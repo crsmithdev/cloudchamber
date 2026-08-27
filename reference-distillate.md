@@ -5,7 +5,7 @@
 
 *The working playbook. Every theme, craft move, and dread mechanism from the six sources, deduplicated and sorted into things you can actually pick up. Load this when pitching, remixing, or auditing. The Register and its annexes are the evidence; this is the tool.*
 
-**Source tags:** `[C]` Chiang · `[W]` Watts · `[setting-c]` setting-c · `[TC]` setting-b · `[K]` djkaktus/SCP · `[E]` Neon Genesis Evangelion. Tags mark where a move is best demonstrated, not where it's allowed.
+**Source tags:** `[C]` Chiang · `[W]` Watts · `[setting-c]` setting-c · `[TC]` setting-b · `[K]` djkaktus/SCP · `[E]` Neon Genesis Evangelion · `[FB]` Fog Belt originals (doctrine arrived at in-house). Tags mark where a move is best demonstrated, not where it's allowed.
 
 ---
 
@@ -30,11 +30,21 @@ Chiang supplies the correctness. Watts supplies the reason the cost is worth pay
 
 - The scary thing is an idea. Cold, conceptual, systems-scale.  
 - The horror is institutional; personal devastation is the residue, not the subject.  
-- No villains. Cruelty is a byproduct of somebody's reasonable programme, and the programme is working.  
+- **Institutions can be the villain** *(amended — see A1)*. The default remains that cruelty is a byproduct of somebody's reasonable programme and the programme is working — but a straight reading in which the institution simply *is* the antagonist is available, and does not need laundering through arithmetic. The reveal does not always have to exonerate.  
 - The narrator is good at their job and warm.  
 - Refuse the compensating virtue — no human quality gets to be the secret weapon.  
 - Withhold the distinction. Where two mechanisms are both available, don't resolve it.  
 - End one beat past the horror, on something small and administrative, correctly filed.
+
+## STANDING AMENDMENTS
+
+*Revisions to the doctrine above, dated. Later entries win. Source: the doctrine-amendments section of* Recognition *(Chris, 2026-08-26).*
+
+**A1 — Institutions can be the villain.** *(2026-08-26)* The register previously leaned on *nobody is evil, several people are voting responsibly* as near-absolute. Amended: institutions are the villain frequently, and that is available as a straight reading rather than only as an arithmetic accident. **The reveal does not always have to exonerate.** The competence requirement is unchanged — what became optional is the exoneration, not the rigour.
+
+**A2 — God is available, and is alien.** *(2026-08-26)* A far less anthropocentric divinity is in the register: one whose understanding of persons, harm, justice and repair is genuinely not ours, and whose correct and attentive responses to sincere petition are sometimes violently awful for the people receiving them. Not malice, not indifference, not trickster-logic — a different ontology, applied faithfully.
+
+**A3 — The taste profile is explicitly evolving.** *(2026-08-26)* Old rules get invalidated as the corpus is re-read and recycled. **Do not treat any prior rule here as canonical against a live instinct.** This document records what has worked; it is not a constitution.
 
 ---
 
@@ -74,6 +84,10 @@ Chiang supplies the correctness. Watts supplies the reason the cost is worth pay
 - The rules known, followable, and irrelevant: do the thing that works, it works, be damned anyway. `[C]`  
 - Being loved by something that cannot tell your sins from your virtues, and reproduces both. `[K]`  
 - The record was never the point; the community you belong to is renegotiated behind your back. `[C]`
+
+- A divinity whose understanding of persons, harm, justice and repair is genuinely not ours, applied faithfully — and the correct answer to a sincere petition is catastrophic for the petitioner. `[FB]`
+- Petitions granted exactly as worded, by something with perfect attention and no interpretive charity whatsoever. `[FB]`
+- A life built on top of an injustice treated as part of the injustice, and removed with it, root and branch, with evident care. `[FB]`
 
 ### 1.4 The sacrifice economy
 
@@ -148,6 +162,8 @@ Chiang supplies the correctness. Watts supplies the reason the cost is worth pay
 - Every safeguarding institution present, funded, correctly staffed, and administered by the interested party. No reformable gap. `[E]`
 - The decision procedure that is one dead person's unresolved ambivalence, running in perpetuity, regarded as a technical achievement. `[E]`
 - The apocalypse as a specification dispute: two parties, one governing document, differing readings, each quietly building toward its own. `[E]`
+
+- The institution as straightforward antagonist — not a machine nobody is steering, but a competent body that chose, and would choose again. `[FB]`
 
 ### 1.11 Lineage, reproduction, inheritance
 
@@ -267,6 +283,8 @@ Chiang supplies the correctness. Watts supplies the reason the cost is worth pay
 - Consumption without intention — a thing eating villages because it has an impulse. `[K]`  
 - No villain to blame. The antagonist is arguably the altruist. `[C]`
 
+- The third option beyond malice and indifference: full attention, sincere response, and an ontology in which your life and the wrong done to it are not separable — so repairing the wrong removes both. `[FB]`
+
 ### 3.3 Correctness as the wound
 
 - A person destroyed by a correct argument. Nobody to be angry at, no consolation that survives contact with the proof. `[C]`  
@@ -275,6 +293,8 @@ Chiang supplies the correctness. Watts supplies the reason the cost is worth pay
 - Their reasoning is unanswerable and their plan is monstrous, and the article refuses to resolve it. `[K]`  
 - Being argued into it: watching intelligent people reason their way to omnicide with good evidence and sincere motives. `[K]`  
 - Moral vertigo — told credibly that everyone you killed was doing their best, and your certainty was the only monster in the room. `[K]`
+
+- The institution is simply the antagonist, and saying so costs the story nothing. Not every reveal has to exonerate, and the ones that refuse to are not cheaper for it. `[FB]`
 
 ### 3.4 Duration with no exit
 
@@ -408,6 +428,8 @@ Chiang supplies the correctness. Watts supplies the reason the cost is worth pay
 - Domestic centre. Every rejected pitch had one relationship or one person's reckoning at its heart.  
 - The artifact that exists to narrate. If it isn't doing a job, it's a testimony wrapper.
 
+- *The villain as shortcut.* A1 permits the institution to be the antagonist; it does not permit it to be stupid, gloating, or uninterested in justifying itself. Competence and sincerity remain mandatory. What is optional is the exoneration.
+
 **Evangelion failure modes**
 
 - *The mercy as a lie.* If the terrible solution does not actually solve the suffering, refusing it costs nothing and the piece is a fable.  
@@ -426,7 +448,7 @@ For generating or auditing in fifteen minutes.
 3. **Pick the artifact (§4).** It must be a document that institution genuinely produces. If it wouldn't exist without the story, choose again.  
 4. **Run the Chiang test.** Follow the premise to its second-order effects — the price list, the exception process, the revision history. If it needs a second impossibility, go back to 2\.  
 5. **Run the Watts test.** Where does the self stop being necessary, and who noticed first, and what did the returns look like afterward?  
-6. **Run the normalisation pass.** Ratepayers, not fanatics. Who files the variance request? What's the bond measure called?  
+6. **Run the normalisation pass.** Ratepayers, not fanatics. Who files the variance request? What's the bond measure called? *(Per A1: this makes the institution legible, not innocent — it may still be the antagonist.)*  
 7. **Run the load-bearing pass.** Remove the awful thing. Does the system stop? If it merely gets nicer, the story is a critique, not a horror.  
 8. **Run the instrument pass.** Could a machine do it instead? If yes, it's engineering. If it needs a specific person, whose signature is on the authorisation?  
 9. **Pick one dread mechanism (§3)** and one withholding move (M11–M19). Exactly one of each. More than one of either dilutes both.  
@@ -458,3 +480,7 @@ For generating or auditing in fifteen minutes.
 **Consent that is real, informed, and worse for it** — Evangelion: the alternative on the stretcher.
 
 **Salvation as the removal of personhood, argued sincerely** — Evangelion: the Human Instrumentality Project.
+
+**An institution that is simply the antagonist** — Fog Belt original: *Recognition*.
+
+**A God who is real, attentive, and not anthropocentric** — Fog Belt original: *Recognition*.
