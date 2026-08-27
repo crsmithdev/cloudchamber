@@ -10,7 +10,7 @@ Each story has three sections:
 - **Synopsis** — the story in prose, at length.
 - **Notes** — metadata, status, open items, differentiation warnings, decisions owed.
 
-Slate-level material — the format rule, parked stories, open items, provenance — is collected at the end under **Slate notes**.
+Slate-level material — the format rule and the provenance of the source documents — is collected at the end under **Slate notes**.
 
 ---
 
@@ -412,6 +412,7 @@ She testifies about her own accuracy and tells the truth, because that is who sh
 ### Notes
 
 - **Origin:** original pick · **Lane:** state / liturgy · **Status:** COMPLETE — nothing supernatural, by design
+- **Verbatim / Recognition** — side-by-side read required before both are greenlit. Distinction to protect: Verbatim is about a functionary's rounding errors in an ongoing recitation; Recognition is about a terminal act of institutional honesty.
 - Marked **complete**. Nothing supernatural, by design — keep it entirely mundane.
 
 ---
@@ -497,6 +498,7 @@ The turn arrives in two movements. The cohort's audiograms are anticipatory — 
 - **Five tests: not yet run.** Especially the djkaktus test on the new format — a standards memorandum is a document-monster, and the register has flagged document-monsters as at or near capacity. This needs a real argument for why the memo is load-bearing and not just a wrapper.
 - **Format trade-off** (see narrator section) — one room in real time vs. programme-level view. Needs a call. Hybrid option flagged.
 - The **"faith-attendance insulation index"** from rev 1 is *dropped* here — it risked reading as satire of religious decline. The lapsed-maintenance idea now lives in the mechanism section without a named institutional variable attached. Reinstate only if a version can be found that stays dead serious.
+- **Threshold / Commissure** — side-by-side read required; likely clear. Commissure is surgical, literal Jaynes, case-by-case; Threshold is developmental, audiological and population-scale.
 - Jaynes quotations to be selected and cleared at script stage; keep them short and attributed.
 - Ending and bell are provisional.
 
@@ -570,63 +572,6 @@ God is real here and prayer works and contrition is heard. The apostate reading 
 
 ---
 
-## Parked
-
-### El Camino Real — PARKED
-
-Two attempts, both rejected.
-
-1. **The 1906 bells created the route by asserting it** — nine hundred markers along a line that never existed as a continuous road — and something 120 years old occupies the structure, with Caltrans maintaining its body via a casting spec and a highway beautification budget line. *Rejected:* depends too much on what the occupant is.
-2. **Same construction, no occupant:** the closed line constitutes a perimeter, enclosing every mission site and burial ground on the coastal side; the mission enclosure system finally has an external border, so residence inside the line constitutes congregation. *Rejected* as too close to Root of Title — same missions, same land instrument, same binding-by-operation-of-law move.
-
-**Keep the "route constructed by declaration" idea; it needs a non-mission payload.**
-
-### Acausal — PARKED MID-REMIX
-
-The decision theory is correct: a sufficiently detailed model of an agent is that agent, so the house has been instantiating its counterparty thousands of times a week. Note: **the counterparty may in some sense be the house.** Return to it.
-
-### Chime Generator — PARKED
-
-See story 14. Core is good, mechanism agreed, ending and bell not written.
-
----
-
-## Not yet remixed
-
-**As of the first pass (sections 1–8):** Offsets, El Camino Real, Suppression, Bloom, Founder's Day, Verbatim, Chime Generator, Threshold.
-
-**As of the addendum (sections 9–15):** Threshold only, with Chime Generator parked mid-remix.
-
-**As of this document:** Threshold has been remixed (rev 2, story 16). El Camino Real and Acausal remain parked.
-
----
-
-## Open items
-
-### Story-level
-
-- **Half-Life** — ending is settled through the surface sequence. Open: how much of the bay monument is described versus withheld.
-- **Root of Title** — vacates *The Fog Is a Waiting List*'s slot. Decide whether *Fog* survives separately or is retired for parts.
-- **Root of Title** — the most explicitly apostate story on the slate. Check it against all five rules of the apostate doctrine, particularly rule 1 (vindicate the metaphysics, never the authority), since the friars must come out of this worse than anyone.
-- **Viability** — pick the deep mechanism (leaning lossy arbitration); decide whether the discard contractor stays or is too close to Root of Title; decide whether the ending lands on the unresolvable embryo or her own file.
-- **Suppression** — differentiation from Root of Title required. Candidate distinctions recorded in the story's notes; also check the narrators don't rhyme.
-- **Founder's Day** — ending and bell.
-- **Chime Generator** — ending and bell.
-- **"Without Regards"** — title; pressure-test the mechanism; check against the five tests, particularly whether the Watts layer is present.
-- **Threshold** — five tests not yet run, especially the djkaktus test on the memorandum format; the one-room-vs-programme-level format trade-off needs a call.
-- **Recognition** — five tests not yet run; Ruth must be alive at 71; the scale question (Ruth alone, or everyone the process touched) is unresolved.
-- **Verbatim / Recognition** — side-by-side read required before both are greenlit.
-- **Threshold / Commissure** — side-by-side read required; likely clear.
-
-### Housekeeping
-
-- Stale six-story "Fog Belt — Dark Remix v2" (fileId `1TYRiqiTHtIrWs665JwX5GIkz9giUuF-v8k4z_slNAUk`) still needs renaming or deleting.
-- Reconcile Reference Register v1 (session-written) against Register v2 / Distillate / annexes.
-- Migrate working docs to a git repo (planned Cowork session). Drive's connector cannot update document content in place, only title and parent.
-  - *Editorial note, 26 Aug 2026: done — the corpus now lives in the `fogbelt` git repo, which is canonical.*
-
----
-
 ## Provenance
 
 This document standardises four source documents, merged into `ideas-v2-working.md` and reorganised here. The originals' own framing is preserved below, because each says something about the conditions it was written under.
@@ -656,6 +601,15 @@ Reconstructed from a voice session whose chat history was lost to a client-side 
 ### Part four — story 17 (Recognition)
 
 New original, developed in voice session 2026-08-26, not on the greenlit slate. Supersedes the `fog-belt-recognition.md` placeholder. Carries the three doctrine amendments now recorded in `reference-distillate.md`.
+
+### Outstanding housekeeping
+
+- Stale six-story "Fog Belt — Dark Remix v2" (fileId `1TYRiqiTHtIrWs665JwX5GIkz9giUuF-v8k4z_slNAUk`) still needs renaming or deleting.
+- Reconcile Reference Register v1 (session-written) against Register v2 / Distillate / annexes.
+- Migrate working docs to a git repo (planned Cowork session). Drive's connector cannot update document content in place, only title and parent.
+  - *Editorial note, 26 Aug 2026: done — the corpus now lives in the `fogbelt` git repo, which is canonical.*
+
+---
 
 ### This document
 
