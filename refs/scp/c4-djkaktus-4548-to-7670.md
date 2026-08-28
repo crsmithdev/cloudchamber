@@ -29,7 +29,7 @@
 - SCP-7450 — L is for Lamentations  
 - SCP-7670 — The Light That Blinds
 
-**Removed 2026-08-28.** The following entries were stripped from this annex as out of register — their net register is comic or heartwarming rather than horrific, and the corpus does not use that mode (see Cut 3 in `distillate-cuts.md`): SCP-4498, SCP-7143-J. The retrieval notes at the foot of this file still describe the original pass and its counts, and are left as written.
+**Removed 2026-08-28.** The following entries were stripped from this annex as out of register — their net register is comic or heartwarming rather than horrific, and the corpus does not use that mode: SCP-4498, SCP-7143-J. Comedy is not available in this register; the distillate withdrew the craft move that licensed it on the same day. The retrieval notes at the foot of this file still describe the original pass and its counts, and are left as written.
 
 ---
 

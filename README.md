@@ -6,15 +6,14 @@ Horror anthology working repo. **This repo is the source of truth.**
 
 ```
 distillate.md                the working playbook -- generate from section 0
-distillate-cuts.md           record of material removed from it, and why
 
-ideas-v1.md                  the greenlit slate (v1)
-ideas-v2.md                  GENERATED -- do not hand-edit
-ideas-v2-working.md          append-only verbatim archive; PART N per source doc
-parts/00-front-matter.md     schema + <!-- CONTENTS-TABLE --> marker
-parts/99-slate-notes.md      format rule + provenance
 stories/NN-slug.md           one story each (front matter: number, heading,
                              contents_cell, status)
+stories/00-undeveloped.md    the bench -- greenlit but never developed, parked
+                             attempts with their reasoning, held pairs, passed-on
+ideas-v2.md                  GENERATED -- do not hand-edit
+parts/00-front-matter.md     schema + <!-- CONTENTS-TABLE --> marker
+parts/99-slate-notes.md      format rule + provenance
 build.py                     regenerate / verify ideas-v2.md
 
 refs/                        source annexes; read, never edited
@@ -44,8 +43,6 @@ Edit the file under `stories/`, then rebuild. `ideas-v2.md` is generated and
 marked `linguist-generated` so GitHub collapses its diff -- review the story
 file instead. Adding a story is one new file plus a rebuild; its Contents table
 row comes from that file's front matter, so there is no second place to update.
-
-`ideas-v2-working.md` is never edited, only appended to.
 
 ## Pushing
 
