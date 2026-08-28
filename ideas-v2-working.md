@@ -809,3 +809,219 @@ These revise standing entries in the taste profile and should be carried into th
 - **Half-Life** — also a lapsing duty cycle. Cleared: Recognition's rite fails by **completion**, not neglect. Nothing decays; the danger is finishing.
 - **Verbatim** — closest neighbour (state recitation as load-bearing liturgy). Needs a side-by-side read before both are greenlit. Distinction to protect: Verbatim is about a functionary's rounding errors in an ongoing recitation; Recognition is about a terminal act of institutional honesty.
 - **Viability** — both hinge on a screening/adjudication rubric. Cleared: no shared mechanism, but avoid duplicating the "her own file" ending beat.
+
+---
+
+<!-- ===== PART 5 — from a 2026-08-27 session (Designated Pathogen Free) ===== -->
+
+# Fog Belt — Dark Remix #22: Designated Pathogen Free
+**Status:** dark remix v1, developed 2026-08-27. Supersedes the C8 one-line
+greenlit pitch ("Immunology is a self/non-self classifier, and it has been
+retrained at scale"), which was never expanded. Clean slate — the original
+line is raided, not satisfied.
+**Lane:** xenotransplant / deep biology
+**Setting:** begins ~2040s, runs forward roughly a century
+---
+## Logline
+Pig organs saved a generation of children. The organs were clean — that part
+was true, audited, and never in doubt. What crossed was not a pathogen, and by
+the time anyone could have noticed, nobody could.
+---
+## The engine
+Immunology is a classifier, and a classifier has to be trained. Self-recognition
+is not innate; it is fitted in infancy against whatever the body meets. "Self"
+is not a fact about you. It is a model.
+Xenotransplant herds are maintained in absolute biological isolation across
+generations — designated pathogen free, some gnotobiotic, every organism in
+them catalogued. Sterile beyond anything in nature. And transgenic: dozens of
+human genes edited in so the organs pass.
+Which makes these herds the largest deliberate reservoir of human-compatible
+biology ever assembled. The entire industry rests on one assumption — that a
+barrier crossed in one direction is crossed in one direction.
+---
+## The mechanism (real, checkable — Acausal principle)
+- **HERV-K.** Roughly 8% of the human genome is fossilised retroviral
+  insertion. HERV-K is the youngest family; some copies retain intact reading
+  frames. Expressed in embryos and in a few disease states. Function
+  uncertain.
+- **PERVs.** Porcine endogenous retroviruses are the single largest real
+  regulatory concern in xenotransplantation. They are in every pig genome.
+  They cannot be bred out, because they *are* the genome. Companies edit copy
+  number down; nobody removes them.
+- **The event is recombination, not infection.** Porcine and human insertions
+  of the same ancient family, separated for ~80 million years, meeting inside
+  transgenic tissue and reassembling into an intact original that neither
+  lineage has carried alone since before there were primates.
+**Why it evades screening.** Every monitoring programme looks for
+replication-competent virus: particles, transmission, infectivity. The assays
+are excellent and the answer is always negative — because the recombinant
+never makes a particle. It is a retrotransposon. It copies itself in place,
+inside the host, using machinery already there. Nothing leaves the cell.
+Nothing to catch. The screening is not lax. It is aimed at the wrong object.
+**Why the pigs show nothing.** It expresses in them and does nothing legible,
+because what it acts on isn't there.
+**What it does.** HERV-K's envelope protein is fusogenic — that is its actual
+function. The domesticated version, syncytin, is how the placenta forms: the
+one human tissue meant to be a fused sheet of many cells sharing cytoplasm.
+Expressed elsewhere, it does the same job, correctly. It fuses cells that were
+never meant to share a membrane.
+The tissue that goes worst is the one where individual cell boundaries *are*
+the architecture. Neurons.
+---
+## Clinical course
+- **Early:** indistinguishable from nothing.
+- **Middle:** resembles a rapid dementia with wrong imaging. No atrophy, no
+  plaques — an increasing coarseness that radiologists call artefact for a
+  decade, because artefact is the more plausible reading.
+- **Terminal:** the cells do not die. They merge, and the merged units keep
+  firing. Patients are not absent. They are *responsive* — slower, coarser,
+  fewer distinctions. A person rendered at falling resolution, fully awake
+  throughout.
+**The arithmetic.** Incubation runs on copy number, which climbs with every
+cell division. Slow in adults. Fast in children. The paediatric xenotransplant
+programme is the pride of the field, because putting a pig heart in an infant
+is the most defensible act in medicine.
+---
+## Containment failure: it was never containable
+It does not escape. It is already germline.
+A retrotransposon copying itself through a body reaches gonadal tissue. One
+insertion into a germ cell and it stops being an infection and becomes
+**inheritance**. The child is not exposed. The child is born with it, in every
+cell, from the zygote — so copy number starts high and climbs through
+development, and development is nothing but cell division.
+Second-generation cases therefore present in childhood or in utero. Fusion
+during neurodevelopment does not look like disease. It looks like a child who
+was simply born that way.
+**And then it stops being traceable.** Recipients number in the tens of
+thousands, but they are mostly young, they recover, they are told they are
+cured, and they have children with people who never had a transplant. Two
+generations and there is no procedure to trace it to. Four and it is a
+background frequency in the population — which is precisely how the 8% already
+in us got there.
+---
+## The ending: four generations on
+Nothing collapses. That is the horror.
+At low copy number distributed across a whole population, the effect is not
+dementia. It is a small, uniform reduction in the number of distinctions a mind
+can hold. Coarser categories. Fewer separable concepts. Individually
+undetectable — you cannot notice a distinction you can no longer make.
+The world is not ruined. It is *duller*, everywhere, at once, and every
+reference point has moved with it. Test scores are fine, because the tests are
+rewritten by the people taking them. Nobody experiences a loss. There is no
+diagnosis, because there is no unaffected control population left.
+What is gone is the tail: the capacity for thinking that holds many fine
+distinctions simultaneously — which is exactly the capacity required to notice
+this and fix it. The species does not lose civilisation. It loses the ability
+to solve the problem, and then loses the ability to perceive that there was one.
+Terminal cases keep occurring, are cared for, and are considered ordinary.
+**Last frame:** the narrator's own document, in later editions, being
+simplified for readability.
+---
+## What it looks like on the ground (setting-a, ~2090)
+Everything works. Bridges stand, trains run, hospitals are good. What has
+stopped is anything requiring many distinctions held at once over a long time.
+- No new drugs of consequence. The low-hanging pharmacology is done; the hard
+  structural biology has quietly stopped producing.
+- Physics has become curatorial.
+- Large software systems are no longer built, only maintained — honestly,
+  slightly wrongly, degrading in ways nobody can trace.
+- Politics: not more violence, *fewer categories*. Positions collapse into two,
+  then fewer. Everyone is sincere. Debates are shorter and more satisfying.
+  Coalitions are enormous.
+- The visible tell: the buildings are fine, and nothing built in forty years is
+  new in any interesting way. Competent copies of things from before.
+Famine and war arrive later, and not from malice — from infrastructure whose
+failure modes required more resolution to anticipate than anyone now has.
+---
+## Escalation ladder (held in reserve — not all of this is in v1)
+Ordered by depth. Chris's brief: worse, but survivable.
+1. **Temporal depth.** The structures that model a self that does not exist yet
+   coarsen. People remain competent and stop representing consequences beyond a
+   few weeks. Not reckless — *sincerely present*. Maintenance stops because a
+   bridge in twenty years is not a thing anyone can quite see.
+2. **Reference thinning.** Language survives socially and stops pointing at
+   anything precise. Conversations are warm and land nowhere. Contracts and
+   laws are still written and cannot be interpreted the same way twice.
+3. **Counterfactual reasoning.** The ability to hold a world that didn't happen
+   — the substrate of every moral emotion. Guilt is comparison to a self who
+   did otherwise. Without it people are not cruel; they are incapable of
+   regret, they are gentle, and they cannot learn. Each generation repeats the
+   same errors sincerely, with no memory of the pattern.
+4. **Narrative continuity.** The self extended through time thins. People are
+   recognisably themselves moment to moment and no longer accumulate. Nobody
+   has a life; they have a very long present. This ends history, which requires
+   someone who can be embarrassed by the past.
+5. **Boundary failure at the wrong scale.** Syncytin joins unrelated cells into
+   shared tissue. At high copy number in dense populations, people in prolonged
+   contact become, at the margins, one tissue. Families. Wards. Survivable.
+   Cared for. Loving.
+6. **Generational fusion.** The placenta is already a fused interface between
+   two people. Push copy number high enough and the interface stops resolving
+   properly at birth. Mother and child remain, in some tissues, continuous.
+   Common enough to be unremarkable, then expected.
+Terminus: the species is still here, still kind, and no longer composed of
+individuals.
+---
+## FORMAT NOTE — departure from the single-narrator house style
+**This premise cannot be carried by one narrator, and that is a feature.**
+Anyone who can see the loss clearly is by definition from before it. Chris's
+call: move away from the one-voice format here.
+**Proposed structure.** A sequence of first-person accounts, one per
+generation, all the *same kind* of document — so the form stays fixed while the
+people inside it drift. Candidates: patient histories; or oral-history
+interviews from a single longitudinal cohort study that recruits and then
+follows descendants for a century.
+Every voice is warm, articulate, and convinced it is fine.
+- **Voice 1** is us: precise, worried, building the case.
+- **Voice 2** is competent, slightly coarser, and dismisses Voice 1 as
+  alarmist.
+- **Voice 4** speaks in shorter sentences, simpler language, describing
+  something appalling as ordinary family life, with real tenderness.
+The reader does the arithmetic across the gaps. Nobody in the story ever does.
+**The complicit hook:** the study is what enabled the paediatric programme, and
+the later interviews are shorter because the interviewers stopped asking the
+harder questions.
+**Also wanted (Chris):** interleave a narrator's-eye view of what the *world*
+looks like at each interval — not only the first-person accounts. Wide shots
+between the voices.
+**Standing implication:** future stories may play with narrative structure.
+The one-narrator rule is no longer a constraint, only a default.
+---
+## Doctrine checks
+- **#1 idea as monster** — yes; the monster is a fitted classifier and a
+  fusogenic protein doing its correct job in the wrong place.
+- **#2 long unattended schedule** — 80 million years of separation, reassembled
+  by a supply chain.
+- **#4 arithmetic not intention** — nobody is evil. The screening was
+  well-designed for the threat it was designed against. The paediatric
+  programme was the most defensible thing in medicine.
+- **#6 Acausal principle** — HERV-K, PERVs, syncytin, gnotobiotic herds,
+  retrotransposition: all real, all checkable, played at full complexity.
+- **#7 Chiang test** — passes. Nothing supernatural anywhere.
+- **#8 Watts test** — passes hard, but *not* via dissolution of self (see
+  differentiation below). Via loss of resolution.
+- **#12 endings are losses at population scale** — species scale.
+- **Amendment: institutions can be the villain** — available here as a straight
+  reading of the industry, though the arithmetic version is stronger.
+---
+## Differentiation check against the corpus
+- **Threshold (#17)** — both concern interior experience being wrong in a way
+  screening can't detect. Distinct: Threshold's cohort *have* full interior
+  life and lack only the interval. Here the interior life is progressively
+  lower-resolution and everyone's reference point moves with it.
+- **Continuum** — flagged. Continuum also runs on boundary failure between
+  persons. Chris explicitly called out over-reliance on dissolution-of-self;
+  v1 was rebuilt away from it. **If both are greenlit, the mother-child fusion
+  rung (ladder #6) should probably be cut from this one** and left to
+  Continuum, or vice versa.
+- **Type 2 (#20), Readiness Potential (#18)** — adjacent neuroscience lane.
+  Read side by side before all three are greenlit.
+- **Continuity of Care (#2)** — no overlap; that one is about tests passing.
+---
+## Open items
+- Narrator/voice cast not yet chosen. Which study, which four people, which
+  regions.
+- Decide how much of the escalation ladder is in-story vs. reserve.
+- Resolve the fusion overlap with Continuum.
+- Title: "Designated Pathogen Free" is strong and ironic (the herds genuinely
+  were). Keep unless the multi-voice structure suggests something better.

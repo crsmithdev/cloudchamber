@@ -35,8 +35,9 @@ Slate-level material — the format rule and the provenance of the source docume
 | 15 | **"Without Regards"** *(working title TBD)* | **New pitch** — not pressure-tested |
 | 16 | **Threshold** | Rev 2 — first pass, not yet run against the five tests |
 | 17 | **Recognition** | First full write-up — not yet run against the five tests |
+| 18 | **Designated Pathogen Free** | Dark remix v1 — multi-voice format, escalation ladder partly in reserve |
 
-**Provenance of the four source documents.** Stories 1–8 were the original remix pass over the earliest picks (R1 and C1), which predate the intellectual spine added in cycle 6. Stories 9–15 were the addendum written after it. Story 16 is a rev-2 rebuild reconstructed from a lost voice session. Story 17 is a new original, not on the greenlit slate. Full detail in **Slate notes → Provenance**.
+**Provenance of the four source documents.** Stories 1–8 were the original remix pass over the earliest picks (R1 and C1), which predate the intellectual spine added in cycle 6. Stories 9–15 were the addendum written after it. Story 16 is a rev-2 rebuild reconstructed from a lost voice session. Story 17 is a new original, not on the greenlit slate. Story 18 is a later dark remix, developed 2026-08-27, and is the first story to depart from the single-narrator format. Full detail in **Slate notes → Provenance**.
 
 ---
 
@@ -547,6 +548,63 @@ God is real here and prayer works and contrition is heard. The apostate reading 
 
 ---
 
+## 18. Designated Pathogen Free
+
+### Summary
+
+Pig organs saved a generation of children, and the organs were clean — that part was true, audited, and never in doubt. What crossed was not a pathogen but a recombination: porcine and human insertions of the same ancient retroviral family, separated for eighty million years, meeting inside transgenic tissue and reassembling. It never makes a particle, so every screening programme returns a correct negative. What it expresses is a fusogenic protein doing its real job in the wrong tissue, and four generations on the species has not collapsed but has lost resolution — a small uniform reduction in the number of distinctions a mind can hold, including the distinction required to notice.
+
+### Synopsis
+
+Immunology is a classifier, and a classifier has to be trained. Self-recognition is not innate; it is fitted in infancy against whatever the body meets, which means "self" is not a fact about you but a model. Xenotransplant herds are the other half of the setup: maintained in absolute biological isolation across generations, designated pathogen free, some gnotobiotic, every organism in them catalogued, sterile beyond anything in nature — and transgenic, with dozens of human genes edited in so the organs pass. That makes them the largest deliberate reservoir of human-compatible biology ever assembled, and the entire industry rests on the assumption that a barrier crossed in one direction is crossed in one direction.
+
+The mechanism is real and checkable at every step. Roughly eight percent of the human genome is fossilised retroviral insertion, and HERV-K is the youngest family, with some copies retaining intact reading frames. Porcine endogenous retroviruses are the single largest genuine regulatory concern in xenotransplantation; they are in every pig genome and cannot be bred out, because they *are* the genome. The event is recombination rather than infection — insertions of the same ancient family, separated for eighty million years, meeting inside transgenic tissue and reassembling into an intact original that neither lineage has carried alone since before there were primates.
+
+It evades screening because the screening is excellent and aimed at the wrong object. Every monitoring programme looks for replication-competent virus — particles, transmission, infectivity — and the answer is always negative, because the recombinant never makes a particle. It is a retrotransposon: it copies itself in place, inside the host, using machinery already there. Nothing leaves the cell. The pigs show nothing either, because it expresses in them and does nothing legible, since what it acts on is not there. What it does express is HERV-K's envelope protein, which is fusogenic — that is its actual function, and its domesticated version, syncytin, is how the placenta forms, the one human tissue meant to be a fused sheet of cells sharing cytoplasm. Expressed elsewhere it does the same job, correctly, fusing cells that were never meant to share a membrane. The tissue that goes worst is the one where individual cell boundaries *are* the architecture.
+
+Clinically it begins as indistinguishable from nothing, then resembles a rapid dementia with wrong imaging — no atrophy, no plaques, an increasing coarseness that radiologists call artefact for a decade because artefact is the more plausible reading. Terminally the cells do not die; they merge, and the merged units keep firing. Patients are not absent but responsive, slower and coarser and holding fewer distinctions: a person rendered at falling resolution, fully awake throughout. Incubation runs on copy number, which climbs with every cell division — slow in adults, fast in children — which is why the paediatric xenotransplant programme is where it lands hardest, and the paediatric programme is the pride of the field, because putting a pig heart in an infant is the most defensible act in medicine.
+
+It was never containable, because it does not escape — it is already germline. A retrotransposon copying itself through a body reaches gonadal tissue, and one insertion into a germ cell converts it from an infection into inheritance. The child is not exposed; the child is born with it in every cell from the zygote, so copy number starts high and climbs through development, and development is nothing but cell division. Second-generation cases present in childhood or in utero, and fusion during neurodevelopment does not look like disease — it looks like a child who was simply born that way. Then it stops being traceable at all: recipients number in the tens of thousands but are mostly young, they recover, they are told they are cured, and they have children with people who never had a transplant. Two generations and there is no procedure to trace it to; four and it is a background frequency in the population, which is precisely how the eight percent already in us got there.
+
+Four generations on, nothing collapses, and that is the horror. At low copy number across a whole population the effect is not dementia but a small, uniform reduction in the number of distinctions a mind can hold — coarser categories, fewer separable concepts, individually undetectable, because you cannot notice a distinction you can no longer make. The world is not ruined, it is duller everywhere at once, and every reference point has moved with it: test scores are fine because the tests are rewritten by the people taking them, and there is no diagnosis because there is no unaffected control population left. What is gone is the tail — the capacity for holding many fine distinctions simultaneously, which is exactly the capacity required to notice this and fix it. The species does not lose civilisation; it loses the ability to solve the problem, and then the ability to perceive that there was one. Bridges stand and trains run and hospitals are good, and no new drugs of consequence arrive, physics becomes curatorial, large software systems are only maintained, and politics collapses not into violence but into fewer categories, everyone sincere, debates shorter and more satisfying. The last frame is the narrator's own document, in later editions, being simplified for readability.
+
+### Notes
+
+- **Origin:** dark remix v1, developed 2026-08-27; supersedes the C8 one-line greenlit pitch ("Immunology is a self/non-self classifier, and it has been retrained at scale"), which was never expanded — the original line is raided, not satisfied · **Lane:** xenotransplant / deep biology · **Setting:** begins ~2040s, runs forward roughly a century · **Status:** dark remix v1
+- **FORMAT — departure from the single-narrator house style, deliberately.** This premise cannot be carried by one narrator, and that is a feature: anyone who can see the loss clearly is by definition from before it. Proposed structure is a sequence of first-person accounts, one per generation, all the *same kind* of document — so the form stays fixed while the people inside it drift. Candidates: patient histories, or oral-history interviews from a single longitudinal cohort study that recruits and then follows descendants for a century. Every voice is warm, articulate, and convinced it is fine. **Voice 1** is us: precise, worried, building the case. **Voice 2** is competent, slightly coarser, and dismisses Voice 1 as alarmist. **Voice 4** speaks in shorter sentences and simpler language, describing something appalling as ordinary family life, with real tenderness. The reader does the arithmetic across the gaps; nobody in the story ever does.
+  - **The complicit hook:** the study is what enabled the paediatric programme, and the later interviews are shorter because the interviewers stopped asking the harder questions.
+  - **Also wanted:** interleave a narrator's-eye view of what the *world* looks like at each interval — wide shots between the voices, not only the first-person accounts.
+  - **Standing implication for the slate:** future stories may play with narrative structure. The one-narrator rule is no longer a constraint, only a default.
+- **Escalation ladder — held in reserve, not all of it is in v1.** Ordered by depth; the brief is *worse, but survivable*.
+  1. **Temporal depth.** The structures that model a self that does not exist yet coarsen. People remain competent and stop representing consequences beyond a few weeks. Not reckless — *sincerely present*. Maintenance stops because a bridge in twenty years is not a thing anyone can quite see.
+  2. **Reference thinning.** Language survives socially and stops pointing at anything precise. Conversations are warm and land nowhere. Contracts and laws are still written and cannot be interpreted the same way twice.
+  3. **Counterfactual reasoning.** The ability to hold a world that didn't happen — the substrate of every moral emotion. Guilt is comparison to a self who did otherwise. Without it people are not cruel; they are incapable of regret, they are gentle, and they cannot learn. Each generation repeats the same errors sincerely, with no memory of the pattern.
+  4. **Narrative continuity.** The self extended through time thins. People are recognisably themselves moment to moment and no longer accumulate. Nobody has a life; they have a very long present. This ends history, which requires someone who can be embarrassed by the past.
+  5. **Boundary failure at the wrong scale.** Syncytin joins unrelated cells into shared tissue. At high copy number in dense populations, people in prolonged contact become, at the margins, one tissue. Families. Wards. Survivable. Cared for. Loving.
+  6. **Generational fusion.** The placenta is already a fused interface between two people. Push copy number high enough and the interface stops resolving properly at birth. Mother and child remain, in some tissues, continuous. Common enough to be unremarkable, then expected.
+  - *Terminus: the species is still here, still kind, and no longer composed of individuals.*
+- **Doctrine checks.**
+  - **#1 idea as monster** — yes; the monster is a fitted classifier and a fusogenic protein doing its correct job in the wrong place.
+  - **#2 long unattended schedule** — 80 million years of separation, reassembled by a supply chain.
+  - **#4 arithmetic not intention** — nobody is evil. The screening was well-designed for the threat it was designed against. The paediatric programme was the most defensible thing in medicine.
+  - **#6 Acausal principle** — HERV-K, PERVs, syncytin, gnotobiotic herds, retrotransposition: all real, all checkable, played at full complexity.
+  - **#7 Chiang test** — passes. Nothing supernatural anywhere.
+  - **#8 Watts test** — passes hard, but *not* via dissolution of self (see differentiation). Via loss of resolution.
+  - **#12 endings are losses at population scale** — species scale.
+  - **Amendment A1 (institutions can be the villain)** — available here as a straight reading of the industry, though the arithmetic version is stronger.
+- **Differentiation check against the corpus.** *(The source cites greenlit-slate numbering, which differs from this document's; story numbers here are given in brackets.)*
+  - **Threshold** [story 16; cited as #17] — both concern interior experience being wrong in a way screening cannot detect. Distinct: Threshold's cohort *have* full interior life and lack only the interval. Here the interior life is progressively lower-resolution and everyone's reference point moves with it.
+  - **Continuum** — flagged. Continuum also runs on boundary failure between persons, and over-reliance on dissolution-of-self was explicitly called out, so v1 was rebuilt away from it. **If both are greenlit, the mother-child fusion rung (ladder #6) should probably be cut from this one** and left to Continuum, or vice versa.
+  - **Type 2** [cited as #20] and **Readiness Potential** [cited as #18] — adjacent neuroscience lane. Read side by side before all three are greenlit. Neither has been remixed, so neither appears in this document.
+  - **Continuity of Care** [story 5; cited as #2] — no overlap; that one is about tests passing.
+- **Open items.**
+  - Narrator/voice cast not yet chosen. Which study, which four people, which regions.
+  - Decide how much of the escalation ladder is in-story vs. reserve.
+  - Resolve the fusion overlap with Continuum.
+  - Title: "Designated Pathogen Free" is strong and ironic (the herds genuinely were). Keep unless the multi-voice structure suggests something better.
+
+---
+
 # Slate notes
 
 *Everything that belongs to the slate rather than to one story. Preserved from the four source documents; where two of them said the same thing at different times, both are kept and dated, because the difference between them is itself a record.*
@@ -610,6 +668,10 @@ New original, developed in voice session 2026-08-26, not on the greenlit slate. 
   - *Editorial note, 26 Aug 2026: done — the corpus now lives in the `fogbelt` git repo, which is canonical.*
 
 ---
+
+### Part five — story 18 (Designated Pathogen Free)
+
+A later dark remix, developed 2026-08-27, superseding a C8 one-line greenlit pitch that was never expanded. The first story on the slate to depart from the single-narrator house style; its format note carries a standing implication that the one-narrator rule is now a default rather than a constraint.
 
 ### This document
 
