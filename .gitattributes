@@ -1,0 +1,6 @@
+# Prose repo: normalise to LF in the index and in the worktree.
+# Prevents CRLF churn if a Windows editor rewrites a file.
+* text=auto eol=lf
+
+# Treat markdown as text explicitly, and diff it by paragraph.
+*.md text eol=lf diff=markdown
