@@ -560,6 +560,21 @@ If the terrible thing could be done by a machine instead, it is engineering. If 
 
 *Containers proven to work. The question to ask of any of them is the djkaktus question: would this document exist if the story didn't need it to?*
 
+**What each artifact is, where it has been checked.** The rule is that the artifact must be doing a job. Run across both passes:
+
+| Story | The artifact is |
+| :-- | :-- |
+| Fully Vested | the schedule |
+| The Queue | the ordination |
+| Runway | the walk |
+| Right Concentration | the app itself |
+| Continuity of Care | the instrument |
+| Root of Title | the teaching session in which establishment occurs |
+| Half-Life | the dive log |
+| Viability | the grading log plus the audit |
+
+*(The first-pass note listed six, the second eight; both are folded together here.)*
+
 **Used on the slate:** quarterly check-in series · new-hire training curriculum · audit walkthrough · dive log · vesting schedule · generational first-person accounts · paired registers, one of which has no format.
 
 **Available, proven elsewhere:**

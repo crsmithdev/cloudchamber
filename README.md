@@ -5,8 +5,8 @@ Horror anthology working repo. **This repo is the source of truth.**
 ## Layout
 
 ```
-distillate.md                the working playbook -- generate from section 0
-format.md                    story schema, the format rule, provenance
+CLAUDE.md                    standing instructions for a Claude session here
+playbook.md                  the working guide -- generate from section 0
 
 stories/NN-slug.md           one story each; 24 developed
 stories/00-undeveloped.md    the bench -- greenlit but never developed, parked
@@ -33,8 +33,20 @@ watts, `[setting-c]` setting-c, `[TC]` setting-b, `[E]` evangelion,
 ## Working on it
 
 Edit the file under `stories/`. There is no build step and no generated file --
-the directory is the slate, and each story stands alone in the three-part form
-described in `format.md`. Adding a story is one new file.
+the directory is the slate. Adding a story is one new file.
+
+Each story has three sections:
+
+- **Summary** -- one paragraph.
+- **Synopsis** -- the story in prose, at length.
+- **Notes** -- origin, lane, status, open items, differentiation warnings,
+  decisions owed.
+
+Synopses for stories 1-21 run to a four-to-six paragraph convention; 22-24 run
+longer, and the author's prose was preserved rather than compressed.
+`stories/00-undeveloped.md` is the bench, not a story: greenlit concepts never
+developed, parked attempts with the reasoning that parked them, the held pairs
+and the passed-on list.
 
 ## Pushing
 
