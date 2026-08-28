@@ -25,14 +25,21 @@ It fits about half the slate cleanly and another quarter partially. It does not 
 
 For what each source is strongest at, see **Quick lookup** at the foot of this document.
 
-## THE SIX TESTS
+## THE SIX QUESTIONS
 
-1. **Chiang.** Does the premise, followed rigorously with no cheating, produce the dread by itself? No second impossibility in act three.  
-2. **Watts.** Does it threaten the assumption that having a self is necessary or advantageous? Strong form: *the ones without selves outperform the ones with them, the data supports it, and the market noticed.*  
-3. **setting-b.** If the metaphysics is materially true, the institutions built on it are correct, not deluded. Nobody is a fanatic; everybody is a ratepayer.  
-4. **setting-c.** Is the awful thing load-bearing? Remove it and does the system stop? The reformer must be right and lose anyway.  
-5. **djkaktus.** Does the artifact exist to *do a job*, or to tell the story? If it exists to tell the story, it fails.  
-6. **Evangelion.** Is the instrument a person, and does the institution know? If the terrible thing could be done by a machine instead, it is engineering. If it requires a specific person, and the paperwork for using them is complete and correct at every step, it is this register.
+*Referred to across the story notes as "the tests" — same six, and the older notes saying "the five tests" predate the Evangelion question. They are questions rather than gates. A story may decline any of them on purpose; the ones that do should say which, and why. Only the setting-c question has held across the whole corpus.*
+
+**Chiang.** Does the premise, followed rigorously with no cheating, produce the dread by itself? The thing to watch for is a second impossibility smuggled in to escape a corner. The live version of the question is *how many impossibilities, and are they paid for* — Dwell Time spends exactly one and buys everything downstream with dose response and arithmetic; Second Circulation declines the question outright, because aliens are permitted there.
+
+**Watts.** Does it threaten the assumption that having a self is necessary or advantageous? Strong form: *the ones without selves outperform the ones with them, the data supports it, and the market noticed.* Not required. A story can be institutional horror only and be fine.
+
+**setting-b.** If the metaphysics is materially true, the institutions built on it are correct, not deluded. Nobody is a fanatic; everybody is a ratepayer. Inapplicable where there is no metaphysics — several of the strongest stories are entirely mundane by design.
+
+**setting-c.** Is the awful thing load-bearing? Remove it and does the system stop? The reformer must be right and lose anyway. **This is the one that has held everywhere.** If removing the awful thing merely makes the system nicer, the story is a critique rather than a horror, and that is a finding rather than a matter of taste.
+
+**djkaktus.** Where there is an artifact: does it exist to *do a job*, or to tell the story? An artifact that exists to narrate is a testimony wrapper. But document-as-monster is at or near capacity, and having no document at all is now a legitimate answer rather than a failure — Second Circulation's monologue has no addressee, and that absence is the complicity.
+
+**Evangelion.** Where there is an instrument: is it a person, and does the institution know? If the terrible thing could be done by a machine instead, it is engineering. If it requires a specific person, and the paperwork for using them is complete and correct at every step, it is this register.
 
 ## THE GUARDRAILS
 
