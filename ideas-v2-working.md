@@ -1486,3 +1486,271 @@ being generous with a guest.
 - Whether the disgust-damping is ever named in-story as a side effect, or only
   ever appears as behaviour.
 - Red Team pass against Second Circulation on the reveal structure.
+
+---
+
+<!-- ===== PART 8 — from a 2026-08-27 session (Second Circulation) ===== -->
+
+# Fog Belt — "Second Circulation" (working title)
+**Status:** new pitch, developed 2026-08-27. Not on the greenlit slate. Not a
+remix of an existing entry — clean origin.
+**Working title alternatives:** Communion · The Warm Season · Outskirts ·
+Ascension (too on the nose) · The Returned
+---
+## Origin and reference points (none used literally)
+- **Crucible** — Stephen Duxbury / A Vox in the Void. Chris's description: far
+  future, aliens arrived centuries ago, left something that altered humanity,
+  departed; history unreliable because it keeps rewriting. *Used for:* the
+  aftermath-not-the-aliens posture, and an unreliable past.
+- **An all-times-at-once invasion** (half-remembered story; ships over the
+  White House in 1850). *Cut deliberately* — the memory alteration already
+  explains the unrecoverable past, and two ideas were fighting for one job.
+  Dropping it buys a **before**: records made by people who could still own
+  what they wrote.
+- **There Is No Antimemetics Division** (qntm). *Used as a register, not a
+  mechanism.* Hall's version is a perception failure and writing fails
+  immediately. This one differs on both counts — see below. **Must stay
+  differentiated; this is the single biggest craft risk in the pitch.**
+**Deliberate departure:** aliens are permitted here, and so is gore. Chris's
+call.
+---
+## Logline
+They arrived once, changed one thing about how people hold the past, and never
+left. Three hundred years later everyone is marked, everyone is loved while it
+happens, and everyone believes it is the soul becoming visible.
+---
+## The engine
+Two separate failures doing two different jobs. Keeping them separate is what
+makes this work.
+**1. The marking is fully remembered, and normalised.**
+No trick at all. It's just three centuries. People see it on themselves and
+each other, have folk terms for it, discuss it at dinner. When something
+happens to everyone, on a schedule, for three hundred years, it is not an
+atrocity. It is a stage of life.
+**2. The taking is what memory will not hold.**
+The graft altered episodic consolidation. You can perceive a collection
+perfectly while it is happening — full attention, full clarity — and it will
+not lay down as something that *happened to you*. So nobody witnesses a
+disappearance. People notice absences, and absence has a hundred ordinary
+explanations.
+**Writing — the differentiator from qntm.** The writing survives. Every word,
+legible, in your own hand, permanently. What fails is **ownership**: it reads
+as testimony from a stranger. True, coherent, appalling, unurgent — because
+urgency requires believing it happened to you.
+---
+## The mythology (essential — this is the warmth)
+The tracery is understood as **the soul becoming visible**. Not a metaphor
+locally; it is the settled, evidenced, consoling reading, because the evidence
+is right there under everyone's skin and it is beautiful.
+- Synchronisation with your family is **communion**.
+- The gone are **ascended**. There is no doubt about this.
+- Sitting with someone in their last season is the most loved a person ever is,
+  and this is *true*.
+This is not a cynical religion, and the story must not sneer at it. It is a
+mature, generous mortality culture with real grief properly held and real
+consolation that works. **The lie is not that they vanished. The lie is that
+it is ordinary.**
+Taste-profile note: this is doctrine #9 (apostate) inverted — the metaphysics
+is vindicated in the worst possible way. The tracery *is* a transformation. It
+*is* an interface with something vastly larger. Everything the faith claims is
+structurally correct and the referent is wrong.
+---
+## The marking: second circulation
+- Onset in the late twenties. A fine dark tracery comes up under the skin —
+  not veins, adjacent to them, running the wrong way. **Warm to the touch.**
+- Loved ones learn its texture. Touching it is intimate, the way holding a hand
+  is.
+- Over years it thickens and organises. Skin above goes translucent and
+  slightly cool.
+- It develops a rhythm that is not your pulse — slower, and **in time with
+  other marked people in the room.** Families sit together and synchronise.
+  This is understood as closeness.
+What is actually happening: it is building the interface, and hardening the
+equipment (below). Thirty years of slow retrofit. When it finishes, the person
+is collected. **The synchronisation is how ripeness announces itself.**
+The tenderness is real. It is also the wiring being tested.
+---
+## What they are and what bodies are for
+They are not compatible with material existence. Whatever they want here, they
+cannot do themselves — they have no purchase on matter. So they need to be
+worn.
+**We are environment suits.** And, because we are grown cheaply and in vast
+numbers, **disposable ones.** Not livestock. Not food — food is the boring
+answer and thirty years of preparation is far too expensive for meat.
+Their consciousness is not sited. Contents rather than containers. So a body is
+**equipment**, and personhood is simply not located where we locate it. They
+are not cruel. You would not call a person cruel for scuffing a shoe.
+This also answers scale: seven billion is not a herd, it is **inventory**. The
+population was thinned early and has been held at working level since.
+---
+## Collection, and the reversal
+Everything up to collection is warmth — because warmth is what a well-tuned
+interface feels like from the inside.
+At occupation the tuning is over. **The analgesia was never kindness; it was
+calibration.** After that:
+- Fully sensate. Pain included.
+- Total loss of output. Every channel a person uses to act on the world is now
+  load-bearing structure for something else.
+- Locked in, indefinitely, in a place perceived perfectly well and for which
+  there are no words.
+- **Still in synchrony.** You can feel every other occupied body. All of them
+  awake. The rhythm that made your family feel close is the only thing any of
+  you can still do.
+**The stored.** Prepared bodies are not always occupied on collection.
+Inventory does not require it. Some hang in the equivalent of a closet,
+conscious, for decades, waiting for a tenant that may never come. Nothing to
+see but a room. This is where people come apart, and they cannot report it.
+---
+## Uses (callous, not cruel — thoughtless is the note)
+- **Counting.** They still need something that distinguishes one thing from
+  another. Bodies stationed for decades doing a single perceptual task, in a
+  posture that stopped mattering on day one. *Lead with this one.*
+- **Sealing.** A body wedged into a gap as a gasket, because it is the right
+  size and holds pressure. Left as long as the seal holds.
+- **Reaching.** Into places that destroy hands. Repeatedly. Hands repaired
+  badly between uses, because function matters and form does not.
+- **Bracing.** Load-bearing. A posture held for years; bones remodel around the
+  load.
+- **Test loads.** Something is unsafe, so you send equipment first.
+---
+## The hardening, and why the discarded do not die
+The tracery is also spec work, and all of it is *reasonable*:
+- Metabolic slack — the suit does not need feeding.
+- Damage tolerance — the suit does not need care.
+- A nervous system rewired for durability.
+The cruelty is a side effect. Discard a body with that spec and it does not
+have the decency to stop. No starvation, no exposure, no infection to carry you
+off. Just a very well-made thing, awake, that will not fail on schedule.
+**The returned aren't dying. That is what is wrong with them.** Their bodies
+never come back — the motor channels stay conscripted — so they are locked in
+permanently, in a body engineered to keep them there.
+**How they are perceived.** Not invisible. Not curiosities. They read as
+**objects.** You see one clearly; attention refuses to class it as a person, so
+you handle it the way you'd handle a damaged thing — you might move it out of
+the road. And the memory failure applies, so afterwards you don't retain having
+done it.
+So the outskirts of every city accumulate them. Sitting where they were set
+down. Awake. Passed constantly. Occasionally shifted. Rained on. Some have been
+there a hundred years, which is three lifetimes in this world.
+**A returned body is the one piece of evidence that outlives the memory
+failure. It doesn't need to be remembered. It's just lying there.**
+---
+## The world: what a stalled civilisation looks like
+Life expectancy roughly thirty-five. No accumulated elders.
+- No rockets — a rocket needs a fifty-year-old who has been doing one thing
+  since twenty.
+- Everything is apprenticeship, and every master dies mid-sentence.
+- Technology stalled at exactly the level one short generation can carry, and
+  carried *well*.
+- Culture is enormously rich. Music, rite, craft, poetry — the arts that a
+  thirty-year working life can perfect are at a level we've never reached.
+Not a farm with the lights off. A civilisation that is beautiful and cannot
+compound.
+---
+## Narrator
+A woman, discarded at the edge of a city, set upright against a wall facing a
+street. Locked in. Sensate. **Roughly ninety years in that position** when we
+meet her.
+Collected in her thirties, when the mythology was a comfort to her, when her
+family sat with her in the warm rhythm and it was — she is clear about this —
+the happiest she has ever been.
+**Why she is the only possible witness:** everyone else's account of the
+occupation is present tense. Hers is not. Ninety years of one street: the same
+marked children growing into their tracery, the same families synchronising in
+doorways, the same collections happening in front of her. She holds the only
+continuous history of the occupation, and she has no output whatsoever.
+She assembled the mechanism decades ago. She has nowhere to put it.
+---
+## Format — DEPARTURE FROM HOUSE STYLE
+**An interior monologue that is not a document.** Nothing written, nothing
+filed, no reader, no recipient.
+That is the structural complicity (#5): the form has no addressee, which is the
+premise rendered as shape. Also the clean exit from the standing caution —
+**document-as-monster is at capacity**, and this story would be strangled by a
+memo.
+**Structure:** she narrates a single ordinary day on that street, and the day
+keeps summoning the ninety years. The reader assembles the mechanism from what
+she has seen.
+---
+## Ending
+Two moves.
+1. A family sets up in the doorway across the street to sit with their
+   grandmother through her last season. It is tender and unhurried and lovely.
+   The narrator can feel the rhythm from where she is — **she is still in
+   synchrony.**
+2. Someone finally sees her. A child, marked early, walks over, looks at her
+   properly, and speaks to her.
+And she understands two things at once: that the tracery is what allows the
+child to perceive her, so **the only people who can see the returned are the
+ones already being prepared** — and that the child will not remember this by
+evening.
+**Last beat (approximate):** the child came back the next day, and the day
+after, and asked her name again each time.
+---
+## Held material — not yet integrated
+Developed before the narrator was chosen; the returned-witness version
+superseded it. Keep for a possible second story or a subplot, but **it needs a
+re-check now that the all-times arrival is cut.**
+- **The archive.** A reporting requirement installed at the arrival and
+  propagated through human institutions ever since. Filed accurately for three
+  centuries by people who file them and go home. Not scholarly in origin —
+  **administrative**. Which makes it a yield census, maintained by the herd, in
+  its own languages, believing the paperwork is its own.
+- **The discipline.** A dry-named, well-funded, rigorous field that studies the
+  archive. They know exactly what it is. They can state the annual toll. All of
+  it in the third person, about a species they belong to and cannot feel
+  themselves inside. Rigour is the product spec: the usual contaminant of
+  studying atrocity — grief — is not available.
+- **The auditor.** The one job requiring two accounts of one event held side by
+  side, which is arithmetic on documents rather than remembering. She finds a
+  discrepancy in the totals that has been there for three hundred years,
+  because someone in every generation has found it.
+*If used: this is document-shaped and collides with the capacity caution. Its
+best home is probably a separate story, not this one.*
+---
+## Doctrine checks
+- **#1 the scary thing is an idea** — the idea is that personhood is not
+  located where we locate it, and that a faith can be structurally correct
+  about everything except the referent.
+- **#2 long unattended schedule** — three hundred years of it; ninety of them
+  from one wall.
+- **#3 institutional not domestic** — *partial exception.* This is deliberately
+  domestic in its warmth (families, doorways, grandmothers) with the
+  institution being an alien logistics operation. Flag for Chris.
+- **#4 arithmetic not intention** — nothing here is malicious. Every horror is
+  a reasonable spec decision viewed from the wrong side.
+- **#5 format structurally complicit** — a monologue with no recipient.
+- **#7 Chiang test** — fails by design. Aliens, explicitly permitted.
+- **#8 Watts test** — passes hard.
+- **#9 apostate doctrine** — inverted: the metaphysics is *vindicated* and that
+  is the catastrophe. Grief, not vindication.
+- **#10 body horror** — heavily in. The marking is tender body horror; the uses
+  are not.
+- **#12 endings are losses at population scale** — species held at inventory
+  level indefinitely.
+---
+## Differentiation flags
+- **vs. qntm / antimemetics** — perception intact, writing survives, ownership
+  fails. Different failure mode, different consequence. Watch it anyway.
+- **vs. Threshold (#17)** — both concern an interior life that is wrong in a
+  way no instrument catches. Distinct, but read side by side.
+- **vs. Designated Pathogen Free (#22)** — both are population-scale, both
+  involve boundary failure between persons (synchrony vs. fusion). **This is
+  the third time the corpus has reached for something in this neighbourhood.**
+  Chris has flagged over-reach on dissolution-of-self before. Deliberate
+  difference here: nobody dissolves. Everyone stays exactly themselves, which
+  is the problem.
+- **vs. Continuum** — both feature a sincere institution whose kindness is
+  load-bearing apparatus. Continuum's is human and calibrating; this one is
+  alien and indifferent. Watch the "the warmth was real and it was also the
+  test" beat — it now appears in both.
+---
+## Open items
+- Working title.
+- When the arrival happened, and how much of the **before** is recoverable.
+  What survives from people who could still own what they wrote.
+- How much the reader is told about them versus how much stays inferred. Lean
+  hard toward inferred.
+- Whether the stored (closet) material appears in this story or is held.
+- Whether the archive/auditor material becomes a separate story.
+- Chris's Red Team pass on the three sincere-institution stories together.

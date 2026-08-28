@@ -38,8 +38,9 @@ Slate-level material — the format rule and the provenance of the source docume
 | 18 | **Designated Pathogen Free** | Dark remix v1 — multi-voice format, escalation ladder partly in reserve |
 | 19 | **Dwell Time** | Developed, first pass — two-register format |
 | 20 | **Super-Donor** | Dark remix v1 — the body-horror test case |
+| 21 | **Second Circulation** *(working title)* | New pitch — clean origin, monologue with no addressee |
 
-**Provenance of the four source documents.** Stories 1–8 were the original remix pass over the earliest picks (R1 and C1), which predate the intellectual spine added in cycle 6. Stories 9–15 were the addendum written after it. Story 16 is a rev-2 rebuild reconstructed from a lost voice session. Story 17 is a new original, not on the greenlit slate. Story 18 is a later dark remix, developed 2026-08-27, and is the first story to depart from the single-narrator format. Story 19 is from the same later session and departs again, using two registers. Story 20 is from the same session and returns to a single voice. Full detail in **Slate notes → Provenance**.
+**Provenance of the four source documents.** Stories 1–8 were the original remix pass over the earliest picks (R1 and C1), which predate the intellectual spine added in cycle 6. Stories 9–15 were the addendum written after it. Story 16 is a rev-2 rebuild reconstructed from a lost voice session. Story 17 is a new original, not on the greenlit slate. Story 18 is a later dark remix, developed 2026-08-27, and is the first story to depart from the single-narrator format. Story 19 is from the same later session and departs again, using two registers. Story 20 is from the same session and returns to a single voice. Story 21 is a clean-origin new pitch from that session, and the first to abandon the document form entirely. Full detail in **Slate notes → Provenance**.
 
 ---
 
@@ -714,6 +715,68 @@ The story itself is one continuous evening in one house, narrated by the mother,
 
 ---
 
+## 21. Second Circulation *(working title)*
+
+### Summary
+
+They arrived once, changed one thing about how people hold the past, and never left. Three hundred years later everyone is marked, everyone is loved while it happens, and everyone believes it is the soul becoming visible. The marking is fully remembered and entirely normalised — it is simply a stage of life. What memory will not hold is the taking, so nobody witnesses a disappearance and absence has a hundred ordinary explanations. The faith built around it is generous, mature and structurally correct about everything except the referent.
+
+### Synopsis
+
+Two separate failures do two different jobs, and keeping them separate is what makes the premise work. The first is not a trick at all: the marking is fully remembered and completely normalised, because when something happens to everyone on a schedule for three hundred years it is not an atrocity but a stage of life. People see it on themselves and each other, have folk terms for it, discuss it at dinner. The second is the graft's actual alteration — episodic consolidation. You can perceive a collection perfectly while it happens, with full attention and full clarity, and it will not lay down as something that happened *to you*. And the writing survives, which is the deliberate departure from qntm: every word legible, permanently, in your own hand. What fails is ownership. It reads as testimony from a stranger — true, coherent, appalling and unurgent, because urgency requires believing it happened to you.
+
+The mythology is essential and must never be sneered at. The tracery is understood as the soul becoming visible, and locally that is not a metaphor but the settled, evidenced, consoling reading, because the evidence is right there under everyone's skin and it is beautiful. Synchronisation with your family is communion. The gone are ascended, and there is no doubt about this. Sitting with someone through their last season is the most loved a person ever is, and that is *true*. It is a mature, generous mortality culture with real grief properly held and real consolation that works. This is the apostate doctrine inverted: the metaphysics is vindicated in the worst possible way, because the tracery genuinely is a transformation and genuinely is an interface with something vastly larger. Everything the faith claims is structurally correct. The lie is not that they vanished — it is that it is ordinary.
+
+The marking itself begins in the late twenties, a fine dark tracery under the skin, not veins but adjacent to them, running the wrong way, and warm to the touch. Loved ones learn its texture, and touching it is intimate the way holding a hand is. Over years it thickens and organises, the skin above going translucent and slightly cool, and it develops a rhythm that is not your pulse — slower, and in time with other marked people in the room, so families sit together and synchronise, which is understood as closeness. What is actually happening is thirty years of slow retrofit: building the interface and hardening the equipment. When it finishes, the person is collected, and the synchronisation is how ripeness announces itself. The tenderness is real. It is also the wiring being tested.
+
+What they are answers what bodies are for. They are not compatible with material existence and have no purchase on matter, so whatever they want here they cannot do themselves — they need to be worn. We are environment suits, and because we are grown cheaply and in vast numbers, disposable ones. Not livestock and not food: food is the boring answer, and thirty years of preparation is far too expensive for meat. Their consciousness is not sited — they are contents rather than containers — so a body is equipment and personhood is simply not located where we locate it. They are not cruel; you would not call a person cruel for scuffing a shoe. Seven billion is not a herd, it is inventory, thinned early and held at working level since.
+
+Everything up to collection is warmth, because warmth is what a well-tuned interface feels like from the inside. At occupation the tuning is over and the analgesia turns out never to have been kindness but calibration. After that: fully sensate, pain included; total loss of output, every channel a person uses to act on the world now load-bearing structure for something else; locked in indefinitely somewhere perceived perfectly well and for which there are no words; and still in synchrony, able to feel every other occupied body, all of them awake, the rhythm that made your family feel close now the only thing any of you can do. Some prepared bodies are never occupied at all, hanging in the equivalent of a closet, conscious, for decades, waiting for a tenant that may never come. The uses are callous rather than cruel — counting, sealing a gap as a gasket, reaching into places that destroy hands, bracing a load until bones remodel around it, going first into somewhere unsafe. And the hardening means the discarded do not die: metabolic slack, damage tolerance, a nervous system rewired for durability, so a discarded body does not have the decency to stop. The returned are not dying, and that is what is wrong with them. They read as objects — you see one clearly, attention refuses to class it as a person, and the memory failure means you do not retain having moved it out of the road. The outskirts of every city accumulate them, sitting where they were set down, awake, passed constantly, rained on, some for a hundred years, which is three lifetimes in this world.
+
+The narrator is one of them: a woman discarded at the edge of a city, set upright against a wall facing a street, locked in and sensate, roughly ninety years in that position when we meet her. She was collected in her thirties, when the mythology was a comfort to her and her family sat with her in the warm rhythm, and she is clear that it was the happiest she has ever been. She is the only possible witness because everyone else's account of the occupation is present tense and hers is not — ninety years of one street, the same marked children growing into their tracery, the same families synchronising in doorways, the same collections happening in front of her. She holds the only continuous history of the occupation and has no output whatsoever; she assembled the mechanism decades ago and has nowhere to put it. The form is an interior monologue that is not a document — nothing written, nothing filed, no reader, no recipient — which is the premise rendered as shape. She narrates one ordinary day, and the day keeps summoning the ninety years. It ends twice: a family setting up in the doorway opposite to sit with their grandmother through her last season, tender and unhurried and lovely, with the narrator feeling the rhythm from where she is because she is still in synchrony; and then a child, marked early, walking over and looking at her properly and speaking to her. She understands two things at once — that the tracery is what allows the child to perceive her, so the only people who can see the returned are the ones already being prepared, and that the child will not remember this by evening. The child came back the next day, and the day after, and asked her name again each time.
+
+### Notes
+
+- **Origin:** new pitch, developed 2026-08-27. Not on the greenlit slate, not a remix of an existing entry — clean origin · **Status:** new pitch
+- **Working title alternatives:** Communion · The Warm Season · Outskirts · Ascension (too on the nose) · The Returned
+- **Reference points, none used literally.**
+  - **Crucible** (Stephen Duxbury / A Vox in the Void) — far future, aliens arrived centuries ago, left something that altered humanity, departed; history unreliable because it keeps rewriting. *Used for:* the aftermath-not-the-aliens posture, and an unreliable past.
+  - **An all-times-at-once invasion** (half-remembered; ships over the White House in 1850). ***Cut deliberately*** — the memory alteration already explains the unrecoverable past, and two ideas were fighting for one job. Dropping it buys a **before**: records made by people who could still own what they wrote.
+  - **There Is No Antimemetics Division** (qntm). *Used as a register, not a mechanism.* Hall's version is a perception failure and writing fails immediately; this differs on both counts. **Must stay differentiated — the single biggest craft risk in the pitch.**
+  - **Deliberate departure:** aliens are permitted here, and so is gore.
+- **FORMAT — departure from house style.** An interior monologue that is not a document: nothing written, nothing filed, no reader, no recipient. That absence of an addressee *is* the structural complicity (#5), the premise rendered as shape. It is also the clean exit from the standing caution that **document-as-monster is at capacity** — this story would be strangled by a memo. Structure: one ordinary day on the street, with the day repeatedly summoning the ninety years; the reader assembles the mechanism from what she has seen.
+- **Held material — not yet integrated.** Developed before the narrator was chosen, and superseded by the returned-witness version. Keep for a possible second story or subplot, but **re-check now that the all-times arrival is cut.**
+  - **The archive.** A reporting requirement installed at the arrival and propagated through human institutions ever since, filed accurately for three centuries by people who file them and go home. Administrative rather than scholarly in origin — which makes it a yield census, maintained by the herd, in its own languages, believing the paperwork is its own.
+  - **The discipline.** A dry-named, well-funded, rigorous field that studies the archive. They know exactly what it is and can state the annual toll, all in the third person, about a species they belong to and cannot feel themselves inside. Rigour is the product spec: the usual contaminant of studying atrocity — grief — is not available.
+  - **The auditor.** The one job requiring two accounts of one event held side by side, which is arithmetic on documents rather than remembering. She finds a discrepancy in the totals that has been there for three hundred years, because someone in every generation has found it.
+  - *If used, this material is document-shaped and collides with the capacity caution. Its best home is probably a separate story.*
+- **Doctrine checks.**
+  - **#1 the scary thing is an idea** — personhood is not located where we locate it, and a faith can be structurally correct about everything except the referent.
+  - **#2 long unattended schedule** — three hundred years of it; ninety of them from one wall.
+  - **#3 institutional not domestic** — ***partial exception, flagged.*** Deliberately domestic in its warmth (families, doorways, grandmothers), with the institution being an alien logistics operation.
+  - **#4 arithmetic not intention** — nothing here is malicious. Every horror is a reasonable spec decision viewed from the wrong side.
+  - **#5 format structurally complicit** — a monologue with no recipient.
+  - **#7 Chiang test** — ***fails by design.*** Aliens, explicitly permitted.
+  - **#8 Watts test** — passes hard.
+  - **#9 apostate doctrine** — inverted: the metaphysics is *vindicated* and that is the catastrophe. Grief, not vindication.
+  - **#10 body horror** — heavily in. The marking is tender body horror; the uses are not.
+  - **#12 endings are losses at population scale** — species held at inventory level indefinitely.
+- **Differentiation flags.**
+  - **vs. qntm / antimemetics** — perception intact, writing survives, ownership fails. Different failure mode, different consequence. Watch it anyway.
+  - **vs. Threshold** (story 16; cited as #17) — both concern an interior life that is wrong in a way no instrument catches. Distinct, but read side by side.
+  - **vs. Designated Pathogen Free** (story 18; cited as #22) — both population-scale, both involving boundary failure between persons (synchrony vs. fusion). **This is the third time the corpus has reached for something in this neighbourhood**, and over-reach on dissolution-of-self has been flagged before. Deliberate difference: nobody dissolves. Everyone stays exactly themselves, which is the problem.
+  - **vs. Continuum** — both feature a sincere institution whose kindness is load-bearing apparatus. Continuum's is human and calibrating; this one is alien and indifferent. Watch the "the warmth was real and it was also the test" beat — it now appears in both.
+  - **vs. Super-Donor** (story 20) — that story's own differentiation flag names this one as sharing the slow-reveal-through-ordinary-language structure and the "warmth is real and also the mechanism" beat, and concludes **these two are now doing the same trick**: if both are greenlit, one needs a different approach to the reveal. A red-team pass on the reveal structure is owed in both directions.
+- **Open items.**
+  - Working title.
+  - When the arrival happened, and how much of the **before** is recoverable — what survives from people who could still own what they wrote.
+  - How much the reader is told about them versus how much stays inferred. **Lean hard toward inferred.**
+  - Whether the stored (closet) material appears in this story or is held.
+  - Whether the archive/auditor material becomes a separate story.
+  - Red-team pass on the three sincere-institution stories together.
+
+---
+
 # Slate notes
 
 *Everything that belongs to the slate rather than to one story. Preserved from the four source documents; where two of them said the same thing at different times, both are kept and dated, because the difference between them is itself a record.*
@@ -789,6 +852,10 @@ Developed 2026-08-27, first pass, from the "Heaven withheld" open thread in Refe
 ### Part seven — story 20 (Super-Donor)
 
 Developed 2026-08-27, superseding a C8 one-line greenlit pitch that was never expanded. Deliberately the corpus's body-horror extreme, and named in its own doctrine checks as the test case for the register's unresolved calibration question of where disturbing becomes cheap.
+
+### Part eight — story 21 (Second Circulation)
+
+A clean-origin new pitch developed 2026-08-27 — not a remix, and not on the greenlit slate. The first story on the slate whose form is not a document at all, taken as the deliberate exit from the standing caution that document-as-monster is at capacity. Its arrival also resolves a dangling reference: stories 20 and 21 flag each other, and until this was written the pointer from Super-Donor had no target in the corpus.
 
 ### This document
 
