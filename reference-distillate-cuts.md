@@ -68,3 +68,34 @@ Chiang supplies the correctness. Watts supplies the reason the cost is worth pay
 ```
 
 **What survived:** all six names, and the substance of each question. **What did not:** the numbering, the word *test*, the pass/fail phrasing, and the implication that a story must satisfy all six.
+
+
+---
+
+## Cut 3 — M27 and the radio play-by-play
+
+**Removed:** 2026-08-28 · **Replaced by:** nothing. The comic register is withdrawn from the toolkit.
+
+**Why:** a survey of the reference files for articles whose net register is comic or heartwarming rather than horrific found eleven comic articles and two warm ones, and the register does not want any of them. The distillate carried two entries that licensed that mode: a craft move recommending comedy as an anaesthetic, and an artifact form whose whole content was a comic register. Both are gone. This is a taste decision, not a finding about the sources — djkaktus is genuinely good at comedy and the annexes record that faithfully. It is simply not available here.
+
+**What was removed, verbatim:**
+
+```markdown
+- **M27. The comic register as anaesthetic.** Real comedy, well built, so the guard is fully down when the thing arrives. Load-bearing, not decorative. `[K]`
+
+**Radio play-by-play.** A comic register played dead straight over the unspeakable. `[K]`
+```
+
+**M27 is not reissued.** The number stays withdrawn rather than being reused, so that any story note referring to it still resolves. The move count in §2 drops from 79 to 78.
+
+**Not removed, and not to be confused with this cut.** Warmth as a delivery mechanism is untouched and remains central: the warm-professional voice (M32), the captured human voice (M35), the interviewer who apologises first (M72), *warm the whole time, aimed at nothing*, and the guardrail requiring every narrator to be good at their job and warm. The distinction is that those are warmth doing harm, not warmth as the article's net register.
+
+**The articles this rules out**, so the ground is not re-walked. Net comic: SCP-80s-J, SCP-4000-J, SCP-001-DJK-J, SCP-001-CK-J, SCP-049-J, SCP-7143-J, SCP-2090, SCP-2398, SCP-2522, SCP-1781, SCP-4498. Net warm: SCP-3355 (*St. Nick*), SCP-2576 (*Joseph and the Technicolor Dream Goat*). Warm-then-turning, and therefore still available: SCP-2980, SCP-4173, SCP-4390, SCP-4489. Annex F contains none of either.
+
+---
+
+## Note — the doctrine front matter, removed and returned
+
+**Removed:** 2026-08-28 (commit `8bd854b`) · **Returned:** 2026-08-28, rewritten
+
+Recorded here so the history is not confusing. That commit deleted §0 Recurring Shapes, the Six Questions, the Guardrails and Standing Amendments A1–A4 — 56 lines, no replacement. They are now back in §0 The Generative Core, rewritten as prompts that produce a premise rather than gates that grade one, with A1–A4 folded inline at the rules they amend rather than kept as a separate log. Nothing from the deleted text was discarded in substance; this is a reversal, not a cut.
