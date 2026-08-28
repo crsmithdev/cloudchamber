@@ -36,8 +36,9 @@ Slate-level material — the format rule and the provenance of the source docume
 | 16 | **Threshold** | Rev 2 — first pass, not yet run against the five tests |
 | 17 | **Recognition** | First full write-up — not yet run against the five tests |
 | 18 | **Designated Pathogen Free** | Dark remix v1 — multi-voice format, escalation ladder partly in reserve |
+| 19 | **Dwell Time** | Developed, first pass — two-register format |
 
-**Provenance of the four source documents.** Stories 1–8 were the original remix pass over the earliest picks (R1 and C1), which predate the intellectual spine added in cycle 6. Stories 9–15 were the addendum written after it. Story 16 is a rev-2 rebuild reconstructed from a lost voice session. Story 17 is a new original, not on the greenlit slate. Story 18 is a later dark remix, developed 2026-08-27, and is the first story to depart from the single-narrator format. Full detail in **Slate notes → Provenance**.
+**Provenance of the four source documents.** Stories 1–8 were the original remix pass over the earliest picks (R1 and C1), which predate the intellectual spine added in cycle 6. Stories 9–15 were the addendum written after it. Story 16 is a rev-2 rebuild reconstructed from a lost voice session. Story 17 is a new original, not on the greenlit slate. Story 18 is a later dark remix, developed 2026-08-27, and is the first story to depart from the single-narrator format. Story 19 is from the same later session and departs again, using two registers. Full detail in **Slate notes → Provenance**.
 
 ---
 
@@ -605,6 +606,54 @@ Four generations on, nothing collapses, and that is the horror. At low copy numb
 
 ---
 
+## 19. Dwell Time
+
+### Summary
+
+The Second Coming happened nineteen years ago, and it was correct — every prophecy verifies, and no theology survived being right. Something arrived at a single point on the Earth's surface and stopped, and it brings the Kingdom literally, at a measurable rate in metres per year, replacing reality inside the front with something that supports no human configuration. Every living thing within a wide radius is compelled to walk toward it, and those who arrive are not killed but kept — reconfigured until nothing remains but praise. The signal coming out of the zone turns out not to be addressed to anyone: it is the congregation, and the advance rate is an appetite.
+
+### Synopsis
+
+Nothing about the entity is legible. It is not humanoid, nobody has perceived it directly, and observers report a pillar or a brightness or an occlusion — no two accounts agreeing on shape, because there is no shape available to agree on. It has never spoken, never moved, and never responded to any signal directed at it, and everything modern civilisation could aim at it has been aimed at it. What it does, it does by being there. Inside the front, reality has been replaced: not mixed and not corrupted but replaced, completely and correctly, with something that has no antecedent.
+
+The compulsion is untreatable, and no drug, shielding, discipline, faith or absence of faith touches it, because it sits below belief and below preference. It is not aimed at persons — it takes birds, deer, livestock, insects — so the zone does not depopulate, it sterilises, and agricultural collapse arrives well ahead of the front. The people who reach the entity are not killed. They are kept, reconfigured into something whose only remaining function is praise: digestion gone, locomotion gone, speech gone, everything surplus to adoration resolved away, persisting indefinitely. By every measure the program can take, they are not suffering. This is exactly what was promised, and that is the problem with it.
+
+Roughly one in nine hundred people is resistant rather than immune, and that distinction is the story. It is polygenic, it clusters in families, and it has nothing whatsoever to do with conduct. Carriers are screened at fourteen months on the same blood draw as the ordinary metabolic panel; positives get a certification number, a county register entry, and confirmatory assays every four years, because tolerance drifts downward with age and exposure. Resistance means only that standing in the field, a carrier can still choose to leave — nobody else can — and that is the entire basis of their value. Suits handle the rest badly and there are not enough of them, so the wall is held by carriers spending themselves and shielded personnel spending equipment, both consumables on a schedule. Every surveyor eventually fails to come back, and not by accident: the interval between wanting to leave and choosing to leave narrows across a career until it closes. From outside it looks like someone walking out to a survey they were not scheduled for, unsealing the suit neatly, folding things, taking their time, because they are not in distress.
+
+The institution around this is the largest and best-funded project in human history and has no offensive capability of any kind, because there is nothing to fight. The wall is not containment — this cannot be contained — it is a delay, meant to stop the population spending itself early against a boundary that is coming to it regardless. Every weapon system on the perimeter faces outward, at pilgrims, and the people manning it are arresting their neighbours, who are not deluded and not wrong and not wicked but simply early. The projection is about twenty-five years to the point where there is no stable population left, and the driver is not the advance rate, it is the food. The survey program's actual deliverable is a timetable, and somebody in an office publishes which cities have how long.
+
+For nineteen years a structured, coherent, enormously strong signal has come out of the zone, and the best cryptanalysts and linguists alive have worked on it continuously on the assumption — never stated as an assumption — that it is addressed to us. Two years of spectral work resolves the structure, and it is not transmission but aggregate emission from the congregation: several million reconfigured people doing the only thing they are now for. There is no correspondent and there never was. The Kingdom is praise as intake, the congregation is a maintained population, and the advance rate is an appetite. The institution does not break; it reclassifies. Contact Analysis is renamed something duller, and the theologians mostly stay, because the metaphysics was right — God has returned and is doing precisely what was promised, and the error was in the tense of "shepherd." Within a year the program has its first actionable number in nineteen years: consumption rate. At which point the wall stops being a barrier and becomes a valve, because if it feeds then satiety is a variable and delivery can be scheduled. Nobody announces this. It appears as a change to the duty roster.
+
+The narrator is the longest-serving surveyor, which is a survival statistic rather than a rank — everyone senior to her went in. Twenty-two at her first survey and forty-one now, excellent at the job, warm, not a believer in any confessional sense and never becoming one, with her own assay trend line in her file where she has read it. Her account is filed because surveyors past a certain assay threshold are required to produce one before retirement, and everyone involved understands what retirement means here while nobody in the document says so: she is writing it because she is being spent. Then the second register, present tense, past the line, addressed to no one. Both things are true at once and she has vocabulary for neither — it is agony, being taken apart with total precision, and it is ecstasy, because everything removed is something she is glad to be rid of. Hunger goes first and the relief is enormous. Then locomotion, which she does not need. Then the faculties that ask questions, and she notices that going, and consents. She never stops being competent; some part of her is still taking readings in the same measured voice she used for flux logs, until the faculty that measures is itself resolved away and the prose changes shape. What she keeps is exactly enough continuity to know she used to have more, and to be grateful that she does not. She was right: it is beautiful. She is not deceived, not overwhelmed, not converted — correctly and permanently happy, and nobody at the wall will ever know it. The emission ticks up by an amount too small to appear in the weekly.
+
+### Notes
+
+- **Origin:** dark remix #27, developed 2026-08-27, first pass; from the "Heaven withheld" open thread in Reference Register v2 · **Status:** developed, first pass
+- **Title alternatives:** Advance Rate · The Congregation · Rated Interval · Forever
+- **FORMAT — two registers.**
+  - **Register A: the service record.** Past tense, professional, filed. It exists for a procedural reason — surveyors past a certain assay threshold must file a full account before retirement — and everyone involved understands what retirement means here while nobody in the document says so. The format is complicit: she is writing it *because she is being spent*, and its purpose is to capture what she knows before the asset is consumed. Vignettes carried inside it: her first survey, before anyone knew resistance had a floor; the colleague at the line, folding his gloves; the four-year assays as a series of numbers; the wall in year two against the wall now; her mother's certification; the interior described in confident technical language for things with no referent, every surveyor inventing a private vocabulary, no two accounts reconcilable, all of them agreeing on three words — *finished, correct, beautiful*. The word *beautiful* survives every attempt to train it out of the reporting format. And the congregation, seen on survey in enormous numbers, held in an arrangement she cannot describe, and reported as looking **well**. Better than well. The line that ends careers.
+  - **Register B: present tense, at the line and past it.** Not addressed to the program, not addressed to anyone. There is no reporting format for it because there isn't one. This is the part that breaks out of the document.
+- **Section order.** 1. **Certification** — fourteen months, the panel, the register, the family. 2. **Rated interval** — first survey; how resistance was understood then. 3. **The line** — the wall, the crowds, the arrests, the suits, the economy. 4. **Inside** — the interior described; the congregation; *beautiful*. 5. **The signal** — nineteen years of decoding; the spectral finding; renaming the office. 6. **Trend line** — her assays; the colleague who folded his gloves; the pull becoming reasonable. 7. **[Register B]** — the walk; the reshaping; the choir.
+- **Tests.**
+  - **Chiang** — one impossibility (the Kingdom arrives, correctly). Everything else is dose response, agricultural arithmetic, and a spectral analysis.
+  - **Watts** — the congregation is optimised; the self is surplus to the function and is removed as such. The ones without selves are the fit ones, and the fit ones are happy.
+  - **setting-b normalisation** — the metaphysics is true, so the institutions are correct. The theologians are not deluded and do not need to be told.
+  - **setting-c load-bearing** — remove the register, the carriers, or the wall and the timetable collapses. The reformer is right and loses anyway.
+  - **djkaktus artifact** — a mandatory pre-retirement service record, produced for knowledge capture, not narration.
+- **Differentiation notes.**
+  - **SCP-1348 (Yehom)** — wounded entity in a Syrian sanctum, radioactive deterrent field, haplotype CMH-6 immune to the memetic effect. Overlap is the ancestry-as-resistance move only. Ours: not wounded, not hiding, not contained, and the field is not a deterrent — it's an invitation. **Action: add to the Reference Register as a differentiation constraint.**
+  - **Annihilation** — the Shimmer mixes; our front **replaces**. No chimeras, no hybrids, nothing inside is a version of anything.
+  - **Evangelion** — take the texture (funded, hardened, acronymed, absurdly competent), drop the combat entirely. No weapon faces inward.
+  - **Chiang, "Hell Is the Absence of God"** — visitation as documented natural event, survivors read as chosen. Ours goes further: the reading is *correct*, and being chosen is the loss.
+- **Open items.**
+  - Whether Register B interleaves throughout or arrives whole at the end.
+  - Whether the valve decision appears on the page or only as a roster change.
+  - Whether her mother's certification is used.
+  - Name, and whether she is named at all in Register B.
+  - Red-team against **Threshold** (story 16 — both have a standards-officer voice) and against **Recognition** (story 17 — both have a vindicated metaphysics).
+
+---
+
 # Slate notes
 
 *Everything that belongs to the slate rather than to one story. Preserved from the four source documents; where two of them said the same thing at different times, both are kept and dated, because the difference between them is itself a record.*
@@ -672,6 +721,10 @@ New original, developed in voice session 2026-08-26, not on the greenlit slate. 
 ### Part five — story 18 (Designated Pathogen Free)
 
 A later dark remix, developed 2026-08-27, superseding a C8 one-line greenlit pitch that was never expanded. The first story on the slate to depart from the single-narrator house style; its format note carries a standing implication that the one-narrator rule is now a default rather than a constraint.
+
+### Part six — story 19 (Dwell Time)
+
+Developed 2026-08-27, first pass, from the "Heaven withheld" open thread in Reference Register v2. Uses two registers rather than one voice — a filed service record, and a present-tense account past the line that has no reporting format.
 
 ### This document
 
