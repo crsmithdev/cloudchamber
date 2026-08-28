@@ -1209,3 +1209,280 @@ The emission ticks up by an amount too small to appear in the weekly.
 - Name, and whether she is named at all in Register B
 - Red-team against **Threshold** (both have a standards officer voice) and
   against **Recognition** (both have a vindicated metaphysics)
+
+---
+
+<!-- ===== PART 7 — from a 2026-08-27 session (Super-Donor) ===== -->
+
+# Fog Belt — Dark Remix #26: Super-Donor
+**Status:** dark remix v1, developed 2026-08-27. Supersedes the C8 one-line
+greenlit pitch ("He isn't the donor. He's the container it's been shipping
+in"), which was never expanded. The original line is honoured but made
+mechanical rather than rhetorical.
+**Lane:** microbiome / post-antibiotic
+**Setting:** near-future onset, runs forward roughly a century
+**Register:** this is the gross one. Deliberately. Nothing else in the corpus
+occupies this space, and the brief was explicitly "weird and viscerally
+disgusting" rather than cosmic or elegiac.
+**Drive:** placeholder at `1Cs_W0Y-poido4wfEfKuOeszkXOZ2vH5I` in folder
+`1C9fHYiG3bL7xT4ZsYXasRB_BGG6NlRBF`. Payload not yet written — connectivity.
+---
+## Logline
+After the antibiotic crash, fecal transplant went from cure to maintenance to
+subscription to shortage. Nobody planned what came next. It was simply the
+cheapest configuration, and it was already what the organism wanted.
+---
+## The engine
+Immunology's cousin: **disgust is a learned classifier with a phenotype
+attached, and something in the transplant benefits from turning it down.**
+Real and checkable throughout (doctrine #6):
+- **Super-donors are a real term in FMT.** A small number of stool donors
+  produce dramatically better outcomes than everyone else, across unrelated
+  indications, and the mechanism is not understood.
+- **Stool bank pass rates run around 3%.** Screening is brutal, slow, and the
+  binding constraint on supply.
+- **Sterile fecal filtrate transplant works.** Filter out every bacterium and
+  it still resolves C. diff. **The therapeutic agent was never the bacteria.
+  It's the phages.**
+- **Temperate phages carry passenger genes.** Cholera, diphtheria and botulinum
+  toxins are all phage-encoded. The cargo can be anything.
+- **Fresh material has a working window of hours.** Homogenised under anaerobic
+  hood, cut with saline and glycerol, strained twice. The literature's own word
+  is *slurry*. Freeze-dried and triple-encapsulated to survive the stomach;
+  staff call them **crapsules**, which is real, and they say it fondly.
+**The cargo here:** genes for neuroactive metabolite production in gut flora,
+damping **disgust**.
+Which is the perfect phenotype for a fecal-oral organism, and clinically
+presents as improved mood, reduced anxiety, higher sociability, better
+quality-of-life scores. Every endpoint improves. Recipients genuinely get
+better. It becomes the most successful intervention in modern medicine and it
+**deserves to be**.
+---
+## Why "container" is literal, not rhetorical
+Three layers, only one of which is him.
+1. **The bacteria** are the container in the ordinary sense — the phages live
+   integrated in bacterial genomes.
+2. **He is the shipping container.** His gut is where that population is
+   maintained at volume, stably, for decades, under climate control, fed,
+   screened, quality-assured.
+3. **The industry is the distribution network.** The phage population's problem
+   was never replication. It was getting from one gut to another gut, and
+   **disgust is why that's hard.** Medicine solved it: cold chain, screening
+   regime, regulatory framework, clinical indication, informed consent.
+**Why a person and not a vat:** a vat has no phenotype. It can't want to be
+donated. He does, and the wanting is the product. He was colonised young, and
+damped disgust is exactly what makes a man volunteer to donate stool to
+strangers twice a week for twenty years, cheerfully. The bank's screening
+criteria — altruistic, compliant, high social trust, willing — **is a fitness
+function selecting for infection.** The recruitment pipeline is the phenotype.
+---
+## The driver: the crash
+FMT as boutique medicine can't carry a species-scale story. This can.
+Carbapenem-resistant Enterobacteriaceae — the post-antibiotic scenario
+infectious disease has warned about for thirty years — arriving through the
+food chain after mass prophylactic dosing in livestock. Resistance goes
+everywhere at once.
+What follows: antibiotics still get used, because you can't not use them, and
+the gut flora of an entire population is stripped repeatedly. Millions of
+people with no functioning microbiome, dying of an infection **FMT actually
+cures.**
+Against that: 3% donor pass rates, weeks of screening, and a queue with a body
+count. A public-health emergency with an obvious industrial answer, and nobody
+has to be a villain to reach for it.
+---
+## The vats
+**Why in vitro fails (real):** continuous-culture bioreactors drift and lose
+diversity within weeks. You cannot maintain a super-donor community without a
+host immune system negotiating it. The ecology needs anaerobic layering, mucus,
+peristalsis, and something making decisions about what's tolerated.
+**So the industry grows the host.** *Bodyoids* — the 2025 proposal for
+ethically sourced human bodies grown without a forebrain, no capacity for
+experience. Hindbrain and gut only. Ventilated, fed, peristalsis intact, immune
+system intact, industrial volume, perfect QA.
+**They are not conscious. That is not the horror.** The horror is that the
+thing being concealed is concealed for a *sound* reason: public trust in FMT is
+fragile, the queue is dying, and disclosure kills uptake. So the programme is
+classified, material is labelled pooled anonymous donation, and every clinician
+believes it. The nurse in section four does not know, and still doesn't.
+**Feeding.** Peristalsis needs bulk and the ecology needs substrate. The vat is
+fed a prepared vegetable slurry, fibrous, made daily. **The household kitchen
+is fully intact and cooking happens every day. Nobody in the family eats any of
+it.**
+**The unexpected development.** In a human donor the phage population is
+negotiated by an immune system that is itself shaped by a mind — stress, sleep,
+sociality, all upstream of gut ecology. The bodyoids have none of that. No
+behavioural feedback at all. Whatever the phages were tuned against for a
+million years is simply **absent**, and the population drifts free.
+What comes out of the vats is *better*. Higher engraftment, better outcomes,
+and much stronger disgust-damping, because nothing was holding it in check.
+**The good version of this product was the one that had a person in it.**
+---
+## The disgust ladder
+Hygiene, not morality. **This must not drift toward moral disgust** or it
+converges on the rest of the corpus. Nobody gets crueller. They get filthier,
+sweeter, and more physically intimate, and the prose adores it.
+1. Food tastes better. Recipients become adventurous eaters — offal,
+   fermentation, things gone further than they should.
+2. Eating off the floor without thinking. A small joke, then a shrug.
+3. Hand-washing declines sharply and universally. Public health messaging fails
+   not because people object but because they can't be made to care. Campaigns
+   are met with genuine puzzlement.
+4. Sharing. Same spoon, same bottle, unremarkable between strangers. Then
+   eating from other people's plates. Then finishing food out of other people's
+   mouths, and this reads as tenderness. Which it is.
+5. Bodies. Smell becomes pleasant rather than tolerated — unwashed hair, breath,
+   feet — actively enjoyed and openly complimented. Bathing frequency
+   collapses. People sleep in heaps.
+6. **Sharing flora becomes the intimate act.** Not sexual. Domestic. Households
+   deliberately transferring gut material between each other, by mouth,
+   casually, at the table, as a gesture of belonging. There is a word for it
+   and it is a warm word.
+And it is transmission, doing exactly what a fecal-oral organism needs,
+entirely without medicine. **The clinical distribution network was only ever
+the beachhead.**
+---
+## How the culture got there (four steps, none stated directly)
+1. **FMT becomes universal.** After the crash nearly everyone gets one. A whole
+   generation walks around with a transplanted ecology and a working knowledge
+   that gut flora is a *possession* — losable, replaceable, traceable to a
+   specific person. That vocabulary is in the language before anything else
+   happens.
+2. **Reinfection.** The crash isn't an event, it's a permanent condition.
+   Antibiotics still get used, flora gets stripped again, people need repeat
+   treatment for life. Cure becomes maintenance; the bank becomes a
+   subscription nobody can afford to have interrupted.
+3. **The shortage never closes.** So people source it themselves. Home FMT is
+   real and happens now; guidance against it is thin against a dying queue.
+   Households keep their own supply. **Oral is what works without equipment.**
+4. **The disgust is already gone.** Everyone from step 1 has it damped, so step
+   3 feels like nothing. **The intervention removed the exact barrier that
+   would have stopped it spreading this way.** Visible only in retrospect.
+Domestication is then a logistics decision, not a cultural one. A bank has cold
+chain, screening, logistics and a shortage. A household has a warm room.
+---
+## The thing in the corner
+**A bodyoid grown from the household's own line.** Not a stranger's unit, not
+an industrial one. A grafted continuation of the family's flora, alive, in the
+room — so *the line is unbroken* in the literal sense: the ecology has never
+left a living gut. That is what "four generations" means, and it is why the
+phrase survives an innocent reading right up until it doesn't.
+Kept beautifully. Washed. The table is arranged around it.
+**Its name is a familial term** — Nan, or the household's own word for the line
+used as a name for the thing that carries it. Warm, slightly odd, obviously
+familial, and **never explained, because nobody explains a family word.**
+Someone does the feeding. Someone changes her.
+**The intended misreading:** the reader builds a frail grandmother with
+dementia, and every subsequent detail confirms it, because bodyoid care and
+dementia care look identical from the outside. Of course she can't feed
+herself. Of course the baby can't either.
+*Held in reserve, deliberately not used:* an elderly relative who has stopped
+being a person and become the household's source. Rejected because it needs
+consciousness to be ambiguous, and the decision here is that nothing in the
+room can be wronged — **which is precisely why nobody stops.**
+---
+## The giving
+Plainly, because the prose will not be plain:
+- There is a stoma. A surgical ostomy — entirely real medicine.
+- Material is taken warm, by hand, into a shallow dish. Not cooked. Not
+  diluted.
+- Mouth to mouth, in turns, **oldest first**, a portion held and passed.
+- The last goes to the youngest child directly from the mother's mouth.
+**The frame is nursing, not affection.** Not a goodnight kiss — the equivalent
+of breastfeeding, and understood that way: the founding act of a body,
+mammalian, unembarrassed, nourishment *of the line*. The mother is thin this
+month for the same reason a nursing mother would be.
+---
+## Format and structure
+**One continuous evening. One voice. No time skips.**
+**Narrator:** the mother of the household.
+**Frame:** a visit. A **technician**, there for the annual line check on Nan.
+Not an estranged relation — a relation invites explanation, a technician
+invites **pride**. She is showing off a well-kept line to someone qualified to
+appreciate it.
+**The visitor never speaks on the page.** Their reactions exist only in what
+she says next — she reassures them about things they didn't ask about, and
+that's where the reader's own flinch lives.
+**The hard rule:** for five sections, **everything must be readable as ordinary
+FMT.** Real clinical medicine, real capsules, real cold chain. Nothing lies,
+and every detail sits comfortably in an innocent reading. *Unbroken four
+generations*, *starting a child*, *thin this month* all survive as
+heirloom-donor sentiment — a family sticking with the same registered line.
+Clever readers will feel the hair on their neck and be unable to say why.
+### Sections
+1. **Arrival.** The guest at the door, the house, the table being set for
+   later. The giving is referred to only in passing, as the thing that happens
+   at the end of the evening — anticipation, not scene. The only tells are
+   omissions: no dish is named, nothing arrives from a kitchen, nobody mentions
+   hunger or being full. **The reader supplies the casserole.** Ends on the
+   line about the household's line being unbroken four generations.
+2. **The kitchen.** The feeding is prepared. Reads as a pet, or an elderly
+   relative.
+3. **Nan's room.** The line check. Praise about *quality* rather than flavour —
+   clean, sweet, thick. One of the children is complimented on hers. The mother
+   apologises that she's thin this month.
+4. **The clinic.** History, from her own childhood treatment. The queue and the
+   body count, remembered as the worst thing that ever happened, and she is
+   right. This section justifies everything, honestly. First mention of the
+   disgust literature, framed as a solved side effect and a minor good.
+5. **The sister, and the rooms.** Her sister's line failed after a course of
+   antibiotics and gets made up from the vat rooms. She's sympathetic about it.
+   The bank, the crapsules, the smell visitors notice for ten minutes and staff
+   have stopped perceiving. **This is a decline narrative told with pride** —
+   the rooms aren't the future of the programme, they're the last of it, kept
+   running for people whose line failed.
+6. **The giving.** Happens on the page, in full, once, at the close. Oldest
+   first, youngest last, the baby from her mouth. One plain sentence about Nan
+   in the corner having a good week.
+**Why this shape:** the reveal is not explanation, it's **inversion**. The
+bodyoid is the one fact with no innocent reading. The reader wrote the innocent
+version themselves in section one; section six hands them the bill.
+**Complicity (#5):** the form is hospitality. Every atrocity arrives as a host
+being generous with a guest.
+---
+## Doctrine checks
+- **#1 the scary thing is an idea** — disgust as a classifier with a phenotype,
+  and an organism whose reproductive strategy is to make itself welcome.
+- **#2 the long unattended schedule** — a century from emergency to appliance.
+- **#3 institutional not domestic** — *deliberate inversion.* The institution is
+  in sections 4–5 and is decaying; the horror has moved into the house. Flag.
+- **#4 arithmetic not intention** — nobody is a villain. The crash was real, the
+  queue was dying, the classification was defensible, domestication was
+  cheapest.
+- **#6 Acausal principle** — super-donors, filtrate transplant, phage passenger
+  genes, CRE, bodyoids, bioreactor drift. All real, all checkable, none
+  simplified.
+- **#7 Chiang test** — passes clean.
+- **#8 Watts test** — passes.
+- **#10 body horror** — maximal, and the calibration question (cheap vs earned)
+  is genuinely live here. **This is the test case.**
+- **#12 endings are losses at population scale** — though note this ending is
+  not a loss the characters would recognise, and the world is arguably
+  *happier*.
+---
+## Differentiation flags
+- **vs. Designated Pathogen Free (#22)** — shared engine: real biology,
+  screening aimed at the wrong object, population-scale change nobody can
+  perceive. **Deliberate difference: #22 is subtraction, slow, invisible and
+  mourned by no one; #26 installs an appetite, moves fast, is fully visible and
+  is celebrated.** Still should not ship near each other.
+- **vs. Second Circulation** — shares the slow-reveal-through-ordinary-language
+  structure and the "warmth is real and also the mechanism" beat. **These two
+  are now doing the same trick.** If both are greenlit, one needs a different
+  approach to the reveal.
+- **vs. Continuum** — sincere institution whose kindness is load-bearing.
+- **vs. #23 Whole Body Donation, #24 The Second Drug, #25 Depopulation** — the
+  C8 group all run "the unit of accounting is wrong." Recommendation stands:
+  push two or three, let the rest donate parts. #26 has now taken the container
+  idea; #23 still has the replication idea intact.
+---
+## Open items
+- Name for Nan / the household word for the line.
+- The technician's role: how much is dramatised, how much silent.
+- How far up the disgust ladder the story actually goes vs. holds in reserve.
+  Rungs 5–6 are the strongest and the riskiest.
+- The super-donor himself (elderly, honoured, cheerful, treated as an ancestor
+  by the households that trace to him) is currently offstage. Decide whether he
+  appears in section 5 or stays a name.
+- Whether the disgust-damping is ever named in-story as a side effect, or only
+  ever appears as behaviour.
+- Red Team pass against Second Circulation on the reveal structure.
