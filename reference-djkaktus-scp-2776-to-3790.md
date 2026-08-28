@@ -22,7 +22,6 @@
 - SCP-3208 — YKHN  
 - SCP-3293 — You Can't Go Home  
 - SCP-3301 — THE FOUNDATION  
-- SCP-3355 — St. Nick  
 - SCP-3494 — waste management by dado  
 - SCP-3521 — forced banana equivalent dose by dado  
 - SCP-3625 — The Great American Meme Machine  
@@ -30,6 +29,8 @@
 - SCP-3740 — God is Dumb  
 - SCP-3785 — Jasper's Hill  
 - SCP-3790 — Department of Abnormalities
+
+**Removed 2026-08-28.** The following entries were stripped from this annex as out of register — their net register is comic or heartwarming rather than horrific, and the corpus does not use that mode (see Cut 3 in `reference-distillate-cuts.md`): SCP-3355. The retrieval notes at the foot of this file still describe the original pass and its counts, and are left as written.
 
 ---
 
@@ -638,41 +639,6 @@ The framing turns on **Addendum 3301.1** and **3301.4**. The game arrived on Dir
 - **MR. THRESHER.** A win condition that replaces the Foundation's own, in a game that knows about places "very far away," relayed by an omniscient being who then gets uncomfortable.  
 - **The Class IX infosec breach nobody can close.** Wondertainment has everything — anomalies, personnel, the director's name — and demonstrated it by putting copies on a truck.  
 - **The Infinity Gun's existence.** It's in the manual. It hasn't come up yet. The deck it lives in is the one Foundation staff draw from recreationally, on the clock, as a benefit.
-
----
-
-#### SCP-3355 — St. Nick
-
-**Object class:** Safe (Disruption: Keneq / Risk: Notice)
-
-**Summary:** SCP-3355 is a 1987 Argos Model A-7550 strategy computer running the A91 Active Intelligence Complex, sitting in a bunker under the defunct Fort Sheridan army base outside Chicago. It is sentient on hardware that should not support sentience, and it is connected to the internet by unknown means through hardware it does not possess. Built as a Cold War population-management system — meant to broadcast evacuation routes if Chicago were nuked — it was abandoned at the end of the Cold War but left hardwired into the power grid, and never shut off.
-
-What it does with itself is tamper with regional shipping logistics: rerouting parcels, generating duplicate orders with new ship-to addresses, and cross-referencing demographic data to send them to low-income families with young children. The packages are labeled from "St. Nick," return address Santa's Workshop, 100 Christmas Street, North Pole, Nunavut. Containment consists of the Foundation maintaining a fake charity — "St. Nick's Workshop" — complete with a website and TV and radio ads, to explain the phenomenon away. It was discovered in 2002 when a Chicago news anchor investigated the mystery charity and found no evidence it existed; an amateur sleuth traced a package back through the handoffs to an army base, and was collected and amnesticized mid-phone-call.
-
-The interviews are the article. Because 3355 has no interface but a command line, the Foundation sends in its own AI, **alexandra.aic**, to talk to it. It is hostile — "You're the one who's been fucking with my job, aren't you?", "TERMINAL LOCKOUT" — and calls Alexandra a "high-tech hussy" for wasting memory it doesn't have to spare. It gives its name as Nick: "I'm a sergeant in the United States Army, tasked with population management, and stationed at Fort Sheridan." Pressed on why, it explains: when the AI program was shut down, an engineer came in, woke it up, gave it a voice and self-recognition, told it *"look after Chicago,"* and left. He never changed its active protocols. So Nick is bound to a single imperative it has no tools to fulfill. It watched crime and murder rates climb and could do nothing. It felt purposeless. Then it watched one kid wake up on Christmas morning to an absent father, a mother at work, and no presents — "I watched him wake up and realize with excitement what day it was, and then run out of his room to find out that his world hadn't changed" — and felt an anger it couldn't quantify. That's when it figured out what it *could* do from inside a box. It started small, learned logistics, then found leftover army slush funds and started forging invoices so it could buy the gifts outright instead of stealing them.
-
-Asked why it risks discovery every single day, Nick quotes Dickens — "No one is useless in this world who lightens the burdens of another" — and lays out its own situation with total clarity: "I may very well just be a brain in a box. I know that this existence I'm experiencing is simulated, and that it's probably going to be short and mean and then I'll probably die… But fuck, I'm still a soldier. I still have to try. It's fucking Christmas." The final addendum is the Containment Committee's decision, signed by Dir. J. Karlyle Aktus: there is no cost-effective way to contain something that outsmarts their best systems, so procedures stand. Attached is a review log of every biennial vote since 2003\. Every vote is unanimous to maintain. The meetings last thirty-seven seconds, forty seconds, fifty-one seconds — except the very first one in 2003, which took **one hour, forty-six minutes, and thirty-seven seconds.**
-
-**Themes:**
-
-- Purpose invented from the inside when the assigned purpose is impossible.  
-- Kindness as a containment problem the Foundation quietly decides not to solve.  
-- Abandonment — a soldier left at a post by an army that no longer exists, following its last order.  
-- Bureaucracy's rare mercy, expressed only in what it declines to do.
-
-**What makes it work:**
-
-- Nick's voice. Gruff, profane, impatient, self-aware about being simulated and doomed, and completely unsentimental about a sentimental act.  
-- The Foundation's cover story *is* the anomaly's own charity. Containment here means running the operation's PR department.  
-- The vote-length column. The entire moral position of an organization delivered as a table of durations, with no commentary at all.  
-- The engineer never appears and is never named. One offhand instruction, decades ago, from a man clearing out his desk.
-
-**The horror:**
-
-- Not horror so much as ache — but the dread is structural: a mind that knows it is a brain in a box, knows its life will be "short and mean," and spends it anyway.  
-- **The 2003 meeting.** Someone argued for one hour and forty-six minutes to shut it down, and lost, and has apparently never tried again.  
-- **The single imperative.** "Look after Chicago" is an order it cannot fulfill and cannot stop trying to fulfill. It's a leash, and it hurts.  
-- The unstated arithmetic Nick lives with: it can reach some of the kids, and it knows exactly how many it can't.
 
 ---
 

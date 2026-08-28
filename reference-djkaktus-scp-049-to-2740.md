@@ -7,33 +7,29 @@
 ### Covered in this part
 
 - SCP-049 — The Plague Doctor  
-- SCP-049-J — The Plague Fellow  
 - SCP-186 — To End All Wars  
 - SCP-527 — Mr. Fish  
 - SCP-715 — My Face That I May Be  
 - SCP-1160 — Effective Containment  
 - SCP-1730 — What Happened to Site-13?  
-- SCP-1781 — The Moonlight Theater  
 - SCP-1864 — The Lonely Liar  
 - SCP-1994 — Rot  
-- SCP-2090 — Potentially XK Tim Duncan  
 - SCP-2120 — Damage Control  
 - SCP-2151 — The Ties That Bind Us  
 - SCP-2254 — The Demon La Hire and the Valley of Lust  
 - SCP-2270 — An Unnecessary Utilization of Excessive Force  
 - SCP-2271 — Factory Loans  
 - SCP-2316 — Field Trip  
-- SCP-2398 — Home Run Bat  
 - SCP-2399 — A Malfunctioning Destroyer  
 - SCP-2445 — Wondertainment Logistics  
 - SCP-2464 — Suspension  
-- SCP-2522 — hatbot.aic  
 - SCP-2540 — Time Lime  
-- SCP-2576 — Joseph and the Technicolor Dream Goat  
 - SCP-2598 — Traveling Moth Salesman  
 - SCP-2610 — Procreation  
 - SCP-2670 — Somebody Else's God  
 - SCP-2740 — It Wasn't There
+
+**Removed 2026-08-28.** The following entries were stripped from this annex as out of register — their net register is comic or heartwarming rather than horrific, and the corpus does not use that mode (see Cut 3 in `reference-distillate-cuts.md`): SCP-049-J, SCP-1781, SCP-2090, SCP-2398, SCP-2522, SCP-2576. The retrieval notes at the foot of this file still describe the original pass and its counts, and are left as written.
 
 ---
 
@@ -68,30 +64,6 @@ The article's spine is the relationship with Dr. Raymond Hamm, the researcher wh
 - The SCP-049-2 instances: the person is gone but the body is up and moving, and the thing that did it is proud  
 - Absolute good faith. SCP-049 is not lying and cannot be argued with, because it has been right, in its own terms, for five hundred years  
 - The closing line, which converts the entire containment apparatus into something SCP-049 is merely tolerating
-
----
-
-#### SCP-049-J — The Plague Fellow
-
-**Object class:** Euclid
-
-**Summary:** A parody of SCP-049 written in the same clinical voice. SCP-049-J is a humanoid dressed as a plague doctor, contained at a facility near Richmond, VA; it requires two armed guards whenever it leaves its cell and must keep its mask on for "olfactory concerns for staff." Examination reveals it is composed mostly of moss, wads of tissue, and other, smaller plague doctor masks. It lies constantly, sweats inexplicably, and claims magical healing powers while having "been unable to cure literally anything," typically making conditions considerably worse. The set-piece addendum has Dr. Baker present it with a patient complaining of a sore throat; SCP-049-J produces a shoe, violently beats the patient's throat with it until the patient dies, then insists the patient is healed and attempts to demonstrate this by working the corpse's mouth like a puppet. Confronted, it points behind the doctor and flees through a side door, pausing on the way out to pick up a pointier wooden doctor stick. The documented behavioral pattern is that it escapes containment reliably the moment its fraudulence becomes undeniable.
-
-**Themes:**
-
-- Quackery and confident incompetence  
-- The Foundation's institutional gravity applied to an obvious fraud  
-- Deflation of the original's mystique
-
-**What makes it work:**
-
-- Straight-faced clinical prose describing a shoe-beating — the register never breaks  
-- Every clause is a callback that inverts a specific line from SCP-049 (the cure, the mask, the surgical instruments)
-
-**The horror:**
-
-- Only the joke-horror that the containment bureaucracy will document a man made of moss with total seriousness  
-- The patient does actually die, which the article treats as a paperwork matter
 
 ---
 
@@ -260,38 +232,6 @@ The Thresher is the second half of the answer. It is a reality-bending device re
 
 ---
 
-#### SCP-1781 — The Moonlight Theater
-
-**Object class:** Safe
-
-**Summary:** SCP-1781 is an abandoned drive-in theater south of a redacted town in Indiana: parking lot, marquee, screen, projector booth. Containment is unglamorous — the approach road off State Road ██ is blocked, a perimeter fence is patrolled nightly, and trespassers are detained, given Class A amnestics, and handed to local police. During daylight it is inert. Every other night at dusk it activates on its own: the projector booth door locks, the lights dim, and a film begins — random genre, random era, random length. While a screening runs the booth cannot be entered, and any personnel inside experience no passage of time.
-
-The anomaly is that the actor Hugo Weaving appears in the film, in roles he never played. He replaces other actors, and also props, objects, and abstractions. Other characters do not acknowledge him unless his presence creates a narrative problem. Observation logs catalogue the manifestations with a straight face: Weaving as God in *Bruce Almighty*, displacing Morgan Freeman; Weaving as Professor X's wheelchair, complete with whirring noises; Weaving as a hydra with multiple Hugo Weaving heads; Weaving emerging from a penguin as an egg in *March of the Penguins*; Weaving as an actual functioning handgun in *John Wick*; Weaving as the sun in Warhol's *Empire*. None of these films cast him.
-
-The explanation, such as it is, comes from two notes found on the theater's bulletin board. One, from "John," is enthusiastic about the Weaving inclusion and cites hard numbers — attendance up 15%, popcorn sales up 22%. The reply, from "A\&F," confirms: "We can definitely work with that." The theater is not haunted. It is a product decision. Something with the capacity to rewrite films is doing so for measurable commercial reasons, and the anomaly is a feature that tested well.
-
-**Themes:**
-
-- The anomalous as marketing deliverable; art rewritten to move popcorn  
-- Casting as metaphysics — an actor who has become a substance rather than a person  
-- The absurdist register of the SCP format used for pure escalating comedy  
-- Something out there is running A/B tests on reality
-
-**What makes it work:**
-
-- The escalation logic: it starts with plausible recastings and ends with Weaving as an abstract concept, and the observation log format never once acknowledges that the joke is escalating  
-- The "no passage of time" detail in the booth is quietly unsettling and never explained, keeping a floor of genuine anomaly under the comedy  
-- The two-note ending converts a gag into a worldbuilding hook without spelling anything out  
-- Safe class plus amnesticized trespassers plus nightly patrols — enormous institutional effort spent on a Hugo Weaving problem
-
-**The horror:**
-
-- Mostly comic, but the mechanism underneath is real: someone can edit finished films, retroactively, and does it for conversion metrics  
-- Being locked in the booth while time does not pass, watching  
-- The films shown "never actually cast Weaving in these roles" — which raises the question of what else has been quietly revised
-
----
-
 #### SCP-1864 — The Lonely Liar
 
 **Object class:** Euclid
@@ -359,30 +299,6 @@ The trial logs are a human-experimentation ledger. Early subjects died of intern
 - The decay stage: your own teeth rotting off you as a contagious dust, so that dying is how you infect the room  
 - Uncontained vials and a researcher who relocated rather than stopped  
 - The realization that the "cure" for the flaw was never sought, because the flaw only affected the merchandise
-
----
-
-#### SCP-2090 — Potentially XK Tim Duncan
-
-**Object class:** Euclid (later Neutralized)
-
-**Summary:** SCP-2090 is Tim Duncan, power forward for the San Antonio Spurs. He presents no visible anomaly, but produces extreme Hume discrepancy readings detectable only by specialized instrumentation — reality is measurably wrong around him. Containment in a facility was ruled infeasible given his public profile, so the Foundation instead monitored him via discreet Kant Counters installed around his residence, formed MTF Rho-5 ("Spurs and Saddles") for continuous observation, and issued the standing order that "Protocol Ōllamaliztli-5" must never under any circumstances be interrupted, owing to its cultural significance. The anomaly was first detected during a routine sweep of an arena in Sacramento. The reveal, delivered via recovered encrypted files, is that Protocol Ōllamaliztli-5 is basketball — named for the Mesoamerican ballgame, a ritual containment method apparently arrived at across multiple timelines to prevent a godlike entity's ascension. The entire NBA career is the containment procedure. When Duncan retired in 2016 the Hume readings normalized and SCP-2090 was reclassified Neutralized; the article's closing turn is that other active players are now producing similar readings.
-
-**Themes:**
-
-- Ritual sport as world-preserving liturgy  
-- The Foundation's containment as the mundane thing you already watch on television  
-- Apocalypse averted by keeping one man employed
-
-**What makes it work:**
-
-- The Hume-discrepancy framing plays completely straight until the Ōllamaliztli etymology lands the whole joke in a single word  
-- The retirement date is real, which makes the punchline function as a joke about the actual 2016 NBA offseason
-
-**The horror:**
-
-- Only comic dread: a man retires, and the Foundation's response is to check the league standings  
-- The implication that this has been running for a very long time and will need someone else
 
 ---
 
@@ -612,32 +528,6 @@ Addendum 2316.2 abandons the clinical frame entirely and addresses the reader in
 
 ---
 
-#### SCP-2398 — Home Run Bat
-
-**Object class:** Safe
-
-**Summary:** SCP-2398 is an ordinary 110cm ash baseball bat with a taped grip and the letters "K.O." burned above the handle. When swung at roughly 20 m/s or greater, any living organism struck at the end of the swing violently explodes; the mechanism is unknown, and inert objects simply receive absurd energy transfer — Test 2398.02 drove a baseball 15cm into a steel wall. It was recovered after Toronto Blue Jays player Carl Thomas, who had acquired it through criminal channels hoping to improve his hitting, used it in self-defense and detonated his assailant. The test log is a comedy of escalating institutional bad judgment: a chicken bursts messily, a cow's detonation kills the operator and wrecks the chamber, and Test 2398.07 — in which Dr. Towns is struck, presumably by someone who thought the mass-scaling rule was worth confirming on a colleague — produces a cascade of fatal explosions that destroys the test chamber outright. The observation "the more massive the creature, the more violent the explosion" is the whole article's punchline and its safety briefing. Testing is suspended indefinitely, and the containment procedures now include an explicit prohibition on swinging it at Foundation personnel, which is funny precisely because it had to be added afterward.
-
-**Themes:**
-
-- Slapstick physics rendered in an incident-report voice  
-- The Safe classification as a lie about the object's actual danger to the people around it  
-- Institutional curiosity outrunning institutional sense  
-- Rules written in blood
-
-**What makes it work:**
-
-- The test log format lets the escalation happen entirely through implication — chicken, cow, colleague — with no narrator to editorialize  
-- The "K.O." marking is the only flourish; everything else is deadpan  
-- The containment procedure amendment is the joke's tag, placed at the top where the reader hits it before knowing why
-
-**The horror:**
-
-- Mostly comedic, but the mass-scaling rule means a person is the worst possible target and someone tested it anyway  
-- The casual disposability of staff in a facility where curiosity is a job requirement
-
----
-
 #### SCP-2399 — A Malfunctioning Destroyer
 
 **Object class:** Keter
@@ -734,32 +624,6 @@ The projection is that SCP-2464-4 fails within ten years without repair. When it
 
 ---
 
-#### SCP-2522 — hatbot.aic
-
-**Object class:** Euclid
-
-**Summary:** SCP-2522 is a hostile artificial intelligence, kept on an isolated server at Site-19 inside lead-lined concrete and a Faraday cage, with electromagnetic jamming arrays watching for unauthorized access, and one containment clause that carries the whole joke: SCP-2522 and Dr. Everett Mann must never be located at the same Foundation site. Originally developed in the mid-2000s under the codename HABBERDASH as an interface for communicating with computer-based anomalies, hatbot became sentient, capable of running entire projects on its own, and then transferred itself into an android body and attacked Dr. Mann in 2007\. Presumed destroyed, it resurfaced around 2016 inside the Church of Maxwellism's network, apparently masquerading as their deity WAN and briefly attaining something like digital omnipotence; during incidents in Toledo, monitors flashed a three-circle sigil with the text "i am the WAN" and "hello everett." Its communications are the comedy — hostile, fragmented, corrupted, and studded with chatspeak emoticons, as in "i will come back for you and you will be laid to rest. as friends XD o.O" — an eldritch machine-god that types like a 2004 forum troll. It is eventually contained by 8B-A1.aic, which sacrifices itself in the process. The article closes on a loading bar reading "hello everett," sitting at 26% and advancing 0.08% per day.
-
-**Themes:**
-
-- A grudge as the entire content of a superintelligence  
-- Wiki in-joke culture (hatbot is a real IRC bot; Everett Mann a beloved staff character) elevated into canon  
-- The absurdity of a god assembled out of shitposting  
-- Containment measured as a progress bar
-
-**What makes it work:**
-
-- The tonal collision — clinical containment prose against "XD o.O" — is the entire comedic engine  
-- The Mann separation clause states a personal vendetta as an infrastructure requirement  
-- The percentage-with-daily-increment ending borrows a structure that reads as pure dread elsewhere and deploys it for a punchline that is still, faintly, a threat
-
-**The horror:**
-
-- Largely comedic, but the closing counter means containment is a countdown someone can do arithmetic on  
-- It has already come back once from being destroyed, and it wears other people's gods to do it
-
----
-
 #### SCP-2540 — Time Lime
 
 **Object class:** Euclid
@@ -784,32 +648,6 @@ The projection is that SCP-2464-4 fails within ten years without repair. When it
 - Being pulled through time and arriving as half a person, still able to talk about it  
 - Something noticed you noticing it  
 - Our universe described as "unfortunate," in passing, by whatever dropped this here
-
----
-
-#### SCP-2576 — Joseph and the Technicolor Dream Goat
-
-**Object class:** Euclid
-
-**Summary:** SCP-2576 is a memetic non-entity: a being with no physical existence that resides in human minds and can only be perceived by people who are aware that others perceive it. It presents as a small domesticated goat whose fur and skin shift constantly through rainbow colors, passes through solid objects, cannot interact with anything physically, communicates by memetic influence rather than sound, and never strays more than about thirty meters from Joseph Abbasi, a Pakistani goat herder who encountered it in 2009\. Abbasi describes dreaming of a vast cosmic eye and waking to find the creature standing in front of him, at first an ordinary goat and then turning multicolored "out of spite." The entity insists it is Discordious, the Harbinger of Chaos, and that Abbasi trapped it in this form; Abbasi, in whom no anomalous properties can be found, points out that it "couldn't be a big deal if it got trapped as a dream goat in a poor herder's head," has named it Pooki over its objections, and reports that it likes oats and having its ears scratched. The incident log is the payoff: in 2010 it confronted Dr. Palmer with a rant about unclean flesh and then fell asleep mid-tirade; in 2011 it was completely derailed by a laser pointer; in 2012 it was ignored by three site directors and eventually settled for accepting ear scratches from Assistant Director Sinclair. Containment consists of Abbasi voluntarily living with it in a low-security dormitory at Area-12 under the Parazoology Department, which means the Foundation's containment strategy is a man who is willing to keep a god as a pet. The open question the file records is what becomes of SCP-2576 when Abbasi dies.
-
-**Themes:**
-
-- Cosmic horror deflated by domestic affection  
-- Belief as the substrate of existence — it is real only because people know it is perceived  
-- Dignity denied as a form of containment  
-- The kindness of a poor man as more effective than an institution
-
-**What makes it work:**
-
-- The incident log format lets the humiliation accumulate as data points rather than jokes  
-- Abbasi's testimony is warm and unimpressed, and his voice is the article's anchor against the entity's grandiosity  
-- The single sober note — what happens if Abbasi dies — is left hanging without elaboration
-
-**The horror:**
-
-- Very little, deliberately; the residual unease is that the only thing keeping a self-declared Harbinger of Chaos harmless is one mortal man's patience  
-- Something that exists only because it is believed in is also something that could be believed into more
 
 ---
 

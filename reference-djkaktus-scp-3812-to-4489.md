@@ -11,13 +11,14 @@
 - SCP-3929 — boner pill by dado  
 - SCP-3930 — The Pattern Screamer  
 - SCP-3935 — This Thing a Quiet Madness Made  
-- SCP-4000-J — Taboo 2: Tabooer  
 - SCP-4173 — The House on Hadley Hill  
 - SCP-4176 — taxes  
 - SCP-4390 — A Bad Maze  
 - SCP-4444 — Bush v. Gore  
 - SCP-4485 — Such Black Light  
 - SCP-4489 — Apologies
+
+**Removed 2026-08-28.** The following entries were stripped from this annex as out of register — their net register is comic or heartwarming rather than horrific, and the corpus does not use that mode (see Cut 3 in `reference-distillate-cuts.md`): SCP-4000-J. The retrieval notes at the foot of this file still describe the original pass and its counts, and are left as written.
 
 ---
 
@@ -200,38 +201,6 @@ Addendum 3935.4 catalogues the town's ambient rot: a figure dressed as a UIU age
 - "Hello," spoken by a small featureless thing hanging upside down, as the sound that precedes annihilation.  
 - Salvation's inhabitants can't reproduce, and no one ever explains why that line is in the containment procedures.  
 - The final reveal is not a monster but an arithmetic error, and it means a girl was hanged, or hanged herself, and the thing under the school woke up because of it.
-
----
-
-#### SCP-4000-J — Taboo 2: Tabooer
-
-**Object class:** Keter (first pass); later "Restricted per protocol 4000-Eshu"
-
-**Summary:** A joke SCP built as a parody of PeppersGhost's much-loved SCP-4000 ("Taboo"), whose conceit is an anomaly that cannot be named or described without triggering it. SCP-4000-J takes that premise and hands it to a hostile compliance process. The item number is "Restricted per protocol 4000-Eshu." The containment procedures instruct that descriptions be "made as vaguely specific as possible" within the limits of the Eshu Protocol, which is "currently under review." Maintenance of the file falls to Dr. Mack — after the names Dr. Daniels, Dr. Meyer and Dr. Peppers have been struck through in sequence, a running gag about attrition (and a nod at the original author).
-
-The article then performs its own strangulation, live. The description begins — "SCP-4000 is an extradimensional forested area…" — and a boxed **Eshu Protocol Update** interrupts: no relevant anomaly may be referred to by a repeating static identifier. The author tries again, describing low-lying wetlands near Baskerville, South Carolina, and is cut off: no reference to structural makeup. He starts "When the thing that is being described in this file" and is stopped because in many cultures the color red signifies aggression (he has not used the word red). He tries the same sentence shorter and gets the identical ruling. "The unusual" — forbidden, nothing may imply anything unusual about a relevant anomaly. "The" — articles are to be avoided, "to encourage the author to think creatively." An addendum header is banned for implying the anomaly was ever *not* discovered. "Wet" — "Descriptors are right out." In desperation he pivots into a genuinely evocative tale opening — "I never knew my grandfather, but he was often spoken about in hushed terms during family gatherings…" — which draws first a bewildered "???" and then a two-part ruling: no personal anecdote by complex metaphor or allusion, and "the author is encouraged to remember that this is an SCP data file, not a tale." From there the protocol simply answers "No." to "SCP," "It," "Uh, Researcher Talloran?" and "Fucking fairies."
-
-The file then restarts, fully sterilized: item number restricted, object class restricted, containment procedures identical except that "vaguely specific" has become "specific," and the description reads, in full: *"I'm going to go snort a fat line of cocaine off Dr. West's ass and hope that when I get back I have the motivation and dexterity to suck my own dick, for that will be the last satisfaction I ever achieve in this short, horrible life."* Final line: **"Eshu Protocol Update: File revisions approved\!"** The license box cites the page as "REDACTED FOR QUESTIONABLE REASONS."
-
-**Themes:**
-
-- Content moderation as an anomaly in its own right — rules that metastasize until compliance and communication are mutually exclusive.  
-- Writing about the unwritable, and what's left when every handle is confiscated.  
-- Institutional review as slow suffocation; the last surviving sentence is the one with no information in it.  
-- Affectionate parody as criticism — the joke only works because SCP-4000's premise is genuinely good.
-
-**What makes it work:**
-
-- The gag is structural, not verbal. The article is *shaped* like an argument the author is losing, and the reader watches the available vocabulary shrink line by line.  
-- The rulings get funnier as they get less rational, and the best one — banning "the" to "encourage the author to think creatively" — is a perfect parody of workshop-speak.  
-- The strikethrough researcher names do all the necessary worldbuilding about what happens to people assigned to this file, in four words.  
-- The final approved description is the sharpest joke on the page: the protocol has no objection to obscenity, only to *content*.
-
-**The horror:**
-
-- Not horror, but it borrows one: the original SCP-4000's dread of an anomaly that eats its own name is still faintly present under the comedy.  
-- The implied fate of Daniels, Meyer and Peppers — three researchers consumed by a file before Mack got it.  
-- The genuine despair in the approved text. It's a joke, but it's a joke written by someone who has been ground down to nothing, and the system stamps it approved.
 
 ---
 

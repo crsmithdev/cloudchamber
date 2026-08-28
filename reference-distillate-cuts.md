@@ -99,3 +99,24 @@ Chiang supplies the correctness. Watts supplies the reason the cost is worth pay
 **Removed:** 2026-08-28 (commit `8bd854b`) · **Returned:** 2026-08-28, rewritten
 
 Recorded here so the history is not confusing. That commit deleted §0 Recurring Shapes, the Six Questions, the Guardrails and Standing Amendments A1–A4 — 56 lines, no replacement. They are now back in §0 The Generative Core, rewritten as prompts that produce a premise rather than gates that grade one, with A1–A4 folded inline at the rules they amend rather than kept as a separate log. Nothing from the deleted text was discarded in substance; this is a reversal, not a cut.
+
+
+---
+
+## Note — the comic and warm articles stripped from the annexes
+
+**Removed:** 2026-08-28 · **Scope:** the source annexes, not this document
+
+Cut 3 withdrew the comic register from the distillate. On instruction, the thirteen articles it named have now also been deleted from the annexes themselves, along with their contents-list entries. Each affected annex carries a dated note under its contents list saying what left it and why.
+
+**Annex C1** (`reference-djkaktus-scp-049-to-2740.md`) — SCP-049-J, SCP-1781, SCP-2090, SCP-2398, SCP-2522, SCP-2576.
+**Annex C2** (`reference-djkaktus-scp-2776-to-3790.md`) — SCP-3355.
+**Annex C3** (`reference-djkaktus-scp-3812-to-4489.md`) — SCP-4000-J.
+**Annex C4** (`reference-djkaktus-scp-4548-to-7670.md`) — SCP-4498, SCP-7143-J.
+**Annex C5** (`reference-djkaktus-scp-8001-to-9935-and-001-proposals.md`) — SCP-80s-J, SCP-001-CK-J, SCP-001-DJK-J.
+
+**Consequences.** Annex C4 was named for SCP-4498 and its range now starts at SCP-4548; the file and its title were renamed accordingly. C4's canon note lost one sentence describing SCP-4498's ensemble cast. The retrieval notes at the foot of each annex still state the counts of the original retrieval pass and are deliberately left as written — they are a record of what was fetched and verified, not of what the register currently holds.
+
+**Not removed.** Four articles that read warm and then turn remain in the annexes and remain available: SCP-2980 (*Devil's Nightlight*), SCP-4173 (*The House on Hadley Hill*), SCP-4390 (*A Bad Maze*), SCP-4489 (*Apologies*). Also left in place is the candidate-queue entry for SCP-9730, whose title is absurd but whose article is not, and the CHECKED AND REJECTED list in `reference-scp-candidates.md`, which records SCP-2557 as rejected for comedic execution — that list exists so the ground is not re-walked.
+
+**Recoverable.** Everything above is in git history at `93c5d3b` and earlier.

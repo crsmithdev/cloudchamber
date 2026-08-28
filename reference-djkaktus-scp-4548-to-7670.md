@@ -1,4 +1,4 @@
-# FOG BELT — REFERENCE REGISTER · ANNEX C4 — DJKAKTUS: SCP-4498 TO SCP-7670
+# FOG BELT — REFERENCE REGISTER · ANNEX C4 — DJKAKTUS: SCP-4548 TO SCP-7670
 
 *Companion to Fog Belt — Reference Register v2 (the master document). Spoilers throughout, by design.*
 
@@ -6,7 +6,6 @@
 
 ### Covered in this part
 
-- SCP-4498 — The Plurality of Lachlan Cairns  
 - SCP-4548 — The Hateful Star  
 - SCP-4595 — WITCH  
 - SCP-4643 — The Wheel of Fire  
@@ -26,45 +25,11 @@
 - SCP-6740 — Our Shared Grave  
 - SCP-6745 — Seasonal Menu  
 - SCP-6765 — The Demon Ogier and the Bleeding Throne of Malidraug  
-- SCP-7143-J — THE KNOB \[SFW?\]  
 - SCP-7341 — Nothing, and Everything  
 - SCP-7450 — L is for Lamentations  
 - SCP-7670 — The Light That Blinds
 
----
-
-#### SCP-4498 — The Plurality of Lachlan Cairns
-
-**Object class:** Euclid (Disruption Class Keneq; Risk Class Caution)
-
-**Summary:** SCP-4498 is the group designation for the 325+ men, women, animals and anomalous entities formerly assigned to or contained at Foundation Site-53 near Pittsburgh, all of whom were abruptly overwritten with the consciousness and identity of Dr. Lachlan Cairns. The cause was mundane in the way djkaktus comedy is always mundane: Cairns was handling an anomalous porcelain cat statue whose tail, turned clockwise, suppresses nearby anomalous effects. He turned it counter-clockwise. The tail snapped off, the lights flickered, and when the cameras rebooted every living thing in the building answered to "Lach Cairns." Containment procedures are essentially a quarantine: the whole former site is an exclusion zone, no instances may leave, contact is limited to "diplomatic operations," and Applied Task Force Cairns-99 puts down riots with non-lethal force under Regional Research Director Kain Pathos Crow and the Department of Internal Resolution. Each instance has a cheap plastic coin set into its eye — a counterfeit of the genuine anomalous coin bound to the real Cairns' consciousness (the article points at a separate file for that coin's origin; I could not confirm the exact cross-reference number, so treat it as "another SCP entry").
-
-The body of the article is a farce assembled from incident footage. Cairns phones Senior Regional Director Sophia Light in a panic — *"They're all me\! Every single one of them, Sophia\!"* — while a mob of himself charges down the corridors carrying furniture and kitchen utensils. Instance-Clef complains about Agent Clef's cardio. Instance-Jones is talked into opening SCP-096's cell by a voice inside, which turns out to be another Cairns wearing 096's body. Instance-Fant, a janitor, sets up as king of the rats in a dumpster and declares himself of "the dirty down below." Factions form: Culinary Lachlans, Sneaky Darkness Lachlans, Lord of the AquaLachs, Filth Lach. Dominating them all is SCP-4498-Z.Kiryu, "Pirate Queen Lachlan Elizabeth Jack Sparrow Cairns," in tricorn hat and butterfly eyepatch, who builds a wooden ship on top of an M1 Abrams and lashes a naked Agent Lament to the mast.
-
-Resolution comes through negotiation. Dr. Crow works out that the plastic coins are powerless imitations and that repairing the cat statue should reverse the effect — at the likely cost of shattering the real coin. Dr. Gears, Cairns, Crow and Director Everett Mann meet the Pirate Council under a flag of truce; the Pirate Queen demands the coin, Gears trades for the statue, then tosses it to Cairns with the driest line in the article: *"Clockwise this time."* The instances stagger, plastic coins drop out of their eyes, and the statue disintegrates.
-
-The after-action reports are the punchline stack. Mann describes arriving to find the staff in a "drunken frenzy," feces-throwing included, and notes his colleagues talk too much. Dr. Desei complains about twelve hours of "Cairns on Cairns yapping." Light — who was supposed to be in Ibiza — informs Cairns that even SCP-096 was briefly a Lachlan, and sentences him to probation caring for a wombat instead of the traditional duck. Lament reports lasting trauma from "Lach's dead pupils." Clef found the whole thing hilarious and admits to beating Lament with a trout.
-
-**Themes:**
-
-- Bureaucratic slapstick as a load-bearing genre in the Foundation setting  
-- Identity as a contagion — selfhood as something that can overwrite a building  
-- The Foundation's institutional cast (Clef, Gears, Crow, Mann, Light, Lament) as a sitcom ensemble  
-- Competence hierarchy: Gears solves in one line what a task force could not  
-- Comedy of scale — one man's personality, multiplied, becomes a geopolitical incident
-
-**What makes it work:**
-
-- Strict document discipline: the format never winks. The absurdity arrives entirely through deadpan log framing, which is what makes it land.  
-- Escalation architecture — one duplicate, then a mob, then organized factions, then a pirate navy — each addendum raising the stakes on a fixed premise.  
-- Character economy: djkaktus is trading on years of established site-personality shorthand, so a single line ("Agent Clef's physical fitness") does a paragraph of work.  
-- The clockwise/counter-clockwise gag is set up in the first addendum and paid off as the resolution, giving a joke article a real plot spine.
-
-**The horror:**
-
-- Underneath the comedy: 325 people were erased. The "instances" are victims, and the article never mourns them.  
-- The 096 sequence is a genuine breach played for laughs — the article's tonal control is itself a bit of dread.  
-- The Foundation's calmness about mass identity death is the setting's usual moral horror, visible in peripheral vision.
+**Removed 2026-08-28.** The following entries were stripped from this annex as out of register — their net register is comic or heartwarming rather than horrific, and the corpus does not use that mode (see Cut 3 in `reference-distillate-cuts.md`): SCP-4498, SCP-7143-J. The retrieval notes at the foot of this file still describe the original pass and its counts, and are left as written.
 
 ---
 
@@ -514,7 +479,7 @@ The coda is the worst part. Site-81 abandons exploration, but the anomaly keeps 
 
 ### Attribution notes
 
-All twelve articles are credited to **djkaktus** alone on the SCP Wiki; no co-authorship or misattribution was found for any of them. Two canon groupings apply: **SCP-4840 and SCP-4812 are both Project PARAGON**, djkaktus's antediluvian mythology of a pre-Flood human civilization and the four cursed knights (SCP-2254 La Hire, SCP-4840-B Lancelot, SCP-6666 Hector, SCP-6765 Ogier) — SCP-4840's containment has been formally transferred to Project PARAGON, and SCP-4812's Sky King material is the same continuity seen from the outside. SCP-4840 additionally sits on the Mekhanite, Cain/Abel (SCP-073, SCP-076), Serpent's Hand and SCP-1000 continuities. **SCP-4760** is not a formal series entry but is embedded in the Marshall, Carter & Dark / Dr. Bright / Ulysses Sate / "the Factory" material. **SCP-4654** uses "dado," a wiki-wide recurring anartist character. **SCP-4498** is a comedy piece drawing on the standard site-personality ensemble (Clef, Gears, Kain Pathos Crow, Everett Mann, Sophia Light, Troy Lament). SCP-4643, SCP-4935, SCP-4864, SCP-4971, SCP-4941 and SCP-4595 carry no series affiliation on the author's page.
+All twelve articles are credited to **djkaktus** alone on the SCP Wiki; no co-authorship or misattribution was found for any of them. Two canon groupings apply: **SCP-4840 and SCP-4812 are both Project PARAGON**, djkaktus's antediluvian mythology of a pre-Flood human civilization and the four cursed knights (SCP-2254 La Hire, SCP-4840-B Lancelot, SCP-6666 Hector, SCP-6765 Ogier) — SCP-4840's containment has been formally transferred to Project PARAGON, and SCP-4812's Sky King material is the same continuity seen from the outside. SCP-4840 additionally sits on the Mekhanite, Cain/Abel (SCP-073, SCP-076), Serpent's Hand and SCP-1000 continuities. **SCP-4760** is not a formal series entry but is embedded in the Marshall, Carter & Dark / Dr. Bright / Ulysses Sate / "the Factory" material. **SCP-4654** uses "dado," a wiki-wide recurring anartist character. SCP-4643, SCP-4935, SCP-4864, SCP-4971, SCP-4941 and SCP-4595 carry no series affiliation on the author's page.
 
 Two details I could not fully confirm and have flagged in text: the exact cross-referenced file number for Dr. Cairns' coin in SCP-4498, and the precise internal dates in SCP-4935's time-dilation log (the retrieved text gave conflicting dates around the anomaly's collapse, which I have described as "early 2019").
 
@@ -848,39 +813,6 @@ Three left arms form a bow, three right arms draw three golden arrows, and he fi
 - The failing filter — an old man in a chair, asleep, dying slowly, and the only thing between the world and the thing below.  
 - The stairwell where the flashlights dim and men simply stop and sit down in the dark for hours.  
 - The woman holding the seal alone, whose name and memory were already erased, who is destroyed in the instant she looks up to see that help arrived.
-
----
-
-#### SCP-7143-J — THE KNOB \[SFW?\]
-
-**Object class:** N/A, with a footnote: "Currently the Foundation has no protocols by which to contain a doorknob." Author: **djkaktus**.
-
-**Summary:** SCP-7143-J is a doorknob on the door to the third-floor staff dormitory at Site-19. Special Containment Procedures, in full: "Due to SCP-7143-J being a doorknob, no containment procedures are necessary." The Description is written with the pained literalism of a manual for an alien species: "It is made of metal. Turning it to the right or left opens the door to which it is affixed. It has a lock, which is used to impede the intended action of turning the doorknob so as to not allow individuals to access the rooms beyond." It was installed by maintenance associate J. Maloney, who, when asked about the installation, remarked: "I installed a doorknob."
-
-Addendum 7143-J.1 is a testing log, prefaced with the note that "the intended purpose of these tests is unknown, as SCP-7143-J is a doorknob." Test 1: Dr. Dorian turned it left; the door opened; Notes: "This is a doorknob. \-Dr. Dorian." Test 4: Agent Jameson locked it; it impeded Agent Jameson; "It seems that this doorknob is locked." Test 15 is entirely \[DATA EXPUNGED\], including the results, with Dr. Clef appended: "I don't know why this is expunged, as this is just a doorknob."
-
-Addendum 7143.2 is an anonymous personnel survey. Agent Romerville uses the doorknob to get into the dormitory. Dr. Cornwall observed it locked and later unlocked: "This is how locks work." Researcher Axwell sometimes turns it left and sometimes right, and adds, "Doors are useful." Dr. Lee is glad the facilities workers keep it clean. Dr. Hughes' entry is a solid block of redaction bars, footnoted by Clef as a computer malfunction. And Researcher Chambers, closing the article: "I would fuck the shit out of that doorknob."
-
-The title tag — **\[SFW?\]** — is the whole architecture. "THE KNOB" plus a nervous safe-for-work question mark primes the reader for something obscene; the article delivers hardware documentation; and then the final line retroactively vindicates the tag.
-
-**Themes:**
-
-- Documentation as compulsion — an institution that cannot stop writing files even when there is nothing to file.  
-- Redaction culture parodied: \[DATA EXPUNGED\] applied to a doorknob is indistinguishable from \[DATA EXPUNGED\] applied to anything else.  
-- The gap between the reader's expectations and the text, weaponized.  
-- Foundation staff as ordinary bored office workers filling out a survey.
-
-**What makes it work:**
-
-- The joke is *structural*, not verbal. The humor is generated by the format's own machinery — testing logs, personnel testimony, expunction — applied to nothing.  
-- Total tonal discipline. Not one sentence winks; the article simply refuses to become interesting.  
-- Clef's two exasperated notes are the only authorial presence, and they're placed to keep the deadpan from going slack.  
-- The title's misdirection turns the entire body into a setup for a one-line payoff, and the payoff is a personnel survey response.
-
-**The horror:**
-
-- None intended — but the expunged Test 15 is a genuine sliver of unease the article never resolves, and Dr. Hughes' blacked-out testimony sits there being *something*.  
-- Read straight, it's a small joke about an organization so procedure-bound it can no longer distinguish the anomalous from the mundane — which, in this setting, is a real failure mode.
 
 ---
 
