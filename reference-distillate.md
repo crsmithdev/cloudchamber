@@ -9,13 +9,21 @@
 
 ---
 
-## 0\. THE ENGINE
+## 0\. RECURRING SHAPES
 
-All six sources run one machine in different housings:
+*Descriptive, not prescriptive.* These are configurations the corpus has actually used, not conditions a pitch has to satisfy. Per **A3** the profile is evolving, and a live instinct beats anything on this page. Stories routinely run two of these at once, and the best ones have usually found a shape that is not here yet.
+
+**The maintained schedule.** The oldest and still the most common:
 
 > **Something has been operating for a long time on a correct principle nobody remembers, maintained by competent people who are not deceived, at a cost that is scheduled, documented, and — on the evidence — worth paying.**
 
-Chiang supplies the correctness. Watts supplies the reason the cost is worth paying. setting-c supplies the duration and the maintenance. setting-b supplies the institutions' rightness. djkaktus supplies the document. Evangelion supplies the instrument that is a person, and the delivery date.
+It fits about half the slate cleanly and another quarter partially. It does not fit Bloom, "Without Regards", Designated Pathogen Free or Dwell Time, and Second Circulation contradicts one of its clauses outright — everyone there is deceived, and the deception is the premise. Use it as one shape among several. Coverage story-by-story is in `reference-distillate-cuts.md`.
+
+**The correct intervention.** A real, well-evidenced, genuinely good intervention whose *success* is the mechanism. Nobody is wrong, the data is clean, the outcomes improve, and that is the problem. Continuity of Care, Viability, Right Concentration, Threshold, Designated Pathogen Free, Super-Donor. The tell is that there is no reformable failure to point at — the thing worked.
+
+**The arriving fact.** Something true and already in motion that no institution can stop, where the story is its *administration* rather than its discovery. Nothing is hidden and there is nothing to uncover; the horror is the timetable, the ranked list, the roster change. Suppression, Bloom, Offsets, Dwell Time.
+
+For what each source is strongest at, see **Quick lookup** at the foot of this document.
 
 ## THE SIX TESTS
 
