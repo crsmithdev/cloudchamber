@@ -21,7 +21,7 @@
 3. **Take a theme family (§1)** and state it as a mechanism with units. Not a mood.
 4. **Take an artifact (§4)** the institution genuinely produces.
 5. **Push on the six questions** below until the premise generates its own second act.
-6. **Check §5** for the failure mode you're closest to, and `ideas-v2.md` for whether the slate already has this.
+6. **Check §5** for the failure mode you're closest to, and `stories/` for whether the slate already has this.
 7. **Write the last line first if you can find it.** One beat past the horror, small, administrative, correctly filed.
 
 ## Recurring shapes
@@ -683,7 +683,7 @@ If the terrible thing could be done by a machine instead, it is engineering. If 
 8. **Run the instrument pass.** Could a machine do it instead? If yes, it's engineering. If it needs a specific person, whose signature is on the authorisation?
 9. **Run the inheritance pass.** `[S]` Who was doing this before the institution arrived, and what did it fail to understand when it took over?
 10. **Pick one dread mechanism (§3) and one withholding move (M11–M19, M58, M59, M62, M65).** Exactly one of each. More than one of either dilutes both.
-11. **Check the slate.** `ideas-v2.md`, 24 stories. Differentiation is a requirement, not a courtesy.
+11. **Check the slate.** `stories/`, 24 developed plus the bench. Differentiation is a requirement, not a courtesy.
 12. **Write the last line.** One beat past the horror, small, administrative, correctly filed. If you can't find it, the ending isn't earned yet.
 13. **Name the bell.** The recurring sound that marks the schedule.
 

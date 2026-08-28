@@ -6,15 +6,11 @@ Horror anthology working repo. **This repo is the source of truth.**
 
 ```
 distillate.md                the working playbook -- generate from section 0
+format.md                    story schema, the format rule, provenance
 
-stories/NN-slug.md           one story each (front matter: number, heading,
-                             contents_cell, status)
+stories/NN-slug.md           one story each; 24 developed
 stories/00-undeveloped.md    the bench -- greenlit but never developed, parked
                              attempts with their reasoning, held pairs, passed-on
-ideas-v2.md                  GENERATED -- do not hand-edit
-parts/00-front-matter.md     schema + <!-- CONTENTS-TABLE --> marker
-parts/99-slate-notes.md      format rule + provenance
-build.py                     regenerate / verify ideas-v2.md
 
 refs/                        source annexes; read, never edited
   chiang-and-watts.md
@@ -34,15 +30,9 @@ Evangelion, `[K]` to the djkaktus annexes, `[S]` to `refs/scp/f-assorted.md`.
 
 ## Working on it
 
-```sh
-python3 build.py           # regenerate ideas-v2.md from parts/ and stories/
-python3 build.py --check   # verify it matches; exits 1 on drift
-```
-
-Edit the file under `stories/`, then rebuild. `ideas-v2.md` is generated and
-marked `linguist-generated` so GitHub collapses its diff -- review the story
-file instead. Adding a story is one new file plus a rebuild; its Contents table
-row comes from that file's front matter, so there is no second place to update.
+Edit the file under `stories/`. There is no build step and no generated file --
+the directory is the slate, and each story stands alone in the three-part form
+described in `format.md`. Adding a story is one new file.
 
 ## Pushing
 
@@ -60,7 +50,7 @@ only on this machine.
 ## Mirrors
 
 The **Fog Belt Project** on claude.ai carries a one-way read-only mirror of the
-stories, parts, distillate and ideas-v1, so the slate can be read from the
+stories, the distillate and the format notes, so the slate can be read from the
 Claude app on mobile. It is refreshed by Claude from committed content and is
 never authoritative; see `fogbelt/README-sync.md` there. The official GitHub
 integration ("+" -> Add from GitHub in the Project) can replace it with an
