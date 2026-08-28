@@ -1,6 +1,6 @@
-# FOG BELT — REFERENCE DISTILLATE
+# FOG BELT — PLAYBOOK
 
-*The working playbook, arranged for generation. §0 is the part you load when you want a premise; §1–§4 are the parts you raid once you have one; §5–§6 are the parts you check against before committing. The Register and its annexes are the evidence — this is the tool.*
+*Arranged for generation. §0 is the part you load when you want a premise; §1–§4 are the parts you raid once you have one; §5–§6 are the parts you check against before committing. The annexes under `refs/` are the evidence — this is the tool.*
 
 **Source tags:** `[C]` Chiang · `[W]` Watts · `[setting-c]` setting-c · `[TC]` setting-b · `[K]` djkaktus · `[S]` SCP, wider wiki (Annex F) · `[E]` Neon Genesis Evangelion · `[FB]` Fog Belt originals (doctrine arrived at in-house). Tags mark where a move is best demonstrated, not where it's allowed.
 
@@ -26,7 +26,7 @@
 
 ## Recurring shapes
 
-*Descriptive, not prescriptive. Configurations the corpus has actually used. Stories routinely run two at once, and the best ones have found a shape that isn't here yet. It does not fit Bloom, "Without Regards", Designated Pathogen Free or Dwell Time, and Second Circulation contradicts one of its clauses outright.*
+*Descriptive, not prescriptive. Configurations the corpus has actually used. Stories routinely run two at once, and the best ones have found a shape that isn't here yet.*
 
 ### The maintained schedule
 

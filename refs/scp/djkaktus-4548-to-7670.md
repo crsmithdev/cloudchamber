@@ -1,6 +1,6 @@
 # FOG BELT — REFERENCE REGISTER · ANNEX C4 — DJKAKTUS: SCP-4548 TO SCP-7670
 
-*Companion to Fog Belt — Reference Register v2 (the master document). Spoilers throughout, by design.*
+*Evidence for `playbook.md`. Spoilers throughout, by design.*
 
 ---
 

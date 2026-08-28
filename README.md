@@ -61,14 +61,9 @@ So Claude can edit and commit here through the device bridge, but **pushing is
 manual** -- run `git push` from your own terminal. Until you do, the work exists
 only on this machine.
 
-## Mirrors
+## Other copies
 
-The **Fog Belt Project** on claude.ai carries a one-way read-only mirror of the
-stories, the distillate and the format notes, so the slate can be read from the
-Claude app on mobile. It is refreshed by Claude from committed content and is
-never authoritative; see `fogbelt/README-sync.md` there. The official GitHub
-integration ("+" -> Add from GitHub in the Project) can replace it with an
-automatic read-only sync, which reflects only what has been pushed.
-
-An older **Google Drive `fogbelt` folder** exists and is stale. It is not
-maintained and should not be read as current.
+There are none that are maintained. A Google Drive `fogbelt` folder and a
+claude.ai Project both held copies at various points; both are stale, neither is
+authoritative, and anything read from either should be checked against this repo
+before it is believed.

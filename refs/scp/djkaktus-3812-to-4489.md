@@ -1,6 +1,6 @@
 # FOG BELT — REFERENCE REGISTER · ANNEX C3 — DJKAKTUS: SCP-3812 TO SCP-4489
 
-*Companion to Fog Belt — Reference Register v2 (the master document). Spoilers throughout, by design.*
+*Evidence for `playbook.md`. Spoilers throughout, by design.*
 
 ---
 

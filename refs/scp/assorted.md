@@ -1,6 +1,6 @@
 # FOG BELT — REFERENCE REGISTER · ANNEX F — ASSORTED SCP ARTICLES
 
-*Companion to Fog Belt — Reference Register v2 (the master document). Spoilers throughout, by design.*
+*Evidence for `playbook.md`. Spoilers throughout, by design.*
 
 Added August 2026. Nineteen articles, seventeen named authors and one uncredited — registered by number rather than by hand, because these were pulled individually rather than as a body of work. The djkaktus annexes cover him alone; this one covers everyone else, including SCP-8980, which was folded in here on 2026-08-28 from the standalone addendum it used to occupy.
 

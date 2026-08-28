@@ -2,7 +2,7 @@
 
 # FOG BELT — REFERENCE REGISTER · ANNEX C6 — DJKAKTUS: CANONS, HUBS, TALES, AND THE AUTHOR
 
-*Companion to Fog Belt — Reference Register v2 (the master document). Spoilers throughout, by design.*
+*Evidence for `playbook.md`. Spoilers throughout, by design.*
 
 ---
 

@@ -1,6 +1,6 @@
 # FOG BELT — REFERENCE REGISTER · ANNEX E — NEON GENESIS EVANGELION
 
-*Companion to Fog Belt — Reference Register v2 (the master document). Spoilers throughout, by design.*
+*Evidence for `playbook.md`. Spoilers throughout, by design.*
 
 *Status note (compiled 26 August 2026). Unmarked claims come from the 1995–96 television series and* The End of Evangelion *(1997), which this annex treats as the primary text. Material that exists only in the Rebuild films is marked **[R]**. Material that exists only in the Sadamoto manga is marked **[M]**. Readings the works support but do not state outright are marked **[inferred]** — this annex does not present fan interpretation as text, because the register's whole value is that its claims can be checked.*
 
