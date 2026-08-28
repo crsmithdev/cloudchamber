@@ -2,7 +2,7 @@
 
 *Companion to Fog Belt — Reference Register v2 (the master document). Spoilers throughout, by design.*
 
-Added August 2026. Eighteen articles, sixteen named authors and one uncredited — registered by number rather than by hand, because these were pulled individually rather than as a body of work. Annexes C1–C6 cover djkaktus; Annex F covers everyone else, alongside the standalone addendum on SCP-8980.
+Added August 2026. Nineteen articles, seventeen named authors and one uncredited — registered by number rather than by hand, because these were pulled individually rather than as a body of work. The djkaktus annexes cover him alone; this one covers everyone else, including SCP-8980, which was folded in here on 2026-08-28 from the standalone addendum it used to occupy.
 
 ---
 
@@ -24,6 +24,7 @@ Added August 2026. Eighteen articles, sixteen named authors and one uncredited �
 - SCP-7034 — Æ is for Aerials (J Dune)  
 - SCP-7179 — E is for Eternity (Calibold)  
 - SCP-7219 — F is for Fallout (Dr Balthazaar)  
+- SCP-8980 — Ergophobia: Without Regards (Yossipossi)  
 - SCP-9138 — The Manner of Fishes (whenwerewe)  
 - SCP-9377 — CONTENTS UNDER PRESSURE (mothmanUXO)  
 
@@ -34,7 +35,7 @@ Added August 2026. Eighteen articles, sixteen named authors and one uncredited �
 - SCP-231 and SCP-2000 were added after the first pass, from the candidate queue in `refs/scp/candidates.md`. Both are canonical enough that their earlier absence looked deliberate; they are here now on instruction.
 - SCP-231's Procedure 110-Montauk is never described in the article. The entry below treats that permanent withholding as the formal move it is and does not reconstruct it — which is also the only honest reading of the source.
 - DrClef appears twice: solo on SCP-231, and with Dr Gears on SCP-835.
-- SCP-186 — To End All Wars was on the original list and is **not** repeated here; it already has a full entry in Annex C1 (`refs/scp/c1-djkaktus-049-to-2740.md`).
+- SCP-186 — To End All Wars was on the original list and is **not** repeated here; it already has a full entry in Annex C1 (`refs/scp/djkaktus-049-to-2740.md`).
 - SCP-597 carries no author credit on the wiki — the licensebox renders an unfilled placeholder.
 - SCP-610's article is deliberately thin; the substance is in field logs L1–L5. L6 is referenced and was never written, and that absence is treated here as part of the design rather than as a gap.
 
@@ -655,6 +656,45 @@ The Level 3+ addendum removes the last of the sympathy. GOC operatives died in t
 - Twenty-eight houses and one therapist's office, quietly bought, because the contamination came home from the dreams in people's skin
 - A woman who melts, throws her husband through a window, and detonates from the inside
 - That the correct thing to do is nothing — leave him there, burning, awake, for the rest of time — and the Foundation is doing it
+
+---
+
+#### SCP-8980 — Ergophobia: Without Regards
+
+**Object class:** not stated in the article
+
+**Summary:** SCP-8980 is by Yossipossi, from SCP Anthology 2024, and is the one entry here that was registered on instruction rather than found by a sweep — one of the most subtly horrifying articles on the site precisely because it is so plausible. Researcher Lillian Marley, 28, a computer scientist and Level 3 Containment Specialist at Site-17, is documented as anomalous: electronics malfunction around her in ways that humiliate her specifically. Emails go to the wrong recipients. Critical files are deleted. One slide of a presentation is replaced with pornography. Her supervisor, Head Researcher Christopher Byrnes, is manufacturing all of it, and he gaslights her into believing she is the anomaly. She consents to her own classification — reasonably, expecting the matter to resolve in days or weeks. She is contained for nine years. It ends only because Byrnes retires.
+
+What follows her consent is escalating cruelty conducted entirely as documented, justified process: confinement, humiliating physical testing, separation from her family, sensory abuse, amnestic administration. The Code of Conduct requires him to oversee her amnesticisation, so he is present, providing the list of targeted engrams. He selects what she forgets, and he tells her what he has done to her immediately beforehand. Every complaint against him was investigated properly, and the documentation supported him, because he wrote it.
+
+The May 2015 Ethics Committee review is thorough and good. It names the abuses, annotates the inaccuracies and obfuscations in his files, finds the strip searches unjustified, and awards roughly $470,000 with free counselling and reintegration support. Byrnes was amnesticised as routine procedure, so there is no longer a person who did it. The remedy is correctly calculated and addressed to nobody who can be held responsible. Marley keeps the bodily memory and loses the account of it. Her knowledge and her career are gone. The article's last line is a new therapist recording her as a difficult case — extremely apathetic, resistant — correctly observed, by someone doing their job.
+
+**Themes:**
+
+- Consent as the trap: she agrees to containment, and everything after that is procedurally correct
+- The paper trail that exonerates its author because he authored it
+- A remedy that is real, generous and useless, addressed to a perpetrator the institution has already erased
+- Trauma without narrative — PTSD without access to what caused it, and the knowledge that you were made to forget something you cannot recover
+- Authority plus good documentation habits as the entire mechanism; no villain is required beyond that, which is the point
+
+**What makes it work:**
+
+- He never breaks a rule. He files
+- The anomaly is manufactured, and the article lets the reader believe it for as long as she does
+- The amnestic scene puts him in the room by regulation, holding the engram list, having just told her what he did
+- The Ethics Committee section is the institution at its best and changes nothing, because the responsible party has been amnesticised into non-existence
+- Strip the anomalous layer and it survives intact: an NDA, a settlement, and nine years of a career
+- It passes the setting-c question (the awful thing is load-bearing) and the setting-b question (the institution is correct, not deluded) while being entirely mundane
+
+**The horror:**
+
+- Nine years, ended by a retirement rather than by anyone noticing
+- Being told what is about to be taken from you, by the man taking it, because a Code of Conduct requires his presence
+- A cheque for $470,000 and free counselling, correctly calculated, owed by nobody
+- Knowing you were made to forget and being unable to know what
+- The last line: a clinician filing an accurate note about a difficult patient
+
+*Story 15, "Without Regards", is the setting-a version derived from this — see `stories/15-without-regards.md`.*
 
 ---
 

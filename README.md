@@ -13,19 +13,21 @@ stories/00-undeveloped.md    the bench -- greenlit but never developed, parked
                              attempts with their reasoning, held pairs, passed-on
 
 refs/                        source annexes; read, never edited
-  chiang-and-watts.md
-  setting-c-and-setting-b.md
+  chiang.md
+  watts.md
+  setting-c.md
+  setting-b.md
   neon-genesis-evangelion.md
   julian-jaynes.md
-  scp/c1..c6-djkaktus-*.md   the djkaktus corpus, Annexes C1-C6
-  scp/f-assorted.md          Annex F -- 18 articles, wider wiki
-  scp/scp-8980-ergophobia.md standalone addendum
+  scp/djkaktus-<range>.md    the djkaktus corpus, five files by SCP number
+  scp/djkaktus-canons-and-tales.md
+  scp/assorted.md            19 articles by other authors
   scp/candidates.md          63 triaged, unregistered articles
 ```
 
-Source tags in the distillate map to `refs/`: `[C]` and `[W]` to
-chiang-and-watts, `[setting-c]` and `[TC]` to the setting-c file, `[E]` to
-Evangelion, `[K]` to the djkaktus annexes, `[S]` to `refs/scp/f-assorted.md`.
+Source tags in the distillate map one-to-one onto `refs/`: `[C]` chiang, `[W]`
+watts, `[setting-c]` setting-c, `[TC]` setting-b, `[E]`
+neon-genesis-evangelion, `[K]` the djkaktus files, `[S]` scp/assorted.md.
 `[FB]` is doctrine arrived at in-house and has no source file.
 
 ## Working on it
