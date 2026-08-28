@@ -2,18 +2,20 @@
 
 *Companion to Fog Belt — Reference Register v2 (the master document). Spoilers throughout, by design.*
 
-Added August 2026. Sixteen articles, sixteen numbers, thirteen authors — registered by number rather than by hand, because these were pulled individually rather than as a body of work. Annexes C1–C6 cover djkaktus; Annex F covers everyone else, alongside the standalone addendum on SCP-8980.
+Added August 2026. Eighteen articles, sixteen named authors and one uncredited — registered by number rather than by hand, because these were pulled individually rather than as a body of work. Annexes C1–C6 cover djkaktus; Annex F covers everyone else, alongside the standalone addendum on SCP-8980.
 
 ---
 
 ### Covered in this part
 
+- SCP-231 — Special Personnel Requirements (DrClef)  
 - SCP-439 — Bone Hive (Multimoog)  
 - SCP-597 — The Mother of Them All (uncredited)  
 - SCP-610 — The Flesh that Hates (NekoChris)  
 - SCP-835 — Expunged Data Released (Dr Gears and DrClef)  
 - SCP-1348 — Inner Sanctum (ophite)  
 - SCP-1733 — Season Opener (bbaztek)  
+- SCP-2000 — Deus Ex Machina (HammerMaiden)  
 - SCP-2718 — What Happens After (Michael Atreus)  
 - SCP-2845 — THE DEER (Djoric)  
 - SCP-2852 — Cousin Johnny (kinchtheknifeblade)  
@@ -29,9 +31,51 @@ Added August 2026. Sixteen articles, sixteen numbers, thirteen authors — regis
 
 - SCP-7027, SCP-7034, SCP-7179 and SCP-7219 are all from the *ABCs of Death* sequence (SCP Anthology 2022), which is why their titles are alphabet-keyed. They can be read as a block.
 - SCP-2852 and SCP-3004 are both kinchtheknifeblade and are cross-referenced in-article; the second is the larger machine and the first is the domestic version of it.
+- SCP-231 and SCP-2000 were added after the first pass, from the candidate queue in `reference-scp-candidates.md`. Both are canonical enough that their earlier absence looked deliberate; they are here now on instruction.
+- SCP-231's Procedure 110-Montauk is never described in the article. The entry below treats that permanent withholding as the formal move it is and does not reconstruct it — which is also the only honest reading of the source.
+- DrClef appears twice: solo on SCP-231, and with Dr Gears on SCP-835.
 - SCP-186 — To End All Wars was on the original list and is **not** repeated here; it already has a full entry in Annex C1 (`reference-djkaktus-scp-049-to-2740.md`).
 - SCP-597 carries no author credit on the wiki — the licensebox renders an unfilled placeholder.
 - SCP-610's article is deliberately thin; the substance is in field logs L1–L5. L6 is referenced and was never written, and that absence is treated here as part of the design rather than as a gap.
+
+---
+
+#### SCP-231 — Special Personnel Requirements
+
+**Object class:** Keter
+
+**Summary:** SCP-231-7 is a young woman whose age the file gives only as a redacted range. She is the seventh and only surviving subject recovered after a police raid on a warehouse operated by a cult, the Children of the Scarlet King. Within twenty-four hours of recovery SCP-231-1 went into labour, gave birth, and produced an event with over three hundred confirmed casualties. From notebooks taken off the cultists the Foundation derived Procedure 110-Montauk, which is now carried out on SCP-231-7 at least once every twenty-four hours by six Class D personnel housed in cells adjacent to hers. What the procedure consists of, the document never says. The text walks up to it and stops: "[DATA EXPUNGED PER ORDER OF O5-██ … INFORMATION MOVED TO EYES-ONLY DOCUMENT 231-110-MONTAUK]". The withholding is permanent, and nothing later in the article walks it back.
+
+Around that hole the containment procedures are unusually specific. A soundproof cell. Cameras covering every inch of it, manned twenty-four hours a day, malfunctioning equipment replaced without delay by psychologically screened staff. Magnetic doors that open only on positive action from a control facility, including the doors linking her cell to the six others. She is restrained to a hospital bed at all times except during the procedure, hydrated by IV drip, fed twice daily through a tube by approved medical personnel "who have not taken the Hippocratic Oath." No narcotics, no anaesthesia, no unapproved medication under any circumstances. A Security Clearance 4/231 officer must monitor the procedure by camera throughout, "although the sound may be turned off if the vocalizations of SCP-231-7 become too distressing." Afterwards the six return to their own cells or their explosive collars are detonated.
+
+The section the article is named for is what stands where the procedure should be. Personnel must score at least 72 on the Milgram Obedience Examination. Ordinary screening against Axis II personality disorders is waived, provided the candidate retains the mental capacity to execute the procedure. Staff must be unmarried and have no offspring, and must demonstrate total loyalty to the Foundation. On site they are issued concealing helmets with integrated voice changers and may not remove their uniforms in the presence of other personnel; no official record is kept of who served on the project. Two months on, then one month rotated out for mandatory psychological counselling. Anyone who expresses sympathy toward SCP-231-7's plight, or a desire to rescue her, is transferred to another project without delay; anyone who acts on it is terminated. The document declines to describe an act and instead describes, in precise detail, the person it takes to perform one — and the specification does all the work the description would have done.
+
+Addendum 231-a lists the fates of SCP-231-1 through -6: each died, by childbirth, by suicide, in the course of an escape attempt or an attempted treatment, and each death produced an event. Addendum 231-b is an O5 memo answering staff who have written in. It concedes the point directly — Procedure 110-Montauk is as horrible as they have heard — confirms that staff leaving the project may take a Class A amnestic and that false memories are implanted, and justifies all of it against the possibility that SCP-231-7's event "could result in an XK class end-of-the-world scenario." The last four addenda are the article's real ending. SCP-231-7's emotional response to the procedure has been observed to be diminishing. Two options are tabled; Option 2 is authorised: administer a Class A amnestic to SCP-231-7, timed to fall during the procedure itself, returning her to base emotional response state. 231-e records that this worked, and that Dr. ████ subsequently committed suicide. 231-f, the final entry, recommends weekly administration to hold efficacy at its peak.
+
+**Themes:**
+
+- The bureaucratic sentence that cannot be finished — an institution that will do the thing but will not write it down
+- Utilitarian arithmetic run to its terminus: an XK-class scenario on one side of the ledger licenses anything at all on the other
+- Complicity as a hiring criterion. The Foundation does not corrupt its staff; it screens for people already willing, then hides their faces from each other
+- Consent engineered backwards — the amnestic is administered not to spare the subject but to restore her to the state in which the procedure works
+- Rescue reclassified as a disciplinary offence, with sympathy as its early warning sign
+
+**What makes it work:**
+
+- The central act is expunged and stays expunged. There is no log, no interview, no leaked fragment. The article's most famous feature is a blank, and it holds because the format supplies a legitimate in-world reason for the blank
+- The title points at the substitution. What the reader is handed in place of a procedure is a recruitment standard, and the standard is legible in a way the procedure never becomes
+- The specificity is displaced onto logistics — feeding schedules, collar protocols, door interlocks, a mute button — and the flatness of that detail is what establishes the scale of what is being managed
+- The Hippocratic Oath clause and the waived personality-disorder screening are single subordinate phrases, dropped without emphasis, that do more than any description could
+- The escalation is procedural rather than dramatic. Nothing is revealed at the end; a memo simply optimises the schedule, and the optimisation is the horror
+- The O5 memo pre-empts the reader's objection by voicing it, then answering it in the register of an internal FAQ — which converts moral protest into a workflow question with a documented response
+
+**The horror:**
+
+- A monitoring officer permitted to turn the sound off, and the fact that someone specified this in writing
+- Six people in adjacent cells, and explosive collars to ensure they walk back into them
+- Helmets with voice changers, no names on file, a two-month rotation — an atrocity administered by people made deliberately unidentifiable to one another
+- The weekly amnestic. She is returned, on schedule, to not knowing — so that every time is the first time, indefinitely
+- Dr. ████, who found the arrangement unbearable and is recorded in one clause of an addendum reporting the arrangement a success
 
 ---
 
@@ -266,6 +310,45 @@ The remaining entries have their playback numbers redacted. In one, Paul Pierce 
 - Proselytizers arguing that the children should be next, in a building where the children come back at the start of every playback
 - The arena lights turning deep red, and then the file ending
 - A DVR on a shelf at Site-██, containing everyone in that building, in the dark, indefinitely
+
+---
+
+#### SCP-2000 — Deus Ex Machina
+
+**Object class:** Thaumiel
+
+**Summary:** SCP-2000 is a subterranean Foundation installation under Yellowstone National Park, entered through what is disguised as a disused Park Ranger station, built to reconstruct civilization after a K-Class end-of-the-world scenario that could not be averted. The mission-critical section begins 75m down and extends to a depth of 100m. It runs on a liquid fluoride thorium reactor rated for 1 GW with a seventy-year life, backed by a geothermal generator that can hold the facility in stand-by indefinitely, and it can permanently sustain ten thousand people. The containment procedures are mostly maintenance: Scranton Reality Anchors every 20 m in a hexagonal array, five temporal stability devices, a pseudo-Riemannian manifold at the entrance to Sub-level 4 that must remain open at all times, monthly neural archetype scans for everyone assigned, weekly scans for anyone stationed on-site, and a clause stating that Level 4/2000 personnel stationed there are not permitted to leave the park for the duration of their assignment. The Description drops the two facts that matter almost in passing: the installation was constructed "sometime in the last ███ years," and "Since its inception, SCP-2000 has been activated at least twice." Records of its construction and of everything before the assumed first use are gone. Whether that blackout was accident or design, the article says, is impossible to determine.
+
+The machinery is 500,000 Bright/Zartion Hominid Replicators, capable at peak of producing 100,000 viable, non-anomalous humans per day after a five-day incubation. Raw material is drawn through an underground Riemannian transit pipe from the region's hot springs and magma flows; a memory bank holding data on all known human alleles lets the system recreate any lost human genome or generate as many new ones as repopulation requires. Then, sitting flat between one clinical sentence and the next, with no emphasis and no elaboration: "You can't bring them back." The next line continues the specification — humans produced this way can be advanced to any age desired without extending the five-day incubation.
+
+Procedure Lazarus-01 is the restart. The Ganymede protocol, indicating the Foundation has failed, unlocks SCP-2000's security systems; the procedure begins when an authorized Level 5/2000 employee inputs a desired "Resume Date" into the BZHR control unit. Life histories, neural archetype scans and genomes of Foundation personnel — all Level 4/2000 and above — are kept on file specifically so that Lazarus-01 can be initiated by "as few as one surviving human." Mission-critical personnel are printed first, from the most recent scan on file, and woken before any other system comes up. Then the prominent political and cultural leaders of the chosen period, from descriptions and genetic information on file. Then a global populace consistent with that period. Memories and life histories are installed by administration of Class-G hallucinogenics and developmental hypnotherapy. Administrative assets falsify dendrochronological, astronomical and radiometric dating records to maintain the appearance of historical continuity. Recovery to year-2000 capability is estimated at 25 to 50 years. At the conclusion of the procedure, amnestic agent ENUI-5 is released en masse, "causing all reconstructed humans to forget their affiliation with Foundation assets." History then resumes from the chosen date.
+
+Two addenda. In the first, a containment breach elsewhere causes a malfunction: for 25 days the facility produces over 10 million humanoid entities with an additional heart chamber, perfect polydactyly of the hands and feet, increased endocranial volume and height, and an abdominal organ of unknown purpose. All remain unconscious until they expire five weeks later. The cause — trans-temporal interaction, sabotage, information leak, or ordinary equipment failure — is undetermined, and the projected date for resumption of normal function is revised twice on the page without comment. In the second, a technician making repairs to SRA units in Sector 3382 finds human remains in an advanced state of decay. Clothing fragments date them at 450 to 700 years old — inside a facility whose own construction date is redacted. Valid Foundation security credentials for Dr. Alto Clef are recovered beside the body; no genetic match can be established. In a hermetically sealed plastic document sleeve is a note: "Why did we have to build this thing? *When* did we do it? *How long* have we been doing it? Do we even *know?!*" The article ends on the flattest possible dismissal — subsequent interrogation has verified that Dr. Clef has no knowledge of the event and is ignorant as to the purpose of the message — and stops there.
+
+**Themes:**
+
+- Continuity as a manufactured product: civilization does not survive, it is re-issued, and the difference is administrative
+- The archive that outlives the thing it records, and the archive that has been edited by its own custodians
+- A doomsday device operable by one person, which makes the survival of humanity contingent on a single set of credentials and a single date typed into a console
+- Amnesia as infrastructure — the last step of saving the world is making the world forget it was saved
+- Institutional memory as the only evidence of what is real, and an institution that has lost its own
+
+**What makes it work:**
+
+- The whole article is a facility spec sheet. Reactor ratings, incubation periods, personnel capacity. The horror arrives in the same typeface as the plumbing
+- "You can't bring them back" is placed mid-paragraph, unmarked, between two engineering sentences, and never returned to. The article states the entire moral stake once and moves on to age-setting
+- "Activated at least twice" is dropped early and casually and does nothing until the addenda; the reader assembles the implication rather than being handed it
+- The 450-to-700-year-old body is the reveal, and it is delivered as a maintenance report by an unnamed technician making repairs to something else
+- The dating chain is what does the damage: the remains are dated by clothing, historical dating methods are falsified by the procedure itself, and the facility's construction date is redacted — every instrument for locating the present has been compromised by the article's own mechanism
+- The final move is a refusal. The note asks the question, Clef does not recognise his own credentials, and the Foundation closes the file. Nobody in the article is in a position to answer, and the article does not pretend otherwise
+
+**The horror:**
+
+- Being reconstructed and told nothing, walking around inside an installed childhood, dosed at the end so the seam never shows
+- A dead man's valid credentials next to a body that is not his, four hundred years deep in a facility that keeps no record of when it was built
+- The note is not a warning about the machine. It is written by someone who realised he was already downstream of it
+- The reconstruction order — Foundation staff first, then leaders, then everyone else — read as a statement about who counts
+- The distinction the article raises and declines to settle: nothing in the text separates a first-run humanity from a reconstructed one, and no reader has access to evidence the article has not already shown can be forged
 
 ---
 
