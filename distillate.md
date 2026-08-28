@@ -4,7 +4,7 @@
 
 **Source tags:** `[C]` Chiang · `[W]` Watts · `[setting-c]` setting-c · `[TC]` setting-b · `[K]` djkaktus · `[S]` SCP, wider wiki (Annex F) · `[E]` Neon Genesis Evangelion · `[FB]` Fog Belt originals (doctrine arrived at in-house). Tags mark where a move is best demonstrated, not where it's allowed.
 
-**Where the evidence lives:** `refs/chiang.md` · `refs/watts.md` · `refs/setting-c.md` · `refs/setting-b.md` · `refs/neon-genesis-evangelion.md` · `refs/julian-jaynes.md` · the djkaktus corpus, six files (`refs/scp/djkaktus-*.md`) · nineteen assorted SCP articles by other authors (`refs/scp/assorted.md`) · sixty-three triaged but unregistered articles (`refs/scp/candidates.md`) · the slate itself (`stories/`, 24 developed and one bench file of undeveloped concepts).
+**Where the evidence lives:** `refs/chiang.md` · `refs/watts.md` · `refs/setting-c.md` · `refs/setting-b.md` · `refs/evangelion.md` · `refs/jaynes.md` · the djkaktus corpus, six files (`refs/scp/djkaktus-*.md`) · nineteen assorted SCP articles by other authors (`refs/scp/assorted.md`) · sixty-three triaged but unregistered articles (`refs/scp/candidates.md`) · the slate itself (`stories/`, 24 developed and one bench file of undeveloped concepts).
 
 **Standing note.** *(A3, 2026-08-26)* The taste profile is explicitly evolving. Old rules get invalidated as the corpus is re-read and recycled. **Do not treat anything in this document as canonical against a live instinct.** It records what has worked; it is not a constitution. Where a rule has been amended, the amendment sits inline with its date rather than in a separate log.
 

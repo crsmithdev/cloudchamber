@@ -17,8 +17,8 @@ refs/                        source annexes; read, never edited
   watts.md
   setting-c.md
   setting-b.md
-  neon-genesis-evangelion.md
-  julian-jaynes.md
+  evangelion.md
+  jaynes.md
   scp/djkaktus-<range>.md    the djkaktus corpus, five files by SCP number
   scp/djkaktus-canons-and-tales.md
   scp/assorted.md            19 articles by other authors
@@ -26,8 +26,8 @@ refs/                        source annexes; read, never edited
 ```
 
 Source tags in the distillate map one-to-one onto `refs/`: `[C]` chiang, `[W]`
-watts, `[setting-c]` setting-c, `[TC]` setting-b, `[E]`
-neon-genesis-evangelion, `[K]` the djkaktus files, `[S]` scp/assorted.md.
+watts, `[setting-c]` setting-c, `[TC]` setting-b, `[E]` evangelion,
+`[K]` the djkaktus files, `[S]` scp/assorted.md.
 `[FB]` is doctrine arrived at in-house and has no source file.
 
 ## Working on it
