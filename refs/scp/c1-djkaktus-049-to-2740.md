@@ -29,7 +29,7 @@
 - SCP-2670 — Somebody Else's God  
 - SCP-2740 — It Wasn't There
 
-**Removed 2026-08-28.** The following entries were stripped from this annex as out of register — their net register is comic or heartwarming rather than horrific, and the corpus does not use that mode (see Cut 3 in `reference-distillate-cuts.md`): SCP-049-J, SCP-1781, SCP-2090, SCP-2398, SCP-2522, SCP-2576. The retrieval notes at the foot of this file still describe the original pass and its counts, and are left as written.
+**Removed 2026-08-28.** The following entries were stripped from this annex as out of register — their net register is comic or heartwarming rather than horrific, and the corpus does not use that mode (see Cut 3 in `distillate-cuts.md`): SCP-049-J, SCP-1781, SCP-2090, SCP-2398, SCP-2522, SCP-2576. The retrieval notes at the foot of this file still describe the original pass and its counts, and are left as written.
 
 ---
 

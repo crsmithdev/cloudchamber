@@ -4,7 +4,7 @@
 
 **Source tags:** `[C]` Chiang · `[W]` Watts · `[setting-c]` setting-c · `[TC]` setting-b · `[K]` djkaktus · `[S]` SCP, wider wiki (Annex F) · `[E]` Neon Genesis Evangelion · `[FB]` Fog Belt originals (doctrine arrived at in-house). Tags mark where a move is best demonstrated, not where it's allowed.
 
-**Where the evidence lives:** `reference-chiang-and-watts.md` · `reference-setting-c-and-setting-b.md` · `reference-neon-genesis-evangelion.md` · `reference-julian-jaynes.md` · Annexes C1–C6, the djkaktus corpus (`reference-djkaktus-*.md`) · Annex F, eighteen assorted SCP articles (`reference-scp-assorted.md`) · the standalone on SCP-8980 (`reference-scp-8980-ergophobia.md`) · sixty-three triaged but unregistered articles (`reference-scp-candidates.md`) · the slate itself (`ideas-v2.md`, 24 stories) · what has been cut from this document and why (`reference-distillate-cuts.md`).
+**Where the evidence lives:** `refs/chiang-and-watts.md` · `refs/setting-c-and-setting-b.md` · `refs/neon-genesis-evangelion.md` · `refs/julian-jaynes.md` · Annexes C1–C6, the djkaktus corpus (`refs/scp/c*-djkaktus-*.md`) · Annex F, eighteen assorted SCP articles (`refs/scp/f-assorted.md`) · the standalone on SCP-8980 (`refs/scp/scp-8980-ergophobia.md`) · sixty-three triaged but unregistered articles (`refs/scp/candidates.md`) · the slate itself (`ideas-v2.md`, 24 stories) · what has been cut from this document and why (`distillate-cuts.md`).
 
 **Standing note.** *(A3, 2026-08-26)* The taste profile is explicitly evolving. Old rules get invalidated as the corpus is re-read and recycled. **Do not treat anything in this document as canonical against a live instinct.** It records what has worked; it is not a constitution. Where a rule has been amended, the amendment sits inline with its date rather than in a separate log.
 
@@ -26,7 +26,7 @@
 
 ## Recurring shapes
 
-*Descriptive, not prescriptive. Configurations the corpus has actually used. Stories routinely run two at once, and the best ones have found a shape that isn't here yet. Coverage story-by-story is in `reference-distillate-cuts.md`.*
+*Descriptive, not prescriptive. Configurations the corpus has actually used. Stories routinely run two at once, and the best ones have found a shape that isn't here yet. Coverage story-by-story is in `distillate-cuts.md`.*
 
 ### The maintained schedule
 
@@ -332,7 +332,7 @@ If the terrible thing could be done by a machine instead, it is engineering. If 
 ---
 # 2. CRAFT MOVES
 
-*The toolkit. Seventy-eight named moves in seven families. Numbers are stable handles, not an order of preference — M1–M55 keep the numbering they have always had, and the Annex F additions run from M56. M27 was withdrawn on 2026-08-28 — see `reference-distillate-cuts.md`.*
+*The toolkit. Seventy-eight named moves in seven families. Numbers are stable handles, not an order of preference — M1–M55 keep the numbering they have always had, and the Annex F additions run from M56. M27 was withdrawn on 2026-08-28 — see `distillate-cuts.md`.*
 
 ### 2.1 Container — choosing the form
 
@@ -737,4 +737,4 @@ If the terrible thing could be done by a machine instead, it is engineering. If 
 
 **Redaction with the key attached** — SCP-835. `[S]`
 
-**Sixty-three further candidates, triaged and unregistered** — `reference-scp-candidates.md`. Tier 1 there (SCP-2400, SCP-2275, SCP-2140, SCP-3309) is the strongest unmined material available.
+**Sixty-three further candidates, triaged and unregistered** — `refs/scp/candidates.md`. Tier 1 there (SCP-2400, SCP-2275, SCP-2140, SCP-3309) is the strongest unmined material available.

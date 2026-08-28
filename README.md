@@ -5,16 +5,33 @@ Horror anthology working repo. **This repo is the source of truth.**
 ## Layout
 
 ```
+distillate.md                the working playbook -- generate from section 0
+distillate-cuts.md           record of material removed from it, and why
+
 ideas-v1.md                  the greenlit slate (v1)
-ideas-v2-working.md          append-only verbatim archive; PART N per source doc
 ideas-v2.md                  GENERATED -- do not hand-edit
+ideas-v2-working.md          append-only verbatim archive; PART N per source doc
 parts/00-front-matter.md     schema + <!-- CONTENTS-TABLE --> marker
 parts/99-slate-notes.md      format rule + provenance
 stories/NN-slug.md           one story each (front matter: number, heading,
                              contents_cell, status)
 build.py                     regenerate / verify ideas-v2.md
-reference-*.md               distillate, its cuts record, and source annexes
+
+refs/                        source annexes; read, never edited
+  chiang-and-watts.md
+  setting-c-and-setting-b.md
+  neon-genesis-evangelion.md
+  julian-jaynes.md
+  scp/c1..c6-djkaktus-*.md   the djkaktus corpus, Annexes C1-C6
+  scp/f-assorted.md          Annex F -- 18 articles, wider wiki
+  scp/scp-8980-ergophobia.md standalone addendum
+  scp/candidates.md          63 triaged, unregistered articles
 ```
+
+Source tags in the distillate map to `refs/`: `[C]` and `[W]` to
+chiang-and-watts, `[setting-c]` and `[TC]` to the setting-c file, `[E]` to
+Evangelion, `[K]` to the djkaktus annexes, `[S]` to `refs/scp/f-assorted.md`.
+`[FB]` is doctrine arrived at in-house and has no source file.
 
 ## Working on it
 

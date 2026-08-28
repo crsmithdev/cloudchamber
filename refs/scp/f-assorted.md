@@ -31,10 +31,10 @@ Added August 2026. Eighteen articles, sixteen named authors and one uncredited �
 
 - SCP-7027, SCP-7034, SCP-7179 and SCP-7219 are all from the *ABCs of Death* sequence (SCP Anthology 2022), which is why their titles are alphabet-keyed. They can be read as a block.
 - SCP-2852 and SCP-3004 are both kinchtheknifeblade and are cross-referenced in-article; the second is the larger machine and the first is the domestic version of it.
-- SCP-231 and SCP-2000 were added after the first pass, from the candidate queue in `reference-scp-candidates.md`. Both are canonical enough that their earlier absence looked deliberate; they are here now on instruction.
+- SCP-231 and SCP-2000 were added after the first pass, from the candidate queue in `refs/scp/candidates.md`. Both are canonical enough that their earlier absence looked deliberate; they are here now on instruction.
 - SCP-231's Procedure 110-Montauk is never described in the article. The entry below treats that permanent withholding as the formal move it is and does not reconstruct it — which is also the only honest reading of the source.
 - DrClef appears twice: solo on SCP-231, and with Dr Gears on SCP-835.
-- SCP-186 — To End All Wars was on the original list and is **not** repeated here; it already has a full entry in Annex C1 (`reference-djkaktus-scp-049-to-2740.md`).
+- SCP-186 — To End All Wars was on the original list and is **not** repeated here; it already has a full entry in Annex C1 (`refs/scp/c1-djkaktus-049-to-2740.md`).
 - SCP-597 carries no author credit on the wiki — the licensebox renders an unfilled placeholder.
 - SCP-610's article is deliberately thin; the substance is in field logs L1–L5. L6 is referenced and was never written, and that absence is treated here as part of the design rather than as a gap.
 

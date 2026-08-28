@@ -2,7 +2,7 @@
 
 *Sixty-three unregistered SCP articles found by hunting the register's own taste profile across six veins. Not annex entries — pitches, for triage. Every article below was fetched and verified to say what the pitch says it says; confidence is marked where it is not high. Spoilers throughout, by design.*
 
-**Method.** Six parallel sweeps, one per vein, each auditing candidates against the Six Questions and the guardrails in `reference-distillate.md`, each excluding the 119 articles already in the register. Cross-vein hits — articles that surfaced independently in two or more sweeps — are marked **✦** and are the strongest signal in the document.
+**Method.** Six parallel sweeps, one per vein, each auditing candidates against the Six Questions and the guardrails in `distillate.md`, each excluding the 119 articles already in the register. Cross-vein hits — articles that surfaced independently in two or more sweeps — are marked **✦** and are the strongest signal in the document.
 
 ---
 

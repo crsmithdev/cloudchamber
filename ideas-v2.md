@@ -513,7 +513,7 @@ The turn arrives in two movements. The cohort's audiograms are anticipatory — 
 
 ## 17. Recognition
 
-*Supersedes the `fog-belt-recognition.md` placeholder. Note the doctrine amendments at the foot of this entry — two standing rules were revised in the session that produced this story, and they are now carried into `reference-distillate.md` as A1 and A2.*
+*Supersedes the `fog-belt-recognition.md` placeholder. Note the doctrine amendments at the foot of this entry — two standing rules were revised in the session that produced this story, and they are now carried into `distillate.md` as A1 and A2.*
 
 ### Summary
 
@@ -546,7 +546,7 @@ God is real here and prayer works and contrition is heard. The apostate reading 
 
 #### Doctrine amendments from this session (Chris, 2026-08-26)
 
-*These revise standing entries in the taste profile. They have since been carried into `reference-distillate.md` as standing amendments A1–A3.*
+*These revise standing entries in the taste profile. They have since been carried into `distillate.md` as standing amendments A1–A3.*
 
 1. **Institutions absolutely can be the villain.** Previously the register leaned on "nobody is evil, several people are voting responsibly" as near-absolute. Amended: institutions are the villain frequently, and that is available as a straight reading, not only as an arithmetic accident. The reveal does not always have to exonerate.
 2. **God is available, and is alien.** A far less anthropocentric divinity is in the register — one whose understanding of persons, harm, justice, and repair is genuinely different from ours, and whose correct and attentive responses to sincere petition are sometimes violently awful for the people receiving them. Not malice, not indifference, not trickster-logic: a different ontology, applied faithfully.
@@ -975,7 +975,7 @@ Reconstructed from a voice session whose chat history was lost to a client-side 
 
 ### Part four — story 17 (Recognition)
 
-New original, developed in voice session 2026-08-26, not on the greenlit slate. Supersedes the `fog-belt-recognition.md` placeholder. Carries the three doctrine amendments now recorded in `reference-distillate.md`.
+New original, developed in voice session 2026-08-26, not on the greenlit slate. Supersedes the `fog-belt-recognition.md` placeholder. Carries the three doctrine amendments now recorded in `distillate.md`.
 
 ### Outstanding housekeeping
 
