@@ -31,7 +31,7 @@ Chiang supplies the correctness. Watts supplies the reason the cost is worth pay
 - The scary thing is an idea. Cold, conceptual, systems-scale.  
 - The horror is institutional; personal devastation is the residue, not the subject.  
 - **Institutions can be the villain** *(amended — see A1)*. The default remains that cruelty is a byproduct of somebody's reasonable programme and the programme is working — but a straight reading in which the institution simply *is* the antagonist is available, and does not need laundering through arithmetic. The reveal does not always have to exonerate.  
-- The narrator is good at their job and warm.  
+- The narrator is good at their job and warm. *(Per A4 there may be more than one; the requirement applies to each voice.)*  
 - Refuse the compensating virtue — no human quality gets to be the secret weapon.  
 - Withhold the distinction. Where two mechanisms are both available, don't resolve it.  
 - End one beat past the horror, on something small and administrative, correctly filed.
@@ -43,6 +43,8 @@ Chiang supplies the correctness. Watts supplies the reason the cost is worth pay
 **A1 — Institutions can be the villain.** *(2026-08-26)* The register previously leaned on *nobody is evil, several people are voting responsibly* as near-absolute. Amended: institutions are the villain frequently, and that is available as a straight reading rather than only as an arithmetic accident. **The reveal does not always have to exonerate.** The competence requirement is unchanged — what became optional is the exoneration, not the rigour.
 
 **A2 — God is available, and is alien.** *(2026-08-26)* A far less anthropocentric divinity is in the register: one whose understanding of persons, harm, justice and repair is genuinely not ours, and whose correct and attentive responses to sincere petition are sometimes violently awful for the people receiving them. Not malice, not indifference, not trickster-logic — a different ontology, applied faithfully.
+
+**A4 — One narrator is a default, not a constraint.** *(2026-08-27)* The single-voice format was never written down here as a rule, but it was operating as one. It is now explicitly optional. Multi-voice and multi-register structures are available where the premise requires them — and some premises do: if the loss the story describes is a loss of the faculty needed to notice it, then anyone who can narrate it clearly is by definition from before it, and one voice cannot carry the piece. The complicity requirement is unchanged. Every voice must still be doing a real job in a real document, and every voice must still be warm, articulate and convinced it is fine. Source: the format notes to *Designated Pathogen Free* (generational accounts) and *Dwell Time* (two registers).
 
 **A3 — The taste profile is explicitly evolving.** *(2026-08-26)* Old rules get invalidated as the corpus is re-read and recycled. **Do not treat any prior rule here as canonical against a live instinct.** This document records what has worked; it is not a constitution.
 
@@ -189,7 +191,7 @@ Chiang supplies the correctness. Watts supplies the reason the cost is worth pay
 
 # 2\. CRAFT MOVES
 
-*The toolkit. Deduped to fifty-two named moves in six families.*
+*The toolkit. Deduped to fifty-five named moves in six families.*
 
 ### 2.1 Container — choosing the form
 
@@ -239,6 +241,9 @@ Chiang supplies the correctness. Watts supplies the reason the cost is worth pay
 - **M35. The only human voice is captured.** Warm, grateful, completely taken — which relocates the horror from the creature to the manipulation. `[K]`  
 - **M36. Voice degradation across documents.** Syntax loosening, imagery narrowing, speaker labels beginning to lie. Dramatise destruction without leaving the form. `[K]`  
 - **M37. The register is the weapon.** Describe forty years of a ruined life in the same tone as the housing material and the winding mechanism. `[C]`  
+- **M53. The fixed form, drifting occupants.** A sequence of first-person accounts, one per generation or interval, all the *same kind* of document — so the form stays fixed while the people inside it change. The reader does the arithmetic across the gaps; nobody in the story ever does. `[FB]`
+- **M54. Two registers, one of which has no format.** A filed, procedural document, and beside it a present-tense account for which no reporting format exists — because there isn't one. The second breaks out of the first. `[FB]`
+- **M55. Wide shots between the voices.** Interleave a narrator's-eye view of the world at each interval, so the reader sees what the first-person accounts structurally cannot. `[FB]`
 - **M38. Typographic reveal.** Do it in the speaker label, the strikethrough class line, the corrupted heading — before any prose states it. `[K]`
 
 ### 2.5 Endings
