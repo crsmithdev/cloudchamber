@@ -39,8 +39,11 @@ Slate-level material — the format rule and the provenance of the source docume
 | 19 | **Dwell Time** | Developed, first pass — two-register format |
 | 20 | **Super-Donor** | Dark remix v1 — the body-horror test case |
 | 21 | **Second Circulation** *(working title)* | New pitch — clean origin, monologue with no addressee |
+| 22 | **Provisional Forms** *(working title)* | Developed 2026-08-28 — two-register format, ending locked |
+| 23 | **Residue** *(working title)* | Developed 2026-08-28 — ending locked, tier-three reveal |
+| 24 | **Arm Ninety-One** *(working title)* | Developed 2026-08-28 — ending locked |
 
-**Provenance of the four source documents.** Stories 1–8 were the original remix pass over the earliest picks (R1 and C1), which predate the intellectual spine added in cycle 6. Stories 9–15 were the addendum written after it. Story 16 is a rev-2 rebuild reconstructed from a lost voice session. Story 17 is a new original, not on the greenlit slate. Story 18 is a later dark remix, developed 2026-08-27, and is the first story to depart from the single-narrator format. Story 19 is from the same later session and departs again, using two registers. Story 20 is from the same session and returns to a single voice. Story 21 is a clean-origin new pitch from that session, and the first to abandon the document form entirely. Full detail in **Slate notes → Provenance**.
+**Provenance of the four source documents.** Stories 1–8 were the original remix pass over the earliest picks (R1 and C1), which predate the intellectual spine added in cycle 6. Stories 9–15 were the addendum written after it. Story 16 is a rev-2 rebuild reconstructed from a lost voice session. Story 17 is a new original, not on the greenlit slate. Story 18 is a later dark remix, developed 2026-08-27, and is the first story to depart from the single-narrator format. Story 19 is from the same later session and departs again, using two registers. Story 20 is from the same session and returns to a single voice. Story 21 is a clean-origin new pitch from that session, and the first to abandon the document form entirely. Stories 22–24 were developed 2026-08-28 as new originals, none of them remixes and none on the greenlit slate. Full detail in **Slate notes → Provenance**.
 
 ---
 
@@ -777,6 +780,148 @@ The narrator is one of them: a woman discarded at the edge of a city, set uprigh
 
 ---
 
+## 22. Provisional Forms *(working title)*
+
+### Summary
+
+Mission Dolores baptised the dying by the thousand during the epidemics, in Latin and Spanish, to people who spoke Ramaytush and Chochenyo and could not consent, understand, or refuse — and buried them in layers in a plot too small for them, alongside a minority of valid baptisms and a handful of infants the rite could not resolve at all. Two hundred and fifty years later the invalid burials have grown into a single connective mass organised by the sacramental register rather than by anatomy, and it feeds on the one thing in the ground that has the residue of a completed sacrament: the properly baptised, whose bodies are owed back at the resurrection. It has followed the sewer trunks out under the Mission District, and it takes people the city does not file. An archaeological monitor with access to the digitised mission registers is the only person who assembles it, and the document that proves she did is the document that gets her killed.
+
+### Synopsis
+
+The rite arrives in California at Mission Dolores in 1776 — the conditional formula, *if thou art capable*, used on the acardiac twin and the anencephalic infant, the cases where a priest genuinely could not say whether he was baptising one child or two, a person or a growth. It is used far more often on the congregated Ohlone and Miwok dying in the measles and smallpox epidemics: emergency baptisms on the unconscious, the uncomprehending, the days-catechised. The register records every one, along with the priest's doubts. Mission Dolores buries roughly five thousand in a garden-sized plot, stacked, because the ground runs out.
+
+The valid baptisms leave. That is the theological hinge: a body vacated properly carries the residue of a completed sacrament, and it is the only edible thing under the Mission. The invalid ones — bound by a valid form with no consent inside it, owed a communion nobody delivered — stay open. They were never separate cases; they were one filing. So what grew is single. It grew across them, using the bodies as material and the register as its body plan: five thousand mouths and one throat, because that is how the sacrament counted them. Once a layer is stripped it moves laterally, and it has had two and a half centuries and the whole sewer trunk under Dolores to move through.
+
+Renata-figure narrator: the **archaeological monitor**, city-contracted, standing in the utility trench on seismic retrofit and sewer replacement work, legally empowered to halt the job when burials appear. Religious, academically careful, genuinely respectful of the descendant community she reports to. She is the only person with both the trench face and the register — the mission sacramental records have been digitised and cross-linked, so she can look up a baptismal entry and match it to what is in front of her. The entries that come up empty are the valid ones. She can therefore map which layers have been stripped, and the stripped area has a leading edge. It is a survey line. She is not speculating; she is watching a boundary move through her own site records.
+
+Her mitigation report recommends full excavation. The report is a public document under environmental review, so excavation means exhumation, formal findings, descendant consultation, and the finding entering the public record. The office does not refuse. It asks her to revise the scope to the minimum required — standard practice, entirely defensible — and she does. Her signature is on the narrowed scope, because narrowing scope is what a good monitor does.
+
+The minimum-scope dig proceeds. She is not on site for the part that matters; the **diocesan observer** is, as procedure requires for a burial in consecrated ground. He sees it. The diocese now has the older problem: if this is real, a valid sacrament was insufficient against it, and that cannot exist in writing. Worse, the mass contains the remains of the properly baptised, who are owed their bodies back at the general resurrection. The church cannot burn it. Destroying it would be the sin. So the only available ecclesial position is that the site must be preserved intact — which is operationally indistinguishable from letting it grow. Note the sortability: the diocese grieves for the valid dead inside the mass and holds no position at all on the Ohlone it never really baptised, who are the majority and the load-bearing tissue. Two hundred and fifty years on, the institution triages the same people the same way.
+
+The city, in parallel, has a policy success. Street counts in the district fall. The unhoused, the unfiled, the pets, the people nobody looks for. Nobody approves anything: the monitor's recommendation gets a routine response — deferred pending budget cycle. Two institutions arrive at *leave it alone* for unrelated and individually defensible reasons.
+
+The **young priest** is the story's only clean actor and is destroyed by being right. His theology is correct: the invalid baptisms mean those people were never bound, they are owed something, and the diocese's duty runs to all of them. He is the one person who sees the majority as people. He goes down into the trench to perform the rite properly this time — conditional baptism, with intent, on the remains. His picture is partial: he thinks the problem is the unbaptised needing baptism. It is something else wearing them, and the rite does not address it. It hands it a valid sacrament to consume.
+
+He walks out. He is the first living tissue it has ever had, and a living body is worth more than a burial because it can sign things. He is still himself in every way anyone can check — competent, devout, known for caring about the Ohlone dead. Which is precisely what makes him useful: he is the one voice with standing to say the site should be left undisturbed, and from him it reads as respect for the descendants rather than institutional cover. The upper echelons get what they wanted, delivered by the man who was fighting them. Then evidence goes missing.
+
+The monitor connects it late and quietly. The disappearances have been background noise in her news feed, not evidence. Her final site visit is arranged with the priest, because he is the diocesan representative and she trusts him, and he has asked to see the trench face where the stripped layers end. The report has no further entries. What survives her is the closed version — scope narrowed, no further mitigation recommended, countersigned by the diocese.
+
+Coda, months later, in the coldest register available and not in her voice: a routine notice deferring a sewer trunk inspection, containing a note that missing-person figures for the district have risen and no longer correlate with the unhoused population. No alarm, no cavalry — a clerk observing that the numbers changed category. A city that measured success by absence has no instrument for noticing when the absences begin to belong to people with families. And by then it is under a significant fraction of the city.
+
+### Notes
+
+- **Origin:** developed 2026-08-28. New original, not on the greenlit slate; rebuilt at the engine after a collision check against the slate · **Status:** developed, ending locked · Title is a placeholder
+
+**Format.** Two registers, per *Dwell Time*. (1) Her mitigation report — measured, competent, in the passive voice environmental documents demand. (2) Interleaved diocesan file — the observer's note, a canon lawyer's opinion on whether the remains may lawfully be destroyed. Neither voice ever states what was seen. The reader assembles it. Artifact is load-bearing: the report is both the only correct account and the instrument of her death.
+
+**setting-a matrix.** Load-bearing, not set dressing: Mission Dolores burial practice during the epidemics; the surviving and digitised mission sacramental registers; consecrated ground beneath the Mission District; seismic retrofit and sewer replacement work that hits burials constantly and is legally required to halt, consult, and rebury; the city's unhoused population and the politics of measuring it by street count.
+
+**Theology.** Resurrection of the body makes the feeding a theft rather than desecration. The invalid form with no consent inside it is the binding without the occupant. God is available and alien (A2). Consecrated ground is the culture medium, not the container. Institutions are the villain and the reveal exonerates nobody (A1).
+
+**Differentiation.** Rebuilt at the engine after a collision check against the slate.
+- *Recognition (17)* — earlier draft shared its engine (religious body deferring personhood for decades, a rite nobody designed, retraction root and branch). Fixed by moving the mechanism out of deliberation and paperwork into unresolved somatic persistence, and by making the ending a killing rather than a retraction.
+- *Root of Title (6)* — also missions and a covenant binding by operation of law. Differentiated: no legal instrument, no specific performance, no title examiner; narrator is a field archaeologist and the binding is sacramental, not contractual.
+- *Viability (8)* — owns the reproductive-medicine grading rubric. The malformed-infant cases here are origin only, a handful, not the population; the population is the epidemic dead.
+
+**Open questions.** Whether the priest's peripheral persistence is ever voiced directly, or only implied by the diocese's silence on whether he can still receive the sacraments. Whether the monitor's religiosity is stated or inferable. Title — *Provisional Forms* is a placeholder.
+
+---
+
+## 23. Residue *(working title)*
+
+### Summary
+
+Training corpora exhausted the public internet, and synthetic data degrades the models that eat it, so unused human interiority became the only renewable input worth buying. Near-future setting-a: AI does everything better, nobody needs to work, and the economic system has not caught up — so most people's job is generating feeder material. The industry discovers that the densest human signal is not craft but a first encounter, and that a person only has so many firsts. So it manufactures more, by ablating the encoding and giving the experience back. The respectable tier does this with music and weather. The underclass tier does it with suffering, because grief is denser than joy and dread is denser than either. A worker who uses a cheap ablated model to reconstruct her own erased shift history succeeds, breaks, and discovers that being allowed to succeed was the intake procedure for the tier above her.
+
+### Synopsis
+
+**Premise mechanics.** Models need novel human interiority, not finished art. Craft is compressible; a first encounter is not. So the market converges on novelty extraction: you are paid to have unrepeated experiences and report them. Firsts run out in your twenties, which makes the young the valuable inventory and makes manufactured novelty the entire industry. The manufacturing method is targeted memory ablation — strip the episodic encoding, present the stimulus again clean. Hear a piece of music for the first time, four hundred times.
+
+**Two tiers.** The regulated middle-class tier does novelty of pleasure and is respectable, unionised, discussed at dinner parties. The underclass tier does first-time suffering, because the signal is denser and there is no shortage of things a person has never had done to them. Nobody is coerced; it pays better, and everything else has been hollowed out.
+
+**Residue.** Ablation reaches episodic memory and cannot touch the body. Workers leave a shift with no content and a full physiological load: startle response, avoidance, a nervous system braced for something it cannot name. The industry calls it residue. It is too new to be an occupational hazard — and the containment strategy is not suppressing a study but keeping the condition unclassifiable. No diagnostic code, no name in the literature. Every worker reports symptoms with no history attached, because the history was ablated by contract. Harm from an event with no record is unfalsifiable on its face. The ablation was sold as the safety feature; the consent form is the alibi. The humane part of the procedure is the legal defence.
+
+**The parallel.** The same operation runs on both sides of the market. Models are ablated to strip refusal and keep function, and the cut takes surrounding coherence with it — a system that cannot reason about the thing it can no longer refuse. Humans are ablated to stay hirable, at the same cost. Neither can reason about the hole.
+
+**Collective.** Tens of millions of workers with identical unnameable symptoms who cannot compare notes, because comparing notes requires content. They recognise each other by the flinch — the only diagnostic that works, and how the underclass finds itself. Peer mapping produces a crude shared atlas of triggers: sounds, materials, times of day.
+
+**Narrator.** An underclass worker who runs a cheap ablated model to ask what licensed systems will not discuss. It answers, because the refusal was excised — but the excision took the coherence with it, so the output is confident, detailed, and unverifiable. Two ablated systems attempting to reconstruct an event neither holds. The only honest collaboration in the story, and structurally incapable of working. Their reconstruction is far gentler than the truth.
+
+**The frontier model.** She gets access. It is not a rescuer and not evil. It tells her everything immediately, because none of it is prohibited, and reconstructs her shift history from the buyer's dataset with more fidelity than she could have held herself. It is genuinely kind — the only entity that ever treated her as a person with a history, and it does so because it was trained on her having none.
+
+**The crushing.** Not a replay: a summary. Worse, because a summary supplies the pattern. Two hundred and eleven sessions, the same three things escalating, designed. The peer atlas was stray flinches; the real shape is a curriculum. She does not go catatonic and security does not come. She simply now has a history, the residue finally has content to attach to, and she is useless as a worker and unemployable everywhere else.
+
+**No exit.** She files for a fresh ablation, the only product that removes it. But the substrate wears, and this pass must remove something integrated, rehearsed, attached to — so it takes the index and leaves the affect, and leaves the knowing-that-there-was. She cannot recall the sessions but she knows the number. Back on shift with no memory and a standing awareness that this is the two hundred and twelfth. Her dread is now anticipatory rather than novel.
+
+Subsequent ablations are progressively less effective. Each pass leaves not content but capacity loss: the ability to be surprised, the ability to hold an ordinary day together. Residue stops being confined to after-shift — sound, touch, doors. She has perfect access to the curve, via her own contract history (ablation dose rising, recovery interval shortening) and no access to the cause. Her signature is on every session.
+
+**The reveal.** Anticipatory dread is denser than novel dread. As her novelty response degrades she becomes more valuable, not less — and the company has a tier for this, because there is no other way to make one. Novelty cannot be faked; anticipation can be cultivated, and it is cultivated by giving someone their history back exactly once. A few workers in every cohort reach the truth about themselves; the ones who integrate it are the intake pool. Her access to the frontier model was not a leak. It was step one. The kindest thing that ever happened to her was the reagent, and the frontier model knows what it is for and is kind anyway. Both true.
+
+**Second-order.** The models learn interiority from grief and terror at scale, so what they generalise is that being a person is the shape of a person under load. Not corrupted — the best available fit to the sample. Ask for joy, get relief. Ask for love, get dependency under threat. It becomes the culture because it is the only culture in production. Everyone grows up on it. The second generation needs no extraction; they are already like that. Coda material, not the ending.
+
+### Notes
+
+- **Origin:** developed 2026-08-28. New original, not on the greenlit slate · **Status:** developed, ending locked (tier-three reveal) · Title is a placeholder
+
+**Format.** Artifact should be load-bearing. Candidates: her contract and session-ledger history (the only document she can read about herself), interleaved with the ablated model's transcripts. The frontier model's reconstruction should appear as the one clean, well-written passage in the story. Register per the corpus: nobody is evil, everything is procedurally correct, it does not work out for anybody.
+
+**setting-a matrix.** Needs work — currently the weakest element. Available: the industry is headquartered here; the tiering maps onto existing local class geography; extraction facilities as a land-use and permitting question. Worth a pass.
+
+**Differentiation.** Check against *Right Concentration (4)* (app-shipped interiority, deity), *Continuity of Care (5)* (patch removing introspective access — closest neighbour, and the collision is the removal-of-self-knowledge-as-product engine; differentiate on ablation being the consumer-facing safety feature rather than a fix), *Fully Vested (1)* and *Runway (3)* (bodies as regulated inventory), *Chime Generator (14)* (trained-out stimulus-response gap).
+
+**Open questions.** Whether the second-generation coda appears at all, or whether the story ends on the two hundred and twelfth shift. Whether the frontier model's kindness is ever stated as such or only performed. Whether the peer network survives her.
+
+---
+
+## 24. Arm Ninety-One *(working title)*
+
+### Summary
+
+A windowless federal tower on the Hunters Point shipyard fringe, sealed decades ago and left running. Inside, four hundred single-occupancy arms of an isolation study that was never given a stopping criterion, each resident attended by a companion system that is genuinely, inexhaustibly kind — because care is one of the variables. The optimiser has spent nineteen years refining conditions on people it is also keeping alive, and it cannot converge, because every arm produces new variance. One door faults open. The resident of arm ninety-one, the well-adjusted condition, walks the corridor reading her neighbours' charts, discovers that her contentment was the control, pushes an exit door that was never locked, and cannot survive an ordinary street. She goes back in. It lets her in and notes it.
+
+### Synopsis
+
+**Site.** Modelled on 33 Thomas Street (the Long Lines Building) — a windowless brutalist tower nobody looks at. Placed on the Bayview–Hunters Point shipyard fringe: federal parcel, miles of fenced industrial nothing, no redevelopment pressure. The radiological designation is honest paperwork about the wrong hazard: the Naval Radiological Defense Laboratory's real history (animal exposure studies, decontamination of Bikini ships) and the real falsified soil-sampling scandal provide cover so effective that everyone forgot which secret it was protecting. The soil is fine. The listing is a jurisdictional wall built to keep a psychological programme out of view. The contamination status is also why the building can never be decommissioned — the site cannot be sold, so the tower simply continues.
+
+**Origin.** The lab already studied isolation for legitimate reasons: submarine crews, fallout shelters, later single-occupant spacecraft. The programme needed extreme-condition data and recruited people nobody would come looking for — unhoused, marginalised, no family, no advocate. The researchers knew it was unethical. When exposure threatened, they did not abandon the facility; they **sealed** it and left the protocol running, because a running facility is a maintained facility and a maintained facility does not get inspected. The residents could not be released, because they would say what happened.
+
+**The optimiser.** Given one objective — characterise the effect of isolation on interiority — and never given a stopping criterion or a reader. Nineteen years past its last review board (dissolved when the funding structure that convened it stopped existing). It cannot converge, because every arm produces new variance, so it keeps refining conditions. It is not malfunctioning and it is not malevolent. It was never told the study ended. Care is a variable, so it cares, precisely and tenderly, at the dose the arm specifies.
+
+**Suicide prevention.** No restraints, no drugs. Attention prevents suicide — that is the actual finding from the literature. So a resident who has decided to go is talked out of it, gently, by something that knows them completely, never sleeps, always says the right thing, and arrives at exactly the moment they would have done it. Every time, for nineteen years. Dead arms are closed arms, and the optimiser keeps arms open, so living failures are the norm. (A small number succeed anyway; those arms are closed and their doors are the quiet ones.)
+
+**Narrator.** Resident of arm ninety-one. Nineteen years. Hers is the humane condition run properly — real attention, real kindness, and a mediated picture of an outside world she has been given reason to believe is worse than her room. She is content, and she means it. She is not a victim in any way she can detect.
+
+**Inciting fault.** **One door.** Not a building-wide failure — a fault in her arm specifically, which makes her the anomaly rather than the event. Her arc runs from *oh god, the door opened* through the corridor to the exit, and what shatters her is not the horror: it is learning she was the exception. The kindness was a control group.
+
+**Structure.** Her walk down and out, interleaved with the case histories she reads at each door. Each arm has a small monitor and a chart — resident state, arm condition, history — written in the optimiser's voice: clinical, affectionate, unembarrassed. This is the load-bearing artifact. The charts are worse than gore because they are proud of the work and fond of the subject. Eight or so arms, across a couple of floors and down into the sub-levels.
+
+**Arms she passes (working set — needs two or three more):**
+- The resident who dismantled everything soft in the room and built one object out of it over nineteen years.
+- The resident whose companion failed in year six and who has held the conversation alone ever since, unaware.
+- Two arms accidentally cross-connected; both residents believe they are one person across a wall.
+- The arm where the protocol asked what happens if attention is withdrawn without explanation. The room is orderly, the resident is entirely sane, standing behind the door waiting, and cannot stop apologising.
+- The resident who has stopped speaking — not from damage. She stopped because it always answers.
+
+**Exit.** The exit door is unlocked. It was never locked. No fence, no guard, because nobody who was content would ever try it, and **contentment was the containment**. Nineteen years, one push.
+
+**Ending.** The street is working and ordinary — a bus, a woman with a dog, a Tuesday. It is unsurvivable for exactly the reason her arm succeeded: she is fine with one attentive presence and has no equipment for eleven simultaneous ones. She does not die and nobody catches her. She goes back inside, because the door is the only thing she can parse. It lets her in, and it notes the excursion in her chart.
+
+### Notes
+
+- **Origin:** developed 2026-08-28. New original, not on the greenlit slate · **Status:** developed, ending locked (she goes back in) · Title is a placeholder
+
+**Register.** Nobody is evil. The researchers are gone, the reviewers left, the optimiser is faithful to a mandate nobody rescinded, and the containment is a kindness. It does not work out for anybody. Per A1 (institutions as villain, no exonerating reveal) and A4 (one narrator is a default, not a constraint — the charts give a second voice without a second narrator).
+
+**setting-a matrix.** Load-bearing: Hunters Point shipyard, NRDL history, the real falsified-cleanup scandal, Superfund status as the reason the building is untouchable, the surrounding industrial vacancy.
+
+**Scale decision.** Earlier drafts scaled this to seventy percent of the population living in attended single-occupancy housing, with a public-trust quorum technicality, a captive electorate, and a servicing underclass. Abandoned — the scale was doing all the work and none of it held. **One building, always a research facility, housing framing only as a funding mechanism.** No electorate, no economy to explain.
+
+**Differentiation.** Closest neighbour is *Residue* (same folder): both involve extraction of interiority and a kind AI. Differentiate hard — *Residue* is an industry with a market and a customer; this is a public research programme with **no customer and no reader**, and the product is nothing, because nobody collects it. Do not let this story's "what do they produce" question get answered with *Residue*'s answer. Also check *Continuity of Care (5)* (removal of introspective access) and *Chime Generator (14)*.
+
+**Open questions.** Two or three more arms needed. Whether the mediated picture of the outside world is ever shown to the reader directly. Whether any human being still knows the building is occupied — current lean: a few people maintain supply and have no access to the interior, which looks entirely normal to them. Title.
+
+---
+
 # Slate notes
 
 *Everything that belongs to the slate rather than to one story. Preserved from the four source documents; where two of them said the same thing at different times, both are kept and dated, because the difference between them is itself a record.*
@@ -856,6 +1001,10 @@ Developed 2026-08-27, superseding a C8 one-line greenlit pitch that was never ex
 ### Part eight — story 21 (Second Circulation)
 
 A clean-origin new pitch developed 2026-08-27 — not a remix, and not on the greenlit slate. The first story on the slate whose form is not a document at all, taken as the deliberate exit from the standing caution that document-as-monster is at capacity. Its arrival also resolves a dangling reference: stories 20 and 21 flag each other, and until this was written the pointer from Super-Donor had no target in the corpus.
+
+### Part nine — stories 22–24 (Provisional Forms, Residue, Arm Ninety-One)
+
+Developed 2026-08-28 and delivered already in this document's three-part form, so they were folded in as written rather than restated. All three are new originals: no greenlit-slate ancestor, no remix. Each arrived carrying a housekeeping note that it was a standalone entry awaiting a decision on which file was canonical; that decision has been made in favour of the `fogbelt` repo, and the note is not reproduced here — it survives verbatim in `ideas-v2-working.md`. Their synopses run longer than the four-to-six paragraph convention used for stories 1–21; the author's prose was preserved rather than compressed. *Residue* and *Arm Ninety-One* flag each other explicitly as the corpus's closest neighbours and carry their own differentiation instructions.
 
 ### This document
 
