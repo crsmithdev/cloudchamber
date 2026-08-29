@@ -6,9 +6,10 @@ Horror anthology working repo. **This repo is the source of truth.**
 
 ```
 CLAUDE.md                    standing instructions for a Claude session here
-playbook.md                  the generative half -- a way in, then the theme
-                             bank, craft moves, dread mechanisms, artifact menu.
-                             Nothing in it evaluates.
+playbook.md                  the generative half. 0 is the ideation workflow;
+                             1-4 are the banks it pulls from (themes, dread
+                             mechanisms, artifacts, setting-a elements); 5 is how
+                             a story gets told. Nothing in it evaluates.
 catalogue.md                 the other half -- describes rather than generates.
                              The slate as it stands (2026-08-29): sameness across
                              all 24, the collision map, the variety index, unused
