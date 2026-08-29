@@ -6,19 +6,15 @@
 
 **Where the evidence lives:** `refs/chiang.md` · `refs/watts.md` · `refs/setting-c.md` · `refs/setting-b.md` · `refs/evangelion.md` · `refs/jaynes.md` · the djkaktus corpus, six files (`refs/scp/djkaktus-*.md`) · nineteen assorted SCP articles by other authors (`refs/scp/assorted.md`) · sixty-three triaged but unregistered articles (`refs/scp/candidates.md`) · the slate itself (`stories/`, 24 developed and one bench file of undeveloped concepts).
 
-**Standing note.** *(A3, 2026-08-26)* The taste profile is explicitly evolving. Old rules get invalidated as the corpus is re-read and recycled. **Do not treat anything in this document as canonical against a live instinct.** It records what has worked; it is not a constitution. Where a rule has been amended, the amendment sits inline with its date rather than in a separate log.
+**Standing note.** *(2026-08-26)* The taste profile is explicitly evolving. Old rules get invalidated as the corpus is re-read and recycled. **Do not treat anything in this document as canonical against a live instinct.** It records what has worked; it is not a constitution. Where a rule has been amended, the amendment sits inline with its date rather than in a separate log.
 
-**On the vocabulary.** *(2026-08-30)* Nothing in this document evaluates, and nothing in it is a rule. It is a bag of starting points. Everything that reads a premise *back* — the recurring shapes, the anti-patterns, the thirteen lenses, the source lookup, and the record of what the slate has already spent — moved to `catalogue.md`, because keeping description and generation in one file made the generative half read as a rubric and produced conformance grading in place of judgement. An unused shape is not a vacancy. The only thing anywhere that operates as a criterion is whether a story feels like another one already on the slate.
+**On the vocabulary.** *(2026-08-29)* Nothing in this document evaluates, and nothing in it is a rule. It is a bag of starting points. Everything that reads a premise *back* — the recurring shapes, the anti-patterns, the thirteen lenses, the source lookup, and the record of what the slate has already spent — moved to `catalogue.md`, because keeping description and generation in one file made the generative half read as a rubric and produced conformance grading in place of judgement. An unused shape is not a vacancy. The only thing anywhere that operates as a criterion is whether a story feels like another one already on the slate.
 
 ---
 
-# 0. THE GENERATIVE CORE
+# 0. A WAY IN
 
-*Everything in this section is written to produce a premise, not to grade one. Nothing here is a gate.*
-
-## A way in
-
-*An ideation aid. Moves that have helped find a premise, in no fixed order, with no obligation to make all six. An idea that arrives whole owes this list nothing.*
+*Moves that have helped find a premise, in no fixed order, with no obligation to make all six. An idea that arrives whole owes this list nothing.*
 
 1. **Take an apparatus, not an anomaly.** A setting-a institution with a founding date, a cover story, a rate card and a weekly rhythm. What does it *do* every Tuesday?
 2. **Take a theme family (§1)** and state it as a mechanism with units. Not a mood.
@@ -70,7 +66,7 @@
 - The rules known, followable, and irrelevant: do the thing that works, it works, be damned anyway. `[C]`
 - Being loved by something that cannot tell your sins from your virtues, and reproduces both. `[K]`
 - The record was never the point; the community you belong to is renegotiated behind your back. `[C]`
-- A divinity whose understanding of persons, harm, justice and repair is genuinely not ours, applied faithfully — and the correct answer to a sincere petition is catastrophic for the petitioner. `[FB]` *(A2, 2026-08-26: this god is available and is alien. Not malice, not indifference, not trickster-logic — a different ontology, applied faithfully.)*
+- A divinity whose understanding of persons, harm, justice and repair is genuinely not ours, applied faithfully — and the correct answer to a sincere petition is catastrophic for the petitioner. `[FB]` *(2026-08-26: this god is available and is alien. Not malice, not indifference, not trickster-logic — a different ontology, applied faithfully.)*
 - Petitions granted exactly as worded, by something with perfect attention and no interpretive charity whatsoever. `[FB]`
 - A life built on top of an injustice treated as part of the injustice, and removed with it, root and branch, with evident care. `[FB]`
 - The moral law of the universe as a contingent arrangement with a start date, an author, and an appetite — replaced on a datable afternoon by a species with better metaphysical leverage. `[S]`

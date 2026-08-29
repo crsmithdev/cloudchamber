@@ -2,7 +2,7 @@
 
 *What has been written, what it keeps doing, and the instruments for reading a premise you already have. `playbook.md` is the other half of the pair: that one generates, this one describes. Nothing here is a rule and nothing here scores.*
 
-**Two things live in this file.** §1–§5 are the slate as it stood on 2026-08-29: two passes over all twenty-four concepts, both run with `playbook.md` withheld — two standing expert panels checking factual and procedural claims, and eight readers taking one axis each and looking only for sameness. The story bodies were read with the 2026-08-28 red-team appendices stripped, so nothing there is downstream of that audit. §6–§9 are the descriptive apparatus, moved out of the playbook on 2026-08-30 because holding description and generation in one document made the generative half read as a rubric: the configurations the corpus has used, the failure modes it has produced, thirteen lenses, and the source lookup.
+**Two things live in this file.** §1–§5 are the slate as it stood on 2026-08-29: two passes over all twenty-four concepts, both run with `playbook.md` withheld — two standing expert panels checking factual and procedural claims, and eight readers taking one axis each and looking only for sameness. The story bodies were read with the 2026-08-28 red-team appendices stripped, so nothing there is downstream of that audit. §6–§9 are the descriptive apparatus, moved out of the playbook on 2026-08-29 because holding description and generation in one document made the generative half read as a rubric: the configurations the corpus has used, the failure modes it has produced, thirteen lenses, and the source lookup.
 
 **Story-specific findings are not in this file.** Every panel correction, collision ruling, protect-list entry and proposed change sits in a `## Slate review and fact check, 2026-08-29` section at the end of its own story file. What is here is what is true of the slate rather than of any one story. Nothing anywhere has been applied.
 
@@ -208,7 +208,7 @@ Not a to-do list. A map of where the variety is, for when a new premise needs so
 
 ## 6. Recurring shapes — the configurations the corpus has used
 
-*Descriptive, not prescriptive. Configurations the corpus has actually used. Stories routinely run two at once, and the best ones have found a shape that isn't here yet.*
+*Descriptive, not prescriptive. Stories routinely run two at once, and the best ones have found a shape that isn't here yet. An unused shape is not a vacancy — what is worth borrowing from an entry below is usually its questions, not its silhouette.*
 
 ### The maintained schedule
 
@@ -264,7 +264,7 @@ The oldest shape and still the most common: about half the slate cleanly, anothe
 
 ## 7. Anti-patterns — the failure modes the corpus has produced
 
-*Failure modes the corpus has actually produced, listed so they are recognisable early. A premise sitting near one of these is worth a second look rather than a rejection — the difference between a failure mode and a deliberate move is usually whether the story knows it is there.*
+*Listed so they are recognisable early. A premise sitting near one of these is worth a second look rather than a rejection — the difference between a failure mode and a deliberate move is usually whether the story knows it is there.*
 
 **Watts failure modes**
 
@@ -286,7 +286,7 @@ The oldest shape and still the most common: about half the slate cleanly, anothe
 - Delusion instead of competence. If the audience can say *if only they knew*, the story is defused.
 - Domestic centre. Every rejected pitch had one relationship or one person's reckoning at its heart.
 - The artifact that exists to narrate. If it isn't doing a job, it's a testimony wrapper.
-- *The villain as shortcut.* A1 permits the institution to be the antagonist; it does not permit it to be stupid, gloating, or uninterested in justifying itself. Competence and sincerity remain mandatory. What is optional is the exoneration.
+- *The villain as shortcut.* The institution is permitted to be the antagonist outright; it is not permitted to be stupid, gloating, or uninterested in justifying itself. What is optional is the exoneration, not the rigour.
 
 **Evangelion failure modes**
 
@@ -307,7 +307,7 @@ The oldest shape and still the most common: about half the slate cleanly, anothe
 
 ## 8. Thirteen lenses — reading a premise you already have
 
-*Things to hold up to a premise you already have, in fifteen minutes. `playbook.md` helps you find one; these help you find out what you have. Nothing here scores. A lens that shows nothing has told you the story isn't using that dimension, which is a fact about the story rather than a fault in it. Item 11 is the exception — see it.*
+*Fifteen minutes, once a premise exists. `playbook.md` helps you find one; these help you find out what you have. Nothing here scores: a lens that shows nothing has told you the story isn't using that dimension, which is a fact about the story rather than a fault in it. Item 11 is the exception — see it.*
 
 1. **Is the apparatus real?** A setting-a institution with a founding date, a cover story, a rate card, and a schedule. What does it *do* every week?
 2. **Is the theme stated as a mechanism with units,** rather than as a mood?
@@ -688,7 +688,7 @@ duration_ms: 878696</usage>
 
 ## 11. Method, and what to distrust
 
-Eight readers, one axis each, all twenty-four story bodies with the red-team appendices stripped so nothing was downstream of an earlier audit. None read `playbook.md`; none was asked about conformance; severity vocabulary was forbidden. Two expert panels ran the same corpus for factual error under the same conditions, self-selecting their seats after reading rather than before.
+This describes how §1–§5 were produced; §6–§9 came out of `playbook.md` unchanged except for their numbering. Eight readers, one axis each, all twenty-four story bodies with the red-team appendices stripped so nothing was downstream of an earlier audit. None read `playbook.md`; none was asked about conformance; severity vocabulary was forbidden. Two expert panels ran the same corpus for factual error under the same conditions, self-selecting their seats after reading rather than before.
 
 What to distrust:
 
