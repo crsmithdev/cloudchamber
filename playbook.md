@@ -433,302 +433,308 @@
 
 # 4. THE setting-a
 
-*Fifteen domains. Every story carries a setting-a matrix, and it has to be structural rather than scenery — the test is whether removing the element removes a mechanism, not an image. A neighbourhood name in a sentence is worth nothing.*
+*Fifteen domains of subject matter: the places, landmarks, organisations, trades, communities and live arguments a story is set in and about. Every story carries a setting-a matrix, and it has to be structural rather than scenery — the test is whether removing the element removes a mechanism, not an image.*
 
-*Each line is a premise seed, not a description, in the same form as §1. The specifics these were distilled from — the statutes, dates, bodies, cases and numbers — are in `refs/setting-a.md`; go there when a premise needs a real mechanism under it, and stay here while you are still looking for one.*
+*Each line is a premise seed rather than a description, in the same form as §1, and the mechanism is meant to be implied by the concrete thing rather than stated. The test each line had to pass: could it be true of Denver, Boston or Atlanta? If yes it does not belong here. The statutes, dates, bodies and cases behind these are in `refs/setting-a.md` — go there once a premise needs a real instrument under it.*
 
 *The horror is a process, never a population. Several of these domains carry the histories of people the region's institutions have harmed; the villain is always the apparatus. Nothing here makes an identity the frightening thing.*
 
 ### 4.1 Land and title
 
-*What a record is for, who it binds, and the fact that it can be annotated but never edited.*
+*Ranchos, fill, buried ships, and a book that can be added to but never corrected.*
 
-- Possession converted into a claim: everyone already living on the ground made a petitioner before a board, with the burden of proof on the occupant, and the paper rather than the occupancy deciding.
-- Two maps of the same ground drawn for incompatible purposes — one calling its boundary to a willow, a skull, a heap of stones, the other requiring measured bearings — so the defect in the title is a disagreement about what a map is.
-- A dispossession with no event, only an expiry: the claim not presented by the stated day is extinguished by operation of law, and some ground is held today on a foreclosure nobody attended.
-- Confirmation that takes a working lifetime to become a document, with the lawyers paid in undivided shares of the thing they were retained to save — the process consumes the asset it validates.
-- The body that adjudicates the chain of title is itself a grantee in that chain, and its own root is one of the claims before it.
-- Title quieted against all the world where the register burned: notice given by publication, a decree binding absent parties who were never served and are presumed to have read the paper.
-- Recording as constructive notice — you are charged, permanently, with knowledge of an instrument you have never seen and could not have found.
-- The industry's working memory is a private duplicate of the public record, obliged to be neither complete nor disclosed; and the insurer, having named in advance the risks it will not cover, has no reason left to look for them.
-- A record that can be annotated but never edited: the covenant is undone by appending a page, so the original text stays in the book forever as part of the chain, corrected and intact.
-- The atrocity as a form design — fillable fields, a category for what is infiltrating, a letter grade — and the forms survive, digitised and searchable, long after the hands that filled them.
-- Ground manufactured out of ballast, dune sand and abandoned ships, sold as lots and held of record for a century: the hulls are met by excavation permit rather than by anyone looking, and the sovereign can still assert the ground was never anyone's to convey.
-- Assessment frozen until a transfer, which makes the event and not the property the taxable object, and turns inheritance into an occupancy test whose clock starts running at a death.
-- An interest that survives only because someone re-files a one-page form once a generation, and ends in the year they forget.
+- A diseño calling its boundary to a willow, a cattle skull and a heap of stones, offered as proof.
+- A rancho extinguished by a filing deadline, and held today on a foreclosure nobody attended.
+- A rancho eaten by the cost of confirming it, the lawyers paid in undivided shares of the ground.
+- The city's own root of title is a pueblo claim, in a chain the city itself adjudicates.
+- The recorder's books burned, so title is now quieted against all the world by newspaper notice.
+- Yerba Buena Cove sold as water lots and filled with dune sand, ballast and abandoned ships.
+- A buried hull under a basement, met by excavation permit rather than by an archaeologist.
+- Tideland fill on sovereign ground, and a trust interest asserted against a block held for a century.
+- A permit band a hundred feet inland, measured from a water's edge that is moving toward it.
+- The redline map's area description form, with a field for what is infiltrating, digitised and searchable.
+- A covenant redacted by appending a page, so the deed keeps its original sentence forever.
+- The title plant: a private duplicate of the record, not public and not obliged to be complete.
+- Assessment frozen until a transfer, so the taxable event is the death, and the heir has a year to move in.
+- A former army post held as a park under a statutory duty to break even, with a rent roll.
 
 ### 4.2 The first peoples
 
-*Documentary standards, claims processes and confidential registers as apparatus — and what a correct system does when it is pointed at a people.*
+*Shellmound parcels, a confidential file, a return inventory, and a land trust with its own rate table.*
 
-- Distinct communities, each with its own language and territory, flattened into one category for administrative convenience: the first thing the record did was reduce the number of peoples it would have to account for.
-- Recognition that ends by omission — a people listed and served until an official's report recommends no further purchases, so the moment they stop existing on paper is a line struck from a schedule.
-- Acknowledgment awarded on proof of continuous community and political authority, evaluated against a documentary record assembled largely by the agencies that interrupted it: the standard of evidence is the same instrument as the harm.
-- Instruments negotiated, marked, and then sealed under an injunction of secrecy for two generations — for fifty years the claim was unfindable by the people settling the land and unreadable by the people who signed it.
-- A taking routed through the ordinary machinery of a local court and funded by bond with reimbursement claimed from a higher government, so the killing has a docket, a line item and an audit trail, and the accounting is the form in which it is best studied.
-- The first vital-statistics system and the instrument of congregation are the same bound books, now a searchable database queried by descendants and researchers alike — the register names what the surface does not.
-- An inventory compiled for study becomes the working map by which the sites are afterwards located, quarried and built over: the survey did not record the ground, it published it.
-- Two adjacent parcels run through one land-use process to opposite outcomes, the procedure identical in both files and the result entirely a function of who appeared at which hearing.
-- A voluntary contribution with a published rate table keyed to residence and ownership — the schedule turned around and issued, correctly and in writing, to the people living on the ground.
-- Grief on a construction clock: a statutory stop-work on discovery, a determination by an official, a designation by a commission, a window measured in hours, and a lead agency entitled to decline the recommendation provided it documents why.
-- The inventory of what must not be disturbed is confidential and exempt from disclosure, indexed by abbreviation and sequence number and released only to qualified applicants — protection and secrecy performed by a single operation.
-- A category invented by the holding institution to describe the ancestors it cannot attribute, and a public university as the largest custodian of what it is now obliged to return.
-- A relocation programme whose principal instrument is a one-way ticket, a first month's rent and a placement, and whose most durable institutions were founded by the people it moved.
-- A land claim filed in the grantor's own instrument and in his own arithmetic, quoting his surplus-land clause back at him — and a body later chartered by the apparatus to assemble the evidence of what its own filing systems did.
+- Eight named language communities around the Bay, flattened into one label by a form with one field.
+- A band served by the Indian Office until a field agent's report struck it from a purchasing schedule.
+- Recognition proved by continuous community, on a record assembled by the agencies that interrupted it.
+- The mission register is the region's first vital-statistics system, and descendants query it online.
+- Thousands buried outside the walled cemetery, under city lots; the book names them, the surface does not.
+- A university survey of four hundred shellmounds became the map by which they were quarried.
+- A levelled shellmound under a shopping centre, its last full record a soil report for the foundations.
+- The parcel landmarked, litigated for a generation, and conveyed to an Ohlone land trust.
+- A land trust issuing its own annual assessment, with a rate table keyed to the settler's square footage.
+- Excavation halts on discovery, and the designated descendant has two days from the day she is let in.
+- The file of what must not be disturbed is confidential, so protection and secrecy are one operation.
+- Ancestors indexed by county abbreviation and sequence number, released only to qualified applicants.
+- A museum's return inventory, a five-year deadline, and the cases papered over the month it took effect.
+- A one-way ticket and a first month's rent, and the friendship house the arrivals built themselves.
+- The tribal monitor watching a trench, on the payroll of the developer who dug it.
 
 ### 4.3 Water, fire, ground
 
-*A landscape administered as a set of published clocks, by agencies that also publish the casualties.*
+*A drowned valley, a creeping fault, a burn scar, and agencies that publish the casualty figures.*
 
-- A valley drowned to supply a city several counties away, and the aqueduct terminating in a colonnade with an inscription and a dedication date — the works built to be worshipped, not merely operated.
-- Two systems' lifelines laid across islands sinking beneath them: drained ground that burns away slowly without fire, private levees holding water above the roofline of the farmhouses, one failure at a levee nobody was watching, and a sustainability deadline assigned to a named agency that will be found to have failed.
-- Ground that fell by a documented number of feet and was arrested by a charge per unit pumped — geology stopped by a fee, and resumed the moment the fee is.
-- A recurrence interval published by the same competent agency that publishes the casualty count and the outage duration: a schedule nobody set, an elapsed clock already past the mean, and an event with a full damage estimate and no date.
-- Motion too slow to be an event — a fault creeping through curbs and culverts, and a structure built astride it retrofitted with a joint designed to let its two halves separate and keep operating.
-- Every parcel assigned a hazard class that governs how it may be built, insured and sold, down to a band five feet wide in which nothing combustible may exist; the probability appearing not as a warning but as a term of the transaction.
-- Made ground remembers, at depth, exactly what it was made of — including the rubble of the last disaster, which is what liquefies in the next one.
-- A building that settles and tilts, whose enduring artifact is not the defect but the monitoring regime: readings surveyed on a schedule, filed, published, and read by owners who cannot sell.
-- A closure decision made correctly under the standards then in force, and re-ignition overnight as the proximate cause of everything after it.
-- A supplier under a legal duty to serve, exercising a regulator-blessed discretion to stop serving, on meteorological criteria, to households whose lungs are on the meter.
-- A corporate person with a criminal record and a served term of probation, still holding the franchise it was convicted for operating.
-- A letter that arrives at a house and states a number about the people inside it — estimated risk in chances per million, disclosed because a threshold was crossed, with nothing required of the recipient.
-- Contaminated ground administered by recorded covenant and public register, with the engineering control a fan under a slab, a maintenance agreement and a periodic review — a machine that must run forever, signed off on schedule by a competent person.
-- A century of extraction still in the sediment and in the fish, reduced to one surviving instrument: a sign at the pier, in several languages, stating meals per month.
+- A valley drowned inside a national park to fill a reservoir for a city four counties away.
+- The aqueduct terminating in a water temple: a colonnade over an outfall, inscribed from Isaiah.
+- Aqueduct siphons laid across Delta islands that are sinking out from under them.
+- Drained peat burning away in air without fire, and levees holding water above the farmhouse roof.
+- A levee failing on an island nobody was watching, and the pear orchard under water by morning.
+- A valley floor that fell thirteen feet on the pumps and was arrested by a charge per acre-foot.
+- Trenches across the fault give a mean recurrence, and the interval is already past it.
+- A stadium built astride the trace, retrofitted with a joint that lets its two halves separate.
+- A federal scenario with a death toll, an ignition count, an outage in months, and no date on it.
+- The Marina liquefying on fill made partly of the rubble of the previous earthquake.
+- A tower's settlement readings surveyed, filed and published, and read by owners who cannot sell.
+- A grass fire signed off as controlled at dusk, and the hills gone by the following evening.
+- A eucalyptus stand planted as a lumber crop that failed, left standing as fuel above the houses.
+- A shutoff called on wind criteria, to houses where the oxygen concentrator is on the meter.
+- Mercury from the quicksilver mine still in the fish, and a pier sign giving meals per month.
 
 ### 4.4 The technology industry
 
-*Nothing is confiscated; a clock is allowed to run, and the person who loses everything was in full compliance throughout.*
+*A campus, a shuttle route, four badge colours, and a plume under the parking structure.*
 
-- A grant earned over years and forfeited in a window measured in weeks, because exercising it produces a tax bill the holder cannot pay — the cheapest lawful way to take equity back is to let the calendar do it; and liquidity, when it comes, is administered on the same schedule as the loyalty it purchases.
-- Thirty days to notify the authority that you accept tax on something currently worthless, with no extension and no relief for the person nobody told the clock had started.
-- A price fixed annually by an appraiser the company retains, in a report the priced parties never see, cannot commission, and have no standing to contest.
-- The acquisition structured so that the preference is satisfied, the common is worth zero, and everyone involved is employed and grateful.
-- A grace period that converts a resignation letter into an immigration event, calendared by the department that processed the resignation.
-- A published queue with dates on it that sometimes move backwards, and a per-country cap producing a wait longer than a working life.
-- Badge colour as legal architecture: a shadow workforce larger than the counted one, tenure caps that end an assignment the month before benefits attach, and a single old settlement that every subsequent structure was drafted around.
-- Care provided by people who owe no clinical confidentiality, and a settlement that priced the diagnosis and left the queue exactly as it was.
-- A rubric revised quarterly by a policy team on another continent, with tiers a client may pay to accelerate, and exactly one line in it carrying a criminal penalty behind it.
-- Efficiency ratios published annually while the water is a utility contract and the power is a position in a waiting list.
-- The first generation's contamination sitting under the current generation's offices, with an obligation that has no end date attached to a party three corporate successions removed from whoever installed the tank.
-- Routine deletion suspended by a hold notice, sanitisation standards applied to whatever is released, and a retention schedule under which the data outlives the product, the entity, and everyone named in it.
-- A document that states in advance, accurately and at length, everything the enterprise will later be accused of — and is protected precisely by having said so.
-- A permitted private route network paying per stop to load at public infrastructure, tracking rent more closely than any map of zoning.
+- The unmarked white coach with tinted glass, paying the city by the stop to use a public kerb.
+- A badge colour that decides which microkitchen you may eat in, and whether you are counted.
+- RVs along the frontage road outside the campus, and an ordinance written about vehicle height.
+- The moderation floor in a leased office off the Bayshore, with a wellness coach who is not a clinician.
+- A fab-era solvent plume under a landscaped office park, held down by a fan beneath the slab.
+- The tank that leaked under a chip plant into a drinking well, and the birth-defect study after.
+- Purple pipe to the cooling towers, and a power connection that is a place in a waiting list.
+- The garage with the landmark plaque, and the orchard, the cannery and the fab it stands on.
+- Eight men resign a Mountain View lab, and everything downstream is a chain-link fence and a plaque.
+- Ninety days to buy what you already earned, at a price set by an appraiser the company retains.
+- A visa queue published monthly as a table, with dates in it that sometimes move backwards.
+- A body shop in Fremont that sponsors the visa, seats the worker, and bills the campus.
+- A privately owned public plaza with a bronze plaque stating the hours it must stay open.
+- The badge that stops working at the garage gate some minutes before the email lands.
+- Cafeteria and shuttle staff with a union, on a campus where nobody else has one.
 
 ### 4.5 Capital and its instruments
 
-*Promises drafted to outlive the money that funds them.*
+*Sand Hill Road, the courthouse steps, and a fund that has to outlive the mowing.*
 
-- A promise correctly drafted to run forever against a principal that was only ever sized for a while — and the shortfall found on schedule, in writing, by someone whose job it was to look.
-- The obligation that matures backwards: the final act of a fund's life is a demand for money already distributed, secured against the people who spent it.
-- A short clock to produce cash on demand, and a default clause that prices failure as a fraction of everything already committed — so a missed wire is not a lapse but a forfeiture with a number attached.
-- Duration as the entire moral question: the difference between a fee and a fortune measured only in how long somebody held something.
-- Disclosure as immunity — every reason the thing may fail, stated in advance, accurately, at a length that guarantees no one reads it, with updates owed forever to purchasers who never will.
-- The covenant that converts a financing into a standing legal duty to raise the price of water on the electorate that approved it.
-- A levy attached to the ground rather than the owner, and a charge attached to the meter rather than any person — escalating annually, immune to the cap everyone else enjoys, and secured by a promise to foreclose on a fixed day.
-- The asset valued once a year by an appraiser the holder did not choose, engaged by a trustee the holder did not select, from a report the holder will never see.
-- The retirement account whose only asset is the employer, carrying a duty to buy those shares back that matures precisely when the former employees need paying and the company cannot.
-- The price of leaving, computed at a rate that makes leaving unavailable — an exit correctly quoted so that no one exits.
-- The statutory pause that changes nothing: underwriting suspended for a stated interval, then resumed at exactly the point where it was interrupted.
-- The pool of last resort, which grows by precisely what everyone else declines to write, and whose ceiling is a fixed number in a rising market.
-- A dead person's sentence as a live constraint — alterable only by a court, and only on application by an official with no interest in the estate.
-- Dormancy as dispossession: a stated interval of silence, one letter to the last known address, then custody by the state for as long as it takes.
-- The dead claim revived by the smallest act of good faith — one partial payment restarts the clock, and the first notice of the judgment is the missing wage.
-- Insurance against a century, drawn down inside a decade, with the ledger still recording the century as intact.
-- The hearing whose entire output is a judicial finding that it is correct for an injured person to sell their future.
+- A road four miles long in Menlo Park, and a term sheet that outlives the company it funds.
+- The bank founded on a plank across two barrels, lending on a face and a name in the parish.
+- A trading floor on Pine Street, now a gym, with the clocks still on the wall.
+- The bank run conducted by phone in an afternoon, by depositors who all know each other.
+- The foreclosure auction on the courthouse steps, and a trust in another state that owns the street.
+- A special tax district past the Caldecott, escalating annually and immune to the cap.
+- The non-renewal letter that arrives after a fire in another county, citing a perimeter.
+- The last-resort pool you join by being declined, with a ceiling fixed in a rising market.
+- A rate covenant on the reservoir bonds, promising bondholders the water bill will rise.
+- The endowment spending rule, and a dead donor's sentence alterable only by a judge.
+- A city that went bankrupt, kept the pension whole, and took it out of the fire houses.
+- The perpetual care fund of a city of cemeteries: principal untouchable, mowing not.
+- The check-cashing window on Mission Street, and the wire that clears in the other direction.
+- A lending circle run out of a Chinatown association hall, with nothing in writing.
+- A wildfire charge on the utility bill that follows the customer who leaves the utility.
 
 ### 4.6 Labour
 
-*Procedure completed so correctly that no one is ever required to find out what happened.*
+*Hiring halls, drayage queues, night harvests, and the building nobody is employed by.*
 
-- The deadline that disposes of a valid claim without reaching it — a step missed, a representative permitted to abandon it, and a wrong that ends without anyone deciding whether it occurred.
-- The killing settled by the creation of a queue, and a day of stopped work observed annually by both parties as a term of the agreement — a memorial with a payroll consequence.
-- Income set by a position in a line, entered by lottery, dispatched lowest-first, administered by the parties jointly, and untouchable by the employer who pays it.
-- A reclassification that alters the legal status of thousands of workers and alters nothing whatever about the work.
-- The week that closes at a negative number, because the instrument of the work is also a debt — and the mandate to replace it left the financing to the person driving.
-- Shade, water and rest guaranteed by a standard whose enforcement is a review of documents conducted after the shift has ended.
-- The earned entitlement whose exercise is somebody else's rostering decision — the hours capped precisely at the threshold where the right begins.
-- A wage floor published annually and a housing standard inspected by the state, both hanging from a permission that belongs to the employer.
-- The statute that makes a price unlawful: a contract signed knowing it does not contain enough money for the law to be obeyed.
-- A licensing apparatus built entirely around the fact that the work is done alone, at night, in a building belonging to someone who is not the employer.
-- The assignment written to end just short of permanence, because permanence is a tax event rather than a fact about the job.
-- A statutory integer that manufactures the disposable labour market required to satisfy it.
-- A dispute system engineered to produce outcomes and no record — confidential, individual, and accumulating nothing, so nothing is ever established.
-- The citation downgraded in exchange for prompt repair — the moment at which an injury stops being a fact about the employer.
-- The denial reviewed on a closed record by a physician who is never named, alongside a rule that assigns a share of the damage to the life the worker had beforehand.
-- A public wage floor that exists only where public money does, and stops at the property line.
-- Notice of a closure filed, published as a list, and answered by a team dispatched to run workshops inside the building that is closing.
+- The dispatch hall by the waterfront: a lottery for a number, and the number is the income.
+- The contract stops all work one day each July, for two men shot outside a hall on Steuart Street.
+- A drayage queue at the port gate, and a truck payment deducted from the week's settlement.
+- The clean-truck deadline met by the driver, financed by the driver, and owned by nobody else.
+- Night harvest in the vineyard under lights, paid by the ton, finished before the heat.
+- Shade, water and rest, guaranteed by a standard enforced by paperwork read after the shift.
+- Grower housing inspected by the state, on a visa that belongs to the grower.
+- The janitor alone in a tower at two in the morning, employed by neither the building nor the tenant.
+- The garment shop up a stairwell off Stockton Street, paid by the bundle, hours unrecorded.
+- A crab fleet tied to the dock until a price is agreed, and a season that opens later each year.
+- The cannery whose shift whistle set the town's clock, and the subdivision on its slab.
+- A shipyard that hired everyone for four years, and the war housing demolished after.
+- Ratios at the county hospital met by a registry nurse who is on nobody's payroll.
+- A day-worker centre with a whiteboard and a posted rate the city funds but cannot enforce.
+- The caregiver in a board-and-care home, paid by the county, sleeping in the room.
 
 ### 4.7 Housing and displacement
 
-*A debt conceded in writing, given a queue position, and administered forever.*
+*Withdrawal notices, fractional deeds, the hearing room on Van Ness, and a debt with a queue position.*
 
-- The right to withdraw entirely, exercisable without cause, with the price of a household published annually as a table and the notice period lengthened for the old and the sick.
-- Protection that empties on turnover, so the tenancy is a wasting asset and the building's value is the tenant's absence.
-- A safeguard enacted with its own expiry date drafted in at the outset, and an affordability term written to end on a schedule fixed before the first family moved in.
-- The increase declined for years, accumulating lawfully, then imposed all at once — a liability accrued by someone never told they were accruing it.
-- The improvement paid for by the people who will never own it, allocated per unit, approved at a hearing, capped as a percentage per year.
-- To be owed anything for the absence of heat, a person must itemise the absence, price it, prove it, and be repaid as a percentage.
-- The eviction lawful only if a sworn intention is afterwards performed for three years, monitored by periodic filings, with the displaced holding a right to return to a unit that is never offered.
-- A building's legal character fixed permanently by a form completed once, decades ago, and enforced ever since by an annual return that only confirms it.
-- The prohibition that survives chiefly as the record of how ordinary the practice was — a statute readable as evidence rather than as law.
-- Ownership assembled out of fractions so that no conversion is ever recorded, and the exit later priced rather than closed.
-- A quota discharged by adopting a plan rather than by building anything, with a penalty that permits construction and compels none.
-- The body whose only remaining function is to finish paying for what its predecessor did, on a payment schedule filed with the state.
-- The acknowledged debt to a displaced household — inheritable, still administered, conferring first position in a line, and redeemable only against inventory that has to exist first.
-- Assistance whose administration is a permanent obligation to keep proving you still qualify, and a clock, running, to find someone willing to accept it.
-- The service provider whose contract makes it the landlord of the people it exists to house, and therefore the party that signs the removal.
-- A numeric score that sets position on a by-name list, and a match that lapses if the person cannot be found in time.
-- The permanent record produced by a deadline rather than by a finding.
+- A notice taped to the door withdrawing the building from the rental business, no cause required.
+- The hotel cleared before dawn by mounted police, and a hole in the block for twenty years.
+- Blocks taken for renewal, and the vacant lots that outlasted two generations of plans.
+- A preference certificate for a demolished home, inheritable, redeemable against nothing built yet.
+- Residential-hotel status fixed by a form filed once, and an annual return that only confirms it.
+- The twenty-eight-day move-out at the SRO desk, so that a tenancy never attaches.
+- Six fractions of one deed, an occupancy agreement, and no conversion recorded anywhere.
+- The hearing room on Van Ness, where the absence of heat is itemised, priced and proved.
+- Increases banked for years out of decency, then imposed lawfully and all at once.
+- A retrofit against the next earthquake, allocated per unit, paid by the people who leave first.
+- The buyout negotiated at the kitchen table, disclosed, filed, and indexed by address.
+- An affidavit of intent to move in, and three years of sworn statements nobody reads.
+- The encampment cleared on notice, possessions bagged, tagged, and stored across town.
+- A voucher good for sixty days, in a market where the search is the disqualifying condition.
+- The nonprofit that holds the master lease and therefore signs the unlawful detainer.
 
 ### 4.8 Queer San Francisco
 
-*Eligibility, registers, and the custody of what remains.*
+*Bars, clinics, archives, and the people the form has no line for.*
 
-- A statutory list deciding who may bury whom — correct, complete, publicly available, and with no line for the person who was in the room.
-- Recognition that arrives first as a permission granted at an admissions desk.
-- The instrument correctly issued, correctly recorded and correctly annulled, with the fee refunded — and beside it an identical instrument that survives, distinguished by nothing but a date stamp.
-- A model of care, admired and copied everywhere, which on inspection is a staffing ratio, a chart design and an admission criterion.
-- Care that must be re-proved twice a year for as long as you need it, with an income ceiling, an annual renewal, and one certified person standing as the sole route between a body and the drug that keeps it.
-- The register that begins as a count without names, acquires names on a stated date, re-enters everyone already in it under one, and later reconstructs who was near whom from material submitted for treatment — no notice to anyone counted, lawful at every step.
-- The emergency order softened on review into a rota: the doors removed, an interval fixed, and somebody assigned to walk it.
-- The clause repealed and the conduct decriminalised while the file stands — booking sheets keeping their section numbers, registration continuing for decades after the offence has ceased to exist.
-- An actuarial estimate of a population, levied on an entire workforce as a monthly line, collected for years, and wrong by an order of magnitude — the estimate outlasting the cost it was built to predict.
-- Eligibility set first by category, then by an interval, then by a question — the form re-issued at every revision, so the whole history of the rule is legible in a single document that must be answered before anyone may give anything.
-- The finding aid that becomes the load-bearing structure of a life once everyone who remembered it is gone, with a processing backlog measured in years and a deed of gift measured in one signature.
-- Grief with an inventory control system: each unit cut to the dimensions of a grave, accessioned, and kept to a conservation schedule.
-- A city that has permitted no new burial ground in over a century, holding the unclaimed for a statutory interval, disposing of them in common, and carrying the name forward in a ledger.
-- The corrected document issued on a person's own word, while every earlier copy the same office issued remains in circulation, indexed, and valid.
+- The bar as the only lawful place to gather, and therefore the only place with a mailing list.
+- Three blocks that became a hospice district — the ward, the grove and the hospice, walkable.
+- Chosen family, and a next-of-kin form with no field for it.
+- The archive in a storefront: forty years of a life, eleven boxes, unprocessed.
+- A quilt panel cut to the dimensions of a grave, accessioned, conserved, in storage.
+- The clinic people fly in for, and the eligibility letter they need before they board.
+- Leather title contests with written judging criteria and a sitting panel.
+- The obituary page as a weekly serial, and the week it ran to four columns.
+- Elders with no children, aging into a housing market built for households.
+- The estate the family arrives to claim, and the roommate who nursed him.
+- The bathhouse closed by health order and reopened with the doors taken off.
+- A study cohort recruited in a bar, still being followed forty years on.
+- The parade contingent that needs a corporate sponsor to afford the permit.
+- A cafeteria riot in the Tenderloin, and the plaque that went up half a century later.
 
 ### 4.9 Medicine and public health
 
-*Not treatment — enrolment: who is entered on which list, who must be told, and on whose signature a body becomes a case.*
+*The county hospital, the free clinic, the exchange van, and the register you were entered on at birth.*
 
-- Disease defined by whether it appears on a schedule, and the clinician penalised not for the illness but for missing the clock attached to it.
-- Emergency authority vested in a single appointed post — power over a whole population that no election created and no election can withdraw.
-- Confinement by concurrent signature: several officials each acting strictly inside their own narrow jurisdiction, and the sum of their correct decisions is a region shut.
-- Enrolment with no enrolment step — a research population assembled from everyone who was born here, insured here or diagnosed here, joined by a document signed for something else.
-- Consent as a thing a standing committee may waive on your behalf, on written criteria, with a quorum, minutes and a vote.
-- A population signal with no consenting subject and no denominator: nothing about any individual, undeclinable, and never wrong about anyone in particular.
-- Diagnosis as permanent attention — entered once, then checked on a recurring cycle against the death records to establish whether you are still alive.
-- The retroactive result: a test run years later that changes what was already put into your body, and arrives as a letter to an address the file still holds.
-- Care that must be re-proved to be kept — the condition is chronic and the entitlement is annual, so the illness outlasts the eligibility that treats it.
-- Legal personhood suspended and restored on a published schedule of hours and days, with a hearing at each boundary and a guardian appointed by the body that detained you.
-- A commitment made cheaply and young to a register that keeps it for decades, then calls it in on a stranger who no longer remembers agreeing.
-- The duty to notify that runs ahead of the family: the institution knows what will be done with the body before the next of kin knows there is one.
-- Redundancy as the missing organ — one facility of last resort, whose momentary unavailability re-routes an entire county's worst hour somewhere further away, and which itself holds a certification that can lapse.
+- The almshouse on the hill, still the last bed in the city, holding a certification that can lapse.
+- One trauma bay for the whole city, and a diversion status set by whoever is answering the radio.
+- Seven county health officers signing one order, and seven million people confined by concurrent signature.
+- A rope drawn around twelve Chinatown blocks by health order, and a vaccine offered only to the people inside it.
+- The free clinic that opened in the Haight for one summer and never closed, now on a grant cycle.
+- The exchange van with a fixed corner and a fixed hour, running under an emergency the board keeps renewing.
+- A nurse who watches you swallow, daily, and a detention order for the patient who stops coming.
+- The prison across the water, whose chief surgeon wrote up ten thousand transplants for the journals.
+- The state home in the valley with a sterilisation ledger and a cemetery of numbered markers.
+- The asylum that came down in the earthquake, its dead in mass graves under the ground it was rebuilt on.
+- Prepaid care invented for a shipyard workforce, and four million members now inside the cohort.
+- A heel-stick card from every child born in the state, kept frozen, released to approved research.
+- Sickle-cell screening run from an Oakland storefront by an organisation with a file on it.
+- The island station's medical exam, where a parasite in the stool was grounds to send the boat back.
 
 ### 4.10 Belief
 
-*Not what is believed — what is kept: the register, the rota, the bar date, and the corporate body that outlives the faith.*
+*Registers, rotas, retreats and encampments — and the corporation that holds the ground under each.*
 
-- Faith as a filing system: the first thing a religion builds is a register, and the register outlives the belief, the building and everyone entered in it.
-- Sacred ground held on an ordinary instrument — the holy site is whatever survived a filing deadline, and a conveyance to the divine fails because the grantee has no capacity to receive.
-- The timetable as the actual doctrine: a bell, an assigned seat, a fixed term, a rota — belief is whatever is left over after the schedule has been kept.
-- Succession made real by a signed document, so that spiritual descent acquires a date, a custodian and therefore a way of being disputed.
-- Enlightenment as a syllabus — a graded curriculum issued on a schedule, dues, advancement, and written rules governing when a participant may leave the room.
-- Minuted resolutions that reach into bodies: a governing board voting on marriage, on children, on sterilisation, and recording the vote in the ordinary way.
-- Congregation as civic portfolio — a faith that acquires appointments, agenda items and a public-sector role, so its internal discipline becomes municipal administration.
-- Redress with a bar date: an institution's entire history of harm converted into a claims process, after which the wrong becomes permanently uncompensable and lawfully so.
-- Repatriation administered as an inventory — the return of the dead scheduled, deadlined, and contingent on the holder's own determination of what it holds.
-- Custodianship continuing at full quality through exactly the period it should have failed: the registers kept faithfully while the people named in them were confined.
-- Burial by administrative default, and a memorial that names everyone because nobody could be sorted — grief resolved by the party with no relationship to it.
-- Pastoral care with a written deliverable: a dying person's last conversation transcribed, submitted to a peer group for critique, and filed as coursework.
-- Moral arithmetic with an application form, a review committee and a payout deadline — goodness run as a grant cycle, with unsuccessful applicants.
-- A private liturgy with an admissions committee, annual dues and a waiting list measured in decades: the rite is sincere and the barrier to it is a membership secretary.
+- The mission church returned to the Church by federal patent, because someone filed inside the window.
+- A wake-up bell at four, an assigned seat, a ninety-day term, and dues.
+- Dharma transmission issued as a signed document, so the lineage acquires a date and a dispute.
+- The retreat on the cliff with a printed catalogue, a workshop calendar and a work-scholar rota.
+- Sixty hours over two weekends, with written rules governing when a participant may leave the room.
+- The ranch in Marin that incorporated as a religion and minuted its resolutions on sterilisation.
+- A congregation on Geary holding a seat on the housing commission and a place on the public agenda.
+- Four hundred unclaimed dead brought back from the jungle and buried in Oakland by default.
+- The temples that went on keeping the registers while everyone named in them was in the camps.
+- Monographs posted monthly on a fixed schedule, degrees, dues, and a museum run by the same body.
+- The July encampment under the redwoods, with camp rosters, annual dues and a waiting list of decades.
+- Land deeded to God in Sonoma, and a court voiding it because the grantee cannot hold title.
+- The group house in Berkeley pricing extinction, with an application form and a payout deadline.
+- Three dioceses in bankruptcy at once, each with a date after which the harm stops being compensable.
+- The cross on the hill kept standing by selling the ground under it, by the acre, to a private buyer.
 
 ### 4.11 Civic government and the public sector
 
-*The apparatus that concedes everything in writing, on time, in full, and is structured so that nothing follows from the concession.*
+*Chambers, commissions and task forces, and the districts that tax you without appearing on a ballot.*
 
-- Government by bodies nobody elected — taxing power, right of entry, an appointed board — where competence is precisely what makes them unreachable.
-- Procedure as the offence: a decision correct in substance and unlawful in sequence, because the meeting happened in pieces.
-- Openness administered exactly to specification — the request answered inside the window by a citation to the exemption, and the body that can find a violation cannot require anything to follow from it.
-- A jury of citizens with a mandate to inquire, a seal on what they learn that binds for life, and no authority beyond compelling a written reply.
-- An abolished agency's obligations administered in perpetuity by its executor: the body is dissolved, the payment schedule continues, filed on a cycle, forever.
-- A quota discharged by adopting a plan, so compliance is measured in the text of an ordinance rather than in anything that exists.
-- Jurisdiction measured from a moving edge — a regulatory line defined against a boundary that the thing being regulated is itself relocating.
-- A commission empowered to create, merge and dissolve municipalities: local existence as an item on somebody else's consent calendar.
-- Public ground operated to a profit-and-loss statement, with a statutory date by which self-sufficiency must be proved or the land is put toward disposal.
-- A century-old grant discharged daily by operating decisions, its conditions never revoked and never fully met — tolerated non-compliance as the stable state.
-- A budget written by an earlier electorate and binding on the present one until its sunset: governance as standing instructions from people who no longer live here.
-- The record found to be falsified after it was relied upon, so the ground must be measured again beneath approvals already granted to people already living there.
-- Insolvency as governance — services, contracts and pensions converted into claims and settled in a plan approved by a court that answers to nobody local.
+- A civil grand jury empanelled each year, sworn to secrecy for life, entitled only to a written reply.
+- The task force that finds the department violated the ordinance and can require nothing to follow.
+- A shoreline permit line measured a hundred feet in from a water's edge that is coming inland.
+- A national park under a statutory deadline to pay for itself or see the land put toward disposal.
+- A commission that can create, merge and dissolve towns, taking them on the consent calendar.
+- Districts nobody votes in: the water, the parks, the bridge, and the mosquito district's right of entry.
+- A century-old grant to flood the valley, its conditions discharged daily and never fully met.
+- Soil samples at the shipyard found falsified, under housing already approved and occupied.
+- A certificate of preference for a neighbourhood that was demolished, transferable to descendants.
+- Nine counties, a hundred and one cities, and a housing quota discharged by adopting the text.
+- One parcel tax across nine counties, voted once, to hold the bay off for a generation.
+- A police department under a court monitor for two decades, filing compliance reports each quarter.
+- The courthouse condemned as unsafe to occupy, vacated floor by floor, and still occupied.
+- Radiological cleanup on an island with tenants living on it throughout the remediation.
+- A city in bankruptcy, its pensions and services converted into claims in a federal judge's plan.
 
 ### 4.12 Death and its administration
 
-*Custody: who holds the body, who holds the file, and which of the two the law is actually about.*
+*A city with no cemeteries, a town with seventeen, and the county officer who inventories the flat.*
 
-- The dead as a land-use problem — a class of residents removed by ordinance, on a compliance schedule, because the ground had become worth more than the use.
-- Disinterment as an administered activity: a consent in statutory order, a permit, a fee, and, at scale, a ballot measure in which the living vote on whether the buried may remain.
-- Names and bodies separated by a materials contract, so the inscription survives in one place and the remains in another, both correctly disposed of, neither wrongly.
-- A jurisdiction whose service population is permanent, silent and overwhelmingly in the majority, governed by the few hundred living people who happen to reside among them.
-- Perpetual maintenance funded out of the return on a number set once, at the time of sale, by someone estimating the future cost of mowing.
-- Consecrated ground re-encountered on a schedule set by capital projects: the dead are found again whenever a building needs a foundation, and at no other time.
-- The right to decide a disposition distributed by a fixed order of kinship, which reliably produces ties, and no procedure exists to break one.
-- Death certified by an official who answers to the body that held the body, and a verdict phrased to be true without being an accusation, returned in a public hearing that decides nothing else.
-- Death as a record that must clear — a signature owed within hours, a filing owed within days, and a family that cannot bury anyone until a database accepts the entry.
-- Identity reduced to a numbered tag that travels with the remains through the process and is the only thing carrying the name across it.
-- A regulator obliged to write the specification for a finished human being, because a new lawful method of disposition has a commencement date and needs a standard by then.
-- The complete apparatus for a person nobody claimed: entry, inventory, appraisal, auction, a documented heir search with a stopping rule, a final account — and an invoice for the burial, recoverable against the person buried.
-- A ceremony designed to be performed correctly for people nobody attended: a read list, a clergy rota, a plot number, on a cycle.
-- A preliminary count published monthly by a named office and revised upward as the laboratory returns, so the number is never final and is never wrong.
+- A city that stopped burying inside its own limits, then spent forty years moving out the ones already there.
+- Thirty-five thousand from one cemetery into a common mound, after the voters declined to keep it.
+- Headstones sold as riprap: the inscriptions in the seawall, the bodies in the next county.
+- A town incorporated to hold the graves, with a million and a half dead and fifteen hundred voters.
+- A golf course and a museum on the old city cemetery, dug into again whenever a retrofit is funded.
+- A child in a sealed glass casket found under a garage, identified from the removal records.
+- Bones cleaned, boxed and shipped home by the district association, until the year the ports closed.
+- The columbarium in the middle of a residential block, the last place in the city that will take you.
+- Perpetual care funded out of the return on a figure someone estimated at the time of sale.
+- A net under the bridge, a patrol on it, and a count kept by whichever county recovers the body.
+- A sheriff who is also the coroner, certifying the manner of a death that happened in his jail.
+- A numbered metal tag through the retort, the only thing carrying the name across the process.
+- The public administrator's inventory of the flat, the appraisal, and the auction of the contents.
+- Unclaimed cremains held in a county vault for years, then a plot, a clergy rota and a read list.
+- A green-burial preserve in Marin that records a grave as coordinates and plants over it.
 
 ### 4.13 Transport and infrastructure
 
-*A small number of chokepoints, each owned by a body nobody votes for, and each crossing a record opened in your name.*
+*Bridges, bores and one tube: a handful of chokepoints, each run by a board no rider elects.*
 
-- Infrastructure as a fossil of old votes — the network's shape is the permanent record of which jurisdictions declined to join, and nothing has ever re-opened the question.
-- A crossing with no alternative, priced by a body whose revenue depends on there being none, and collected without a booth: a plate is read and an account is opened in your name.
-- Governance assembled by appointment from constituent jurisdictions rather than from the people carried, so the passenger is a customer of something they cannot vote against.
-- A technical choice made once, in a decade nobody remembers, that makes every replacement bespoke — the standard not adopted becomes a permanent condition of procurement.
-- The single asset with no redundancy, whose entire safety regime was written out of one night, and whose next failure has no second route to fall back on.
-- Direction of travel as an administrative decision: the same corridor reversed twice a day on a published timetable, so the schedule is the infrastructure.
-- The replacement built against the last disaster, delivered decades late, entering service with an open defect file and a monitoring programme instead of a fix.
-- A corridor legally preserved as a dormant railway, so its disuse is an interruption rather than an end, and service can be resumed over whatever has been built on it in the meantime.
-- Municipal enterprise outside the municipal boundary — a facility owned by one jurisdiction, sited among people who neither elect its board nor share its revenue.
-- The name of a public facility as a matter of registered marks, litigated between two public bodies, with the public no party to it.
-- Mobility as a determination about a body: an application, an assessment appointment, a category, an expiry date and an appeal.
-- The agency that became a landlord by accident, holding and renting property acquired for a route never built, for decades, with no interest in housing anyone.
-- The structure voted on repeatedly, so the built environment records not a decision but a sequence of them, none final and all correct.
-- Emergency capacity held in the shape of an ordinary commuter service, exercised to a plan, so the evacuation asset is the boat people take to work.
+- The bridge with a net under it, and the tally the net was procured against, kept since opening day.
+- The only crossing for miles, priced by the body that owns the absence of another, and billed to a plate.
+- A bridge board seated by appointment from six counties, and not one seat a rider can vote against.
+- Two counties that walked out of the compact, and a network map that has recorded their absence since.
+- The gauge nobody else in the world uses, so every replacement car is bespoke, from one builder.
+- Four miles of tube under the Bay with no second route, and a rulebook written out of one night's fire.
+- The tunnel bore that reverses at noon, and the fire that ran uphill in it against the traffic.
+- The replacement span in service with the cracked rods still on file, and monitoring in place of a fix.
+- A subway whose train control loads off floppy disks, and a replacement contract measured in decades.
+- The terminal that opened, cracked, closed, and reopened over a train box with no railway in it.
+- An airport owned by a city it does not sit in, insulating the windows of people who cannot vote for its board.
+- Two ports in court over what an airport may be called, with the travelling public no party to it.
+- A railway legally asleep rather than dead, so a trail is an interruption and service can be resumed.
+- Houses bought for a freeway never built, and the highway agency that has been their landlord since.
+- The commuter ferry that is also the evacuation plan, exercised annually against a written scenario.
 
 ### 4.14 Education, research and the university
 
-*A sorting apparatus with an endowment, a patent portfolio and a police power, whose oldest asset is the ground and whose newest is the assignment clause.*
+*A land-grant campus with a police force, a patent portfolio, a weapons lab and a leasehold housing market.*
 
-- An endowment made of ground taken from people who are still here, converted to scrip, sold, and spent into a permanent institution that now holds the archive of the taking.
-- A public trust with constitutional autonomy: appointees serving terms longer than any government, exempt from the rules that bind every neighbour, and answerable to no electorate.
-- The tiered assignment of persons to institutions by percentile — a plan that sorts a generation at eighteen and has never been repealed, only administered.
-- Admission by lottery, with tiebreakers standing in for a desegregation decree that expired, and a merit exception abolished by a board vote and restored by a judge: entry to a school as a permanent item on a litigation calendar.
-- An unelected private body empowered to terminate a public college's right to exist, on written findings, with the appeal heard by itself.
-- Local democracy suspended by a loan — an elected board superseded by a state-appointed administrator on the terms of an emergency advance, the debt outliving the intervention and the board restored to it.
-- A child's status changed by a count of absences, escalated by a review board that keeps minutes, and referred to a prosecutor: attendance as an offence with a threshold.
-- Title in a publicly funded discovery vested in the institution, with a public-interest override written into the statute and never once exercised, generating a revenue line that outlives the laboratory and expires on a date.
-- The whole apparatus of institutional ownership resting on a clause in a form signed at hire by someone who was not told what they were assigning.
-- A committee lawfully empowered to approve a numbered quantity of lives per protocol, obliged to consider alternatives, inspected twice a year, and minuted.
-- Misconduct as a procedure with its own clock — sequestration, an inquiry, an investigation, a report to a distant office — under which whether the finding is true becomes a question of whether the deadlines were met.
-- Experiments on people who were never asked, disclosed by a commission decades later and resolved by a compensation statute that arrives after every subject is dead.
-- A landowner forbidden by its founding instrument to sell, and therefore leasing: a housing market whose entry criterion is an academic appointment and whose exit price is a formula.
-- A university managing a weapons programme through a corporate vehicle, so the academic body is a member of an entity rather than the operator of the work.
+- An endowment made of scrip on ground taken, spent into the campus that now archives the taking.
+- A board with terms outlasting any administration, on land exempt from the rules binding its neighbours.
+- The oath added to the payroll form, the faculty who would not sign, and the ones who signed and left.
+- A generation sorted at eighteen by percentile: the top eighth, the top third, and everybody else.
+- A private accreditor telling a public college it may stop existing, with the appeal heard by itself.
+- An elected school board superseded by a state administrator on the terms of a loan that outlives him.
+- Entry by lottery with tiebreakers, run once a year on a machine, standing in for a decree that expired.
+- The exam school whose admissions are a permanent item on a litigation calendar — test, lottery, test.
+- Title in a publicly funded discovery vested in the campus, with a public override never once used.
+- The whole tech-transfer estate resting on a clause in a hiring form, signed unread by a graduate student.
+- A committee empowered to approve a number of lives per protocol, inspected twice a year, and minuted.
+- The injection given on the ward to a man never asked, compensated after every subject was dead.
+- A founding grant forbidding the sale of the land, so the housing is leasehold and the exit price a formula.
+- The weapons lab held through a limited company, so the campus is a member and not the operator.
+- The eucalyptus the campus planted along the hill road, now fuel, felled stand by stand under injunction.
 
 ### 4.15 Food, land and the working landscape
 
-*Ground and water administered as a permit regime, in which the calendar of what may be grown, taken and eaten is written by instruments and audits.*
+*A crop report, a rain gauge and a toxin assay: what may be grown, taken and eaten, decided by instrument.*
 
-- The county officer who is at once the regulator of poison, the certifier of scales and the author of the annual valuation of everything grown — enforcement and accountancy in a single appointment.
-- Entitlement to water fixed by the year a predecessor first diverted, so seniority is a date, and the curtailments go out in the order in which people arrived.
-- Conservation as an instrument that outruns a life: a contract that renews itself annually and can be exited only by a wind-down measured in years, or a development right bought once and then visited every year, forever, to confirm that nothing has happened.
-- Openings and closures set by instrument — a toxin assay, a count of animals in the water, a rain gauge at a designated station — so what may be taken is decided by laboratories and no one can be petitioned.
-- The protected area as a boundary drawn on water, inside which conduct is a schedule of prohibitions written by a distant office and amendable by rule.
-- Collapse that must be certified before it can be relieved: the fishery declared a disaster by an official act, which is the step that releases the money.
-- A term written decades ago and left to lapse, ending an operation on its expiry date without anyone having to decide anything.
-- Private standards with public auditors — an industry writing its own metrics after an outbreak, submitting to state inspection, and marking the compliant produce.
-- Recall as a classification exercise: a hazard sorted into a numbered class and listed in a weekly report, traced backward through records never kept for that purpose, with the duty to trace arriving years after the duty to withdraw.
-- Charity with an inventory system — commodities allocated by programme, distributed under service agreements to pantries monitored against them, reported in pounds — alongside hunger administered as an eligibility finding re-proved on a cycle.
-- The grade posted at the door: an inspection score displayed on the premises it judges, a closure available on the inspector's finding, and a fee charged for coming back to look again.
-- Housing permitted, inspected and licensed as an appurtenance of an operation, so that a job ending is a vacating order arrived at without an eviction.
-- Lineage certified by tag — a plant's ancestry maintained in a registered block, tested on a cycle, the certification lapsing the year a test comes back positive and invalidating everything propagated from it.
-- Jurisdiction over a place as an agency memorandum: a determination that ground is or is not protected, issued, relied upon by everyone building against it, and withdrawn.
+- One county officer regulates the poison, seals the scales, and prices every crop grown in the county.
+- Farmland under a contract that renews itself every year and can be left only by a nine-year wind-down.
+- A development right bought once and visited every year, forever, to confirm nothing has been built.
+- The crab season opened by a toxin assay and a count of whales, published as a delay, not a decision.
+- Oyster beds that shut themselves when a gauge upstream passes a number, with nobody to petition.
+- A salmon fleet tied up a fourth straight season, with permits worth more than the boats and still trading.
+- The fishery has to be certified collapsed before the money moves, and the certifying is its own queue.
+- Ranches held on federal ground since the taking, and ranch housing that ends when the lease does.
+- Water by priority date: seniority is the year a predecessor first dug, and curtailment runs back up the list.
+- Salt ponds bought back to be flooded slowly, under an adaptive plan measured in decades.
+- A memorandum saying the ponds are protected waters, relied on by everyone, and then withdrawn.
+- Grapes rejected for smoke taint on a laboratory panel, against a contract that pays on the panel's word.
+- Rows worked in wildfire smoke, with the respirator issued at a published air quality number.
+- Housing licensed as an appurtenance of the job, so the last shift is also the vacating order.
+- Vine stock certified in a mother block, and a registration that lapses the year one test comes back positive.
 
 ---
 
