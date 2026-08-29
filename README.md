@@ -22,7 +22,10 @@ stories/NN-slug.md           one story each; 24 developed
 stories/00-undeveloped.md    the bench -- greenlit but never developed, parked
                              attempts with their reasoning, held pairs, passed-on
 
-refs/                        source annexes; read, never edited
+refs/                        annexes. The source files are read, never edited;
+                             setting-a.md is written in-house and grows
+  setting-a.md                the specifics behind playbook section 4 -- fifteen
+                             domains of setting-a statutes, bodies, dates, cases
   chiang.md
   watts.md
   setting-c.md

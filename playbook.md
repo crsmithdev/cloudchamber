@@ -4,7 +4,7 @@
 
 **Source tags:** `[C]` Chiang · `[W]` Watts · `[setting-c]` setting-c · `[TC]` setting-b · `[K]` djkaktus · `[S]` SCP, wider wiki (Annex F) · `[E]` Neon Genesis Evangelion · `[FB]` Fog Belt originals (doctrine arrived at in-house). Tags mark where a move is best demonstrated, not where it's allowed.
 
-**Where the evidence lives:** `refs/chiang.md` · `refs/watts.md` · `refs/setting-c.md` · `refs/setting-b.md` · `refs/evangelion.md` · `refs/jaynes.md` · the djkaktus corpus, six files (`refs/scp/djkaktus-*.md`) · nineteen assorted SCP articles by other authors (`refs/scp/assorted.md`) · sixty-three triaged but unregistered articles (`refs/scp/candidates.md`) · the slate itself (`stories/`, 24 developed and one bench file of undeveloped concepts).
+**Where the evidence lives:** `refs/chiang.md` · `refs/watts.md` · `refs/setting-c.md` · `refs/setting-b.md` · `refs/evangelion.md` · `refs/jaynes.md` · the djkaktus corpus, six files (`refs/scp/djkaktus-*.md`) · nineteen assorted SCP articles by other authors (`refs/scp/assorted.md`) · sixty-three triaged but unregistered articles (`refs/scp/candidates.md`) · the slate itself (`stories/`, 24 developed and one bench file of undeveloped concepts) · `refs/setting-a.md`, the specifics behind §4, written in-house and meant to grow.
 
 **Standing note.** *(2026-08-26)* The taste profile is explicitly evolving. Old rules get invalidated as the corpus is re-read and recycled. **Do not treat anything in this document as canonical against a live instinct.** It records what has worked; it is not a constitution. Where a rule has been amended, the amendment sits inline with its date rather than in a separate log.
 
@@ -433,289 +433,302 @@
 
 # 4. THE setting-a
 
-*Every story carries a setting-a matrix. This is the bank for it: real bodies that keep records, run schedules, issue documents and administer something on people or on ground. One line each, a premise seed rather than a description.*
+*Fifteen domains. Every story carries a setting-a matrix, and it has to be structural rather than scenery — the test is whether removing the element removes a mechanism, not an image. A neighbourhood name in a sentence is worth nothing.*
 
-*Two rules. **The element has to be structural, not scenery** — the test is whether removing it removes a mechanism, not an image; a neighbourhood name in a sentence is worth nothing. And **the horror is a process, never a population.** The material below includes the histories of people the region's institutions have harmed; the villain is always the apparatus, its schedule and its paperwork, and never the people it was pointed at. Nothing here makes an identity the frightening thing.*
+*Each line is a premise seed, not a description, in the same form as §1. The specifics these were distilled from — the statutes, dates, bodies, cases and numbers — are in `refs/setting-a.md`; go there when a premise needs a real mechanism under it, and stay here while you are still looking for one.*
 
-*Items marked `[?]` are specifics a fact-check should confirm before they carry weight in a story.*
+*The horror is a process, never a population. Several of these domains carry the histories of people the region's institutions have harmed; the villain is always the apparatus. Nothing here makes an identity the frightening thing.*
 
 ### 4.1 Land and title
 
-- The Act of March 3, 1851 (9 Stat. 631) put the burden of proof on the grantee: every Californio landholder became a claimant before a three-man Board of Land Commissioners, and possession since 1830 counted for nothing without a paper the board would accept.
-- The *expediente* and the *diseño* — the Mexican-era case file and its hand-drawn sketch map, with boundaries called to a willow, a cattle skull, a pile of stones — read by an American tribunal that required metes and bounds, so the defect in title is a difference in what a map is for.
-- Section 8's two-year presentation bar: a claim not filed by March 1853 was extinguished by operation of law and the land passed into the public domain, which means some parcels are held today on a foreclosure nobody attended.
-- The confirmed claim still needed a federal survey and a patent from the General Land Office; the median wait ran to roughly seventeen years `[?]`, and the ranchos were routinely paid to their own lawyers in undivided interests.
-- San Francisco's own root of title is the pueblo claim — four square leagues confirmed to the city as successor to Mexican Yerba Buena, ratified by the Van Ness Ordinance (1855), state confirmation in 1858 and the Act of July 1, 1864 — so the city is a grantee in the same chain it adjudicates.
-- The McEnerney Act (Stats. 1906) still lets a claimant quiet title *in rem* against all the world where the 1906 fire destroyed the Recorder's books, with notice by newspaper publication and posting; the decree binds absent parties who were never served and are presumed to have read the paper.
-- Recording is not title: Civil Code §§1213–1214 make a recorded instrument constructive notice to everyone forever, so a person is charged with knowledge of a document they have never seen and could not have found.
-- The title plant — a private, parcel-indexed duplicate of the public record maintained by the insurers `[?]` — is the working memory of the industry, and it is not a government record, not public, and not obliged to be complete.
-- CLTA standard-coverage exceptions carve out rights of parties in possession and matters an accurate survey would disclose: the insurer has named the risks it will not insure, and having named them, has no reason to ever look.
-- Racially restrictive covenants survived *Shelley v. Kraemer* (1948) as printed text in millions of deeds; AB 1466 (2021) directs county recorders to redact them, but the mechanism is a *recorded modification* appended to the chain — the original instrument stays in the book, because the record can be annotated and never edited.
-- The HOLC Residential Security Maps and their Area Description forms (setting-a surveys, 1937) are a fillable questionnaire with fields for "Infiltration of," "Foreign-born" and "Relief families" and a letter grade — the atrocity is a form design, and the forms are digitised and searchable.
-- Yerba Buena Cove was sold as water lots and filled 1849–1860s with dune sand, ship's ballast and abandoned vessels; the 1859 waterfront line is now inland, and buried hulls (*Niantic*, *General Harrison*, *Candace*) are encountered by excavation permits rather than by archaeology.
-- Fill over former tidelands sits on sovereign land held in the public trust: the State Lands Commission can assert a trust interest in ground a private owner has held of record for a century, and BCDC (McAteer-Petris Act, 1965) permits everything within 100 feet of the shoreline band.
-- Proposition 13 (Art. XIII A) freezes assessment at a 1975 base year until a "change in ownership," which makes the transfer event — not the property — the taxable object; every deed carries a Preliminary Change of Ownership Report (BOE-502-A) asking the Assessor's real question in plain language.
-- Proposition 19 (eff. 16 February 2021) narrowed the parent-child exclusion to a principal residence occupied by the child within one year: inheritance now has an occupancy test with a deadline that starts running at a death.
-- The Western Addition A-1 and A-2 projects displaced thousands under the Redevelopment Agency; the surviving instrument is the Certificate of Preference, a housing-priority document issued to displaced households and transmissible to heirs — a paper that records a taking and is itself now an inheritable asset.
-- The Presidio Trust Act (1996) required the Trust to make a former army post financially self-sufficient by 2013 or see the property go to GSA for disposal: a national park operated under a statutory profitability covenant, with tenants, leases and a rent roll.
-- Marketable-record provisions (Civil Code §880.020 et seq.) expire certain ancient interests after thirty years unless a Notice of Intent to Preserve is recorded — an obligation that stays alive only because someone re-files a one-page form once a generation, and dies the year they forget `[?]`.
+*What a record is for, who it binds, and the fact that it can be annotated but never edited.*
 
-**Reach for first —** the chain of title itself. It runs continuously from a Mexican grant to Monday's escrow, every instrument in it binds parties who never read it, and it supplies dates, defects, an examiner whose job is to find them, and a deadline.
+- Possession converted into a claim: everyone already living on the ground made a petitioner before a board, with the burden of proof on the occupant, and the paper rather than the occupancy deciding.
+- Two maps of the same ground drawn for incompatible purposes — one calling its boundary to a willow, a skull, a heap of stones, the other requiring measured bearings — so the defect in the title is a disagreement about what a map is.
+- A dispossession with no event, only an expiry: the claim not presented by the stated day is extinguished by operation of law, and some ground is held today on a foreclosure nobody attended.
+- Confirmation that takes a working lifetime to become a document, with the lawyers paid in undivided shares of the thing they were retained to save — the process consumes the asset it validates.
+- The body that adjudicates the chain of title is itself a grantee in that chain, and its own root is one of the claims before it.
+- Title quieted against all the world where the register burned: notice given by publication, a decree binding absent parties who were never served and are presumed to have read the paper.
+- Recording as constructive notice — you are charged, permanently, with knowledge of an instrument you have never seen and could not have found.
+- The industry's working memory is a private duplicate of the public record, obliged to be neither complete nor disclosed; and the insurer, having named in advance the risks it will not cover, has no reason left to look for them.
+- A record that can be annotated but never edited: the covenant is undone by appending a page, so the original text stays in the book forever as part of the chain, corrected and intact.
+- The atrocity as a form design — fillable fields, a category for what is infiltrating, a letter grade — and the forms survive, digitised and searchable, long after the hands that filled them.
+- Ground manufactured out of ballast, dune sand and abandoned ships, sold as lots and held of record for a century: the hulls are met by excavation permit rather than by anyone looking, and the sovereign can still assert the ground was never anyone's to convey.
+- Assessment frozen until a transfer, which makes the event and not the property the taxable object, and turns inheritance into an occupancy test whose clock starts running at a death.
+- An interest that survives only because someone re-files a one-page form once a generation, and ends in the year they forget.
 
 ### 4.2 The first peoples
 
-- The Ramaytush Ohlone are the people of the San Francisco Peninsula and are here now, organised as the Association of Ramaytush Ohlone; the Chochenyo of the East Bay, Tamyen of the Santa Clara Valley, Karkin of the Carquinez shore and their relations are eight named language communities, not one undifferentiated category — and the flattening into a single label was itself an administrative act.
-- The Muwekma Ohlone Tribe descends from the Verona Band of Alameda County, which the Indian Office listed and served until special agent L. A. Dorrington's 1927 report recommended no land purchases; being dropped from a purchasing schedule is the documented moment a recognised people became, on paper, not one.
-- Federal acknowledgment under 25 C.F.R. Part 83 requires proof of continuous community and political authority, evaluated on a documentary record largely created by the agencies that interrupted it; the 2002 final determination against Muwekma was affirmed as non-arbitrary in *Muwekma Ohlone Tribe v. Salazar*, 708 F.3d 209 (D.C. Cir. 2013) `[?]`.
-- Eighteen treaties negotiated with California tribes in 1851–52 reserved roughly 7.5 million acres; the Senate rejected them in closed session under an injunction of secrecy that held until 1905, so for fifty-three years the reserved land was settled by people who could not have discovered the claim and the claimants could not read the instrument bearing their marks.
-- The Act for the Government and Protection of Indians (22 April 1850) authorised the indenture of Native children and the hiring-out of adults on a justice of the peace's order; the indenture provisions were repealed in 1863, and the county records the process generated are the paperwork of an ordinary local court.
-- The state funded militia expeditions by bond and Congress reimbursed a large share of the cost in the 1850s `[?]`: the killing has a line item, an audit trail and a reimbursement claim, which is the form in which it is best studied.
-- The Mission San Francisco de Asís registers (founded 1776) are baptismal, marriage and burial books that are simultaneously the region's first vital-statistics system and the record of congregation; the Huntington's Early California Population Project has made roughly 110,000 of those entries a searchable database, so descendants and researchers now query the same volumes.
-- Over five thousand Native people are buried at Mission Dolores, most in ground now outside the walled cemetery and under city lots `[?]` — the register names them and the surface does not.
-- Nels Nelson's 1907–09 survey for the University recorded some 425 shellmound sites around the Bay: an academic inventory that became, for the century after, the working map by which the mounds were located, quarried and built over.
-- The Emeryville Shellmound was levelled in 1924 for industrial use and the parcel later carried a shopping centre; the West Berkeley Shellmound at 1900 Fourth Street was landmarked in 2000 and the parcel transferred to the Sogorea Te' Land Trust in 2024 after settlement `[?]` — two adjacent parcels, one land-use process, opposite outcomes.
-- The Sogorea Te' Land Trust administers the Shuumi Land Tax, a voluntary annual contribution with a published rate table keyed to residence and ownership: an Indigenous body that has issued a schedule, a rate and an assessment to the settlers on it.
-- Health & Safety Code §7050.5 halts all excavation on discovery of human remains and refers the determination to the county coroner; if the remains are Native American the coroner must notify the Native American Heritage Commission within 24 hours, the NAHC designates a Most Likely Descendant, and the MLD has 48 hours from site access to make recommendations (Public Resources Code §5097.98) `[?]` — grief on a construction clock, with a lead agency free to reject the recommendation and document why.
-- The NAHC (est. 1976) maintains the Sacred Lands File, a confidential inventory searched on request and exempt from public disclosure; the map of what must not be disturbed is itself withheld, so protection and secrecy are the same operation.
-- Site records live in the California Historical Resources Information System via the Northwest Information Center at Sonoma State, under trinomials (CA-SFR-, CA-ALA-) issued by the state — ancestors indexed by county abbreviation and sequence number, released only to qualified applicants.
-- NAGPRA (1990, 25 U.S.C. §3001; 43 C.F.R. Part 10) set inventory deadlines in 1995 and produced the category "culturally unidentifiable" — a determination made by the holding institution about the ancestors it holds; the revised regulations effective 12 January 2024 eliminated that category, required deference to tribal traditional knowledge, gave institutions five years to update inventories and required consent before exhibition or research, which is why displays closed nationwide that month.
-- CalNAGPRA (Health & Safety Code §8010 et seq., 2001, strengthened by AB 275 in 2020) reaches state agencies and the University of California and creates a Repatriation Oversight Commission with a dispute process; the Phoebe A. Hearst Museum's holdings have been among the largest in the country `[?]`, which makes a public university the largest local custodian of the ancestors it is now obliged to return.
-- The BIA's Voluntary Relocation Program (1952) and the Indian Relocation Act of 1956 supplied a one-way ticket, a first month's rent and vocational placement to designated cities including San Francisco, San Jose and Oakland — a federal programme whose principal instrument was a bus ticket that did not return, and whose institutions (Intertribal Friendship House, Oakland, 1955) were founded by the people it moved.
-- The occupation of Alcatraz, 20 November 1969 – 11 June 1971, was filed in the form of a conveyance: Indians of All Tribes cited the 1868 Treaty of Fort Laramie's surplus-land provision and offered $24 in glass beads and red cloth, addressed "To the Great White Father and All His People" — a land claim written in the grantor's own instrument and in his own arithmetic.
-- Executive Order N-15-19 (18 June 2019) apologised for state-sponsored violence and created the California Truth and Healing Council — a state body chartered to assemble the evidence of what the state's own filing systems did.
+*Documentary standards, claims processes and confidential registers as apparatus — and what a correct system does when it is pointed at a people.*
 
-**Reach for first —** the Most Likely Descendant process. It is the whole domain in one apparatus: a discovery, a statutory stop-work, a coroner's determination, a designation by a state commission, a 48-hour window, a recommendation, and a lead agency entitled to decline it in writing.
+- Distinct communities, each with its own language and territory, flattened into one category for administrative convenience: the first thing the record did was reduce the number of peoples it would have to account for.
+- Recognition that ends by omission — a people listed and served until an official's report recommends no further purchases, so the moment they stop existing on paper is a line struck from a schedule.
+- Acknowledgment awarded on proof of continuous community and political authority, evaluated against a documentary record assembled largely by the agencies that interrupted it: the standard of evidence is the same instrument as the harm.
+- Instruments negotiated, marked, and then sealed under an injunction of secrecy for two generations — for fifty years the claim was unfindable by the people settling the land and unreadable by the people who signed it.
+- A taking routed through the ordinary machinery of a local court and funded by bond with reimbursement claimed from a higher government, so the killing has a docket, a line item and an audit trail, and the accounting is the form in which it is best studied.
+- The first vital-statistics system and the instrument of congregation are the same bound books, now a searchable database queried by descendants and researchers alike — the register names what the surface does not.
+- An inventory compiled for study becomes the working map by which the sites are afterwards located, quarried and built over: the survey did not record the ground, it published it.
+- Two adjacent parcels run through one land-use process to opposite outcomes, the procedure identical in both files and the result entirely a function of who appeared at which hearing.
+- A voluntary contribution with a published rate table keyed to residence and ownership — the schedule turned around and issued, correctly and in writing, to the people living on the ground.
+- Grief on a construction clock: a statutory stop-work on discovery, a determination by an official, a designation by a commission, a window measured in hours, and a lead agency entitled to decline the recommendation provided it documents why.
+- The inventory of what must not be disturbed is confidential and exempt from disclosure, indexed by abbreviation and sequence number and released only to qualified applicants — protection and secrecy performed by a single operation.
+- A category invented by the holding institution to describe the ancestors it cannot attribute, and a public university as the largest custodian of what it is now obliged to return.
+- A relocation programme whose principal instrument is a one-way ticket, a first month's rent and a placement, and whose most durable institutions were founded by the people it moved.
+- A land claim filed in the grantor's own instrument and in his own arithmetic, quoting his surplus-land clause back at him — and a body later chartered by the apparatus to assemble the evidence of what its own filing systems did.
 
 ### 4.3 Water, fire, ground
 
-- The Raker Act (19 December 1913, 38 Stat. 242) granted San Francisco rights-of-way through Yosemite on conditions, including §6's bar on selling the system's power to a private utility for resale; the compliance question has been open for over a century without the grant ever being revoked `[?]`.
-- O'Shaughnessy Dam (1923, raised 1938) drowned a valley to supply a city 167 miles away; the water arrived in October 1934 at the Pulgas Water Temple, a colonnade built by a municipal utility over an outfall and inscribed from Isaiah — the aqueduct terminates in a temple, by design, with a dedication date.
-- SFPUC's Water System Improvement Program is engineered to a stated level of service: deliver basic water to the service area within 24 hours of a major earthquake `[?]` — a public agency has published the number of hours it expects the city to go dry.
-- EBMUD (formed 1923) draws the Mokelumne through aqueducts crossing the Delta, first delivering water in 1929; two large urban systems therefore depend on siphons laid across islands that are subsiding beneath them.
-- The Sustainable Groundwater Management Act (2014, Water Code §10720 et seq.) requires Groundwater Sustainability Agencies to avoid six statutorily defined "undesirable results" and to reach sustainability by 2040, so a basin now has a plan, a deadline, and a named agency that will be found to have failed.
-- Downtown San Jose subsided roughly 13 feet between 1910 and 1969 from groundwater pumping, measured against survey benchmarks and arrested only by imported water and managed recharge financed by a groundwater production charge — the ground fell by a documented amount and was stopped by a pump tax.
-- Delta islands sit up to 25 feet below sea level because drained peat oxidises in air and the land burns away slowly without fire; about 1,100 miles of private and district levees hold back water that is above the farmhouses, and the Jones Tract failure of 3 June 2004 flooded roughly 12,000 acres from a levee nobody was watching.
-- The Hayward Fault ruptured on 21 October 1868 (M~6.8) and paleoseismic trenching gives about twelve events in 1,900 years, a mean recurrence near 150 years `[?]`; the elapsed interval is now longer than the mean, and this arithmetic is published by the USGS rather than inferred by the story.
-- The USGS HayWired scenario models a M7.0 on the Hayward Fault with roughly 800 deaths, 18,000 injuries, 400 ignitions and $82 billion in property damage `[?]`, plus East Bay water outages measured in weeks to months — a federal agency has written the casualty figures for an event with no date.
-- The Hayward Fault creeps aseismically at about 5 mm/yr, offsetting curbs and culverts and California Memorial Stadium, built astride the trace in 1923 and retrofitted in 2010–12 with a joint designed to let the two halves separate — a structure engineered to be torn in half slowly and to keep operating.
-- UCERF3 (2015) puts the probability of one or more M6.7+ earthquakes in the setting-a over thirty years at 72%: a number that appears in insurance underwriting, bond disclosure and residential transaction documents.
-- The Alquist-Priolo Act (1972, PRC §2621) forbids habitable structures within 50 feet of an active trace and requires a site-specific fault investigation before permit; the Seismic Hazards Mapping Act (1990) adds liquefaction and landslide zones, and Civil Code §1103 forces all six hazards onto a one-page Natural Hazard Disclosure Statement handed to every buyer.
-- Loma Prieta (17 October 1989, M6.9) liquefied the Marina District — fill that included 1906 rubble and 1915 exposition debris — and collapsed the Cypress Structure on Bay Mud; the mechanism is that made ground remembers, at depth, exactly what it was made of.
-- 301 Mission Street settled some 18 inches and tilted measurably after completion in 2009, and its perimeter pile upgrade concluded in 2023 `[?]`; the enduring artifact is the monitoring regime — surveyed settlement readings, filed on a schedule, published, and read by owners who cannot sell.
-- CalFire's Fire Hazard Severity Zone maps (PRC §4201, Gov. Code §51175) assign every parcel a class that governs building standards, insurance and disclosure; AB 3074 (2020) added Zone 0, an ember-resistant band within five feet of the structure in which combustible material is prohibited `[?]`.
-- The Oakland Hills Tunnel Fire (20 October 1991) killed 25 people and destroyed 2,843 dwellings after a grass fire declared controlled the previous day re-ignited overnight — a closure decision, correctly made under the standards then in force, is the proximate cause.
-- PG&E's Public Safety Power Shutoff programme de-energised roughly 738,000 customers on 9 October 2019 `[?]` under CPUC guidelines: a utility with a legal duty to serve, exercising a regulator-blessed discretion to stop serving, on meteorological criteria, to people on home oxygen.
-- PG&E was convicted on six federal felony counts after the San Bruno pipeline explosion (9 September 2010, eight deaths) and pleaded guilty in June 2020 to 84 counts of involuntary manslaughter for the Camp Fire; the corporate person has a criminal record, served a term of federal probation, and continues to hold the franchise.
-- BAAQMD (1955, the first regional air district in the country) administers the Air Toxics "Hot Spots" Act (AB 2588, 1987), under which a facility exceeding a risk threshold must notify nearby residents in writing of their estimated cancer risk in chances per million — a letter that arrives at a house and states a number about the people in it.
-- Contaminated ground is administered by recorded Land Use Covenants and the Cortese List (Gov. Code §65962.5), with DTSC's EnviroStor and the Water Board's GeoTracker as the public registers; at the Middlefield-Ellis-Whisman site TCE migrates as vapour into buildings above it, the driving endpoint has a short exposure window, and the engineering control — a sub-slab depressurisation fan with an O&M agreement and five-year reviews — must run forever.
-- Mercury from New Almaden (1845–1976, the largest such mine in North America) is still in Bay sediment and Bay fish, and hydraulic mining debris was enjoined only in 1884 by *Woodruff v. North Bloomfield*; both leave one modern instrument — an OEHHA fish consumption advisory posted at the pier, in several languages, stating meals per month.
+*A landscape administered as a set of published clocks, by agencies that also publish the casualties.*
 
-**Reach for first —** the recurrence interval. It is a published number with an elapsed clock running against it, produced by a competent agency that also publishes the casualties, and nothing else in the region so cleanly gives a story a schedule nobody set and nobody can stop.
+- A valley drowned to supply a city several counties away, and the aqueduct terminating in a colonnade with an inscription and a dedication date — the works built to be worshipped, not merely operated.
+- Two systems' lifelines laid across islands sinking beneath them: drained ground that burns away slowly without fire, private levees holding water above the roofline of the farmhouses, one failure at a levee nobody was watching, and a sustainability deadline assigned to a named agency that will be found to have failed.
+- Ground that fell by a documented number of feet and was arrested by a charge per unit pumped — geology stopped by a fee, and resumed the moment the fee is.
+- A recurrence interval published by the same competent agency that publishes the casualty count and the outage duration: a schedule nobody set, an elapsed clock already past the mean, and an event with a full damage estimate and no date.
+- Motion too slow to be an event — a fault creeping through curbs and culverts, and a structure built astride it retrofitted with a joint designed to let its two halves separate and keep operating.
+- Every parcel assigned a hazard class that governs how it may be built, insured and sold, down to a band five feet wide in which nothing combustible may exist; the probability appearing not as a warning but as a term of the transaction.
+- Made ground remembers, at depth, exactly what it was made of — including the rubble of the last disaster, which is what liquefies in the next one.
+- A building that settles and tilts, whose enduring artifact is not the defect but the monitoring regime: readings surveyed on a schedule, filed, published, and read by owners who cannot sell.
+- A closure decision made correctly under the standards then in force, and re-ignition overnight as the proximate cause of everything after it.
+- A supplier under a legal duty to serve, exercising a regulator-blessed discretion to stop serving, on meteorological criteria, to households whose lungs are on the meter.
+- A corporate person with a criminal record and a served term of probation, still holding the franchise it was convicted for operating.
+- A letter that arrives at a house and states a number about the people inside it — estimated risk in chances per million, disclosed because a threshold was crossed, with nothing required of the recipient.
+- Contaminated ground administered by recorded covenant and public register, with the engineering control a fan under a slab, a maintenance agreement and a periodic review — a machine that must run forever, signed off on schedule by a competent person.
+- A century of extraction still in the sediment and in the fish, reduced to one surviving instrument: a sign at the pier, in several languages, stating meals per month.
 
 ### 4.4 The technology industry
 
-- Four years with a one-year cliff, and a 90-day post-termination exercise window that turns a fully vested grant into a tax bill the holder cannot pay — the ISO clock is IRC §422(a)(2), and simply letting it run is the cheapest lawful way to take equity back.
-- The 83(b) election: thirty days from grant to notify the IRS that you accept tax on something currently worthless, with no extension and no relief for the person who was never told the clock had started.
-- The 409A valuation, refreshed every twelve months by an appraiser the company retains, fixing the strike price for people who never see the report, cannot commission another, and have no standing to contest it.
-- The tender offer with company-set eligibility — minimum tenure, current employment, a per-holder cap — so liquidity is a benefit administered on the same schedule as the loyalty it purchases.
-- The acqui-hire structured as an asset purchase with consideration allocated to a retention pool rather than to stock: the liquidation preference is satisfied, the common is worth zero, and everyone involved is employed and grateful.
-- Severance conditioned on a general release carrying confidentiality and non-disparagement terms — narrowed by SB 331 (in force 1 January 2022) and by the NLRB's *McLaren Macomb* (February 2023), and still signed, because the consideration period is short and rent is monthly.
-- The H-1B is employer-specific with a 60-day grace period after termination (8 CFR §214.1(l)(2)) — a rule that makes a resignation letter an immigration event, calendared by HR.
-- The Department of State Visa Bulletin: monthly, two charts, and a 7% per-country limit (INA §202(a)(2)) producing an EB-2 India queue longer than a working life — a published table with dates on it that sometimes move backwards.
-- Badge colour as legal architecture: a temp/vendor/contractor roster reported in 2019 as exceeding Google's full-time headcount `[?]`, tenure caps that end an assignment before benefits attach, and *Vizcaino v. Microsoft* ($97m settlement, 2000) as the precedent every subsequent structure was drafted around.
-- The content-moderation vendor's wellness programme, staffed by coaches who are not licensed clinicians and owe no clinical confidentiality — and *Scola v. Facebook* ($52m, 2020), which priced the diagnosis and left the queue exactly as it was.
-- The escalation taxonomy, revised quarterly by a policy team on another continent, with tiered SLAs a client may pay to accelerate, and one line in the whole rubric carrying a criminal penalty behind it: the mandatory CyberTipline report under 18 U.S.C. §2258A.
-- WUE and PUE published annually while the cooling towers draw a recycled-water allocation under a municipal purple-pipe contract and the load sits in an interconnection queue — a building whose water is a utility agreement and whose power is a waiting list.
-- The MEW Study Area — Middlefield-Ellis-Whisman, Mountain View — where the fab-era TCE plume sits beneath later office construction, and the lease carries a sub-slab depressurisation system, a recorded land use covenant, and a CERCLA five-year review that a competent person signs on schedule.
-- Santa Clara County holds more Superfund sites than any county in the United States `[?]`, each with an operations-and-maintenance obligation that has no end date and a responsible party three corporate successions removed from whoever installed the tank.
-- Decommissioning under a litigation hold: routine deletion suspended by a hold notice, NIST SP 800-88 sanitisation levels applied to the media that is released, and a retention schedule under which the data outlives the product, the entity, and everyone named in it.
-- The S-1's Item 105 risk factors — a document in which a company states in advance, accurately and at length, everything it will later be accused of, and is thereby protected from being sued for it `[?]`.
-- The commuter shuttle permit: a private coach paying a per-stop, per-day fee to load at a public bus stop under a municipal programme (San Francisco's began as a pilot in August 2014), producing a permitted route network that tracks rent more closely than any zoning map.
+*Nothing is confiscated; a clock is allowed to run, and the person who loses everything was in full compliance throughout.*
 
-**Reach for first —** the calendar of short deadlines. Thirty days for the 83(b), ninety to exercise, sixty of H-1B grace. Nothing in this industry is confiscated; a clock is allowed to run, and the person who loses everything was in full compliance the entire time.
+- A grant earned over years and forfeited in a window measured in weeks, because exercising it produces a tax bill the holder cannot pay — the cheapest lawful way to take equity back is to let the calendar do it; and liquidity, when it comes, is administered on the same schedule as the loyalty it purchases.
+- Thirty days to notify the authority that you accept tax on something currently worthless, with no extension and no relief for the person nobody told the clock had started.
+- A price fixed annually by an appraiser the company retains, in a report the priced parties never see, cannot commission, and have no standing to contest.
+- The acquisition structured so that the preference is satisfied, the common is worth zero, and everyone involved is employed and grateful.
+- A grace period that converts a resignation letter into an immigration event, calendared by the department that processed the resignation.
+- A published queue with dates on it that sometimes move backwards, and a per-country cap producing a wait longer than a working life.
+- Badge colour as legal architecture: a shadow workforce larger than the counted one, tenure caps that end an assignment the month before benefits attach, and a single old settlement that every subsequent structure was drafted around.
+- Care provided by people who owe no clinical confidentiality, and a settlement that priced the diagnosis and left the queue exactly as it was.
+- A rubric revised quarterly by a policy team on another continent, with tiers a client may pay to accelerate, and exactly one line in it carrying a criminal penalty behind it.
+- Efficiency ratios published annually while the water is a utility contract and the power is a position in a waiting list.
+- The first generation's contamination sitting under the current generation's offices, with an obligation that has no end date attached to a party three corporate successions removed from whoever installed the tank.
+- Routine deletion suspended by a hold notice, sanitisation standards applied to whatever is released, and a retention schedule under which the data outlives the product, the entity, and everyone named in it.
+- A document that states in advance, accurately and at length, everything the enterprise will later be accused of — and is protected precisely by having said so.
+- A permitted private route network paying per stop to load at public infrastructure, tracking rent more closely than any map of zoning.
 
 ### 4.5 Capital and its instruments
 
-- The capital call: a drawdown notice with ten business days to fund `[?]` and a default clause forfeiting a stated share of the capital account — an instrument under which a pension system's failure to wire on time is a breach with a number attached.
-- Carry at 20% over an 8% preferred return, with a clawback at fund end secured by escrow and the individual partners' personal guarantees, so the final act of a fund's life is a demand on people who spent the money a decade earlier.
-- IRC §1061's three-year holding period for carried interest: the tax code's price for treating a fee as a gain, denominated entirely in how long somebody has to hold something.
-- The Official Statement — several hundred pages disclosing every reason the bond might fail — delivered under SEC Rule 15c2-12, with continuing disclosure to EMMA and material-event notices due within ten business days, forever, to purchasers who will never read it.
-- The rate covenant: a promise to bondholders to set utility rates high enough to maintain stated debt-service coverage (1.25x is standard), which converts a financing into a standing legal obligation to raise the price of water on the electorate that approved it.
-- A Mello-Roos community facilities district (Gov. Code §53311 et seq., 1982): a special tax that escalates annually, is not ad valorem and so is untouched by Proposition 13, holds lien priority equal to property tax, and is backed by a covenant to commence judicial foreclosure on delinquent parcels within a fixed number of days.
-- The endowment's spending rule — a percentage of a trailing twelve-quarter average — and UPMIFA's donor-restriction machinery `[?]`, under which a dead donor's sentence is a live constraint and altering it requires a court or the Attorney General.
-- Insurance Code §675.1's one-year non-renewal moratorium for ZIP codes inside a declared wildfire perimeter: a statutory pause, after which the underwriting decision resumes precisely where it was interrupted.
-- The FAIR Plan as insurer of last resort (Insurance Code §10090 et seq., 1968) — a syndicated pool whose assessments fall on the admitted carriers, whose exposure grows with every non-renewal written elsewhere, and whose dwelling limit is a hard number `[?]`.
-- The ESOP: a retirement account whose sole asset is the employer, valued once a year by an appraiser engaged by a trustee the employer selected, carrying a repurchase obligation that matures as a company liability at exactly the moment its former employees need paying.
-- The perpetual care endowment fund — required of California cemeteries, principal untouchable, income to maintain the graves in perpetuity — and the arithmetic of fixed principal against a rising cost of mowing, administered by a corporate trustee that does not die.
-- CalPERS' actuarial valuation: a 6.8% discount rate (since 2021), an unfunded liability amortised on a fixed schedule, a contribution arriving as a mandatory line on a city's general fund, and a termination liability valued at a risk-free rate — the price of leaving, calculated so that leaving is not available.
-- Wildfire cost securitisation under AB 1054 (2019): recovery bonds issued against a non-bypassable charge that follows the customer even if they leave the utility — a debt attached to the meter rather than to any person.
-- The single-family rental securitisation, first issued in 2013, in which the collateral is a rent roll and the trust's covenants create a contractual interest in occupancy and rent growth, enforced by a servicer with no office in the county.
-- Escheat under the Unclaimed Property Law (CCP §1500 et seq.): three years of dormancy, a holder's due-diligence letter to the last known address, remittance to the State Controller, and custody for as long as it takes `[?]`.
-- The charged-off account sold at cents on the dollar with an affidavit of sale, a four-year limitations period on a written contract (CCP §337) that one partial payment restarts, and a default judgment that first becomes visible as a wage garnishment.
-- The structured settlement factoring transfer, which a judge must approve as being in the payee's best interest (Insurance Code §10134 et seq.) — a hearing whose output is a judicial finding that it is correct for an injured person to sell their future.
-- ARB compliance offsets under Cap-and-Trade: a hundred-year permanence obligation on a forest project, serialised credits in CITSS, and a pooled Forest Buffer Account insuring a century of stored carbon that wildfire has drawn down in well under a decade `[?]`.
+*Promises drafted to outlive the money that funds them.*
 
-**Reach for first —** the perpetual obligation with a finite funding source: the care fund, the buffer pool, the hundred-year covenant, the termination liability. Capital's characteristic horror is a promise correctly drafted to run forever against money that was only ever sized for a while, and the shortfall is found by an actuary, on schedule, in writing, by someone whose job it was to look.
+- A promise correctly drafted to run forever against a principal that was only ever sized for a while — and the shortfall found on schedule, in writing, by someone whose job it was to look.
+- The obligation that matures backwards: the final act of a fund's life is a demand for money already distributed, secured against the people who spent it.
+- A short clock to produce cash on demand, and a default clause that prices failure as a fraction of everything already committed — so a missed wire is not a lapse but a forfeiture with a number attached.
+- Duration as the entire moral question: the difference between a fee and a fortune measured only in how long somebody held something.
+- Disclosure as immunity — every reason the thing may fail, stated in advance, accurately, at a length that guarantees no one reads it, with updates owed forever to purchasers who never will.
+- The covenant that converts a financing into a standing legal duty to raise the price of water on the electorate that approved it.
+- A levy attached to the ground rather than the owner, and a charge attached to the meter rather than any person — escalating annually, immune to the cap everyone else enjoys, and secured by a promise to foreclose on a fixed day.
+- The asset valued once a year by an appraiser the holder did not choose, engaged by a trustee the holder did not select, from a report the holder will never see.
+- The retirement account whose only asset is the employer, carrying a duty to buy those shares back that matures precisely when the former employees need paying and the company cannot.
+- The price of leaving, computed at a rate that makes leaving unavailable — an exit correctly quoted so that no one exits.
+- The statutory pause that changes nothing: underwriting suspended for a stated interval, then resumed at exactly the point where it was interrupted.
+- The pool of last resort, which grows by precisely what everyone else declines to write, and whose ceiling is a fixed number in a rising market.
+- A dead person's sentence as a live constraint — alterable only by a court, and only on application by an official with no interest in the estate.
+- Dormancy as dispossession: a stated interval of silence, one letter to the last known address, then custody by the state for as long as it takes.
+- The dead claim revived by the smallest act of good faith — one partial payment restarts the clock, and the first notice of the judgment is the missing wage.
+- Insurance against a century, drawn down inside a decade, with the ledger still recording the century as intact.
+- The hearing whose entire output is a judicial finding that it is correct for an injured person to sell their future.
 
 ### 4.6 Labour
 
-- The 1934 award that ended the West Coast strike and the 16–19 July general strike by establishing jointly operated hiring halls — and the fact that the contract still stops all work on 5 July, a memorial with a payroll consequence, observed annually by both parties.
-- Registration as the actual property: casual, Class B, Class A, controlled by a joint labor relations committee, entered by lottery drawing tens of thousands of applications `[?]`, and dispatched low-hours-first — an income set by a queue position the employer cannot alter and the union administers.
-- AB 5 (Labor Code §2775, 2019) codifying the *Dynamex* ABC test, held not preempted as to motor carriers and operative at the ports since 2022 `[?]`: a reclassification that altered the legal status of thousands of drivers and altered nothing about the work.
-- The lease-purchase agreement under which a drayage driver's truck payment, insurance and fuel are deducted from the weekly settlement, so a week can close at a negative number — and the Clean Truck Program compliance deadline that made a newer tractor mandatory and left the financing to the driver.
-- Title 8 CCR §3395: shade at 80°F, water, preventative cool-down rest on request, high-heat procedures at 95°F, a written acclimatisation plan — a standard whose enforcement is a document review conducted after the shift has ended.
-- AB 1066 (2016), phasing agricultural overtime to eight and forty by 2022 for large employers and 2025 for small ones, and the scheduling response of capping hours — an earned entitlement whose exercise is somebody else's rostering decision.
-- The H-2A certification with an Adverse Effect Wage Rate published annually by the Department of Labor, employer-provided housing inspected by the state, and a visa attached to a single employer: a wage floor and a housing standard administered together, on one party's petition.
-- Labor Code §2810, which makes it unlawful to enter a janitorial, security, farm labour, garment or construction services contract the buyer knows does not contain enough money for the contractor to comply with wage law — a statute that criminalises a price.
-- The janitorial employer registry and mandatory harassment-prevention training created by AB 1978 (2016) and AB 2079 — a licensing apparatus built because the work is done alone, at night, in a building belonging to a third party who is not the employer.
-- Rev. Rul. 93-86's one-year rule: an assignment expected to exceed twelve months is indefinite, the per diem becomes taxable wages, and the staffing contract is therefore written to thirteen weeks so that it never does.
-- Nurse-to-patient ratios under AB 394 (1999), operative through Title 22 CCR §70217 since 2004 and applying at all times including meal breaks — a statutory integer that manufactures the registry and float labour market required to satisfy it.
-- The arbitration agreement with a class waiver (*Concepcion*, 2011; *Epic Systems*, 2018), confidential awards, and no accumulating precedent: a dispute system engineered to produce outcomes while producing no record.
-- PAGA (Labor Code §2698 et seq., 2004), surviving *Viking River* (2022) and *Adolph* (2023) and amended in 2024 `[?]` — a private plaintiff standing in for the state, with most of the recovery going to the state.
-- Labor Code §6432's rebuttable presumption of a serious violation, and the settlement conference at which a serious citation is reclassified to general in exchange for prompt abatement — reclassification being the point at which the injury stops being a fact about the employer.
-- Independent Medical Review under SB 863 (2012): a denied treatment authorisation reviewed on the record by a physician whose name is never disclosed, with a determination that is effectively unappealable — and apportionment under Labor Code §4663, which assigns a share of the disability to the life the worker had beforehand.
-- The general prevailing wage determination issued by the Director of Industrial Relations by craft and by county, twice yearly, with certified payroll filed electronically and a published debarment list — a public wage floor that exists only where public money does, and stops at the property line.
-- The grievance and its steps, each carrying a filing deadline that extinguishes the claim if missed, against the duty of fair representation (*Vaca v. Sipes*, 1967), which permits a union to abandon a meritorious grievance provided it is not arbitrary — a wrong that ends without anyone ever deciding whether it occurred.
-- Cal-WARN (Labor Code §1400–1408): sixty days' notice at seventy-five employees, notices filed with the Employment Development Department and published as a public list, and a Rapid Response team dispatched to run workshops inside the building that is closing.
+*Procedure completed so correctly that no one is ever required to find out what happened.*
 
-**Reach for first —** the deadline that disposes of a valid claim without reaching it: the grievance step, the WARN exception, the IMR's closed record, the reclassified citation. Labour's horror is not denial, it is procedural completeness — every determination correct, every form timely, and no one at any stage required to find out what happened.
+- The deadline that disposes of a valid claim without reaching it — a step missed, a representative permitted to abandon it, and a wrong that ends without anyone deciding whether it occurred.
+- The killing settled by the creation of a queue, and a day of stopped work observed annually by both parties as a term of the agreement — a memorial with a payroll consequence.
+- Income set by a position in a line, entered by lottery, dispatched lowest-first, administered by the parties jointly, and untouchable by the employer who pays it.
+- A reclassification that alters the legal status of thousands of workers and alters nothing whatever about the work.
+- The week that closes at a negative number, because the instrument of the work is also a debt — and the mandate to replace it left the financing to the person driving.
+- Shade, water and rest guaranteed by a standard whose enforcement is a review of documents conducted after the shift has ended.
+- The earned entitlement whose exercise is somebody else's rostering decision — the hours capped precisely at the threshold where the right begins.
+- A wage floor published annually and a housing standard inspected by the state, both hanging from a permission that belongs to the employer.
+- The statute that makes a price unlawful: a contract signed knowing it does not contain enough money for the law to be obeyed.
+- A licensing apparatus built entirely around the fact that the work is done alone, at night, in a building belonging to someone who is not the employer.
+- The assignment written to end just short of permanence, because permanence is a tax event rather than a fact about the job.
+- A statutory integer that manufactures the disposable labour market required to satisfy it.
+- A dispute system engineered to produce outcomes and no record — confidential, individual, and accumulating nothing, so nothing is ever established.
+- The citation downgraded in exchange for prompt repair — the moment at which an injury stops being a fact about the employer.
+- The denial reviewed on a closed record by a physician who is never named, alongside a rule that assigns a share of the damage to the life the worker had beforehand.
+- A public wage floor that exists only where public money does, and stops at the property line.
+- Notice of a closure filed, published as a list, and answered by a team dispatched to run workshops inside the building that is closing.
 
 ### 4.7 Housing and displacement
 
-- The Ellis Act (Gov. Code §7060 et seq., 1985): an unconditional right to go out of the rental business, 120 days' notice extended to one year for tenants 62 or older or disabled, a memorandum recorded against the property, re-rental restrictions running five and ten years (§7060.2), and a relocation payment set by CPI-indexed table with a per-unit cap `[?]` — the price of a household, published annually.
-- Costa-Hawkins (Civil Code §1954.50 et seq., 1995): vacancy decontrol, plus exemptions for single-family homes, condominiums, and anything with a certificate of occupancy after the local cutoff (13 June 1979 in San Francisco) — a statute that makes a controlled unit a wasting asset, and whose repeal has now failed at the ballot three times.
-- AB 1482: 5% plus CPI to a 10% maximum (Civil Code §1947.12), just cause after twelve months (§1946.2), a rolling fifteen-year new-construction exemption, and a sunset on 1 January 2030 — a protection with its own expiry date drafted in at enactment.
-- Banked increases — the annual allowable increase a landlord declined to take, accumulating for years and then imposed lawfully all at once, so that a tenant's rent history is a deferred liability nobody told them they were accruing.
-- The capital improvement passthrough petition: the owner's costs amortised across the building, allocated per unit, approved by a rent board hearing officer, capped at a percentage of base rent per year — an improvement the tenant pays for and does not own.
-- The tenant's petition for decreased housing services, in which a person must itemise the absence of heat, assign it a dollar value, prove it, and receive a retroactive reduction expressed as a percentage.
-- The owner move-in eviction under SF Admin Code §37.9(a)(8): an affidavit under penalty of perjury, occupancy as principal residence for 36 continuous months, periodic sworn statements filed with the Rent Board `[?]`, and a right of first refusal for the displaced tenant if the unit is re-rented.
-- Chapter 41's residential-hotel designations, fixed by a status report filed decades ago, maintained by an annual unit usage report to the Department of Building Inspection, and convertible only on one-for-one replacement or payment of an in-lieu fee — a building's legal character determined by a form completed around 1979 `[?]` and enforced ever since.
-- Civil Code §1940.1, which prohibits a residential hotel operator from requiring an occupant to move out to prevent tenancy attaching at thirty days: a statute whose existence is the surviving record that the practice was routine.
-- The tenancy in common — a fractional interest sold with a written occupancy agreement, financed by fractional loans from roughly 2007 `[?]` — converting a rental building to owner-occupancy without a single condominium being created, against the conversion lottery and the 2013 bypass ordinance that priced the exit.
-- The 6th cycle RHNA: 441,176 units allocated across the nine-county ABAG region for 2023–2031, a housing element due 31 January 2023, HCD certification, and the builder's remedy (Gov. Code §65589.5(d)(5)) as the penalty — a quota discharged by adopting a plan, not by building anything.
-- The successor agency: redevelopment dissolved by ABx1 26 (2011) and upheld in *Matosantos*, leaving an oversight board, a Recognized Obligation Payment Schedule filed with the Department of Finance, and a Long Range Property Management Plan — a body whose entire remaining purpose is to finish paying for what the agency did.
-- The Certificate of Preference, issued to households displaced by Western Addition A-1 and A-2 and by Hunters Point redevelopment, still administered, still conferring first priority in the affordable lottery, and inheritable `[?]` — an acknowledged debt redeemable only against inventory that has to exist first.
-- Annual recertification on form HUD-50058, interim recertification on any income change, a voucher term of sixty days `[?]` to locate a unit that will accept it, and source-of-income protection added to FEHA by SB 329 (2019) — assistance whose administration is a permanent obligation to keep proving you still qualify.
-- LIHTC (IRC §42): a fifteen-year compliance period, a thirty-year extended-use agreement, annual tenant income certification, and the qualified contract process permitting early exit — affordability with a term, drafted at the outset to end.
-- The master-lease nonprofit holding the head lease on an SRO and subleasing to formerly homeless tenants, and therefore the party that signs the unlawful detainer: a service provider whose contract makes it the landlord of the people it exists to house.
-- The Point-in-Time count conducted in the last ten days of January, HMIS, and coordinated entry required under the HEARTH Act (2009) — an assessment instrument producing a numeric score that sets priority on a by-name list, and a referral match that lapses if the person cannot be found in time.
-- CCP §1161.2, under which an unlawful detainer file is masked for sixty days and becomes public only if the plaintiff prevails inside that window — an eviction record created by a deadline rather than by a finding.
+*A debt conceded in writing, given a queue position, and administered forever.*
 
-**Reach for first —** the document that records a debt to a displaced household and is still in force: the Certificate of Preference, the Ellis re-rental right, the OMI right of first refusal, the successor agency's payment schedule. The apparatus never denies what it did; it concedes it in writing, assigns it a queue position, and administers the queue competently for sixty years against an inventory that was never built.
+- The right to withdraw entirely, exercisable without cause, with the price of a household published annually as a table and the notice period lengthened for the old and the sick.
+- Protection that empties on turnover, so the tenancy is a wasting asset and the building's value is the tenant's absence.
+- A safeguard enacted with its own expiry date drafted in at the outset, and an affordability term written to end on a schedule fixed before the first family moved in.
+- The increase declined for years, accumulating lawfully, then imposed all at once — a liability accrued by someone never told they were accruing it.
+- The improvement paid for by the people who will never own it, allocated per unit, approved at a hearing, capped as a percentage per year.
+- To be owed anything for the absence of heat, a person must itemise the absence, price it, prove it, and be repaid as a percentage.
+- The eviction lawful only if a sworn intention is afterwards performed for three years, monitored by periodic filings, with the displaced holding a right to return to a unit that is never offered.
+- A building's legal character fixed permanently by a form completed once, decades ago, and enforced ever since by an annual return that only confirms it.
+- The prohibition that survives chiefly as the record of how ordinary the practice was — a statute readable as evidence rather than as law.
+- Ownership assembled out of fractions so that no conversion is ever recorded, and the exit later priced rather than closed.
+- A quota discharged by adopting a plan rather than by building anything, with a penalty that permits construction and compels none.
+- The body whose only remaining function is to finish paying for what its predecessor did, on a payment schedule filed with the state.
+- The acknowledged debt to a displaced household — inheritable, still administered, conferring first position in a line, and redeemable only against inventory that has to exist first.
+- Assistance whose administration is a permanent obligation to keep proving you still qualify, and a clock, running, to find someone willing to accept it.
+- The service provider whose contract makes it the landlord of the people it exists to house, and therefore the party that signs the removal.
+- A numeric score that sets position on a by-name list, and a match that lapses if the person cannot be found in time.
+- The permanent record produced by a deadline rather than by a finding.
 
 ### 4.8 Queer San Francisco
 
-- Health & Safety Code §7100 sets the order of persons entitled to control the disposition of remains — agent under an advance directive, then spouse or registered domestic partner, then adult children, then parents, then siblings — a list that is correct, complete, and has no line for the person who was in the room.
-- California's statewide Domestic Partner Registry opened 1 January 2000 under AB 26, and the first substantive right it conferred was hospital visitation: legal recognition beginning as a permission granted at an admissions desk.
-- San Francisco issued 4,036 marriage licences to same-sex couples between 12 February and 11 March 2004; the California Supreme Court voided them on 12 August 2004 and the county refunded the fees — an instrument correctly issued, correctly recorded, and correctly annulled.
-- The roughly 18,000 California marriages solemnised between 16 June and 4 November 2008 that survived Proposition 8 under *Strauss v. Horton*: two classes of certificate distinguished by nothing but a date stamp.
-- Ward 86 at San Francisco General, opened January 1983 as the first dedicated outpatient AIDS clinic in the world, and Ward 5B, the inpatient unit, opened July 1983 — the "San Francisco model of care," which in practice is a staffing ratio, a chart design and an admission criterion.
-- The Ryan White CARE Act (1990), Part A: the San Francisco Eligible Metropolitan Area, an allocation formula keyed to living case counts, and client eligibility recertification on a six-month cycle `[?]` — care that must be re-proved twice a year for as long as you have it.
-- California's AIDS Drug Assistance Program, administered by the CDPH Office of AIDS: an income ceiling, an annual recertification, and a certified enrollment worker who is the sole route between a person and the drug.
-- Molecular HIV surveillance: laboratories report viral genetic sequences to public health, which uses them to reconstruct transmission clusters for intervention — no patient consent, no notice to the patient, and entirely lawful `[?]`.
-- California's shift from code-based to name-based HIV reporting, effective 2006 `[?]` — the date on which the register acquired names, and everyone already counted in it was re-entered under one.
-- Health Director Mervyn Silverman's order of 9 October 1984 closing fourteen bathhouses and sex clubs, and the subsequent court-supervised reopening on conditions including removal of doors from private rooms and monitors patrolling on a fixed interval `[?]` — a public health order that specifies a rota.
-- San Francisco's cross-dressing prohibition — "a dress not belonging to his or her sex," enacted 1863 and carried forward in later codification `[?]` — repealed only in July 1974, having produced a century of booking sheets with a citable section number on each.
-- The Consenting Adults Act (AB 489, effective 1 January 1976) decriminalised the conduct but did not clear the file: men convicted under the prior statutes remained subject to Penal Code §290 registration for decades afterward `[?]`. The offence ended; the registration did not.
-- San Francisco's 2001 transgender health benefit for city employees, the first of its kind in the United States, funded by a per-employee-per-month surcharge levied on the entire workforce against a projected cost — by 2006 the surcharge had collected about $5.6 million and the programme had spent $386,417, and the surcharge was ended. An actuarial estimate of a population, billed to everyone, and wrong by an order of magnitude.
-- The FDA blood donor deferral for men who have sex with men: lifetime from 1985, twelve months from December 2015, three months from April 2020, replaced by individual risk assessment in the May 2023 guidance — and the AABB Donor History Questionnaire, the actual form, revised and re-issued at each step.
-- The GLBT Historical Society (founded 1985): a deed of gift, an accession number, a processing backlog measured in years, and a finding aid that becomes the load-bearing structure of a life once the people who remembered it are gone.
-- The AIDS Memorial Quilt: each panel three feet by six, the dimensions of a grave, sewn into twelve-by-twelve-foot blocks, individually catalogued, and stewarded by the National AIDS Memorial in the setting-a since 2020 `[?]` — grief with an inventory control system and a conservation schedule.
-- The Office of the Chief Medical Examiner and the county's duty to dispose of unclaimed remains (Health & Safety Code §7104) in a city that has permitted no new cemeteries since 1900: cremated remains held for a statutory interval, a common disposition, and a name carried forward in a ledger.
-- Amendment of a California birth certificate under AB 1121 (2017) by self-attestation without a physician's declaration, with a nonbinary marker available from 1 January 2019 `[?]` — the state issuing a corrected document while every earlier copy it issued remains in circulation, indexed, and valid.
+*Eligibility, registers, and the custody of what remains.*
 
-**Reach for first —** Health & Safety Code §7100. It is a real, short, publicly available statutory list that decides who may bury whom, it is administered by people acting properly, and its cruelty requires no author: the apparatus is already written and needs no invention.
+- A statutory list deciding who may bury whom — correct, complete, publicly available, and with no line for the person who was in the room.
+- Recognition that arrives first as a permission granted at an admissions desk.
+- The instrument correctly issued, correctly recorded and correctly annulled, with the fee refunded — and beside it an identical instrument that survives, distinguished by nothing but a date stamp.
+- A model of care, admired and copied everywhere, which on inspection is a staffing ratio, a chart design and an admission criterion.
+- Care that must be re-proved twice a year for as long as you need it, with an income ceiling, an annual renewal, and one certified person standing as the sole route between a body and the drug that keeps it.
+- The register that begins as a count without names, acquires names on a stated date, re-enters everyone already in it under one, and later reconstructs who was near whom from material submitted for treatment — no notice to anyone counted, lawful at every step.
+- The emergency order softened on review into a rota: the doors removed, an interval fixed, and somebody assigned to walk it.
+- The clause repealed and the conduct decriminalised while the file stands — booking sheets keeping their section numbers, registration continuing for decades after the offence has ceased to exist.
+- An actuarial estimate of a population, levied on an entire workforce as a monthly line, collected for years, and wrong by an order of magnitude — the estimate outlasting the cost it was built to predict.
+- Eligibility set first by category, then by an interval, then by a question — the form re-issued at every revision, so the whole history of the rule is legible in a single document that must be answered before anyone may give anything.
+- The finding aid that becomes the load-bearing structure of a life once everyone who remembered it is gone, with a processing backlog measured in years and a deed of gift measured in one signature.
+- Grief with an inventory control system: each unit cut to the dimensions of a grave, accessioned, and kept to a conservation schedule.
+- A city that has permitted no new burial ground in over a century, holding the unclaimed for a statutory interval, disposing of them in common, and carrying the name forward in a ledger.
+- The corrected document issued on a person's own word, while every earlier copy the same office issued remains in circulation, indexed, and valid.
 
 ### 4.9 Medicine and public health
 
-- Title 17 CCR §2500: the schedule of reportable conditions and the clock attached to each — immediately by telephone, within one working day, within seven calendar days — imposed as a personal legal duty on the physician and the laboratory, with a penalty for silence.
-- Health & Safety Code §120175, under which the local health officer "shall take measures as may be necessary" to prevent the spread of communicable disease: isolation and quarantine authority vested in one appointed county official who stands for no election.
-- The joint order of 16 March 2020 signed by the health officers of San Francisco, Santa Clara, San Mateo, Marin, Contra Costa and Alameda counties and the City of Berkeley — seven unelected officers confining roughly seven million people by concurrent signature, each acting entirely within their own statute.
-- Zuckerberg San Francisco General as the sole Level I trauma centre for San Francisco and northern San Mateo County `[?]`, and the diversion status that silently re-routes an entire county's worst hour to somewhere further away.
-- Donor Network West, the organ procurement organisation for Northern California, and the federal condition of participation requiring hospitals to notify the OPO of every death and every imminent death — a call placed on a timer, sometimes before the family has been told.
-- California's Newborn Screening Program: a heel-stick dried blood spot from every infant born in the state, retained by the CDPH biobank, available for approved research, destroyed only on written parental request `[?]` — a statewide cohort with no enrolment step.
-- The California Cancer Registry (Health & Safety Code §103885): reporting of every diagnosis is mandatory and consent is not sought, and the registry conducts active follow-up thereafter, matching against death and licence records to establish, on a recurring cycle, whether each person in it is still alive.
-- Kaiser Permanente Northern California: roughly 4.5 million members who are simultaneously a payer's book of business and one of the largest longitudinal research cohorts in the world `[?]` — the enrolment document is a membership packet.
-- The Institutional Review Board and 45 CFR §46.116(f): a standing committee lawfully empowered to determine that a defined class of people need not be asked, on written criteria, with minutes, a quorum and a vote.
-- Irwin Memorial Blood Bank (founded 1941), now operating as Vitalant: community blood banking, directed donation, and the lookback — the letter that reaches a recipient years afterward because a donor's later test retroactively changed the meaning of an earlier unit.
-- The National Marrow Donor Program registry: an HLA type taken at a campus drive and held for decades, and the telephone call that arrives long after, asking a stranger to honour a commitment they no longer remember making.
-- County Medi-Cal eligibility: annual redetermination, share-of-cost, and the public plans that are themselves governmental bodies with boards meeting in public — San Francisco Health Plan, Alameda Alliance for Health, Santa Clara Family Health Plan, Contra Costa Health Plan, Partnership HealthPlan of California.
-- The Lanterman-Petris-Short Act (1967): the 72-hour hold under §5150, the 14-day certification under §5250, the certification review hearing, and conservatorship of the gravely disabled administered by a county Public Guardian — legal personhood suspended and restored on a published schedule of hours and days.
-- The Alameda County Sheriff's Coroner's Bureau: a sworn law enforcement agency holding the office of coroner, certifying cause and manner of death including deaths occurring in its own custody.
-- Laguna Honda Hospital, descended from the 1866 almshouse, which lost CMS certification in 2022 and was required to prepare the transfer of every resident `[?]` — a place of last resort holding an accreditation that can lapse.
-- Sewershed-level wastewater surveillance, a public health signal with no consenting subject, no denominator, no individual result and no mechanism to decline participation.
+*Not treatment — enrolment: who is entered on which list, who must be told, and on whose signature a body becomes a case.*
 
-**Reach for first —** Title 17 §2500. It is a genuine schedule with a legal duty and a penalty attached, it is the hinge on which physician, laboratory, county and state all turn, and a story only has to change what is on the list.
+- Disease defined by whether it appears on a schedule, and the clinician penalised not for the illness but for missing the clock attached to it.
+- Emergency authority vested in a single appointed post — power over a whole population that no election created and no election can withdraw.
+- Confinement by concurrent signature: several officials each acting strictly inside their own narrow jurisdiction, and the sum of their correct decisions is a region shut.
+- Enrolment with no enrolment step — a research population assembled from everyone who was born here, insured here or diagnosed here, joined by a document signed for something else.
+- Consent as a thing a standing committee may waive on your behalf, on written criteria, with a quorum, minutes and a vote.
+- A population signal with no consenting subject and no denominator: nothing about any individual, undeclinable, and never wrong about anyone in particular.
+- Diagnosis as permanent attention — entered once, then checked on a recurring cycle against the death records to establish whether you are still alive.
+- The retroactive result: a test run years later that changes what was already put into your body, and arrives as a letter to an address the file still holds.
+- Care that must be re-proved to be kept — the condition is chronic and the entitlement is annual, so the illness outlasts the eligibility that treats it.
+- Legal personhood suspended and restored on a published schedule of hours and days, with a hearing at each boundary and a guardian appointed by the body that detained you.
+- A commitment made cheaply and young to a register that keeps it for decades, then calls it in on a stranger who no longer remembers agreeing.
+- The duty to notify that runs ahead of the family: the institution knows what will be done with the body before the next of kin knows there is one.
+- Redundancy as the missing organ — one facility of last resort, whose momentary unavailability re-routes an entire county's worst hour somewhere further away, and which itself holds a certification that can lapse.
 
 ### 4.10 Belief
 
-- Mission San Francisco de Asís, founded 29 June 1776, and its sacramental registers — baptisms, marriages, burials, kept in bound books: the region's first administrative dataset, still queryable, and a record of who was entered into it and by whom.
-- The Mexican secularisation decree of 1833 and the United States Land Commission created by the Act of 3 March 1851, under which Archbishop Alemany filed claims and in 1859 received a federal patent restoring the mission churches to the Church — title to sacred ground established by a claims process with a filing deadline.
-- NAGPRA (1990) and CalNAGPRA (AB 978, 2001) applied to the Phoebe A. Hearst Museum at Berkeley — repatriation administered as an inventory, a consultation schedule and a statutory deadline `[?]`.
-- The Archdiocese of San Francisco's Chapter 11 filing of August 2023, alongside the Diocese of Oakland (May 2023) and Santa Rosa (March 2023), following AB 218's three-year revival window for time-barred abuse claims — three dioceses in bankruptcy simultaneously, each with a claims bar date after which a harm becomes permanently uncompensable.
-- San Francisco Zen Center (1962), Tassajara Zen Mountain Center (1967, the first Sōtō Zen training monastery outside Asia) and Green Gulch Farm: the ninety-day practice period, the wake-up bell, the assigned seat, the shuso appointment, and dharma transmission recorded as a lineage document with a signature.
-- Esalen Institute, Big Sur, founded 1962: a nonprofit landholder with a printed catalogue, a workshop calendar, and a work-scholar programme with a fixed term, an application, and an assigned rota.
-- Erhard Seminars Training, founded in San Francisco in 1971: a two-weekend curriculum of roughly sixty hours with written rules governing when a participant may leave the room, and a successor organisation still running a version of the format `[?]`.
-- Synanon, headquartered in Marin County, which incorporated as a religion in 1974 and whose governing board in the later 1970s issued directives to the membership concerning marriage and sterilisation `[?]` — an organisation whose minuted resolutions reached into bodies.
-- Peoples Temple's relocation to 1859 Geary Boulevard in 1972 and Jim Jones's 1976 appointment to the San Francisco Housing Authority Commission `[?]`: a congregation holding a civic portfolio, a public appointment and a place on a public agenda.
-- The more than four hundred unidentified and unclaimed dead of Jonestown interred at Evergreen Cemetery in Oakland, and the memorial installed there in 2011 bearing all 918 names — a burial arranged by administrative default because no other party would accept the remains.
-- Glide Memorial and the Glide Foundation: a congregation and a foundation with separate governance and shared property, a daily meals programme run at industrial scale, and the 2018 rupture with the United Methodist bishop over the appointment of clergy `[?]` — a church that kept the building and lost the appointment.
-- Clinical Pastoral Education: an accredited unit of roughly four hundred hours, certification through ACPE, and the "verbatim" — a written transcript of a conversation with a dying person, submitted to a peer group for critique and filed.
-- Buddhist Churches of America, headquartered at 1710 Octavia Street, whose ministers and members were removed to camps in 1942 and whose temples held member property in trust throughout — an institution that went on keeping the registers while the people in them were confined.
-- The Rosicrucian Order AMORC, headquartered in San Jose since 1927: a graded curriculum of monographs posted to members on a fixed schedule, dues, degree advancement, and a museum operated by the same corporate body.
-- The Bohemian Club's encampment at Monte Rio, the Cremation of Care performed each July since 1881 `[?]`, camp rosters, annual dues and a membership waiting list measured in decades — a private association with a liturgy, an admissions committee and a landholding.
-- Morning Star Ranch in Sonoma County, where Lou Gottlieb deeded the land to God in 1969 and the court held the conveyance void because the named grantee could not hold title `[?]` — a sincere transfer defeated on a question of legal capacity.
-- Berkeley's rationalist and effective-altruism institutions — MIRI (founded 2000), CFAR (2012) and its multi-day workshop curriculum, and grantmakers operating published expected-value criteria — a moral calculus with an application form, a review committee and a payout deadline.
+*Not what is believed — what is kept: the register, the rota, the bar date, and the corporate body that outlives the faith.*
 
-**Reach for first —** the mission sacramental registers. They are the oldest continuously kept administrative records in the region, they were created by people who believed the filing was itself an act of care, and they are still being used as evidence about who exists.
+- Faith as a filing system: the first thing a religion builds is a register, and the register outlives the belief, the building and everyone entered in it.
+- Sacred ground held on an ordinary instrument — the holy site is whatever survived a filing deadline, and a conveyance to the divine fails because the grantee has no capacity to receive.
+- The timetable as the actual doctrine: a bell, an assigned seat, a fixed term, a rota — belief is whatever is left over after the schedule has been kept.
+- Succession made real by a signed document, so that spiritual descent acquires a date, a custodian and therefore a way of being disputed.
+- Enlightenment as a syllabus — a graded curriculum issued on a schedule, dues, advancement, and written rules governing when a participant may leave the room.
+- Minuted resolutions that reach into bodies: a governing board voting on marriage, on children, on sterilisation, and recording the vote in the ordinary way.
+- Congregation as civic portfolio — a faith that acquires appointments, agenda items and a public-sector role, so its internal discipline becomes municipal administration.
+- Redress with a bar date: an institution's entire history of harm converted into a claims process, after which the wrong becomes permanently uncompensable and lawfully so.
+- Repatriation administered as an inventory — the return of the dead scheduled, deadlined, and contingent on the holder's own determination of what it holds.
+- Custodianship continuing at full quality through exactly the period it should have failed: the registers kept faithfully while the people named in them were confined.
+- Burial by administrative default, and a memorial that names everyone because nobody could be sorted — grief resolved by the party with no relationship to it.
+- Pastoral care with a written deliverable: a dying person's last conversation transcribed, submitted to a peer group for critique, and filed as coursework.
+- Moral arithmetic with an application form, a review committee and a payout deadline — goodness run as a grant cycle, with unsuccessful applicants.
+- A private liturgy with an admissions committee, annual dues and a waiting list measured in decades: the rite is sincere and the barrier to it is a membership secretary.
 
 ### 4.11 Civic government and the public sector
 
-- The Certificate of Preference, issued by the San Francisco Redevelopment Agency to households displaced from the Western Addition, still honoured as priority in city housing programmes and transferable to descendants `[?]` — a paper instrument that has outlived the agency that issued it, the neighbourhood it refers to, and the person it was issued to.
-- The dissolution of California's redevelopment agencies by AB 1X 26, effective 1 February 2012, and the Successor Agencies and Oversight Boards that have since filed a Recognized Obligation Payment Schedule on a recurring cycle — an abolished body's debts administered in perpetuity by its executor.
-- The Ralph M. Brown Act (1953, Gov. Code §54950 et seq.): a 72-hour agenda posting requirement, a prohibition on acting upon anything not listed, and the serial meeting rule, under which a conversation conducted in sequence is itself the offence.
-- San Francisco's Sunshine Ordinance (1999) and its Task Force, which can find that a department violated the ordinance and cannot compel it to do anything about it `[?]` — an adjudicative body with a docket, findings, and no remedy.
-- The California Public Records Act: ten days to determine whether responsive records exist, a fourteen-day extension available, and an exemption asserted by statutory citation — the response that is timely, complete, correct and empty.
-- The civil grand jury empanelled annually in every California county (Penal Code §888 et seq.): sworn citizens, secrecy binding for life, a one-year term, investigative reports into local government, and a statutory duty on the named agency to respond within 60 or 90 days (§933) — a body with a mandate to inquire and no power to act.
-- The Local Agency Formation Commission in each county (Cortese-Knox-Hertzberg Act, 1999), which approves the creation, annexation, consolidation and dissolution of cities and special districts and draws their spheres of influence: a commission that can end a town.
-- The San Francisco Bay Conservation and Development Commission, created by the McAteer-Petris Act of 1965 as the first coastal zone agency in the United States, holding permit jurisdiction over the Bay and a shoreline band one hundred feet inland — a regulatory line measured from a water's edge that is moving.
-- ABAG, MTC and the Regional Housing Needs Allocation: 441,176 units assigned to the setting-a for the sixth cycle, 2023–2031, divided among nine counties and 101 cities and towns, and enforceable through the zoning each is thereby compelled to adopt.
-- The Presidio Trust, created by Congress in 1996 and required by statute to reach financial self-sufficiency by 2013 or see the land put toward disposal — a national park operating to a profit-and-loss statement against a legislative deadline.
-- The Raker Act of 1913, which permitted the flooding of Hetch Hetchy on continuing conditions the City remains bound by — a century-old federal statute discharged daily by a municipal utility's operating decisions.
-- The Hunters Point Naval Shipyard radiological cleanup, in which the contractor's soil sampling was found to have been falsified and the affected areas required retesting after the results had already been relied upon — a remediation record that had to be reconstructed beneath housing already approved.
-- Proposition 13 (1978) and the assessor's roll, under which assessed value is fixed at acquisition, together with Proposition 19 — a deadline that starts running at a death.
-- San Francisco's charter set-asides — the Children's Fund, the Library Preservation Fund, the Open Space Fund — each dedicating a fixed property tax rate for a fixed term and amendable only by the voters: a budget written by an earlier electorate and binding on the present one until its sunset date.
-- The Public Administrator, the county officer who opens the estate of a person who died with no one willing or able to administer it: an inventory of the dwelling, an appraisal, a public auction of the contents, and distribution to heirs located by search.
-- Escheat to the State Controller's Unclaimed Property Division after three years of inactivity, including the contents of safe deposit boxes, which are opened, inventoried, sold, and the proceeds held indefinitely against a claim that may never be made.
-- The districts nobody votes in: EBMUD (1923), the East Bay Regional Park District (1934), the Golden Gate Bridge, Highway and Transportation District (1928) with a nineteen-member board drawn from six counties, BAAQMD (1955), and the county mosquito abatement districts holding statutory right of entry onto private property for inspection `[?]`.
-- Vallejo's Chapter 9 filing in May 2008, and the AB 506 (2011) mediation process later imposed on municipal filers — a city as debtor, its labour contracts and pension obligations as claims, and its services as line items in a plan of adjustment approved by a federal judge.
+*The apparatus that concedes everything in writing, on time, in full, and is structured so that nothing follows from the concession.*
 
-**Reach for first —** the Certificate of Preference. It is a real, still-live document that records a completed harm, entitles the bearer to a position in a queue, passes to heirs, and is administered correctly by an agency that no longer exists: every mechanism the anthology uses, already issued, on paper, in the file.
+- Government by bodies nobody elected — taxing power, right of entry, an appointed board — where competence is precisely what makes them unreachable.
+- Procedure as the offence: a decision correct in substance and unlawful in sequence, because the meeting happened in pieces.
+- Openness administered exactly to specification — the request answered inside the window by a citation to the exemption, and the body that can find a violation cannot require anything to follow from it.
+- A jury of citizens with a mandate to inquire, a seal on what they learn that binds for life, and no authority beyond compelling a written reply.
+- An abolished agency's obligations administered in perpetuity by its executor: the body is dissolved, the payment schedule continues, filed on a cycle, forever.
+- A quota discharged by adopting a plan, so compliance is measured in the text of an ordinance rather than in anything that exists.
+- Jurisdiction measured from a moving edge — a regulatory line defined against a boundary that the thing being regulated is itself relocating.
+- A commission empowered to create, merge and dissolve municipalities: local existence as an item on somebody else's consent calendar.
+- Public ground operated to a profit-and-loss statement, with a statutory date by which self-sufficiency must be proved or the land is put toward disposal.
+- A century-old grant discharged daily by operating decisions, its conditions never revoked and never fully met — tolerated non-compliance as the stable state.
+- A budget written by an earlier electorate and binding on the present one until its sunset: governance as standing instructions from people who no longer live here.
+- The record found to be falsified after it was relied upon, so the ground must be measured again beneath approvals already granted to people already living there.
+- Insolvency as governance — services, contracts and pensions converted into claims and settled in a plan approved by a court that answers to nobody local.
 
 ### 4.12 Death and its administration
 
-- San Francisco's Board of Supervisors prohibited new interments within city limits in 1900 and ordered the removal of existing remains in 1912 `[?]`; the removals ran into the 1940s, which means the operative instrument was a land-use ordinance with a decades-long compliance tail administered against the dead.
-- Roughly 35,000 remains were moved from Laurel Hill to a common mound at Cypress Lawn in Colma around 1940 `[?]`, after voters declined to preserve the cemetery in a 1937 ballot measure — disinterment as an outcome of a municipal election.
-- The headstones and coping were sold as construction material and used as breakwater fill at Aquatic Park, as riprap at Ocean Beach and as gutter lining in Buena Vista Park, where the inscriptions remain legible; the names and the bodies were separated by a materials contract and are now in different counties.
-- Colma was incorporated in 1924 expressly to shelter the cemetery industry from the city's ordinance: seventeen cemeteries, roughly 1.5 million interments, and about 1,500 living residents who elect the council that governs them.
-- The City Cemetery at Point Lobos (c. 1870–1898) held tens of thousands of burials in sections assigned to benevolent and national associations; Lincoln Park golf course and the Legion of Honor sit on it, and the 1993 seismic retrofit exhumed some 750 individuals `[?]` — the site is re-encountered on a schedule set by capital projects rather than by anyone's intention.
-- The California Public Cemetery District Law (Health & Safety Code §9000 et seq.) makes burial a special-district function with a board, a budget, a tax rate and a duty to inter district residents — a democratic body whose service population is permanent and non-voting.
-- Endowment care funds `[?]` take a statutory share of each sale into a principal that may never be spent, with only the income available for maintenance in perpetuity; the actuarial assumption was made once, at the time of sale, and the grounds are maintained forever out of the return on a number set in 1926.
-- Disinterment requires the written consent of the cemetery authority and of the next of kin in the statutory order, or a court order, plus a permit from the local registrar: moving a body is a permitted activity with an application, a fee and a signature block.
-- Government Code §27491 obliges the coroner to inquire into deaths in enumerated circumstances and to determine cause and manner; the office is a sheriff-coroner in some setting-a counties and an independent medical examiner in others, so whether the official who certifies a death in custody reports to the agency holding the custody is a county-by-county fact.
-- Alameda County's coroner's inquest returns one of four verdicts by jury, including "at the hands of another person, other than by accident" `[?]` — a finding phrased to be true without being an accusation, delivered by lay jurors in a public hearing that decides nothing else.
-- Health & Safety Code §7100 fixes the order of persons holding the right to control disposition, so the disposition of a body can turn on a vote among siblings, and the tie is a legal condition with no procedure to break it.
-- California's electronic death registration requires the attending physician to complete the medical certification within about 15 hours of death and the funeral director to file with the local registrar within eight days `[?]`; the permit for disposition cannot issue until the record clears, so a family waits on a signature in a state database.
-- Remains left unclaimed are disposed of by the person in custody after statutory notice, and cremated remains unclaimed beyond the statutory period may be scattered at sea or placed in a common interment `[?]`; counties conduct periodic mass interments of the unclaimed, with a list of names read aloud, a clergy roster and a plot number.
-- The Public Administrator (Probate Code §7600 et seq.) is a county officer who takes possession of the estate of a person who died without a will or known heirs, secures the residence, inventories its contents, sells them at public auction, searches for heirs and files a final account with the court — a civil servant who reads your papers and prices your furniture as a statutory duty.
-- Where no heir is found within the degrees the Probate Code allows, the estate escheats to the state and is held by the Controller subject to a limited claim period `[?]`: a life converts to an entry in the Unclaimed Property database, searchable by anyone, indexed by surname.
-- The county's duty to bury attaches when no responsible person acts, and the county may recover its costs from the estate — so the indigent burial generates an invoice against the deceased, and the last document in the file is a debt.
-- Cremation is regulated under a signed authorisation naming the authorising party and their statutory rank; a numbered metal identification tag accompanies the body through the retort and into the container, and is the only continuity of identity across the process `[?]`.
-- Alkaline hydrolysis was authorised by AB 967 (2017, operative 1 July 2020) and natural organic reduction by AB 351 (2022), with licensed facilities permitted from 1 January 2027 — new lawful methods of disposition arriving on legislative commencement dates, each requiring a regulator to write the standard for what a finished human being looks like.
-- San Francisco National Cemetery in the Presidio, established 1884 and closed to new interments in 1992 `[?]`, is a federal burial ground inside a national park run by a trust under a self-sufficiency mandate — three custodial regimes on one parcel, with different statutes governing the ground and the graves.
-- The Office of the Chief Medical Examiner publishes a monthly preliminary count of accidental overdose deaths: a named public office issuing a number on a fixed cycle, revised upward as toxicology returns.
+*Custody: who holds the body, who holds the file, and which of the two the law is actually about.*
 
-**Reach for first —** the Public Administrator. It is the region's most complete apparatus for a person nobody claimed: statutory authority to enter, an inventory, an auction, a documented heir search with a stopping rule, and a final account filed with a court that will approve it.
+- The dead as a land-use problem — a class of residents removed by ordinance, on a compliance schedule, because the ground had become worth more than the use.
+- Disinterment as an administered activity: a consent in statutory order, a permit, a fee, and, at scale, a ballot measure in which the living vote on whether the buried may remain.
+- Names and bodies separated by a materials contract, so the inscription survives in one place and the remains in another, both correctly disposed of, neither wrongly.
+- A jurisdiction whose service population is permanent, silent and overwhelmingly in the majority, governed by the few hundred living people who happen to reside among them.
+- Perpetual maintenance funded out of the return on a number set once, at the time of sale, by someone estimating the future cost of mowing.
+- Consecrated ground re-encountered on a schedule set by capital projects: the dead are found again whenever a building needs a foundation, and at no other time.
+- The right to decide a disposition distributed by a fixed order of kinship, which reliably produces ties, and no procedure exists to break one.
+- Death certified by an official who answers to the body that held the body, and a verdict phrased to be true without being an accusation, returned in a public hearing that decides nothing else.
+- Death as a record that must clear — a signature owed within hours, a filing owed within days, and a family that cannot bury anyone until a database accepts the entry.
+- Identity reduced to a numbered tag that travels with the remains through the process and is the only thing carrying the name across it.
+- A regulator obliged to write the specification for a finished human being, because a new lawful method of disposition has a commencement date and needs a standard by then.
+- The complete apparatus for a person nobody claimed: entry, inventory, appraisal, auction, a documented heir search with a stopping rule, a final account — and an invoice for the burial, recoverable against the person buried.
+- A ceremony designed to be performed correctly for people nobody attended: a read list, a clergy rota, a plot number, on a cycle.
+- A preliminary count published monthly by a named office and revised upward as the laboratory returns, so the number is never final and is never wrong.
+
+### 4.13 Transport and infrastructure
+
+*A small number of chokepoints, each owned by a body nobody votes for, and each crossing a record opened in your name.*
+
+- Infrastructure as a fossil of old votes — the network's shape is the permanent record of which jurisdictions declined to join, and nothing has ever re-opened the question.
+- A crossing with no alternative, priced by a body whose revenue depends on there being none, and collected without a booth: a plate is read and an account is opened in your name.
+- Governance assembled by appointment from constituent jurisdictions rather than from the people carried, so the passenger is a customer of something they cannot vote against.
+- A technical choice made once, in a decade nobody remembers, that makes every replacement bespoke — the standard not adopted becomes a permanent condition of procurement.
+- The single asset with no redundancy, whose entire safety regime was written out of one night, and whose next failure has no second route to fall back on.
+- Direction of travel as an administrative decision: the same corridor reversed twice a day on a published timetable, so the schedule is the infrastructure.
+- The replacement built against the last disaster, delivered decades late, entering service with an open defect file and a monitoring programme instead of a fix.
+- A corridor legally preserved as a dormant railway, so its disuse is an interruption rather than an end, and service can be resumed over whatever has been built on it in the meantime.
+- Municipal enterprise outside the municipal boundary — a facility owned by one jurisdiction, sited among people who neither elect its board nor share its revenue.
+- The name of a public facility as a matter of registered marks, litigated between two public bodies, with the public no party to it.
+- Mobility as a determination about a body: an application, an assessment appointment, a category, an expiry date and an appeal.
+- The agency that became a landlord by accident, holding and renting property acquired for a route never built, for decades, with no interest in housing anyone.
+- The structure voted on repeatedly, so the built environment records not a decision but a sequence of them, none final and all correct.
+- Emergency capacity held in the shape of an ordinary commuter service, exercised to a plan, so the evacuation asset is the boat people take to work.
+
+### 4.14 Education, research and the university
+
+*A sorting apparatus with an endowment, a patent portfolio and a police power, whose oldest asset is the ground and whose newest is the assignment clause.*
+
+- An endowment made of ground taken from people who are still here, converted to scrip, sold, and spent into a permanent institution that now holds the archive of the taking.
+- A public trust with constitutional autonomy: appointees serving terms longer than any government, exempt from the rules that bind every neighbour, and answerable to no electorate.
+- The tiered assignment of persons to institutions by percentile — a plan that sorts a generation at eighteen and has never been repealed, only administered.
+- Admission by lottery, with tiebreakers standing in for a desegregation decree that expired, and a merit exception abolished by a board vote and restored by a judge: entry to a school as a permanent item on a litigation calendar.
+- An unelected private body empowered to terminate a public college's right to exist, on written findings, with the appeal heard by itself.
+- Local democracy suspended by a loan — an elected board superseded by a state-appointed administrator on the terms of an emergency advance, the debt outliving the intervention and the board restored to it.
+- A child's status changed by a count of absences, escalated by a review board that keeps minutes, and referred to a prosecutor: attendance as an offence with a threshold.
+- Title in a publicly funded discovery vested in the institution, with a public-interest override written into the statute and never once exercised, generating a revenue line that outlives the laboratory and expires on a date.
+- The whole apparatus of institutional ownership resting on a clause in a form signed at hire by someone who was not told what they were assigning.
+- A committee lawfully empowered to approve a numbered quantity of lives per protocol, obliged to consider alternatives, inspected twice a year, and minuted.
+- Misconduct as a procedure with its own clock — sequestration, an inquiry, an investigation, a report to a distant office — under which whether the finding is true becomes a question of whether the deadlines were met.
+- Experiments on people who were never asked, disclosed by a commission decades later and resolved by a compensation statute that arrives after every subject is dead.
+- A landowner forbidden by its founding instrument to sell, and therefore leasing: a housing market whose entry criterion is an academic appointment and whose exit price is a formula.
+- A university managing a weapons programme through a corporate vehicle, so the academic body is a member of an entity rather than the operator of the work.
+
+### 4.15 Food, land and the working landscape
+
+*Ground and water administered as a permit regime, in which the calendar of what may be grown, taken and eaten is written by instruments and audits.*
+
+- The county officer who is at once the regulator of poison, the certifier of scales and the author of the annual valuation of everything grown — enforcement and accountancy in a single appointment.
+- Entitlement to water fixed by the year a predecessor first diverted, so seniority is a date, and the curtailments go out in the order in which people arrived.
+- Conservation as an instrument that outruns a life: a contract that renews itself annually and can be exited only by a wind-down measured in years, or a development right bought once and then visited every year, forever, to confirm that nothing has happened.
+- Openings and closures set by instrument — a toxin assay, a count of animals in the water, a rain gauge at a designated station — so what may be taken is decided by laboratories and no one can be petitioned.
+- The protected area as a boundary drawn on water, inside which conduct is a schedule of prohibitions written by a distant office and amendable by rule.
+- Collapse that must be certified before it can be relieved: the fishery declared a disaster by an official act, which is the step that releases the money.
+- A term written decades ago and left to lapse, ending an operation on its expiry date without anyone having to decide anything.
+- Private standards with public auditors — an industry writing its own metrics after an outbreak, submitting to state inspection, and marking the compliant produce.
+- Recall as a classification exercise: a hazard sorted into a numbered class and listed in a weekly report, traced backward through records never kept for that purpose, with the duty to trace arriving years after the duty to withdraw.
+- Charity with an inventory system — commodities allocated by programme, distributed under service agreements to pantries monitored against them, reported in pounds — alongside hunger administered as an eligibility finding re-proved on a cycle.
+- The grade posted at the door: an inspection score displayed on the premises it judges, a closure available on the inspector's finding, and a fee charged for coming back to look again.
+- Housing permitted, inspected and licensed as an appurtenance of an operation, so that a job ending is a vacating order arrived at without an eviction.
+- Lineage certified by tag — a plant's ancestry maintained in a registered block, tested on a cycle, the certification lapsing the year a test comes back positive and invalidating everything propagated from it.
+- Jurisdiction over a place as an agency memorandum: a determination that ground is or is not protected, issued, relied upon by everyone building against it, and withdrawn.
 
 ---
 

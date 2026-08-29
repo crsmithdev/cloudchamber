@@ -14,7 +14,7 @@ Check `stories/` for differentiation before developing a premise. Twenty-four ar
 
 ## The register
 
-Every story carries a distinctly setting-a twist or matrix, and it has to be structural rather than scenery — `playbook.md` §4 is the bank, twelve domains from land title to the administration of the dead. A neighbourhood name in a sentence is worth nothing.
+Every story carries a distinctly setting-a twist or matrix, and it has to be structural rather than scenery — `playbook.md` §4 is the bank — fifteen domains as themes, from land title to the administration of the dead — and `refs/setting-a.md` holds the statutes, dates, bodies and cases those themes were distilled from. Generate from the themes; go to the annex when a premise needs a real mechanism under it. A neighbourhood name in a sentence is worth nothing.
 
 Pitch dark. The target register is setting-c and setting-b — it does not work out well for anybody. Heavier on body horror, weirder themes, weird religious angles. Avoid the conventional, and avoid the "schedule that predicts the future" shape; the maintained schedule already carries eleven of the twenty-four.
 
