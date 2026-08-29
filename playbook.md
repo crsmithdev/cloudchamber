@@ -435,7 +435,7 @@
 
 *Fifteen domains of subject matter: the places, landmarks, organisations, trades, communities and live arguments a story is set in and about. Every story carries a setting-a matrix, and it has to be structural rather than scenery: take the element out and see whether a mechanism goes with it, or only an image.*
 
-*Each line is a premise seed rather than a description, in the same form as §1, and the mechanism is meant to be implied by the concrete thing rather than stated. Each line was written against one question — could it be true of Denver, Boston or Atlanta? — and a line that could be is not doing the work this section exists for. The statutes, dates, bodies and cases behind these are in `refs/setting-a.md` — go there once a premise needs a real instrument under it.*
+*Each line is a premise seed rather than a description, in the same form as §1, and the mechanism is meant to be implied by the concrete thing rather than stated. The statutes, dates, bodies and cases behind these are in `refs/setting-a.md` — go there once a premise needs a real instrument under it.*
 
 *The horror is a process, never a population. Several of these domains carry the histories of people the region's institutions have harmed; the villain is always the apparatus. Nothing here makes an identity the frightening thing.*
 
