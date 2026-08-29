@@ -1,6 +1,6 @@
 # FOG BELT — PLAYBOOK
 
-*Arranged for generation. §0 is the part you load when you want a premise; §1–§4 are the parts you raid once you have one; §5–§6 are the parts you read against once you have something. The annexes under `refs/` are the evidence — this is the tool.*
+*This document is for generating. §0 is what you load when you want a premise; §1–§4 are what you raid once you have one. Nothing here evaluates, catalogues or scores — what the corpus has already done, and the instruments for reading a premise you already have, live in `catalogue.md`. The annexes under `refs/` are the evidence; this is the tool.*
 
 **Source tags:** `[C]` Chiang · `[W]` Watts · `[setting-c]` setting-c · `[TC]` setting-b · `[K]` djkaktus · `[S]` SCP, wider wiki (Annex F) · `[E]` Neon Genesis Evangelion · `[FB]` Fog Belt originals (doctrine arrived at in-house). Tags mark where a move is best demonstrated, not where it's allowed.
 
@@ -8,7 +8,7 @@
 
 **Standing note.** *(A3, 2026-08-26)* The taste profile is explicitly evolving. Old rules get invalidated as the corpus is re-read and recycled. **Do not treat anything in this document as canonical against a live instinct.** It records what has worked; it is not a constitution. Where a rule has been amended, the amendment sits inline with its date rather than in a separate log.
 
-**On the vocabulary.** *(2026-08-29)* Nothing in this document evaluates. The six questions in §0 and the thirteen items in §6 are lenses — devices for finding out what a premise contains — and the older habit of calling them *tests*, with passes and failures, was a category error: it produces conformance grading, which is not judgement and is not taste. A lens that shows nothing has told you the story isn't using that dimension, which is information rather than a defect. An unused shape in §0 is not a vacancy. The one thing here that operates as a criterion is §6.11 — whether a story feels like another one on the slate — and it is the only place in this document where a story can be said to be failing at something.
+**On the vocabulary.** *(2026-08-30)* Nothing in this document evaluates, and nothing in it is a rule. It is a bag of starting points. Everything that reads a premise *back* — the recurring shapes, the anti-patterns, the thirteen lenses, the source lookup, and the record of what the slate has already spent — moved to `catalogue.md`, because keeping description and generation in one file made the generative half read as a rubric and produced conformance grading in place of judgement. An unused shape is not a vacancy. The only thing anywhere that operates as a criterion is whether a story feels like another one already on the slate.
 
 ---
 
@@ -18,127 +18,14 @@
 
 ## A way in
 
-*An ideation aid. Moves that have helped find a premise, in no fixed order, with no obligation to make all seven. An idea that arrives whole owes this list nothing.*
+*An ideation aid. Moves that have helped find a premise, in no fixed order, with no obligation to make all six. An idea that arrives whole owes this list nothing.*
 
-1. **Take a shape** from *Recurring shapes* below — or notice that the idea in hand doesn't fit any of them, which is the better outcome.
-2. **Take an apparatus, not an anomaly.** A setting-a institution with a founding date, a cover story, a rate card and a weekly rhythm. What does it *do* every Tuesday?
-3. **Take a theme family (§1)** and state it as a mechanism with units. Not a mood.
-4. **Take an artifact (§4)** the institution genuinely produces.
-5. **Push on the six questions** below until the premise generates its own second act.
-6. **Check §5** for the failure mode you're closest to, and `stories/` for whether the slate already has this.
-7. **Write the last line first if you can find it.** One beat past the horror, small, administrative, correctly filed.
-
-## Recurring shapes
-
-*Descriptive, not prescriptive. Configurations the corpus has actually used. Stories routinely run two at once, and the best ones have found a shape that isn't here yet.*
-
-### The maintained schedule
-
-> **Something has been operating for a long time on a correct principle nobody remembers, maintained by competent people who are not deceived, at a cost that is scheduled, documented, and — on the evidence — worth paying.**
-
-The oldest shape and still the most common: about half the slate cleanly, another quarter partially. It does not fit *Bloom*, *"Without Regards"*, *Designated Pathogen Free* or *Dwell Time*, and *Second Circulation* contradicts one of its clauses outright — everyone there is deceived, and the deception is the premise.
-
-**To generate:** name the schedule before you name the anomaly. What is the interval — weekly, quarterly, every 378 days? Who signs the variance request when it slips? What does the requisition list?
-
-**Where it stands.** Eleven stories fit this cleanly — an observation about the slate, not a quota. A twelfth is worth writing if it isn't doing what the other eleven already do.
-
-### The correct intervention
-
-*A real, well-evidenced, genuinely good intervention whose success is the mechanism.* Nobody is wrong, the data is clean, the outcomes improve, and that is the problem. The tell is that there is no reformable failure to point at — the thing worked.
-
-**To generate:** name a real programme with a published metric. Ask what the metric stopped measuring, who is now structurally unnecessary, and what happens to them, on a schedule, with a form.
-
-**Running:** Continuity of Care · Viability · Right Concentration · Threshold · Designated Pathogen Free · Super-Donor.
-
-**Well-worn:** the intervention whose cost falls on the people it treats. Try one where the cost falls on people outside the programme entirely, or one where the intervention is *sincerely designed by someone who is not us* — SCP-9138's paradise is engineered in good faith by an obligate filial cannibal, and every beneficiary is grateful. `[S]`
-
-### The arriving fact
-
-*Something true and already in motion that no institution can stop, where the story is its administration rather than its discovery.* Nothing is hidden and there is nothing to uncover; the horror is the timetable, the ranked list, the roster change.
-
-**To generate:** start from the memo that acknowledges it. Who is on the distribution list? What is the first thing that gets rescheduled?
-
-**Running:** Suppression · Bloom · Offsets · Dwell Time.
-
-### The inherited post `[S]`
-
-*The job was already being done when the institution arrived.* It took over the rota without ever learning what the rota is for, and it cannot stop without finding out. SCP-1348 inherits a liturgy from a ten-limbed predecessor that starved rather than break the schedule, and staffs it by maternal descent while disqualifying anyone who can understand the words. SCP-2845 commissions its ritual from an outside occultist who tells them plainly that nothing can ever be substituted or revised. SCP-7219 is one occult agency's prisoner inherited by another, with no interval of freedom in between.
-
-**To generate:** who was doing this before? What did the institution keep, and what did it not understand well enough to know it was discarding? What is the disqualifying criterion for the staff — and what does that criterion tell the reader about the job?
-
-**Unused on the slate.** Nothing on the current 24 runs this cleanly. An unused shape is not a vacancy and not something the slate is missing. What is worth borrowing is the four questions above — who was doing this before, what got kept, what got discarded, who is disqualified — which are useful against any premise. The shape itself is only one answer to them, and a slate where several stories took it would be worse, not better.
-
-### The sincere paradise `[S]`
-
-*Someone designed the good outcome, meant it, and got it wrong in a way that cannot be appealed.* Not a trap and not a lie — a specification. SCP-7179's afterlife solves comfort completely and never considers duration. SCP-9138's heaven rewards closeness, selflessness and fecundity, sincerely, according to a species for whom closeness means being eaten by your children.
-
-**To generate:** write the design document for the good outcome. What did the designer optimise? What did they not think to bound? Then write the testimony of someone enjoying it, in the register of gratitude, and let the reader do the translating.
-
-### The one-way channel `[S]`
-
-*Someone is reporting from inside something nobody can reach, and the institution's entire role is to receive and file.* SCP-7034 is fourteen days of a researcher narrating his own moral collapse into a communicator that cannot answer him. SCP-9377 is a porthole and a sixty-second window. SCP-2718 is a woman write-protecting a file in the minutes before she expects to be killed.
-
-**To generate:** make the reader occupy the receiving seat, not the rescuing one. What is the institution's standing instruction about what to say into the channel? (SCP-9377's is to keep promising rescue to men the same file has already classified as killed in action.)
-
-**Adjacent on the slate:** *Dwell Time*'s two registers, *Designated Pathogen Free*'s generational accounts. Neither is one-way.
-
-## The six questions
-
-*The story notes call these "the tests" — same six; the older notes saying "the five tests" predate the Evangelion question. The name is wrong and is being retired: these are lenses, not evaluations, and the useful version of each is the one that generates the next draft. A story may decline any of them, and declining is a choice rather than a failure; saying which and why helps the next reader, but is not owed.*
-
-### Chiang — spend the impossibility, then pay for it
-
-One impossibility, bought honestly, and everything downstream is arithmetic. Watch for a second one smuggled in to escape a corner.
-
-**Ask:** what does this premise make cheap that used to be expensive? Who arbitrages that? What does the trade press say about it in year twelve? What is the exception process, and who was denied?
-
-*Dwell Time* spends exactly one and buys the rest with dose response. *Second Circulation* declines the question outright — aliens are permitted there. SCP-9138 spends one (a filterfeeding technique discovered on 14 June 1950) and gets a new moral law for the universe eleven days later, with grave-robbing as the containment procedure. `[S]`
-
-### Watts — find where the self stops being necessary
-
-Strong form: *the ones without selves outperform the ones with them, the data supports it, and the market noticed.* Not required — a story can be institutional horror only and be fine.
-
-**Ask:** who noticed first, and what did the returns look like afterwards? What is the line item that used to be a person?
-
-The wider vein: consciousness kept alive because it is load-bearing infrastructure rather than out of cruelty — SCP-439 leaves parts of the brain intact for metabolic efficiency, and the eyes still track. `[S]`
-
-### setting-b — make the institution correct, not deluded
-
-If the metaphysics is materially true, the institutions built on it are correct. Nobody is a fanatic; everybody is a ratepayer. Inapplicable where there is no metaphysics — several of the strongest stories are entirely mundane by design.
-
-**Ask:** what is the bond measure called? Who audits it? What does the ethics body approve, and what does it approve *instead*?
-
-### setting-c — find the load
-
-Where this lens is working, the awful thing is structural: remove it and the system stops rather than softens. **It has been the most productive of the six** — and the most over-applied, so read the next paragraph with that in mind.
-
-**Ask:** draft the memo that cancels the programme. Who has to be told, and what do they have to stop doing? A short distribution list is information, not a verdict — usually that the horror is a condition the institution observes rather than an activity it performs. Sometimes that means the premise wants another turn. Sometimes it means the story is an arriving fact, where nothing can be cancelled and the shape is doing exactly what it should.
-
-### djkaktus — make the artifact do a job
-
-Where there is an artifact: does it exist to *do a job*, or to tell the story? An artifact that exists to narrate is a testimony wrapper.
-
-Document-as-monster is at or near capacity. Having no document at all is now a legitimate answer — *Second Circulation*'s monologue has no addressee, and that absence is the complicity. So is having a document that is the wrong kind: captioned photographs with no narration `[S]` (SCP-9377), a table of five endorsements `[S]` (SCP-9138), a recruitment standard standing where a procedure should be `[S]` (SCP-231).
-
-**Ask:** who filed this, to satisfy what requirement, and what would happen to them if they hadn't?
-
-### Evangelion — check whether the instrument is a person
-
-If the terrible thing could be done by a machine instead, it is engineering. If it requires a specific person, and the paperwork for using them is complete and correct at every step, it is this register.
-
-**Ask:** whose signature is on the authorisation? What is the screening criterion for the people who carry it out — and can that criterion carry the whole scene by itself? `[S]` (SCP-231 declines to describe the act and specifies the person instead: Milgram score 72, unmarried, no offspring, personality-disorder screening waived.)
-
-## Defaults and permissions
-
-*Long called "the guardrails", which flatters the list's authority. Three of the four dated A-items are permissions, added because a default was getting in the way, and A3 governs the rest. The undated lines are what the register does by default, not what it is required to do.*
-
-- The scary thing is an idea. Cold, conceptual, systems-scale.
-- The horror is institutional; personal devastation is the residue, not the subject.
-- **Institutions can be the villain.** *(A1, 2026-08-26 — supersedes "no villains".)* The default remains that cruelty is a byproduct of somebody's reasonable programme and the programme is working. But a straight reading in which the institution simply *is* the antagonist is available and does not need laundering through arithmetic. **The reveal does not always have to exonerate.** What became optional is the exoneration, not the rigour — see the anti-pattern in §5.
-- **The narrator is good at their job and warm.** *(A4, 2026-08-27 — one narrator is a default, not a constraint.)* Multi-voice and multi-register structures are available where the premise requires them, and some premises do: if the loss the story describes is a loss of the faculty needed to notice it, anyone who can narrate it clearly is by definition from before it, and one voice cannot carry the piece. The requirement applies to each voice. Every voice must be doing a real job in a real document, and must be warm, articulate and convinced it is fine.
-- Refuse the compensating virtue — no human quality gets to be the secret weapon.
-- Withhold the distinction. Where two mechanisms are both available, don't resolve it.
-- End one beat past the horror, on something small and administrative, correctly filed.
+1. **Take an apparatus, not an anomaly.** A setting-a institution with a founding date, a cover story, a rate card and a weekly rhythm. What does it *do* every Tuesday?
+2. **Take a theme family (§1)** and state it as a mechanism with units. Not a mood.
+3. **Take an artifact (§4)** the institution genuinely produces.
+4. **Give the mechanism a rate,** and follow it out — the price list, the exception process, the revision history, the people who game it, what the trade press says in year twelve.
+5. **Ask who is on shift right now,** why they cannot stop, what disqualifies someone from the job, and who was doing it before the institution arrived.
+6. **Write the last line first if you can find it.** One beat past the horror, small, administrative, correctly filed.
 
 ---
 # 1. THEME BANK
@@ -646,118 +533,3 @@ If the terrible thing could be done by a machine instead, it is engineering. If 
 **After-action report** written in the first person by the man who came back, handed to a subordinate to clean up. `[S]`
 
 **Census of what is currently attached** — itemised by species, with the human count last and casual. `[S]`
-
----
-
-# 5. ANTI-PATTERNS
-
-*Failure modes the corpus has actually produced, listed so they are recognisable early. A premise sitting near one of these is worth a second look rather than a rejection — the difference between a failure mode and a deliberate move is usually whether the story knows it is there.*
-
-**Watts failure modes**
-
-- *Cartesian bait-and-switch* — "it was a simulation / she was a machine all along." Threatens the contents of the self, not its necessity. Files as a twist.
-- *Vibes-only nihilism* — announcing at length that free will is a lie, with no mechanism, no cost, no scene where the claim does work.
-- *The flattering monster* — the hive exists so someone can defy it and prove individuality matters.
-- *Edgelord grimness* — grimness without the citation apparatus is weather.
-
-**Chiang failure modes**
-
-- A second impossibility introduced to escape a corner.
-- The speculative element used as a metaphor for a psychological one — which lets the audience defuse it by translating it.
-- Escalation substituted for implication.
-
-**Institutional failure modes**
-
-- The cargo cult. Do not write a ritual that is a misunderstanding; write one that is a complete, functioning technical procedure whose meaning has been lost while its efficacy has not.
-- The obviously-right reformer. Correctness should increase isolation, not leverage.
-- Delusion instead of competence. If the audience can say *if only they knew*, the story is defused.
-- Domestic centre. Every rejected pitch had one relationship or one person's reckoning at its heart.
-- The artifact that exists to narrate. If it isn't doing a job, it's a testimony wrapper.
-- *The villain as shortcut.* A1 permits the institution to be the antagonist; it does not permit it to be stupid, gloating, or uninterested in justifying itself. Competence and sincerity remain mandatory. What is optional is the exoneration.
-
-**Evangelion failure modes**
-
-- *The mercy as a lie.* If the terrible solution does not actually solve the suffering, refusing it costs nothing and the piece is a fable.
-- *The interiority tour.* Psychological collapse rendered at length for its own sake, with no apparatus around it — the domestic-centre rejection, arrived at from the other direction.
-- *The iconography without the engineering.* Borrowed sacred imagery doing mood work while the metaphysics stays unspecified. Steal the apparatus, not the vestments.
-- *The child as pathos delivery.* If the vulnerable operator exists to be pitied rather than correctly processed by a competent institution, it is sentiment in a uniform.
-
-**SCP failure modes** `[S]`
-
-- *The gore inventory.* Escalating physical description that accumulates nothing. Annex F's worst material is anatomical and its best is arithmetical — the difference is whether the reader is doing a sum.
-- *The interpretive narrator.* A file that tells the reader how to feel about its own contents. The strongest entries in the annex have no assessment section at all, and stop the instant the question becomes unbearable.
-- *The blank that hides nothing.* Withholding only works where the withheld thing is load-bearing and the format supplies a legitimate reason for the gap. An expunged tag over material the reader can trivially reconstruct is decoration.
-- *The twist that is only a reclassification.* Changing the object class is not the same as changing what the reader understands. The reveal has to alter the meaning of the pages already read.
-- *Cosmology for its own sake.* Naming a wider mythology is only free when the document has no access to it either. If the file can explain the librarians and the deathless city, it should, and then it is a different and lesser story.
-
----
-
-# 6. THIRTEEN LENSES
-
-*Things to hold up to a premise you already have, in fifteen minutes. §0 helps you find one; these help you find out what you have. Nothing here scores. A lens that shows nothing has told you the story isn't using that dimension, which is a fact about the story rather than a fault in it. Item 11 is the exception — see it.*
-
-1. **Is the apparatus real?** A setting-a institution with a founding date, a cover story, a rate card, and a schedule. What does it *do* every week?
-2. **Is the theme stated as a mechanism with units,** rather than as a mood?
-3. **Would the artifact exist without the story?** If not, it is a testimony wrapper — worth knowing before the premise gets built on it.
-4. **Follow the premise to its second-order effects** — the price list, the exception process, the revision history, the people who game it. If it needs a second impossibility, go back to the theme.
-5. **Where does the self stop being necessary,** who noticed first, and what did the returns look like afterward?
-6. **The normalisation lens.** Ratepayers, not fanatics. Who files the variance request? What is the bond measure called? *(Per A1 this makes the institution legible, not innocent — it may still be the antagonist.)*
-7. **The load-bearing lens.** Remove the awful thing. Does the system stop, or merely get nicer? Either answer tells you what the institution is actually for. A story built on an arriving fact will often answer neither, because nobody can remove it — that is the shape working, and this lens is structurally blind to it.
-8. **The instrument lens.** Could a machine do it instead? If yes, it's engineering. If it needs a specific person, whose signature is on the authorisation?
-9. **The inheritance lens.** `[S]` Who was doing this before the institution arrived, and what did it fail to understand when it took over?
-10. **Which dread mechanism (§3) is carrying this, and which withholding move (M11–M19, M58, M59, M62, M65)?** If more than one of either is running they are likely diluting each other, and it is worth knowing which one you would keep. The count is a diagnostic, not a limit.
-11. **Check the slate.** `stories/`, 24 developed plus the bench. Does this feel like one of the others — same voice, same rhythm, same institution under a different name? This is the one item here that is a criterion rather than a lens, and it outranks everything else in the document.
-12. **Look for the last line.** One beat past the horror, small, administrative, correctly filed. Not having one yet is normal — these are concepts, not finished stories — but the search usually shows you where the story actually ends.
-13. **Name the bell.** The recurring sound that marks the schedule.
-
----
-
-## Quick lookup — who is strongest on what
-
-**A premise that generates dread without a monster** — Chiang: *Hell Is the Absence of God*, *Exhalation*, *Omphalos*.
-
-**The self as unnecessary, argued, in scene** — Watts: *Blindsight*.
-
-**Institutional duration and maintenance** — setting-c: the Administratum, the Adeptus Mechanicus, the Black Ships.
-
-**Institutions that are correct rather than deluded** — setting-b: Church logistics, the Body Barn, grace-as-inventory.
-
-**The artifact form itself** — djkaktus: *Fear Alone*, SCP-3000, SCP-2740, SCP-2670.
-
-**Withholding as content** — djkaktus: SCP-2933, SCP-2740. Chiang: *Division by Zero*. Wider wiki: SCP-231 (the act never described), SCP-610 (the log never written).
-
-**Making the appalling decision correct** — djkaktus: SCP-2464, SCP-2670, SCP-4935. setting-b throughout.
-
-**A voice that is warm and doing the harm** — djkaktus: SCP-049, SCP-2254, *Integrity Project*.
-
-**The instrument that is a person, and the institution that knows** — Evangelion: NERV, the Marduk Institute, the dummy plug.
-
-**Consent that is real, informed, and worse for it** — Evangelion: the alternative on the stretcher.
-
-**Salvation as the removal of personhood, argued sincerely** — Evangelion: the Human Instrumentality Project.
-
-**An institution that is simply the antagonist** — Fog Belt original: *Recognition*.
-
-**A God who is real, attentive, and not anthropocentric** — Fog Belt original: *Recognition*.
-
-**The specification standing in for the act** — SCP-231. `[S]`
-
-**A designed afterlife, and duration as the flaw in the design** — SCP-7179, SCP-9138. `[S]`
-
-**Oblivion pursued as a discipline, and the cost demonstrated by someone who never chose it** — SCP-7027. `[S]`
-
-**Testimony from people who are grateful** — SCP-9138. `[S]`
-
-**The inherited liturgy and the staff disqualified from understanding it** — SCP-1348, SCP-2845. `[S]`
-
-**The one-way channel and the institution as audience** — SCP-7034, SCP-9377, SCP-2718. `[S]`
-
-**Sterility and damage measured in grandchildren** — SCP-2852, SCP-3004. `[S]`
-
-**The arrangement that predates the institution** — SCP-597, SCP-2000, SCP-3004. `[S]`
-
-**Duration rendered as arithmetic** — SCP-7179, SCP-1733, SCP-9377. `[S]`
-
-**Redaction with the key attached** — SCP-835. `[S]`
-
-**Sixty-three further candidates, triaged and unregistered** — `refs/scp/candidates.md`. Tier 1 there (SCP-2400, SCP-2275, SCP-2140, SCP-3309) is the strongest unmined material available.
