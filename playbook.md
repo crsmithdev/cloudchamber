@@ -14,16 +14,17 @@
 
 # 0. IDEATION
 
-*How a premise gets made here. The steps are in order and the order matters: the combination happens before the darkening, the darkening before the structure, and the telling is chosen before anything is written up. There is no writing workflow yet — this stops at an agreed idea in its own file.*
+*How a premise gets made here. The steps are in order and the order matters: the combination happens before the darkening, the darkening before the structure, the substrate is settled before the telling, and the telling is chosen before anything is written up. There is no writing workflow yet — this stops at an agreed idea in its own file.*
 
 1. **Pull from each of §1–§4.** A theme, a dread mechanism, an artifact, a setting-a element. Two constraints on the four: **at least one must be a combination** — two or three entries from that section held together, not one taken whole — and **at least one must not be a listed item at all**, but something the section suggested and does not contain. Four clean picks off four lists is a premise the file already knows how to write.
 2. **Combine them into a basic idea.** One flat sentence. No adjectives, no register, no atmosphere. If it needs the register to be interesting, it is not an idea yet.
 3. **Remix it dark.** Ask what it looks like when the institution is competent, the data is good, the people are decent, and it is worse for all three. Find the body in it. Find the part that cannot be unlearned.
 4. **Find a twist, then the layer under it.** One turn is a reveal; two turns that reinterpret each other is a story. Ask what the reader will have to reread — then ask what the second reading is still concealing from the third. Give it more than one thing to be about.
-5. **Work out how to tell it (§5).** Who is speaking, from where, at what remove, holding what document, and what they are unable to say. This is a decision with consequences and it is made here, not afterwards.
-6. **Summarise it in a paragraph or two** — enough to carry the idea across, not the story.
-7. **Iterate with Chris until he says it is OK.** One idea at a time; he replies take-it or pass.
-8. **Then write it up in its own file** under `stories/`, in the form the README describes.
+5. **Work out the layer below the one you are telling.** Where the story withholds — and it should — the withheld thing still has to exist in specifics before the withholding means anything. Settle it for yourself even when none of it reaches the page: what the mechanism actually is, who benefits and by how much, what the missing pages said, why the interval is that interval and not another. Most of it should stay off the page. A reader cannot tell a gap with a floor under it from a gap without one on a first read, but they can on a second, and hand-waving is exactly what a second read finds. If the honest answer is *I don't know either*, that is a hole rather than a mystery, and it will have to be filled before the story is written.
+6. **Work out how to tell it (§5).** Who is speaking, from where, at what remove, holding what document, and what they are unable to say. This is a decision with consequences and it is made here, not afterwards.
+7. **Summarise it in a paragraph or two** — enough to carry the idea across, not the story.
+8. **Iterate with Chris until he says it is OK.** One idea at a time; he replies take-it or pass.
+9. **Then write it up in its own file** under `stories/`, in the form the README describes.
 
 ---
 
