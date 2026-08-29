@@ -1,48 +1,138 @@
-FOG BELT — REFERENCE REGISTER, ANNEX D  
-JULIAN JAYNES — THE ORIGIN OF CONSCIOUSNESS IN THE BREAKDOWN OF THE BICAMERAL MIND (1976)
+# FOG BELT — REFERENCE REGISTER · ANNEX D — JULIAN JAYNES
 
-Added August 2026, during the Threshold remix. Sixth source in the register. Tag: \[J\].
+*Evidence for `playbook.md`. The whole argument is stated, conclusions included.*
 
-WHY HE IS IN THE REGISTER
+*Status note (rewritten 29 August 2026; supersedes the short entry compiled during the Threshold remix). Unmarked claims are Jaynes's own, as made in* The Origin of Consciousness in the Breakdown of the Bicameral Mind *(Houghton Mifflin, 1976). Additions from the 1990 afterword are marked **[1990]**; work postdating the book, **[post-J]**; readings the register makes and Jaynes does not — the inversion in §6 included — **[inferred]**. Where sources disagree the disagreement is stated, not resolved. Written so a listener with a library card can check it.*
 
-Jaynes supplies something none of the other five sources do: a real, published, seriously-argued theory of interiority that is dateable, anatomically specific, unfalsifiable, and widely dismissed. He is the perfect in-world citation — a story can have a character read him on the record without inventing anything, and the listener can check every word.
+*Source tag: `[J]`.*
 
-He is also a model for how the slate should handle real theory. Jaynes played his idea at full complexity and never simplified it for the reader, which is the Acausal principle stated in advance.
+---
 
-THE THEORY, ACCURATELY
+### 0. WHAT THE BOOK IS
 
-\- Until roughly 3,000 years ago — the end of the Bronze Age — the normal and ubiquitous state of the human mind was bicameral: two-chambered.  
-\- The right hemisphere organised experience and issued directives to the left as auditory hallucination, using right-hemisphere language areas.  
-\- These were not experienced as one's own thoughts. They were experienced as the speech of a god, and obeyed.  
-\- Bicameral people therefore had no introspective mind-space, no analog "I", no deliberation.  
-\- Consciousness in Jaynes's sense is not biological but a learned cultural construct, arriving with the breakdown of that arrangement.  
-\- Textual evidence: the Iliad's characters are commanded by gods and never deliberate. The Odyssey, later, has interiority. Jaynes read the difference as a record of the transition.  
-\- He noted the Hebrew relationship as already post-transition and different in kind — covenantal, a god you make terms with and can be abandoned by, rather than one that simply speaks in you.  
-\- He read schizophrenia as partial reversion to bicameral function.  
-\- One book. He spent the rest of his life defending it.
+**Julian Jaynes** (1920–1997). McGill B.A. 1941; graduate work at Yale under **Frank A. Beach** on imprinting and animal behaviour; Yale M.A. 1948; lecturer in psychology at **Princeton** for roughly three decades to 1995; associate editor of *Behavioral and Brain Sciences*. **[contested]** The doctorate is the one fact the sources will not agree on: the Julian Jaynes Society lists a Yale Ph.D. in 1977, the year *after* the book; the other standard account is that he declined the degree on principle.
 
-Reception: not falsifiable, and generally not accepted — but persistently, uncomfortably compelling to a minority of serious psychologists, which is the exact reputational position the slate wants a cited source to occupy.
+**One book.** Houghton Mifflin, 1976. It sold out its first printing, drew long favourable reviews from **John Updike** in *The New Yorker* and **Christopher Lehmann-Haupt** in the *New York Times*, and was a finalist for the 1978 **National Book Award** in Contemporary Thought. Afterword edition 1990; Mariner reissue 2000; at least seven translations. He announced sequel volumes repeatedly, completed none, and spent his remaining twenty-one years defending the same argument.
 
-WHAT THE SLATE DOES WITH HIM
+**Four parts, and the shape matters.** An **Introduction: The Problem of Consciousness**; **Book I: The Mind of Man** (definition, the *Iliad*, the bicameral mind, the double brain, the origin of civilisation); **Book II: The Witness of History** (idols and graves, literate theocracies, the causes of consciousness, Mesopotamia, Greece, the Khabiru); **Book III: Vestiges of the Bicameral Mind in the Modern World** (authorisation, prophets and possession, poetry and music, hypnosis, schizophrenia, science). Definition comes first; history is not touched until the terms are fixed.
 
-The move used in Threshold, and available generally: Jaynes has the anatomy right, the date right, and the mechanism right, and is wrong about exactly one thing — the direction.
+**[1990]** The afterword does the most useful structural thing in the book, and every summary drops it: it restates the theory as **four separable hypotheses**. (1) Consciousness is a learned process built from metaphorical language. (2) A prior mentality, the bicameral mind, ran on verbal hallucination. (3) The transition is datable, to the end of the second millennium BCE in Greece and the Near East, later elsewhere. (4) A neurological model locating the hallucinatory source in the right temporal-parietal lobe. You can reject (3) and (4) and keep (1) and (2). Almost everyone who dismisses the book dismisses the compound.
 
-He read bicameralism as a deficit: an absence of interior space, later filled. Invert it. There was never a deficit. The bicameral mind is a fully occupied interior with the traffic running the other way — addressed rather than authoring. What arrived 3,000 years ago was not a new capacity but a wall. We did not gain an inner life; we sealed one. Jaynes described the sealing and called it a birth.
+---
 
-Why he could not see it: he was reconstructing from texts written by the sealed, about the unsealed. Every source available to him was on our side of the wall. From there it can only read as loss.
+### 1. THE ARGUMENT, AT FULL COMPLEXITY
 
-Why this is useful rather than merely clever: it means the reception history is part of the mechanism. A theory that is nearly correct is what gets dismissed. Total vindication of a crank is a cheap move; vindication of a competent man on every axis except one, where the one error cost him the entire reception, is a Fog Belt move.
+**What he means by consciousness, and what he refuses to mean.** Nearly every dismissal fails here. He is not talking about awareness, wakefulness, sensation or having an experience. Consciousness is **not all mentality** (perceptual constancy, motor control and speech production run without it); **not sense perception** (if it were, by reductio, there would be ten thousand conscious beings per cubic millimetre of blood); **not a copy of experience** — "the conscious memory does not copy experience but reconstructs it as a must-have-been"; **not necessary for concepts, learning or skill**; **not necessary for thinking or judgement**, his anchor there being **Karl Marbe's 1901** weight-comparison work and the **Würzburg school's** "imageless thought", where the judgement arrives with no conscious content for the judging — he renames that a **struction**, an instruction handed to the nervous system which returns an answer from nowhere; and it has **no location**.
 
-TRANSFERABLE MOVES
+What remains is narrow, specific and — the point — *optional*. **Consciousness is an operation, not a thing: a learned analogue of the physical world, generated by metaphor and run in an imagined space.** Say "I *see* the solution" often enough and the seeing imports a space to see in. He names the machinery (**metaphrand**, **metaphier**, **paraphier**, **paraphrand**) and six features: **spatialisation**, the construction of a **mind-space**, an introcosmos with extension; **excerption**, since you never call up the whole of anything, only a fragment picked out of the parade; **the analog 'I'**, the observing self that moves about the mind-space, contentless, related by him to Kant's transcendental ego; **the metaphor 'me'**, the self as *object*, seen from outside and placed in imagined scenes; **narratisation**, the compulsive fitting of events into a story, a before and an after put around anything that happens; and **conciliation**, assimilating new content to a learned schema so it fits.
 
-\- The near-miss citation. Have the story's institution hold the dataset that would have vindicated a real, dismissed thinker, and have its standing position be that publishing it would restore the finding along with everything else. The apostate doctrine, applied to scholarship.  
-\- Interiority as topology, not quantity. The horror is not that nobody is home. It is that someone is home in the wrong configuration — present, rich, continuous, and oriented as an addressee rather than an author. This is the designated differentiator from Viability, which is an absence story. Do not blur them.  
-\- Consciousness with a date. Any capacity Jaynes treats as recent and cultural can be given an installation date, a coverage curve, and a maintenance schedule.  
-\- The obeyed voice as infrastructure. Right-hemisphere speech production is real. Anything that treats it as a receiver rather than a source inherits Jaynes's whole evidentiary apparatus for free.  
-\- Liturgy as duty cycle. Fixed hours, fixed words, aloud, in unison, no gaps — arrived at independently by every tradition. Read as protocol rather than devotion, with observance rates as a measurable coverage term.
+**The bicameral mind.** **[1990]** A neurocultural arrangement in which a governing, superior being — right hemisphere — issued hallucinatory verbal directives to an obedient, subordinate mortal — left hemisphere. Decision stress exceeding habit triggered the voice. It was not experienced as thought, because there was no mind-space to have a thought *in* and no analog 'I' to question or refuse. It was experienced as the speech of a god, a king or a dead parent, and obeyed. His phrase: **"noble automatons who knew not what they did."**
 
-ANTI-PATTERNS
+**The neurological model**, built on **Sperry's** and **Gazzaniga's** split-brain work: the right-hemisphere areas corresponding to **Wernicke's** and **Broca's** — silent in most modern people, anatomically present in all of them — generated admonitory speech, transmitted across the **anterior commissure** (he stresses this, not the corpus callosum) to the language-dominant left. The claim is *a different use of the same brain*; nothing anatomical had to change for the arrangement to end. And it is a theory of civilisation as much as of mind: bicameral societies were rigid hierarchies held together by hallucination rather than policing — nests of social insects, with direction from an idol in place of pheromones from a queen — which is how populations far too large for face-to-face authority cohered with no bureaucracy worth the name.
 
-\- Do not have a character explain Jaynes at length. Cite the book by name, state the one inversion, move on. The listener who knows it will run ahead; the listener who does not loses nothing.  
-\- Do not make him simply right. The error is load-bearing.  
-\- Do not let a second story also stake a claim on the nature of selfhood explicitly. Threshold holds that ground now.  
+---
+
+### 2. THE EVIDENCE
+
+**Homer.** The oldest strata of the *Iliad* contain no word translatable as *mind*, *soul*, *will* or *body as a whole*; the words later carrying those senses are physiological (*thumos*, agitation; *phrenes*, the lungs; *psyche*, life-breath; *noos*, perception). Nobody deliberates. The gods decide, and characters are seized, told and moved — Athena takes Achilles by the hair in Book I and the quarrel resolves. The *Odyssey*, later, is full of guile, planning and a man with an interior, and he reads the gap as the record of the transition. **[post-J]** Two caveats: the reading is downstream of **Bruno Snell**, *The Discovery of the Mind* (1946), and **E. R. Dodds**, *The Greeks and the Irrational* (1951); and both epics are conventionally dated to the eighth century BCE, within a century of each other and four hundred years *after* his collapse. The chronology is the weakest joint in the book and he never repaired it.
+
+**The tended dead, the houses of gods, the idols.** Corpses propped, seated, fed and addressed at Eynan/Ain Mallaha; the plastered skulls of Jericho — read not as afterlife belief but as the plain fact that the dead **went on speaking** to those who had known them. A settlement's central large building that is not a dwelling, from Çatalhöyük and Eridu onward: the god has an address. And figures with enormous disproportionate eyes, the eye-idols of Tell Brak being his signature exhibit, alongside Mesopotamian cult statues that were fed, washed, clothed, put to bed, taken travelling and made to speak by ritual. **[post-J]** The **mīs-pî / pīt-pî** mouth-washing and mouth-opening ceremony is real and well attested in the Assyriological literature — precisely a rite for turning a manufactured object into a speaking presence. Checkable, not his invention, and the strongest single item in the evidence base. With it go the **personal gods**: the Mesopotamian **ili**, which an individual had and could lose, and the Egyptian **ka**, the double addressed in the second person, telling you what to do and continuing after death.
+
+**The gods go quiet.** The second-millennium Mesopotamian material is the theory at its strongest, because the texts say so themselves. Kings begin to be depicted **before empty thrones**. The *Epic of Tukulti-Ninurta* is explicitly about divine abandonment. The lament *Ludlul bēl nēmeqi* records the condition directly: *My god has forsaken me and disappeared, my goddess has failed me and keeps at a distance, the good angel who walked beside me has departed.* This is not despair being invented; on his reading it is a symptom report. The **Assyrian and Amarna** correspondence shows the same transition in progress, though it is the material most dependent on his own selection and translation.
+
+**Divination, prayer, writing.** After the voices stop, the apparatus starts: extispicy, augury, astrology, sortilege, dreams, lots — an enormous, expensive, professionalised industry appearing where none was needed. You do not build divination while the gods are still audible; **the prosthesis dates the amputation.** Prayer is a new speech genre, address to an addressee who has stopped answering. Writing is both symptom and solvent: it lets a directive persist, be revisited, deferred and *ignored*, since the written command has a controllable location rather than a ubiquitous power. Every literate bicameral theocracy is already dissolving the thing that built it.
+
+---
+
+### 3. THE BREAKDOWN
+
+The most-skipped part of the book and the part with the most usable machinery. Book II chapter 3, *The Causes of Consciousness*. Cumulative pressures, not one cause.
+
+1. **Structural fragility.** Authority is entirely hallucinatory, with no fallback of coercion beneath it. Once the hierarchy is disputed the effects are exaggerated in a way a police state would not permit — nothing else is holding it up.
+2. **Writing.** The auditory imperative loses to the visual record. A voice must be obeyed when it speaks; a tablet can be put in a drawer.
+3. **Trade and contact**, eroding the isolation each god's jurisdiction depended on, and with it **the observation of difference**: peoples in contact discover that others have other gods and other commands. Difference invites a question, and a question needs somewhere to be put.
+4. **Catastrophe and mass migration.** The second millennium BCE was, in his words, heavy laden with profound and irreversible changes: geological catastrophe (he leans on **Thera**), the collapse of the Bronze Age palace systems, invasion, war, and enormous numbers of displaced people moving into places where nobody's god had jurisdiction.
+5. **The gods could not answer.** His precipitating cause, stated flatly: *in social chaos the gods could not tell you what to do.* The arrangement had never been tested by a situation for which no schema existed. It failed as a class.
+6. **The survival value of deceit.** In a crowd of strangers, a creature that can model another's interior, conceal its own and narratise a future beats one that can only be commanded. Consciousness is selected for as a **social weapon**, not as an enlightenment — and the epics then serve as teaching material, instruction in how to have an inside.
+
+Then the sequence a writer should steal. **The voices do not simply stop. They become intermittent, then unreliable, then available only to specialists, then only through apparatus, then only through interpretation.** The end state is a licensed professional reading an animal's liver on your behalf. Every step is a degradation of coverage, and every step is met with more institution.
+
+---
+
+### 4. THE VESTIGES
+
+Book III, and the reason the theory keeps returning. The capacity is not gone; it is unused, and can be re-entered under what he calls the **general bicameral paradigm** — a collective cognitive imperative (a belief system saying this is possible), an induction, a trance, and an archaic authorisation.
+
+- **Oracles**, as a sequence rather than an institution: *locality* oracles (a place speaks), then a *prophet* at the place, then *possessed*, then *interpreted*, then *induced*. One-directional, and a decline. At **Delphi** — the Pythia on the tripod, interpreters standing by — the apparatus grows more elaborate as spontaneity is lost: what begins as someone simply speaking ends as a facility with staff, a fee schedule and a translation layer.
+- **Prophecy, possession, glossolalia**: speech produced by the subject and attributed elsewhere, under conditions the culture has pre-authorised. **Poetry and music** likewise — the Muse is not a figure of speech, and invocation is an induction procedure.
+- **Hypnosis**, the most testable part of the case: an ordinary, residual, learnable capacity to hand executive control to an external voice, requiring no pathology. **[post-J]** His observation that hypnotic susceptibility correlates with religious upbringing has held up better than most of the book.
+- **Schizophrenia**, read as partial relapse — crucially as *the loss of the modern arrangement* rather than the arrival of an alien one.
+- **Authorisation generally**: charisma, the imagined counsel of a dead parent, the internalised voice of an institution — and, in the last chapter, **science** as the search for authorisation continued by other means.
+
+---
+
+### 5. RECEPTION AND STANDING
+
+**Taken seriously.** **Daniel Dennett** is the most important reader and the most commonly misdescribed. *Julian Jaynes's Software Archeology* (*Canadian Psychology* 27:2, 1986) reframes the theory as a claim about **software rather than hardware** — the brain did not change, the conceptual equipment running on it did — and defends the top-down method against the demand that a theory of consciousness begin at neurons. He defends Jaynes against **Ned Block's** use-mention charge, on the ground that some things (money, baseball, consciousness) cannot exist prior to their concepts, and credits the hypothesis in *Consciousness Explained* (1991). He also dissents clearly: the anatomical and hemispheric claims are **"optional modules"**, discardable without collapse, and he is specifically sceptical that hallucination need be central. **Sympathetic to the shape, sceptical of the mechanism** — which is not endorsement.
+
+**The standard objections, which are good ones.** **Block:** a category error; the ancients lacked the vocabulary and the theory of consciousness, not consciousness. **Classicists**, **Jan Bremmer** among them: Homeric psychology does not bear the strong reading, and the god-machinery of epic is a compositional convention. **Walter J. Ong:** orality, in the Parry–Lord sense, accounts for the texture of the *Iliad* with nobody needing to be differently minded. **Chronology:** the two epics are not separated by the centuries the argument needs. **Falsifiability:** anything introspective is late, anything commanded early, anything modern and voice-like a vestige, so nothing counts against it. **W. T. Jones:** prior orientations drive the book rather than its evidence. **Asaad and Shapiro** rejected it as an account of hallucination. **Iain McGilchrist** (*The Master and His Emissary*, 2009) argues the reverse motion: hemispheres more integrated, later divided. **Dawkins's** much-quoted line is not a defence: "either complete rubbish or a work of consummate genius. Nothing in between! Probably the former, but I'm hedging my bets."
+
+**The afterlife.** The **Julian Jaynes Society**, founded 1997 by **Marcel Kuijsten**, publishes the main body of post-1976 Jaynesian scholarship — four edited volumes, a newsletter, a member archive, conferences — and **Brian J. McVeigh** is its most productive scholar, arguing that critics attack a definition Jaynes explicitly disowned. Its claim that the neurological model is "confirmed by dozens of brain imaging studies" is stronger than the literature supports and should be read as advocacy.
+
+**What modern hallucination research says.** **[post-J]** It cuts both ways. *Against him, on anatomy*: the dominant neuroimaging finding in auditory verbal hallucination implicates **left** temporal and language regions — left superior temporal gyrus, Broca's area — not the right hemisphere his model requires. *For him, on the shape*: the mainstream model is **inner-speech misattribution**, self-generated speech experienced as coming from elsewhere, which is his mechanism without his history or his hemispheres; **Charles Fernyhough** (Durham; *Hearing the Voice*) accounts developmentally for how inner speech is internalised and can be re-externalised as an alien voice. *On normality*: **Beavan, Read and Cartwright** (*Journal of Mental Health*, 2011) found general-population prevalence estimates from **0.6% to 84%** purely according to definition and method, while a WHO survey of some 31,000 people across 18 countries put lifetime voice-hearing near 2.5% — *the measurement is definition-dependent to a degree that is itself worth a story.* *On culture*: **Tanya Luhrmann's** study (*British Journal of Psychiatry*, 2014; 60 participants across San Mateo, Accra and Chennai) found the *character* of voices culturally shaped, American participants overwhelmingly describing intrusive, violent, illness-framed voices where Ghanaian and Indian participants far more often described voices of God, of kin, of guidance. **The most Jaynesian finding in modern psychiatry, and it needs none of his history to be true.** The **Hearing Voices Movement** (**Romme** and **Escher**, from 1987) has meanwhile restored, as clinical practice, the proposition that a voice can be an interlocutor.
+
+**The plain position.** The book is not accepted. It is also not dead, has never been decisively refuted as a whole, and is defended by a minority of serious people while cited by a much larger number of unserious ones. That is exactly the reputational location the register wants a cited source to occupy: a listener can look him up and find neither vindication nor demolition.
+
+---
+
+### 6. WHAT THE SLATE DOES WITH HIM
+
+**[inferred]** The move used in Threshold, and available generally. Preserved unchanged in substance, because it is why he is in the register at all.
+
+**Jaynes has the anatomy right, the date right, and the mechanism right, and is wrong about exactly one thing — the direction.**
+
+He read bicamerality as a **deficit**: an absence of interior space, later filled. Invert it. There was never a deficit. The bicameral mind is **a fully occupied interior with the traffic running the other way** — addressed rather than authoring. What arrived three thousand years ago was not a new capacity but **a wall**. We did not gain an inner life. We sealed one. Jaynes described the sealing and called it a birth.
+
+**Why he could not see it.** He was reconstructing from texts written by the sealed, about the unsealed. Every source available to him — every tablet, every epic, every lament — was composed on our side of the wall by someone already fitted. From there it can only read as loss, because the instrument doing the reading is the thing that was installed. The evidence is not merely incomplete; it is *systematically* one-sided, with the same bias in every document. He was not careless. He was standing in the wrong place, and there is no right place to stand.
+
+**Why this is useful rather than merely clever.** It means **the reception history is part of the mechanism**. A theory that is nearly correct is exactly what gets dismissed — near enough to check, wrong on one axis, and so refuted rather than pursued. Total vindication of a crank is a cheap move and every reader has seen it. Vindication of a competent, credentialed, seriously-argued man on every axis except one, where the single error cost him the entire reception and the reception is itself downstream of the thing he was describing, is a Fog Belt move. The dismissal is not a failure of the field. It is the wall doing maintenance.
+
+**What the rewrite adds.** **[inferred]** The 1990 four-hypothesis restructuring is a gift. A character can accept (1), (2) and (4) — language, hallucination, anatomy — and reject only (3), the dating and the direction, and remain a competent reader of the primary literature rather than a crank. An institution can hold that position in writing, in a memo, with citations. The near-miss is not a private intuition; it is a defensible reading of a published book, and can be filed as one.
+
+---
+
+### 7. TRANSFERABLE MOVES
+
+- **The near-miss citation.** Have the institution hold the dataset that would have vindicated a real, dismissed thinker, and have its standing position be that publishing it would restore the finding along with everything else. The apostate doctrine, applied to scholarship.
+- **Interiority as topology, not quantity.** The horror is not that nobody is home. It is that someone is home in the wrong configuration — present, rich, continuous, oriented as an addressee rather than an author. The designated differentiator from Viability, which is an absence story. Do not blur them.
+- **Consciousness with a date.** Any capacity Jaynes treats as recent and cultural can be given an installation date, a coverage curve and a maintenance schedule.
+- **The obeyed voice as infrastructure.** Right-hemisphere speech production is real. Anything that treats it as a receiver rather than a source inherits his whole evidentiary apparatus for free.
+- **Liturgy as duty cycle.** Fixed hours, fixed words, aloud, in unison, no gaps — arrived at independently by every tradition. Read as protocol rather than devotion, with observance rates as a measurable coverage term.
+- **The prosthesis dates the amputation.** Wherever an institution suddenly funds an elaborate apparatus for obtaining an answer, the answer used to arrive free, and the budget line is the evidence.
+- **Loss as a service level, not an event.** Write a capacity's disappearance as five stages of declining coverage — intermittent, unreliable, specialist-only, apparatus-mediated, interpreted — each met with more institution.
+- **Definition as the load-bearing weapon.** An institution that defines *conscious*, *present* or *alive* in advance and applies it consistently can do things no cruelty could authorise, and every objection will be to the definition, and the definition will be sound.
+- **Numbered, separable doctrine.** Give a belief explicit, independently falsifiable parts, then have the institution hold three and quietly decline the fourth. Faith becomes a position, which can be minuted and audited.
+- **The measurement that depends on the question.** A prevalence ranging from under one per cent to eighty-four per cent according to how you ask is a real fact, so an institution needing a number can choose one honestly.
+- **The archive written by the converted.** Every document about the prior state is composed by someone already changed. Build the record so the bias is uniform and undetectable from inside, and let a careful reader be wrong for the best possible reasons.
+- **Authorisation supplied by the subject.** Hypnosis needs no pathology — only a belief system that licenses it, an induction, and an archaic authority. An institution that supplies all three has coerced nobody.
+
+---
+
+### 8. ANTI-PATTERNS
+
+- **Do not have a character explain Jaynes at length.** Cite the book by name, state the one inversion, move on. The listener who knows it will run ahead; the listener who does not loses nothing.
+- **Do not make him simply right.** The error is load-bearing.
+- **Do not let a second story also stake a claim on the nature of selfhood explicitly.** Threshold holds that ground now.
+- **Do not use "bicameral" as set dressing.** It has been done — *Westworld*, *Snow Crash* — and the word alone now signals a robot becoming self-aware, which is the inverse of the register's reading.
+- **Do not misreport the reception.** Dennett is sympathetic to the shape and explicitly sceptical of the hallucination mechanism. "Dennett endorsed it" is wrong and checkable in an afternoon, and the register's credibility is the only thing making the near-miss land.
+- **Do not import his hemispheric anatomy as settled.** Modern imaging mostly points left. If a story needs the right hemisphere, have the institution *assert* it, in a document, against the literature — which is more interesting anyway.
+- **Do not write voice-hearing as pathology alone.** Between the Hearing Voices Movement and Luhrmann's work, treating a voice as straightforwardly a symptom is now the naive position. An institution that does so should be visibly behind.
+- **Do not lean on the date.** A story resting on 1200 BCE inherits his weakest joint; a story resting on *a datable transition, whenever it was* inherits none of it.
+
+---
+
+### Sources
+
+Julian Jaynes, *The Origin of Consciousness in the Breakdown of the Bicameral Mind*, Houghton Mifflin 1976; afterword edition 1990; Mariner 2000 · Jaynes, "Consciousness and the Voices of the Mind" · Dennett, "Julian Jaynes's Software Archeology", *Canadian Psychology* 27:2, 1986 · Moore, "Volition in Jaynes", *Frontiers in Psychology* 12, 2021 · the Julian Jaynes Society's overview and glossary · Luhrmann et al., *British Journal of Psychiatry*, 2014 · Beavan, Read and Cartwright, "The prevalence of voice-hearers", *Journal of Mental Health* 20:3, 2011 · the Hearing Voices Movement's own account of its founding · standard reference entries on Jaynes, on bicameral mentality, on mīs-pî and on auditory hallucination.
+
+**Caveat.** The archaeological and Assyriological specifics — Eynan, Tell Brak, *Ludlul bēl nēmeqi*, the empty thrones — are Jaynes's selections and interpretations of real material; distinguish the artefacts, which exist, from the reading, which is his. The doctorate discrepancy in §0 is left open deliberately. Everything in §6 is the register's own inversion, not a claim about what Jaynes believed.

@@ -2,9 +2,9 @@
 
 *This document is for generating. §0 is the workflow; §1–§4 are the four banks it pulls from; §5 is how the thing gets told. Nothing here evaluates, catalogues or scores — what the corpus has already done, and the instruments for reading a premise you already have, live in `catalogue.md`. The annexes under `refs/` are the evidence; this is the tool.*
 
-**Source tags:** `[C]` Chiang · `[W]` Watts · `[setting-c]` setting-c · `[TC]` setting-b · `[S]` the SCP wiki, djkaktus and Annex F together · `[E]` Neon Genesis Evangelion · `[FB]` Fog Belt originals (doctrine arrived at in-house). Tags mark where a move is best demonstrated, not where it's allowed.
+**Source tags:** `[C]` Chiang · `[W]` Watts · `[setting-c]` setting-c · `[TC]` setting-b · `[S]` the SCP wiki, djkaktus and Annex F together · `[E]` Neon Genesis Evangelion · `[J]` Julian Jaynes · `[FB]` Fog Belt originals (doctrine arrived at in-house). Tags mark where a move is best demonstrated, not where it's allowed.
 
-**Where the evidence lives:** `refs/chiang.md` · `refs/watts.md` · `refs/setting-c.md` · `refs/setting-b.md` · `refs/evangelion.md` · `refs/jaynes.md` · the djkaktus corpus, six files (`refs/scp/djkaktus-*.md`) · nineteen assorted SCP articles by other authors (`refs/scp/assorted.md`) · sixty-three triaged but unregistered articles (`refs/scp/candidates.md`) · the slate itself (`stories/`, 24 developed and one bench file of undeveloped concepts) · `refs/setting-a.md`, the specifics behind §4, written in-house and meant to grow.
+**Where the evidence lives:** `refs/chiang.md` · `refs/watts.md` · `refs/setting-c.md` · `refs/setting-b.md` · `refs/evangelion.md` · `refs/jaynes.md` (Annex D, rewritten 2026-08-29) · the djkaktus corpus, six files (`refs/scp/djkaktus-*.md`) · nineteen assorted SCP articles by other authors (`refs/scp/assorted.md`) · sixty-three triaged but unregistered articles (`refs/scp/candidates.md`) · the slate itself (`stories/`, 24 developed and one bench file of undeveloped concepts) · `refs/setting-a.md`, the specifics behind §4, written in-house and meant to grow.
 
 **Standing note.** *(2026-08-26)* The taste profile is explicitly evolving. Old rules get invalidated as the corpus is re-read and recycled. **Do not treat anything in this document as canonical against a live instinct.** It records what has worked; it is not a constitution. Where a rule has been amended, the amendment sits inline with its date rather than in a separate log.
 
@@ -30,7 +30,7 @@
 
 # 1. THEME BANK
 
-*Fourteen families. Deduped. Each line is a premise seed, not a description.*
+*Seventeen families. Deduped. Each line is a premise seed, not a description.*
 
 ### 1.1 The self is optional
 
@@ -53,6 +53,8 @@
 - The candidate who failed intake retained as equipment, cleaning the corridor his cohort walks down. `[setting-c]`
 - Voluntary enclosure issued as a vehicle: sealed in, fuelled, and driven to where it is needed. `[TC]`
 - Minds certainly sentient and certainly excluded, on a technicality of manufacture with no appeal. `[TC]`
+- Someone is home, richly and continuously, and oriented as an addressee rather than an author. `[J]`
+- The inner voice as a receiver rather than a source, with a transmission schedule someone maintains. `[J]`
 
 ### 1.2 Determinism, foreknowledge, and the editable will
 
@@ -66,6 +68,7 @@
 - Memory that persists across a reset, so revenge becomes possible for a crime that has not been committed yet and never will be. `[S]`
 - Instructions received while asleep that become obsessive-compulsive behaviour on waking — conviction installed rather than argued, and indistinguishable from your own. `[S]`
 - Two survivors of one event disagreeing about its date, both correct, and the file has to pick one. `[setting-c]`
+- Instructions arriving in your own voice, in your own accent, that you did not compose. `[J]`
 
 ### 1.3 Verified metaphysics that isn't about you
 
@@ -90,6 +93,8 @@
 - Signals intelligence on the divine — the transmitter infallible, the channel noisy, the take late. `[TC]`
 - A machine built to defeat divine observation, fielded, serviced, and — this is the part — working. `[TC]`
 - The adversary jamming the channel through your own sanctified objects, so the relic is the intrusion. `[TC]`
+- Something answered everyone, everywhere, for millennia, and then stopped, and the stopping has a date. `[J]`
+- Divination as prosthesis — the apparatus built after the answers stopped, and funded ever since. `[J]`
 
 ### 1.4 The sacrifice economy
 
@@ -120,7 +125,6 @@
 - A failing power supply with a visible, audible countdown, and a Thaumiel classification that means *the only thing between you and it is already dying*. `[S]`
 - The predecessor who did the job alone until he starved rather than break the schedule, and was classified as a case of malnutrition. `[S]`
 - A liturgy performed three times a day, forever, by people selected for their inability to understand the language it is in. `[S]`
-- Containment as hospice: a classification whose meaning is that the file's job is to manage a death rather than prevent one. `[S]`
 - Deep time in a small box — a three-day cycle run for a century, with a demolition date set by people who will not be alive to see it, and the arithmetic left to the reader. `[S]`
 - Eternity as a mathematical rather than emotional object: meaning is a consumable, the supply is finite, and the time is not. `[S]`
 - The whole arrangement standing on one undocumented system, kept by inheritors of the rite alone. `[setting-c]`
@@ -128,6 +132,9 @@
 - Each copy slightly worse than its parent, so the procedure drifts wrong and less questionable at once. `[setting-c]`
 - An intermittent fault, therefore a deniable one, therefore logged as no fault found — and it docks on time. `[setting-c]`
 - A post that ages the holder a year per heartbeat, held for years, with a waiting list to hold it. `[TC]`
+- Fixed hours, fixed words, aloud, in unison, no gaps, and an observance rate reported quarterly. `[J]`
+- A capacity with an installation date, a coverage curve, and a maintenance schedule nobody renewed. `[J]`
+- Loss delivered as five stages of declining service, each one answered with more institution. `[J]`
 
 ### 1.6 Memory as a consumable
 
@@ -140,7 +147,6 @@
 - Amnestics that fail in the worst direction — the terror stays, the cause is deleted. `[S]`
 - The amnestic administered to the victim not as mercy but as maintenance: she is returned, on a weekly schedule, to the state in which the procedure still works. `[S]`
 - Continuity re-issued rather than survived — installed childhoods, falsified dating records, and a mass amnestic at the end so the seam never shows. `[S]`
-- Every instrument for locating the present compromised by the same mechanism that requires them: the dating methods are forged by the procedure whose date you are trying to establish. `[S]`
 - Cultural erasure as containment — unmake two thousand years of believers and starve the thing that eats belief. It has been tried once, and it worked. `[S]`
 - The liturgical language retained and the vernacular lost: nobody speaks it now, they only file in it. `[setting-c]`
 - A chronology headed brief and incomplete — precise on the enemy's dates, unforthcoming about its own. `[TC]`
@@ -154,12 +160,13 @@
 - Autonomy versus paternalism, complicated by a choice made in an environment engineered to shape it. `[C]`
 - Manipulation that leaves no signature — you cannot detect when you have been persuaded. `[C]`
 - Reproductive coercion made institutional: a bureaucracy that farms a human condition as a renewable resource. `[S]`
-- The same condition as transcendence for the man who chose it and atrocity for the man who caught it, with no clinical difference between the two cases anywhere in the file. `[S]`
 - Companions with no will of their own, wholly loyal, who cannot refuse, cannot be persuaded, and cannot be killed — and the horror is what that does to the person they were provided for. `[S]`
 - A recruitment field on which volunteering and being volunteered are recorded identically. `[setting-c]`
 - The larynx taken in the second rite, so that every later objection has to be submitted in writing. `[TC]`
 - Consent taken last, after the surgery, and genuine when it comes — which is why they wait for it. `[TC]`
 - A compound that dulls the will and leaves the aggression, which is the combination the work needs. `[TC]`
+- Authorisation supplied by the subject, who provides the credentials of the voice they then obey. `[J]`
+- No pathology required — only a belief system that licenses it, an induction, and an old authority. `[J]`
 
 ### 1.8 Complicity
 
@@ -200,11 +207,12 @@
 - Publish the index, never the event — a shelf of authorisations, alphabetical, each correctly filed. `[setting-c]`
 - An archive that must be preserved and must never be read, and one clerk holds both obligations. `[setting-c]`
 - Exhaustive on the penalties, silent on the reward — nowhere in the corpus is the reward described. `[TC]`
+- Not a lost faculty but an installed wall, and the absence is a fitting with a part number. `[J]`
+- What was removed leaves no gap to feel, because the thing that would feel it is what was installed. `[J]`
 
 ### 1.10 Institutions
 
 - Bureaucracy as the true immortal. Emperors die; the filing continues. `[setting-c]`
-- Nobody is in charge and everybody is: a clerk's misplaced zero and an executive's judgement are indistinguishable in the record. `[setting-c]`
 - Recycle the name, consume the person — immortality by interchangeability, and everyone finds it consoling. `[setting-c]`
 - Institutional continuity as a coping mechanism: journals, tenure and prizes persisting after their content evaporated. `[C]`
 - Mission inverted — not concealing the anomaly from the public but concealing the public from the anomaly. `[S]`
@@ -224,12 +232,10 @@
 - Structural incapacity for revolt as a design objective — nothing can resupply itself, so mutiny starves. `[setting-c]`
 - The record more real than the event, so the same act is a sacrament or a capital offence by reader. `[setting-c]`
 - Correctness that isolates rather than empowers: the true account is now the punishable one. `[setting-c]`
-- Four documents describing one place — a ledger, a census, a self-account, a file — and no arbiter. `[setting-c]`
-- Scale that destroys witness: nobody is positioned to see the whole of it, including whoever runs it. `[setting-c]`
-- One field on the form meaning both too sacred to assess and no longer in existence, indistinguishably. `[setting-c]`
-- Grace and chemistry entered under one heading, and nothing in the record will adjudicate which. `[TC]`
 - The adversary losing to its own committee, and the entire defence is a wager that the deadlock holds. `[TC]`
 - The whole apparatus a remediation programme for one afternoon's decision by the most trusted people. `[TC]`
+- An institution correct on every axis except the direction, and ruined by the single error. `[J]`
+- A finding dismissed for being nearly right, and the dismissal is the mechanism keeping itself in repair. `[J]`
 
 ### 1.11 Lineage, reproduction, inheritance
 
@@ -248,6 +254,7 @@
 - A species' self-destruction as the weather that made the next empire possible, and it is on the record. `[setting-c]`
 - Children modified in childhood into better receivers, because adult tissue takes the signal poorly. `[TC]`
 - One procedure: a career for the volunteers, a sentence for the trespassers, performed identically. `[TC]`
+- A trait taught in childhood, never inherited, so one lapse in teaching ends a lineage of minds. `[J]`
 
 ### 1.12 Love and grief as attack surface
 
@@ -264,6 +271,7 @@
 - The victim who is also the weapon, so that rescuing him and releasing him are the same act, and the humane thing is to leave him where he is forever. `[S]`
 - Correspondence that arrives before it was sent, so the condolence can precede the death it concerns. `[setting-c]`
 - Mourning that is downstream of a freight schedule, because the dead must first be made unusable. `[TC]`
+- The dead parent still issuing instructions, still correct, still obeyed, on the same old schedule. `[J]`
 
 ### 1.13 Death as an administered condition `[S]`
 
@@ -280,6 +288,7 @@
 - A third outcome nobody specified — claimed by neither ledger, conscious, and permanent. `[TC]`
 - Applied for damnation and refused for insufficiency; failure with no floor under it, indefinitely. `[TC]`
 - Corpse throughput as a security function, with rail freight, a rite per body, and a standing backlog. `[TC]`
+- The dead kept propped, fed and addressed, because the addressing is what the institution runs on. `[J]`
 
 ### 1.14 The body as material
 
@@ -303,6 +312,72 @@
 - The replacement limb issued as a sentence, on a schedule, with the term stated in the order. `[TC]`
 - Examined weekly for years by someone kind, on a form with no field for the person being examined. `[E]`
 - The disgust arrives through competence: nothing was botched, and that is what cannot be unseen. `[W]`
+- A speech centre on the silent side: intact, unused, and available to whoever finds a way in. `[J]`
+
+### 1.15 Several true accounts and no arbiter `[setting-c]`
+
+*Not erasure and not faulty memory: several complete records of one thing, each properly authorised, none reconcilable, and a decision that has to be taken anyway.*
+
+- Four documents describing one place — a ledger, a census, a self-account, a file — and no arbiter. `[setting-c]`
+- An institution that publishes its own unreliability as doctrine, and goes on filing underneath it. `[setting-c]`
+- The figure everyone plans against is disputed between two offices, and the dispute is the load-bearing fact. `[setting-c]`
+- The same act is a sacrament in one reading and a capital offence in another, so the file is the battlefield. `[setting-c]`
+- Two witnesses to one event disagree about its date, and the discrepancy is a property of the event. `[setting-c]`
+- The record and the place have diverged, and the record is the one with a budget line against it. `[setting-c]`
+- A provenance that cannot be established, for the object on which the whole arrangement is founded. `[setting-c]`
+- The founding document's register — instruction or joke — is no longer establishable, and it is being followed. `[setting-c]`
+- Nobody is in charge and everybody is: a clerk's misplaced zero and an executive's judgement are indistinguishable in the record. `[setting-c]`
+- An infallible source, a fallible channel, and no test separating a transmission from an intrusion. `[TC]`
+- The superseded procedure still in circulation, stamped, indistinguishable from the one that replaced it. `[TC]`
+- One surviving chronology, compiled by a party to the events, and everything downstream cites it. `[TC]`
+- A formal system in which every statement is provable, so the record will confirm whatever it is asked. `[C]`
+- Testimony that disagrees with itself, a binding vote at the end of it, and no fact that would settle it. `[C]`
+- The written genealogy and the recited one disagree, and an office needs one answer by month end. `[C]`
+- Every instrument for locating the present compromised by the same mechanism that requires them: the dating methods are forged by the procedure whose date you are trying to establish. `[S]`
+- Decisions arriving through a channel nobody in the building is equipped to audit, and taken as read. `[W]`
+
+### 1.16 Classification as the operative act `[setting-c]` `[TC]`
+
+*The taxonomy rather than the officer: the category that refuses to distinguish, the schedule that assigns, the designation that changes what a thing is.*
+
+- One field on the form meaning both too sacred to assess and no longer in existence, indistinguishably. `[setting-c]`
+- Grace and chemistry entered under one heading, and nothing in the record will adjudicate which. `[TC]`
+- A grade assessed once, correctly, that asset-strips a place across three generations while everyone complies. `[setting-c]`
+- An intake that sorts arrivals into three careers and one consumption, by graders not told which is which. `[setting-c]`
+- An index of authorised annihilations, alphabetical, with form numbers and countersignatures, kept for reference. `[setting-c]`
+- The body whose actual product is not enforcement but deciding what may be known, and filing that too. `[setting-c]`
+- Eligibility that turns on being judged redeemable, so the more salvageable are the more thoroughly spent. `[setting-c]`
+- One column of the duty roster in which a person and a device are entered in the same notation. `[setting-c]`
+- A finding available against anyone, so enforcement is a selection rather than a determination. `[TC]`
+- The same instrument treating one casualty and finishing another, by which line of the oath applies. `[TC]`
+- Full sentience granted and standing withheld, on the ground that the thing was manufactured and not born. `[TC]`
+- A schedule assigning which affliction each initiate receives, by rank, in the register of a gift. `[TC]`
+- A person classified as the fault by the man manufacturing the evidence, who consents, and stays nine years. `[S]`
+- A class code reading *awaiting assignment*, and thirteen years in a cell because nobody was assigned. `[S]`
+- The same condition as transcendence for the man who chose it and atrocity for the man who caught it, with no clinical difference between the two cases anywhere in the file. `[S]`
+- Containment as hospice: a classification whose meaning is that the file's job is to manage a death rather than prevent one. `[S]`
+- A reclassification with no new fact behind it, after which everything downstream is correctly different. `[FB]`
+- Criteria drafted to be administrable rather than true, and then administered exactly as written. `[FB]`
+
+### 1.17 There is no establishing shot `[setting-c]`
+
+*Distinct from scale as moral solvent in 1.4, which is about the legibility of blame. This is the unavailability of a vantage: too large, too distributed or too long for anyone at any level to have seen it.*
+
+- Scale that destroys witness: nobody is positioned to see the whole of it, including whoever runs it. `[setting-c]`
+- Staff who cannot describe the floor above them, and are not being kept from it — there is nobody to ask. `[setting-c]`
+- The border of the known world is one instrument's range, and things continue past it, addressed by nobody. `[setting-c]`
+- No shared present: the report describes a place that has aged at a different rate from the office reading it. `[setting-c]`
+- The call for help and the answer to it are two documents, months apart, and nobody experiences both. `[setting-c]`
+- A process longer than any career, so its shape is legible only to people who cannot compare notes. `[setting-c]`
+- Each stage judging relevance by its own standard, and no stage in the chain seeing the file entire. `[setting-c]`
+- The widest vantage in the organisation, from which one can see enough to despair and not enough to act. `[setting-c]`
+- Ground so extensive that nobody has counted what is on it, and the only act available at that scale is salvage. `[TC]`
+- A complete account, received only in fragments cut to the size of one person's attention. `[TC]`
+- The thing being done to you has nobody inside it who could describe it either, and its leadership rotates. `[TC]`
+- Throughput exceeded years ago, deliveries unchanged, and no post from which both facts are visible. `[TC]`
+- A professional whose whole job is to render the thing legible upward, and who understands none of it. `[W]`
+- A finding that exists only in aggregate, reported to every participant, verifiable by none of them. `[C]`
+- A population figure inside the mercy programme that is never justified in the document, only serviced. `[S]`
 
 ---
 
