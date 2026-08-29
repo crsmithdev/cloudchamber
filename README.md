@@ -40,8 +40,8 @@ refs/                        annexes. The source files are read, never edited;
 
 Source tags in `playbook.md` and `catalogue.md` map one-to-one onto `refs/`: `[C]` chiang, `[W]`
 watts, `[setting-c]` setting-c, `[TC]` setting-b, `[E]` evangelion,
-`[K]` the djkaktus files, `[S]` the wider wiki -- scp/assorted.md and
-scp/candidates.md.
+`[S]` the SCP wiki entire -- the djkaktus files, scp/assorted.md and
+scp/candidates.md, folded into one tag on 2026-08-29.
 `[FB]` is doctrine arrived at in-house and has no source file.
 
 ## Working on it
