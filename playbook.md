@@ -1,6 +1,6 @@
 # FOG BELT — PLAYBOOK
 
-*Arranged for generation. §0 is the part you load when you want a premise; §1–§4 are the parts you raid once you have one; §5–§6 are the parts you check against before committing. The annexes under `refs/` are the evidence — this is the tool.*
+*Arranged for generation. §0 is the part you load when you want a premise; §1–§4 are the parts you raid once you have one; §5–§6 are the parts you read against once you have something. The annexes under `refs/` are the evidence — this is the tool.*
 
 **Source tags:** `[C]` Chiang · `[W]` Watts · `[setting-c]` setting-c · `[TC]` setting-b · `[K]` djkaktus · `[S]` SCP, wider wiki (Annex F) · `[E]` Neon Genesis Evangelion · `[FB]` Fog Belt originals (doctrine arrived at in-house). Tags mark where a move is best demonstrated, not where it's allowed.
 
@@ -8,13 +8,17 @@
 
 **Standing note.** *(A3, 2026-08-26)* The taste profile is explicitly evolving. Old rules get invalidated as the corpus is re-read and recycled. **Do not treat anything in this document as canonical against a live instinct.** It records what has worked; it is not a constitution. Where a rule has been amended, the amendment sits inline with its date rather than in a separate log.
 
+**On the vocabulary.** *(2026-08-29)* Nothing in this document evaluates. The six questions in §0 and the thirteen items in §6 are lenses — devices for finding out what a premise contains — and the older habit of calling them *tests*, with passes and failures, was a category error: it produces conformance grading, which is not judgement and is not taste. A lens that shows nothing has told you the story isn't using that dimension, which is information rather than a defect. An unused shape in §0 is not a vacancy. The one thing here that operates as a criterion is §6.11 — whether a story feels like another one on the slate — and it is the only place in this document where a story can be said to be failing at something.
+
 ---
 
 # 0. THE GENERATIVE CORE
 
 *Everything in this section is written to produce a premise, not to grade one. Nothing here is a gate.*
 
-## How to run it
+## A way in
+
+*An ideation aid. Moves that have helped find a premise, in no fixed order, with no obligation to make all seven. An idea that arrives whole owes this list nothing.*
 
 1. **Take a shape** from *Recurring shapes* below — or notice that the idea in hand doesn't fit any of them, which is the better outcome.
 2. **Take an apparatus, not an anomaly.** A setting-a institution with a founding date, a cover story, a rate card and a weekly rhythm. What does it *do* every Tuesday?
@@ -36,7 +40,7 @@ The oldest shape and still the most common: about half the slate cleanly, anothe
 
 **To generate:** name the schedule before you name the anomaly. What is the interval — weekly, quarterly, every 378 days? Who signs the variance request when it slips? What does the requisition list?
 
-**At capacity.** Eleven stories fit this cleanly. A twelfth needs to be doing something the other eleven aren't.
+**Where it stands.** Eleven stories fit this cleanly — an observation about the slate, not a quota. A twelfth is worth writing if it isn't doing what the other eleven already do.
 
 ### The correct intervention
 
@@ -46,7 +50,7 @@ The oldest shape and still the most common: about half the slate cleanly, anothe
 
 **Running:** Continuity of Care · Viability · Right Concentration · Threshold · Designated Pathogen Free · Super-Donor.
 
-**Exhausted:** the intervention whose cost falls on the people it treats. Try one where the cost falls on people outside the programme entirely, or one where the intervention is *sincerely designed by someone who is not us* — SCP-9138's paradise is engineered in good faith by an obligate filial cannibal, and every beneficiary is grateful. `[S]`
+**Well-worn:** the intervention whose cost falls on the people it treats. Try one where the cost falls on people outside the programme entirely, or one where the intervention is *sincerely designed by someone who is not us* — SCP-9138's paradise is engineered in good faith by an obligate filial cannibal, and every beneficiary is grateful. `[S]`
 
 ### The arriving fact
 
@@ -62,7 +66,7 @@ The oldest shape and still the most common: about half the slate cleanly, anothe
 
 **To generate:** who was doing this before? What did the institution keep, and what did it not understand well enough to know it was discarding? What is the disqualifying criterion for the staff — and what does that criterion tell the reader about the job?
 
-**Unused on the slate.** Nothing on the current 24 runs this cleanly. It is the most available shape in the document.
+**Unused on the slate.** Nothing on the current 24 runs this cleanly. An unused shape is not a vacancy and not something the slate is missing. What is worth borrowing is the four questions above — who was doing this before, what got kept, what got discarded, who is disqualified — which are useful against any premise. The shape itself is only one answer to them, and a slate where several stories took it would be worse, not better.
 
 ### The sincere paradise `[S]`
 
@@ -80,7 +84,7 @@ The oldest shape and still the most common: about half the slate cleanly, anothe
 
 ## The six questions
 
-*Referred to across the story notes as "the tests" — same six; the older notes saying "the five tests" predate the Evangelion question. They are questions rather than gates, and the useful version of each is the one that generates the next draft. A story may decline any of them on purpose; the ones that do should say which, and why.*
+*The story notes call these "the tests" — same six; the older notes saying "the five tests" predate the Evangelion question. The name is wrong and is being retired: these are lenses, not evaluations, and the useful version of each is the one that generates the next draft. A story may decline any of them, and declining is a choice rather than a failure; saying which and why helps the next reader, but is not owed.*
 
 ### Chiang — spend the impossibility, then pay for it
 
@@ -106,9 +110,9 @@ If the metaphysics is materially true, the institutions built on it are correct.
 
 ### setting-c — find the load
 
-The awful thing must be structural. Remove it and the system stops, not softens. **This is the one that has held everywhere.**
+Where this lens is working, the awful thing is structural: remove it and the system stops rather than softens. **It has been the most productive of the six** — and the most over-applied, so read the next paragraph with that in mind.
 
-**Ask:** draft the memo that cancels the programme. Who has to be told, and what do they have to stop doing? If that memo is short, the story is a critique and the premise needs another turn.
+**Ask:** draft the memo that cancels the programme. Who has to be told, and what do they have to stop doing? A short distribution list is information, not a verdict — usually that the horror is a condition the institution observes rather than an activity it performs. Sometimes that means the premise wants another turn. Sometimes it means the story is an arriving fact, where nothing can be cancelled and the shape is doing exactly what it should.
 
 ### djkaktus — make the artifact do a job
 
@@ -124,7 +128,9 @@ If the terrible thing could be done by a machine instead, it is engineering. If 
 
 **Ask:** whose signature is on the authorisation? What is the screening criterion for the people who carry it out — and can that criterion carry the whole scene by itself? `[S]` (SCP-231 declines to describe the act and specifies the person instead: Milgram score 72, unmarried, no offspring, personality-disorder screening waived.)
 
-## The guardrails
+## Defaults and permissions
+
+*Long called "the guardrails", which flatters the list's authority. Three of the four dated A-items are permissions, added because a default was getting in the way, and A3 governs the rest. The undated lines are what the register does by default, not what it is required to do.*
 
 - The scary thing is an idea. Cold, conceptual, systems-scale.
 - The horror is institutional; personal devastation is the residue, not the subject.
@@ -645,6 +651,8 @@ If the terrible thing could be done by a machine instead, it is engineering. If 
 
 # 5. ANTI-PATTERNS
 
+*Failure modes the corpus has actually produced, listed so they are recognisable early. A premise sitting near one of these is worth a second look rather than a rejection — the difference between a failure mode and a deliberate move is usually whether the story knows it is there.*
+
 **Watts failure modes**
 
 - *Cartesian bait-and-switch* — "it was a simulation / she was a machine all along." Threatens the contents of the self, not its necessity. Files as a twist.
@@ -684,22 +692,22 @@ If the terrible thing could be done by a machine instead, it is engineering. If 
 
 ---
 
-# 6. THE AUDIT PASS
+# 6. THIRTEEN LENSES
 
-*For checking a premise you already have, in fifteen minutes. §0 generates; this grades.*
+*Things to hold up to a premise you already have, in fifteen minutes. §0 helps you find one; these help you find out what you have. Nothing here scores. A lens that shows nothing has told you the story isn't using that dimension, which is a fact about the story rather than a fault in it. Item 11 is the exception — see it.*
 
 1. **Is the apparatus real?** A setting-a institution with a founding date, a cover story, a rate card, and a schedule. What does it *do* every week?
 2. **Is the theme stated as a mechanism with units,** rather than as a mood?
-3. **Would the artifact exist without the story?** If not, choose again.
+3. **Would the artifact exist without the story?** If not, it is a testimony wrapper — worth knowing before the premise gets built on it.
 4. **Follow the premise to its second-order effects** — the price list, the exception process, the revision history, the people who game it. If it needs a second impossibility, go back to the theme.
 5. **Where does the self stop being necessary,** who noticed first, and what did the returns look like afterward?
-6. **Run the normalisation pass.** Ratepayers, not fanatics. Who files the variance request? What is the bond measure called? *(Per A1 this makes the institution legible, not innocent — it may still be the antagonist.)*
-7. **Run the load-bearing pass.** Remove the awful thing. Does the system stop? If it merely gets nicer, the story is a critique, not a horror.
-8. **Run the instrument pass.** Could a machine do it instead? If yes, it's engineering. If it needs a specific person, whose signature is on the authorisation?
-9. **Run the inheritance pass.** `[S]` Who was doing this before the institution arrived, and what did it fail to understand when it took over?
-10. **Pick one dread mechanism (§3) and one withholding move (M11–M19, M58, M59, M62, M65).** Exactly one of each. More than one of either dilutes both.
-11. **Check the slate.** `stories/`, 24 developed plus the bench. Differentiation is a requirement, not a courtesy.
-12. **Write the last line.** One beat past the horror, small, administrative, correctly filed. If you can't find it, the ending isn't earned yet.
+6. **The normalisation lens.** Ratepayers, not fanatics. Who files the variance request? What is the bond measure called? *(Per A1 this makes the institution legible, not innocent — it may still be the antagonist.)*
+7. **The load-bearing lens.** Remove the awful thing. Does the system stop, or merely get nicer? Either answer tells you what the institution is actually for. A story built on an arriving fact will often answer neither, because nobody can remove it — that is the shape working, and this lens is structurally blind to it.
+8. **The instrument lens.** Could a machine do it instead? If yes, it's engineering. If it needs a specific person, whose signature is on the authorisation?
+9. **The inheritance lens.** `[S]` Who was doing this before the institution arrived, and what did it fail to understand when it took over?
+10. **Which dread mechanism (§3) is carrying this, and which withholding move (M11–M19, M58, M59, M62, M65)?** If more than one of either is running they are likely diluting each other, and it is worth knowing which one you would keep. The count is a diagnostic, not a limit.
+11. **Check the slate.** `stories/`, 24 developed plus the bench. Does this feel like one of the others — same voice, same rhythm, same institution under a different name? This is the one item here that is a criterion rather than a lens, and it outranks everything else in the document.
+12. **Look for the last line.** One beat past the horror, small, administrative, correctly filed. Not having one yet is normal — these are concepts, not finished stories — but the search usually shows you where the story actually ends.
 13. **Name the bell.** The recurring sound that marks the schedule.
 
 ---

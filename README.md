@@ -6,7 +6,13 @@ Horror anthology working repo. **This repo is the source of truth.**
 
 ```
 CLAUDE.md                    standing instructions for a Claude session here
-playbook.md                  the working guide -- generate from section 0
+playbook.md                  the working guide -- generate from section 0;
+                             sections 5-6 are lenses, not a grading rubric
+redteam.md                   the slate read as a whole (2026-08-29) -- slate-wide
+                             only: sameness across all 24, the collision map, the
+                             variety index, unused ground, and the expert panels'
+                             cross-story material. Per-story findings live at the
+                             end of each story file.
 
 stories/NN-slug.md           one story each; 24 developed
 stories/00-undeveloped.md    the bench -- greenlit but never developed, parked
