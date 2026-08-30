@@ -25,6 +25,9 @@ stories/00-undeveloped.md    the bench -- greenlit but never developed, parked
 
 refs/                        annexes. The source files are read, never edited;
                              setting-a.md is written in-house and grows
+  register.md                the genre terms section 0 stands on -- grimdark,
+                             cosmic horror, the eerie, the abject, body horror,
+                             and the Aristotle constraint, with citations
   setting-a.md                the specifics behind playbook section 5 -- fifteen
                              domains of setting-a statutes, bodies, dates, cases
   chiang.md

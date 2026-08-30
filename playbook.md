@@ -4,7 +4,7 @@
 
 **Source tags:** `[C]` Chiang · `[W]` Watts · `[setting-c]` setting-c · `[TC]` setting-b · `[S]` the SCP wiki, djkaktus and Annex F together · `[E]` Neon Genesis Evangelion · `[J]` Julian Jaynes · `[FB]` Fog Belt originals (doctrine arrived at in-house). Tags mark where a move is best demonstrated, not where it's allowed.
 
-**Where the evidence lives:** `refs/chiang.md` · `refs/watts.md` · `refs/setting-c.md` · `refs/setting-b.md` · `refs/evangelion.md` · `refs/jaynes.md` (Annex D, rewritten 2026-08-29) · the djkaktus corpus, six files (`refs/scp/djkaktus-*.md`) · nineteen assorted SCP articles by other authors (`refs/scp/assorted.md`) · sixty-three triaged but unregistered articles (`refs/scp/candidates.md`) · the slate itself (`stories/`, 24 developed and one bench file of undeveloped concepts) · `refs/setting-a.md`, the specifics behind §5, written in-house and meant to grow.
+**Where the evidence lives:** `refs/chiang.md` · `refs/watts.md` · `refs/setting-c.md` · `refs/setting-b.md` · `refs/evangelion.md` · `refs/jaynes.md` (Annex D, rewritten 2026-08-29) · the djkaktus corpus, six files (`refs/scp/djkaktus-*.md`) · nineteen assorted SCP articles by other authors (`refs/scp/assorted.md`) · sixty-three triaged but unregistered articles (`refs/scp/candidates.md`) · the slate itself (`stories/`, 24 developed and one bench file of undeveloped concepts) · `refs/setting-a.md`, the specifics behind §5, written in-house and meant to grow · `refs/register.md`, the genre terms §0 stands on, with the citations §0 does not carry.
 
 **Standing note.** *(2026-08-26)* The taste profile is explicitly evolving. Old rules get invalidated as the corpus is re-read and recycled. **Do not treat anything in this document as canonical against a live instinct.** It records what has worked; it is not a constitution. Where a rule has been amended, the amendment sits inline with its date rather than in a separate log.
 
@@ -18,20 +18,23 @@
 
 **Pitch dark & complex.** whatever happens, it does not work out well for anybody. Avoid the conventional, happy endings, and simplistic plots or character arcs.  
 
-**Grimdark.** Dark and weird religious angles, body horror, twists and turns that turn bleaker rather than brighter, apparatus that outlasts everyone inside it.
+**Grimdark furniture, cosmic-horror engine.** Dark and weird religious angles, body horror, twists and turns that turn bleaker rather than brighter, apparatus that outlasts everyone inside it. But grimdark's own definition is morally grey people and a glimmer they are defiant enough to reach for, and neither is available here: the people are decent, competent and correct, and there is nothing in the frame for defiance to act on. What drives it is indifference rather than malice — the cosmic register with the supernatural stripped out and an institution standing where the god was. That is harder to write, because nothing has been suspended and nothing is unknowable.
 
-**What dark means here.** Not intensity, and not bleakness — bleak is a mood and it wears off. These are the properties the register is actually built from, and a premise should carry several of them:
+**What dark means here.** Not intensity, and not bleakness — bleak is the weather this register already comes with, and it wears off. Not nihilism either: nihilism valorises the dark for its own sake and lets everybody off, the characters and the reader together. The values here are intact, correct and worth having; they simply have no purchase. These are the properties the register is built from, and a premise should carry several:
 
+- **Nothing has been suspended.** No law broken, no instrument faulty, no data bad, nobody lying. The good thing is doing exactly what it was built to do, and that is the problem. Everything below is downstream of this.
 - **No exit, or an exit that cannot be used.** The door was never locked, and she cannot survive an ordinary street.
 - **Duration rather than event.** No starvation, no dehydration, no attrition, no mercy. The condition does not resolve, and death is not among the outcomes on offer.
-- **Consent, desire and gratitude captured.** They wanted to. The wanting is the product. Nobody had to be coerced and nobody was lied to.
+- **Consent, desire and gratitude captured.** They wanted to. The wanting is the product. Nobody had to be coerced and nobody was lied to. Kindness is not the counterweight here — it is one of the variables.
 - **The victim's own qualities are the mechanism.** Their altruism is the screening criterion. Their interiority is the cost. Their competence is what makes them useful.
 - **Invisible from inside.** What is taken is the faculty that would have noticed the taking, so there is no moment of realisation available to anyone, including the reader.
+- **No agent.** Ask who did this and the true answer is nobody. Not a conspiracy, not a decision, not a person with a motive — a shape no one occupies and everyone maintains.
 - **Already done, at scale, and not reversible.** Four generations in. Forty million people. The safety is gone for good and was never deliberate.
-- **The cruelty is optimal rather than excessive.** Pain because it holds them still more reliably than anaesthesia would, not because anyone is cruel. Nobody in the building enjoys any of this.
-- **No reckoning.** Nobody is punished, nothing is exposed that changes anything, and there is no one it would be correct to prosecute.
+- **The cruelty is optimal rather than excessive.** Pain because it holds them still more reliably than anaesthesia would, not because anyone is cruel. Nobody in the building enjoys any of this. Excess is the cheap version and it reads as an author rather than a world.
+- **The disgust is a category failure, not an injury.** What turns the stomach is the organ that is genuinely clean, the rubric that scores a person, the form that has a field for it. Blood is not the mechanism and gore is not the register.
+- **No reckoning, and no recognition.** Nobody is punished, nothing is exposed that changes anything, and there is no one it would be correct to prosecute. Nobody gets the scene where they finally understand, and the reader does not get to be finished with it either.
 
-**The floor is higher than instinct.** The first version is never dark enough, and the version that feels sufficient is reliably one turn short. Write past the point where it feels like enough, then decide what to pull back from.
+**The floor is higher than instinct, and the ceiling is not squeamishness.** The first version is never dark enough, and the version that feels sufficient is reliably one turn short: write past the point where it feels like enough, then decide what to pull back from. But when you do hit a limit, it is never *too much*. It is that an innocent destroyed by a faultless machine, with nobody to blame and nothing learned, is the one configuration that produces revulsion instead of dread — and revulsion is how a reader gets out. The fix is never to soften it. The fix is to put the reader inside the arrangement: something they use, something they approve of, something they would have signed off on. If they can stand outside it and be appalled, it is not finished.
 
 **Every story carries a setting-a matrix**, and it has to be structural rather than scenery — take the element out and see whether a mechanism goes with it, or only an image.
 
