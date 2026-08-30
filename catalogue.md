@@ -298,7 +298,7 @@ The oldest shape and still the most common: about half the slate cleanly, anothe
 
 **SCP failure modes** `[S]`
 
-- *The gore inventory.* Escalating physical description that accumulates nothing. Annex F's worst material is anatomical and its best is arithmetical — the difference is whether the reader is doing a sum.
+- *The gore inventory.* Escalating physical description that accumulates nothing — the failure is the accumulation, not the description; the register's best work is extremely physical. Annex F's worst material is anatomical and its best is arithmetical — the difference is whether the reader is doing a sum.
 - *The interpretive narrator.* A file that tells the reader how to feel about its own contents. The strongest entries in the annex have no assessment section at all, and stop the instant the question becomes unbearable.
 - *The blank that hides nothing.* Withholding only works where the withheld thing is load-bearing and the format supplies a legitimate reason for the gap. An expunged tag over material the reader can trivially reconstruct is decoration.
 - *The twist that is only a reclassification.* Changing the object class is not the same as changing what the reader understands. The reveal has to alter the meaning of the pages already read.
