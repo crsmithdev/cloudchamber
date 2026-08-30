@@ -285,6 +285,7 @@ The oldest shape and still the most common: about half the slate cleanly, anothe
 - The obviously-right reformer. Correctness should increase isolation, not leverage.
 - Delusion instead of competence. If the audience can say *if only they knew*, the story is defused.
 - Domestic centre. Every rejected pitch had one relationship or one person's reckoning at its heart.
+- *The institutional gloss.* A premise that describes an apparatus and leaves the harm implied — a schedule, a criterion, a filing, and no statement of what is physically done to anyone or why they cannot leave. It reads as competent and lands as nothing. The cruelty has to be derived from the mechanism and named in the specific; where it is only gestured at, what exists is a setting.
 - The artifact that exists to narrate. If it isn't doing a job, it's a testimony wrapper.
 - *The villain as shortcut.* The institution is permitted to be the antagonist outright; it is not permitted to be stupid, gloating, or uninterested in justifying itself. What is optional is the exoneration, not the rigour.
 
