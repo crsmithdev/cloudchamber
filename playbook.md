@@ -45,8 +45,9 @@
 5. **Work out the layer below the one you are telling.** Where the story withholds — and it should — the withheld thing still has to exist in specifics before the withholding means anything. Settle it for yourself even when none of it reaches the page: what the mechanism actually is, who benefits and by how much, what the missing pages said, why the interval is that interval and not another. Most of it should stay off the page. A reader cannot tell a gap with a floor under it from a gap without one on a first read, but they can on a second, and hand-waving is exactly what a second read finds. If the honest answer is *I don't know either*, that is a hole rather than a mystery, and it will have to be filled before the story is written.
 6. **Work out how to tell it (§6).** Who is speaking, from where, at what remove, holding what document, and what they are unable to say. This is a decision with consequences and it is made here, not afterwards.
 7. **Summarise it in a paragraph or two** — enough to carry the idea across, not the story.
-8. **Iterate with Chris until he says it is OK.** One idea at a time; he replies take-it or pass.
-9. **Then write it up in its own file** under `stories/`, in the form the README describes.
+8. **Read it back before pitching it.** Once, whole, as though somebody else wrote it. Does it hold together — are the four pulls load-bearing rather than decorative, do the second-order effects follow, does the substrate from step 5 actually support what is being withheld, could the telling from step 6 carry it? Then the blunt question: is it horrifying, and does it answer to §0? Something in it should make a reader stop. Where the answer is no, fix it here. This pass is silent — do not pitch the idea and its problems together.
+9. **Iterate with Chris until he says it is OK.** One idea at a time; he replies take-it or pass.
+10. **Then write it up in its own file** under `stories/`, in the form the README describes.
 
 ---
 
