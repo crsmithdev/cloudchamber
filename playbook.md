@@ -1,12 +1,10 @@
 # FOG BELT — PLAYBOOK
 
-*This document is for generating. §0 is the workflow; §1–§4 are the four banks it pulls from; §5 is how the thing gets told. Nothing here evaluates, catalogues or scores — what the corpus has already done, and the instruments for reading a premise you already have, live in `catalogue.md`. The annexes under `refs/` are the evidence; this is the tool.*
-
-**The register.** Pitch dark: the target is setting-c and setting-b, and it does not work out well for anybody. Heavier on body horror, weirder themes, weird religious angles; avoid the conventional. Every story carries a distinctly setting-a twist or matrix, and it has to be structural rather than scenery. **No comedy and nothing heartwarming** — the comic register was withdrawn on 2026-08-28 and its source material deleted from the annexes. Warmth is a different thing and is central: the narrator is good at their job and warm, and that is what makes it unbearable. **The horror is a process, never a population** — nothing here makes an identity, an illness or a disability the frightening thing, and where the material reaches into the histories of people these institutions have harmed, the villain is always the apparatus.
+*This document is for generating. §0 is what every story has in common; §1 is the workflow; §2–§5 are the four banks it pulls from; §6 is how the thing gets told. Nothing here evaluates, catalogues or scores — what the corpus has already done, and the instruments for reading a premise you already have, live in `catalogue.md`. The annexes under `refs/` are the evidence; this is the tool.*
 
 **Source tags:** `[C]` Chiang · `[W]` Watts · `[setting-c]` setting-c · `[TC]` setting-b · `[S]` the SCP wiki, djkaktus and Annex F together · `[E]` Neon Genesis Evangelion · `[J]` Julian Jaynes · `[FB]` Fog Belt originals (doctrine arrived at in-house). Tags mark where a move is best demonstrated, not where it's allowed.
 
-**Where the evidence lives:** `refs/chiang.md` · `refs/watts.md` · `refs/setting-c.md` · `refs/setting-b.md` · `refs/evangelion.md` · `refs/jaynes.md` (Annex D, rewritten 2026-08-29) · the djkaktus corpus, six files (`refs/scp/djkaktus-*.md`) · nineteen assorted SCP articles by other authors (`refs/scp/assorted.md`) · sixty-three triaged but unregistered articles (`refs/scp/candidates.md`) · the slate itself (`stories/`, 24 developed and one bench file of undeveloped concepts) · `refs/setting-a.md`, the specifics behind §4, written in-house and meant to grow.
+**Where the evidence lives:** `refs/chiang.md` · `refs/watts.md` · `refs/setting-c.md` · `refs/setting-b.md` · `refs/evangelion.md` · `refs/jaynes.md` (Annex D, rewritten 2026-08-29) · the djkaktus corpus, six files (`refs/scp/djkaktus-*.md`) · nineteen assorted SCP articles by other authors (`refs/scp/assorted.md`) · sixty-three triaged but unregistered articles (`refs/scp/candidates.md`) · the slate itself (`stories/`, 24 developed and one bench file of undeveloped concepts) · `refs/setting-a.md`, the specifics behind §5, written in-house and meant to grow.
 
 **Standing note.** *(2026-08-26)* The taste profile is explicitly evolving. Old rules get invalidated as the corpus is re-read and recycled. **Do not treat anything in this document as canonical against a live instinct.** It records what has worked; it is not a constitution. Where a rule has been amended, the amendment sits inline with its date rather than in a separate log.
 
@@ -14,27 +12,41 @@
 
 ---
 
-# 0. IDEATION
+# 0. WHAT THE SERIES IS
+
+*The high-level theme. Everything downstream serves this, and a premise that does not answer to it is not a Fog Belt premise however good it is.*
+
+**Pitch dark.** The target is setting-c and setting-b: it does not work out well for anybody. Heavier on body horror, weirder themes, weird religious angles. Avoid the conventional.
+
+**Every story carries a setting-a matrix**, and it has to be structural rather than scenery — take the element out and see whether a mechanism goes with it, or only an image.
+
+**No comedy, and nothing heartwarming.** Warmth is a different thing and is central: the narrator is good at their job and warm, and that is what makes it unbearable.
+
+**The horror is a process, never a population.** Nothing here makes an identity, an illness or a disability the frightening thing. Where the material reaches into the histories of people these institutions have harmed, the villain is always the apparatus.
+
+---
+
+# 1. IDEATION
 
 *How a premise gets made here. The steps are in order and the order matters: the combination happens before the darkening, the darkening before the structure, the substrate is settled before the telling, and the telling is chosen before anything is written up. There is no writing workflow yet — this stops at an agreed idea in its own file.*
 
-1. **Pull from each of §1–§4.** A theme, a dread mechanism, an artifact, a setting-a element. Two constraints on the four: **at least one must be a combination** — two or three entries from that section held together, not one taken whole — and **at least one must not be a listed item at all**, but something the section suggested and does not contain. Four clean picks off four lists is a premise the file already knows how to write.
+1. **Pull from each of §2–§5.** A theme, a dread mechanism, an artifact, a setting-a element. Two constraints on the four: **at least one must be a combination** — two or three entries from that section held together, not one taken whole — and **at least one must not be a listed item at all**, but something the section suggested and does not contain. Four clean picks off four lists is a premise the file already knows how to write.
 2. **Combine them into a basic idea.** One flat sentence. No adjectives, no register, no atmosphere. If it needs the register to be interesting, it is not an idea yet.
 3. **Remix it dark.** Ask what it looks like when the institution is competent, the data is good, the people are decent, and it is worse for all three. Find the body in it. Find the part that cannot be unlearned.
 4. **Find a twist, then the layer under it.** One turn is a reveal; two turns that reinterpret each other is a story. Ask what the reader will have to reread — then ask what the second reading is still concealing from the third. Give it more than one thing to be about.
 5. **Work out the layer below the one you are telling.** Where the story withholds — and it should — the withheld thing still has to exist in specifics before the withholding means anything. Settle it for yourself even when none of it reaches the page: what the mechanism actually is, who benefits and by how much, what the missing pages said, why the interval is that interval and not another. Most of it should stay off the page. A reader cannot tell a gap with a floor under it from a gap without one on a first read, but they can on a second, and hand-waving is exactly what a second read finds. If the honest answer is *I don't know either*, that is a hole rather than a mystery, and it will have to be filled before the story is written.
-6. **Work out how to tell it (§5).** Who is speaking, from where, at what remove, holding what document, and what they are unable to say. This is a decision with consequences and it is made here, not afterwards.
+6. **Work out how to tell it (§6).** Who is speaking, from where, at what remove, holding what document, and what they are unable to say. This is a decision with consequences and it is made here, not afterwards.
 7. **Summarise it in a paragraph or two** — enough to carry the idea across, not the story.
 8. **Iterate with Chris until he says it is OK.** One idea at a time; he replies take-it or pass.
 9. **Then write it up in its own file** under `stories/`, in the form the README describes.
 
 ---
 
-# 1. THEME BANK
+# 2. THEME BANK
 
 *Seventeen families. Deduped. Each line is a premise seed, not a description.*
 
-### 1.1 The self is optional
+### 2.1 The self is optional
 
 - Consciousness as metabolically expensive overhead; a startup cost the winning lineages amortized away. `[W]`
 - Intelligence without interiority, outperforming, in scene, on the metrics. `[W]`
@@ -58,7 +70,7 @@
 - Someone is home, richly and continuously, and oriented as an addressee rather than an author. `[J]`
 - The inner voice as a receiver rather than a source, with a transmission schedule someone maintains. `[J]`
 
-### 1.2 Determinism, foreknowledge, and the editable will
+### 2.2 Determinism, foreknowledge, and the editable will
 
 - Determinism as an experimentally accessible fact rather than a metaphysical position, sold cheap, at retail. `[C]`
 - The gap between believing a thing and having it demonstrated — abstraction was the only thing protecting you. `[C]`
@@ -72,7 +84,7 @@
 - Two survivors of one event disagreeing about its date, both correct, and the file has to pick one. `[setting-c]`
 - Instructions arriving in your own voice, in your own accent, that you did not compose. `[J]`
 
-### 1.3 Verified metaphysics that isn't about you
+### 2.3 Verified metaphysics that isn't about you
 
 - God exists, is demonstrably attentive, and built the apparatus for someone else. `[C]`
 - Meaning as falsifiable — purpose as an externally granted property, revocable by one careful measurement. `[C]`
@@ -98,7 +110,7 @@
 - Something answered everyone, everywhere, for millennia, and then stopped, and the stopping has a date. `[J]`
 - Divination as prosthesis — the apparatus built after the answers stopped, and funded ever since. `[J]`
 
-### 1.4 The sacrifice economy
+### 2.4 The sacrifice economy
 
 - Capability purchased with human beings at a known exchange rate, on a published schedule. `[setting-c]`
 - The debt that is unpayable by definition, and grows regardless of payment, so effort itself is the trap. `[S]`
@@ -116,7 +128,7 @@
 - Worth assessed by the destiny diverted: the more you were going to become, the higher you price. `[TC]`
 - The cheapest method and the cruellest converging, so efficiency does all the arguing for you. `[TC]`
 
-### 1.5 Maintenance and duration
+### 2.5 Maintenance and duration
 
 - Decline as the steady state, not the crisis. It has been falling for a very long time and has not landed. `[setting-c]`
 - Knowledge as loss: every institution custodian of something it no longer understands, and the direction of travel is downward. `[setting-c]`
@@ -138,7 +150,7 @@
 - A capacity with an installation date, a coverage curve, and a maintenance schedule nobody renewed. `[J]`
 - Loss delivered as five stages of declining service, each one answered with more institution. `[J]`
 
-### 1.6 Memory as a consumable
+### 2.6 Memory as a consumable
 
 - Memory as narrative construction rather than retrieval; identity as the story that construction sustains. `[C]`
 - Your memories are advocacy, not evidence — including the ones establishing that you are a good person. `[C]`
@@ -153,7 +165,7 @@
 - The liturgical language retained and the vernacular lost: nobody speaks it now, they only file in it. `[setting-c]`
 - A chronology headed brief and incomplete — precise on the enemy's dates, unforthcoming about its own. `[TC]`
 
-### 1.7 Consent under engineered preference
+### 2.7 Consent under engineered preference
 
 - If you can edit what a mind wants before you ask it, a perfectly enthusiastic yes is compatible with total ownership. `[C]`
 - Care as capture: the predator arrives as the only person who was ever kind to you. `[S]`
@@ -170,7 +182,7 @@
 - Authorisation supplied by the subject, who provides the credentials of the voice they then obey. `[J]`
 - No pathology required — only a belief system that licenses it, an induction, and an old authority. `[J]`
 
-### 1.8 Complicity
+### 2.8 Complicity
 
 - Staying at your post as the specific moral texture — careers measured in funerals not attended. `[S]`
 - The appalling decision as the correct one available. `[TC]` `[S]`
@@ -192,7 +204,7 @@
 - An oath compelling aid to one's own and requiring none to the others, with one instrument for both. `[TC]`
 - People called forward to hold ground nobody expected them to hold, and the water released on time. `[TC]`
 
-### 1.9 Erasure, absence, and negative space
+### 2.9 Erasure, absence, and negative space
 
 - The anomaly's signature is absence: things that did not happen, remembered clearly. `[S]`
 - A dread with no object — the fear confirmed, the thing never. `[S]`
@@ -212,7 +224,7 @@
 - Not a lost faculty but an installed wall, and the absence is a fitting with a part number. `[J]`
 - What was removed leaves no gap to feel, because the thing that would feel it is what was installed. `[J]`
 
-### 1.10 Institutions
+### 2.10 Institutions
 
 - Bureaucracy as the true immortal. Emperors die; the filing continues. `[setting-c]`
 - Recycle the name, consume the person — immortality by interchangeability, and everyone finds it consoling. `[setting-c]`
@@ -239,7 +251,7 @@
 - An institution correct on every axis except the direction, and ruined by the single error. `[J]`
 - A finding dismissed for being nearly right, and the dismissal is the mechanism keeping itself in repair. `[J]`
 
-### 1.11 Lineage, reproduction, inheritance
+### 2.11 Lineage, reproduction, inheritance
 
 - The doom already nested inside living bodies; extinction as a countable schedule, not a decline. `[C]`
 - Reproduction weaponised — the atrocity is that it works and cannot be outpaced. `[S]`
@@ -258,7 +270,7 @@
 - One procedure: a career for the volunteers, a sentence for the trespassers, performed identically. `[TC]`
 - A trait taught in childhood, never inherited, so one lapse in teaching ends a lineage of minds. `[J]`
 
-### 1.12 Love and grief as attack surface
+### 2.12 Love and grief as attack surface
 
 - Grief as an aperture — the apparatus recruits the recently bereaved. `[S]`
 - Love as a security vulnerability; the thing wins because someone needs the dead to still be in there. `[S]`
@@ -275,7 +287,7 @@
 - Mourning that is downstream of a freight schedule, because the dead must first be made unusable. `[TC]`
 - The dead parent still issuing instructions, still correct, still obeyed, on the same old schedule. `[J]`
 
-### 1.13 Death as an administered condition `[S]`
+### 2.13 Death as an administered condition `[S]`
 
 *New family, opened by Annex F. The corpus has never worked this vein and it is the most generative thing the annex added.*
 
@@ -292,9 +304,9 @@
 - Corpse throughput as a security function, with rail freight, a rite per body, and a standing backlog. `[TC]`
 - The dead kept propped, fed and addressed, because the addressing is what the institution runs on. `[J]`
 
-### 1.14 The body as material
+### 2.14 The body as material
 
-*New family, opened 2026-08-29. The register has asked for heavier body horror since it was written and §1 has never had a bodily family to answer it. The vein is not gore — the anti-pattern is escalating physical description that accumulates nothing, and the difference is whether the reader is doing a sum.*
+*§0 asks for heavier body horror and §2 has never had a bodily family to answer it. The vein is not gore — the anti-pattern is escalating physical description that accumulates nothing, and the difference is whether the reader is doing a sum.*
 
 - The body priced by yield rather than by person: so many usable units per donor, and a rate card. `[setting-c]`
 - The clinician at the bedside is recovering an asset, and the dying man knows it and agrees. `[setting-c]`
@@ -316,7 +328,7 @@
 - The disgust arrives through competence: nothing was botched, and that is what cannot be unseen. `[W]`
 - A speech centre on the silent side: intact, unused, and available to whoever finds a way in. `[J]`
 
-### 1.15 Several true accounts and no arbiter `[setting-c]`
+### 2.15 Several true accounts and no arbiter `[setting-c]`
 
 *Not erasure and not faulty memory: several complete records of one thing, each properly authorised, none reconcilable, and a decision that has to be taken anyway.*
 
@@ -338,7 +350,7 @@
 - Every instrument for locating the present compromised by the same mechanism that requires them: the dating methods are forged by the procedure whose date you are trying to establish. `[S]`
 - Decisions arriving through a channel nobody in the building is equipped to audit, and taken as read. `[W]`
 
-### 1.16 Classification as the operative act `[setting-c]` `[TC]`
+### 2.16 Classification as the operative act `[setting-c]` `[TC]`
 
 *The taxonomy rather than the officer: the category that refuses to distinguish, the schedule that assigns, the designation that changes what a thing is.*
 
@@ -361,9 +373,9 @@
 - A reclassification with no new fact behind it, after which everything downstream is correctly different. `[FB]`
 - Criteria drafted to be administrable rather than true, and then administered exactly as written. `[FB]`
 
-### 1.17 There is no establishing shot `[setting-c]`
+### 2.17 There is no establishing shot `[setting-c]`
 
-*Distinct from scale as moral solvent in 1.4, which is about the legibility of blame. This is the unavailability of a vantage: too large, too distributed or too long for anyone at any level to have seen it.*
+*Distinct from scale as moral solvent in 2.4, which is about the legibility of blame. This is the unavailability of a vantage: too large, too distributed or too long for anyone at any level to have seen it.*
 
 - Scale that destroys witness: nobody is positioned to see the whole of it, including whoever runs it. `[setting-c]`
 - Staff who cannot describe the floor above them, and are not being kept from it — there is nobody to ask. `[setting-c]`
@@ -383,11 +395,11 @@
 
 ---
 
-# 2. DREAD MECHANISMS
+# 3. DREAD MECHANISMS
 
 *What actually makes it cold. Fifteen families.*
 
-### 2.1 Retroactive re-reading of the audience
+### 3.1 Retroactive re-reading of the audience
 
 - Every clinical fact deployed against the thing is also true of them: they confabulate, they don't see the gorilla, the motor cortex fires first. The horror is about the equipment they closed the book with. `[W]`
 - Contagion by knowledge: the file is the vector, and reading to the end is participation. `[S]`
@@ -395,7 +407,7 @@
 - Harm transmitted rather than depicted — the dangerous object is the idea, and they now have it. `[C]`
 - The document that has already breached them by being read, and says so in its own first section, before the description begins. `[S]`
 
-### 2.2 No malice available
+### 3.2 No malice available
 
 - Predation without malice: nothing hates you; you're inventory. `[S]`
 - Immune response, not attack. You are not being murdered, you are being cleaned up. Malice would be flattering. `[W]`
@@ -406,7 +418,7 @@
 - The third option beyond malice and indifference: full attention, sincere response, and an ontology in which your life and the wrong done to it are not separable — so repairing the wrong removes both. `[FB]`
 - Sincere hospitality from something whose idea of closeness is consumption, offered in good faith, with no way to explain the objection. `[S]`
 
-### 2.3 Correctness as the wound
+### 3.3 Correctness as the wound
 
 - A person destroyed by a correct argument. Nobody to be angry at, no consolation that survives contact with the proof. `[C]`
 - The fanaticism is correct. The hymn *is* the boot sequence. Being right has made no one wise. `[setting-c]`
@@ -417,7 +429,7 @@
 - The institution is simply the antagonist, and saying so costs the story nothing. Not every reveal has to exonerate, and the ones that refuse to are not cheaper for it. `[FB]`
 - A doctrine that is coherent, patient, argued in complete sentences by its best exponent, and concludes that the correct outcome is never having existed. `[S]`
 
-### 2.4 Duration with no exit
+### 3.4 Duration with no exit
 
 - A state with no arc: adoring a being that cannot perceive you, forever. `[C]`
 - The dread is duration. She will be on that cliff on every full moon indefinitely. `[S]`
@@ -430,7 +442,7 @@
 - Not that he has run out of things to do, but that the space he occupies has run out of configurations it can be in. `[S]`
 - A tape on a shelf in a video archive, and everyone in the building standing at centre court at 0–0, waiting. `[S]`
 
-### 2.5 The schedule
+### 3.5 The schedule
 
 - The number is the horror. "A thousand a day" is worse than "countless," and worse again once it has been revised upward four times by variance request. `[setting-c]`
 - The procedure itself: a sedated person in a diving suit, towed out and unclipped, and every dose of the product traces back to it. `[S]`
@@ -442,7 +454,7 @@
 - Weekly administration, recommended in the final addendum, to hold efficacy at its peak. `[S]`
 - Four people a night, at a maximum distance of a redacted number of kilometres, and the frequency increasing. `[S]`
 
-### 2.6 Legibility without lawfulness
+### 3.6 Legibility without lawfulness
 
 - Perfectly legible universe, no lawfulness that helps you. `[C]`
 - The rules have entry criteria, and cracks, and the cracks are permanent and conscious — you can be judged *insufficiently* evil. `[TC]`
@@ -451,7 +463,7 @@
 - Effort routed back to the starting point, forever, by the shape of the world — not by punishment. `[C]`
 - Selection criteria published, satisfiable, and aimed at exactly the people you would want spared. `[S]`
 
-### 2.7 Composure
+### 3.7 Composure
 
 - The narrator is not distressed. The field has accommodated to its own irrelevance and speaks of it as a research opportunity. `[C]`
 - Bureaucratic politeness persisting into apocalypse. `[S]`
@@ -460,7 +472,7 @@
 - Serenity from the person who should be devastated, because the record was never the point. `[C]`
 - An institution that answers moral protest by publishing an internal FAQ: yes, it is as bad as you have heard; here is the reasoning; here is your amnestic on exit. `[S]`
 
-### 2.8 Care that is capture
+### 3.8 Care that is capture
 
 - The predator arrives as the only person who was ever kind to you. `[S]`
 - Mercy as the delivery mechanism — the dormant mind filled with hymns immediately before the trigger word. `[setting-c]`
@@ -471,7 +483,7 @@
 - Milk chemically identical to your mother's, a full natural lifespan attached to it, toothless and wasted and content. `[S]`
 - Two of them cannot be pulled off. The smallest detail in the file and its clearest statement about what the pull actually is. `[S]`
 
-### 2.9 The mundane interface
+### 3.9 The mundane interface
 
 - An object nearly everyone has physically held. A student loan letter. A keychain. A cereal box. `[C]` `[S]`
 - The banality of the venue: nothing gothic. A fast-food restaurant off a state road. `[S]`
@@ -482,7 +494,7 @@
 - Eight lanes of stopped traffic, a black sky, no signal, and ten hours of ordinary annoyance before anything is impossible. `[S]`
 - A basketball game with a real date, a real venue and named commentators, kept on a DVR, playable. `[S]`
 
-### 2.10 Consent that is real
+### 3.10 Consent that is real
 
 - The apparatus never coerces. It presents the true alternative and lets the correct decision be made — informed, uncompelled, and worse for it. `[E]`
 - The fix exists, works, and would end the person. The mercy is not a trick; it is an offer. `[E]`
@@ -491,7 +503,7 @@
 - The instrument is a person, the institution knows, and the people who know number about four. `[E]`
 - The same condition chosen by one man as the summit of a lifetime's discipline and caught by another like a sinus headache, with the file unable to distinguish the two cases. `[S]`
 
-### 2.11 The arrangement is older than the institution `[S]`
+### 3.11 The arrangement is older than the institution `[S]`
 
 *New family. The dread of arriving late to something already in progress.*
 
@@ -501,7 +513,7 @@
 - The job was already being done when they arrived, by something with ten limbs and three amputations, which starved rather than stop. `[S]`
 - The note in the sealed sleeve that asks the only real question — *why did we have to build this thing? when did we do it? how long have we been doing it?* — and a closing line establishing that nobody in the document is in a position to answer it. `[S]`
 
-### 2.12 Disgust produced by correct procedure
+### 3.12 Disgust produced by correct procedure
 
 *Nothing is botched. The revulsion is manufactured by the thing going right, which is why it cannot be filed as an accident.*
 
@@ -512,7 +524,7 @@
 - The most sickening line in the file is a specification tolerance, and it is met. `[S]`
 - No one flinches, and the reader has to decide whether that is training or something worse. `[E]`
 
-### 2.13 The body's own testimony `[FB]`
+### 3.13 The body's own testimony `[FB]`
 
 *The register's default is that dread arrives through a document. This is the mechanism for when there is none, and the tissue is the only witness — evidence that cannot be redacted, revised, or addressed to anyone.*
 
@@ -523,7 +535,7 @@
 - What the institution will not write down is nonetheless present, in the room, and warm. `[TC]`
 - The autopsy delivered flat and without comment — ten limbs, three of them amputated — and the word for what it was left entirely to the reader. `[S]`
 
-### 2.14 The interval
+### 3.14 The interval
 
 *Between the procedure and the result. Not duration, which has no end, and not the schedule, which repeats — the specific dread of a latency that has already elapsed for somebody.*
 
@@ -534,7 +546,7 @@
 - The outcome table runs in decades, so the rite takes an afternoon and the sentence takes a lifetime. `[S]`
 - The result arrives correctly, on time, addressed to somebody no longer in a position to receive it. `[S]`
 
-### 2.15 Scale in units the body understands
+### 3.15 Scale in units the body understands
 
 *Not the number. The volume, the tonnage, the floor area, the temperature. Convert the count into a quantity the reader can feel the weight of, and the arithmetic stops being abstract.*
 
@@ -547,15 +559,15 @@
 
 ---
 
-# 3. THE ARTIFACT MENU
+# 4. THE ARTIFACT MENU
 
 *Containers proven to work. The question to ask of any of them is the djkaktus question: would this document exist if the story did not need it to?*
 
 *An artifact is a job somebody has to do — a form somebody is paid to complete, on a deadline, for a reader who will act on it — not a frame put around a story. Where the job is real, the document writes itself and the horror is in what the job requires; where it is only a frame, what you have is a narrator wearing letterhead.*
 
-### 3.1 The regional artifacts
+### 4.1 The regional artifacts
 
-*Documents this region actually produces. Every one has a body that issues it, a reader who acts on it, and a consequence for filing late. Take one of these and a §4 element and you are not decorating a form, you are already inside an office.*
+*Documents this region actually produces. Every one has a body that issues it, a reader who acts on it, and a consequence for filing late. Take one of these and a §5 element and you are not decorating a form, you are already inside an office.*
 
 **The diseño** — the hand-drawn sketch map from a Mexican-era case file, calling its boundaries to a willow, a cattle skull and a heap of stones, submitted as proof to a tribunal that will only accept metes and bounds. The defect in the title is a difference in what a map is for.
 
@@ -617,7 +629,7 @@
 
 **The shellfish closure** — growing areas classified approved, conditionally approved, restricted or prohibited, with the conditional beds closing automatically when a designated rain gauge records a defined rainfall over a defined period. The food becomes unlawful to harvest by instrument reading, on a published rule, with nobody to petition because nobody decided.
 
-### 3.2 The inherited menu
+### 4.2 The inherited menu
 
 *Available, proven elsewhere. Grouped by what the document is doing rather than where it came from, because the family is the reusable part. Source tags mark where a move is best demonstrated, not where it is allowed.*
 
@@ -695,15 +707,15 @@
 
 ---
 
-# 4. THE setting-a
+# 5. THE setting-a
 
 *Fifteen domains of subject matter: the places, landmarks, organisations, trades, communities and live arguments a story is set in and about. Every story carries a setting-a matrix, and it has to be structural rather than scenery: take the element out and see whether a mechanism goes with it, or only an image.*
 
-*Each line is a premise seed rather than a description, in the same form as §1, and the mechanism is meant to be implied by the concrete thing rather than stated. The statutes, dates, bodies and cases behind these are in `refs/setting-a.md` — go there once a premise needs a real instrument under it.*
+*Each line is a premise seed rather than a description, in the same form as §2, and the mechanism is meant to be implied by the concrete thing rather than stated. The statutes, dates, bodies and cases behind these are in `refs/setting-a.md` — go there once a premise needs a real instrument under it.*
 
-*The horror is a process, never a population. Several of these domains carry the histories of people the region's institutions have harmed; the villain is always the apparatus. Nothing here makes an identity the frightening thing.*
+*Several of these domains carry the histories of people the region's institutions have harmed. §0 governs: the villain is always the apparatus.*
 
-### 4.1 Land and title
+### 5.1 Land and title
 
 *Ranchos, fill, buried ships, and a book that can be added to but never corrected.*
 
@@ -722,7 +734,7 @@
 - Assessment frozen until a transfer, so the taxable event is the death, and the heir has a year to move in.
 - A former army post held as a park under a statutory duty to break even, with a rent roll.
 
-### 4.2 The first peoples
+### 5.2 The first peoples
 
 *Shellmound parcels, a confidential file, a return inventory, and a land trust with its own rate table.*
 
@@ -742,7 +754,7 @@
 - A one-way ticket and a first month's rent, and the friendship house the arrivals built themselves.
 - The tribal monitor watching a trench, on the payroll of the developer who dug it.
 
-### 4.3 Water, fire, ground
+### 5.3 Water, fire, ground
 
 *A drowned valley, a creeping fault, a burn scar, and agencies that publish the casualty figures.*
 
@@ -762,7 +774,7 @@
 - A shutoff called on wind criteria, to houses where the oxygen concentrator is on the meter.
 - Mercury from the quicksilver mine still in the fish, and a pier sign giving meals per month.
 
-### 4.4 The technology industry
+### 5.4 The technology industry
 
 *A campus, a shuttle route, four badge colours, and a plume under the parking structure.*
 
@@ -782,7 +794,7 @@
 - The badge that stops working at the garage gate some minutes before the email lands.
 - Cafeteria and shuttle staff with a union, on a campus where nobody else has one.
 
-### 4.5 Capital and its instruments
+### 5.5 Capital and its instruments
 
 *Sand Hill Road, the courthouse steps, and a fund that has to outlive the mowing.*
 
@@ -802,7 +814,7 @@
 - A lending circle run out of a Chinatown association hall, with nothing in writing.
 - A wildfire charge on the utility bill that follows the customer who leaves the utility.
 
-### 4.6 Labour
+### 5.6 Labour
 
 *Hiring halls, drayage queues, night harvests, and the building nobody is employed by.*
 
@@ -822,7 +834,7 @@
 - A day-worker centre with a whiteboard and a posted rate the city funds but cannot enforce.
 - The caregiver in a board-and-care home, paid by the county, sleeping in the room.
 
-### 4.7 Housing and displacement
+### 5.7 Housing and displacement
 
 *Withdrawal notices, fractional deeds, the hearing room on Van Ness, and a debt with a queue position.*
 
@@ -842,7 +854,7 @@
 - A voucher good for sixty days, in a market where the search is the disqualifying condition.
 - The nonprofit that holds the master lease and therefore signs the unlawful detainer.
 
-### 4.8 Queer San Francisco
+### 5.8 Queer San Francisco
 
 *Bars, clinics, archives, and the people the form has no line for.*
 
@@ -861,7 +873,7 @@
 - The parade contingent that needs a corporate sponsor to afford the permit.
 - A cafeteria riot in the Tenderloin, and the plaque that went up half a century later.
 
-### 4.9 Medicine and public health
+### 5.9 Medicine and public health
 
 *The county hospital, the free clinic, the exchange van, and the register you were entered on at birth.*
 
@@ -880,7 +892,7 @@
 - Sickle-cell screening run from an Oakland storefront by an organisation with a file on it.
 - The island station's medical exam, where a parasite in the stool was grounds to send the boat back.
 
-### 4.10 Belief
+### 5.10 Belief
 
 *Registers, rotas, retreats and encampments — and the corporation that holds the ground under each.*
 
@@ -900,7 +912,7 @@
 - Three dioceses in bankruptcy at once, each with a date after which the harm stops being compensable.
 - The cross on the hill kept standing by selling the ground under it, by the acre, to a private buyer.
 
-### 4.11 Civic government and the public sector
+### 5.11 Civic government and the public sector
 
 *Chambers, commissions and task forces, and the districts that tax you without appearing on a ballot.*
 
@@ -920,7 +932,7 @@
 - Radiological cleanup on an island with tenants living on it throughout the remediation.
 - A city in bankruptcy, its pensions and services converted into claims in a federal judge's plan.
 
-### 4.12 Death and its administration
+### 5.12 Death and its administration
 
 *A city with no cemeteries, a town with seventeen, and the county officer who inventories the flat.*
 
@@ -940,7 +952,7 @@
 - Unclaimed cremains held in a county vault for years, then a plot, a clergy rota and a read list.
 - A green-burial preserve in Marin that records a grave as coordinates and plants over it.
 
-### 4.13 Transport and infrastructure
+### 5.13 Transport and infrastructure
 
 *Bridges, bores and one tube: a handful of chokepoints, each run by a board no rider elects.*
 
@@ -960,7 +972,7 @@
 - Houses bought for a freeway never built, and the highway agency that has been their landlord since.
 - The commuter ferry that is also the evacuation plan, exercised annually against a written scenario.
 
-### 4.14 Education, research and the university
+### 5.14 Education, research and the university
 
 *A land-grant campus with a police force, a patent portfolio, a weapons lab and a leasehold housing market.*
 
@@ -980,7 +992,7 @@
 - The weapons lab held through a limited company, so the campus is a member and not the operator.
 - The eucalyptus the campus planted along the hill road, now fuel, felled stand by stand under injunction.
 
-### 4.15 Food, land and the working landscape
+### 5.15 Food, land and the working landscape
 
 *A crop report, a rain gauge and a toxin assay: what may be grown, taken and eaten, decided by instrument.*
 
@@ -1002,11 +1014,11 @@
 
 ---
 
-# 5. TELLING IT
+# 6. TELLING IT
 
-*How the story reaches a reader: who speaks, from where, in what document, withholding what, and stopping where. Ninety-four named moves in nine families. Numbers are stable handles, not an order of preference — M1–M55 keep the numbering they have always had, the Annex F additions run from M56, and M80–M95 arrived with §5.1 and §5.2 on 2026-08-29. M27, the comic register as anaesthetic, was withdrawn on 2026-08-28: comedy is not available in this register, and the number is not reissued.*
+*How the story reaches a reader: who speaks, from where, in what document, withholding what, and stopping where. Ninety-four named moves in nine families. Numbers are stable handles, not an order of preference — M1–M55 keep the numbering they have always had, the Annex F additions run from M56, and M80–M95 arrived with §6.1 and §6.2 on 2026-08-29. M27, the comic register as anaesthetic, was withdrawn on 2026-08-28: comedy is not available in this register, and the number is not reissued.*
 
-### 5.1 Who is telling it
+### 6.1 Who is telling it
 
 *The choice made first and noticed last. The house default — a warm, competent professional inside the institution, addressing an internal reader — is a good instrument and is currently running in twenty-three of twenty-four files on the slate, so anything below that is not that is worth more than it looks.*
 
@@ -1019,7 +1031,7 @@
 - **M86 — No narrator.** Apparatus only: forms, tables, exhibits, an index. The arrangement is the voice. `[S]`
 - **M87 — The instrument's own voice.** The machine, the system, the standard, speaking in its own register about a person, warmly and correctly.
 
-### 5.2 Archives and assembled records
+### 6.2 Archives and assembled records
 
 *Not a container but a stance: the story is a thing somebody gathered, and the gathering is legible. Who assembled this, under what mandate, with what missing, and what did they decide to include?*
 
@@ -1032,7 +1044,7 @@
 - **M94 — Exhibit and appendix.** The document stops before its recommendation and the reader is left holding the attachments.
 - **M95 — The register that outlived its purpose.** A book still being kept, correctly and on schedule, by people who no longer know what the entries are for.
 
-### 5.3 Container — choosing the form
+### 6.3 Container — choosing the form
 
 - **M1. The form is the story.** Pick the container because it is the only shape in which that idea can be felt. A journal editorial, a museum label, a training module, a rulebook, a prisoner manifest, a facility dossier, a testament to a posthumous reader. `[C]` `[S]`
 - **M2. The operating manual first.** Draft the checklist, rate card, escalation taxonomy, aftercare policy — then let the listener supply the revulsion. `[S]`
@@ -1048,7 +1060,7 @@
 - **M57. Corrupt the fields.** Let the object class render an error string and the item number a broken image. The file is damaged because its contents damage files, and that does the work of a paragraph of exposition. `[S]`
 - **M60. Captions under bad photographs.** Deliver the entire escalation as a sequence of poor-quality stills with terse captions and no interpretation, so the football game, the kiss and the axe all arrive in the same flat register and the reader performs the escalation unaided. `[S]`
 
-### 5.4 Withholding
+### 6.4 Withholding
 
 - **M11. Never describe the worst thing.** Refusing to transcribe is better than any transcript: whatever they supply is worse than what you'd write. `[S]`
 - **M12. Show the conditions of the proof, not the proof.** No illegal step, no error found — unfalsifiable and therefore unanswerable. `[C]`
@@ -1064,7 +1076,7 @@
 - **M62. Redact the counter.** Remove the index — the playback number, the date, the run count — exactly at the point where the reader most wants to know how far this went. `[S]`
 - **M65. The unnamed key.** Build the whole apparatus out of one mythology and never name it. Saturn's synodic period, the Holst movement, wool-bound feet, a sickle, a swallowed stone, an induced vomit: every element points at Cronus and the article never says so. `[S]`
 
-### 5.5 Escalation and structure
+### 6.5 Escalation and structure
 
 - **M20. Escalate by revision, not narration.** Addenda, updated memoranda, transferred jurisdiction, revoked clearances. The audience watches an institution *learn*. `[S]`
 - **M21. The ladder.** Each section written from one rung higher than the last — clinical file, worried memo, rejected theory, event log, a message from the author. `[S]`
@@ -1081,7 +1093,7 @@
 - **M68. The reveal as a maintenance report.** Deliver the largest fact in the document through an unnamed technician who was repairing something else and found a body. `[S]`
 - **M71. Sympathy granted, then revoked behind a clearance gate.** Establish the thing as a victim in the main file — abducted, held, asking for help — and put the disqualifying evidence in a higher-clearance addendum the reader reaches last. `[S]`
 
-### 5.6 Voice and register
+### 6.6 Voice and register
 
 - **M31. Give the format a person.** One consistent human voice intruding on institutional prose does more than pages of interiority. `[S]`
 - **M32. The warm professional.** Every line reasonable, collegial, engaged — which is what makes it unbearable. Never give the thing a villain's voice. `[S]`
@@ -1101,7 +1113,7 @@
 - **M74. Two voices that never meet.** The doctrine stated calmly and completely by its best exponent; the cost demonstrated across four interviews by someone who never chose it. Neither ever addresses the other, and the article does not adjudicate. `[S]`
 - **M75. The last voice is a believer.** Hold institutional register for the entire document and drop to the personal exactly once, at the very end, in the voice of someone who signs off *May God forgive me* and then signs their name and *Child of God*. `[S]`
 
-### 5.7 Endings
+### 6.7 Endings
 
 - **M39. End on a realisation, not an event.** Resolve the premise completely and the human situation not at all. `[C]`
 - **M40. One beat past the horror,** on something small, administrative, or domestic, correctly filed. `[S]`
@@ -1115,7 +1127,7 @@
 - **M69. End on a rate, not an event.** Nothing resolves and nothing breaches; a number is simply going up. Four contacts a night, and rising. Eighty-three thousand disappearances, already counted. `[S]`
 - **M70. Defeat your own closure.** Write the full stop — *no further communication has been received* — and then put one more thing under it, from the other side. `[S]`
 
-### 5.8 The instrument and the operator
+### 6.8 The instrument and the operator
 
 - **M47. Give the self a field strength.** Make the boundary between persons a measurable quantity with a unit and a readout, then have someone propose reducing it, for good reasons, in a meeting. `[E]`
 - **M48. The operator's inner state as a performance metric.** A synchronisation percentage, tracked over time, reviewed by a supervisor, improved by catastrophe. Institutional capture dramatised in one number. `[E]`
@@ -1124,7 +1136,7 @@
 - **M51. Let the cover story occupy the visible plot.** An urgent, real, competently-run emergency that is not what the institution is for, with most of the cast inside it too. `[E]`
 - **M52. Deliver the ending twice and retract neither.** The same events from inside the subject and from inside the apparatus. Do not adjudicate. `[E]`
 
-### 5.9 The channel `[S]`
+### 6.9 The channel `[S]`
 
 *New family. How the document reaches the reader, treated as a mechanism in its own right.*
 
