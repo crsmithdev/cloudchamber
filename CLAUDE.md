@@ -2,27 +2,27 @@
 
 A horror anthology. This repo is the source of truth.
 
-**Read `playbook.md` before pitching or developing anything, and `catalogue.md` before reviewing anything.** It is entirely generative: §0 is the ideation workflow, §1–§4 are the four banks it pulls from — themes, dread mechanisms, artifacts, setting-a elements — and §5 is how a story gets told. Nothing in it evaluates. The rest of the repo is `stories/` (the slate, one file each, plus `stories/00-undeveloped.md` — the bench) and `refs/` (source annexes; read, never edited). `catalogue.md` at the root is the other half of the pair, and describes rather than generates: the slate as it stands — sameness across all 24, the collision map, the variety index, the unused ground, and the expert panels' cross-story material — followed by the descriptive apparatus moved out of the playbook on 2026-08-29, being the recurring shapes, the anti-patterns, the thirteen lenses and the source lookup. Every story file ends with two appended sections: a red-team appendix (2026-08-28), whose preamble must be read before any finding in it is treated as a verdict, and a slate review and fact check (2026-08-29) carrying that story's expert corrections, collision rulings and proposed changes. Nothing in either has been applied.
+*Instructions for a session. Anything that describes what another document contains belongs in that document, not here.*
+
+## Read first
+
+**`playbook.md`** before pitching or developing. It generates; nothing in it evaluates, and its header carries the register.
+
+**`catalogue.md`** before reviewing. It describes what has been written and holds the instruments for reading a premise back.
+
+**`README.md`** for the layout and the form a story file takes.
+
+Every story file ends with two appended review sections. Read the preamble of either before treating a finding in it as a verdict; nothing in them has been applied, and no story text has been altered by them.
 
 ## Pitching
 
 One paragraph per pitch, one at a time. Chris replies take-it or pass; do not develop anything he has not taken.
 
-The recurring shapes, the anti-patterns and the thirteen lenses in `catalogue.md` are **lenses, not tests**. They show what a premise contains and push it into its next draft; they do not grade it, and conformance to them is not a measure of anything. An unused shape is not a vacancy. A pitch may decline any of them on purpose. The single thing that does function as a criterion is whether a story feels like another one already on the slate (`catalogue.md` §8.11).
-
-Check `stories/` for differentiation before developing a premise. Twenty-four are written and the bench file lists what was greenlit and never developed, what was parked, and why — the parked entries carry the reasoning that parked them, so the same rejected construction does not get re-attempted.
-
-## The register
-
-Every story carries a distinctly setting-a twist or matrix, and it has to be structural rather than scenery — `playbook.md` §4 is the bank — fifteen domains as themes, from land title to the administration of the dead — and `refs/setting-a.md` holds the statutes, dates, bodies and cases those themes were distilled from. Generate from the themes; go to the annex when a premise needs a real mechanism under it. A neighbourhood name in a sentence is worth nothing.
-
-Pitch dark. The target register is setting-c and setting-b — it does not work out well for anybody. Heavier on body horror, weirder themes, weird religious angles. Avoid the conventional, and avoid the "schedule that predicts the future" shape; the maintained schedule already carries eleven of the twenty-four.
-
-**No comedy, and nothing heartwarming.** The comic register was withdrawn from the playbook on 2026-08-28 and the source material for it was deleted from the annexes. Warmth as a delivery mechanism is different and is still central: the narrator is good at their job and warm, and that is what makes it unbearable.
+Check `stories/` before developing: whether a story feels like another one already on the slate is the only thing anywhere that functions as a criterion. Twenty-four are written, and `stories/00-undeveloped.md` carries the reasoning that parked what was parked, so the same rejected construction does not get re-attempted.
 
 ## Working here
 
-No build step and no generated files. A story is one file under `stories/`, in the three-part form described in the README.
+No build step and no generated files. A story is one file under `stories/`.
 
 **No Claude session can reach GitHub.** Edit and commit through the device bridge; Chris pushes manually from his own terminal. See the README for the detail.
 
