@@ -16,13 +16,17 @@
 
 *The high-level theme. Everything downstream serves this, and a premise that does not answer to it is not a Fog Belt premise however good it is.*
 
-**Pitch dark.** The target is setting-c and setting-b: it does not work out well for anybody. Heavier on body horror, weirder themes, weird religious angles. Avoid the conventional.
+**Pitch dark & complex.** whatever happens, it does not work out well for anybody. Avoid the conventional, happy endings, and simplistic plots or character arcs.  
 
 **Every story carries a setting-a matrix**, and it has to be structural rather than scenery — take the element out and see whether a mechanism goes with it, or only an image.
 
-**No comedy, and nothing heartwarming.** Warmth is a different thing and is central: the narrator is good at their job and warm, and that is what makes it unbearable.
+**Comedy in small doses only.** Black comedy is fine. Pure comic relief is fine very occasionally, as a counterpoint that makes the dark around it darker. What is not available is the comic *register* — a piece whose mode is funny, or a joke that lets the reader off.
 
-**The horror is a process, never a population.** Nothing here makes an identity, an illness or a disability the frightening thing. Where the material reaches into the histories of people these institutions have harmed, the villain is always the apparatus.
+**Moments can be heartwarming; the piece is not, and does not end that way.** Good things arrive at a price, redemption has a cost, and a positive outcome is somebody else's loss — usually somebody who is not in the room and was not consulted. Warmth as a delivery mechanism is a different thing again and is central: the narrator is good at their job and warm, and that is what makes it unbearable. Chris may override this for a given story; as a standing rule it holds.
+
+**Systems horror first.** Institutions, apparatuses, schedules, instruments. That is the priority and the house strength rather than a requirement — a story can put the horror somewhere else and be right to.
+
+**What does hold: the horror is never a population.** Nothing makes an identity, an illness or a disability the frightening thing, and where the material reaches into the histories of people these institutions have harmed, the villain is the apparatus.
 
 ---
 
@@ -1016,7 +1020,7 @@
 
 # 6. TELLING IT
 
-*How the story reaches a reader: who speaks, from where, in what document, withholding what, and stopping where. Ninety-four named moves in nine families. Numbers are stable handles, not an order of preference — M1–M55 keep the numbering they have always had, the Annex F additions run from M56, and M80–M95 arrived with §6.1 and §6.2 on 2026-08-29. M27, the comic register as anaesthetic, was withdrawn on 2026-08-28: comedy is not available in this register, and the number is not reissued.*
+*How the story reaches a reader: who speaks, from where, in what document, withholding what, and stopping where. Ninety-four named moves in nine families. Numbers are stable handles, not an order of preference — M1–M55 keep the numbering they have always had, the Annex F additions run from M56, and M80–M95 arrived with §6.1 and §6.2 on 2026-08-29. M27, the comic register as anaesthetic, was withdrawn on 2026-08-28 and the number is not reissued — §0 permits black comedy and the occasional beat of relief, but not a comic mode.*
 
 ### 6.1 Who is telling it
 
