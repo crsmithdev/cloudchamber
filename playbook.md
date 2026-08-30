@@ -8,7 +8,7 @@
 
 **Standing note.** *(2026-08-26)* The taste profile is explicitly evolving. Old rules get invalidated as the corpus is re-read and recycled. **Do not treat anything in this document as canonical against a live instinct.** It records what has worked; it is not a constitution. Where a rule has been amended, the amendment sits inline with its date rather than in a separate log.
 
-**On the vocabulary.** *(2026-08-29)* Nothing in this document evaluates, and nothing in it is a rule. It is a bag of starting points. Everything that reads a premise *back* — the recurring shapes, the anti-patterns, the thirteen lenses, the source lookup, and the record of what the slate has already spent — moved to `catalogue.md`, because keeping description and generation in one file made the generative half read as a rubric and produced conformance grading in place of judgement. An unused shape is not a vacancy. The only thing anywhere that operates as a criterion is whether a story feels like another one already on the slate.
+**On the vocabulary.** *(2026-08-29)* Nothing in this document evaluates, and nothing in it is a rule. It is a bag of starting points. Everything that reads a premise *back* — the recurring shapes, the anti-patterns, the thirteen lenses, the source lookup, and the record of what the slate has already spent — moved to `catalogue.md`, because keeping description and generation in one file made the generative half read as a rubric and produced conformance grading in place of judgement. An unused shape is not a vacancy. Two things do operate as criteria and both are in §0: whether a premise answers to what the series is, and whether it feels like another story already on the slate. Nothing else here grades anything.
 
 ---
 
@@ -36,7 +36,7 @@
 - **Something is in the room.** An organism, an apparatus, a body, a procedure running now — a thing that can be pictured and is both threatening and impure. A policy is not an antagonist and a condition inferable from a dataset is not a monster. The reader has to be shown the thing, not told the shape of it.
 - **No reckoning, and no recognition.** Nobody is punished, nothing is exposed that changes anything, and there is no one it would be correct to prosecute. Nobody gets the scene where they finally understand, and the reader does not get to be finished with it either.
 
-**The floor is higher than instinct, and the ceiling is not squeamishness.** The first version is never dark enough, and the version that feels sufficient is reliably one turn short: write past the point where it feels like enough, then decide what to pull back from. But when you do hit a limit, it is never *too much*. It is that an innocent destroyed by a faultless machine, with nobody to blame and nothing learned, is the one configuration that produces revulsion instead of dread — and revulsion is how a reader gets out. The fix is never to soften it. The fix is to put the reader inside the arrangement: something they use, something they approve of, something they would have signed off on. If they can stand outside it and be appalled, it is not finished.
+**The floor is higher than instinct, and the ceiling is not squeamishness.** The first version is never dark enough, and the version that feels sufficient is reliably one turn short: write past the point where it feels like enough, then decide what to pull back from. But when you do hit a limit, it is never *too much*. Aristotle's objection to this exact configuration — a faultless person destroyed by a faultless machine, nobody to blame, nothing learned — is that it shocks rather than moves, and he is right about a reader who is standing outside it. The configuration is not the error. The reader's position is. The fix is never to soften. It is to put the reader inside the arrangement — something they use, approve of, would have signed off on — so there is nowhere left to stand and be appalled from. If they can watch this from outside, it is not finished.
 
 **Every story carries a setting-a matrix**, and it has to be structural rather than scenery — take the element out and see whether a mechanism goes with it, or only an image.
 
@@ -743,7 +743,7 @@
 
 *Fifteen domains of subject matter: the places, landmarks, organisations, trades, communities and live arguments a story is set in and about. Every story carries a setting-a matrix, and it has to be structural rather than scenery: take the element out and see whether a mechanism goes with it, or only an image.*
 
-*Each line is a premise seed rather than a description, in the same form as §2, and the mechanism is meant to be implied by the concrete thing rather than stated. The statutes, dates, bodies and cases behind these are in `refs/setting-a.md` — go there once a premise needs a real instrument under it.*
+*Each line is a premise seed rather than a description, in the same form as §2. The concrete thing has to carry a mechanism and the mechanism has to be nameable: an entry that implies a harm without containing one is a fact about the region, not a seed. The admission test for a line here — does it name a body, a duration, a count, or a thing in a room? The statutes, dates and cases behind these are in `refs/setting-a.md` — go there once a premise needs a real instrument under it.*
 
 *Several of these domains carry the histories of people the region's institutions have harmed. §0 governs: the villain is always the apparatus.*
 
@@ -1048,7 +1048,7 @@
 
 # 6. TELLING IT
 
-*How the story reaches a reader: who speaks, from where, in what document, withholding what, and stopping where. Ninety-four named moves in nine families. Numbers are stable handles, not an order of preference — M1–M55 keep the numbering they have always had, the Annex F additions run from M56, and M80–M95 arrived with §6.1 and §6.2 on 2026-08-29. M27, the comic register as anaesthetic, was withdrawn on 2026-08-28 and the number is not reissued — §0 permits black comedy and the occasional beat of relief, but not a comic mode.*
+*How the story reaches a reader: who speaks, from where, in what document, withholding what, and stopping where. A hundred and three named moves in ten families. Numbers are stable handles, not an order of preference — M1–M55 keep the numbering they have always had, the Annex F additions run from M56, M80–M95 arrived with §6.1 and §6.2, and M96–M104 with §6.10, the depiction family §6 had never had. M27, the comic register as anaesthetic, was withdrawn on 2026-08-28 and the number is not reissued — §0 permits black comedy and the occasional beat of relief, but not a comic mode.*
 
 ### 6.1 Who is telling it
 
@@ -1083,18 +1083,18 @@
 - **M3. The procedure is the monster.** Flat administrative prose whose implications the document declines to notice. A bureaucracy's characteristic evil is the passive voice. `[S]`
 - **M4. Read the horror before the monster.** Put the containment procedure at the top, in policy register, so the audience only understands what each bullet cost after the fact. `[S]`
 - **M5. The trigger documentation.** State the rules so clearly that the audience understands exactly how they will be broken — and then make them wait. `[S]`
-- **M6. Institutional register as the only emotion.** No interiority, no scene. The slight over-brightness of a closing paragraph is the entire affect. `[C]`
+- **M6. Institutional register as the only emotion.** One available register, not a rule: no interiority, no scene, and the slight over-brightness of a closing paragraph as the entire affect. Costs you the body, so spend it deliberately and rarely. `[C]`
 - **M7. Actuarial realism on the sacred.** Casualty statistics, support groups, insurance reasoning, pilgrimage tourism. `[C]`
 - **M8. Anchor to real material.** Real physics, real ethnography, real astronomy, real dates. The emotional payload derives from the mechanism rather than sitting on top of it. `[C]` `[W]`
 - **M9. The document is a bad witness.** Footnotes that contradict the body. Two sources that disagree. A memo declaring half of what precedes it obsolete. Confidently wrong beats ominous. `[setting-c]` `[S]`
 - **M10. Present the chronology as an interested party's.** Head it *Brief and Incomplete*. Let it date the enemy's crimes precisely and be vague about its own. `[TC]`
-- **M56. The substitution.** Refuse to describe the act and describe, in precise detail, *the person it takes to perform it* — the Milgram threshold, the waived personality-disorder screening, the unmarried-and-childless clause, the helmets with voice changers, the two-month rotation. The specification does everything the description would have done, and is legible in a way the act never becomes. `[S]`
+- **M56. The specification beside the act.** Describe, in precise detail, *the person it takes to perform it* — the Milgram threshold, the waived personality-disorder screening, the unmarried-and-childless clause, the helmets with voice changers, the two-month rotation. The specification is legible in a way the act never becomes — but it does the institutional half and drops the body, so it is a companion to the description and not a substitute for it. `[S]`
 - **M57. Corrupt the fields.** Let the object class render an error string and the item number a broken image. The file is damaged because its contents damage files, and that does the work of a paragraph of exposition. `[S]`
 - **M60. Captions under bad photographs.** Deliver the entire escalation as a sequence of poor-quality stills with terse captions and no interpretation, so the football game, the kiss and the axe all arrive in the same flat register and the reader performs the escalation unaided. `[S]`
 
 ### 6.4 Withholding
 
-- **M11. Never describe the worst thing.** Refusing to transcribe is better than any transcript: whatever they supply is worse than what you'd write. `[S]`
+- **M11. Decline to transcribe one thing.** Occasionally, for one specific item, what the reader supplies beats what you would write. One item, chosen, in a piece that describes everything else — not a policy. Used as a default it produces a story about a gap. `[S]`
 - **M12. Show the conditions of the proof, not the proof.** No illegal step, no error found — unfalsifiable and therefore unanswerable. `[C]`
 - **M13. The blank as the climax.** Expunged results, truncated logs, an outcome reported only as a classification change. `[S]`
 - **M14. The locked option.** The one function you cannot see is the one that matters. `[S]`
@@ -1102,9 +1102,9 @@
 - **M16. Underwrite the perpetrator.** No journals quoted, only the phrase "his daughter." Force the reconstruction. `[S]`
 - **M17. Withhold the distinction.** Never resolve whether the blessing worked or the drug did. Give the compound a formula, an addiction profile, and a saint. `[TC]`
 - **M18. The lie never disclosed.** The title, the central mystery, and the emotional weight can all rest on information withheld permanently. `[S]`
-- **M19. Refuse to escalate.** Sometimes there is no addendum, no exploration log, no thing in the dark. The refusal *is* the move, and it's rare. `[S]`
+- **M19. Refuse to escalate.** Occasionally there is no addendum, no exploration log, no thing in the dark, and the refusal *is* the move. Rare, and it is not available to a piece that never showed the thing in the first place. `[S]`
 - **M58. The missing top rung.** Number a document, title it, give it a clearance restriction, cross-reference it from the log above — and never write it. The terminal reveal is a locked door with the reader's name not on it. `[S]`
-- **M59. Ship the key with the seal.** Redact the file, then publish the uncensored companion inside the same fiction, under an order releasing it. The reader elects to lift the classification, and the horror arrives with their fingerprints on it. Place the cuts on anatomy and interior, never on procedure — a real classification decision leaves the dull parts fully legible. `[S]`
+- **M59. Ship the key with the seal.** Redact the file, then publish the uncensored companion inside the same fiction, under an order releasing it. The reader elects to lift the classification, and the horror arrives with their fingerprints on it. Place the cuts where a real classification decision would place them, which is on identities, methods and sources — not on anatomy, which no classifier has ever thought worth sealing. `[S]`
 - **M62. Redact the counter.** Remove the index — the playback number, the date, the run count — exactly at the point where the reader most wants to know how far this went. `[S]`
 - **M65. The unnamed key.** Build the whole apparatus out of one mythology and never name it. Saturn's synodic period, the Holst movement, wool-bound feet, a sickle, a swallowed stone, an induced vomit: every element points at Cronus and the article never says so. `[S]`
 
@@ -1176,3 +1176,17 @@
 - **M76. The one-way communicator.** A device that transmits and cannot receive. The institution is an audience rather than a rescuer, and so is the reader — receiving, timestamping, unable to reply. Every consolation the format normally offers is structurally unavailable. `[S]`
 - **M77. The sixty-second window.** Contact possible only through a porthole, at intervals, with a standing instruction about what to say — and a file that has already classified the man at the glass as dead. `[S]`
 - **M78. The request to destroy this document.** Have the narrator's last coherent instruction be that the log should be burned. The log is what the reader is holding. `[S]`
+
+### 6.10 Depiction `[FB]`
+
+*§6 has thirteen named ways to withhold and, until now, none to show. That asymmetry is why a writer scanning this section for how to deliver the horror finds only ways not to. Withholding works against depiction; with nothing to work against it produces a story about a gap.*
+
+- **M96 — The scene the file cannot contain.** One person, one room, the thing happening, at the length it actually takes. Everything else in the piece can be documents; this cannot be.
+- **M97 — Stages, named, with durations.** Five of them, in order, with how long each lasts. The reader knows what is coming and reads on, which is worse than surprise.
+- **M98 — The competent witness.** Somebody qualified is present throughout, taking accurate notes, and does not intervene, because intervening is not their job and the notes are.
+- **M99 — Texture, chosen.** One fluid, one smell, one temperature, one sound. Selected rather than accumulated — the failure is the inventory, not the substance.
+- **M100 — The count in the room.** Not the population figure. The number of occupied units on this corridor tonight, and which one you are standing outside.
+- **M101 — Spend the duration on the page.** Make the reader hold the eleven days, the nineteen minutes, the fourteenth year. Summary is where dread goes to die.
+- **M102 — Under its own power.** The body changing while somebody is still inside it and can feel each stage — not a thing done to tissue, a thing tissue is doing.
+- **M103 — The unbearable specific.** One detail worse than the summary and impossible to paraphrase, placed where the reader cannot skip it.
+- **M104 — Say the number, then say what it is made of.** Four hundred rooms is arithmetic. Four hundred rooms and what is in the fortieth is the register.
