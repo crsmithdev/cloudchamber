@@ -18,11 +18,15 @@
 
 **Pitch dark & complex.** whatever happens, it does not work out well for anybody. Avoid the conventional, happy endings, and simplistic plots or character arcs.  
 
+**Grimdark.** Dark and weird religious angles, body horror, twists and turns that turn bleaker rather than brighter, apparatus that outlasts everyone inside it.
+
 **Every story carries a setting-a matrix**, and it has to be structural rather than scenery — take the element out and see whether a mechanism goes with it, or only an image.
+
+**Written stories and audio dramas.** Both, and the audio half shapes who the narrator is, how they behave and how the piece is told: a voice has to be worth listening to for the length of it. The requirement is that the central voice is compelling company — not that it is warm, likeable, or reliable.
 
 **Comedy in small doses only.** Black comedy is fine. Pure comic relief is fine very occasionally, as a counterpoint that makes the dark around it darker. What is not available is the comic *register* — a piece whose mode is funny, or a joke that lets the reader off.
 
-**Moments can be heartwarming; the piece is not, and does not end that way.** Good things arrive at a price, redemption has a cost, and a positive outcome is somebody else's loss — usually somebody who is not in the room and was not consulted. Warmth as a delivery mechanism is a different thing again and is central: the narrator is good at their job and warm, and that is what makes it unbearable. Chris may override this for a given story; as a standing rule it holds.
+**Moments can be heartwarming; the piece is not, and does not end that way.** Good things arrive at a price, redemption has a cost, and a positive outcome is somebody else's loss — usually somebody who is not in the room and was not consulted. It is not all bleak and warmth in a scene is fine; what warmth cannot do is settle the account. Chris may override this for a given story; as a standing rule it holds.
 
 **Systems horror first.** Institutions, apparatuses, schedules, instruments. That is the priority and the house strength rather than a requirement — a story can put the horror somewhere else and be right to.
 
