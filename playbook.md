@@ -1028,7 +1028,7 @@
 
 ### 6.1 Who is telling it
 
-*The choice made first and noticed last. The house default — a warm, competent professional inside the institution, addressing an internal reader — is a good instrument and is currently running in twenty-three of twenty-four files on the slate, so anything below that is not that is worth more than it looks.*
+*The choice made first and noticed last. §0 asks only that the central voice is compelling company — not that it is warm, likeable or reliable. What the slate has actually done is run one voice, a warm competent professional inside the institution addressing an internal reader, in twenty-three of twenty-four files. That is a habit rather than a house style, and everything below that is not that is worth more than it looks.*
 
 - **M80 — The beneficiary.** Narrated by the person the programme was built for, who is grateful, and whose gratitude is the evidence. `[S]`
 - **M81 — The functionary who does not qualify.** The narrator administers something they are themselves screened out of, and knows the criterion.
@@ -1104,7 +1104,7 @@
 ### 6.6 Voice and register
 
 - **M31. Give the format a person.** One consistent human voice intruding on institutional prose does more than pages of interiority. `[S]`
-- **M32. The warm professional.** Every line reasonable, collegial, engaged — which is what makes it unbearable. Never give the thing a villain's voice. `[S]`
+- **M32. The warm professional.** Every line reasonable, collegial, engaged — which is what makes it unbearable. One available voice among several, not the default; if you take it, never let it slip into a villain's. `[S]`
 - **M33. The narrator with no access to his own interior.** Not lying — structurally unable to report himself. `[W]`
 - **M34. Damn them in their own affectionate voice.** They never use the word they should. `[S]`
 - **M35. The only human voice is captured.** Warm, grateful, completely taken — which relocates the horror from the creature to the manipulation. `[S]`
