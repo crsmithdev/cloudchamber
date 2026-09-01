@@ -254,3 +254,81 @@ Also: `cdw` The Case of Charles Dexter Ward, `a` The Alchemist.
 - **Wikisource was unreachable** from both the fetch layer and curl. Any Wikisource URL here rests on search metadata, not inspection. Fallbacks are supplied where it was the only pointer.
 - **Word counts for public-domain items are estimates**, rounded to the nearest thousand, derived from bibliographic knowledge rather than measured. Adequate for planning; not citable.
 - **Clarkesworld began refusing fetches partway through the research** (rate-limiting). Earlier fetches succeeded, so the venue is confirmed free; two specific URLs are unverified-by-fetch but almost certainly live and are marked in §3.
+
+---
+
+## 8. WHAT YOU HAVE TO GET YOURSELF
+
+*Everything above is what a research pass could reach. This section is the remainder — material that exists, matters, and needs a person with a wallet, a library card, a browser, or an email account. Ordered by value per unit of effort.*
+
+### 8.1 Purchases — the missing register
+
+**This is the important one.** §0 finding 3 stands: the quiet, formally controlled, ambiguous end of the field — the register this project is actually written in — is almost entirely print-only. No amount of further searching fixes it. If that register is to be represented in a test set, it has to be bought.
+
+**Highest density per unit spent, in order:**
+
+1. **Ellen Datlow, *The Best Horror of the Year*, any recent volumes.** The single most efficient purchase available. Datlow reads the entire field including the anthologies and chapbooks that never reach the web, and each volume's summation is also a *year-in-review index* naming what was published where — which doubles as a research tool for finding more. Buy two or three non-adjacent years rather than a run.
+2. **Paula Guran, *The Year's Best Dark Fantasy & Horror*.** Different taste, overlapping remit; useful precisely because the two editors disagree.
+3. **The anthologies the Shirley Jackson ballot keeps drawing from:** ***Aickman's Heirs*** (Undertow — an SJA winner, and the most on-register title in existence for this project), ***Looming Low*** (Dim Shores), ***Fearful Symmetries*** (ed. Datlow), ***The Weird*** (ed. VanderMeer — the big historical anthology, and the fastest way to acquire the pre-1980 weird canon in one volume).
+
+**Single-author collections whose reputations rest entirely on them:**
+
+- **Robert Aickman** — *Cold Hand in Mine*, *Dark Entries*, *The Wine-Dark Sea*. **Not free anywhere, and central to the register.** `refs/craft.md` §6 leans on his introductions; the fiction itself is the thing the annex cannot show you.
+- **Nathan Ballingrud** — *North American Lake Monsters* (Small Beer, SJA winner) and *Wounds*. The clearest case of a first-rank reputation with zero free representative work. Note: search results surface OceanofPDF for these. **That is a piracy site. Don't.**
+- **Laird Barron** — *The Imago Sequence*, *Occultation*. The free stories at §3 are a thin sample of him.
+- **Livia Llewellyn** — *Engines of Desire*, *Furnace* (Word Horde, both SJA finalists).
+- **Caitlín R. Kiernan** — *The Ammonite Violin & Others*, *Two Worlds and In Between*.
+- **Nadia Bulkin** — *She Said Destroy* (Word Horde, SJA finalist).
+- **Michael Wehunt** — *Greener Pastures* (SJA finalist).
+- **Kristi DeMeester** — *Everything That's Underneath* (Apex).
+- **John Langan** — *Sefira and Other Betrayals*.
+- **Ted Chiang** — *Stories of Your Life and Others* and *Exhalation*. `refs/chiang.md` exists; the fiction is collection-only except "The Great Silence."
+- **Kim Fu** — *Lesser Known Monsters of the 21st Century*, which contains "Pre-Simulation Consultation XF007867" (SJA winner, transcript form) — the formally-unusual story I most wanted for §3 and could not reach.
+
+**Two closed formats worth knowing about:** **Amazon Original Stories** has taken a large share of the SJA novelette ballot since 2020 (Nghi Vo's *What the Dead Know*, Kurt Fawver's *The Thirteen Ways We Turned Darryl Datson into a Monster*, both winners) and exists nowhere else. **Black Static** (TTA Press) was DeMeester's main venue and has no free archive — back issues are the only route.
+
+### 8.2 Behind a login you can have and I can't
+
+**A public library card is the highest-leverage thing on this page.** Many library systems include JSTOR, Gale, ProQuest or Project MUSE access at no cost, and several of the gaps below dissolve immediately with one.
+
+**For this corpus:** the literary quarterlies that appear on pre-2019 SJA ballots — *Granta*, *Tin House*, *The Southern Review*, *The Paris Review*, *The New Yorker* — are paywalled to me and often free to a cardholder. Mariana Enriquez's "Spiderweb" (*New Yorker*, 2016) is one example among many.
+
+**For `refs/craft.md`, which is the same errand:** its Part VII lists what could not be sourced, and a good share is a single database away —
+
+- **Joanna Russ, "The Wearing Out of Genre Materials,"** *College English* 33.1 (1971), pp. 46–54 — JSTOR. **The highest-value unretrieved item in the ideation material**; its three-phase schema (Innocence / Plausibility / Decadence) is the missing theory of why premises exhaust.
+- **Bruce Robbins, "Cruelty Is Bad: Banality and Proximity in *Never Let Me Go*,"** *Novel* 40:3 (2007) — Project MUSE. The highest-value unretrieved item in the theme material.
+- **Carol Clover, "Her Body, Himself,"** *Representations* 20 (1987) — UC Press/JSTOR. The 1987 original differs from the 1992 book chapter quoted in the annex.
+- **Barbara Creed,** *Screen* 27:1 (1986) — Oxford Academic.
+- **HathiTrust full-volume download** is institutional-only; a university affiliation unlocks it.
+
+**Subscriptions:** Kiernan's **Sirenia Digest** is subscription-only and is where a lot of her short work lives.
+
+### 8.3 Sites that refuse a script and welcome a reader
+
+These blocked automated access during the research but are perfectly usable in a browser. **Nothing here is a paywall — it is an automation policy, and reading them yourself is exactly what they want.**
+
+- **Clarkesworld** — robots.txt disallow. Free to read, and it holds "The Things," "Spar," "Things With Beards," "Sweetbaby," "Window Boy," the Omelas story. **Read it in a tab.**
+- **Nightmare** and **Lightspeed** — formal anti-scraping policies. Same situation: the archives are free and open to a human.
+- **freesfonline.net** — blocks robots, browser-only. Organised by author; the best way to sweep one writer's free output at a time.
+- **sfadb.com** and **Locus Online** — both now block automated fetching. sfadb is still the best award index in existence and gives *venue*, which is the field that predicts availability.
+- **Wikisource** — was unreachable from my fetch layer entirely (see §7). It holds **story-level URLs**, which Gutenberg largely does not. If you want single stories rather than whole volumes, this is where to look, and only you can look.
+- **Wikipedia's award tables** — did not render through automated fetch; fine in a browser. Fastest way to walk a full ballot year by year.
+
+### 8.4 Verification errands
+
+Small, cheap for a person, and each closes a flagged uncertainty:
+
+- **The Horla, in English.** The one core-set item with no verified clean English text (§5.3). PG 10775 is the French. Resolve via the story index at https://www.gutenberg.org/ebooks/28076 and confirm which volume of PG 3090 carries it.
+- **The Wikisource URLs** in §4, which rest on search metadata rather than inspection.
+- **Two Clarkesworld URLs** in §3 unverified by fetch but almost certainly live.
+- **The `refs/craft.md` print-check list** — King's *Danse Macabre* page numbers and the "phobic pressure points" wording, Gardner's page numbers, Clute's SIGHTING entry, Edmund Wilson on Lovecraft. Each is one physical copy and five minutes.
+
+### 8.5 The one that needs a person, not a tool
+
+**Ask.** I cannot send email; you can.
+
+The two archives best matched to this project — **Nightmare** and **Clarkesworld** — are also the two that have most explicitly refused automated collection. But their policies are aimed at scraping and AI training, and **a named individual asking to use a defined set of stories for a private craft experiment is a different request entirely.** Editors answer that kind of mail. John Joseph Adams (Nightmare/Lightspeed) and Neil Clarke (Clarkesworld) are both reachable and both publicly engaged on exactly this issue.
+
+Worth doing for **Escape Artists / PseudoPod** too — §7 records that two research passes disagreed about whether their Creative Commons licence covers story text or only the audio, and the fetched legal page says audio. **One email settles it**, and if the text is usable, PseudoPod's 1,000+ episodes with full transcripts become the largest clean horror corpus available.
+
+The worst outcome of asking is that you are where you already are.
