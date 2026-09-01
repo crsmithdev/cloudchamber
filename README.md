@@ -30,6 +30,17 @@ refs/                        annexes. The source files are read, never edited;
                              and the Aristotle constraint, with citations
   setting-a.md                the specifics behind playbook section 5 -- fifteen
                              domains of setting-a statutes, bodies, dates, cases
+  craft.md                   the evidence behind playbook sections 1 and 6 --
+                             eight parts: what produces dread and how the SF
+                             premise joins to horror; how writers generate and
+                             kill premises; structure, character and endings;
+                             the prose, from the fictive dream to the clinical
+                             register to body horror at sentence level; what
+                             serious horror is about and how theme gets in
+                             without arguing; 74 failure modes with the
+                             authority attached; and a verification ledger of
+                             what is corrected, what is refuted, and what must
+                             still be checked in print
   chiang.md
   watts.md
   setting-c.md
