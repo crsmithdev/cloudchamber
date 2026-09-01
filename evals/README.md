@@ -66,3 +66,17 @@ The first four runs are contaminated by the leakage in test 3. The control run i
 ## Next
 
 Generated premises against the slate, same protocol. Then ablation: regenerate with one section removed and compare. That is what the harness is for.
+
+## External fiction — `CORPUS.md`
+
+Award-attested horror and SF-horror short fiction that is free and legal to read online, with the licensing map. Compiled 2026-09-01; every URL fetched and confirmed.
+
+**It lives here and not in `refs/` deliberately.** The annexes under `refs/` are source material the playbook draws *from* — read, distilled, and pulled into the banks. This is material to test *against*. Nothing in it should be distilled into a playbook section, and no generator should read it: a generator that has read the test set is not being tested.
+
+Three things in it govern how it can be used:
+
+- **Most of it is link-only.** Nightmare and Lightspeed carry explicit anti-scraping policies; Clarkesworld's robots.txt disallows fetching and its editor campaigns on the point. Free to read, not free to copy. Honour that.
+- **The copyable set is narrow** — Watts (CC BY-NC-SA, all of rifters.com plus *Blindsight*), SCP (CC BY-SA, with a bulk JSON API carrying ratings), Small Beer Press (Link, McHugh — plain text offered directly), and the public-domain core set. That is the only material that can go in a local corpus.
+- **The register this project cares about is the least available.** Bram Stoker short fiction: one winner in ten is free. The quiet, Aickman-descended end of the Shirley Jackson ballot is print-only with no free workaround.
+
+**What it is not.** It is a set of positives — stories that are good by external attestation. A test set built only from these measures agreement, not discrimination: a rubric that approves everything scores perfectly on it. Negative cases are still owed, and `README.md` test 1 is the model — the degradation set works because the comparison is within-item.
