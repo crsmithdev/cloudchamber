@@ -17,6 +17,8 @@
   --pass:#8b3a3a; --pass-soft:#f2e2e2;
   --maybe:#8a6a1f; --maybe-soft:#f4ecd8;
   --artifact:#5c4b8a; --artifact-soft:#e8e3f2;
+  --pole-lo:#2f4a57; --pole-lo-ink:#f2f6f7;
+  --pole-hi:#8fd8ea; --pole-hi-ink:#06222c;
   --ui:"Archivo","Segoe UI",system-ui,sans-serif;
   --prose:"Newsreader",Georgia,"Times New Roman",serif;
   --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
@@ -30,6 +32,8 @@
   --pass:#db8080; --pass-soft:#331b1b;
   --maybe:#dcb765; --maybe-soft:#332a14;
   --artifact:#a99ad6; --artifact-soft:#241f33;
+  --pole-lo:#23414e; --pole-lo-ink:#d6e8ef;
+  --pole-hi:#6fd0e8; --pole-hi-ink:#06222c;
 }}
 :root[data-theme="dark"]{
   --ground:#0d1316; --surface:#151e22; --surface-2:#1c272c;
@@ -40,6 +44,8 @@
   --pass:#db8080; --pass-soft:#331b1b;
   --maybe:#dcb765; --maybe-soft:#332a14;
   --artifact:#a99ad6; --artifact-soft:#241f33;
+  --pole-lo:#23414e; --pole-lo-ink:#d6e8ef;
+  --pole-hi:#6fd0e8; --pole-hi-ink:#06222c;
 }
 *{box-sizing:border-box}
 html,body{margin:0; height:100%}
@@ -98,18 +104,31 @@ main{flex:1; min-height:0; overflow:hidden; display:flex; flex-direction:column}
 .chip i{font-style:normal; color:var(--faint)}
 .chip.on i{color:inherit; opacity:.65}
 .chip.on{border-color:var(--accent); color:var(--accent); background:var(--accent-soft)}
-/* Three of the six dimensions have two real poles (voice, mode, reference)
-   and three only measure how much of a thing is present (persuasion,
-   abstraction, elaboration). Colour alone cannot say which end of which —
-   both poles came out identical. So polarity is carried structurally: a
-   two-poled chip is weighted on the side it sits at, and a one-sided chip is
-   filled when the property is present and hollow-dashed when it is absent. */
-.chip.lo{border-left-width:4px}
-.chip.hi{border-right-width:4px}
-.chip.present{background:var(--accent); color:var(--accent-ink);
-  border-color:var(--accent)}
-.chip.absent{border-style:dashed; color:var(--muted); background:none}
-.chip.present i{color:inherit; opacity:.7}
+/* Three dimensions contrast two ways of writing — voice, mode, reference —
+   and three measure how much of one thing is present: persuasion,
+   abstraction, elaboration, whose low label names an absence rather than an
+   opposite. Those are different kinds of fact and they get different
+   instruments.
+
+   A two-poled dimension is one axis, so its ends are the two ends of one
+   colour ramp: dark slate at the low pole, bright teal at the high one, both
+   solid. A one-sided dimension is a magnitude, so it ramps in weight on a
+   single hue — dashed and faint when absent, outlined when middling, solid
+   accent when present. Nothing filled-teal now means two different things. */
+.chip.lo{background:var(--pole-lo); border-color:var(--pole-lo);
+  color:var(--pole-lo-ink)}
+.chip.hi{background:var(--pole-hi); border-color:var(--pole-hi);
+  color:var(--pole-hi-ink)}
+.chip.mid{border-style:solid; color:var(--muted)}
+.chip.present{border-color:var(--accent); background:var(--accent-soft);
+  color:var(--accent)}
+.chip.some{color:var(--muted)}
+.chip.absent{border-style:dashed; border-color:var(--rule-2);
+  color:var(--faint); background:none}
+/* The tercile is the half worth reading; the dimension only says which axis. */
+.chip b{font-weight:600; letter-spacing:0}
+.chip i{font-style:normal; font-weight:400; opacity:.62; letter-spacing:.04em}
+.chip.lo i, .chip.hi i{opacity:.72}
 .chip.wh{border-color:var(--maybe); color:var(--maybe); background:var(--maybe-soft)}
 .prose{font-family:var(--prose); font-size:19px; line-height:1.62; color:var(--ink)}
 .prose p{margin:0 0 .72em}
@@ -461,14 +480,14 @@ function chipRow(f, withheld){
     const lo = f[k] === POLES[k][0], hi = f[k] === POLES[k][1];
     const z = f[d];
     const score = typeof z === "number" ? `  ${z >= 0 ? "+" : ""}${z.toFixed(2)}` : "";
-    let cls = "";
-    if (TWO_POLED.has(k)) cls = lo ? " on lo" : hi ? " on hi" : "";
-    else cls = hi ? " on present" : lo ? " absent" : "";
+    let cls;
+    if (TWO_POLED.has(k)) cls = lo ? " lo" : hi ? " hi" : " mid";
+    else cls = hi ? " present" : lo ? " absent" : " some";
     const what = TWO_POLED.has(k)
       ? (lo || hi ? `${d} — this end of two` : `${d} — between the poles`)
       : (hi ? `${d} — present` : lo ? `${d} — absent` : `${d} — some`);
     return `<span class="chip${cls}" title="${what}${score}">` +
-      `<i>${esc(k)}</i> ${esc(f[k])}</span>`;
+      `<i>${esc(k)}</i> <b>${esc(f[k])}</b></span>`;
   });
   if (withheld) out.push('<span class="chip wh" title="redaction or elision ' +
     'detected in the text">withheld</span>');
