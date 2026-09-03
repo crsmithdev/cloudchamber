@@ -1,9 +1,12 @@
-<svg width="100%" viewBox="0 0 680 1090" role="img" xmlns="http://www.w3.org/2000/svg"><title>Fog Belt seed pipeline</title><desc>Flowchart from source corpus through local extraction, manual culling, dice draw, tail-sampled generation, partial execution, judging, and logging.</desc>
+<svg width="100%" viewBox="0 0 680 830" role="img" xmlns="http://www.w3.org/2000/svg"><title>Fog Belt seed pipeline</title><desc>Two lanes. Passages are harvested from the source texts and scored on Biber's six dimensions; themes are drafted by a session against a brief and validated on ingest. Both banks feed one draw, which renders a packet the seeding skill generates from. There is no cull.</desc>
 <style>
 text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 .th{font-size:14px;font-weight:500}
 .ts{font-size:12px;font-weight:400}
-.arr{stroke:#73726c;stroke-width:1.5;fill:none}
+.tn{font-size:11.5px;font-weight:400;fill:#5F5E5A;font-style:italic}
+.lane{font-size:11px;font-weight:600;letter-spacing:.08em;fill:#73726c}
+.arr{stroke:#73726c;stroke-width:1.5;fill:none;marker-end:url(#arrow)}
+.plain{stroke:#73726c;stroke-width:1.5;fill:none}
 .gray rect{fill:#F1EFE8;stroke:#5F5E5A}
 .gray .th{fill:#2C2C2A}.gray .ts{fill:#5F5E5A}
 .purple rect{fill:#EEEDFE;stroke:#534AB7}
@@ -13,43 +16,73 @@ text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 .teal rect{fill:#E1F5EE;stroke:#0F6E56}
 .teal .th{fill:#085041}.teal .ts{fill:#0F6E56}
 </style>
-<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#73726c"/></marker></defs>
 
-<g class="gray"><rect x="60" y="30" width="240" height="56" rx="8" stroke-width="0.5"/><text class="th" x="180" y="50" text-anchor="middle" dominant-baseline="central">Refs corpus</text><text class="ts" x="180" y="68" text-anchor="middle" dominant-baseline="central">PDFs, never opened here</text></g>
-<g class="gray"><rect x="380" y="30" width="240" height="56" rx="8" stroke-width="0.5"/><text class="th" x="500" y="50" text-anchor="middle" dominant-baseline="central">SCP scrape</text><text class="ts" x="500" y="68" text-anchor="middle" dominant-baseline="central">Markdown, already working</text></g>
+<text class="lane" x="30" y="34">PASSAGES — HOW IT READS</text>
+<text class="lane" x="360" y="34">THEMES — WHAT GETS MADE</text>
 
-<path d="M180 86 L180 106 L340 106 L340 126" class="arr" marker-end="url(#arrow)"/>
-<path d="M500 86 L500 106 L340 106" class="arr"/>
+<g class="gray"><rect x="30" y="46" width="290" height="52" rx="4"/>
+  <text class="th" x="46" y="68">sources/texts/</text>
+  <text class="ts" x="46" y="86">109 SCP articles · 29 anthology PDFs</text></g>
+<g class="gray"><rect x="360" y="46" width="290" height="52" rx="4"/>
+  <text class="th" x="376" y="68">sources/summaries/</text>
+  <text class="ts" x="376" y="86">reference registers, read by hand</text></g>
 
-<g class="gray"><rect x="200" y="126" width="280" height="56" rx="8" stroke-width="0.5"/><text class="th" x="340" y="146" text-anchor="middle" dominant-baseline="central">Local extraction</text><text class="ts" x="340" y="164" text-anchor="middle" dominant-baseline="central">Slices by structural signal</text></g>
-<line x1="340" y1="182" x2="340" y2="222" class="arr" marker-end="url(#arrow)"/>
+<path class="arr" d="M175 98 V136"/>
+<path class="arr" d="M505 98 V136"/>
 
-<g class="gray"><rect x="200" y="222" width="280" height="56" rx="8" stroke-width="0.5"/><text class="th" x="340" y="242" text-anchor="middle" dominant-baseline="central">Candidates</text><text class="ts" x="340" y="260" text-anchor="middle" dominant-baseline="central">Noisy, tagged, generous</text></g>
-<line x1="340" y1="278" x2="340" y2="318" class="arr" marker-end="url(#arrow)"/>
+<g class="purple"><rect x="30" y="136" width="290" height="52" rx="4"/>
+  <text class="th" x="46" y="158">pipeline harvest</text>
+  <text class="ts" x="46" y="176">overlapping windows, best 12 per doc</text></g>
+<g class="purple"><rect x="360" y="136" width="290" height="52" rx="4"/>
+  <text class="th" x="376" y="158">pipeline themes --brief</text>
+  <text class="ts" x="376" y="176">the grain, plus 8 lines from grain.md</text></g>
 
-<g class="coral"><rect x="200" y="318" width="280" height="56" rx="8" stroke-width="0.5"/><text class="th" x="340" y="338" text-anchor="middle" dominant-baseline="central">Chris culls</text><text class="ts" x="340" y="356" text-anchor="middle" dominant-baseline="central">Manual, permanently</text></g>
-<line x1="340" y1="374" x2="340" y2="414" class="arr" marker-end="url(#arrow)"/>
+<path class="arr" d="M175 188 V226"/>
+<path class="arr" d="M505 188 V226"/>
 
-<g class="purple"><rect x="60" y="414" width="280" height="56" rx="8" stroke-width="0.5"/><text class="th" x="200" y="434" text-anchor="middle" dominant-baseline="central">examples.md</text><text class="ts" x="200" y="452" text-anchor="middle" dominant-baseline="central">Verbatim, six to ten</text></g>
-<g class="purple"><rect x="400" y="414" width="220" height="56" rx="8" stroke-width="0.5"/><text class="th" x="510" y="434" text-anchor="middle" dominant-baseline="central">Dice draw</text><text class="ts" x="510" y="452" text-anchor="middle" dominant-baseline="central">Outside the model</text></g>
+<g class="purple"><rect x="30" y="226" width="290" height="52" rx="4"/>
+  <text class="th" x="46" y="248">pipeline facets</text>
+  <text class="ts" x="46" y="266">Biber D1–D6, standardised over the pool</text></g>
+<g class="coral"><rect x="360" y="226" width="290" height="52" rx="4"/>
+  <text class="th" x="376" y="248">a session drafts</text>
+  <text class="ts" x="376" y="266">one sentence: a mechanism and a turn</text></g>
 
-<path d="M200 470 L200 490 L300 490 L300 510" class="arr" marker-end="url(#arrow)"/>
-<path d="M510 470 L510 490 L380 490 L380 510" class="arr" marker-end="url(#arrow)"/>
+<path class="arr" d="M175 278 V316"/>
+<path class="arr" d="M505 278 V316"/>
 
-<g class="purple"><rect x="200" y="510" width="280" height="56" rx="8" stroke-width="0.5"/><text class="th" x="340" y="530" text-anchor="middle" dominant-baseline="central">Generate blind</text><text class="ts" x="340" y="548" text-anchor="middle" dominant-baseline="central">Tail sampling, modal excluded</text></g>
-<line x1="340" y1="566" x2="340" y2="606" class="arr" marker-end="url(#arrow)"/>
+<g class="teal"><rect x="30" y="316" width="290" height="52" rx="4"/>
+  <text class="th" x="46" y="338">examples.jsonl</text>
+  <text class="ts" x="46" y="356">1,016 passages, verbatim, six scores each</text></g>
+<g class="purple"><rect x="360" y="316" width="290" height="52" rx="4"/>
+  <text class="th" x="376" y="338">pipeline themes --ingest</text>
+  <text class="ts" x="376" y="356">rejects: proper nouns, deixis, wrong length</text></g>
 
-<g class="purple"><rect x="200" y="606" width="280" height="56" rx="8" stroke-width="0.5"/><text class="th" x="340" y="626" text-anchor="middle" dominant-baseline="central">Five premises</text><text class="ts" x="340" y="644" text-anchor="middle" dominant-baseline="central">Each with a probability</text></g>
-<line x1="340" y1="662" x2="340" y2="702" class="arr" marker-end="url(#arrow)"/>
+<path class="arr" d="M505 368 V406"/>
+<g class="teal"><rect x="360" y="406" width="290" height="52" rx="4"/>
+  <text class="th" x="376" y="428">themes.jsonl</text>
+  <text class="ts" x="376" y="446">38 themes, portable off their source</text></g>
 
-<g class="teal"><rect x="200" y="702" width="280" height="56" rx="8" stroke-width="0.5"/><text class="th" x="340" y="722" text-anchor="middle" dominant-baseline="central">Execute the survivors</text><text class="ts" x="340" y="740" text-anchor="middle" dominant-baseline="central">400 words, in form</text></g>
-<line x1="340" y1="758" x2="340" y2="798" class="arr" marker-end="url(#arrow)"/>
+<path class="plain" d="M175 368 V496 H340"/>
+<path class="plain" d="M505 458 V496 H340"/>
+<path class="arr" d="M340 490 V520"/>
 
-<g class="teal"><rect x="200" y="798" width="280" height="56" rx="8" stroke-width="0.5"/><text class="th" x="340" y="818" text-anchor="middle" dominant-baseline="central">Judge the prose</text><text class="ts" x="340" y="836" text-anchor="middle" dominant-baseline="central">Three bins, tuned for recall</text></g>
-<line x1="340" y1="854" x2="340" y2="894" class="arr" marker-end="url(#arrow)"/>
+<g class="purple"><rect x="170" y="520" width="340" height="52" rx="4"/>
+  <text class="th" x="186" y="542">pipeline draw</text>
+  <text class="ts" x="186" y="560">one example per facet cell before any cell repeats</text></g>
 
-<g class="coral"><rect x="200" y="894" width="280" height="56" rx="8" stroke-width="0.5"/><text class="th" x="340" y="914" text-anchor="middle" dominant-baseline="central">Chris picks</text><text class="ts" x="340" y="932" text-anchor="middle" dominant-baseline="central">The only real decision</text></g>
-<line x1="340" y1="950" x2="340" y2="990" class="arr" marker-end="url(#arrow)"/>
+<path class="arr" d="M340 572 V610"/>
 
-<g class="gray"><rect x="200" y="990" width="280" height="56" rx="8" stroke-width="0.5"/><text class="th" x="340" y="1010" text-anchor="middle" dominant-baseline="central">log.jsonl</text><text class="ts" x="340" y="1028" text-anchor="middle" dominant-baseline="central">Labelled pairs accumulate</text></g>
+<g class="teal"><rect x="170" y="610" width="340" height="52" rx="4"/>
+  <text class="th" x="186" y="632">the packet</text>
+  <text class="ts" x="186" y="650"># REGISTER, then # SEED nearest the ask</text></g>
+
+<path class="arr" d="M340 662 V700"/>
+
+<g class="coral"><rect x="170" y="700" width="340" height="52" rx="4"/>
+  <text class="th" x="186" y="722">seed-premises</text>
+  <text class="ts" x="186" y="740">tail sampling, modal excluded, batch blind</text></g>
+
+<text class="tn" x="30" y="790">No cull. Keep, pass and maybe, the decision trail and both reviewers were removed on 2026-09-03,</text>
+<text class="tn" x="30" y="808">to be re-added later. Both banks are pools as they stand, and draw samples the whole of them.</text>
 </svg>
