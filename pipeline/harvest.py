@@ -56,6 +56,41 @@ def docs_for(src: sources.Source, root: Path) -> list[Doc]:
     return out
 
 
+def _overlap(a: tuple, b: tuple) -> float:
+    """Fraction of the smaller block-span that the two windows share."""
+    lo, hi = max(a[0], b[0]), min(a[1], b[1])
+    if hi < lo:
+        return 0.0
+    shared = hi - lo + 1
+    smaller = min(a[1] - a[0] + 1, b[1] - b[0] + 1)
+    return shared / smaller if smaller else 0.0
+
+
+def top_per_doc(passages: list[Passage], limit: int, max_overlap: float = 0.5) -> list[Passage]:
+    """Keep the best `limit` windows per document, without near-duplicates.
+
+    Overlapping windows are how the harvester avoids missing a passage that
+    straddles a paragraph boundary, but three windows from the same starting
+    block are three readings of the same prose. Taking the highest-scoring and
+    rejecting anything that shares more than half its blocks keeps the recall
+    the overlap buys and drops the redundancy it costs.
+
+    Without this a 110-article SCP run produces ~42,000 candidates, which is
+    not a pool anyone culls; it is a pool that gets abandoned.
+    """
+    kept: list[Passage] = []
+    for p in sorted(passages, key=lambda x: -x.score):
+        if sum(1 for k in kept if k.source_id == p.source_id) >= limit:
+            continue
+        if any(
+            k.source_id == p.source_id and _overlap(k.block_span, p.block_span) > max_overlap
+            for k in kept
+        ):
+            continue
+        kept.append(p)
+    return kept
+
+
 def score(p: Passage) -> Passage:
     s = signals.compute(p.text, p.position)
     ts = signals.tag_scores(s)
@@ -69,6 +104,7 @@ def harvest(
     root: str | Path = ".",
     only: list[str] | None = None,
     min_score: float = 0.0,
+    per_doc: int = 12,
     seeds: str | Path | None = None,
 ) -> dict:
     root = Path(root)
@@ -87,15 +123,17 @@ def harvest(
         if not docs:
             print(f"{src.id}: no files matched {src.path!r}")
             continue
-        found = 0
+        raw = 0
+        picked: list[Passage] = []
         for d in docs:
-            for p in windows(d):
-                p = score(p)
-                if p.score >= min_score:
-                    all_passages.append(p)
-                    found += 1
-        per_source[src.id] = found
-        print(f"{src.id}: {len(docs)} docs -> {found} candidate passages")
+            scored = [score(p) for p in windows(d)]
+            raw += len(scored)
+            scored = [p for p in scored if p.score >= min_score]
+            picked.extend(top_per_doc(scored, per_doc))
+        all_passages.extend(picked)
+        per_source[src.id] = len(picked)
+        print(f"{src.id}: {len(docs)} docs -> {len(picked)} passages "
+              f"(from {raw} windows, best {per_doc}/doc)")
 
     added, refreshed = bank.merge(all_passages)
     print(f"\nbank: +{added} new, {refreshed} refreshed, pool now {len(bank.load())}")

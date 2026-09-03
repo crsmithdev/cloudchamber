@@ -12,13 +12,17 @@ the current `refs/` layout and are used when no config file is present.
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
 try:
     import tomllib
-except ModuleNotFoundError:  # py<3.11
-    tomllib = None
+except ModuleNotFoundError:  # py < 3.11
+    try:
+        import tomli as tomllib  # pip install tomli
+    except ModuleNotFoundError:
+        tomllib = None
 
 
 @dataclass
@@ -95,7 +99,7 @@ DEFAULTS: list[Source] = [
     ),
     Source(
         id="literature",
-        path="evals/LITERATURE.md",
+        path="doc/literature.md",
         reader="markdown",
         passages=False,  # criticism conditions for criticism
         themes=True,
@@ -136,7 +140,16 @@ DEFAULTS: list[Source] = [
 def load(root: str | Path = ".") -> list[Source]:
     root = Path(root)
     cfg = root / "sources.toml"
-    if not cfg.exists() or tomllib is None:
+    if not cfg.exists():
+        return list(DEFAULTS)
+    if tomllib is None:
+        # Silently falling back to DEFAULTS here means edits to sources.toml
+        # do nothing and nobody finds out for hours. Say so.
+        print(
+            "  ! sources.toml is being IGNORED: no TOML parser on this Python "
+            f"({sys.version_info.major}.{sys.version_info.minor}). "
+            "Use Python 3.11+, or `pip install tomli`. Built-in defaults in use."
+        )
         return list(DEFAULTS)
     data = tomllib.loads(cfg.read_text(encoding="utf-8"))
     out = []

@@ -4,7 +4,7 @@
 
 **Source tags:** `[C]` Chiang · `[W]` Watts · `[setting-c]` setting-c · `[TC]` setting-b · `[S]` the SCP wiki, djkaktus and Annex F together · `[E]` Neon Genesis Evangelion · `[J]` Julian Jaynes · `[FB]` Fog Belt originals (doctrine arrived at in-house). Tags mark where a move is best demonstrated, not where it's allowed.
 
-**Where the evidence lives:** `refs/chiang.md` · `refs/watts.md` · `refs/setting-c.md` · `refs/setting-b.md` · `refs/evangelion.md` · `refs/jaynes.md` (Annex D, rewritten 2026-08-29) · the djkaktus corpus, six files (`refs/scp/djkaktus-*.md`) · nineteen assorted SCP articles by other authors (`refs/scp/assorted.md`) · sixty-three triaged but unregistered articles (`refs/scp/candidates.md`) · the slate itself (`stories/`, 24 developed and one bench file of undeveloped concepts) · `refs/setting-a.md`, the specifics behind §5, written in-house and meant to grow · `refs/register.md`, the genre terms §0 stands on, with the citations §0 does not carry.
+**Where the evidence lives:** `refs/summaries/chiang.md` · `refs/summaries/watts.md` · `refs/summaries/setting-c.md` · `refs/summaries/setting-b.md` · `refs/summaries/evangelion.md` · `refs/summaries/jaynes.md` (Annex D, rewritten 2026-08-29) · the djkaktus corpus, six files (`refs/summaries/scp/djkaktus-*.md`) · nineteen assorted SCP articles by other authors (`refs/summaries/scp/assorted.md`) · sixty-three triaged but unregistered articles (`refs/summaries/scp/candidates.md`) · the slate itself (`stories/`, 24 developed and one bench file of undeveloped concepts) · `refs/summaries/setting-a.md`, the specifics behind §5, written in-house and meant to grow · `refs/summaries/register.md`, the genre terms §0 stands on, with the citations §0 does not carry.
 
 **Standing note.** *(2026-08-26)* The taste profile is explicitly evolving. Old rules get invalidated as the corpus is re-read and recycled. **Do not treat anything in this document as canonical against a live instinct.** It records what has worked; it is not a constitution. Where a rule has been amended, the amendment sits inline with its date rather than in a separate log.
 
@@ -826,7 +826,7 @@
 
 *Fifteen domains of subject matter: the places, trades, institutions, communities and live arguments a story is set in and about. Every story carries a setting-a matrix, and it has to be structural rather than scenery: take the element out and see whether a mechanism goes with it, or only an image.*
 
-*Each line is a theme, not an instance. A theme has someone it happens to, a mechanism that does it, and a cost — and it can produce more than one story. The instances, and the statutes, dates and cases under them, are in `refs/setting-a.md` — go there once a premise needs a real instrument beneath it.*
+*Each line is a theme, not an instance. A theme has someone it happens to, a mechanism that does it, and a cost — and it can produce more than one story. The instances, and the statutes, dates and cases under them, are in `refs/summaries/setting-a.md` — go there once a premise needs a real instrument beneath it.*
 
 *Several of these domains carry the histories of people the region's institutions have harmed. §0 governs: the villain is always the apparatus.*
 

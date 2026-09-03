@@ -57,7 +57,7 @@ author = "Stephen King"
 kind = "fiction"
 
 [source.literature]
-path = "evals/LITERATURE.md"
+path = "doc/literature.md"
 reader = "markdown"
 passages = false          # criticism conditions for criticism
 themes = true

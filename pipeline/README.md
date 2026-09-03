@@ -64,7 +64,7 @@ call it must not make.
 
 ## The six failure tags
 
-From `seeds/exemplars.md`. A tag means "worth an eye on this axis", never
+From `seeds/README.md`. A tag means "worth an eye on this axis", never
 "this is an exemplar of it".
 
 | tag | what it counters |
@@ -118,4 +118,4 @@ SCP material is CC BY-SA 3.0 and carries author, source and licence through to
 the bank; anything published from it must too. Watts is CC BY-NC-SA. The
 anthology PDFs are not redistributable — they are read locally, passages are
 held locally for conditioning, and nothing derived from them should be
-published verbatim. `evals/CORPUS.md` has the licensing map for the wider set.
+published verbatim. `doc/corpus.md` has the licensing map for the wider set.

@@ -10,6 +10,8 @@ A horror anthology. This repo is the source of truth.
 
 **`catalogue.md`** before reviewing. It describes what has been written and holds the instruments for reading a premise back.
 
+**`seeding-v7.md`** when the job is to produce candidates rather than triage them. It sits upstream of the playbook and hands off at §2.
+
 **`README.md`** for the layout and the form a story file takes.
 
 Every story file ends with two appended review sections. Read the preamble of either before treating a finding in it as a verdict; nothing in them has been applied, and no story text has been altered by them.
@@ -18,11 +20,18 @@ Every story file ends with two appended review sections. Read the preamble of ei
 
 One paragraph per pitch, one at a time. Chris replies take-it or pass; do not develop anything he has not taken.
 
-Check `stories/` before developing: whether a story feels like another one already on the slate is the only thing anywhere that functions as a criterion. Twenty-four are written, and `stories/00-undeveloped.md` carries the reasoning that parked what was parked, so the same rejected construction does not get re-attempted.
+Check `stories/` before developing: whether a story feels like another one already on the slate is the only thing anywhere that functions as a criterion. Twenty-five are written, and `stories/00-undeveloped.md` carries the reasoning that parked what was parked, so the same rejected construction does not get re-attempted.
 
 ## Working here
 
-No build step and no generated files. A story is one file under `stories/`.
+A story is one file under `stories/`, written by hand. Nothing generates it.
+
+**`seeds/` is the exception, and it has a rule.** `pipeline harvest` fills the
+candidate pool and `pipeline export` writes `seeds/exemplars.md`; both are
+regenerable and neither should be hand-edited. `seeds/decisions.jsonl` is the
+opposite — append-only, tracked, and the only file in the repo that cannot be
+rebuilt from its sources. Never rewrite or prune it. Chris's passes are as
+load-bearing as his keeps.
 
 **No Claude session can reach GitHub.** Edit and commit through the device bridge; Chris pushes manually from his own terminal. See the README for the detail.
 

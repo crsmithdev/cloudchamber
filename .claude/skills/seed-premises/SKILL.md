@@ -69,7 +69,7 @@ Then pitch the survivor. One paragraph. Do not stack alternatives, do not name t
 
 ### 6. Do not consult the evals
 
-`evals/` grades the playbook, not premises, and a generator that has read the test set is not being tested. Nothing in `evals/CORPUS.md` or `evals/LITERATURE.md` enters a generation call.
+`doc/corpus.md` is external fiction held as a standard to read against, and `doc/literature.md` is the academic material behind the method. Neither enters a generation call: a generator that has read the comparison set is not being compared.
 
 ## Failure signs in a batch
 

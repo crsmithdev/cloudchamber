@@ -23,6 +23,8 @@ def main(argv=None):
     h = sub.add_parser("harvest", help="extract passages from sources into the bank")
     h.add_argument("--only", nargs="*", help="source ids to run")
     h.add_argument("--min-score", type=float, default=0.0)
+    h.add_argument("--per-doc", type=int, default=12,
+                   help="best N passages per source document (default 12)")
 
     r = sub.add_parser("review", help="cull the pool: keep / pass / maybe")
     r.add_argument("--tag", help="only passages carrying this failure tag")
@@ -56,7 +58,8 @@ def main(argv=None):
     seeds = a.seeds
 
     if a.cmd == "harvest":
-        harvest_mod.harvest(root, only=a.only, min_score=a.min_score, seeds=seeds)
+        harvest_mod.harvest(root, only=a.only, min_score=a.min_score,
+                            per_doc=a.per_doc, seeds=seeds)
 
     elif a.cmd == "review":
         review_mod.review(root, seeds=seeds, tag=a.tag, order=a.order,
