@@ -10,11 +10,11 @@ and what it has made (`stories/`). Plus the code and the two standing documents.
 
 ```
 CLAUDE.md                    standing instructions for a Claude session here
-series.md                    what every story has in common. The register
-                             1 is the ideation workflow; 2-5 are the banks it
-                             pulls from (themes, dread mechanisms, artifacts,
-                             setting-a elements); 6 is how a story gets told.
-                             Nothing in it evaluates.
+series.md                    what every story has in common -- the register
+                             every premise is checked against. Nothing in it
+                             evaluates. The banks that used to sit beside it
+                             are sources/settings/ and extracted/themes.jsonl;
+                             the workflow is the seed-premises skill.
 catalogue.md                 the other half -- describes rather than generates.
                              The slate as it stands (2026-08-29), then the
                              recurring shapes, the anti-patterns, the thirteen
