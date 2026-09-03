@@ -341,16 +341,99 @@ Short clauses, not sentences. An incomplete frame is a defect (§8); an
 unresolved deixis is a rejection at write time (§9); a frame appearing in one
 document only is a detail rather than a theme (§7).
 
+---
+
+## 11. What the working bank actually looks like — and a correction
+
+§8 proposed a four-field frame and §10 argued for it. **Measured against
+playbook §2, that is over-engineered, and this section supersedes both on the
+storage format.** §2–§5 are the banks that produced twenty-five stories; they
+are the only seed format in this project with evidence behind it, and they are
+not frames.
+
+| | §2 bullets (n=376) | mined `themes.jsonl` (n=432) |
+| :-- | --: | --: |
+| median words | **21** (p10 15, p90 32) | 24 |
+| a single sentence | 98% | — |
+| carries a turn connective | **63%** | 35% |
+| names who it is done to | **40%** | 17% |
+| implies a cost or a no-exit | **17%** | 6% |
+| contains a proper noun | **0%** | **53%** |
+| opens on a deictic | **0** | 12% |
+
+**The mined bank is already the right length.** That was not the problem. It
+fails on four content properties, and the largest gap is portability: 53% of
+mined rows carry a proper noun from their source, which drags a generation
+call back toward the article the row came from instead of seeding a new one.
+
+What a §2 bullet is, from the bank itself:
+
+> The body altered to meet a written specification, and the specification is a
+> purchasing document.
+
+> The victim who is also the weapon, so that rescuing him and releasing him
+> are the same act, and the humane thing is to leave him where he is forever.
+
+> The criterion is nine years old, arbitrary, and load-bearing: raise it and
+> the whole series restarts at one.
+
+One sentence. A mechanism, and a **turn** — the move playbook §1.3 calls the
+slate's signature, where a real thing that works becomes the mechanism. Roles
+are present but *compressed into the clause chain*, never enumerated.
+
+### Why the single line beats the frame here
+
+1. **§1.1 requires combination** — "at least one must be a combination, two or
+   three entries held together". Two 21-word lines hold together. Two
+   four-field records give eight fields and produce mush; the worked
+   combination attempted on 2026-09-03 was the weakest artefact in that batch.
+2. **The turn is the payload, and a frame has nowhere to put it.** "…and the
+   specification is a purchasing document" lives in the sentence's syntax.
+   Decomposing into `mechanism` / `subject` / `cost` destroys exactly the thing
+   that makes the seed live, which is why only 63% → 35% is the gap that
+   matters most after portability.
+3. **Brevity already solves the form problem.** §10 worried that a prose theme
+   competes with the exemplars for register conditioning. A 21-word line in a
+   bulleted bank is incommensurable with a 200–400 word passage on length and
+   formatting alone. Field labels were solving a problem brevity had solved.
+
+### And the Oblique Strategies result does not argue for generic cards
+
+`generation.md` §3.2 cites the deck beating ChatGPT on distinctness. The moral
+it draws is that **randomness sourced outside the generator does real work** —
+not that the cards should be contentless. Fog Belt cannot use contentless
+cards: §1.3 kills any premise without an engine, and a generic card leaves the
+engine to the model, which is precisely where the model reaches for its
+modal move. The §2 grain sits between the oblique card and the worked premise,
+and the evidence for that position is twenty-five stories.
+
+### The spec, restated
+
+```
+one sentence, 15-32 words
+a mechanism, and a turn on something that works
+no proper nouns — portable off its source
+self-contained — no unresolved deixis
+implies who it is done to, and what it costs
+```
+
+The roles from §8 survive, but as a **drafting scaffold and an acceptance
+test**, not as the stored object: draft by answering mechanism / subject /
+cost, then compress to one line, then check the line still implies all three.
+The acceptance test is now measurable, and its target is a distribution rather
+than a rule — a mined bank should be statistically indistinguishable from §2
+on the table above.
+
 ## Recommendation
 
 1. **Retire local sentence extraction.** It cannot produce a theme; §1 is not
    a tuning problem. Keep the code in history, drop it from the pipeline, and
    do not re-point the regexes.
-2. **Store a frame, and make it look nothing like prose.** §10 is the
-   governing constraint: the seed block shares a prompt with the exemplars,
-   few-shot conditioning acts on form, and a prose theme competes with the
-   passages it is supposed to accompany. Notation wins on the same evidence
-   that makes it underspecified enough to resist fixation.
+2. **Store one sentence in the playbook §2 grain — not a frame.** §11
+   supersedes §8 and §10 on this: 21 words, a mechanism and a turn, no proper
+   nouns, self-contained. The four-field record survives as a drafting
+   scaffold and an acceptance test, not as the stored object. Target the §2
+   distribution, which is the only seed format here with evidence behind it.
 3. **Make the research intake the primary path.** `pipeline themes --research`
    → brief → a session reads → `--ingest` is already the right architecture:
    a model drafts abstractions, Chris culls. It was built as the fallback for
