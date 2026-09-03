@@ -271,8 +271,20 @@ wins — so an item leaves the bench by being read, never by being marked. A
 verdict given *after* expanding in the Deck is already a full read, is written
 as `manual`, and correctly never reaches the bench.
 
-Keys: `1` `2` `3` switch mode, `f` keep, `j` pass, `m` maybe, `space` expand,
-`x` toggle a ledger row, `enter` commit a screen, `u` undo, `?` for the list.
+Keys: `1` `2` `3` switch mode, `f` keep, `j` pass, `m` maybe, `a` artifact,
+`space` expand, `x` toggle a ledger row, `enter` commit a screen, `u` undo,
+`?` for the list.
+
+**`a` is not a fourth verdict.** It records a `pass` with `method: "artifact"`
+and a note, because a passage with markup in it is not usable prose — but the
+method says the fault is the extractor rather than the writing, so the flagged
+ids can be pulled back out of the trail and fixed at source:
+
+```bash
+grep '"method": "artifact"' extracted/decisions.jsonl
+```
+
+`pipeline stats` reports the count, and a non-zero one is a bug list.
 
 **Undo has a window, not a rewrite.** A verdict is held for 1.4s before it is
 posted; undo inside that window means nothing was ever written. Undo after it
@@ -318,10 +330,24 @@ enough — not when the queue is empty.
 `signals.py` is lexical and structural; `biber.py` is grammatical. No model
 reads anything and no network call is made. Each number is named and
 inspectable, which is how every stripper bug so far has been found: two behind
-raw CSS at the top of D1, and a third behind raw CSS at the bottom of D5 — an
-`[[html]]` block, an embedded iframe document, that no rule was dropping.
+raw CSS at the top of D1, a third behind raw CSS at the bottom of D5 — an
+`[[html]]` block that no rule was dropping — and a fourth, the worst of them,
+found by reading the pool for surviving markup rather than by score.
 **Always check the extremes**, and there are twelve of them now, not four:
 `pipeline facets --extremes 5`.
+
+**The fourth was silent.** `[[module Rate]]` is self-closing, and the paired
+drop rule matched it non-greedily forward to the *next* module's `[[/module]]`,
+deleting everything in between. It removed 1,482 of scp-2316's 1,676 words and
+took five articles to zero. Fixing it recovered **41,316 words, 8% of the SCP
+corpus**, and the pool went from 947 passages to 1,016. Paired rules now refuse
+to span a second opener of the same tag.
+
+Four more classes were leaking into passages and are now handled: wikidot
+tables (`||~ h||` rows are data, so the block is classed `meta` and never
+harvested), colour spans (`##red|text##`), literal spans (`@@text@@` and the
+`@@@@` spacer), and heading markers left mid-block. Regression checks for all
+of them are in the selftest fixture.
 
 The costs, named:
 

@@ -58,9 +58,15 @@ is well-founded; it is right if it predicts Chris.
 Never done. Only SCP has ever been harvested, and every number in
 `pipeline/README.md` is fitted to 947 SCP passages. When it happens:
 
-- `pdftotext` (poppler) or `pdfplumber` must be installed. Neither is on this
-  machine, so `read_pdf.py` cannot run here at all and the selftest reports
-  the PDF adapter as skipped.
+- ~~`pdftotext` or `pdfplumber` must be installed.~~ **`pdfplumber` 0.11.10 is
+  now installed** in the user site-packages, and `read_pdf.py` runs. A sample
+  harvest of one Chiang volume on 2026-09-03 produced clean prose with the page
+  furniture stripped.
+- **Story splitting is the open problem, not extraction.** That volume yielded
+  *two* docs — the whole book plus its story-notes — rather than one per story,
+  so `--per-doc 12` caps an entire collection at twelve passages instead of
+  twelve per story. Recall across the PDF corpus will be badly short until
+  `_split_stories` is looked at.
 - **Re-read the D3-D6 table in `pipeline/README.md` afterwards.** Those four
   dimensions were added *for* this harvest. Their numbers there describe 947
   containment documents and are not evidence about fiction.

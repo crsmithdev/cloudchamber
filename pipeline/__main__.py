@@ -162,6 +162,9 @@ def main(argv=None):
                 print(f"{name}: pool {st['pool']}  keep {st['keep']}  "
                       f"pass {st['pass']}  maybe {st['maybe']}  "
                       f"unlabelled {st['unlabelled']}  sources {st['sources']}")
+                if st.get("artifacts"):
+                    print(f"    {st['artifacts']} flagged as extraction artifacts "
+                          f"— a stripper bug, not a verdict")
                 if st["keep_rate"]:
                     tail = "  ".join(f"{r:.0%}" for r in st["keep_rate"][-8:])
                     print(f"    keep rate per 50: {tail}")

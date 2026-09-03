@@ -235,6 +235,10 @@ class Bank:
             "keep_rate": self.keep_rate(block),
             "sources": len({p.get("source_id", "") for p in pool.values()}),
             "facetted": sum(1 for p in pool.values() if p.get("facets")),
+            # Passages flagged in the reviewer as broken text rather than as
+            # bad writing. A non-zero count is a stripper bug, not a taste
+            # signal: `grep '"method": "artifact"' decisions.jsonl`.
+            "artifacts": sum(1 for r in v.values() if r.get("method") == "artifact"),
         }
         if target_per_cell:
             from .biber import CELLS

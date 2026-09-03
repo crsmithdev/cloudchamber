@@ -47,6 +47,15 @@ license: CC BY-SA 3.0
 
 [[module Rate]]
 
++ A Heading Run
+++ Second Level
++++ Third Level
+
+||~ Control Time||~ Date||~ Dilation||
+||1200 hrs EST||1/30/2019|| ##red|-215 MINUTES## ||
+
+Literal spans @@must@@ unwrap, and the empty @@@@ spacer disappears.
+
 **Special Containment Procedures:** Subjects are to be processed at the
 intake facility on a standard weekly interval. Personnel are not to be
 informed of the disposal protocol[[footnote]]This footnote body must be
@@ -79,6 +88,10 @@ personnel remain in operation as scheduled.
 </style>
 <div class="continue-button">Continue</div>
 [[/html]]
+
+[[module CSS]]
+#page-content { color: red; }
+[[/module]]
 
 [[footnoteblock]]
 [[include :scp-wiki:component:license-box]]
@@ -115,6 +128,20 @@ def main() -> int:
     check("html block removed",
           "box-shadow" not in text and "cubic-bezier" not in text
           and "continue-button" not in text)
+    # The one that had been silently eating articles: [[module Rate]] is
+    # self-closing, so a non-greedy body ran forward to a LATER module's
+    # closer and deleted everything between. 1,482 of scp-2316's 1,676 words.
+    check("a self-closing module does not eat the article",
+          "Special Containment Procedures" in text and "disposal protocol" in text)
+    check("css module body still removed", "#page-content" not in text)
+    check("wikidot table rows dropped",
+          "1200 hrs" not in text and "||" not in text)
+    check("colour spans unwrapped", "##red" not in text and "-215 MINUTES" not in text)
+    check("literal spans unwrapped",
+          "@@" not in text and "must unwrap" in text.replace("  ", " "))
+    check("heading markers stripped",
+          "+ A Heading" not in text and "++ Second" not in text
+          and "A Heading Run" in text)
     check("triple link kept its label", "Site-81" in text)
     check("no stray brackets", not re.search(r"[\[\]]", text.replace("[REDACTED]", "")))
     check("prose survived", doc.word_count() > 150, f"{doc.word_count()} words")

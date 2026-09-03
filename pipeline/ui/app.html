@@ -16,6 +16,7 @@
   --keep:#0e7a5c; --keep-soft:#dcefe8;
   --pass:#8b3a3a; --pass-soft:#f2e2e2;
   --maybe:#8a6a1f; --maybe-soft:#f4ecd8;
+  --artifact:#5c4b8a; --artifact-soft:#e8e3f2;
   --ui:"Archivo","Segoe UI",system-ui,sans-serif;
   --prose:"Newsreader",Georgia,"Times New Roman",serif;
   --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
@@ -28,6 +29,7 @@
   --keep:#3fbe94; --keep-soft:#0f2f26;
   --pass:#db8080; --pass-soft:#331b1b;
   --maybe:#dcb765; --maybe-soft:#332a14;
+  --artifact:#a99ad6; --artifact-soft:#241f33;
 }}
 :root[data-theme="dark"]{
   --ground:#0d1316; --surface:#151e22; --surface-2:#1c272c;
@@ -37,6 +39,7 @@
   --keep:#3fbe94; --keep-soft:#0f2f26;
   --pass:#db8080; --pass-soft:#331b1b;
   --maybe:#dcb765; --maybe-soft:#332a14;
+  --artifact:#a99ad6; --artifact-soft:#241f33;
 }
 *{box-sizing:border-box}
 html,body{margin:0; height:100%}
@@ -106,6 +109,11 @@ main{flex:1; min-height:0; overflow:hidden; display:flex; flex-direction:column}
 .btn.pass{color:var(--pass); border-color:var(--pass)} .btn.pass:hover{background:var(--pass-soft)}
 .btn.maybe{color:var(--maybe); border-color:var(--maybe)} .btn.maybe:hover{background:var(--maybe-soft)}
 .btn.ghost{color:var(--muted)}
+/* Not a verdict about the writing — a report that the text is broken. Its own
+   colour so it never reads as a fourth opinion alongside keep/pass/maybe. */
+.btn.artifact{color:var(--artifact); border-color:var(--artifact)}
+.btn.artifact:hover{background:var(--artifact-soft)}
+.rail i.artifact{background:var(--artifact)}
 kbd{font-family:var(--mono); font-size:11px; background:var(--surface-2);
   border:1px solid var(--rule-2); border-radius:3px; padding:1px 5px; color:var(--ink)}
 .head{display:flex; gap:12px; align-items:baseline; flex-wrap:wrap}
@@ -242,6 +250,7 @@ input.note:focus{outline:2px solid var(--accent); outline-offset:-1px}
       <button class="btn pass" data-v="pass">Pass <span class="k">j</span></button>
       <button class="btn maybe" data-v="maybe">Maybe <span class="k">m</span></button>
       <button class="btn ghost" id="deck-expand">Expand <span class="k">space</span></button>
+      <button class="btn artifact" data-v="artifact">Artifact <span class="k">a</span></button>
       <span class="fade" style="font-family:var(--mono); font-size:11.5px"
         id="deck-pos"></span>
     </footer>
@@ -527,9 +536,18 @@ const Deck = (() => {
   function verdict(v){
     const p = items[i];
     if (!p) return;
-    queueVerdict({id: p.id, verdict: v, method: expanded ? "manual" : "triage"},
-      `${v} · ${p.title}`);
-    done.push(v);
+    // "artifact" is not a fourth verdict. The passage is passed, because a
+    // passage with markup in it is not usable prose; the method says the
+    // reason is the stripper rather than the writing, so the flagged ids can
+    // be pulled back out of the trail and fixed at source.
+    const artifact = v === "artifact";
+    queueVerdict({
+      id: p.id,
+      verdict: artifact ? "pass" : v,
+      method: artifact ? "artifact" : (expanded ? "manual" : "triage"),
+      note: artifact ? "markup or extraction artifact in the text" : "",
+    }, `${artifact ? "flagged" : v} · ${p.title}`);
+    done.push(artifact ? "artifact" : v);
     items.splice(i, 1); expanded = false;
     if (i >= items.length) i = Math.max(0, items.length - 1);
     if (items.length < 8) load(); else draw();
@@ -545,6 +563,7 @@ const Deck = (() => {
     if (k === "f") return verdict("keep"), true;
     if (k === "j") return verdict("pass"), true;
     if (k === "m") return verdict("maybe"), true;
+    if (k === "a") return verdict("artifact"), true;
     if (k === " ") { expanded = true; draw(); return true; }
     if (k === "u") return undo(), true;
     return false;
@@ -643,8 +662,8 @@ el("tabs").querySelectorAll(".tab").forEach(t =>
   t.addEventListener("click", () => setMode(t.dataset.mode)));
 
 document.querySelectorAll("#deck [data-v]").forEach(b =>
-  b.addEventListener("click", () => Deck.keys(b.dataset.v === "keep" ? "f"
-    : b.dataset.v === "pass" ? "j" : "m")));
+  b.addEventListener("click", () => Deck.keys(
+    {keep: "f", pass: "j", maybe: "m", artifact: "a"}[b.dataset.v])));
 document.querySelectorAll("#bench [data-bv]").forEach(b =>
   b.addEventListener("click", () => Bench.keys(b.dataset.bv === "keep" ? "f"
     : b.dataset.bv === "pass" ? "j" : "m")));
@@ -661,7 +680,7 @@ document.addEventListener("keydown", e => {
   }
   const k = e.key.toLowerCase();
   if (k >= "1" && k <= "3") { setMode(ORDER[+k - 1]); e.preventDefault(); return; }
-  if (k === "?") { showToast("1/2/3 switch mode · f keep · j pass · m maybe · u undo", true); return; }
+  if (k === "?") { showToast("1/2/3 mode · f keep · j pass · m maybe · a artifact · u undo", true); return; }
   if (MODE_API[mode].keys(k)) e.preventDefault();
 });
 

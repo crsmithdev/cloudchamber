@@ -44,9 +44,15 @@ _FOOTNOTE = re.compile(r"\[\[footnote\]\].*?\[\[/footnote\]\]", re.S | re.I)
 # list tight: [[div]] and friends legitimately wrap an entire article, so
 # deleting their bodies deletes the story. Learned the hard way — an earlier
 # version of this took eleven articles to zero words.
+# The body must not contain another opener of the same tag. Several of these
+# are self-closing in practice — `[[module Rate]]` has no `[[/module]]` — and a
+# plain non-greedy `.*?` then runs forward to the NEXT module's closer and
+# deletes everything between. That silently removed 1,482 of scp-2316's 1,676
+# words, and it had been doing so since the rule was written.
 _PAIRED_DROP = re.compile(
     r"\[\[(module|code|iframe|mediahosting|footnoteblock|html)\b[^\]]*\]\]"
-    r".*?\[\[/\1\]\]",
+    r"(?:(?!\[\[\1\b).)*?"
+    r"\[\[/\1\]\]",
     re.S | re.I,
 )
 # Single-tag machinery with no closing partner.
@@ -85,6 +91,22 @@ _EMPH = [
     (re.compile(r"--(?!-)(.+?)--"), r"\1"),
     (re.compile(r"\{\{(.+?)\}\}", re.S), r"\1"),
 ]
+# Wikidot literal spans: @@text@@ renders text verbatim, and the empty @@@@ is
+# used as a spacer. Both are markup and neither is prose.
+_LITERAL = re.compile(r"@@(.*?)@@", re.S)
+# Inline colour: ##red|text## and ##FF0000|text##. Keep the text, drop the hue.
+_COLOUR = re.compile(r"##[#0-9a-z]+\|(.*?)##", re.I | re.S)
+# A wikidot table row. `||~ h ||~ h||` is a header row, `|| a || b ||` a body
+# row. Tables are data, not prose — the block is classified `meta` and never
+# reaches the harvester, rather than being flattened into a sentence.
+_TABLE_LINE = re.compile(r"^\s*\|\|")
+# Heading markers anywhere in a block, not just on its first line: a run of
+# consecutive headings collapses into one chunk, and only the first was being
+# caught.
+_HEADING_LINE = re.compile(r"^\s*(?:\++|=)\s+(?=\S)", re.M)
+# Two headings joined onto one line: "... subject to + level 715/5 ...".
+_HEADING_INLINE = re.compile(r"\s\+{1,6}\s+(?=[A-Z])")
+
 # Redaction blocks are meaningful — keep them as a marker the scorer can see.
 _REDACT = re.compile(r"[█▓▒░]{2,}")
 
@@ -123,8 +145,19 @@ def _strip_markup(body: str) -> str:
     body = _INLINE_DIRECTIVE.sub("", body)
     # Any bracket left over is a strip artifact, not content.
     body = re.sub(r"(?<!\w)\]{1,3}|\[{1,3}(?!\w)", "", body)
+    # Literal and colour spans unwrap to their contents, before the emphasis
+    # pass so that **##red|x##** reduces cleanly.
+    for _ in range(3):
+        body, k = _LITERAL.subn(lambda m: m.group(1), body)
+        if not k:
+            break
+    body = _COLOUR.sub(lambda m: m.group(1), body)
     for pat, rep in _EMPH:
         body = pat.sub(rep, body)
+    # Unmatched emphasis: `marked on a map provided to us **.` — the opener
+    # never closed, so the paired rules above could not reach it.
+    body = re.sub(r"(?<!\*)\*\*(?!\*)", "", body)
+    body = re.sub(r"(?<![:/])//(?=[\s.,;)])", "", body)
     body = _REDACT.sub("[REDACTED]", body)
     return body
 
@@ -178,16 +211,39 @@ def parse(path: str | Path, source_prefix: str = "scp") -> Doc:
         if not joined:
             continue
 
+        # A table is data. Classified as meta so `Doc.prose()` skips it —
+        # flattening `||1200 hrs EST||2/22/2019||` into a paragraph produced
+        # passages that were rows of a dilation log.
+        if any(_TABLE_LINE.match(ln) for ln in lines):
+            kept = [ln for ln in lines if not _TABLE_LINE.match(ln)]
+            if kept:
+                doc.blocks.append(Block(clean_text("\n".join(kept)), kind="prose"))
+            doc.blocks.append(Block("", kind="meta"))
+            continue
+
         first = lines[0].strip()
         hm = _HEADING.match(first)
         if hm and len(lines) == 1:
             doc.blocks.append(Block(clean_text(hm.group(2)), kind="heading"))
+            continue
+        # Several headings in a row land in one chunk. Strip the markers and
+        # treat the whole run as headings rather than as a paragraph.
+        if all(_HEADING.match(ln.strip()) for ln in lines):
+            for ln in lines:
+                doc.blocks.append(
+                    Block(clean_text(_HEADING_LINE.sub("", ln)), kind="heading"))
             continue
 
         if _LIST.match(first):
             joined = "\n".join(_LIST.sub("", ln) for ln in lines)
             doc.blocks.append(Block(clean_text(joined), kind="list"))
             continue
+
+        # A heading can open a block whose remaining lines are prose, and a
+        # heading marker can appear mid-line where two headings were joined.
+        # Neither reaches the block-level rules above.
+        joined = _HEADING_LINE.sub("", joined)
+        joined = _HEADING_INLINE.sub(" ", joined)
 
         kind = "quote" if quote else "prose"
         # Collapse intra-paragraph newlines: wikidot paragraphs are single
