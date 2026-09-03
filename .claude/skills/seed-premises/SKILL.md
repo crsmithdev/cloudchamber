@@ -27,7 +27,7 @@ From the repo root:
 node -e "const fs=require('fs');const t=fs.readFileSync('playbook.md','utf8');const m=[...new Set(t.match(/\*\*M\d+\b/g)||[])].map(s=>s.slice(2));for(let i=m.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[m[i],m[j]]=[m[j],m[i]];}console.log(m.slice(0,3).join(', '));"
 ```
 
-Then draw at least one of the four §1.1 pulls the same way — a theme, a dread mechanism, an artifact, or a setting element picked at random rather than chosen. The setting element is a number into the setting file's §3; the artifact comes from its §4 or playbook §4.2.
+Then draw at least one of the four §1.1 pulls the same way — a theme, a dread mechanism, an artifact, or a setting element picked at random rather than chosen. The setting element is a number into the setting file's §3; the artifact comes from its §4.
 
 Then the seed:
 
