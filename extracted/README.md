@@ -11,7 +11,7 @@ Target: six to ten passages. More is not better — the set has to fit in front 
 ## What does not go here
 
 - **Anything a model wrote.** Model-generated examples regress to exactly the mean this file exists to escape, and the failure is invisible on inspection. This is the one absolute rule.
-- **Anything from `craft.md`, `catalogue.md`, playbook §2, or the `research/` annexes.** Those are criticism and taxonomy. Conditioning on them produces more criticism and taxonomy.
+- **Anything from `craft.md`, `catalogue.md`, or the `research/` annexes.** Those are criticism and taxonomy. Conditioning on them produces more criticism and taxonomy.
 - **Synopses.** A synopsis of a story in the register is not a passage in the register.
 
 ## Where to harvest from
@@ -73,7 +73,7 @@ them, so nothing was lost.
 ## Themes
 
 `themes.jsonl` is the other bank. A theme is one sentence carrying a mechanism
-and a turn, in the grain of playbook §2 — 9–44 words, no proper nouns, no
+and a turn, in the grain of `pipeline/grain.md` — 9–44 words, no proper nouns, no
 designations, self-contained. `pipeline themes --audit` checks the bank
 against §2; `pipeline/README.md` has the rules.
 

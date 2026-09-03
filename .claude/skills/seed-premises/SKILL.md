@@ -7,13 +7,13 @@ description: Generate Fog Belt premises by drawing constraints outside the model
 
 The default failure here is not a bad premise. It is a competent one — the premise most writers would reach for given the constraints, delivered fluently. This procedure exists to keep the generator off the centre of its own distribution. The evidence behind every step is in `research/generation.md`.
 
-Read `CLAUDE.md` and playbook §0–§1 first. Those say what a Fog Belt premise is. This says how to sample for one. Do not let this replace §1 — it wraps a call around it.
+Read `CLAUDE.md` and `series.md` first. Those say what a Fog Belt premise is. This says how to sample for one, and it is now the whole workflow: the playbook that held it was retired on 2026-09-03.
 
 ## Every run is under a setting
 
 A setting is the fourth thing a premise pulls from and the thing it is checked against. `sources.toml` declares them; `sources/settings/<id>.md` is one file per setting with nine fixed sections (`sources/settings/README.md`). The default is `setting-a`, whose canon is the real world. `/seed-premises setting-b`, or a request that names a setting, picks another.
 
-**Step 0: read `sources/settings/<id>.md` in full**, before drawing anything. Under a lore setting the setting's metaphysics is the one impossibility and nothing else is suspended; §1 of the file says what that purchase is, §2 says how playbook §0 reads there, and §5–§8 are what the cull checks against.
+**Step 0: read `sources/settings/<id>.md` in full**, before drawing anything. Under a lore setting the setting's metaphysics is the one impossibility and nothing else is suspended; §1 of the file says what that purchase is, §2 says how `series.md` reads there, and §5–§8 are what the cull checks against.
 
 ## Order of operations
 
@@ -23,9 +23,10 @@ The order is load-bearing. Do not reorder it, and do not skip step 1 because you
 
 From the repo root:
 
-```
-node -e "const fs=require('fs');const t=fs.readFileSync('playbook.md','utf8');const m=[...new Set(t.match(/\*\*M\d+\b/g)||[])].map(s=>s.slice(2));for(let i=m.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[m[i],m[j]]=[m[j],m[i]];}console.log(m.slice(0,3).join(', '));"
-```
+*(The numbered-move draw that stood here read `playbook.md` for its `M<n>`
+markers. Those lived in the dread-mechanism and telling-it banks, which were
+retired on 2026-09-03, so the draw is gone rather than broken. The three pulls
+below are what remains, and they are still drawn rather than chosen.)*
 
 Then draw at least one of the four §1.1 pulls the same way — a theme, a dread mechanism, an artifact, or a setting element picked at random rather than chosen. The setting element is a number into the setting file's §3; the artifact comes from its §4.
 
@@ -47,7 +48,7 @@ Read `extracted/examples.md` in full and hold it. It is written by `python -m pi
 
 If that file does not exist yet, say so and continue, but expect register drift — the resolution pull is structural and instructions are the weakest instrument against it.
 
-**Never write examples yourself, and never let model-written prose into that file.** It regresses to exactly the mean this procedure exists to escape, and the failure is invisible on inspection. Do not substitute `craft.md`, `catalogue.md`, playbook §2 or a lore file — those are criticism, taxonomy and reference, and conditioning on them produces more of the same.
+**Never write examples yourself, and never let model-written prose into that file.** It regresses to exactly the mean this procedure exists to escape, and the failure is invisible on inspection. Do not substitute `craft.md`, `catalogue.md` or a setting file — those are criticism, taxonomy and reference, and conditioning on them produces more of the same.
 
 ### 3. Check differentiation first, not last
 
@@ -79,7 +80,7 @@ The batch is the working set, not the pitch. Chris sees one paragraph at a time 
 - Drop anything that fails the angle test: five readers should get five different stories out of it, and it must not be *directly about* its idea. A premise that is an essay in disguise is dead.
 - Drop anything the differentiation pass flags.
 - **Run the canon check** against lore §5–§8. Class every load-bearing element: documented, thin, absent, or open ground. Absent kills. Thin kills unless the element stays off the page. Invention resting on invention kills — one invented element supporting another is how five setting-b pitches were lost. A second marvel on top of the setting's kills. Where canon is silent, the premise has the narrator believe something rather than the story assert it. Under the setting-a this is the fact-check the slate already does: a real mechanism has a citation in `research/setting-a.md` or is marked for one.
-- Run the remainder through playbook §1.3 — one impossibility, an engine, and a turn on something that works. A premise with no engine is a setting.
+- Run the remainder through the one-impossibility test in `series.md` — one impossibility, an engine, and a turn on something that works. A premise with no engine is a setting.
 - On the last two or three, write 400 words of the strongest. That is the only test shown to discriminate: the novelty advantage of a generated premise lives entirely in the un-executed abstract and inverts once written.
 
 Then pitch the survivor. One paragraph. Do not stack alternatives, do not name the craft moves behind it, do not pre-defend it. A taken premise lands in `stories/` for the setting-a and `stories/<id>/` for any other setting, in the form the README describes, with the setting and the canon class of each load-bearing element in its Notes.

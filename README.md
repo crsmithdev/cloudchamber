@@ -10,7 +10,7 @@ and what it has made (`stories/`). Plus the code and the two standing documents.
 
 ```
 CLAUDE.md                    standing instructions for a Claude session here
-playbook.md                  the generative half. 0 is what the series is;
+series.md                    what every story has in common. The register
                              1 is the ideation workflow; 2-5 are the banks it
                              pulls from (themes, dread mechanisms, artifacts,
                              setting-a elements); 6 is how a story gets told.
@@ -20,7 +20,7 @@ catalogue.md                 the other half -- describes rather than generates.
                              recurring shapes, the anti-patterns, the thirteen
                              lenses and the source lookup. Per-story findings
                              live at the end of each story file.
-seeding-v7.md                generation, upstream of the playbook. Six engines,
+seeding-v7.md                generation, upstream of the seeding skill. Six engines,
                              universal moves 3-8, an inversion rule for minting
                              engines, a repair table. Supersedes seeding v1-v6
 sources.toml                 what the pipeline reads and what it takes from
@@ -45,7 +45,7 @@ sources/                     material the project reads. See sources/README.md
   queue/scp-candidates.md    63 triaged articles not yet held
 
 research/                    what the project has concluded. See its README
-  craft.md generation.md     the evidence behind playbook 1/6 and behind the
+  craft.md generation.md     the evidence behind the seeding method and behind the
                              shape of a generation call
   register.md setting-a.md    the genre terms 0 stands on; the specifics behind 5
   literature.md              academic work on horror. Read for themes, never
@@ -69,11 +69,11 @@ pipeline/                    the seeding machinery. Two extractions: verbatim
   seed-premises/SKILL.md     how a generation call is shaped: draw the
                              constraints outside the model, condition on
                              examples, ask for a distribution rather than a
-                             list, cull before pitching. Wraps playbook 1
+                             list, cull before pitching. Carries the whole
                              rather than replacing it
 ```
 
-Source tags in `playbook.md` and `catalogue.md` resolve to full text wherever
+Source tags in `catalogue.md` resolve to full text wherever
 full text exists. `[C]` Chiang and `[W]` Watts are the books in
 `sources/texts/books/`; `[S]` is `sources/texts/scp/`. `[setting-c]`, `[TC]`, `[E]`
 and `[J]` are `sources/summaries/`, where the distillate is the source of
@@ -94,7 +94,7 @@ sections after them:
   decisions owed.
 - **Red-team, 2026-08-28** -- an adversarial council's finding list. Read the
   section's preamble first; it says which findings are verdicts and which are
-  only conformance to a playbook that no longer grades.
+  only conformance to a method that no longer grades.
 - **Slate review and fact check, 2026-08-29** -- expert corrections, collision
   rulings, what only this story has, and changes proposed.
 

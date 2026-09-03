@@ -6,11 +6,11 @@ A horror anthology. This repo is the source of truth.
 
 ## Read first
 
-**`playbook.md`** before pitching or developing. It generates; nothing in it evaluates, and its header carries the register.
+**`series.md`** before pitching or developing — what every story has in common, and the register the rest is checked against. The playbook that used to hold it was retired on 2026-09-03; its banks are `sources/settings/<id>.md` and `extracted/themes.jsonl`, and its workflow is the `seed-premises` skill.
 
 **`catalogue.md`** before reviewing. It describes what has been written and holds the instruments for reading a premise back.
 
-**`seeding-v7.md`** when the job is to produce candidates rather than triage them. It sits upstream of the playbook and hands off at §2.
+**`seeding-v7.md`** when the job is to produce candidates rather than triage them. It sits upstream of the seeding skill.
 
 **`sources/settings/<setting>.md`** before seeding, whole. Every run is under a setting — `setting-a` unless one is named — and the file is the bank the setting pull comes from and the canon the cull checks against. `sources/settings/README.md` says what its nine sections do.
 

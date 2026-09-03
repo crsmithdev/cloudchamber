@@ -8,7 +8,7 @@ sources in `sources/texts/`. They condition *how a story reads*. They feed
 
 **Themes** are abstractions — one sentence carrying a mechanism and a turn.
 They condition *what gets made*. They feed `extracted/themes.jsonl`. The shape
-is playbook §2's, measured: see **Themes** below.
+is the retired playbook bank's, measured before it went: see **Themes** below.
 
 A source declares which of the two it feeds. Not every source feeds both: the
 academic literature yields themes only, and the settings (setting-c,
@@ -22,7 +22,7 @@ python -m pipeline harvest              # sources -> passage candidates
 python -m pipeline facets               # score the pool on Biber D1-D6
 python -m pipeline themes --brief scp   # a drafting brief for a session
 python -m pipeline themes --ingest f.json --source scp   # validate and bank
-python -m pipeline themes --audit       # grain, against playbook §2
+python -m pipeline themes --audit       # grain, against pipeline/grain.md
 python -m pipeline serve                # the cull in a browser: the funnel
 python -m pipeline review --triage      # or in the terminal: 40 words, k / p / x
 python -m pipeline review --compare     # five at a time, pick the best
@@ -61,7 +61,7 @@ python -m pipeline themes --ingest themes.json --source scp
 python -m pipeline themes --audit
 ```
 
-**The grain is measured, not asserted.** `GRAIN` in `themes.py` is playbook
+**The grain is measured, not asserted.** `GRAIN` in `themes.py` is the retired
 §2 — 376 bullets, the only seed format in this project with evidence behind it
 — and `--audit` compares the bank against it on the same six numbers.
 
@@ -82,7 +82,7 @@ Validation is split, because §2 is not uniform:
 Those three are distributional. A per-row rule for them would be tighter than
 the evidence, and would reject a third of the bank that produced the slate.
 
-The calibration test both ways: **playbook §2 passes its own validator at 98%,
+The calibration test both ways: **the reference passes its own validator at 98%,
 the 432 mined rows it replaced passed at 20%** — 226 carried a proper noun and
 224 a designation, welding them to the article they came from.
 
@@ -100,7 +100,7 @@ normalisation  how the setting makes it ordinary
 
 Answer those, then compress to one sentence that implies all four without
 listing them. A labelled record was tried and rejected: it has nowhere to put
-the turn, and two records will not combine the way playbook §1.1 needs two
+the turn, and two records will not combine the way the ideation step needs two
 entries to.
 
 ## Why the trail matters
