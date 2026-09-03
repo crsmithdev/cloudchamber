@@ -45,7 +45,8 @@ _FOOTNOTE = re.compile(r"\[\[footnote\]\].*?\[\[/footnote\]\]", re.S | re.I)
 # deleting their bodies deletes the story. Learned the hard way — an earlier
 # version of this took eleven articles to zero words.
 _PAIRED_DROP = re.compile(
-    r"\[\[(module|code|iframe|mediahosting|footnoteblock)\b[^\]]*\]\].*?\[\[/\1\]\]",
+    r"\[\[(module|code|iframe|mediahosting|footnoteblock|html)\b[^\]]*\]\]"
+    r".*?\[\[/\1\]\]",
     re.S | re.I,
 )
 # Single-tag machinery with no closing partner.

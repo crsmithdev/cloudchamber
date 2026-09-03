@@ -34,14 +34,16 @@ import textwrap
 from pathlib import Path
 
 from .bank import THEME_DECISIONS, THEMES, Bank
-from .biber import CELLS, cell
+from .biber import CELLS, cell, matches
 
 WRAP = 96
 RULE = "─" * WRAP
 TRIAGE_WORDS = 40
 COMPARE_WORDS = 60
-ORDERS = ("score", "random", "source", "cluster", "d1", "d1-desc", "d2",
-          "d2-desc")
+ORDERS = tuple(
+    ["score", "random", "source", "cluster"]
+    + [f"d{i}{suffix}" for i in range(1, 7) for suffix in ("", "-desc")]
+)
 
 
 # --- shared ---------------------------------------------------------------
@@ -55,11 +57,19 @@ def _head(p: dict) -> str:
 
 
 def _meta(p: dict) -> str:
+    from .biber import ALL_DIMENSIONS, LABELS
+
     f = p.get("facets") or {}
-    facet = (
-        f"{cell(f)}  d1 {f.get('d1', 0):+.2f}  d2 {f.get('d2', 0):+.2f}"
-        if f else "(no facets — run `pipeline facets`)"
-    )
+    if f:
+        scores = "  ".join(f"{d} {f[d]:+.2f}" for d in ALL_DIMENSIONS if d in f)
+        # The two off-grid labels worth seeing at review time; the rest are in
+        # the numbers.
+        extra = "  ".join(
+            f[LABELS[d][0]] for d in ("d4", "d5") if LABELS[d][0] in f
+        )
+        facet = f"{cell(f)}  {extra}\n{scores}" if extra else f"{cell(f)}\n{scores}"
+    else:
+        facet = "(no facets — run `pipeline facets`)"
     flag = "  [withheld]" if p.get("withheld") else ""
     return (
         f"score {p.get('score', 0):.3f}   {p.get('words', 0)}w   "
@@ -86,12 +96,7 @@ def _queue(bank: Bank, facet: str | None, order: str, limit: int,
     queue = [p for pid, p in pool.items() if pid not in done]
 
     if facet:
-        queue = [
-            p for p in queue
-            if facet in (cell(p.get("facets")),
-                         (p.get("facets") or {}).get("voice"),
-                         (p.get("facets") or {}).get("mode"))
-        ]
+        queue = [p for p in queue if matches(p.get("facets"), facet)]
     if withheld:
         queue = [p for p in queue if p.get("withheld")]
     queue = [p for p in queue if p.get("score", 0) >= min_score]
@@ -109,7 +114,7 @@ def _queue(bank: Bank, facet: str | None, order: str, limit: int,
         rank = {c: i for i, c in enumerate(CELLS)}
         queue.sort(key=lambda p: (rank.get(cell(p.get("facets")), len(CELLS)),
                                   -p.get("score", 0)))
-    elif order.removesuffix("-desc") in ("d1", "d2"):
+    elif order.removesuffix("-desc").startswith("d"):
         key = order.removesuffix("-desc")
         queue.sort(key=lambda p: (p.get("facets") or {}).get(key, 0.0),
                    reverse=order.endswith("-desc"))

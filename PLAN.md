@@ -8,7 +8,10 @@
 
 ## Done
 
-**Part 1 — the six failure tags are gone, replaced by Biber D1/D2.**
+**Part 1 — the six failure tags are gone, replaced by Biber's dimensions.**
+All six are scored as of 2026-09-03, on the reasoning that the corpus is about
+to stop being SCP-only; `research/tagging.md` carries why that overruled its
+own recommendation 2. Only D1 and D2 bucket the pool.
 `pipeline/biber.py` (two backends, `biberplus` or a local fallback),
 `pipeline facets` (fit, persist, score, report, `--extremes`), `signals.py`
 stripped of `tag_scores`/`tags`/`THRESHOLD` and the six lexicons,
@@ -24,8 +27,13 @@ a standalone boolean flag.
 a keep rate per block of 50.
 
 Verified end to end on the 947-passage SCP pool: `python -m pipeline.selftest`
-passes under both backends, all 9 cells fill, and the extremes read as their
-labels claim.
+passes under both backends, all 9 cells fill, and all twelve dimension
+extremes read as their labels claim.
+
+**`biberplus` is installed** into `~/.local/lib/python3.12/site-packages` and
+is the live backend for a bare `python3 -m pipeline`. The spaCy model had to
+be installed from its wheel URL — `python -m spacy download` shells out to pip
+without `--break-system-packages` and fails on this PEP 668 system.
 
 ## Still to do
 
@@ -53,6 +61,9 @@ Never done. Only SCP has ever been harvested, and every number in
 - `pdftotext` (poppler) or `pdfplumber` must be installed. Neither is on this
   machine, so `read_pdf.py` cannot run here at all and the selftest reports
   the PDF adapter as skipped.
+- **Re-read the D3-D6 table in `pipeline/README.md` afterwards.** Those four
+  dimensions were added *for* this harvest. Their numbers there describe 947
+  containment documents and are not evidence about fiction.
 - **Refit afterwards.** `pipeline facets --refit --extremes 5`. The pool grows
   several-fold and a baseline fitted on documents does not describe fiction.
   `facets` warns when the pool has drifted more than 20% from the fitted `n`,
@@ -70,12 +81,15 @@ turn out not to happen. Not started.
 
 ## Environment gotchas that will waste time otherwise
 
-- **`biberplus` is not installed by default anywhere here.** The adapter falls
-  back silently and says which backend is live on every `facets` run. Over the
-  SCP pool the two agree at r = 0.97 on D1 and r = 0.76 on D2 — the local D1
-  is effectively the same measurement, the local D2 is rougher. **The two are
-  not interchangeable within one corpus**: `facet-stats.json` records the
-  backend and `facets` refits rather than mixing them.
+- **`biberplus` is installed here but will not be everywhere.** The adapter
+  falls back and says which backend is live on every `facets` run. Over the
+  SCP pool the two agree at r = 0.96 on D1 down to r = 0.68 on D5; the table
+  is in `pipeline/README.md`. **The two are not interchangeable within one
+  corpus**: `facet-stats.json` records the backend and `facets` refits rather
+  than mixing them.
+- **An import is not proof biberplus works.** It installs cleanly without its
+  spaCy model and then raises on the first passage. `biber.probe()` runs one
+  and downgrades once, loudly.
 - **`biberplus` 0.4.0's `calculate_tag_frequencies` is broken under numpy 2**
   (`np.array_split` over a DataFrame returns bare arrays; the function
   swallows the error and returns `None`). `biber.py` counts the per-token tags

@@ -18,7 +18,7 @@ from source fiction at all.
 
 ```bash
 python -m pipeline harvest              # sources -> passage candidates
-python -m pipeline facets               # score the pool on Biber D1/D2
+python -m pipeline facets               # score the pool on Biber D1-D6
 python -m pipeline themes               # sources -> theme candidates
 python -m pipeline review --triage      # fast pass: 40 words, k / p / x
 python -m pipeline review --compare     # five at a time, pick the best
@@ -77,34 +77,106 @@ be making the taste call, which is the one call it must not make.
 
 ## Facets
 
-`biber.py` scores every passage on two of Biber's (1988) dimensions — the
-established empirical framework for describing how a text reads, and the two
-that demonstrably reproduce in this corpus. `research/tagging.md` has the
-citations and the evidence.
+`biber.py` scores every passage on all six of Biber's (1988) dimensions — the
+established empirical framework for describing how a text reads.
+`research/tagging.md` has the citations.
 
-| dimension | negative pole | positive pole |
-| :-- | :-- | :-- |
-| **D1** `voice` | `informational` — nouns, prepositions, nominalisation, long words | `involved` — private verbs, contractions, 1st/2nd person, present tense |
-| **D2** `mode` | `non-narrative` | `narrative` — past tense, 3rd person, perfect aspect, public verbs |
+| | dimension | negative pole | positive pole |
+| :-- | :-- | :-- | :-- |
+| **D1** | `voice` | `informational` — nouns, prepositions, nominalisation, long words | `involved` — private verbs, contractions, 1st/2nd person, present tense |
+| **D2** | `mode` | `non-narrative` — present tense, attributive adjectives | `narrative` — past tense, 3rd person, perfect aspect, public verbs |
+| **D3** | `reference` | `situated` — time and place adverbials, general adverbs | `elaborated` — WH relatives, pied-piping, phrasal coordination, nominalisation |
+| **D4** | `persuasion` | *(none)* | `persuasive` — infinitives, prediction and necessity modals, suasive verbs, conditionals, split auxiliaries |
+| **D5** | `abstraction` | *(none)* | `abstract` — conjuncts, agentless and by-passives, participial clauses, adverbial subordinators |
+| **D6** | `elaboration` | *(none)* | `elaborated` — that-complements of verbs and adjectives, that-relatives, demonstratives |
 
-Terciles on each give a 9-cell `voice/mode` grid. `pipeline stats` breaks the
-kept set down by cell, and `pipeline draw --coverage` takes one from each cell
-before any cell gets a second — which is clustering retrieval, the standard
-diversity method for in-context demonstrations.
+D4, D5 and D6 have no negative pole in Biber's solution: the score says how
+much of the thing is present, not which of two ways of writing this is. Their
+low-tercile labels (`unpersuasive`, `non-abstract`, `unelaborated`) name an
+absence, not an opposite.
 
-D3–D6 are deliberately not implemented. Biber derived them to separate
-conversation from academic prose, a far wider spread than this corpus has, and
-there is no evidence they discriminate here.
+A feature may load on more than one dimension — that is Biber's solution, not
+a bug. Nominalisations are D1-negative and D3-positive; attributive adjectives
+are negative on both D1 and D2; present tense is D1-positive and D2-negative.
+It is also why D1 and D3 correlate here at -0.53: they share a feature by
+construction.
 
-**Two backends.** `biberplus` if it imports, else a dependency-free local
-fallback of closed word lists and regexes. Over the 948-passage SCP pool the
-two correlate at **r = 0.97 on D1** and **r = 0.76 on D2** — the local D1 is
-effectively the same measurement, the local D2 noticeably rougher, because
-past-tense detection without a part-of-speech tagger is a suffix rule and a
-list of irregulars. The two are *not* interchangeable within one corpus:
+**Only D1 and D2 bucket the pool.** Terciles on those two give the 9-cell
+`voice/mode` grid that `pipeline stats` and `draw --coverage` use. Bucketing on
+all six would be 3^6 = 729 cells over a few thousand passages, which is not
+coverage, it is a histogram of singletons. The other four are scored, stored
+and filterable, and they are what Part 3 tests against real verdicts.
+
+### Do they earn their place?
+
+Over 947 SCP passages, scored with biberplus. `pipeline facets` prints this.
+
+| dimension | range | skew | closest other |
+| :-- | :-- | :-- | :-- |
+| `voice` | -1.67 .. +4.14 | +1.24 | `reference` -0.53 |
+| `mode` | -2.19 .. +4.00 | +0.70 | `abstraction` -0.09 |
+| `reference` | -3.12 .. +2.98 | -0.08 | `voice` -0.53 |
+| `persuasion` | -1.86 .. +4.30 | +0.75 | `voice` +0.24 |
+| `abstraction` | -2.02 .. +3.78 | +0.42 | `voice` -0.49 |
+| `elaboration` | -1.11 .. +4.35 | +1.36 | `persuasion` +0.20 |
+
+Nothing is redundant: the largest correlation between any two dimensions is
+0.53, so the most overlapping pair still shares only a quarter of its
+variance. D2, D4 and D6 are near-orthogonal to everything. This is a corpus of
+containment documents, though — the point of D3-D6 is the anthology PDFs,
+which are several times larger and are fiction. Re-read this table after that
+harvest.
+
+### Filtering
+
+`--facet` takes a whole cell, a `dimension=label` pair, or a bare label where
+it is unambiguous. `pipeline review --facet '?'` lists them.
+
+```bash
+pipeline review --facet involved/narrative     # a grid cell
+pipeline review --facet abstraction=abstract   # any dimension
+pipeline review --facet elaborated             # ambiguous: D3 and D6 both
+```
+
+The last one is an error, not an empty queue — `elaborated` is a label on both
+`reference` and `elaboration`, and the command says so and names the fix.
+
+### Backends
+
+`biberplus` if it imports **and its spaCy model loads**, else a dependency-free
+local fallback. An import is not proof: biberplus installs cleanly without the
+model and then raises on the first passage, so `biber.probe()` runs one and
+downgrades once, loudly, rather than per-passage.
+
+```bash
+pip install --user --break-system-packages biberplus
+pip install --user --break-system-packages \
+  https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
+```
+
+The second line is deliberate: `python -m spacy download` shells out to pip
+without `--break-system-packages` and fails on a PEP 668 system.
+
+The fallback reaches all six dimensions — 47 of the 51 features are lexical
+enough to fake — but it is missing `nouns`, `phrasal_coordination`,
+`wz_past_participial` and `that_relative_obj` entirely, and several of the
+rest are regex proxies. Agreement over the same 947 passages:
+
+| dimension | r | tercile agreement | local feature coverage |
+| :-- | --: | --: | --: |
+| `voice` | 0.96 | 82% | 96% |
+| `mode` | 0.80 | 66% | 100% |
+| `reference` | 0.76 | 63% | 86% |
+| `persuasion` | 0.83 | 69% | 100% |
+| `abstraction` | 0.68 | 60% | 83% |
+| `elaboration` | 0.78 | 69% | 75% |
+
+D1 is effectively the same measurement either way. D5 is the worst, because
+detecting a passive without a parse is a regex over BE plus a participle list.
+**Use biberplus.** The two are not interchangeable within one corpus —
 standardisation is corpus-relative, so switching backends means
-`pipeline facets --refit`. `extracted/facet-stats.json` records which one
-fitted it and the command refuses to mix them.
+`pipeline facets --refit`; `facet-stats.json` records which one fitted it and
+the command refuses to mix them.
 
 **One tag survives, and it is not a tag.** `withheld` is a boolean flag for
 redaction and elision — a surface fact about the text, cheaply detectable,
@@ -125,7 +197,7 @@ changed the order and not the contents.
 
 ## Culling is the constraint
 
-948 passages at 30–60s of careful reading each is 8–15 hours, and the pool
+947 passages at 30–60s of careful reading each is 8–15 hours, and the pool
 grows several-fold once the PDFs are harvested. The interface is the
 bottleneck, not the taxonomy. Hence:
 
@@ -134,7 +206,7 @@ bottleneck, not the taxonomy. Hence:
   `x` expands; a verdict after expanding is recorded as a full read, not a
   triage call. Run it over everything, then a careful pass over survivors.
 - **`--compare`** shows five at a time. Forced choice, ties permitted and
-  encouraged, no numeric scales. ~190 screens instead of 948, and it yields
+  encouraged, no numeric scales. ~190 screens instead of 947, and it yields
   ranking data rather than a binary.
 - **`--order cluster`** keeps consecutive screens inside one facet cell, so
   calibration holds instead of every screen being a register switch.
@@ -150,14 +222,17 @@ enough — not when the queue is empty.
 
 `signals.py` is lexical and structural; `biber.py` is grammatical. No model
 reads anything and no network call is made. Each number is named and
-inspectable, which is why the last eyeball of the D1 extremes found raw CSS at
-the top and two SCP stripper bugs behind it. **Always check the extremes:**
+inspectable, which is how every stripper bug so far has been found: two behind
+raw CSS at the top of D1, and a third behind raw CSS at the bottom of D5 — an
+`[[html]]` block, an embedded iframe document, that no rule was dropping.
+**Always check the extremes**, and there are twelve of them now, not four:
 `pipeline facets --extremes 5`.
 
 The costs, named:
 
-- **The local backend's D2 is the weak one.** r = 0.76 against biberplus,
-  62% tercile agreement. Where D2 matters, install `biberplus` and refit.
+- **The local backend's D5 is the weak one.** r = 0.68 against biberplus, 60%
+  tercile agreement, because a passive without a parse is a regex. Install
+  `biberplus` and refit.
 - **`register_score` is still hand-set constants.** Nothing in it is fitted to
   anything. `PLAN.md` Part 3 is where that gets tested against real verdicts.
 - **Local theme extraction is the weakest component overall.** It matches the

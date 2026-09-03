@@ -4,7 +4,7 @@
 
 ## What goes here
 
-Passages of **prose in the target register**, 150–400 words each, verbatim, with nothing but a source line and a facet. No analysis, no framing, no explanation of what the passage demonstrates. They are loaded before a generation call and work by conditioning; a description of an effect conditions for more descriptions.
+Passages of **prose in the target register**, 150–400 words each, verbatim, with nothing but a source line and its facets. No analysis, no framing, no explanation of what the passage demonstrates. They are loaded before a generation call and work by conditioning; a description of an effect conditions for more descriptions.
 
 Target: six to ten passages. More is not better — the set has to fit in front of every call.
 
@@ -24,24 +24,38 @@ In descending order of quality:
 
 ## Facets
 
-Each passage carries two facets, so the set can be checked for coverage rather
+Each passage carries six facets, so the set can be checked for coverage rather
 than accumulating along one axis. They are not asserted; they are fitted to
-the corpus by `python -m pipeline facets`, which scores every passage on two of
+the corpus by `python -m pipeline facets`, which scores every passage on
 Biber's (1988) dimensions. See `pipeline/README.md` for the mechanics and
 `research/tagging.md` for the evidence.
 
-- **voice** — `informational` | `mixed` | `involved`. Biber's D1. The
-  informational pole is nouns, prepositions, nominalisation and long words:
-  containment procedures, postmortem summaries, timelines. The involved pole
-  is private verbs, contractions and first and second person: interviews,
-  transcripts, letters.
-- **mode** — `non-narrative` | `mixed` | `narrative`. Biber's D2. The
-  narrative pole is past tense, third person and perfect aspect. Live present-
-  tense dialogue sits at the non-narrative pole, which is correct and worth
-  knowing before it looks like a bug.
+- **voice** — `informational` | `mixed` | `involved`. The informational pole
+  is nouns, prepositions, nominalisation and long words: containment
+  procedures, postmortem summaries, timelines. The involved pole is private
+  verbs, contractions and first and second person: interviews, transcripts,
+  letters.
+- **mode** — `non-narrative` | `mixed` | `narrative`. The narrative pole is
+  past tense, third person and perfect aspect. Live present-tense dialogue
+  sits at the non-narrative pole, which is correct and worth knowing before it
+  looks like a bug.
+- **reference** — `situated` | `mixed` | `elaborated`. Whether the prose
+  points at the situation (here, then, away) or builds its referents in the
+  text (relative clauses, nominalisation).
+- **persuasion** — `unpersuasive` | `moderate` | `persuasive`. Modals,
+  infinitives and suasive verbs: the grammar of ordering and requiring.
+- **abstraction** — `non-abstract` | `mixed` | `abstract`. Passives and
+  conjuncts — process without an agent.
+- **elaboration** — `unelaborated` | `moderate` | `elaborated`. That-clauses
+  stacking qualification onto a claim as it is being made.
 
-Terciles on both give nine cells. `pipeline stats --target N` says which are
-short.
+The last three have no opposite pole. Their low labels name an absence, not a
+contrary.
+
+**Only voice and mode bucket the pool** — terciles on those two give nine
+cells, and `pipeline stats --target N` says which are short. The other four are
+scored and filterable but do not divide the bank, because six of them would
+give 729 cells.
 
 One flag rides alongside: **`withheld`**, for redaction and elision — a gap
 with a floor under it. It is a surface fact about the text, not a reading of

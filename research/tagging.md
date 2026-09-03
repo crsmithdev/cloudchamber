@@ -6,11 +6,22 @@ checked for coverage. Compiled 2026-09-03. The six failure tags then in
 `pipeline/signals.py` were coined in one session on 2026-09-02 and were
 grounded in nothing below; this document is the alternative.*
 
-*Adopted 2026-09-03. Recommendations 1, 2, 4 and 5 are implemented —
+*Adopted 2026-09-03. Recommendations 1, 4 and 5 are implemented —
 `pipeline/biber.py` and `pipeline facets`. Recommendation 3 (focalization) is
 not: the voice axis is D1's, and an LLM annotator has not earned a place next
 to it. Recommendation 6 (validate against `decisions.jsonl`) is waiting on
 verdicts to validate against.*
+
+***Recommendation 2 was overruled the same day.** It says to score D1 and D2
+only and "do not adopt D3-D6 without evidence they discriminate in this
+corpus". All six are now scored. The reasoning was that the corpus is about to
+stop being this corpus: everything below was fitted to 947 SCP containment
+documents, and the anthology PDFs are several times larger and are fiction. A
+dimension that fails to discriminate documents is not thereby shown to fail on
+fiction, and the cost of carrying four extra numbers until Part 3 tests them is
+four columns in a JSONL file. Measured on the SCP pool, none of the six is
+redundant — the largest correlation between any two is -0.53, between D1 and
+D3, which share the nominalisation feature by construction.*
 
 ---
 

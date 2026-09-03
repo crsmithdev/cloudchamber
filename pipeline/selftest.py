@@ -70,6 +70,16 @@ its label, with no stray brackets left behind.
 The screening continues. It continues each morning, indefinitely, and the
 personnel remain in operation as scheduled.
 
+[[html]]
+<style>
+.continue-button {
+    box-shadow: inset 0 0.3125rem 0 rgba(var(--light-gray-monochrome), 0);
+    transition: transform 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+</style>
+<div class="continue-button">Continue</div>
+[[/html]]
+
 [[footnoteblock]]
 [[include :scp-wiki:component:license-box]]
 =====
@@ -98,6 +108,12 @@ def main() -> int:
     check("include block removed", "info-ayers" not in text and "|lang=en" not in text)
     check("module removed", "[[module" not in text and "Rate]]" not in text)
     check("licensebox tail removed", "Filename:" not in text)
+    # An [[html]] block is an embedded iframe document, never narration. One
+    # was leaking a full stylesheet into the pool from scp-4485, found by
+    # reading the D5 extremes.
+    check("html block removed",
+          "box-shadow" not in text and "cubic-bezier" not in text
+          and "continue-button" not in text)
     check("triple link kept its label", "Site-81" in text)
     check("no stray brackets", not re.search(r"[\[\]]", text.replace("[REDACTED]", "")))
     check("prose survived", doc.word_count() > 150, f"{doc.word_count()} words")
@@ -171,6 +187,36 @@ def main() -> int:
           biber.facets(rows[0], stats)["voice"] == "involved"
           and biber.facets(rows[1], stats)["voice"] == "informational",
           f"{biber.facets(rows[0], stats)} / {biber.facets(rows[1], stats)}")
+    persuasive = (
+        "Personnel must be instructed to withdraw. If the interval closes, "
+        "the committee should require that the site be sealed, and we would "
+        "urge the director to recommend that they be told to leave."
+    )
+    abstract = (
+        "The specimen was subsequently transferred, and the enclosure was "
+        "sealed by the technicians. However, since the readings were "
+        "recorded, the sample has been withheld; therefore the assessment "
+        "was consequently deferred."
+    )
+    more = [biber.features(t) for t in (persuasive, abstract)]
+    stats2 = biber.fit(rows + more)
+    d4 = [biber.dimensions(r, stats2)["d4"] for r in (more[0], rows[1])]
+    d5 = [biber.dimensions(r, stats2)["d5"] for r in (more[1], rows[0])]
+    check("d4 separates persuasion from its absence", d4[0] > d4[1], str(d4))
+    check("d5 separates abstract from non-abstract", d5[0] > d5[1], str(d5))
+    check("all six dimensions are scored",
+          len(biber.scored_dimensions(stats2)) == 6,
+          str(biber.scored_dimensions(stats2)))
+    check("a facet record carries a label per dimension",
+          all(biber.LABELS[d][0] in biber.facets(more[0], stats2)
+              for d in biber.ALL_DIMENSIONS))
+    check("the coverage grid stays two-dimensional", len(biber.CELLS) == 9)
+    check("an ambiguous label is reported as such",
+          biber.ambiguous("moderate") == ["persuasion", "elaboration"]
+          and biber.ambiguous("abstract") == [])
+    check("dimension=label matches, bare ambiguous label does not",
+          biber.matches({"persuasion": "moderate"}, "persuasion=moderate")
+          and not biber.matches({"persuasion": "moderate"}, "moderate"))
     check("stats record the backend", stats["backend"] == biber.BACKEND)
     check("every cell is a known cell",
           biber.cell(biber.facets(rows[0], stats)) in biber.CELLS)

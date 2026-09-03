@@ -36,7 +36,7 @@ import time
 from pathlib import Path
 
 from .bank import THEME_DECISIONS, THEMES, Bank, _now
-from .biber import cell
+from .biber import cell, matches
 
 
 def _weighted(pool: list[dict], k: int, temperature: float, rng: random.Random) -> list[dict]:
@@ -91,8 +91,10 @@ def _by_coverage(pool: list[dict], k: int, temperature: float, rng: random.Rando
 
 # `-d1` would be the natural spelling for descending, but argparse reads a
 # leading dash as the start of the next option. Suffix instead.
-ORDERINGS = ("d1", "d1-desc", "d2", "d2-desc", "score", "score-desc",
-             "random", "picked")
+ORDERINGS = tuple(
+    [f"d{i}{suffix}" for i in range(1, 7) for suffix in ("", "-desc")]
+    + ["score", "score-desc", "random", "picked"]
+)
 
 
 def _ordered(rows: list[dict], order_by: str, rng: random.Random) -> list[dict]:
@@ -105,7 +107,7 @@ def _ordered(rows: list[dict], order_by: str, rng: random.Random) -> list[dict]:
         return out
     desc = order_by.endswith("-desc")
     key = order_by[:-5] if desc else order_by
-    if key in ("d1", "d2"):
+    if key.startswith("d") and key[1:].isdigit():
         def val(r):
             return (r.get("facets") or {}).get(key, 0.0)
     else:
@@ -135,9 +137,7 @@ def draw(
     if include_unlabelled:
         pool += bank.unlabelled()
     if facet:
-        pool = [p for p in pool
-                if facet in (cell(p.get("facets")), (p.get("facets") or {}).get("voice"),
-                             (p.get("facets") or {}).get("mode"))]
+        pool = [p for p in pool if matches(p.get("facets"), facet)]
 
     if not pool:
         raise SystemExit(
@@ -169,8 +169,8 @@ def draw(
         "exemplar_ids": [p["id"] for p in exemplars],
         "exemplar_order": [
             {"id": p["id"], "cell": cell(p.get("facets")),
-             "d1": (p.get("facets") or {}).get("d1"),
-             "d2": (p.get("facets") or {}).get("d2")}
+             **{d: v for d, v in (p.get("facets") or {}).items()
+                if d.startswith("d") and d[1:].isdigit()}}
             for p in exemplars
         ],
         "theme_ids": [t.get("id") for t in themes],

@@ -13,6 +13,7 @@ from . import review as review_mod
 from . import sample as sample_mod
 from . import themes as themes_mod
 from .bank import THEME_DECISIONS, THEMES, Bank
+from . import biber
 from .biber import CELLS
 
 
@@ -46,8 +47,10 @@ def main(argv=None):
     r.add_argument("--batch", type=int, default=5, help="screen size for --compare")
     r.add_argument("--per-screen", type=int, default=20,
                    help="screen size for --themes")
-    r.add_argument("--facet", help="a cell, a voice or a mode: "
-                                   f"{', '.join(CELLS[:3])}, involved, narrative, …")
+    r.add_argument("--facet", metavar="Q",
+                   help="a cell (involved/narrative), a dimension=label pair "
+                        "(persuasion=persuasive), or an unambiguous label "
+                        "(abstract). `--facet ?` lists them all.")
     r.add_argument("--withheld", action="store_true",
                    help="only passages carrying the withheld flag")
     r.add_argument("--order", choices=review_mod.ORDERS, default="score")
@@ -62,7 +65,8 @@ def main(argv=None):
     d.add_argument("--temperature", type=float, default=0.85)
     d.add_argument("--no-coverage", action="store_true")
     d.add_argument("--include-unlabelled", action="store_true")
-    d.add_argument("--facet")
+    d.add_argument("--facet", metavar="Q",
+                   help="same query language as `review --facet`")
     d.add_argument("--order-by", choices=sample_mod.ORDERINGS, default="d1",
                    help="render order of the drawn set (default: ascending d1)")
     d.add_argument("--seed", type=int)
@@ -93,6 +97,7 @@ def main(argv=None):
     elif a.cmd == "review":
         if a.triage and a.compare:
             sys.exit("--triage and --compare are different modes; pick one")
+        _check_facet(a.facet)
         if a.themes:
             review_mod.review_themes(root, out=out, per_screen=a.per_screen,
                                      limit=a.limit)
@@ -106,6 +111,7 @@ def main(argv=None):
         review_mod.export(root, out=out)
 
     elif a.cmd == "draw":
+        _check_facet(a.facet)
         packet = sample_mod.draw(
             root, out=out, n_exemplars=a.exemplars, n_themes=a.themes,
             temperature=a.temperature, coverage=not a.no_coverage,
@@ -149,6 +155,23 @@ def main(argv=None):
                     print(f"    short of {st['target_per_cell']}/cell: "
                           + ", ".join(f"{c} (-{n})"
                                       for c, n in st["cells_short"].items()))
+
+
+def _check_facet(query: str | None) -> None:
+    """Fail loudly on an unusable --facet rather than returning nothing."""
+    if not query:
+        return
+    if query == "?":
+        for dim in biber.ALL_DIMENSIONS:
+            name, labels = biber.LABELS[dim]
+            print(f"  {dim}  {name:<12s} {' | '.join(labels)}")
+        print(f"\n  cells: {biber.CELLS[0]} … ({len(biber.CELLS)} of them)")
+        print("  queries: a cell, dimension=label, or an unambiguous label")
+        sys.exit(0)
+    clash = biber.ambiguous(query)
+    if clash:
+        sys.exit(f"{query!r} is a label on more than one dimension "
+                 f"({', '.join(clash)}). Say which: {clash[0]}={query}")
 
 
 if __name__ == "__main__":
