@@ -12,6 +12,7 @@ own problem, or collected them as evidence for how the work should be done.
 | `literature.md` | academic work on what makes horror land. `sources.toml` reads this for themes and never for passages: criticism conditions for criticism |
 | `corpus.md` | award-attested horror free to read online, with the licensing map. Held as a standard to read *against* — deliberately not in `sources/`, and never harvested |
 | `tagging.md` | established practice for classifying passages -- Biber's multi-dimensional analysis and its tooling, Genette focalization, appraisal theory, and what the in-context-learning literature says about choosing a demonstration set. The grounding the six failure tags never had, and the basis of the facets that replaced them on 2026-09-03 |
+| `themes.md` | why the theme extractor produces sentences rather than themes, measured over the 432 banked rows, and what the field does instead -- topic modelling, keyphrase extraction, Braun & Clarke thematic analysis and its LLM-assisted forms, TnT-LLM taxonomy induction, motif detection, frame semantics, propositions. Ends in a rebuild recommendation for `pipeline/themes.py` |
 | `selection.md` | design for the selection stage. **Not built.** The harvest and exemplar-bank stages it assumed are now `pipeline/`; this one is still paper |
 
 `literature.md` is the only file here the pipeline reads.
