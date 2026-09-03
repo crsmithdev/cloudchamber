@@ -40,14 +40,26 @@ def _front_matter(raw: str) -> tuple[dict, str]:
 # Footnote bodies: [[footnote]]...[[/footnote]] — remove entirely, including
 # the text inside, which is commentary rather than narration.
 _FOOTNOTE = re.compile(r"\[\[footnote\]\].*?\[\[/footnote\]\]", re.S | re.I)
-# Any remaining paired block whose content is machinery, not prose.
-_BLOCK_MACHINERY = re.compile(
-    r"\[\[(module|div|table|row|cell|iframe|image|gallery|code|collapsible|tabview|tab|span|size|"
-    r"footnoteblock|include)\b.*?(\[\[/\1\]\]|\]\])",
+# Paired blocks whose BODY is machinery and must go with the tags. Keep this
+# list tight: [[div]] and friends legitimately wrap an entire article, so
+# deleting their bodies deletes the story. Learned the hard way — an earlier
+# version of this took eleven articles to zero words.
+_PAIRED_DROP = re.compile(
+    r"\[\[(module|code|iframe|mediahosting|footnoteblock)\b[^\]]*\]\].*?\[\[/\1\]\]",
     re.S | re.I,
 )
-# Self-closing / unpaired directives, including the bare [[>]] [[=]] alignment
-# markers and their closers.
+# Single-tag machinery with no closing partner.
+_BLOCK_MACHINERY = re.compile(
+    r"\[\[(module|image|include|iftags|embed)\b[^\]]*\]\]",
+    re.S | re.I,
+)
+# A bare CSS rule that survived anyway — belt and braces, line-scoped so it
+# cannot run away across paragraphs.
+_CSS_RULE = re.compile(
+    r"(?:^|\n)[^\n{}]{0,120}\{[^{}\n]{0,400}?(?:color|margin|padding|font|width|height|"
+    r"display|position|opacity|background|border|content|transform|--[a-z-]+)\s*:"
+    r"[^{}]{0,400}?\}", re.I,
+)
 _INLINE_DIRECTIVE = re.compile(r"\[\[/?[^\]\n]{0,400}?\]\]", re.S)
 # Multi-line [[include ... ]] blocks with piped parameters.
 _INCLUDE = re.compile(r"\[\[include\b.*?\]\]", re.S | re.I)
@@ -92,7 +104,12 @@ def _strip_markup(body: str) -> str:
     body = _WIKI_COMMENT.sub("", body)
     body = _FOOTNOTE.sub("", body)
     body = _INCLUDE.sub("", body)
+    body = _PAIRED_DROP.sub("", body)
     body = _BLOCK_MACHINERY.sub("", body)
+    for _ in range(3):
+        body, k = _CSS_RULE.subn("", body)
+        if not k:
+            break
     # Links must resolve BEFORE the generic directive sweep: [[[a|b]]] starts
     # with [[ and the sweep will eat the head of it, stranding a bracket in
     # the middle of a sentence.
