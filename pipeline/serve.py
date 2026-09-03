@@ -229,6 +229,11 @@ class Handler(BaseHTTPRequestHandler):
 def _free_port(start: int) -> int:
     for port in range(start, start + 40):
         with socket.socket() as s:
+            # Match what the server itself will do. HTTPServer sets
+            # allow_reuse_address, so without this the probe rejects a port
+            # left in TIME_WAIT by the previous run and walks to the next one
+            # — the URL moves every restart for no reason.
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             try:
                 s.bind(("127.0.0.1", port))
                 return port
