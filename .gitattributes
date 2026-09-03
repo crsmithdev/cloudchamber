@@ -4,3 +4,8 @@
 
 # Treat markdown as text explicitly, and diff it by paragraph.
 *.md text eol=lf diff=markdown
+
+# The refs/ source PDFs are tracked. Mark them binary explicitly: the
+# `* text=auto` rule above relies on git's own binary detection, and a
+# mis-detected PDF would be corrupted by line-ending conversion on checkout.
+*.pdf binary

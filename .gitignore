@@ -1,7 +1,3 @@
-# Source PDFs — 96 MB, and not redistributable. They are read locally by
-# `pipeline harvest` and must never enter a commit.
-refs/*.pdf
-
 # Google Drive for Desktop scratch
 .tmp.drivedownload/
 .tmp.driveupload/
