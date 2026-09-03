@@ -117,16 +117,26 @@ the feedback edges from `extracted/decisions.jsonl` are meant to attach.
 
 ## Pushing
 
-**No Claude session can reach GitHub.** Verified 2026-08-28: the cloud
-container's egress refuses `github.com`; `api.github.com` returns 403 on every
-repository endpoint, public ones included, pointing at an `add_repo` tool that
-does not exist; and the sandboxed VM behind the device bridge is blocked on port
-22 as well. Filed as anthropics/claude-code issue #84581, open, no workaround.
-A personal access token does not help.
+**It depends which session.** Two cases, and they were conflated until
+2026-09-03.
 
-So Claude can edit and commit here through the device bridge, but **pushing is
-manual** -- run `git push` from your own terminal. Until you do, the work exists
-only on this machine.
+*Cloud sessions and the device bridge cannot reach GitHub.* Verified
+2026-08-28: the cloud container's egress refuses `github.com`;
+`api.github.com` returns 403 on every repository endpoint, public ones
+included, pointing at an `add_repo` tool that does not exist; and the sandboxed
+VM behind the device bridge is blocked on port 22 as well. Filed as
+anthropics/claude-code issue #84581, open, no workaround. A personal access
+token does not help. From those, Claude edits and commits, and **pushing is
+manual** -- run `git push` from your own terminal.
+
+*A local Claude Code session on this machine can.* It uses your own SSH agent
+and `gh` credentials, so `git ls-remote`, `git push` and `gh repo view` all
+work. Verified 2026-09-03 by pushing `c42c1dc`. Chris has granted these
+sessions a standing permission to push.
+
+Either way the repo is **private**, which is the thing to check before any push
+-- `sources/texts/books/` is 96 MB of tracked, non-redistributable anthology
+PDFs, and history is forever.
 
 ## Other copies
 

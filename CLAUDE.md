@@ -33,6 +33,6 @@ opposite — append-only, tracked, and the only file in the repo that cannot be
 rebuilt from its sources. Never rewrite or prune it. Chris's passes are as
 load-bearing as his keeps.
 
-**No Claude session can reach GitHub.** Edit and commit through the device bridge; Chris pushes manually from his own terminal. See the README for the detail.
+**Whether a session can reach GitHub depends on where it runs.** Cloud sessions and the device bridge cannot: edit and commit there, and Chris pushes manually from his own terminal. A local Claude Code session on this machine can, and has standing permission to push. The repo is private; check that before any push, because the tracked PDFs are not redistributable. See the README for the detail.
 
 **Repo only.** Project docs were abandoned on 2026-08-28. Do not read from or write to the Claude project's doc store — it is stale by definition and anything written there is lost. This repo, reached through the folder connected to the session, is the only source and the only destination.
