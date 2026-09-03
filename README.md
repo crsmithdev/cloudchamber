@@ -19,6 +19,17 @@ catalogue.md                 the other half -- describes rather than generates.
                              lenses and the source lookup. Per-story findings live
                              at the end of each story file.
 
+seeds/exemplars.md           register-conditioning passages loaded before a
+                             generation call. Prose only, hand-harvested, never
+                             model-written -- the standard is in the file
+
+.claude/skills/
+  seed-premises/SKILL.md     how a generation call is shaped: draw the
+                             constraints outside the model, condition on
+                             exemplars, ask for a distribution rather than a
+                             list, cull before pitching. Wraps playbook 1
+                             rather than replacing it
+
 stories/NN-slug.md           one story each; 24 developed
 stories/00-undeveloped.md    the bench -- greenlit but never developed, parked
                              attempts with their reasoning, held pairs, passed-on
@@ -28,6 +39,14 @@ refs/                        annexes. The source files are read, never edited;
   register.md                the genre terms section 0 stands on -- grimdark,
                              cosmic horror, the eerie, the abject, body horror,
                              and the Aristotle constraint, with citations
+  generation.md              in-house, like setting-a.md. The evidence behind
+                             how a generation call is shaped -- mode collapse
+                             and where it comes from, what raises output
+                             diversity and by how much, why negations decay
+                             with distance from the ask, and why exemplars
+                             beat instructions on register. craft.md is the
+                             human side of ideation and evals/LITERATURE.md is
+                             the judging side; this is the third leg
   setting-a.md                the specifics behind playbook section 5 -- fifteen
                              domains of setting-a statutes, bodies, dates, cases
   craft.md                   the evidence behind playbook sections 1 and 6 --

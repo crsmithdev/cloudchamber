@@ -1,0 +1,91 @@
+# What to read, and what to take from it.
+#
+# passages = feed the exemplar bank (verbatim prose, conditions HOW it reads)
+# themes   = feed the theme bank    (abstractions,   conditions WHAT gets made)
+#
+# reader: pdf | scp | markdown | research
+#   research means no code reads anything — `pipeline themes --research <id>`
+#   emits a brief, a Claude session does the reading, and the result comes
+#   back via `pipeline themes --ingest`.
+
+[source.scp]
+path = "refs/scp/*.md"
+reader = "scp"
+passages = true
+themes = true
+kind = "document"
+license = "CC BY-SA 3.0"
+notes = "Verbatim wikidot source. Attribution required on anything published."
+
+[source.datlow]
+path = "refs/Ellen Datlow*.pdf"
+reader = "pdf"
+passages = true
+themes = true
+kind = "fiction"
+notes = "Anthologies. Story splitting is best-effort; check attribution before quoting."
+
+[source.evenson]
+path = "refs/Brian Evenson*.pdf"
+reader = "pdf"
+author = "Brian Evenson"
+kind = "fiction"
+
+[source.langan]
+path = "refs/John Langan*.pdf"
+reader = "pdf"
+author = "John Langan"
+kind = "fiction"
+
+[source.watts]
+path = "refs/Peter Watts*.pdf"
+reader = "pdf"
+author = "Peter Watts"
+kind = "fiction"
+license = "CC BY-NC-SA"
+
+[source.chiang]
+path = "refs/Ted Chiang*.pdf"
+reader = "pdf"
+author = "Ted Chiang"
+kind = "fiction"
+
+[source.king]
+path = "refs/Stephen King*.pdf"
+reader = "pdf"
+author = "Stephen King"
+kind = "fiction"
+
+[source.literature]
+path = "evals/LITERATURE.md"
+reader = "markdown"
+passages = false          # criticism conditions for criticism
+themes = true
+kind = "criticism"
+notes = "Academic studies on what makes horror land. Themes only, never passages."
+
+[source.setting-c]
+reader = "research"
+passages = false
+themes = true
+kind = "setting"
+notes = "Source fiction is far too large to hold. Themes come from reference material."
+research = [
+  "faction cosmology and the theology of the Imperium",
+  "attitudes to the body, augmetics, and sanctioned mutilation",
+  "bureaucratic horror: the Administratum, tithes, records",
+  "how sacrifice is normalized at population scale",
+]
+
+[source.setting-b]
+reader = "research"
+passages = false
+themes = true
+kind = "setting"
+notes = "Same reasoning as setting-c. Reference material, not source fiction."
+research = [
+  "the theological premise and what the breach actually did",
+  "faction doctrine and how each justifies itself",
+  "the material culture of the war: relics, prosthetics, weapons",
+  "what counts as damnation, and who is exempt",
+]

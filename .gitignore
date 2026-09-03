@@ -1,0 +1,18 @@
+# Source PDFs — 96 MB, and not redistributable. They are read locally by
+# `pipeline harvest` and must never enter a commit.
+refs/*.pdf
+
+# Google Drive for Desktop scratch
+.tmp.drivedownload/
+.tmp.driveupload/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Regenerable pipeline output. `pipeline harvest` rebuilds the pool from
+# refs/ at any time. seeds/decisions.jsonl is DELIBERATELY NOT ignored —
+# it is the one file here that cannot be regenerated from anything.
+seeds/exemplars.jsonl
+seeds/themes.jsonl
+seeds/packets/
