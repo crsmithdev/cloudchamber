@@ -371,6 +371,59 @@ def main() -> int:
     check("keep rate reports whole blocks only", bank.keep_rate(block=2) == [0.5],
           str(bank.keep_rate(block=2)))
 
+    print("\nsettings")
+    import json as _json
+    from . import sample as sample_mod
+
+    # Lore fixtures with the one section the draw lifts. The real files are
+    # not read here: the test is the plumbing, not the canon.
+    (tmp / "lore").mkdir()
+    for sid, rule in (("setting-a", "The matrix is structural."),
+                      ("setting-b", "The present is 1914."),
+                      ("setting-c", "No establishing shot.")):
+        (tmp / "lore" / f"{sid}.md").write_text(
+            f"# LORE\n\n## 1. The spine\n\nx\n\n## 9. Hard rules\n\n- {rule}\n",
+            encoding="utf-8")
+    with (tmp / "extracted" / "themes.jsonl").open("a", encoding="utf-8") as fh:
+        for sid, text in (("scp", "A neutral theme."),
+                          ("setting-b", "A setting theme.")):
+            fh.write(_json.dumps({"id": f"t-{sid}", "text": text,
+                                  "source_id": sid}) + "\n")
+
+    ids = [s_.id for s_ in sources_mod.load_settings(tmp)]
+    check("settings fall back to defaults without sources.toml",
+          ids == ["setting-a", "setting-b", "setting-c"], str(ids))
+    check("no setting given resolves to the default",
+          sources_mod.setting(None, tmp).id == "setting-a")
+
+    pk = sample_mod.draw(tmp, include_unlabelled=True, n_themes=5, write=False)
+    check("default draw takes themes from neutral sources only",
+          [t_["source_id"] for t_ in pk["themes"]] == ["scp"],
+          str([t_["source_id"] for t_ in pk["themes"]]))
+    check("packet records the setting", pk["params"]["setting"] == "setting-a")
+    rendered = sample_mod.render(pk)
+    check("canon block is rendered last",
+          "# CANON" in rendered and "The matrix is structural." in rendered
+          and rendered.index("# CANON") > rendered.index("# SEED"))
+
+    pk = sample_mod.draw(tmp, setting="setting-b", include_unlabelled=True,
+                         n_themes=5, write=False)
+    check("a lore setting draws only its own themes",
+          [t_["source_id"] for t_ in pk["themes"]] == ["setting-b"],
+          str([t_["source_id"] for t_ in pk["themes"]]))
+    check("the canon block is that setting's",
+          "1914" in sample_mod.render(pk) and "structural" not in sample_mod.render(pk))
+
+    for sid, needle, name in (
+        ("setting-c", "--brief", "a setting with nothing banked names the brief"),
+        ("nope", "setting-b", "an unknown setting names the valid ids"),
+    ):
+        try:
+            sample_mod.draw(tmp, setting=sid, include_unlabelled=True, write=False)
+            check(name, False, "no error raised")
+        except SystemExit as e:
+            check(name, needle in str(e), str(e))
+
     print()
     if FAILURES:
         print(f"{len(FAILURES)} FAILED: {', '.join(FAILURES)}")

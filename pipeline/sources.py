@@ -6,6 +6,11 @@ wants a verbatim paragraph of a psychology paper conditioning the prose), and
 a setting like setting-c yields themes from online reference material
 rather than from source fiction at all.
 
+A setting is a different kind of thing: what a premise is seeded *under*. It
+names a lore file (`lore/<id>.md`, nine fixed sections) that constrains the
+seed, and the theme sources the seed is drawn from. Exactly one setting is the
+default. The exemplar bank is register and does not vary by setting.
+
 Config lives in `sources.toml` next to the repo root. The defaults below match
 the current `sources/` layout and are used when no config file is present.
 """
@@ -39,6 +44,14 @@ class Source:
     # For reader = "research": where a session should look. No code fetches
     # these; `pipeline themes --research <id>` emits a brief instead.
     research: list[str] = field(default_factory=list)
+
+
+@dataclass
+class Setting:
+    id: str
+    lore: str  # path to the lore file, relative to repo root
+    themes: list[str] = field(default_factory=list)  # source ids the seed draws from
+    default: bool = False
 
 
 DEFAULTS: list[Source] = [
@@ -136,12 +149,25 @@ DEFAULTS: list[Source] = [
     ),
 ]
 
+SETTING_DEFAULTS: list[Setting] = [
+    Setting(
+        id="setting-a",
+        lore="lore/setting-a.md",
+        themes=["scp", "datlow", "evenson", "langan", "watts", "chiang", "king",
+                "literature"],
+        default=True,
+    ),
+    Setting(id="setting-b", lore="lore/setting-b.md",
+            themes=["setting-b"]),
+    Setting(id="setting-c", lore="lore/setting-c.md",
+            themes=["setting-c"]),
+]
 
-def load(root: str | Path = ".") -> list[Source]:
-    root = Path(root)
+
+def _config(root: Path) -> dict | None:
     cfg = root / "sources.toml"
     if not cfg.exists():
-        return list(DEFAULTS)
+        return None
     if tomllib is None:
         # Silently falling back to DEFAULTS here means edits to sources.toml
         # do nothing and nobody finds out for hours. Say so.
@@ -150,12 +176,49 @@ def load(root: str | Path = ".") -> list[Source]:
             f"({sys.version_info.major}.{sys.version_info.minor}). "
             "Use Python 3.11+, or `pip install tomli`. Built-in defaults in use."
         )
+        return None
+    return tomllib.loads(cfg.read_text(encoding="utf-8"))
+
+
+def load(root: str | Path = ".") -> list[Source]:
+    data = _config(Path(root))
+    if data is None:
         return list(DEFAULTS)
-    data = tomllib.loads(cfg.read_text(encoding="utf-8"))
-    out = []
-    for sid, body in data.get("source", {}).items():
-        out.append(Source(id=sid, **body))
+    out = [Source(id=sid, **body) for sid, body in data.get("source", {}).items()]
     return out or list(DEFAULTS)
+
+
+def load_settings(root: str | Path = ".") -> list[Setting]:
+    data = _config(Path(root))
+    out = list(SETTING_DEFAULTS)
+    if data is not None and data.get("setting"):
+        out = [Setting(id=sid, **body) for sid, body in data["setting"].items()]
+    defaults = [s.id for s in out if s.default]
+    if len(defaults) != 1:
+        raise SystemExit(
+            "sources.toml: exactly one [setting.*] must carry `default = true`; "
+            f"found {defaults or 'none'}"
+        )
+    return out
+
+
+def setting(setting_id: str | None, root: str | Path = ".") -> Setting:
+    """The setting a draw runs under: the id given, else the default.
+
+    There is always one. An unknown id is an error that names the valid ones,
+    because the alternative — quietly drawing under the default — would seed
+    a setting-a premise in a call that thought it was constrained.
+    """
+    all_ = load_settings(root)
+    if setting_id is None:
+        return next(s for s in all_ if s.default)
+    for s in all_:
+        if s.id == setting_id:
+            return s
+    raise SystemExit(
+        f"unknown setting {setting_id!r}; sources.toml declares: "
+        + ", ".join(s.id for s in all_)
+    )
 
 
 def resolve(src: Source, root: str | Path = ".") -> list[Path]:

@@ -76,6 +76,9 @@ def main(argv=None):
     d.add_argument("--order-by", choices=sample_mod.ORDERINGS, default="d1",
                    help="render order of the drawn set (default: ascending d1)")
     d.add_argument("--seed", type=int)
+    d.add_argument("--setting", metavar="ID",
+                   help="lore file the seed is drawn under (default: the one "
+                        "marked default in sources.toml)")
     d.add_argument("--json", action="store_true", help="emit the packet as JSON")
 
     t = sub.add_parser("themes", help="draft themes into the bank, and audit the grain")
@@ -129,7 +132,7 @@ def main(argv=None):
             root, out=out, n_exemplars=a.exemplars, n_themes=a.themes,
             temperature=a.temperature, coverage=not a.no_coverage,
             include_unlabelled=a.include_unlabelled, facet=a.facet,
-            order_by=a.order_by, seed=a.seed,
+            order_by=a.order_by, seed=a.seed, setting=a.setting,
         )
         if a.json:
             print(json.dumps(packet, ensure_ascii=False, indent=2))

@@ -30,7 +30,8 @@ python -m pipeline review               # careful pass: full text, one at a time
 python -m pipeline review --themes      # dense multi-select over the themes
 python -m pipeline stats --target 8     # progress toward a stop rule
 python -m pipeline export               # kept passages -> extracted/exemplars.md
-python -m pipeline draw -n 6 -t 2       # a generation packet
+python -m pipeline draw -n 6 -t 2       # a generation packet, under the default setting
+python -m pipeline draw --setting setting-b   # under a lore setting
 python -m pipeline.selftest             # verify the code works after a sync
 ```
 

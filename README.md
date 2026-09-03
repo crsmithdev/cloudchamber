@@ -24,7 +24,13 @@ seeding-v7.md                generation, upstream of the playbook. Six engines,
                              universal moves 3-8, an inversion rule for minting
                              engines, a repair table. Supersedes seeding v1-v6
 sources.toml                 what the pipeline reads and what it takes from
-                             each source -- passages, themes, or both
+                             each source -- passages, themes, or both; and
+                             the settings a premise can be seeded under
+lore/<setting>.md            one file per setting -- setting-a (the default),
+                             setting-b, setting-c. Nine fixed sections:
+                             spine, register, the setting bank, artifacts, the
+                             documented / thin / absent / open triage, hard rules.
+                             See lore/README.md
 
 stories/NN-slug.md           one story each; 25 developed
 stories/00-undeveloped.md    the bench -- greenlit but never developed, parked
@@ -108,7 +114,8 @@ python -m pipeline harvest      # sources/texts/ -> passage candidates
 python -m pipeline themes       # sources/ -> theme candidates
 python -m pipeline review       # the cull: k / p / m / s / b / q
 python -m pipeline export       # kept passages -> extracted/exemplars.md
-python -m pipeline draw -n 6    # a generation packet
+python -m pipeline draw -n 6    # a generation packet, under the default setting
+python -m pipeline draw --setting setting-b   # under a lore setting
 python -m pipeline.selftest     # verify the code after a sync
 ```
 

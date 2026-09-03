@@ -12,6 +12,8 @@ A horror anthology. This repo is the source of truth.
 
 **`seeding-v7.md`** when the job is to produce candidates rather than triage them. It sits upstream of the playbook and hands off at §2.
 
+**`lore/<setting>.md`** before seeding, whole. Every run is under a setting — `setting-a` unless one is named — and the file is the bank the setting pull comes from and the canon the cull checks against. `lore/README.md` says what its nine sections do.
+
 **`README.md`** for the layout and the form a story file takes.
 
 Every story file ends with two appended review sections. Read the preamble of either before treating a finding in it as a verdict; nothing in them has been applied, and no story text has been altered by them.
@@ -20,7 +22,7 @@ Every story file ends with two appended review sections. Read the preamble of ei
 
 One paragraph per pitch, one at a time. Chris replies take-it or pass; do not develop anything he has not taken.
 
-Check `stories/` before developing: whether a story feels like another one already on the slate is the only thing anywhere that functions as a criterion. Twenty-five are written, and `stories/00-undeveloped.md` carries the reasoning that parked what was parked, so the same rejected construction does not get re-attempted.
+Check `stories/` before developing: whether a story feels like another one already on the slate is the only thing anywhere that functions as a criterion. Under a setting other than the default the slate is `stories/<setting>/`, and a premise resting on anything the lore file's §7 lists as absent is dead before it is pitched. Twenty-five are written, and `stories/00-undeveloped.md` carries the reasoning that parked what was parked, so the same rejected construction does not get re-attempted.
 
 ## Working here
 

@@ -38,7 +38,7 @@
 
 **The floor is higher than instinct, and the ceiling is not squeamishness.** The first version is never dark enough, and the version that feels sufficient is reliably one turn short: write past the point where it feels like enough, then decide what to pull back from. But when you do hit a limit, it is never *too much*. Aristotle's objection to this exact configuration — a faultless person destroyed by a faultless machine, nobody to blame, nothing learned — is that it shocks rather than moves, and he is right about a reader who is standing outside it. The configuration is not the error. The reader's position is. The fix is never to soften. It is to put the reader inside the arrangement — something they use, approve of, would have signed off on — so there is nowhere left to stand and be appalled from. If they can watch this from outside, it is not finished.
 
-**Every story carries a setting-a matrix**, and it has to be structural rather than scenery — take the element out and see whether a mechanism goes with it, or only an image.
+**Every story carries a setting-a matrix**, and it has to be structural rather than scenery — take the element out and see whether a mechanism goes with it, or only an image. *(2026-09-03: the setting-a is the default setting rather than the only one. A story seeded under another setting — `lore/` holds one file per setting — carries that setting's matrix instead, and the same test applies.)*
 
 **Written stories and audio dramas.** Both, and the audio half shapes who the narrator is, how they behave and how the piece is told: a voice has to be worth listening to for the length of it. The requirement is that the central voice is compelling company — not that it is warm, likeable, or reliable.
 
@@ -56,7 +56,7 @@
 
 *How a premise gets made here. The steps are in order and the order matters: the engine is found before the darkening, the darkening is derived rather than applied, the structure comes after it, the substrate is settled before the telling, and the telling is chosen before anything is written up. There is no writing workflow yet — this stops at an agreed idea in its own file.*
 
-1. **Pull from each of §2–§5.** A theme, a dread mechanism, an artifact, a setting-a element. Two constraints on the four: **at least one must be a combination** — two or three entries from that section held together, not one taken whole — and **at least one must not be a listed item at all**, but something the section suggested and does not contain. Four clean picks off four lists is a premise the file already knows how to write.
+1. **Pull from each of §2–§5.** A theme, a dread mechanism, an artifact, a setting element *(2026-09-03: from the setting's domain bank, `lore/<id>.md` §3 — which for the setting-a, the default, is §5 here)*. Two constraints on the four: **at least one must be a combination** — two or three entries from that section held together, not one taken whole — and **at least one must not be a listed item at all**, but something the section suggested and does not contain. Four clean picks off four lists is a premise the file already knows how to write.
 2. **Combine them into a basic idea.** One flat sentence. No adjectives, no register, no atmosphere. If it needs the register to be interesting, it is not an idea yet.
 3. **Spend the impossibility, name the engine, turn something that works.** Three parts of one move, and this is where both the horror and the darkness come from — not from step 4.
    **One impossibility, and only one.** Something that is not true: an organism that does what no organism does, a rubric that tracks a thing no rubric could track, a signal in seventy years of discarded data. Buy it openly and pay for it in arithmetic from there on. Everything else is real, checkable and correctly administered, which is what the setting-a bank and the annexes are for — but a premise assembled *entirely* out of real mechanisms is journalism. It can be bleak, well researched and true, and it will not be horror, because nothing in it is impure and there is nothing the reader has to fail to accommodate. If a second impossibility is needed to get out of a corner, go back to the theme.
@@ -829,6 +829,8 @@
 *Each line is a theme, not an instance. A theme has someone it happens to, a mechanism that does it, and a cost — and it can produce more than one story. The instances, and the statutes, dates and cases under them, are in `research/setting-a.md` — go there once a premise needs a real instrument beneath it.*
 
 *Several of these domains carry the histories of people the region's institutions have harmed. §0 governs: the villain is always the apparatus.*
+
+*(2026-09-03: this is the setting-a setting's bank. `lore/setting-a.md` indexes it by number and carries the canon check beside it; every other setting carries its own bank in its own lore file.)*
 
 ### 5.1 Land and title
 
