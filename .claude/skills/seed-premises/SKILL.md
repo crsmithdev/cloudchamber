@@ -42,7 +42,7 @@ You do not get to pick. Left to itself a model reaches for the same handful of m
 
 The packet's `# REGISTER` block is the examples, drawn from the pool by `pipeline draw`. Those are passages of prose in the target register. They are not instructions: do not summarise them, refer to them, or explain what they demonstrate. They work by conditioning or not at all.
 
-**The examples do not change with the setting.** They condition how a story reads; the setting changes what it is about. A lore setting with a register problem is a lore file problem (§2), not a reason to look for setting-flavoured prose.
+**The examples do not change with the setting.** They condition how a story reads; the setting changes what it is about. A setting whose reference register reads wrong is a problem with that file in `sources/summaries/`, not a reason to look for setting-flavoured prose.
 
 If that file does not exist yet, say so and continue, but expect register drift — the resolution pull is structural and instructions are the weakest instrument against it.
 

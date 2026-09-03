@@ -252,16 +252,3 @@ def parse(path: str | Path, source_prefix: str = "scp") -> Doc:
         doc.blocks.append(Block(clean_text(joined), kind=kind))
 
     return doc.finalize()
-
-
-def parse_dir(directory: str | Path, source_prefix: str = "scp") -> list[Doc]:
-    directory = Path(directory)
-    docs = []
-    for p in sorted(directory.glob("*.md")):
-        if p.name.upper() in {"README.MD", "CLAUDE.MD"}:
-            continue
-        try:
-            docs.append(parse(p, source_prefix))
-        except Exception as e:  # a bad file should not kill a corpus run
-            print(f"  ! {p.name}: {e}")
-    return docs

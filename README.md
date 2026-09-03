@@ -24,8 +24,7 @@ seeding-v7.md                generation, upstream of the seeding skill. Six engi
                              universal moves 3-8, an inversion rule for minting
                              engines, a repair table. Supersedes seeding v1-v6
 sources.toml                 what the pipeline reads and what it takes from
-                             each source -- passages, themes, or both; and
-                             the settings a premise can be seeded under
+                             each source -- passages, themes, or both
 
 stories/NN-slug.md           one story each; 25 developed
 stories/00-undeveloped.md    the bench -- greenlit but never developed, parked
@@ -52,7 +51,6 @@ research/                    what the project has concluded. See its README
 extracted/                   everything the pipeline produced. See its README
   examples.jsonl            the candidate pool (regenerable; gitignored)
   themes.jsonl               extracted themes (regenerable; gitignored)
-                             file here that cannot be rebuilt from anything else
   packets/                   what each generation call was conditioned on
 
 pipeline/                    the seeding machinery. Two extractions: verbatim
@@ -103,10 +101,12 @@ and the passed-on list.
 ## Running the pipeline
 
 ```bash
-python -m pipeline harvest      # sources/texts/ -> passage candidates
-python -m pipeline themes       # sources/ -> theme candidates
-python -m pipeline draw -n 6    # a generation packet, under the default setting
-python -m pipeline.selftest     # verify the code after a sync
+python -m pipeline harvest             # sources/texts/ -> passage candidates
+python -m pipeline facets              # score the pool on Biber D1-D6
+python -m pipeline themes --brief scp  # a drafting brief for a session
+python -m pipeline stats               # what is in the banks
+python -m pipeline draw -n 6           # a generation packet
+python -m pipeline.selftest            # verify the code after a sync
 ```
 
 `pipeline/README.md` has the rest, including which parts are weakest and where

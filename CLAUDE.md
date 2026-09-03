@@ -31,6 +31,8 @@ A story is one file under `stories/`, written by hand. Nothing generates it.
 sources and neither should be hand-edited. There is no decision layer — keep,
 pass and maybe, and the append-only trail under them, were removed on
 2026-09-03 and will be re-added later. Both banks are pools as they stand.
+The three verdicts that existed before the removal went with it, deliberately;
+they are at `git show 9ef1306^:extracted/decisions.jsonl` if ever wanted.
 
 **Whether a session can reach GitHub depends on where it runs.** Cloud sessions and the device bridge cannot: edit and commit there, and Chris pushes manually from his own terminal. A local Claude Code session on this machine can, and has standing permission to push. The repo is private; check that before any push, because the tracked PDFs are not redistributable. See the README for the detail.
 

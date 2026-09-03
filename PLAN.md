@@ -1,49 +1,28 @@
-# PLAN — what is left after the Biber re-base
+# PLAN — what is left
 
-*Working document. Written 2026-09-03, rewritten the same day once Parts 1 and
-2 landed. Delete it when Part 3 is done. Rationale and citations are in
-`research/tagging.md`; the mechanics are in `pipeline/README.md`.*
+*Working document. Much of what this file described was built and then
+deliberately removed on 2026-09-03: the decision layer, the reviewers, the
+settings, and the playbook. What follows is trimmed to what is still true.
+`git log` is the record of the rest.*
 
 ---
 
-## Done
+## Removed, to be re-added later
 
-**Part 1 — the six failure tags are gone, replaced by Biber's dimensions.**
-All six are scored as of 2026-09-03, on the reasoning that the corpus is about
-to stop being SCP-only; `research/tagging.md` carries why that overruled its
-own recommendation 2. Only D1 and D2 bucket the pool.
-`pipeline/biber.py` (two backends, `biberplus` or a local fallback),
-`pipeline facets` (fit, persist, score, report, `--extremes`), `signals.py`
-stripped of `tag_scores`/`tags`/`THRESHOLD` and the six lexicons,
-`register_score` renormalised without the `0.30 * max(tag_scores)` term,
-`sample.py` re-based on the 9-cell facet grid with an explicit recorded
-`--order-by`, and `bank.py` reporting `kept_by_facet`. `withheld` survives as
-a standalone boolean flag.
-
-**Part 2 — culling is cheap.** `review --triage` (40 words, `x` expands),
-`review --compare` (five a screen, ties encouraged, recorded as
-`method: "compare"` with a `group` id), `review --order cluster`,
-`review --themes` (20 a screen, keep by number), and `stats --target N` with
-a keep rate per block of 50.
-
-Verified end to end on the 947-passage SCP pool: `python -m pipeline.selftest`
-passes under both backends, all 9 cells fill, and all twelve dimension
-extremes read as their labels claim.
-
-**`biberplus` is installed** into `~/.local/lib/python3.12/site-packages` and
-is the live backend for a bare `python3 -m pipeline`. The spaCy model had to
-be installed from its wheel URL — `python -m spacy download` shells out to pip
-without `--break-system-packages` and fails on this PEP 668 system.
+The cull. Keep, pass and maybe, the append-only trail, the terminal reviewer
+(triage / compare / ledger) and the browser one, and `pipeline export`. Both
+banks are pools as they stand. Passage ids are content-derived, so verdicts
+recorded later still attach to the same passages.
 
 ## Still to do
 
 ### Part 3 — validate, then prune
 
-Blocked on verdicts. Once ~200 exist in `extracted/decisions.jsonl`:
+Blocked on the decision layer coming back, and then on ~200 verdicts:
 
 1. Which facet, if any, predicts a keep? Test it. Split by `method` first —
-   a `compare` keep is a ranking, a `triage` pass is a 40-word rejection, and
-   a `manual` verdict is a full read. They are not the same evidence.
+   different review modes are not the same evidence and the trail should say
+   which produced each row.
 2. Refit `register_score` weights against keeps and passes instead of the
    hand-set constants. Everything in it is still asserted.
 3. Refit the render order in `sample.py` the same way. `--order-by d1` is a
@@ -76,23 +55,6 @@ Never done. Only SCP has ever been harvested, and every number in
   but the warning is not the decision.
 - Re-read the extremes. They are how the last two stripper bugs were found.
 
-### Done instead: `pipeline serve`
-
-Built 2026-09-03. The funnel — Ledger over the themes, Deck over all 947
-passages, Bench over the survivors — in a browser on localhost, standard
-library only. `pipeline/README.md` §The funnel has the detail. The reason it
-is a browser and not a TUI: register cannot be judged in a monospace column,
-and the passages had to be set as prose.
-
-Still open from the mockups: **Slate**, forced choice over five at a time. It
-answers "which of these is better" rather than "is this good", and it yields
-ranking data. Worth building once there are verdicts to check its rankings
-against — which makes it a Part 3 question, not a now question.
-
-A phone reviewer is still unbuilt. `serve` binds loopback-only; putting it on
-a phone means either exposing the port or the published-artifact route.
-
----
 
 ## Environment gotchas that will waste time otherwise
 
@@ -114,34 +76,17 @@ a phone means either exposing the port or the published-artifact route.
   warning. Keep the two in sync or install `tomli`.
 - **Google Drive sync leaves a zero-byte `.git/index.lock`** that blocks every
   git command. Safe to `rm` when no git process is running.
-- Cull decisions are append-only. **Never rewrite `extracted/decisions.jsonl`.**
 
 ---
 
 ## Still open, and needing a human
 
-- **`seeding-v7.md` refers seven times to `playbook-v2.md`, which does not
-  exist** in the repo or anywhere in git history. PLAN.md previously recorded
-  that its section references "map exactly onto `playbook.md`'s sections".
-  **They do not.** Checked one by one:
+- **`seeding-v7.md` refers seven times to `playbook-v2.md`, which never existed
+  in this repo.** `playbook.md` itself has now been retired too, so the
+  references point at nothing twice over. Its §-numbered citations never
+  matched playbook.md's sections either — the comparison is in
+  `git show 014d679:PLAN.md`. Needs a human decision: repoint, rewrite, or cut.
 
-  | seeding-v7 says | `playbook.md` has | verdict |
-  | :-- | :-- | :-- |
-  | enter at §2 | §2 Theme bank | plausible |
-  | §1 sourcing, "collision (§1.2), the found armature (§1.4)" | §1 Ideation, numbered steps 1–12, no §1.2/§1.4 | no |
-  | §3.6 "the marvel budget" | §3.6 Legibility without lawfulness | no |
-  | §5 "the person", §5.3 "exposure is positional" | §5 The setting-a, §5.3 land and title | no |
-  | §6 "shape and ending" | §6 Telling it, §6.7 Endings | close |
-  | §6.7 "the container" | §6.7 Endings (container is §6.3, register §6.6) | no |
-  | §8.3, §8.4 | no §8 at all | no |
-
-  `catalogue.md` is not the referent either: it has §1–§6 and no §8. And
-  seeding-v7 describes `playbook-v2.md` as "composed entirely of kill tests"
-  with a "stated default is discard", which contradicts `playbook.md`'s own
-  header ("Nothing here evaluates"). The likeliest reading is that
-  `playbook-v2.md` was a real, differently-structured document that was never
-  committed — but that is a guess, and the fix (repoint, rewrite, or restore)
-  is Chris's call.
 - The Chiang *Exhalation* and adjacent-Watts analysis was deleted with the
   annexes on 2026-09-03 and has no replacement in `sources/texts/`. Recoverable
   from git history if wanted.

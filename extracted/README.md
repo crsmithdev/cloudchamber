@@ -1,6 +1,6 @@
 # EXAMPLES — register conditioning
 
-*`examples.md` is empty until the cull runs. The pool below it is not: `pipeline harvest` fills `examples.jsonl` and `pipeline facets` scores it. Reading that pool down is the one thing in the seeding procedure that cannot be automated or delegated to a model.*
+*There is no kept set. The cull that produced one — and `pipeline export`, which wrote it to `examples.md` — was removed on 2026-09-03 and will be re-added. The pool is what there is: `pipeline harvest` fills `examples.jsonl`, `pipeline facets` scores it, and `pipeline draw` samples the whole of it. Reading that pool down is still the one thing in the seeding procedure that cannot be automated or delegated to a model.*
 
 ## What goes here
 
@@ -53,7 +53,7 @@ The last three have no opposite pole. Their low labels name an absence, not a
 contrary.
 
 **Only voice and mode bucket the pool** — terciles on those two give nine
-cells, and `pipeline stats --target N` says which are short. The other four are
+cells, and `pipeline facets` reports which are empty. The other four are
 scored and filterable but do not divide the bank, because six of them would
 give 729 cells.
 

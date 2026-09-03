@@ -89,8 +89,3 @@ research = [
   "the material culture of the war: relics, prosthetics, weapons",
   "what counts as damnation, and who is exempt",
 ]
-
-# Settings. A setting is what a premise is seeded under: which lore file
-# constrains it (lore/<id>.md, nine fixed sections) and which theme sources
-# its seed is drawn from. Exactly one is the default. The example bank is
-# register and does not vary by setting.

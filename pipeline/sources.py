@@ -140,6 +140,7 @@ DEFAULTS: list[Source] = [
     ),
 ]
 
+
 def _config(root: Path) -> dict | None:
     cfg = root / "sources.toml"
     if not cfg.exists():

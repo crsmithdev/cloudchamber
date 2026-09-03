@@ -99,9 +99,10 @@ def passage_id(source_id: str, text: str) -> str:
     """Stable ID for a passage.
 
     Derived from source plus normalized text, so a re-harvest of the same
-    material produces the same IDs and Chris's earlier keep/pass decisions
-    still attach. This is what makes the decision trail durable across
-    re-runs and across changes to the segmentation heuristics.
+    material produces the same IDs and any verdict recorded against a passage
+    still attaches to it. That is what will make the decision trail durable
+    across re-runs and across changes to the segmentation heuristics when the
+    layer removed on 2026-09-03 comes back.
     """
     norm = " ".join(clean_text(text, normalize_quotes=True).lower().split())
     h = hashlib.sha1(f"{source_id}\x00{norm}".encode("utf-8")).hexdigest()

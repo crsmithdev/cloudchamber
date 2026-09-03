@@ -7,10 +7,10 @@ __pycache__/
 *.py[cod]
 
 # Regenerable pipeline output. `pipeline harvest` rebuilds the pool from
-# sources/ at any time. One file here is DELIBERATELY NOT ignored:
+# sources/ at any time. Two files here are DELIBERATELY NOT ignored:
 #   facet-stats.json  is the baseline every dimension score is relative to.
 #                     Regenerable in principle, but re-fitting it moves every
-#                     passage's facets under decisions already taken against
+#                     passage's facets under verdicts already recorded against
 #                     them, so the fitted copy is tracked and shared.
 extracted/examples.jsonl
 extracted/themes.jsonl

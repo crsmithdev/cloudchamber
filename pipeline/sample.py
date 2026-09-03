@@ -1,9 +1,10 @@
 """Draw a generation packet: some themes as a seed, some examples as register.
 
 This is the step that runs when Chris says "come up with an idea". It is
-deliberately dumb right now — mostly random over the kept set, because there
-is not yet enough decision history to steer with, and a clever sampler built
-on no data is just a bias with extra steps.
+deliberately dumb right now — mostly random over the whole pool, because the
+decision layer that would supply something to steer with was removed on
+2026-09-03, and a clever sampler built on no data is just a bias with extra
+steps.
 
 Three knobs exist so steering is possible later without a rewrite:
 
@@ -32,11 +33,9 @@ from __future__ import annotations
 
 import json
 import random
-import re
 import time
 from pathlib import Path
 
-from . import sources as sources_mod
 from .bank import THEMES, Bank, _now
 from .biber import cell, matches
 
@@ -140,6 +139,13 @@ def draw(
         pool = [p for p in pool if matches(p.get("facets"), facet)]
 
     if not pool:
+        if facet:
+            raise SystemExit(
+                f"No passage matches --facet {facet!r}. The pool holds "
+                f"{len(bank.load())}. `pipeline draw --facet ?` lists the "
+                f"queries; a dimension=label pair takes the dimension's name "
+                f"(persuasion=persuasive), not its number."
+            )
         raise SystemExit("The example pool is empty. Run `pipeline harvest` first.")
 
     picker = _by_coverage if coverage else _weighted
@@ -187,14 +193,14 @@ def draw(
 def render(packet: dict) -> str:
     """The packet as text, ready to sit in front of a generation call.
 
-    Register first, seed second, canon last. Instruction force decays with
-    distance from the point of generation while register conditioning does
-    not, so the examples open and the constraints sit immediately before the
-    ask — the order the seed-premises skill and `research/generation.md`
-    §3.3-§3.4 both specify. The canon block is the one part of the packet that
-    is a constraint rather than conditioning, which is why it goes last of all.
+    Register first, seed second. Instruction force decays with distance from
+    the point of generation while register conditioning does not, so the
+    examples open and the seed sits immediately before the ask — the order the
+    seed-premises skill and `research/generation.md` §3.3-§3.4 both specify.
     This file used to emit the seed first, which put six passages of prose
-    between the constraints and the call.
+    between it and the call. The `# CANON` block that used to close the packet
+    went with the settings on 2026-09-03; the reference register is read by
+    hand from `sources/summaries/`.
     """
     out = ["# REGISTER", "",
            "*Passages below are published human prose, verbatim. Match the "

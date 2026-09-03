@@ -2,9 +2,10 @@
 
 Runs the pipeline end to end against a synthetic repo in a temp directory.
 Checks the things that actually break: wikidot stripping, PDF furniture and
-de-hyphenation, window sizing, Biber dimension polarity, and — the important
-one — that re-harvesting the same material produces the same passage ids and
-does not blank the facets, so decisions survive a change to the heuristics.
+de-hyphenation, window sizing, Biber dimension polarity, the draw and its
+render order, and — the important one — that re-harvesting the same material
+produces the same passage ids and does not blank the facets, so a verdict
+recorded later still attaches to the passage it was given for.
 
 No network, no model, no API key. If this passes after a sync, the files
 arrived intact.
@@ -265,7 +266,7 @@ def main() -> int:
 
     # The validator is calibrated against playbook §2; if it rejects its own
     # reference corpus it is measuring itself.
-    bullets = themes.grain_examples(Path.cwd())
+    bullets = themes.grain_examples()
     passing = sum(1 for b in bullets if not themes.check(b))
     check("the grain reference passes its own validator",
           passing / len(bullets) > 0.95, f"{passing}/{len(bullets)}")
@@ -306,7 +307,6 @@ def main() -> int:
     check("re-harvest refreshes all", refreshed2 == len(passages2))
     check("ids stable across re-harvest", set(bank.load()) == first_ids)
 
-
     print("\nfacets")
     from . import facets as facets_mod
 
@@ -321,6 +321,38 @@ def main() -> int:
     bank.merge(passages2)
     check("facets survive a re-harvest",
           all(p.get("facets") for p in bank.load().values()))
+
+    print("\ndraw")
+    import json as _json
+    from . import sample as sample_mod
+
+    with (tmp / "extracted" / "themes.jsonl").open("a", encoding="utf-8") as fh:
+        for tid, text in (("t-a", "A neutral theme."), ("t-b", "Another one.")):
+            fh.write(_json.dumps({"id": tid, "text": text,
+                                  "source_id": "scp"}) + "\n")
+
+    pk = sample_mod.draw(tmp, n_examples=3, n_themes=2, seed=7, write=False)
+    check("draw samples the whole pool, not a kept subset",
+          set(pk["example_ids"]) <= set(bank.load()) and pk["example_ids"],
+          str(pk["example_ids"]))
+    check("draw banks themes from the theme pool",
+          sorted(pk["theme_ids"]) == ["t-a", "t-b"], str(pk["theme_ids"]))
+    check("the realised order is recorded",
+          [r["id"] for r in pk["example_order"]] == pk["example_ids"])
+    d1 = [(r.get("facets") or {}).get("d1", 0.0) for r in pk["examples"]]
+    check("--order-by d1 renders ascending", d1 == sorted(d1), str(d1))
+
+    rendered = sample_mod.render(pk)
+    check("render puts the register before the seed",
+          rendered.index("# REGISTER") < rendered.index("# SEED"))
+    check("render emits no canon block", "# CANON" not in rendered)
+
+    try:
+        sample_mod.draw(tmp, facet="d4=persuasive", write=False)
+        check("a facet that matches nothing says so", False, "no error raised")
+    except SystemExit as e:
+        check("a facet that matches nothing says so",
+              "--facet" in str(e) and "harvest" not in str(e), str(e))
 
     print()
     if FAILURES:

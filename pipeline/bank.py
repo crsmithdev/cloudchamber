@@ -7,10 +7,12 @@ Two append-friendly JSONL stores under `extracted/`, and nothing else:
                    material does not churn ids.
   themes.jsonl     drafted themes, same shape.
 
-**There is no decision layer.** Keep/pass/maybe and the append-only trail that
-carried them were removed on 2026-09-03, to be re-added later. Both banks are
-pools as they stand: everything in them is in play, and nothing records a
-verdict about anything.
+**There is no decision layer.** Keep/pass/maybe and the readers and writers of
+the append-only trail were removed on 2026-09-03, to be re-added later. Both
+banks are pools as they stand: everything in them is in play, and nothing here
+records or consults a verdict. The trail itself, `extracted/decisions.jsonl`,
+is left on disk untouched — it cannot be rebuilt, and passage ids are
+content-derived, so its rows still attach when the layer comes back.
 """
 
 from __future__ import annotations
@@ -53,19 +55,9 @@ def read_jsonl(path: str | Path) -> Iterator[dict]:
     return gen()
 
 
-def append_jsonl(path: str | Path, rows: Iterable[dict]) -> int:
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    n = 0
-    with path.open("a", encoding="utf-8") as fh:
-        for r in rows:
-            fh.write(json.dumps(r, ensure_ascii=False) + "\n")
-            n += 1
-    return n
-
-
 def write_jsonl(path: str | Path, rows: Iterable[dict]) -> int:
-    """Atomic full rewrite. Used for the pool, never for decisions."""
+    """Atomic full rewrite. The pool is the only thing rewritten whole;
+    `extracted/decisions.jsonl` is append-only and nothing here touches it."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=str(path.parent), suffix=".tmp")
@@ -87,13 +79,11 @@ def _row(obj) -> dict:
 
 
 class Bank:
-    """The example pool plus its decision history."""
+    """One JSONL pool, keyed by id."""
 
     def __init__(self, root: str | Path | None = None, pool: str = EXAMPLES):
         self.root = _root(root)
         self.pool_path = self.root / pool
-
-    # --- pool ---------------------------------------------------------
 
     def load(self) -> dict[str, dict]:
         return {r["id"]: r for r in read_jsonl(self.pool_path) if "id" in r}
@@ -130,8 +120,6 @@ class Bank:
                 added += 1
         write_jsonl(self.pool_path, existing.values())
         return added, refreshed
-
-    # --- decisions ----------------------------------------------------
 
     def stats(self) -> dict:
         pool = self.load()

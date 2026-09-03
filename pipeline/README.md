@@ -18,8 +18,8 @@ from source fiction at all.
 ## Running it
 
 ```bash
-python -m pipeline harvest              # sources -> passage candidates
-python -m pipeline facets               # score the pool on Biber D1-D6
+python -m pipeline harvest               # sources -> passage candidates
+python -m pipeline facets                # score the pool on Biber D1-D6
 python -m pipeline themes --brief scp    # a drafting brief for a session
 python -m pipeline themes --ingest f.json --source scp   # validate and bank
 python -m pipeline themes --audit        # grain, against pipeline/grain.md
@@ -35,10 +35,10 @@ Scope a harvest with `--only scp datlow`. Scope a draw with `--facet involved`
 (a voice, a mode, or a whole cell like `involved/narrative`), `--order-by`,
 `--seed`.
 
-**There is no cull.** Keep, pass and maybe, the append-only decision trail, the
-terminal reviewer and the browser one were all removed on 2026-09-03 and will
-be re-added later. Both banks are pools as they stand and `draw` samples the
-whole of them.
+**There is no cull.** Keep, pass and maybe, the append-only decision trail,
+the terminal reviewer and the browser one were all removed on 2026-09-03 and
+will be re-added later. Both banks are pools as they stand, and `draw` samples
+the whole of them.
 
 ## Themes
 
@@ -269,8 +269,8 @@ The costs, named:
 
 ## Where the feedback edges will attach
 
-Nothing consumes verdicts, because nothing records them yet. When the decision
-layer comes back, four things should read it, in rough order of value:
+Nothing records verdicts at present. When the decision layer comes back,
+four things should read it, in rough order of value:
 
 1. **Validation of the facets themselves.** Which facet, if any, predicts a
    keep? Anything that predicts nothing gets dropped, including D1 and D2.

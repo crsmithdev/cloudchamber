@@ -139,7 +139,7 @@ def measure(texts: list[str]) -> dict:
 GRAIN_REFERENCE = Path(__file__).parent / "grain.md"
 
 
-def grain_examples(root: str | Path = ".") -> list[str]:
+def grain_examples() -> list[str]:
     """The frozen form reference.
 
     This used to read playbook §2, which was both the bank and the thing new
@@ -155,7 +155,7 @@ def audit(root: str | Path = ".", out: str | Path | None = None) -> dict:
     """Compare the banked themes against playbook §2 on the same measures."""
     bank = Bank(out or Path(root) / "extracted", pool=THEMES)
     banked = [r.get("text", "") for r in bank.load().values()]
-    ref = measure(grain_examples(root))
+    ref = measure(grain_examples())
     got = measure(banked) if banked else None
 
     print(f"{'':<22}{'grain ref':>14}{'banked':>14}")
@@ -253,7 +253,7 @@ Aim for 6–12. Fewer good ones beats more.
 def brief(source_id: str, root: str | Path = ".", shots: int = 8) -> str:
     import random
 
-    bullets = grain_examples(root)
+    bullets = grain_examples()
     picked = random.SystemRandom().sample(bullets, min(shots, len(bullets)))
     shot_text = "\n".join(f"> {b}" for b in picked)
     for src in sources.load(root):
@@ -261,10 +261,11 @@ def brief(source_id: str, root: str | Path = ".", shots: int = 8) -> str:
             lines = "\n".join(f"- {q}" for q in getattr(src, "research", []) or [])
             if src.kind == "setting":
                 lines += (
-                    f"\n\nRead `sources/summaries/{src.id}.md` "
-                    "in full first. A theme abstracts from what the lore file's §5 "
-                    "documents and §8 leaves open; nothing in its §7 seeds anything, "
-                    "and the setting's nouns stay in the lore file, not in the theme."
+                    f"\n\nRead `sources/summaries/{src.id}.md` in full first. "
+                    "It is a reference register, not a bank: a theme abstracts "
+                    "from the mechanisms it documents and the ground it leaves "
+                    "open, and the setting's proper nouns stay in that file "
+                    "rather than in the theme."
                 )
             return BRIEF.format(
                 sid=src.id, notes=src.notes or "", lines=lines, shots=shot_text,
