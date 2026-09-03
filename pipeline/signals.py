@@ -2,7 +2,7 @@
 
 Two jobs:
 
-  1. Tag a passage against the six failures from `seeds/README.md`, so the
+  1. Tag a passage against the six failures from `extracted/README.md`, so the
      bank can be checked for coverage rather than accumulating on one axis.
   2. Score register fitness, so the pool sorts usefully.
 

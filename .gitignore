@@ -7,8 +7,8 @@ __pycache__/
 *.py[cod]
 
 # Regenerable pipeline output. `pipeline harvest` rebuilds the pool from
-# refs/ at any time. seeds/decisions.jsonl is DELIBERATELY NOT ignored —
+# refs/ at any time. extracted/decisions.jsonl is DELIBERATELY NOT ignored —
 # it is the one file here that cannot be regenerated from anything.
-seeds/exemplars.jsonl
-seeds/themes.jsonl
-seeds/packets/
+extracted/exemplars.jsonl
+extracted/themes.jsonl
+extracted/packets/

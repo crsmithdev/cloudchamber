@@ -1,6 +1,6 @@
 """The cull. Chris reads passages and says keep or pass.
 
-Every verdict appends to `seeds/decisions.jsonl` and nothing is ever
+Every verdict appends to `extracted/decisions.jsonl` and nothing is ever
 overwritten, because the decisions are the training data. A pass is as
 informative as a keep — arguably more so, since the pool is mostly passes and
 a discriminator needs negatives.
@@ -39,13 +39,13 @@ def _render(p: dict, i: int, total: int) -> str:
 
 def review(
     root: str | Path = ".",
-    seeds: str | Path | None = None,
+    out: str | Path | None = None,
     tag: str | None = None,
     order: str = "score",
     limit: int = 0,
     min_score: float = 0.0,
 ) -> None:
-    bank = Bank(seeds or Path(root) / "seeds")
+    bank = Bank(out or Path(root) / "extracted")
     pool = bank.load()
     done = bank.verdicts()
 
@@ -98,13 +98,13 @@ def review(
           f"unlabelled {s['unlabelled']}  of {s['pool']}")
 
 
-def export(root: str | Path = ".", seeds: str | Path | None = None,
-           out: str | Path | None = None) -> Path:
-    """Write the kept set to `seeds/exemplars.md` in the documented format."""
-    seeds_dir = Path(seeds or Path(root) / "seeds")
-    bank = Bank(seeds_dir)
+def export(root: str | Path = ".", out: str | Path | None = None,
+           path: str | Path | None = None) -> Path:
+    """Write the kept set to `extracted/exemplars.md` in the documented format."""
+    out_dir = Path(out or Path(root) / "extracted")
+    bank = Bank(out_dir)
     kept = sorted(bank.kept(), key=lambda p: (p.get("tags") or ["zz"])[0])
-    out = Path(out) if out else seeds_dir / "exemplars.md"
+    dest = Path(path) if path else out_dir / "exemplars.md"
 
     lines = [
         "# EXEMPLARS — register conditioning",
@@ -122,6 +122,6 @@ def export(root: str | Path = ".", seeds: str | Path | None = None,
         lines += [f"### {who} — {src}", tags, "", p.get("text", ""), ""]
         if p.get("license"):
             lines += [f"<!-- {p['license']}; {p.get('origin','')} -->", ""]
-    out.write_text("\n".join(lines), encoding="utf-8")
-    print(f"wrote {out} ({len(kept)} passages)")
-    return out
+    dest.write_text("\n".join(lines), encoding="utf-8")
+    print(f"wrote {dest} ({len(kept)} passages)")
+    return dest

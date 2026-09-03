@@ -2,7 +2,7 @@
 
 *Compiled 2026-09-02. In-house, like `setting-a.md` — written here rather than distilled from a source annex.*
 
-**Where this sits.** `craft.md` is the human evidence behind playbook §1 and §6: how writers generate and kill premises. `evals/LITERATURE.md` is the evidence behind judging, and is explicitly downstream of generation — no generator reads it. This file is the third leg and the one that was missing: what the machine does to a premise before craft has any say, and what can be done about it at the point of the call.
+**Where this sits.** `craft.md` is the human evidence behind playbook §1 and §6: how writers generate and kill premises. `research/literature.md` is the evidence behind judging, and is explicitly downstream of generation — no generator reads it. This file is the third leg and the one that was missing: what the machine does to a premise before craft has any say, and what can be done about it at the point of the call.
 
 It does not grade anything and it is not a rubric. Playbook §1 says what to think about. This says how to sample. The two are orthogonal and both are needed: §1 run through a default generation call produces competent premises, which is the failure mode this file exists to name.
 
@@ -40,7 +40,7 @@ The diagnostic worth keeping: an over-optimised sentiment reward model once taug
 
 ### 1.4 Why this bears on §0 specifically
 
-The pull toward redemption, exposure and resolution is the same distributional concentration expressed as narrative shape. Which means the two properties `evals/README.md` identified as **house conventions rather than universals** — the absent impossibility and the added reckoning — are exactly the two the model will erode without being asked to. The haiku run found a reader will not supply them and will not miss them. This file says the generator will not supply them either, and will actively drift off them, and that instructions are the weakest available instrument against that drift.
+The pull toward redemption, exposure and resolution is the same distributional concentration expressed as narrative shape. Which means the two properties `research/literature.md` identified as **house conventions rather than universals** — the absent impossibility and the added reckoning — are exactly the two the model will erode without being asked to. The haiku run found a reader will not supply them and will not miss them. This file says the generator will not supply them either, and will actively drift off them, and that instructions are the weakest available instrument against that drift.
 
 ---
 
@@ -60,7 +60,7 @@ The pull toward redemption, exposure and resolution is the same distributional c
 | Best off-the-shelf LLM judge agreement with human creative-writing preference | 73% | LitBench, arXiv:2507.00769 |
 | Min-p sampling's diversity claim: significant in 1 of 12 comparisons after correction; 2–10× more tuning than its baselines | 1 / 12 | Schaeffer, Kazdan & Denisov-Blanch, arXiv:2506.13681 — **disputed, do not cite the original** |
 
-**The one that governs the rest.** The AI novelty advantage exists only in the un-executed abstract and inverts once ideas are built. A premise that reads as novel in a list is not the same object as a premise that survives being written. No pitch-stage rubric substitutes for cheap partial execution — which is the same conclusion `evals/LITERATURE.md` reaches from the judging side, arrived at independently.
+**The one that governs the rest.** The AI novelty advantage exists only in the un-executed abstract and inverts once ideas are built. A premise that reads as novel in a list is not the same object as a premise that survives being written. No pitch-stage rubric substitutes for cheap partial execution — which is the same conclusion `research/literature.md` reaches from the judging side, arrived at independently.
 
 **Not settled.** Two results complicate the homogenisation story rather than confirming it. A dynamic experiment with 844 participants and iterated idea chains found high AI exposure *increased* collective diversity over time and reversed a decline that occurred without AI (Ashkinaze et al., CI 2025, arXiv:2401.13481). And the persona result above shows diversity is recoverable. Honest summary: homogenisation is a property of one-shot designs where everyone sees the same suggestions, not an inevitable property of assistance.
 
@@ -100,7 +100,7 @@ Independent convergence: exemplars that visibly diverge *from each other* also p
 
 **A caution specific to this repo.** `craft.md`, `catalogue.md` and playbook §2 are *criticism and taxonomy*. Few-shot conditioning acts on form, so feeding those in as exemplars conditions the model to produce more criticism and taxonomy — more named moves, more confident craft-talk. That is a thing an LLM is already too good at, and a plausible explanation for generated premises that read as competent rather than disturbing. The exemplar slot wants 150–400 words of prose that simply *is* the register, with no framing.
 
-The corpus for that already exists in `refs/` — the Datlow volumes, Evenson, Langan, Watts, Chiang — plus the SCP material behind the `[S]` tag. Harvesting it is a passage-extraction job, not a writing job. **Nothing distilled or summarised is a substitute**, which is the same distinction `evals/README.md` draws when it keeps `CORPUS.md` out of `refs/`.
+The corpus for that already exists in `refs/` — the Datlow volumes, Evenson, Langan, Watts, Chiang — plus the SCP material behind the `[S]` tag. Harvesting it is a passage-extraction job, not a writing job. **Nothing distilled or summarised is a substitute**, which is the same distinction `research/literature.md` draws when it keeps `CORPUS.md` out of `refs/`.
 
 Open problem, flagged rather than papered over: nobody has documented a technique for *sustaining* bleakness across a long context. Since rebound worsens with intervening context and the sentiment pull is structural, drift toward uplift probably gets worse over a long run — which argues for shorter separately re-anchored passes. Untested.
 
@@ -130,7 +130,7 @@ Note this collides with §4's standing caution that document-as-monster is at or
 
 ### 3.7 Pool across model families, not personas
 
-One persona generates at cosine ≈0.92 with itself; persona prompting ranked among the *weaker* of 35 tested strategies. Three vendors on one seed beats three characters on one model. Pooling is also what `evals/README.md` already requires on the judging side for a different reason — judge model must differ from generator model.
+One persona generates at cosine ≈0.92 with itself; persona prompting ranked among the *weaker* of 35 tested strategies. Three vendors on one seed beats three characters on one model. Pooling is also what `research/literature.md` already requires on the judging side for a different reason — judge model must differ from generator model.
 
 ### 3.8 What to stop doing
 
@@ -148,7 +148,7 @@ Nothing in the playbook has been edited. Recorded here for a deliberate decision
 
 1. **§1.1 gains a draw.** The pull from §2–§5 currently lets whoever is generating choose. Drawing at least one of the four at random, outside the model, is the §3.2 change and it is small.
 2. **§1.9–1.10 gain a batch.** Steps 9 and 10 assume one premise. The batch-blind discipline of §3.5 sits between 8 and 9.
-3. **A new pre-step 0: load exemplars.** Requires `seeds/exemplars.md`, which does not exist yet.
+3. **A new pre-step 0: load exemplars.** Requires `extracted/exemplars.md`, which does not exist yet.
 4. **`CLAUDE.md`'s register paragraph wants rewriting per §3.4** — same constraints, positive form, and restated at the point of generation rather than only at the top of the file.
 5. **§1.10's read-back is the right place for a 400-word partial execution** on anything that survives, per the ideation–execution result.
 

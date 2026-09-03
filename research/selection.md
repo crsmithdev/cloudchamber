@@ -2,7 +2,7 @@
 
 Third stage of the seed pipeline. Drafted 2026-09-02. Still unbuilt as of 2026-09-03 — the harvest and
 exemplar-bank stages it assumed are now `pipeline/`, but nothing here is.
-Companion to `pipeline/` (exemplar sourcing, built 2026-09-02) and `refs/summaries/generation.md`
+Companion to `pipeline/` (exemplar sourcing, built 2026-09-02) and `research/generation.md`
 (the underlying findings). Untested — this is a design, not a validated process.
 
 ## The goal, stated correctly
@@ -160,5 +160,5 @@ profane, traumatised, apologising to Bill for being unprofessional in his own
 after-action report. Strong candidate for `[withheld]`, possibly `[clinical-body]`.
 Passage not yet selected — needs Chris's nomination.
 
-Source: `refs/scp/scp-835.md`, ID `1YyCowr_fvLDRdZ7cMcgLNoeFyWIXdsqd`.
+Source: `sources/texts/scp/scp-835.md`, ID `1YyCowr_fvLDRdZ7cMcgLNoeFyWIXdsqd`.
 Dr Gears and DrClef, CC BY-SA 3.0.

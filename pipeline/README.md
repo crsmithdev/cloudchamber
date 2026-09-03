@@ -4,10 +4,10 @@ Two extractions, one bank each, one decision trail each.
 
 **Passages** are verbatim prose, 150–400 words, harvested from original
 sources in `refs/`. They condition *how a story reads*. They feed
-`seeds/exemplars.jsonl`.
+`extracted/exemplars.jsonl`.
 
 **Themes** are abstractions — a mechanism, what it costs, who it is done to.
-They condition *what gets made*. They feed `seeds/themes.jsonl`.
+They condition *what gets made*. They feed `extracted/themes.jsonl`.
 
 A source declares which of the two it feeds. Not every source feeds both: the
 academic literature yields themes only, and the settings (setting-c,
@@ -21,7 +21,7 @@ python -m pipeline harvest              # sources -> passage candidates
 python -m pipeline themes               # sources -> theme candidates
 python -m pipeline review               # the cull: k / p / m / s / b / q
 python -m pipeline stats                # state of both banks
-python -m pipeline export               # kept passages -> seeds/exemplars.md
+python -m pipeline export               # kept passages -> extracted/exemplars.md
 python -m pipeline draw -n 6 -t 2       # a generation packet
 python -m pipeline.selftest             # verify the code works after a sync
 ```
@@ -39,7 +39,7 @@ python -m pipeline themes --ingest themes.json --source setting-c
 
 ## Why the trail matters
 
-`seeds/decisions.jsonl` is append-only and is never rewritten, deduplicated or
+`extracted/decisions.jsonl` is append-only and is never rewritten, deduplicated or
 pruned. Every keep and every pass is a row, with a timestamp. Two consequences
 worth stating plainly:
 
@@ -64,7 +64,7 @@ call it must not make.
 
 ## The six failure tags
 
-From `seeds/README.md`. A tag means "worth an eye on this axis", never
+From `extracted/README.md`. A tag means "worth an eye on this axis", never
 "this is an exemplar of it".
 
 | tag | what it counters |
@@ -118,4 +118,4 @@ SCP material is CC BY-SA 3.0 and carries author, source and licence through to
 the bank; anything published from it must too. Watts is CC BY-NC-SA. The
 anthology PDFs are not redistributable — they are read locally, passages are
 held locally for conditioning, and nothing derived from them should be
-published verbatim. `doc/corpus.md` has the licensing map for the wider set.
+published verbatim. `research/corpus.md` has the licensing map for the wider set.

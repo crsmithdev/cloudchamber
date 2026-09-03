@@ -17,7 +17,7 @@ from .bank import THEME_DECISIONS, THEMES, Bank
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="pipeline", description="Fog Belt seeding pipeline")
     ap.add_argument("--root", default=".", help="repo root (default: cwd)")
-    ap.add_argument("--seeds", default=None, help="override seeds/ directory")
+    ap.add_argument("--out", default=None, help="override the extracted/ directory")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     h = sub.add_parser("harvest", help="extract passages from sources into the bank")
@@ -32,7 +32,7 @@ def main(argv=None):
     r.add_argument("--limit", type=int, default=0)
     r.add_argument("--min-score", type=float, default=0.0)
 
-    sub.add_parser("export", help="write kept passages to seeds/exemplars.md")
+    sub.add_parser("export", help="write kept passages to extracted/exemplars.md")
 
     d = sub.add_parser("draw", help="draw a generation packet")
     d.add_argument("-n", "--exemplars", type=int, default=6)
@@ -55,22 +55,22 @@ def main(argv=None):
 
     a = ap.parse_args(argv)
     root = Path(a.root)
-    seeds = a.seeds
+    out = a.out
 
     if a.cmd == "harvest":
         harvest_mod.harvest(root, only=a.only, min_score=a.min_score,
-                            per_doc=a.per_doc, seeds=seeds)
+                            per_doc=a.per_doc, out=out)
 
     elif a.cmd == "review":
-        review_mod.review(root, seeds=seeds, tag=a.tag, order=a.order,
+        review_mod.review(root, out=out, tag=a.tag, order=a.order,
                           limit=a.limit, min_score=a.min_score)
 
     elif a.cmd == "export":
-        review_mod.export(root, seeds=seeds)
+        review_mod.export(root, out=out)
 
     elif a.cmd == "draw":
         packet = sample_mod.draw(
-            root, seeds=seeds, n_exemplars=a.exemplars, n_themes=a.themes,
+            root, out=out, n_exemplars=a.exemplars, n_themes=a.themes,
             temperature=a.temperature, coverage=not a.no_coverage,
             include_unlabelled=a.include_unlabelled, tag=a.tag, seed=a.seed,
         )
@@ -87,12 +87,12 @@ def main(argv=None):
         elif a.ingest:
             if not a.source:
                 sys.exit("--ingest needs --source <id>")
-            themes_mod.ingest(a.ingest, a.source, root, seeds=seeds)
+            themes_mod.ingest(a.ingest, a.source, root, out=out)
         else:
-            themes_mod.harvest_local(root, only=a.only, seeds=seeds)
+            themes_mod.harvest_local(root, only=a.only, out=out)
 
     elif a.cmd == "stats":
-        sd = Path(seeds) if seeds else root / "seeds"
+        sd = Path(a.out) if a.out else root / "extracted"
         ex = Bank(sd).stats()
         th = Bank(sd, pool=THEMES, decisions=THEME_DECISIONS).stats()
         if a.json:

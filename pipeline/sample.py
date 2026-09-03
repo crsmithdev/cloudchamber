@@ -11,7 +11,7 @@ Two knobs exist so steering is possible later without a rewrite:
                  so a packet is not six passages all doing the same thing
   --temperature  0 = strictly highest-scoring, 1 = uniform over eligible
 
-Every packet is written to `seeds/packets/` with the ids it drew. When a
+Every packet is written to `extracted/packets/` with the ids it drew. When a
 premise from a packet turns out well, the packet says exactly what conditioned
 it — which is the only way the sampler ever gets to stop being random.
 """
@@ -79,7 +79,7 @@ def _by_coverage(pool: list[dict], k: int, temperature: float, rng: random.Rando
 
 def draw(
     root: str | Path = ".",
-    seeds: str | Path | None = None,
+    out: str | Path | None = None,
     n_exemplars: int = 6,
     n_themes: int = 2,
     temperature: float = 0.85,
@@ -89,10 +89,10 @@ def draw(
     seed: int | None = None,
     write: bool = True,
 ) -> dict:
-    seeds_dir = Path(seeds or Path(root) / "seeds")
+    out_dir = Path(out or Path(root) / "extracted")
     rng = random.Random(seed if seed is not None else int(time.time() * 1000) % (2**31))
 
-    bank = Bank(seeds_dir)
+    bank = Bank(out_dir)
     pool = bank.kept()
     if include_unlabelled:
         pool += bank.unlabelled()
@@ -108,7 +108,7 @@ def draw(
     picker = _by_coverage if coverage else _weighted
     exemplars = picker(pool, n_exemplars, temperature, rng)
 
-    tbank = Bank(seeds_dir, pool=THEMES, decisions=THEME_DECISIONS)
+    tbank = Bank(out_dir, pool=THEMES, decisions=THEME_DECISIONS)
     tpool = tbank.kept() or tbank.unlabelled()
     themes = _weighted(tpool, n_themes, 1.0, rng) if tpool else []
 
@@ -130,7 +130,7 @@ def draw(
     }
 
     if write:
-        out_dir = seeds_dir / "packets"
+        out_dir = out_dir / "packets"
         out_dir.mkdir(parents=True, exist_ok=True)
         stamp = time.strftime("%Y%m%d-%H%M%S", time.gmtime())
         path = out_dir / f"{stamp}.json"

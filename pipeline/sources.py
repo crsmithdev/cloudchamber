@@ -7,7 +7,7 @@ a setting like setting-c yields themes from online reference material
 rather than from source fiction at all.
 
 Config lives in `sources.toml` next to the repo root. The defaults below match
-the current `refs/` layout and are used when no config file is present.
+the current `sources/` layout and are used when no config file is present.
 """
 
 from __future__ import annotations
@@ -44,7 +44,7 @@ class Source:
 DEFAULTS: list[Source] = [
     Source(
         id="scp",
-        path="refs/scp/*.md",
+        path="sources/texts/scp/*.md",
         reader="scp",
         passages=True,
         themes=True,
@@ -54,7 +54,7 @@ DEFAULTS: list[Source] = [
     ),
     Source(
         id="datlow",
-        path="refs/Ellen Datlow*.pdf",
+        path="sources/texts/books/Ellen Datlow*.pdf",
         reader="pdf",
         passages=True,
         themes=True,
@@ -63,21 +63,21 @@ DEFAULTS: list[Source] = [
     ),
     Source(
         id="evenson",
-        path="refs/Brian Evenson*.pdf",
+        path="sources/texts/books/Brian Evenson*.pdf",
         reader="pdf",
         author="Brian Evenson",
         kind="fiction",
     ),
     Source(
         id="langan",
-        path="refs/John Langan*.pdf",
+        path="sources/texts/books/John Langan*.pdf",
         reader="pdf",
         author="John Langan",
         kind="fiction",
     ),
     Source(
         id="watts",
-        path="refs/Peter Watts*.pdf",
+        path="sources/texts/books/Peter Watts*.pdf",
         reader="pdf",
         author="Peter Watts",
         kind="fiction",
@@ -85,21 +85,21 @@ DEFAULTS: list[Source] = [
     ),
     Source(
         id="chiang",
-        path="refs/Ted Chiang*.pdf",
+        path="sources/texts/books/Ted Chiang*.pdf",
         reader="pdf",
         author="Ted Chiang",
         kind="fiction",
     ),
     Source(
         id="king",
-        path="refs/Stephen King*.pdf",
+        path="sources/texts/books/Stephen King*.pdf",
         reader="pdf",
         author="Stephen King",
         kind="fiction",
     ),
     Source(
         id="literature",
-        path="doc/literature.md",
+        path="research/literature.md",
         reader="markdown",
         passages=False,  # criticism conditions for criticism
         themes=True,

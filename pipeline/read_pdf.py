@@ -1,6 +1,6 @@
 """PDF -> Doc.
 
-Built for the ebook-converted anthologies in `refs/` — the Datlow volumes,
+Built for the ebook-converted anthologies in `sources/texts/books/` — the Datlow volumes,
 Evenson, Langan, Watts, Chiang, King. Those share a set of artifacts that will
 wreck a naive extraction:
 

@@ -2,7 +2,7 @@
 
 *Evidence for `playbook.md` §1 (ideation) and §6 (telling it), and for the general question of what makes one of these work at all. Written to be checked, not to be obeyed. Where two credible authorities contradict each other the contradiction is left standing — that is the finding, and harmonising it would destroy the information.*
 
-*Companion to `refs/register.md`, which holds the genre terms (grimdark, cosmic horror, the weird and the eerie, terror/horror/revulsion, Carroll's art-horror, Kristeva's abject). Those definitions are not re-established here. This annex starts where that one stops: not what the words mean, but what the machines do.*
+*Companion to `research/register.md`, which holds the genre terms (grimdark, cosmic horror, the weird and the eerie, terror/horror/revulsion, Carroll's art-horror, Kristeva's abject). Those definitions are not re-established here. This annex starts where that one stops: not what the words mean, but what the machines do.*
 
 ---
 

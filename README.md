@@ -4,6 +4,10 @@ Horror anthology working repo. **This repo is the source of truth.**
 
 ## Layout
 
+Four kinds of thing, one directory each: what the project reads (`sources/`),
+what it has concluded (`research/`), what a machine pulled out (`extracted/`),
+and what it has made (`stories/`). Plus the code and the two standing documents.
+
 ```
 CLAUDE.md                    standing instructions for a Claude session here
 playbook.md                  the generative half. 0 is what the series is;
@@ -12,28 +16,39 @@ playbook.md                  the generative half. 0 is what the series is;
                              setting-a elements); 6 is how a story gets told.
                              Nothing in it evaluates.
 catalogue.md                 the other half -- describes rather than generates.
-                             The slate as it stands (2026-08-29): sameness across
-                             all 24, the collision map, the variety index, unused
-                             ground, the expert panels' cross-story material. Then
-                             the recurring shapes, the anti-patterns, the thirteen
-                             lenses and the source lookup. Per-story findings live
-                             at the end of each story file.
+                             The slate as it stands (2026-08-29), then the
+                             recurring shapes, the anti-patterns, the thirteen
+                             lenses and the source lookup. Per-story findings
+                             live at the end of each story file.
 seeding-v7.md                generation, upstream of the playbook. Six engines,
                              universal moves 3-8, an inversion rule for minting
-                             engines, and a repair table. Supersedes seeding v1-v6.
-                             Was misnamed playbook-v2.md until 2026-09-03.
-sources.toml                 what the pipeline reads and what it takes from each
-                             source -- passages, themes, or both
+                             engines, a repair table. Supersedes seeding v1-v6
+sources.toml                 what the pipeline reads and what it takes from
+                             each source -- passages, themes, or both
 
 stories/NN-slug.md           one story each; 25 developed
 stories/00-undeveloped.md    the bench -- greenlit but never developed, parked
                              attempts with their reasoning, held pairs, passed-on
 
-pipeline/                    the seeding machinery. Two extractions: verbatim
-                             passages (how a story reads) and themes (what gets
-                             made). Local, no model, no network. See its README
-seeds/                       what the pipeline produces and what Chris decides
-  README.md                  the standard: what belongs in the exemplar bank
+sources/                     material the project reads. See sources/README.md
+  texts/books/*.pdf          29 anthologies and collections, tracked, NOT
+                             redistributable. Read locally, never published
+  texts/scp/scp-NNNN.md      109 SCP articles, verbatim wikidot, CC BY-SA 3.0
+  distilled/                 setting-c, setting-b, Evangelion, Jaynes -- where no
+                             full text can be held, the distillate IS the source
+  queue/scp-candidates.md    63 triaged articles not yet held
+
+research/                    what the project has concluded. See its README
+  craft.md generation.md     the evidence behind playbook 1/6 and behind the
+                             shape of a generation call
+  register.md setting-a.md    the genre terms 0 stands on; the specifics behind 5
+  literature.md              academic work on horror. Read for themes, never
+                             for passages -- criticism conditions for criticism
+  corpus.md                  award-attested horror free to read online, with the
+                             licensing map. A standard to read against
+  selection.md               design for the selection stage. Not built
+
+extracted/                   everything the pipeline produced. See its README
   exemplars.jsonl            the candidate pool (regenerable; gitignored)
   themes.jsonl               extracted themes (regenerable; gitignored)
   decisions.jsonl            every keep and pass, append-only, TRACKED. The one
@@ -41,44 +56,9 @@ seeds/                       what the pipeline produces and what Chris decides
   exemplars.md               the kept set, written by `pipeline export`
   packets/                   what each generation call was conditioned on
 
-doc/                         reading and design, nothing that runs
-  literature.md              academic work on what makes horror land. The theme
-                             extractor reads this; it never yields passages
-  corpus.md                  award-attested horror free to read online, with the
-                             licensing map. Held as a standard to read against,
-                             deliberately outside refs/ -- nothing here is
-                             distilled into the playbook or harvested
-  selection.md               design for the selection stage. Not built
-  pipeline.svg               the pipeline as a diagram
-
-refs/                        sources. Read, never edited
-  *.pdf                      the anthologies -- Datlow, Evenson, Langan, Watts,
-                             Chiang, King. 96 MB, not redistributable, GITIGNORED.
-                             `pipeline harvest` reads them in place
-  scp/scp-NNNN.md            110 SCP articles, verbatim wikidot source, CC BY-SA
-  summaries/                 the annexes: the register's commentary on the above.
-                             Source files are read; setting-a.md and generation.md
-                             are written in-house and grow
-    register.md              the genre terms section 0 stands on -- grimdark,
-                             cosmic horror, the eerie, the abject, body horror,
-                             and the Aristotle constraint, with citations
-    generation.md            the evidence behind how a generation call is shaped
-                             -- mode collapse and where it comes from, what raises
-                             output diversity and by how much, why negations decay
-                             with distance from the ask, and why exemplars beat
-                             instructions on register
-    setting-a.md              the specifics behind playbook section 5 -- fifteen
-                             domains of setting-a statutes, bodies, dates, cases
-    craft.md                 the evidence behind playbook sections 1 and 6 --
-                             eight parts, 74 failure modes with the authority
-                             attached, and a verification ledger of what is
-                             corrected, refuted, and still to be checked in print
-    chiang.md watts.md setting-c.md setting-b.md evangelion.md jaynes.md
-    scp/djkaktus-<range>.md  the djkaktus corpus, five files by SCP number
-    scp/djkaktus-canons-and-tales.md
-    scp/assorted.md          19 articles by other authors
-    scp/candidates.md        63 triaged, unregistered articles
-
+pipeline/                    the seeding machinery. Two extractions: verbatim
+                             passages (how a story reads) and themes (what gets
+                             made). Local, no model, no network
 .claude/skills/
   seed-premises/SKILL.md     how a generation call is shaped: draw the
                              constraints outside the model, condition on
@@ -87,17 +67,12 @@ refs/                        sources. Read, never edited
                              rather than replacing it
 ```
 
-Source tags in `playbook.md` and `catalogue.md` map one-to-one onto
-`refs/summaries/`: `[C]` chiang, `[W]` watts, `[setting-c]` setting-c, `[TC]`
-setting-b, `[E]` evangelion, `[S]` the SCP wiki entire -- the djkaktus
-files, scp/assorted.md and scp/candidates.md, folded into one tag on 2026-08-29.
-`[FB]` is doctrine arrived at in-house and has no source file.
-
-**Two things live under `refs/scp/`-shaped paths and they are not the same.**
-`refs/scp/` is raw article text, 110 files, verbatim. `refs/summaries/scp/` is
-the register's commentary on those articles. The commentary was there first and
-the raw scrape took the shorter path in September; every reference in
-`playbook.md` was repointed on 2026-09-03.
+Source tags in `playbook.md` and `catalogue.md` resolve to full text wherever
+full text exists. `[C]` Chiang and `[W]` Watts are the books in
+`sources/texts/books/`; `[S]` is `sources/texts/scp/`. `[setting-c]`, `[TC]`, `[E]`
+and `[J]` are `sources/distilled/`, where the distillate is the source of
+record because the thing itself cannot be held. `[FB]` is doctrine arrived at
+in-house and has no source file.
 
 ## Working on it
 
@@ -129,16 +104,16 @@ and the passed-on list.
 ## Running the pipeline
 
 ```bash
-python -m pipeline harvest      # refs/ -> passage candidates
-python -m pipeline themes       # refs/ -> theme candidates
+python -m pipeline harvest      # sources/texts/ -> passage candidates
+python -m pipeline themes       # sources/ -> theme candidates
 python -m pipeline review       # the cull: k / p / m / s / b / q
-python -m pipeline export       # kept passages -> seeds/exemplars.md
+python -m pipeline export       # kept passages -> extracted/exemplars.md
 python -m pipeline draw -n 6    # a generation packet
 python -m pipeline.selftest     # verify the code after a sync
 ```
 
 `pipeline/README.md` has the rest, including which parts are weakest and where
-the feedback edges from `seeds/decisions.jsonl` are meant to attach.
+the feedback edges from `extracted/decisions.jsonl` are meant to attach.
 
 ## Pushing
 

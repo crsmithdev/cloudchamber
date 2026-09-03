@@ -5,7 +5,7 @@ description: Generate Fog Belt premises by drawing constraints outside the model
 
 # Seeding
 
-The default failure here is not a bad premise. It is a competent one — the premise most writers would reach for given the constraints, delivered fluently. This procedure exists to keep the generator off the centre of its own distribution. The evidence behind every step is in `refs/summaries/generation.md`.
+The default failure here is not a bad premise. It is a competent one — the premise most writers would reach for given the constraints, delivered fluently. This procedure exists to keep the generator off the centre of its own distribution. The evidence behind every step is in `research/generation.md`.
 
 Read `CLAUDE.md` and playbook §0–§1 first. Those say what a Fog Belt premise is. This says how to sample for one. Do not let this replace §1 — it wraps a call around it.
 
@@ -27,7 +27,7 @@ You do not get to pick. Left to itself a model reaches for the same handful of m
 
 ### 2. Load the exemplars
 
-Read `seeds/exemplars.md` in full and hold it. It is written by `python -m pipeline export` from Chris's keeps; if it is missing or empty the cull has not been run yet, and you should say so rather than substituting anything. Those are passages of prose in the target register. They are not instructions: do not summarise them, refer to them, or explain what they demonstrate. They work by conditioning or not at all.
+Read `extracted/exemplars.md` in full and hold it. It is written by `python -m pipeline export` from Chris's keeps; if it is missing or empty the cull has not been run yet, and you should say so rather than substituting anything. Those are passages of prose in the target register. They are not instructions: do not summarise them, refer to them, or explain what they demonstrate. They work by conditioning or not at all.
 
 If that file does not exist yet, say so and continue, but expect register drift — the resolution pull is structural and instructions are the weakest instrument against it.
 
@@ -69,7 +69,7 @@ Then pitch the survivor. One paragraph. Do not stack alternatives, do not name t
 
 ### 6. Do not consult the evals
 
-`doc/corpus.md` is external fiction held as a standard to read against, and `doc/literature.md` is the academic material behind the method. Neither enters a generation call: a generator that has read the comparison set is not being compared.
+`research/corpus.md` is external fiction held as a standard to read against, and `research/literature.md` is the academic material behind the method. Neither enters a generation call: a generator that has read the comparison set is not being compared.
 
 ## Failure signs in a batch
 
@@ -84,4 +84,4 @@ Any of these means the call was shaped wrong rather than the seed being bad. Red
 
 ## What not to try
 
-Persona prompting as a diversity lever, regenerate-and-pick, and raising temperature to get strangeness are all measured dead ends. `refs/summaries/generation.md` §3.8 has the detail.
+Persona prompting as a diversity lever, regenerate-and-pick, and raising temperature to get strangeness are all measured dead ends. `research/generation.md` §3.8 has the detail.

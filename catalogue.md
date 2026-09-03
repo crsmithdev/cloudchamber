@@ -374,7 +374,7 @@ The oldest shape and still the most common: about half the slate cleanly, anothe
 
 **Redaction with the key attached** — SCP-835. `[S]`
 
-**Sixty-three further candidates, triaged and unregistered** — `refs/summaries/scp/candidates.md`. Tier 1 there (SCP-2400, SCP-2275, SCP-2140, SCP-3309) is the strongest unmined material available.
+**Sixty-three further candidates, triaged and unregistered** — `sources/queue/scp-candidates.md`. Tier 1 there (SCP-2400, SCP-2275, SCP-2140, SCP-3309) is the strongest unmined material available.
 
 ---
 

@@ -86,11 +86,11 @@ def main() -> int:
     from .segment import MAX_WORDS, MIN_WORDS, windows
 
     tmp = Path(tempfile.mkdtemp(prefix="fogbelt-selftest-"))
-    (tmp / "refs" / "scp").mkdir(parents=True)
-    (tmp / "refs" / "scp" / "scp-0000.md").write_text(SCP_FIXTURE, encoding="utf-8")
+    (tmp / "sources" / "texts" / "scp").mkdir(parents=True)
+    (tmp / "sources" / "texts" / "scp" / "scp-0000.md").write_text(SCP_FIXTURE, encoding="utf-8")
 
     print("scp adapter")
-    doc = read_scp.parse(tmp / "refs" / "scp" / "scp-0000.md")
+    doc = read_scp.parse(tmp / "sources" / "texts" / "scp" / "scp-0000.md")
     text = " ".join(b.text for b in doc.blocks)
     check("front matter parsed", doc.author == "testauthor", repr(doc.author))
     check("footnote body removed", "must be removed entirely" not in text)
@@ -140,7 +140,7 @@ def main() -> int:
     check("themes carry facets", all(t["facets"] for t in trows))
 
     print("\nbank and decision trail")
-    bank = Bank(tmp / "seeds")
+    bank = Bank(tmp / "extracted")
     added, refreshed = bank.merge(passages)
     check("first merge adds", added == len(passages) and refreshed == 0,
           f"+{added} ~{refreshed}")
@@ -154,7 +154,7 @@ def main() -> int:
           bank.verdicts()[passages[0].id]["verdict"] == "pass")
 
     # The load-bearing property: re-harvest must not churn ids.
-    doc2 = read_scp.parse(tmp / "refs" / "scp" / "scp-0000.md")
+    doc2 = read_scp.parse(tmp / "sources" / "texts" / "scp" / "scp-0000.md")
     passages2 = [score(p) for p in windows(doc2)]
     added2, refreshed2 = bank.merge(passages2)
     check("re-harvest adds nothing new", added2 == 0, f"+{added2}")

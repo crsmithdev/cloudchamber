@@ -9,7 +9,7 @@
 #   back via `pipeline themes --ingest`.
 
 [source.scp]
-path = "refs/scp/*.md"
+path = "sources/texts/scp/*.md"
 reader = "scp"
 passages = true
 themes = true
@@ -18,7 +18,7 @@ license = "CC BY-SA 3.0"
 notes = "Verbatim wikidot source. Attribution required on anything published."
 
 [source.datlow]
-path = "refs/Ellen Datlow*.pdf"
+path = "sources/texts/books/Ellen Datlow*.pdf"
 reader = "pdf"
 passages = true
 themes = true
@@ -26,38 +26,38 @@ kind = "fiction"
 notes = "Anthologies. Story splitting is best-effort; check attribution before quoting."
 
 [source.evenson]
-path = "refs/Brian Evenson*.pdf"
+path = "sources/texts/books/Brian Evenson*.pdf"
 reader = "pdf"
 author = "Brian Evenson"
 kind = "fiction"
 
 [source.langan]
-path = "refs/John Langan*.pdf"
+path = "sources/texts/books/John Langan*.pdf"
 reader = "pdf"
 author = "John Langan"
 kind = "fiction"
 
 [source.watts]
-path = "refs/Peter Watts*.pdf"
+path = "sources/texts/books/Peter Watts*.pdf"
 reader = "pdf"
 author = "Peter Watts"
 kind = "fiction"
 license = "CC BY-NC-SA"
 
 [source.chiang]
-path = "refs/Ted Chiang*.pdf"
+path = "sources/texts/books/Ted Chiang*.pdf"
 reader = "pdf"
 author = "Ted Chiang"
 kind = "fiction"
 
 [source.king]
-path = "refs/Stephen King*.pdf"
+path = "sources/texts/books/Stephen King*.pdf"
 reader = "pdf"
 author = "Stephen King"
 kind = "fiction"
 
 [source.literature]
-path = "doc/literature.md"
+path = "research/literature.md"
 reader = "markdown"
 passages = false          # criticism conditions for criticism
 themes = true

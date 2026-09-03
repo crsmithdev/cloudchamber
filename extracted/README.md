@@ -11,14 +11,14 @@ Target: six to ten passages. More is not better — the set has to fit in front 
 ## What does not go here
 
 - **Anything a model wrote.** Model-generated exemplars regress to exactly the mean this file exists to escape, and the failure is invisible on inspection. This is the one absolute rule.
-- **Anything from `craft.md`, `catalogue.md`, playbook §2, or the `refs/summaries/` annexes.** Those are criticism and taxonomy. Conditioning on them produces more criticism and taxonomy.
+- **Anything from `craft.md`, `catalogue.md`, playbook §2, or the `research/` annexes.** Those are criticism and taxonomy. Conditioning on them produces more criticism and taxonomy.
 - **Synopses.** A synopsis of a story in the register is not a passage in the register.
 
 ## Where to harvest from
 
 In descending order of quality:
 
-1. The `refs/` PDFs — the Datlow volumes, Evenson, Langan, Watts, Chiang — and the SCP articles behind the `[S]` tag. Published human prose, exact register, zero contamination.
+1. The `sources/` PDFs — the Datlow volumes, Evenson, Langan, Watts, Chiang — and the SCP articles behind the `[S]` tag. Published human prose, exact register, zero contamination.
 2. Hand-written passages from `stories/`, where the prose is Chris's own. Anything model-drafted is disqualified.
 3. Newly hand-written passages, only where 1 and 2 cannot cover a specific failure.
 

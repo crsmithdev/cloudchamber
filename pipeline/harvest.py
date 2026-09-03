@@ -105,10 +105,10 @@ def harvest(
     only: list[str] | None = None,
     min_score: float = 0.0,
     per_doc: int = 12,
-    seeds: str | Path | None = None,
+    out: str | Path | None = None,
 ) -> dict:
     root = Path(root)
-    bank = Bank(seeds or root / "seeds")
+    bank = Bank(out or root / "extracted")
     all_passages: list[Passage] = []
     per_source: dict[str, int] = {}
 

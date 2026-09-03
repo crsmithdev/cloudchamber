@@ -273,7 +273,7 @@ Also: `cdw` The Case of Charles Dexter Ward, `a` The Alchemist.
 
 **Single-author collections whose reputations rest entirely on them:**
 
-- **Robert Aickman** — *Cold Hand in Mine*, *Dark Entries*, *The Wine-Dark Sea*. **Not free anywhere, and central to the register.** `refs/summaries/craft.md` §6 leans on his introductions; the fiction itself is the thing the annex cannot show you.
+- **Robert Aickman** — *Cold Hand in Mine*, *Dark Entries*, *The Wine-Dark Sea*. **Not free anywhere, and central to the register.** `research/craft.md` §6 leans on his introductions; the fiction itself is the thing the annex cannot show you.
 - **Nathan Ballingrud** — *North American Lake Monsters* (Small Beer, SJA winner) and *Wounds*. The clearest case of a first-rank reputation with zero free representative work. Note: search results surface OceanofPDF for these. **That is a piracy site. Don't.**
 - **Laird Barron** — *The Imago Sequence*, *Occultation*. The free stories at §3 are a thin sample of him.
 - **Livia Llewellyn** — *Engines of Desire*, *Furnace* (Word Horde, both SJA finalists).
@@ -282,7 +282,7 @@ Also: `cdw` The Case of Charles Dexter Ward, `a` The Alchemist.
 - **Michael Wehunt** — *Greener Pastures* (SJA finalist).
 - **Kristi DeMeester** — *Everything That's Underneath* (Apex).
 - **John Langan** — *Sefira and Other Betrayals*.
-- **Ted Chiang** — *Stories of Your Life and Others* and *Exhalation*. `refs/summaries/chiang.md` exists; the fiction is collection-only except "The Great Silence."
+- **Ted Chiang** — *Stories of Your Life and Others* and *Exhalation*. `sources/texts/books/ (Chiang, full text)` exists; the fiction is collection-only except "The Great Silence."
 - **Kim Fu** — *Lesser Known Monsters of the 21st Century*, which contains "Pre-Simulation Consultation XF007867" (SJA winner, transcript form) — the formally-unusual story I most wanted for §3 and could not reach.
 
 **Two closed formats worth knowing about:** **Amazon Original Stories** has taken a large share of the SJA novelette ballot since 2020 (Nghi Vo's *What the Dead Know*, Kurt Fawver's *The Thirteen Ways We Turned Darryl Datson into a Monster*, both winners) and exists nowhere else. **Black Static** (TTA Press) was DeMeester's main venue and has no free archive — back issues are the only route.
@@ -293,7 +293,7 @@ Also: `cdw` The Case of Charles Dexter Ward, `a` The Alchemist.
 
 **For this corpus:** the literary quarterlies that appear on pre-2019 SJA ballots — *Granta*, *Tin House*, *The Southern Review*, *The Paris Review*, *The New Yorker* — are paywalled to me and often free to a cardholder. Mariana Enriquez's "Spiderweb" (*New Yorker*, 2016) is one example among many.
 
-**For `refs/summaries/craft.md`, which is the same errand:** its Part VII lists what could not be sourced, and a good share is a single database away —
+**For `research/craft.md`, which is the same errand:** its Part VII lists what could not be sourced, and a good share is a single database away —
 
 - **Joanna Russ, "The Wearing Out of Genre Materials,"** *College English* 33.1 (1971), pp. 46–54 — JSTOR. **The highest-value unretrieved item in the ideation material**; its three-phase schema (Innocence / Plausibility / Decadence) is the missing theory of why premises exhaust.
 - **Bruce Robbins, "Cruelty Is Bad: Banality and Proximity in *Never Let Me Go*,"** *Novel* 40:3 (2007) — Project MUSE. The highest-value unretrieved item in the theme material.
@@ -321,7 +321,7 @@ Small, cheap for a person, and each closes a flagged uncertainty:
 - **The Horla, in English.** The one core-set item with no verified clean English text (§5.3). PG 10775 is the French. Resolve via the story index at https://www.gutenberg.org/ebooks/28076 and confirm which volume of PG 3090 carries it.
 - **The Wikisource URLs** in §4, which rest on search metadata rather than inspection.
 - **Two Clarkesworld URLs** in §3 unverified by fetch but almost certainly live.
-- **The `refs/summaries/craft.md` print-check list** — King's *Danse Macabre* page numbers and the "phobic pressure points" wording, Gardner's page numbers, Clute's SIGHTING entry, Edmund Wilson on Lovecraft. Each is one physical copy and five minutes.
+- **The `research/craft.md` print-check list** — King's *Danse Macabre* page numbers and the "phobic pressure points" wording, Gardner's page numbers, Clute's SIGHTING entry, Edmund Wilson on Lovecraft. Each is one physical copy and five minutes.
 
 ### 8.5 The one that needs a person, not a tool
 

@@ -1,6 +1,6 @@
 """The banks, and the decision trail.
 
-Three append-friendly JSONL stores under `seeds/`:
+Three append-friendly JSONL stores under `extracted/`:
 
   exemplars.jsonl  the candidate pool. One line per passage, keyed by a stable
                    id derived from source + text, so re-harvesting the same
@@ -25,7 +25,7 @@ from dataclasses import asdict, is_dataclass
 from pathlib import Path
 from typing import Iterable, Iterator
 
-SEEDS = Path("seeds")
+OUT = Path("extracted")
 EXEMPLARS = "exemplars.jsonl"
 DECISIONS = "decisions.jsonl"
 THEMES = "themes.jsonl"
@@ -33,7 +33,7 @@ THEME_DECISIONS = "theme-decisions.jsonl"
 
 
 def _root(root: str | Path | None) -> Path:
-    p = Path(root) if root else SEEDS
+    p = Path(root) if root else OUT
     p.mkdir(parents=True, exist_ok=True)
     return p
 

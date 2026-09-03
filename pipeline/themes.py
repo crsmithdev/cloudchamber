@@ -12,7 +12,7 @@ justifies its own cruelty. Themes seed *what gets made*; exemplars condition
             brief, a Claude session does the reading against online reference
             material, and the result is banked with `pipeline themes --ingest`.
 
-Both land in `seeds/themes.jsonl` with the same decision mechanics as the
+Both land in `extracted/themes.jsonl` with the same decision mechanics as the
 exemplar bank, so a theme Chris passes on stays passed and the trail survives.
 
 This is the weakest component in the pipeline. It matches the grammatical
@@ -132,11 +132,11 @@ def from_doc(doc: Doc, max_per_doc: int = 40) -> list[dict]:
 
 
 def harvest_local(root: str | Path = ".", only: list[str] | None = None,
-                  seeds: str | Path | None = None) -> dict:
+                  out: str | Path | None = None) -> dict:
     from .harvest import docs_for
 
     root = Path(root)
-    bank = Bank(seeds or root / "seeds", pool=THEMES, decisions=THEME_DECISIONS)
+    bank = Bank(out or root / "extracted", pool=THEMES, decisions=THEME_DECISIONS)
     rows: list[dict] = []
     for src in sources.load(root):
         if only and src.id not in only:
@@ -212,7 +212,7 @@ def research_brief(source_id: str, root: str | Path = ".") -> str:
 
 
 def ingest(path: str | Path, source_id: str, root: str | Path = ".",
-           seeds: str | Path | None = None) -> int:
+           out: str | Path | None = None) -> int:
     """Bank themes produced by a research session."""
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     if isinstance(data, dict):
@@ -237,7 +237,7 @@ def ingest(path: str | Path, source_id: str, root: str | Path = ".",
             "score": float(item.get("score", 0.6)),
             "researched_at": _now(),
         })
-    bank = Bank(seeds or Path(root) / "seeds", pool=THEMES, decisions=THEME_DECISIONS)
+    bank = Bank(out or Path(root) / "extracted", pool=THEMES, decisions=THEME_DECISIONS)
     added, refreshed = bank.merge(rows)
     print(f"ingested {len(rows)} themes for {source_id}: +{added} new, {refreshed} refreshed")
     return added
