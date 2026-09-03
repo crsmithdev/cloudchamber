@@ -127,41 +127,40 @@ kbd{font-family:var(--mono); font-size:11px; background:var(--surface-2);
   font-variant-numeric:tabular-nums}
 
 /* ---------- deck ---------- */
-/* Two states, and they want opposite layouts.
-   Collapsed is a 40-word opening: both tracks are sized to content so the pair
-   centres, because a `1fr` prose track absorbs the surplus and strands the
-   column at the left edge of an ultrawide.
-   Expanded is the whole passage: the prose track takes the width and sets
-   itself in newspaper columns, which is the only way 400 words uses a 3440px
-   screen instead of becoming one tall scrolling ribbon.
-   The measure is what must not move. It is set on the prose element in `ch` so
-   it resolves against the prose font-size — put it on the grid track in `em`
-   and it resolves against the card's 15px, silently capping the line while the
-   type grows. Column counts are pinned per breakpoint rather than left to
-   `column-width`, because multicol widens columns to fill the track and would
-   hand back 80-character lines. */
-#deck .card{flex:1; min-height:0; overflow-y:auto; padding:clamp(16px,2.2vh,34px) 34px;
+/* Expanded is the default and it is one column at two thirds of the viewport,
+   running top to bottom. A column that wide would be a 190-character line at
+   normal size, so the type scales with the viewport to compensate — at 3440
+   that is ~52px and about 90 characters, which is long but readable. This is a
+   deliberate trade of measure for filling the screen; the earlier multi-column
+   version kept a tighter measure and was rejected as harder to read across.
+   Collapsed stays a narrow centred column, because a 40-word opening at two
+   thirds width is a single stranded line. */
+#deck .card{flex:1; min-height:0; overflow-y:auto; padding:clamp(14px,1.8vh,28px) 34px;
   display:grid; grid-template-columns:minmax(190px,16em) auto;
-  gap:0 clamp(24px,3vw,64px); align-content:center; justify-content:center}
-#deck .card.expanded{grid-template-columns:minmax(190px,16em) minmax(0,1fr);
+  gap:0 clamp(24px,2.4vw,52px); align-content:center; justify-content:center}
+#deck .card.expanded{grid-template-columns:minmax(180px,14em) auto;
   align-content:start; justify-content:center}
+/* Wide enough for the rail to sit outside the text: the card becomes a plain
+   block so the prose centres on the viewport, and the rail is lifted out of
+   the flow to the left. Centring the grid instead centres rail+prose as a
+   unit, which pushes the text right of centre by half the rail. */
+@media (min-width:1500px){
+  #deck .card.expanded{display:block; position:relative}
+  #deck .card.expanded .rail-meta{position:absolute; left:0; top:0;
+    width:14em; border-right:1px solid var(--rule)}
+  #deck .card.expanded .prose{margin:0 auto}
+}
 #deck .rail-meta{display:grid; gap:10px; align-content:start;
-  border-right:1px solid var(--rule); padding-right:clamp(16px,2vw,32px);
-  min-width:0}
+  border-right:1px solid var(--rule); padding-right:clamp(16px,1.6vw,28px);
+  min-width:0; position:sticky; top:0}
 #deck .rail-meta .title{font-size:clamp(15px,1.05vw,21px); line-height:1.2}
 #deck .rail-meta .by{font-size:12.5px}
 #deck .rail-meta .nums{margin-left:0; line-height:1.7; word-break:break-word}
 #deck .chips{gap:4px}
 #deck .prose{font-size:clamp(18px,1.15vw,24px); line-height:1.58;
   width:62ch; max-width:100%; min-width:0}
-#deck .card.expanded .prose{width:auto; max-width:64ch; margin:0 auto;
-  column-gap:2.6em}
-@media (min-width:1800px){
-  #deck .card.expanded .prose{column-count:2; max-width:131ch}
-}
-@media (min-width:2600px){
-  #deck .card.expanded .prose{column-count:3; max-width:198ch}
-}
+#deck .card.expanded .prose{width:66vw; max-width:none;
+  font-size:clamp(19px,2vw,52px); line-height:1.42}
 #deck footer{flex:none; padding:12px 34px; border-top:1px solid var(--rule);
   background:var(--surface); display:flex; gap:14px; align-items:center; flex-wrap:wrap}
 .rail{flex:none; height:3px; display:flex; background:var(--surface-2)}
@@ -171,9 +170,9 @@ kbd{font-family:var(--mono); font-size:11px; background:var(--surface-2);
 
 @media (max-width:900px){
   #deck .card, #deck .card.expanded{grid-template-columns:minmax(0,1fr); gap:14px}
-  #deck .card.expanded .prose{column-count:1}
+  #deck .card.expanded .prose{width:100%; font-size:clamp(18px,4.4vw,26px)}
   #deck .rail-meta{border-right:0; border-bottom:1px solid var(--rule);
-    padding-right:0; padding-bottom:12px}
+    padding-right:0; padding-bottom:12px; position:static}
 }
 
 /* ---------- ledger ---------- */
