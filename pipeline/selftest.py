@@ -265,9 +265,9 @@ def main() -> int:
 
     # The validator is calibrated against playbook §2; if it rejects its own
     # reference corpus it is measuring itself.
-    bullets = themes.playbook_bullets(Path.cwd())
+    bullets = themes.grain_examples(Path.cwd())
     passing = sum(1 for b in bullets if not themes.check(b))
-    check("playbook §2 passes its own validator",
+    check("the grain reference passes its own validator",
           passing / len(bullets) > 0.95, f"{passing}/{len(bullets)}")
     check("a good theme passes",
           not themes.check("A debt notice that enrols on delivery rather than "
@@ -285,8 +285,11 @@ def main() -> int:
               any(why.split()[0] in r for r in themes.check(bad)),
               str(themes.check(bad)))
     m = themes.measure(bullets)
-    check("measure reports the §2 grain",
-          m["median_words"] == 21 and m["proper_rate"] < 0.05, str(m))
+    # The reference is frozen, so assert the properties it is kept for rather
+    # than a median that moves whenever the sample is reselected.
+    check("the grain reference is in grain",
+          themes.GRAIN["min_words"] <= m["median_words"] <= themes.GRAIN["max_words"]
+          and m["proper_rate"] == 0 and m["deictic_rate"] == 0, str(m))
 
     print("\nbank and decision trail")
     bank = Bank(tmp / "extracted")

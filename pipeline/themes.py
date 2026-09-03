@@ -5,9 +5,9 @@ carrying a mechanism and a turn: *the body altered to meet a written
 specification, and the specification is a purchasing document.* Themes seed
 **what gets made**; examples condition **how it reads**.
 
-The shape is not invented here. `playbook.md` §2-§5 is the only seed format in
-this project with evidence behind it — twenty-five stories came out of it — and
-`GRAIN` below is that bank measured. `research/themes.md` §11 has the numbers
+The shape is not invented here. The playbook's theme bank was the only seed
+format with evidence behind it — twenty-five stories came out of it — and
+`GRAIN` below is that bank measured, frozen before it was retired. `research/themes.md` §11 has the numbers
 and the argument, including why a labelled `mechanism / subject / cost` record
 was tried and rejected: a frame has nowhere to put the turn, and two frames
 will not combine the way playbook §1.1 needs two entries to.
@@ -136,26 +136,29 @@ def measure(texts: list[str]) -> dict:
     }
 
 
-def playbook_bullets(root: str | Path = ".") -> list[str]:
-    """The §2 bank, as the reference distribution."""
-    text = (Path(root) / "playbook.md").read_text(encoding="utf-8")
-    body = text[text.find("# 2. THEME BANK"):text.find("# 3. DREAD")]
-    out = []
-    for line in re.findall(r"^- (.+)$", body, re.M):
-        line = re.sub(r"`\[[^\]]+\]`", "", line).strip()
-        if len(line.split()) > 3:
-            out.append(line)
-    return out
+GRAIN_REFERENCE = Path(__file__).parent / "grain.md"
+
+
+def grain_examples(root: str | Path = ".") -> list[str]:
+    """The frozen form reference.
+
+    This used to read playbook §2, which was both the bank and the thing new
+    themes were measured against — so retiring the bank would have taken the
+    calibration with it. These twenty-four lines are kept for their shape
+    only; `pipeline/grain.md` says so at the top.
+    """
+    text = GRAIN_REFERENCE.read_text(encoding="utf-8")
+    return [ln[2:].strip() for ln in text.splitlines() if ln.startswith("- ")]
 
 
 def audit(root: str | Path = ".", out: str | Path | None = None) -> dict:
     """Compare the banked themes against playbook §2 on the same measures."""
     bank = Bank(out or Path(root) / "extracted", pool=THEMES, decisions=THEME_DECISIONS)
     banked = [r.get("text", "") for r in bank.load().values()]
-    ref = measure(playbook_bullets(root))
+    ref = measure(grain_examples(root))
     got = measure(banked) if banked else None
 
-    print(f"{'':<22}{'playbook §2':>14}{'banked':>14}")
+    print(f"{'':<22}{'grain ref':>14}{'banked':>14}")
     rows = [("n", "n", "{:.0f}"), ("median words", "median_words", "{:.0f}"),
             ("p10 / p90", None, None),
             ("carries a turn", "turn_rate", "{:.0%}"),
@@ -250,7 +253,7 @@ Aim for 6–12. Fewer good ones beats more.
 def brief(source_id: str, root: str | Path = ".", shots: int = 8) -> str:
     import random
 
-    bullets = playbook_bullets(root)
+    bullets = grain_examples(root)
     picked = random.SystemRandom().sample(bullets, min(shots, len(bullets)))
     shot_text = "\n".join(f"> {b}" for b in picked)
     for src in sources.load(root):
