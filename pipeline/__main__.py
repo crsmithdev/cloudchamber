@@ -11,6 +11,7 @@ from . import facets as facets_mod
 from . import harvest as harvest_mod
 from . import review as review_mod
 from . import sample as sample_mod
+from . import serve as serve_mod
 from . import themes as themes_mod
 from .bank import THEME_DECISIONS, THEMES, Bank
 from . import biber
@@ -56,6 +57,11 @@ def main(argv=None):
     r.add_argument("--order", choices=review_mod.ORDERS, default="score")
     r.add_argument("--limit", type=int, default=0)
     r.add_argument("--min-score", type=float, default=0.0)
+
+    v = sub.add_parser("serve", help="the cull in a browser: ledger / deck / bench")
+    v.add_argument("--port", type=int, default=3002,
+                   help="first port to try (default 3002; walks up if busy)")
+    v.add_argument("--no-open", action="store_true", help="do not open a browser")
 
     sub.add_parser("export", help="write kept passages to extracted/exemplars.md")
 
@@ -106,6 +112,9 @@ def main(argv=None):
             review_mod.review(root, out=out, facet=a.facet, order=a.order,
                               limit=a.limit, min_score=a.min_score, mode=mode,
                               batch=a.batch, withheld=a.withheld)
+
+    elif a.cmd == "serve":
+        serve_mod.serve(root, out=out, port=a.port, open_browser=not a.no_open)
 
     elif a.cmd == "export":
         review_mod.export(root, out=out)

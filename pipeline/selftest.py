@@ -269,6 +269,39 @@ def main() -> int:
     check("facets survive a re-harvest",
           all(p.get("facets") for p in bank.load().values()))
 
+    print("\nserve")
+    from . import serve as serve_mod
+
+    # Its own bank: these verdicts must not perturb the decision-trail
+    # assertions above, which count rows.
+    serve_dir = tmp / "serve-extracted"
+    Bank(serve_dir).merge(passages)
+    facets_mod.score(out=serve_dir, refit=True)
+    cull = serve_mod.Cull(serve_dir)
+    q = cull.queue("deck", limit=3)
+    check("deck queue serves the pool", q["items"] and q["total"] > 0,
+          f"{q['total']}")
+    check("queue rows carry text and facets",
+          all(r["text"] and r["dims"] for r in q["items"]))
+    pid = q["items"][0]["id"]
+    cull.record([{"id": pid, "verdict": "keep", "method": "triage"}])
+    check("a triage keep becomes a survivor",
+          [r["id"] for r in cull.queue("bench")["items"]] == [pid])
+    cull.record([{"id": pid, "verdict": "keep", "method": "bench",
+                  "note": "read in full"}])
+    check("a bench verdict clears the bench", cull.queue("bench")["total"] == 0)
+    try:
+        cull.record([{"id": pid, "verdict": "sideways"}])
+        check("a bad verdict is refused", False, "no error raised")
+    except ValueError:
+        check("a bad verdict is refused", True)
+    check("passage verdicts stay out of the theme trail",
+          not (serve_dir / "theme-decisions.jsonl").exists())
+    check("ui is a real file on disk", (serve_mod.UI / "app.html").exists())
+    html = (serve_mod.UI / "app.html").read_text(encoding="utf-8")
+    check("the page sets passages as prose", "Newsreader" in html)
+    check("the page never calls scrollIntoView", "scrollIntoView" not in html)
+
     print("\ncompare-mode decisions")
     bank.record(passages[1].id, "keep", method="compare",
                 extra={"group": "g1", "group_size": 5, "picked": 2})

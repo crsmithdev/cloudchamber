@@ -20,7 +20,8 @@ from source fiction at all.
 python -m pipeline harvest              # sources -> passage candidates
 python -m pipeline facets               # score the pool on Biber D1-D6
 python -m pipeline themes               # sources -> theme candidates
-python -m pipeline review --triage      # fast pass: 40 words, k / p / x
+python -m pipeline serve                # the cull in a browser: the funnel
+python -m pipeline review --triage      # or in the terminal: 40 words, k / p / x
 python -m pipeline review --compare     # five at a time, pick the best
 python -m pipeline review               # careful pass: full text, one at a time
 python -m pipeline review --themes      # dense multi-select over the themes
@@ -194,6 +195,44 @@ the largest positive term for 199 of 1,024 passages, and swapped 11 of the top
 The pool itself never depended on them — selection is bound by the
 overlap-rejection rule in `top_per_doc`, not by score — so removing them
 changed the order and not the contents.
+
+## The funnel
+
+`pipeline serve` opens the cull on `127.0.0.1:3002` in three modes, meant to be
+run in this order. Every verdict goes through the same `Bank.record` as a
+terminal verdict and carries a `method` saying which mode produced it.
+
+| mode | shows | writes | run it over |
+| :-- | :-- | :-- | :-- |
+| **Ledger** | 20 themes a screen, keep by number | `method: "ledger"` | all 404 themes, one sitting |
+| **Deck** | 40 words, `space` expands | `triage`, or `manual` once expanded | all 947 passages |
+| **Bench** | full text, six dimensions, a note | `method: "bench"` | the survivors only |
+
+**A survivor is a keep or a maybe from a cheap pass.** `Bank.survivors()` is
+the middle of the funnel: verdicts whose method is one of `triage`, `compare`,
+`multiselect` or `ledger`. A bench verdict supersedes the triage one — latest
+wins — so an item leaves the bench by being read, never by being marked. A
+verdict given *after* expanding in the Deck is already a full read, is written
+as `manual`, and correctly never reaches the bench.
+
+Keys: `1` `2` `3` switch mode, `f` keep, `j` pass, `m` maybe, `space` expand,
+`x` toggle a ledger row, `enter` commit a screen, `u` undo, `?` for the list.
+
+**Undo has a window, not a rewrite.** A verdict is held for 1.4s before it is
+posted; undo inside that window means nothing was ever written. Undo after it
+appends a superseding row, because the trail is append-only and a correction
+is a new row rather than an erasure. The top bar says whether anything is
+pending, and closing the tab with unsaved verdicts warns.
+
+Why a browser at all, when the terminal reviewer works: the thing under
+judgement is prose *register*, and register cannot be judged fairly in a 15px
+monospace column. The passages are set in a serif at a reading measure because
+that is the only way the judgement is about the prose rather than about the
+typography. Everything else — the stop-rule gauges, the facet chips, the
+dimension bars — is chrome around that one decision.
+
+Standard library only: `http.server`, one HTML file, no build step, no
+framework, loopback-only binding.
 
 ## Culling is the constraint
 

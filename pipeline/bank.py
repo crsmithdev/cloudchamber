@@ -182,6 +182,28 @@ class Bank:
         v = self.verdicts()
         return [p for pid, p in self.load().items() if pid not in v]
 
+    # Methods that are a cheap filter rather than a read: a verdict carrying
+    # one of these has survived a pass, it has not been judged.
+    CHEAP = {"triage", "compare", "multiselect", "ledger"}
+
+    def survivors(self) -> list[dict]:
+        """Kept or maybe'd by a cheap pass, and not yet read in full.
+
+        The middle of the funnel. `pipeline serve --mode bench` reads this:
+        triage says what is worth 400 words, and this is that list. Recording
+        a `bench` verdict supersedes the triage one — latest wins — so an item
+        leaves this queue by being judged, never by being marked.
+        """
+        v = self.verdicts()
+        out = []
+        for pid, p in self.load().items():
+            row = v.get(pid)
+            if not row:
+                continue
+            if row.get("verdict") in ("keep", "maybe") and row.get("method") in self.CHEAP:
+                out.append(p)
+        return out
+
     def stats(self, target_per_cell: int = 0, block: int = 50) -> dict:
         """State of the bank, and progress toward a stop rule.
 

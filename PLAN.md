@@ -70,12 +70,21 @@ Never done. Only SCP has ever been harvested, and every number in
   but the warning is not the decision.
 - Re-read the extremes. They are how the last two stripper bugs were found.
 
-### Optional: a phone reviewer
+### Done instead: `pipeline serve`
 
-Terminal review only works at the desk. A published artifact with a database
-capability could hold the pool, take verdicts on a phone in spare minutes, and
-be read back into `decisions.jsonl` later. Worth it only if the desk sessions
-turn out not to happen. Not started.
+Built 2026-09-03. The funnel — Ledger over the themes, Deck over all 947
+passages, Bench over the survivors — in a browser on localhost, standard
+library only. `pipeline/README.md` §The funnel has the detail. The reason it
+is a browser and not a TUI: register cannot be judged in a monospace column,
+and the passages had to be set as prose.
+
+Still open from the mockups: **Slate**, forced choice over five at a time. It
+answers "which of these is better" rather than "is this good", and it yields
+ranking data. Worth building once there are verdicts to check its rankings
+against — which makes it a Part 3 question, not a now question.
+
+A phone reviewer is still unbuilt. `serve` binds loopback-only; putting it on
+a phone means either exposing the port or the published-artifact route.
 
 ---
 
