@@ -261,30 +261,116 @@ call.
 
 ---
 
+---
+
+## 10. Fitness for the actual use — a generation input beside exemplars
+
+§3–§9 rank the methods on whether they produce a theme. That is the wrong
+question on its own: a theme here is consumed by `pipeline draw`, which sets
+it beside 150–400-word verbatim passages in one prompt. `research/generation.md`
+already has the evidence, and it decides the choice more sharply than the
+thematic-analysis literature does.
+
+**Few-shot conditioning acts on form.** §3.3 of that file is explicit, and the
+caution it draws is that feeding in criticism or taxonomy conditions the model
+to produce more criticism and taxonomy. The same mechanism applies to the seed
+block: **anything in the prompt is available for imitation as form, whether or
+not it was put there for its content.**
+
+That is a live defect, not a hypothetical. The current themes are verbatim SCP
+sentences at a median of 24 words, and `sample.render` prints them immediately
+above six verbatim SCP passages. In the same register, at a similar grain, in
+the same document. The theme block is currently functioning as a second,
+worse exemplar set — diluting the register conditioning the exemplar slot
+exists to provide.
+
+**A theme must therefore be formally unlike prose.** Notation, not sentences.
+If it cannot be mistaken for an exemplar it cannot compete with one, and the
+structured frame of §8 gets this for free while an abstractive paragraph — the
+tempting default, and what an LLM produces unprompted — gets it exactly wrong.
+
+**Underspecification is a feature.** Exposure to a single worked example
+raises design fixation and produces fewer, less varied and less original ideas
+than no example at all (Wadinambiarachchi et al., CHI 2024, via
+`generation.md` §2). A theme written as a finished premise is that example. A
+frame states the mechanism and leaves the story undone, which is what a seed
+has to do.
+
+**The deck precedent.** The Oblique Strategies deck beat ChatGPT on
+group-level idea distinctness (Anderson, Shah & Kreminski, C&C 2024), and
+`generation.md` §3.2 draws the moral: randomness sourced outside the generator
+does real work. The theme bank *is* that deck. Decks are made of short
+discrete combinable cards, and playbook §1 requires combination — "at least
+one must be a combination — two or three entries held together". Paragraphs do
+not combine; roles do.
+
+### Ranked for this use
+
+| approach | as a generation input | verdict |
+| :-- | :-- | :-- |
+| **Frame with roles** (§8), induced TnT-LLM-style (§6) | notation, combinable, underspecified, corpus-level so the draw has known cardinality | **use this** |
+| Abstractive prose theme | competes with exemplars for register; a worked premise, so maximally fixating | actively harmful |
+| Keyphrase | deck-like and combinable, but carries no mechanism, so it seeds nothing about what happens | insufficient alone |
+| Topic model | a word list cannot be drawn against or combined | no |
+
+### Consequences for the packet
+
+Two things fall out that are not about extraction at all:
+
+1. **`sample.render` has the order backwards.** It prints SEED then REGISTER.
+   The skill and `generation.md` §3.3–§3.4 both put exemplars first and the
+   constraints last, nearest the ask, because instruction force decays with
+   distance from the point of generation while register conditioning does not.
+2. **The two blocks must be visually incommensurable** — the frame as a
+   labelled record, the exemplars as unframed prose. Presentation is doing
+   load-bearing work here, not decoration.
+
+### The record
+
+Portable, so it can be drawn against anything. No proper nouns from the
+source: a theme carrying `SCP-2000` drags the model toward that article.
+
+```
+mechanism      the process, as a process           required
+subject        who it is done to, and at what scale required
+cost           what is given up; whether it returns required
+normalisation  how the setting makes it ordinary   optional
+```
+
+Short clauses, not sentences. An incomplete frame is a defect (§8); an
+unresolved deixis is a rejection at write time (§9); a frame appearing in one
+document only is a detail rather than a theme (§7).
+
 ## Recommendation
 
 1. **Retire local sentence extraction.** It cannot produce a theme; §1 is not
    a tuning problem. Keep the code in history, drop it from the pipeline, and
    do not re-point the regexes.
-2. **Make the research intake the primary path.** `pipeline themes --research`
+2. **Store a frame, and make it look nothing like prose.** §10 is the
+   governing constraint: the seed block shares a prompt with the exemplars,
+   few-shot conditioning acts on form, and a prose theme competes with the
+   passages it is supposed to accompany. Notation wins on the same evidence
+   that makes it underspecified enough to resist fixation.
+3. **Make the research intake the primary path.** `pipeline themes --research`
    → brief → a session reads → `--ingest` is already the right architecture:
    a model drafts abstractions, Chris culls. It was built as the fallback for
    settings whose text is too large to hold; it should be the default for
    everything.
-3. **Two phases, TnT-LLM shaped.** Induce a taxonomy of mechanisms over the
+4. **Two phases, TnT-LLM shaped.** Induce a taxonomy of mechanisms over the
    corpus and refine it; then assign articles to it. A theme becomes a
    corpus-level object with document instances, which is what makes recurrence
    measurable.
-4. **Store a frame, not a string.** Require `mechanism`, `subject`, `cost`,
-   `normalisation`. An incomplete frame is a defect.
 5. **Enforce self-containment at write time.** Reject unresolved deixis in
    `themes.py`, with a selftest check. This is the cheapest fix in the
    document and it invalidates 61% of the current bank.
-6. **Adopt two kill tests, both from §2 and §7.** Does it recur in more than
+6. **Fix the packet.** `sample.render` prints the seed before the register;
+   both the skill and `generation.md` put the exemplars first and the
+   constraints last. Cheap, independent of the rebuild, and worth doing first.
+7. **Adopt two kill tests, both from §2 and §7.** Does it recur in more than
    one document — persistence. Is the mechanism the article's subject rather
    than something it mentions — the motific test.
-7. **Do not adopt topic modelling or keyphrase extraction** as theme sources.
-8. **Re-cull from scratch.** The 432 rows are spans, not themes; a keep on one
+8. **Do not adopt topic modelling or keyphrase extraction** as theme sources.
+9. **Re-cull from scratch.** The 432 rows are spans, not themes; a keep on one
    would be a keep on the wrong kind of object. `theme-decisions.jsonl` does
    not exist yet, so nothing is lost — and this is the good case, exactly as
    it was for the six register tags.
