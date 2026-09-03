@@ -1,7 +1,8 @@
 # SELECTION.md
 
-Third stage of the seed pipeline. Drafted 2026-09-02, voice session.
-Companion to `HARVEST.md` (exemplar sourcing) and `refs/summaries/generation.md`
+Third stage of the seed pipeline. Drafted 2026-09-02. Still unbuilt as of 2026-09-03 — the harvest and
+exemplar-bank stages it assumed are now `pipeline/`, but nothing here is.
+Companion to `pipeline/` (exemplar sourcing, built 2026-09-02) and `refs/summaries/generation.md`
 (the underlying findings). Untested — this is a design, not a validated process.
 
 ## The goal, stated correctly

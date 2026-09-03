@@ -27,7 +27,7 @@ You do not get to pick. Left to itself a model reaches for the same handful of m
 
 ### 2. Load the exemplars
 
-Read `seeds/exemplars.md` in full and hold it. Those are passages of prose in the target register. They are not instructions: do not summarise them, refer to them, or explain what they demonstrate. They work by conditioning or not at all.
+Read `seeds/exemplars.md` in full and hold it. It is written by `python -m pipeline export` from Chris's keeps; if it is missing or empty the cull has not been run yet, and you should say so rather than substituting anything. Those are passages of prose in the target register. They are not instructions: do not summarise them, refer to them, or explain what they demonstrate. They work by conditioning or not at all.
 
 If that file does not exist yet, say so and continue, but expect register drift — the resolution pull is structural and instructions are the weakest instrument against it.
 
