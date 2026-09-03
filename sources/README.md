@@ -7,7 +7,7 @@ about the thing?**
 texts/        the thing itself, verbatim
   books/      29 PDFs — Datlow (17 vols), Evenson, Langan, Watts, Chiang, King
   scp/        109 SCP articles, verbatim wikidot source, CC BY-SA 3.0
-distilled/    the thing itself is not holdable, so the distillate stands in
+summaries/    the thing itself is not holdable, so the distillate stands in
 queue/        triaged, wanted, not yet held
 ```
 
@@ -22,7 +22,7 @@ harvested locally, never published. The SCP articles are CC BY-SA 3.0 and carry
 author, source URL and licence in their front matter; anything published from
 them must carry the same.
 
-## distilled/
+## summaries/
 
 setting-c, setting-b, Evangelion, Jaynes. These are not summaries
 of something we hold — the source is a setting too large to hold (setting-c, setting-b), a television series, or a book of argument rather than prose. For

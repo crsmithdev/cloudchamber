@@ -97,13 +97,13 @@ research = [
 
 [setting.setting-a]
 default = true
-lore = "lore/setting-a.md"
+lore = "sources/settings/setting-a.md"
 themes = ["scp", "datlow", "evenson", "langan", "watts", "chiang", "king", "literature"]
 
 [setting.setting-b]
-lore = "lore/setting-b.md"
+lore = "sources/settings/setting-b.md"
 themes = ["setting-b"]
 
 [setting.setting-c]
-lore = "lore/setting-c.md"
+lore = "sources/settings/setting-c.md"
 themes = ["setting-c"]

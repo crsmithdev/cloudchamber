@@ -26,11 +26,11 @@ seeding-v7.md                generation, upstream of the playbook. Six engines,
 sources.toml                 what the pipeline reads and what it takes from
                              each source -- passages, themes, or both; and
                              the settings a premise can be seeded under
-lore/<setting>.md            one file per setting -- setting-a (the default),
+sources/settings/<setting>.md            one file per setting -- setting-a (the default),
                              setting-b, setting-c. Nine fixed sections:
                              spine, register, the setting bank, artifacts, the
                              documented / thin / absent / open triage, hard rules.
-                             See lore/README.md
+                             See sources/settings/README.md
 
 stories/NN-slug.md           one story each; 25 developed
 stories/00-undeveloped.md    the bench -- greenlit but never developed, parked
@@ -40,7 +40,7 @@ sources/                     material the project reads. See sources/README.md
   texts/books/*.pdf          29 anthologies and collections, tracked, NOT
                              redistributable. Read locally, never published
   texts/scp/scp-NNNN.md      109 SCP articles, verbatim wikidot, CC BY-SA 3.0
-  distilled/                 setting-c, setting-b, Evangelion, Jaynes -- where no
+  summaries/                 setting-c, setting-b, Evangelion, Jaynes -- where no
                              full text can be held, the distillate IS the source
   queue/scp-candidates.md    63 triaged articles not yet held
 
@@ -76,7 +76,7 @@ pipeline/                    the seeding machinery. Two extractions: verbatim
 Source tags in `playbook.md` and `catalogue.md` resolve to full text wherever
 full text exists. `[C]` Chiang and `[W]` Watts are the books in
 `sources/texts/books/`; `[S]` is `sources/texts/scp/`. `[setting-c]`, `[TC]`, `[E]`
-and `[J]` are `sources/distilled/`, where the distillate is the source of
+and `[J]` are `sources/summaries/`, where the distillate is the source of
 record because the thing itself cannot be held. `[FB]` is doctrine arrived at
 in-house and has no source file.
 

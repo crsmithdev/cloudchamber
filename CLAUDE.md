@@ -12,7 +12,7 @@ A horror anthology. This repo is the source of truth.
 
 **`seeding-v7.md`** when the job is to produce candidates rather than triage them. It sits upstream of the playbook and hands off at §2.
 
-**`lore/<setting>.md`** before seeding, whole. Every run is under a setting — `setting-a` unless one is named — and the file is the bank the setting pull comes from and the canon the cull checks against. `lore/README.md` says what its nine sections do.
+**`sources/settings/<setting>.md`** before seeding, whole. Every run is under a setting — `setting-a` unless one is named — and the file is the bank the setting pull comes from and the canon the cull checks against. `sources/settings/README.md` says what its nine sections do.
 
 **`README.md`** for the layout and the form a story file takes.
 

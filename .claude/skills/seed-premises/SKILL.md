@@ -11,9 +11,9 @@ Read `CLAUDE.md` and playbook §0–§1 first. Those say what a Fog Belt premise
 
 ## Every run is under a setting
 
-A setting is the fourth thing a premise pulls from and the thing it is checked against. `sources.toml` declares them; `lore/<id>.md` is one file per setting with nine fixed sections (`lore/README.md`). The default is `setting-a`, whose canon is the real world. `/seed-premises setting-b`, or a request that names a setting, picks another.
+A setting is the fourth thing a premise pulls from and the thing it is checked against. `sources.toml` declares them; `sources/settings/<id>.md` is one file per setting with nine fixed sections (`sources/settings/README.md`). The default is `setting-a`, whose canon is the real world. `/seed-premises setting-b`, or a request that names a setting, picks another.
 
-**Step 0: read `lore/<id>.md` in full**, before drawing anything. Under a lore setting the setting's metaphysics is the one impossibility and nothing else is suspended; §1 of the file says what that purchase is, §2 says how playbook §0 reads there, and §5–§8 are what the cull checks against.
+**Step 0: read `sources/settings/<id>.md` in full**, before drawing anything. Under a lore setting the setting's metaphysics is the one impossibility and nothing else is suspended; §1 of the file says what that purchase is, §2 says how playbook §0 reads there, and §5–§8 are what the cull checks against.
 
 ## Order of operations
 

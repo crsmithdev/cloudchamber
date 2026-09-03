@@ -377,11 +377,11 @@ def main() -> int:
 
     # Lore fixtures with the one section the draw lifts. The real files are
     # not read here: the test is the plumbing, not the canon.
-    (tmp / "lore").mkdir()
+    (tmp / "sources" / "settings").mkdir(parents=True, exist_ok=True)
     for sid, rule in (("setting-a", "The matrix is structural."),
                       ("setting-b", "The present is 1914."),
                       ("setting-c", "No establishing shot.")):
-        (tmp / "lore" / f"{sid}.md").write_text(
+        (tmp / "sources" / "settings" / f"{sid}.md").write_text(
             f"# LORE\n\n## 1. The spine\n\nx\n\n## 9. Hard rules\n\n- {rule}\n",
             encoding="utf-8")
     with (tmp / "extracted" / "themes.jsonl").open("a", encoding="utf-8") as fh:

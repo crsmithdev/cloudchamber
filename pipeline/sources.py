@@ -7,7 +7,7 @@ a setting like setting-c yields themes from online reference material
 rather than from source fiction at all.
 
 A setting is a different kind of thing: what a premise is seeded *under*. It
-names a lore file (`lore/<id>.md`, nine fixed sections) that constrains the
+names a lore file (`sources/settings/<id>.md`, nine fixed sections) that constrains the
 seed, and the theme sources the seed is drawn from. Exactly one setting is the
 default. The example bank is register and does not vary by setting.
 
@@ -152,14 +152,14 @@ DEFAULTS: list[Source] = [
 SETTING_DEFAULTS: list[Setting] = [
     Setting(
         id="setting-a",
-        lore="lore/setting-a.md",
+        lore="sources/settings/setting-a.md",
         themes=["scp", "datlow", "evenson", "langan", "watts", "chiang", "king",
                 "literature"],
         default=True,
     ),
-    Setting(id="setting-b", lore="lore/setting-b.md",
+    Setting(id="setting-b", lore="sources/settings/setting-b.md",
             themes=["setting-b"]),
-    Setting(id="setting-c", lore="lore/setting-c.md",
+    Setting(id="setting-c", lore="sources/settings/setting-c.md",
             themes=["setting-c"]),
 ]
 

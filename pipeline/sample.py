@@ -132,7 +132,7 @@ def lore_section(path: Path, number: int = CANON_SECTION) -> str:
     """One numbered `## N.` section of a lore file, body only.
 
     The lore files share nine fixed sections so this can be lifted by heading
-    rather than by a marker somebody has to remember to keep. `lore/README.md`
+    rather than by a marker somebody has to remember to keep. `sources/settings/README.md`
     is the schema.
     """
     if not path.exists():
@@ -140,7 +140,7 @@ def lore_section(path: Path, number: int = CANON_SECTION) -> str:
     text = path.read_text(encoding="utf-8")
     head = re.search(rf"^## {number}\.[^\n]*\n", text, re.M)
     if not head:
-        raise SystemExit(f"{path}: no `## {number}.` section — see lore/README.md")
+        raise SystemExit(f"{path}: no `## {number}.` section — see sources/settings/README.md")
     rest = text[head.end():]
     nxt = re.search(r"^## ", rest, re.M)
     return (rest[:nxt.start()] if nxt else rest).strip()
