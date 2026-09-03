@@ -94,16 +94,3 @@ research = [
 # constrains it (lore/<id>.md, nine fixed sections) and which theme sources
 # its seed is drawn from. Exactly one is the default. The example bank is
 # register and does not vary by setting.
-
-[setting.setting-a]
-default = true
-lore = "sources/settings/setting-a.md"
-themes = ["scp", "datlow", "evenson", "langan", "watts", "chiang", "king", "literature"]
-
-[setting.setting-b]
-lore = "sources/settings/setting-b.md"
-themes = ["setting-b"]
-
-[setting.setting-c]
-lore = "sources/settings/setting-c.md"
-themes = ["setting-c"]

@@ -12,13 +12,6 @@ Three knobs exist so steering is possible later without a rewrite:
   --temperature  0 = strictly highest-scoring, 1 = uniform over eligible
   --order-by     what order the drawn set is rendered in
 
-And one constraint:
-
-  --setting      which lore file the seed is drawn under. Themes come only
-                 from that setting's sources, and the lore file's §9 is pasted
-                 into the packet last, immediately before the ask. There is
-                 always a setting; the default is the setting-a.
-
 Coverage sampling is "clustering retrieval" — cluster, then take one per
 cluster — which is an established diversity method for in-context
 demonstrations (`research/tagging.md` §4). The design was always right; the
@@ -44,7 +37,7 @@ import time
 from pathlib import Path
 
 from . import sources as sources_mod
-from .bank import THEME_DECISIONS, THEMES, Bank, _now
+from .bank import THEMES, Bank, _now
 from .biber import cell, matches
 
 
@@ -125,27 +118,6 @@ def _ordered(rows: list[dict], order_by: str, rng: random.Random) -> list[dict]:
     return sorted(rows, key=val, reverse=desc)
 
 
-CANON_SECTION = 9
-
-
-def lore_section(path: Path, number: int = CANON_SECTION) -> str:
-    """One numbered `## N.` section of a lore file, body only.
-
-    The lore files share nine fixed sections so this can be lifted by heading
-    rather than by a marker somebody has to remember to keep. `sources/settings/README.md`
-    is the schema.
-    """
-    if not path.exists():
-        raise SystemExit(f"lore file missing: {path}")
-    text = path.read_text(encoding="utf-8")
-    head = re.search(rf"^## {number}\.[^\n]*\n", text, re.M)
-    if not head:
-        raise SystemExit(f"{path}: no `## {number}.` section — see sources/settings/README.md")
-    rest = text[head.end():]
-    nxt = re.search(r"^## ", rest, re.M)
-    return (rest[:nxt.start()] if nxt else rest).strip()
-
-
 def draw(
     root: str | Path = ".",
     out: str | Path | None = None,
@@ -153,48 +125,28 @@ def draw(
     n_themes: int = 2,
     temperature: float = 0.85,
     coverage: bool = True,
-    include_unlabelled: bool = False,
     facet: str | None = None,
     order_by: str = "d1",
     seed: int | None = None,
-    setting: str | None = None,
     write: bool = True,
 ) -> dict:
     root = Path(root)
     out_dir = Path(out or root / "extracted")
     rng = random.Random(seed if seed is not None else int(time.time() * 1000) % (2**31))
 
-    where = sources_mod.setting(setting, root)
-    canon = lore_section(root / where.lore)
-
     bank = Bank(out_dir)
-    pool = bank.kept()
-    if include_unlabelled:
-        pool += bank.unlabelled()
+    pool = list(bank.load().values())
     if facet:
         pool = [p for p in pool if matches(p.get("facets"), facet)]
 
     if not pool:
-        raise SystemExit(
-            "No kept examples. Run `pipeline harvest` then `pipeline review` first, "
-            "or pass --include-unlabelled to draw from the raw pool."
-        )
+        raise SystemExit("The example pool is empty. Run `pipeline harvest` first.")
 
     picker = _by_coverage if coverage else _weighted
     examples = _ordered(picker(pool, n_examples, temperature, rng), order_by, rng)
 
-    tbank = Bank(out_dir, pool=THEMES, decisions=THEME_DECISIONS)
-    tpool = tbank.kept() or tbank.unlabelled()
-    # The seed is the one thing a setting changes. Drawing a theme from
-    # outside its sources would put a setting-a mechanism under a call that
-    # believed itself constrained, so an empty pool is a stop, not a fallback.
-    tpool = [t for t in tpool if t.get("source_id") in where.themes]
-    if not tpool:
-        raise SystemExit(
-            f"No themes banked for setting {where.id!r} (sources: "
-            f"{', '.join(where.themes)}). Run `pipeline themes --brief "
-            f"{where.themes[0]}`, draft against it, then `--ingest`."
-        )
+    tbank = Bank(out_dir, pool=THEMES)
+    tpool = list(tbank.load().values())
     themes = _weighted(tpool, n_themes, 1.0, rng)
 
     packet = {
@@ -205,10 +157,8 @@ def draw(
             "n_themes": n_themes,
             "temperature": temperature,
             "coverage": coverage,
-            "include_unlabelled": include_unlabelled,
             "facet": facet,
             "order_by": order_by,
-            "setting": where.id,
         },
         # Order matters and is therefore recorded: this list is the sequence
         # the examples were actually rendered in, not a set.
@@ -222,10 +172,6 @@ def draw(
         "theme_ids": [t.get("id") for t in themes],
         "examples": examples,
         "themes": themes,
-        "lore": where.lore,
-        # Recorded verbatim so the packet says what the call was held to,
-        # even after the lore file moves on.
-        "canon": canon,
     }
 
     if write:
@@ -263,10 +209,4 @@ def render(packet: dict) -> str:
         out += [f"- {t.get('text','')}", ""]
     if not packet.get("themes"):
         out += ["*(no themes banked yet — `pipeline themes --brief <source>`)*", ""]
-
-    if packet.get("canon"):
-        setting = (packet.get("params") or {}).get("setting", "")
-        out += ["# CANON", "",
-                f"*Setting: {setting}. Every premise in the batch holds to these.*", "",
-                packet["canon"], ""]
     return "\n".join(out)

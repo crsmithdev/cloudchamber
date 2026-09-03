@@ -2,15 +2,14 @@
 
 *The definition of the register, lifted verbatim from `playbook.md` §0 on
 2026-09-03 when that file was retired. It is kept because it is not a bank —
-it is the thing the banks were checked against. `sources/settings/*.md` defer
-to it ("§0 governs: the villain is always the apparatus"), the `seed-premises`
-skill reads it first, and playbook §1.3's one-impossibility rule is a
+it is the thing the banks were checked against. The `seed-premises` skill
+reads it first, and the one-impossibility rule the skill culls on is a
 restatement of its first property.*
 
 *Everything else in the playbook — the theme bank, the dread mechanisms, the
 artifact menu, the setting-a domains and the telling-it bank — was retired or
-moved into `sources/settings/` and `extracted/themes.jsonl`. The workflow that
-was §1 is the `seed-premises` skill.*
+moved into `sources/summaries/` and `extracted/themes.jsonl`. The workflow
+that was §1 is the `seed-premises` skill.*
 
 ---
 
@@ -38,7 +37,7 @@ was §1 is the `seed-premises` skill.*
 
 **The floor is higher than instinct, and the ceiling is not squeamishness.** The first version is never dark enough, and the version that feels sufficient is reliably one turn short: write past the point where it feels like enough, then decide what to pull back from. But when you do hit a limit, it is never *too much*. Aristotle's objection to this exact configuration — a faultless person destroyed by a faultless machine, nobody to blame, nothing learned — is that it shocks rather than moves, and he is right about a reader who is standing outside it. The configuration is not the error. The reader's position is. The fix is never to soften. It is to put the reader inside the arrangement — something they use, approve of, would have signed off on — so there is nowhere left to stand and be appalled from. If they can watch this from outside, it is not finished.
 
-**Every story carries a setting-a matrix**, and it has to be structural rather than scenery — take the element out and see whether a mechanism goes with it, or only an image. *(2026-09-03: the setting-a is the default setting rather than the only one. A story seeded under another setting — `sources/settings/` holds one file per setting — carries that setting's matrix instead, and the same test applies.)*
+**Every story carries a setting-a matrix**, and it has to be structural rather than scenery — take the element out and see whether a mechanism goes with it, or only an image. *(A story seeded from another reference register in `sources/summaries/` carries that setting's matrix instead, and the same test applies.)*
 
 **Written stories and audio dramas.** Both, and the audio half shapes who the narrator is, how they behave and how the piece is told: a voice has to be worth listening to for the length of it. The requirement is that the central voice is compelling company — not that it is warm, likeable, or reliable.
 

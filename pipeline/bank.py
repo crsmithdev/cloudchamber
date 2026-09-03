@@ -1,18 +1,16 @@
-"""The banks, and the decision trail.
+"""The banks.
 
-Three append-friendly JSONL stores under `extracted/`:
+Two append-friendly JSONL stores under `extracted/`, and nothing else:
 
-  examples.jsonl  the candidate pool. One line per passage, keyed by a stable
+  examples.jsonl   the passage pool. One line per passage, keyed by a stable
                    id derived from source + text, so re-harvesting the same
-                   material does not orphan earlier decisions.
-  decisions.jsonl  append-only. One line per verdict Chris gives. Never
-                   rewritten, never deduplicated, never pruned — a passage he
-                   passed on in March and kept in June is two rows, and the
-                   sequence is the signal. This is the training trail.
-  themes.jsonl     extracted themes, same shape, same decision mechanics.
+                   material does not churn ids.
+  themes.jsonl     drafted themes, same shape.
 
-Append-only matters. The pool can be rebuilt from the sources at any time;
-the decisions cannot be rebuilt from anything.
+**There is no decision layer.** Keep/pass/maybe and the append-only trail that
+carried them were removed on 2026-09-03, to be re-added later. Both banks are
+pools as they stand: everything in them is in play, and nothing records a
+verdict about anything.
 """
 
 from __future__ import annotations
@@ -27,9 +25,7 @@ from typing import Iterable, Iterator
 
 OUT = Path("extracted")
 EXAMPLES = "examples.jsonl"
-DECISIONS = "decisions.jsonl"
 THEMES = "themes.jsonl"
-THEME_DECISIONS = "theme-decisions.jsonl"
 
 
 def _root(root: str | Path | None) -> Path:
@@ -93,11 +89,9 @@ def _row(obj) -> dict:
 class Bank:
     """The example pool plus its decision history."""
 
-    def __init__(self, root: str | Path | None = None, pool: str = EXAMPLES,
-                 decisions: str = DECISIONS):
+    def __init__(self, root: str | Path | None = None, pool: str = EXAMPLES):
         self.root = _root(root)
         self.pool_path = self.root / pool
-        self.decisions_path = self.root / decisions
 
     # --- pool ---------------------------------------------------------
 
@@ -139,139 +133,13 @@ class Bank:
 
     # --- decisions ----------------------------------------------------
 
-    def record(self, passage_id: str, verdict: str, note: str = "",
-               method: str = "manual", extra: dict | None = None) -> None:
-        """Append one verdict. Never overwrites an earlier one.
-
-        `method` says how the verdict was reached — `manual`, `triage`,
-        `compare` — because they are not the same evidence. A `compare` keep
-        means "best of the five on that screen", which is a ranking, not an
-        absolute judgement, and Part 3 has to be able to tell them apart.
-        """
-        if verdict not in {"keep", "pass", "maybe"}:
-            raise ValueError(f"verdict must be keep/pass/maybe, got {verdict!r}")
-        row = {
-            "id": passage_id,
-            "verdict": verdict,
-            "note": note,
-            "method": method,
-            "at": _now(),
-        }
-        if extra:
-            row.update(extra)
-        append_jsonl(self.decisions_path, [row])
-
-    def verdicts(self) -> dict[str, dict]:
-        """Latest verdict per passage. The full history stays on disk."""
-        latest: dict[str, dict] = {}
-        for r in read_jsonl(self.decisions_path):
-            if "id" in r:
-                latest[r["id"]] = r
-        return latest
-
-    def history(self, passage_id: str) -> list[dict]:
-        return [r for r in read_jsonl(self.decisions_path) if r.get("id") == passage_id]
-
-    # --- views --------------------------------------------------------
-
-    def kept(self) -> list[dict]:
-        v = self.verdicts()
-        return [p for pid, p in self.load().items() if v.get(pid, {}).get("verdict") == "keep"]
-
-    def unlabelled(self) -> list[dict]:
-        v = self.verdicts()
-        return [p for pid, p in self.load().items() if pid not in v]
-
-    # Methods that are a cheap filter rather than a read: a verdict carrying
-    # one of these has survived a pass, it has not been judged.
-    CHEAP = {"triage", "compare", "multiselect", "ledger"}
-
-    def survivors(self) -> list[dict]:
-        """Kept or maybe'd by a cheap pass, and not yet read in full.
-
-        The middle of the funnel. `pipeline serve --mode bench` reads this:
-        triage says what is worth 400 words, and this is that list. Recording
-        a `bench` verdict supersedes the triage one — latest wins — so an item
-        leaves this queue by being judged, never by being marked.
-        """
-        v = self.verdicts()
-        out = []
-        for pid, p in self.load().items():
-            row = v.get(pid)
-            if not row:
-                continue
-            if row.get("verdict") in ("keep", "maybe") and row.get("method") in self.CHEAP:
-                out.append(p)
-        return out
-
-    def stats(self, target_per_cell: int = 0, block: int = 50) -> dict:
-        """State of the bank, and progress toward a stop rule.
-
-        `pipeline review` is not aiming to label the whole pool — 944 passages
-        at 30-60s each is 8-15 hours, and the pool grows several-fold once the
-        PDFs are harvested. The stop condition is the marginal keep rate going
-        flat, or every facet cell holding enough keeps. Both need the decision
-        order, which is why `decisions.jsonl` is appended and never sorted.
-        """
+    def stats(self) -> dict:
         pool = self.load()
-        v = self.verdicts()
-        counts = {"keep": 0, "pass": 0, "maybe": 0}
-        for r in v.values():
-            counts[r.get("verdict", "pass")] = counts.get(r.get("verdict", "pass"), 0) + 1
-
-        by_cell: dict[str, int] = {}
-        for pid, p in pool.items():
-            if v.get(pid, {}).get("verdict") != "keep":
-                continue
-            c = _cell(p.get("facets"))
-            by_cell[c] = by_cell.get(c, 0) + 1
-
-        out = {
+        return {
             "pool": len(pool),
-            "labelled": len(v),
-            "unlabelled": len(pool) - len(v),
-            **counts,
-            "kept_by_facet": by_cell,
-            "keep_rate": self.keep_rate(block),
             "sources": len({p.get("source_id", "") for p in pool.values()}),
             "facetted": sum(1 for p in pool.values() if p.get("facets")),
-            # Passages flagged in the reviewer as broken text rather than as
-            # bad writing. A non-zero count is a stripper bug, not a taste
-            # signal: `grep '"method": "artifact"' decisions.jsonl`.
-            "artifacts": sum(1 for r in v.values() if r.get("method") == "artifact"),
         }
-        if target_per_cell:
-            from .biber import CELLS
-
-            out["target_per_cell"] = target_per_cell
-            out["cells_short"] = {
-                c: target_per_cell - by_cell.get(c, 0)
-                for c in CELLS
-                if by_cell.get(c, 0) < target_per_cell
-            }
-        return out
-
-    def keep_rate(self, block: int = 50) -> list[float]:
-        """Keep rate per consecutive block of `block` verdicts, in order.
-
-        Flat or falling across the last few blocks is the signal to stop: the
-        pool is sorted by score, so a keep rate that has stopped declining
-        means the sort has stopped helping.
-        """
-        verdicts = [r.get("verdict") for r in read_jsonl(self.decisions_path)
-                    if r.get("verdict")]
-        rates = []
-        for i in range(0, len(verdicts) - block + 1, block):
-            chunk = verdicts[i:i + block]
-            rates.append(round(sum(1 for x in chunk if x == "keep") / len(chunk), 3))
-        return rates
-
-
-def _cell(facet: dict | None) -> str:
-    """`biber.cell`, inlined to keep bank.py free of the import."""
-    if not isinstance(facet, dict) or not facet:
-        return "(unscored)"
-    return f"{facet.get('voice', '?')}/{facet.get('mode', '?')}"
 
 
 def _now() -> str:

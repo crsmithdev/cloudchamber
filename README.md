@@ -13,7 +13,7 @@ CLAUDE.md                    standing instructions for a Claude session here
 series.md                    what every story has in common -- the register
                              every premise is checked against. Nothing in it
                              evaluates. The banks that used to sit beside it
-                             are sources/settings/ and extracted/themes.jsonl;
+                             are sources/summaries/ and extracted/themes.jsonl;
                              the workflow is the seed-premises skill.
 catalogue.md                 the other half -- describes rather than generates.
                              The slate as it stands (2026-08-29), then the
@@ -26,11 +26,6 @@ seeding-v7.md                generation, upstream of the seeding skill. Six engi
 sources.toml                 what the pipeline reads and what it takes from
                              each source -- passages, themes, or both; and
                              the settings a premise can be seeded under
-sources/settings/<setting>.md            one file per setting -- setting-a (the default),
-                             setting-b, setting-c. Nine fixed sections:
-                             spine, register, the setting bank, artifacts, the
-                             documented / thin / absent / open triage, hard rules.
-                             See sources/settings/README.md
 
 stories/NN-slug.md           one story each; 25 developed
 stories/00-undeveloped.md    the bench -- greenlit but never developed, parked
@@ -57,9 +52,7 @@ research/                    what the project has concluded. See its README
 extracted/                   everything the pipeline produced. See its README
   examples.jsonl            the candidate pool (regenerable; gitignored)
   themes.jsonl               extracted themes (regenerable; gitignored)
-  decisions.jsonl            every keep and pass, append-only, TRACKED. The one
                              file here that cannot be rebuilt from anything else
-  examples.md               the kept set, written by `pipeline export`
   packets/                   what each generation call was conditioned on
 
 pipeline/                    the seeding machinery. Two extractions: verbatim
@@ -112,15 +105,12 @@ and the passed-on list.
 ```bash
 python -m pipeline harvest      # sources/texts/ -> passage candidates
 python -m pipeline themes       # sources/ -> theme candidates
-python -m pipeline review       # the cull: k / p / m / s / b / q
-python -m pipeline export       # kept passages -> extracted/examples.md
 python -m pipeline draw -n 6    # a generation packet, under the default setting
-python -m pipeline draw --setting setting-b   # under a lore setting
 python -m pipeline.selftest     # verify the code after a sync
 ```
 
 `pipeline/README.md` has the rest, including which parts are weakest and where
-the feedback edges from `extracted/decisions.jsonl` are meant to attach.
+the feedback edges will attach when the decision layer is re-added.
 
 ## Pushing
 

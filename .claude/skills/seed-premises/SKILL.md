@@ -11,9 +11,7 @@ Read `CLAUDE.md` and `series.md` first. Those say what a Fog Belt premise is. Th
 
 ## Every run is under a setting
 
-A setting is the fourth thing a premise pulls from and the thing it is checked against. `sources.toml` declares them; `sources/settings/<id>.md` is one file per setting with nine fixed sections (`sources/settings/README.md`). The default is `setting-a`, whose canon is the real world. `/seed-premises setting-b`, or a request that names a setting, picks another.
-
-**Step 0: read `sources/settings/<id>.md` in full**, before drawing anything. Under a lore setting the setting's metaphysics is the one impossibility and nothing else is suspended; §1 of the file says what that purchase is, §2 says how `series.md` reads there, and §5–§8 are what the cull checks against.
+The setting is the fourth thing a premise pulls from. Its material is a reference register under `sources/summaries/` — `setting-a.md` by default, or `setting-b.md` / `setting-c.md`. Settings are no longer a pipeline concept: the lore files and the `# CANON` block were removed on 2026-09-03 along with the decision layer, and the reference doc is read by hand.
 
 ## Order of operations
 
@@ -28,21 +26,21 @@ markers. Those lived in the dread-mechanism and telling-it banks, which were
 retired on 2026-09-03, so the draw is gone rather than broken. The three pulls
 below are what remains, and they are still drawn rather than chosen.)*
 
-Then draw at least one of the four §1.1 pulls the same way — a theme, a dread mechanism, an artifact, or a setting element picked at random rather than chosen. The setting element is a number into the setting file's §3; the artifact comes from its §4.
+Then draw at least one of the four §1.1 pulls the same way — a theme, a dread mechanism, an artifact, or a setting element picked at random rather than chosen. The setting element is a number into `sources/summaries/setting-a.md`'s domains; the artifact comes from its artifact list.
 
 Then the seed:
 
 ```
-python -m pipeline draw --setting <id>
+python -m pipeline draw
 ```
 
-It draws themes only from the setting's sources, renders the examples first, the seed second, and the lore file's §9 last as `# CANON`. If it refuses because nothing is banked for the setting, run the brief it names and draft themes before going on; do not substitute themes from another setting.
+It renders the examples first and the seed second, immediately before the ask.
 
 You do not get to pick. Left to itself a model reaches for the same handful of moves every time and will report having chosen deliberately. If a drawn move looks impossible against the seed, that is the interesting case, not a reason to redraw. Redraw only when two draws are the same move under different numbers.
 
 ### 2. Load the examples
 
-Read `extracted/examples.md` in full and hold it. It is written by `python -m pipeline export` from Chris's keeps; if it is missing or empty the cull has not been run yet, and you should say so rather than substituting anything. Those are passages of prose in the target register. They are not instructions: do not summarise them, refer to them, or explain what they demonstrate. They work by conditioning or not at all.
+The packet's `# REGISTER` block is the examples, drawn from the pool by `pipeline draw`. Those are passages of prose in the target register. They are not instructions: do not summarise them, refer to them, or explain what they demonstrate. They work by conditioning or not at all.
 
 **The examples do not change with the setting.** They condition how a story reads; the setting changes what it is about. A lore setting with a register problem is a lore file problem (§2), not a reason to look for setting-flavoured prose.
 
@@ -58,7 +56,7 @@ Phrase it to the generator as distance, not prohibition: *generate maximally dis
 
 ### 4. Make the call
 
-Example passages first, drawn constraints second, register floor last — immediately before the ask. Negations decay with distance from the point of generation, so anything that must be excluded belongs in the final lines rather than the preamble. Lore §2 supplies the setting's register sentence in the preamble; the `# CANON` block from the packet goes last of all, after the register floor, positive-framed as it is written.
+Example passages first, drawn constraints second, register floor last — immediately before the ask. Negations decay with distance from the point of generation, so anything that must be excluded belongs in the final lines rather than the preamble. The hard rules in `sources/summaries/setting-a.md` go last of all, after the register floor, positive-framed as they are written.
 
 Ask for a distribution, not a list:
 

@@ -41,7 +41,7 @@ import re
 from pathlib import Path
 
 from . import sources
-from .bank import THEME_DECISIONS, THEMES, Bank, _now
+from .bank import THEMES, Bank, _now
 from .doc import Doc
 
 # --- the grain, measured off playbook §2 ----------------------------------
@@ -153,7 +153,7 @@ def grain_examples(root: str | Path = ".") -> list[str]:
 
 def audit(root: str | Path = ".", out: str | Path | None = None) -> dict:
     """Compare the banked themes against playbook §2 on the same measures."""
-    bank = Bank(out or Path(root) / "extracted", pool=THEMES, decisions=THEME_DECISIONS)
+    bank = Bank(out or Path(root) / "extracted", pool=THEMES)
     banked = [r.get("text", "") for r in bank.load().values()]
     ref = measure(grain_examples(root))
     got = measure(banked) if banked else None
@@ -261,7 +261,7 @@ def brief(source_id: str, root: str | Path = ".", shots: int = 8) -> str:
             lines = "\n".join(f"- {q}" for q in getattr(src, "research", []) or [])
             if src.kind == "setting":
                 lines += (
-                    f"\n\nRead `sources/summaries/{src.id}.md` and `sources/settings/{src.id}.md` "
+                    f"\n\nRead `sources/summaries/{src.id}.md` "
                     "in full first. A theme abstracts from what the lore file's §5 "
                     "documents and §8 leaves open; nothing in its §7 seeds anything, "
                     "and the setting's nouns stay in the lore file, not in the theme."
@@ -308,7 +308,7 @@ def ingest(path: str | Path, source_id: str, root: str | Path = ".",
         print("nothing banked.")
         return 0
 
-    bank = Bank(out or Path(root) / "extracted", pool=THEMES, decisions=THEME_DECISIONS)
+    bank = Bank(out or Path(root) / "extracted", pool=THEMES)
     added, refreshed = bank.merge(rows)
     print(f"banked {len(rows)} for {source_id}: +{added} new, {refreshed} refreshed")
     m = measure([r["text"] for r in rows])

@@ -160,7 +160,7 @@ def register_score(s: dict) -> float:
     the `0.30 * max(tag_scores)` term was removed; their ratios to each other
     are unchanged. Every constant here is still hand-set and none of it is
     fitted to anything — `PLAN.md` Part 3 is where that gets tested against
-    `decisions.jsonl` rather than argued about.
+    real verdicts rather than argued about, once the decision layer returns.
     """
     good = (
         0.40 * s["concrete"]

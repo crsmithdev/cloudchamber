@@ -1,3 +1,0 @@
-{"id": "a469203c44ce", "verdict": "keep", "note": "", "method": "triage", "at": "2026-09-03T17:32:25Z"}
-{"id": "021ac307747f", "verdict": "pass", "note": "markup or extraction artifact in the text", "method": "artifact", "at": "2026-09-03T17:34:45Z"}
-{"id": "5f12e1833ced", "verdict": "keep", "note": "", "method": "manual", "at": "2026-09-03T17:51:08Z"}
