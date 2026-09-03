@@ -123,20 +123,43 @@ kbd{font-family:var(--mono); font-size:11px; background:var(--surface-2);
   font-variant-numeric:tabular-nums}
 
 /* ---------- deck ---------- */
-/* A 40-word opening leaves most of the card empty. Centre it so the sparse
-   state reads as deliberate rather than as a rendering accident, and so the
-   eye lands in the same place on every card. */
-#deck .card{flex:1; min-height:0; overflow-y:auto; padding:30px 34px;
-  display:grid; gap:16px; align-content:center; justify-items:start;
-  max-width:none}
-#deck .card > *{width:100%}
-#deck .prose{max-width:66ch}
+/* Wide-and-short is the hard case: an ultrawide leaves the reading column
+   marooned in a black field, while a short viewport cannot afford the title,
+   chips and meta stacked above the prose. So the chrome goes into a left rail
+   — horizontal space is what there is a surplus of — and the prose column
+   scales its type with the viewport instead of its width. The measure stays
+   at a reading 34em; what grows is the size of the characters, which is the
+   only way to fill a large screen without breaking the measure. */
+/* Both tracks sized to content so the pair centres as a unit — a `1fr` prose
+   track absorbs the whole surplus and strands the column on the left. */
+#deck .card{flex:1; min-height:0; overflow-y:auto; padding:clamp(16px,2.2vh,34px) 34px;
+  display:grid; grid-template-columns:minmax(190px,16em) minmax(0,34em);
+  gap:0 clamp(24px,3vw,64px); align-content:center; justify-content:center}
+#deck .rail-meta{display:grid; gap:10px; align-content:start;
+  border-right:1px solid var(--rule); padding-right:clamp(16px,2vw,32px);
+  min-width:0}
+#deck .rail-meta .title{font-size:clamp(15px,1.05vw,21px); line-height:1.2}
+#deck .rail-meta .by{font-size:12.5px}
+#deck .rail-meta .nums{margin-left:0; line-height:1.7; word-break:break-word}
+#deck .chips{gap:4px}
+/* The measure must be set on the prose element, in ch, so it resolves against
+   the prose font-size. Put it on the grid track in `em` and it resolves
+   against the card's 15px instead — which silently cut the line to ~30
+   characters while the type got bigger. */
+#deck .prose{font-size:clamp(18px,1.25vw,25px); line-height:1.58;
+  width:62ch; max-width:100%; min-width:0}
 #deck footer{flex:none; padding:12px 34px; border-top:1px solid var(--rule);
   background:var(--surface); display:flex; gap:14px; align-items:center; flex-wrap:wrap}
 .rail{flex:none; height:3px; display:flex; background:var(--surface-2)}
 .rail i{display:block; height:100%}
 .rail i.keep{background:var(--keep)} .rail i.pass{background:var(--pass)}
 .rail i.maybe{background:var(--maybe)}
+
+@media (max-width:900px){
+  #deck .card{grid-template-columns:minmax(0,1fr); gap:14px}
+  #deck .rail-meta{border-right:0; border-bottom:1px solid var(--rule);
+    padding-right:0; padding-bottom:12px}
+}
 
 /* ---------- ledger ---------- */
 #ledger .rows{flex:1; min-height:0; overflow-y:auto; background:var(--surface)}
@@ -237,12 +260,12 @@ input.note:focus{outline:2px solid var(--accent); outline-offset:-1px}
     <div class="empty" id="deck-empty" hidden></div>
     <div class="rail" id="deck-rail"></div>
     <div class="card">
-      <div class="head">
+      <div class="rail-meta">
         <div class="title" id="deck-title">—</div>
         <div class="by" id="deck-by"></div>
+        <div class="chips" id="deck-chips"></div>
         <div class="nums" id="deck-nums"></div>
       </div>
-      <div class="chips" id="deck-chips"></div>
       <div class="prose" id="deck-text"></div>
     </div>
     <footer>
@@ -518,8 +541,8 @@ const Deck = (() => {
     setEmpty("deck", false);
     el("deck-title").textContent = p.title;
     el("deck-by").textContent = p.author ? "— " + p.author : p.source;
-    el("deck-nums").textContent =
-      `${p.words}w · score ${p.score.toFixed(3)} · ${p.cell} · ${p.id}`;
+    el("deck-nums").innerHTML =
+      `${p.words}w · score ${p.score.toFixed(3)}<br>${esc(p.cell)}<br>${p.id}`;
     el("deck-chips").innerHTML = chipRow(p.facets, p.withheld);
     if (expanded) {
       el("deck-text").innerHTML = proseHTML(p.text);
