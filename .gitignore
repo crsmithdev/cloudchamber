@@ -7,8 +7,15 @@ __pycache__/
 *.py[cod]
 
 # Regenerable pipeline output. `pipeline harvest` rebuilds the pool from
-# refs/ at any time. extracted/decisions.jsonl is DELIBERATELY NOT ignored —
-# it is the one file here that cannot be regenerated from anything.
+# sources/ at any time. Two files here are DELIBERATELY NOT ignored:
+#   decisions.jsonl   cannot be regenerated from anything
+#   facet-stats.json  is the baseline every dimension score is relative to.
+#                     Regenerable in principle, but re-fitting it moves every
+#                     passage's facets under decisions already taken against
+#                     them, so the fitted copy is tracked and shared.
 extracted/exemplars.jsonl
 extracted/themes.jsonl
 extracted/packets/
+
+# Agent worktrees
+.worktrees/

@@ -11,7 +11,7 @@ own problem, or collected them as evidence for how the work should be done.
 | `setting-a.md` | the specifics behind playbook §5 — fifteen domains of setting-a statutes, bodies, dates, cases. Written in-house and meant to grow |
 | `literature.md` | academic work on what makes horror land. `sources.toml` reads this for themes and never for passages: criticism conditions for criticism |
 | `corpus.md` | award-attested horror free to read online, with the licensing map. Held as a standard to read *against* — deliberately not in `sources/`, and never harvested |
-| `tagging.md` | established practice for classifying passages -- Biber's multi-dimensional analysis and its tooling, Genette focalization, appraisal theory, and what the in-context-learning literature says about choosing a demonstration set. The grounding the six failure tags never had |
+| `tagging.md` | established practice for classifying passages -- Biber's multi-dimensional analysis and its tooling, Genette focalization, appraisal theory, and what the in-context-learning literature says about choosing a demonstration set. The grounding the six failure tags never had, and the basis of the facets that replaced them on 2026-09-03 |
 | `selection.md` | design for the selection stage. **Not built.** The harvest and exemplar-bank stages it assumed are now `pipeline/`; this one is still paper |
 
 `literature.md` is the only file here the pipeline reads.

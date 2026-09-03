@@ -3,7 +3,7 @@
 Two extractions, one bank each, one decision trail each.
 
 **Passages** are verbatim prose, 150–400 words, harvested from original
-sources in `refs/`. They condition *how a story reads*. They feed
+sources in `sources/texts/`. They condition *how a story reads*. They feed
 `extracted/exemplars.jsonl`.
 
 **Themes** are abstractions — a mechanism, what it costs, who it is done to.
@@ -18,16 +18,24 @@ from source fiction at all.
 
 ```bash
 python -m pipeline harvest              # sources -> passage candidates
+python -m pipeline facets               # score the pool on Biber D1/D2
 python -m pipeline themes               # sources -> theme candidates
-python -m pipeline review               # the cull: k / p / m / s / b / q
-python -m pipeline stats                # state of both banks
+python -m pipeline review --triage      # fast pass: 40 words, k / p / x
+python -m pipeline review --compare     # five at a time, pick the best
+python -m pipeline review               # careful pass: full text, one at a time
+python -m pipeline review --themes      # dense multi-select over the themes
+python -m pipeline stats --target 8     # progress toward a stop rule
 python -m pipeline export               # kept passages -> extracted/exemplars.md
 python -m pipeline draw -n 6 -t 2       # a generation packet
 python -m pipeline.selftest             # verify the code works after a sync
 ```
 
-Scope a run with `--only scp datlow`, or a review with `--tag clinical-body`,
-`--order random`, `--limit 40`.
+`harvest` then `facets`, in that order: a Biber dimension is a z-score against
+the whole pool, so it cannot be computed one passage at a time on the way past.
+
+Scope a run with `--only scp datlow`. Scope a review with `--facet involved`
+(a voice, a mode, or a whole cell like `involved/narrative`), `--withheld`,
+`--order cluster`, `--limit 40`.
 
 For a setting:
 
@@ -51,45 +59,107 @@ worth stating plainly:
   unchanged keeps its id and its earlier verdict. That is deliberate: it is
   what lets the heuristics be improved without discarding the labels.
 
+Every row carries a `method`, because the three review modes are not the same
+evidence. A `compare` keep means "best of the five on that screen" — a
+ranking, with a `group` id so the screen can be reconstructed. A `triage` pass
+means "rejected on 40 words". A `manual` verdict is a full read. Anything
+fitted to this trail has to be able to tell them apart.
+
 Passes are as valuable as keeps. A discriminator trained on keeps alone has no
 negatives, and this pool is mostly negatives by design.
 
 ## Why generous
 
-The harvester over-produces. Windows overlap, tag thresholds sit low, and a
-passage with no tag at all still enters the pool. That is the intended
-division of labour: recall is the machine's job, precision is Chris's. A
-harvester tuned for precision would be making the taste call, which is the one
-call it must not make.
+The harvester over-produces. Windows overlap, and a passage with no facet at
+all still enters the pool. That is the intended division of labour: recall is
+the machine's job, precision is Chris's. A harvester tuned for precision would
+be making the taste call, which is the one call it must not make.
 
-## The six failure tags
+## Facets
 
-From `extracted/README.md`. A tag means "worth an eye on this axis", never
-"this is an exemplar of it".
+`biber.py` scores every passage on two of Biber's (1988) dimensions — the
+established empirical framework for describing how a text reads, and the two
+that demonstrably reproduce in this corpus. `research/tagging.md` has the
+citations and the evidence.
 
-| tag | what it counters |
-| :-- | :-- |
-| `no-resolution` | an ending that closes the mechanism and leaves the person inside it |
-| `warm-mechanism` | warmth as the instrument rather than as relief |
-| `document-working` | an artifact doing a job rather than narrating |
-| `clinical-body` | physical harm at sentence level in institutional register |
-| `scale` | population-scale harm stated without escalation of tone |
-| `withheld` | a gap with a floor under it |
+| dimension | negative pole | positive pole |
+| :-- | :-- | :-- |
+| **D1** `voice` | `informational` — nouns, prepositions, nominalisation, long words | `involved` — private verbs, contractions, 1st/2nd person, present tense |
+| **D2** `mode` | `non-narrative` | `narrative` — past tense, 3rd person, perfect aspect, public verbs |
 
-`pipeline stats` breaks the kept set down by tag, so the bank can be checked
-for coverage rather than accumulating along one axis.
+Terciles on each give a 9-cell `voice/mode` grid. `pipeline stats` breaks the
+kept set down by cell, and `pipeline draw --coverage` takes one from each cell
+before any cell gets a second — which is clustering retrieval, the standard
+diversity method for in-context demonstrations.
+
+D3–D6 are deliberately not implemented. Biber derived them to separate
+conversation from academic prose, a far wider spread than this corpus has, and
+there is no evidence they discriminate here.
+
+**Two backends.** `biberplus` if it imports, else a dependency-free local
+fallback of closed word lists and regexes. Over the 948-passage SCP pool the
+two correlate at **r = 0.97 on D1** and **r = 0.76 on D2** — the local D1 is
+effectively the same measurement, the local D2 noticeably rougher, because
+past-tense detection without a part-of-speech tagger is a suffix rule and a
+list of irregulars. The two are *not* interchangeable within one corpus:
+standardisation is corpus-relative, so switching backends means
+`pipeline facets --refit`. `extracted/facet-stats.json` records which one
+fitted it and the command refuses to mix them.
+
+**One tag survives, and it is not a tag.** `withheld` is a boolean flag for
+redaction and elision — a surface fact about the text, cheaply detectable,
+with no reading of the passage inside it. Filter on it with `--withheld`.
+
+### What used to be here
+
+Six failure tags — `no-resolution`, `warm-mechanism`, `document-working`,
+`clinical-body`, `scale`, `withheld` — coined in one session on 2026-09-02 and
+grounded in nothing. They were not merely decorative: `register_score`
+carried a `0.30 * max(tag_scores)` term that contributed a mean of 0.119, was
+the largest positive term for 199 of 1,024 passages, and swapped 11 of the top
+12 when removed. An unvalidated taxonomy was deciding what got read first.
+
+The pool itself never depended on them — selection is bound by the
+overlap-rejection rule in `top_per_doc`, not by score — so removing them
+changed the order and not the contents.
+
+## Culling is the constraint
+
+948 passages at 30–60s of careful reading each is 8–15 hours, and the pool
+grows several-fold once the PDFs are harvested. The interface is the
+bottleneck, not the taxonomy. Hence:
+
+- **`--triage`** shows the first 40 words. Most rejects are obvious in one
+  sentence, and paying 400 words to say no is the largest waste in the loop.
+  `x` expands; a verdict after expanding is recorded as a full read, not a
+  triage call. Run it over everything, then a careful pass over survivors.
+- **`--compare`** shows five at a time. Forced choice, ties permitted and
+  encouraged, no numeric scales. ~190 screens instead of 948, and it yields
+  ranking data rather than a binary.
+- **`--order cluster`** keeps consecutive screens inside one facet cell, so
+  calibration holds instead of every screen being a register switch.
+- **`--themes`** is a different interface entirely: 20 short themes a screen,
+  keep by number. The whole 400-odd set is half an hour.
+
+**Do not aim to label the pool.** `pipeline stats` reports the keep rate per
+block of 50 in decision order and, with `--target N`, which facet cells are
+still short. Stop when the marginal keep rate flattens or every cell has
+enough — not when the queue is empty.
 
 ## What is heuristic and what that costs
 
-Everything in `signals.py` is lexical and structural. No model reads anything;
-no network call is made. Each signal is a named number you can inspect, which
-is why `warm-mechanism` firing on polite prose with no harm in it was findable
-and fixable — with an embedding it would have been invisible.
+`signals.py` is lexical and structural; `biber.py` is grammatical. No model
+reads anything and no network call is made. Each number is named and
+inspectable, which is why the last eyeball of the D1 extremes found raw CSS at
+the top and two SCP stripper bugs behind it. **Always check the extremes:**
+`pipeline facets --extremes 5`.
 
-The cost is real and worth naming:
+The costs, named:
 
-- **`no-resolution` is the weakest tag.** It needs to know a story ended
-  badly, and position-plus-vocabulary is a poor proxy. Expect misses.
+- **The local backend's D2 is the weak one.** r = 0.76 against biberplus,
+  62% tercile agreement. Where D2 matters, install `biberplus` and refit.
+- **`register_score` is still hand-set constants.** Nothing in it is fitted to
+  anything. `PLAN.md` Part 3 is where that gets tested against real verdicts.
 - **Local theme extraction is the weakest component overall.** It matches the
   grammatical shapes a mechanism takes. It will hand you sentences that are
   merely procedural. Cull hard, or lean on the research intake for anything
@@ -103,14 +173,14 @@ The cost is real and worth naming:
 Nothing consumes `decisions.jsonl` yet. When there is enough of it, four
 things should read it, in rough order of value:
 
-1. **Generation** — suppress ground already mined, so premises stop landing
+1. **Validation of the facets themselves.** Which facet, if any, predicts a
+   keep? Anything that predicts nothing gets dropped, including D1 and D2.
+2. **Generation** — suppress ground already mined, so premises stop landing
    near ones already written.
-2. **`exemplars.md`** — promote kept passages into the conditioning set as
+3. **`exemplars.md`** — promote kept passages into the conditioning set as
    taste moves, instead of freezing at the first cull.
-3. **The scorer** — fit `register_score` weights against keeps and passes
-   rather than the hand-set constants currently in `signals.py`.
-4. **The sampler** — `sample.py` is deliberately near-random until there is
-   data to steer it with.
+4. **The scorer and the sampler** — fit `register_score` weights, and the
+   render order, against keeps and passes rather than the hand-set constants.
 
 ## Licensing
 

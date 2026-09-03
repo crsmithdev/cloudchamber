@@ -2,9 +2,15 @@
 
 *What the literature actually offers for the job `extracted/` does: labelling
 prose passages along axes that (a) describe how they read and (b) can be
-checked for coverage. Compiled 2026-09-03. The six failure tags currently in
-`pipeline/signals.py` were coined in one session on 2026-09-02 and are grounded
-in nothing below; this document is the alternative.*
+checked for coverage. Compiled 2026-09-03. The six failure tags then in
+`pipeline/signals.py` were coined in one session on 2026-09-02 and were
+grounded in nothing below; this document is the alternative.*
+
+*Adopted 2026-09-03. Recommendations 1, 2, 4 and 5 are implemented —
+`pipeline/biber.py` and `pipeline facets`. Recommendation 3 (focalization) is
+not: the voice axis is D1's, and an LLM annotator has not earned a place next
+to it. Recommendation 6 (validate against `decisions.jsonl`) is waiting on
+verdicts to validate against.*
 
 ---
 

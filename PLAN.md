@@ -1,200 +1,118 @@
-# PLAN — re-base tagging on Biber, and make culling cheap
+# PLAN — what is left after the Biber re-base
 
-*Working document. Written 2026-09-03 to hand off to a Claude Code session.
-Delete it when the work is done. Rationale and citations are in
-`research/tagging.md`; this is only what to build.*
+*Working document. Written 2026-09-03, rewritten the same day once Parts 1 and
+2 landed. Delete it when Part 3 is done. Rationale and citations are in
+`research/tagging.md`; the mechanics are in `pipeline/README.md`.*
 
 ---
 
-## Where things stand
+## Done
 
-Committed and verified on lightbox2 (nothing pushed — `git push` is manual):
+**Part 1 — the six failure tags are gone, replaced by Biber D1/D2.**
+`pipeline/biber.py` (two backends, `biberplus` or a local fallback),
+`pipeline facets` (fit, persist, score, report, `--extremes`), `signals.py`
+stripped of `tag_scores`/`tags`/`THRESHOLD` and the six lexicons,
+`register_score` renormalised without the `0.30 * max(tag_scores)` term,
+`sample.py` re-based on the 9-cell facet grid with an explicit recorded
+`--order-by`, and `bank.py` reporting `kept_by_facet`. `withheld` survives as
+a standalone boolean flag.
 
-- `pipeline/` harvests passages and themes locally. `python -m pipeline.selftest`
-  passes. Harvest gives **944 passages from 103/109 SCP articles**; themes 432.
-- The PDFs have **never been harvested**. Only SCP has. Everything below about
-  dimensions is fitted to documents, not fiction, and must be re-checked once
-  `pipeline harvest` runs over `sources/texts/books/`.
-- `extracted/decisions.jsonl` **does not exist yet**. No real cull has happened.
-  That is the good case: nothing has been labelled under the old tags.
+**Part 2 — culling is cheap.** `review --triage` (40 words, `x` expands),
+`review --compare` (five a screen, ties encouraged, recorded as
+`method: "compare"` with a `group` id), `review --order cluster`,
+`review --themes` (20 a screen, keep by number), and `stats --target N` with
+a keep rate per block of 50.
 
-### Environment gotchas that will waste time otherwise
+Verified end to end on the 947-passage SCP pool: `python -m pipeline.selftest`
+passes under both backends, all 9 cells fill, and the extremes read as their
+labels claim.
 
-- **`biberplus` is installed on Windows, not in the Cowork Linux VM.** A Claude
-  session reaching the machine through `device_bash` gets a *different*
-  interpreter than the one Chris runs. Write the biber layer as an adapter:
-  use `biberplus` if importable, else the local fallback. Do not assume either.
-- **Python on the VM is 3.10** — no `tomllib`, so `sources.toml` is ignored and
-  `pipeline/sources.py` DEFAULTS are used instead. It prints a warning. Keep
-  the two in sync or install `tomli`.
+## Still to do
+
+### Part 3 — validate, then prune
+
+Blocked on verdicts. Once ~200 exist in `extracted/decisions.jsonl`:
+
+1. Which facet, if any, predicts a keep? Test it. Split by `method` first —
+   a `compare` keep is a ranking, a `triage` pass is a 40-word rejection, and
+   a `manual` verdict is a full read. They are not the same evidence.
+2. Refit `register_score` weights against keeps and passes instead of the
+   hand-set constants. Everything in it is still asserted.
+3. Refit the render order in `sample.py` the same way. `--order-by d1` is a
+   default, not a finding.
+4. Drop anything that predicts nothing — including the facets, if they don't.
+
+This is the point of the append-only trail. Nothing above is right because it
+is well-founded; it is right if it predicts Chris.
+
+### Harvest the PDFs
+
+Never done. Only SCP has ever been harvested, and every number in
+`pipeline/README.md` is fitted to 947 SCP passages. When it happens:
+
+- `pdftotext` (poppler) or `pdfplumber` must be installed. Neither is on this
+  machine, so `read_pdf.py` cannot run here at all and the selftest reports
+  the PDF adapter as skipped.
+- **Refit afterwards.** `pipeline facets --refit --extremes 5`. The pool grows
+  several-fold and a baseline fitted on documents does not describe fiction.
+  `facets` warns when the pool has drifted more than 20% from the fitted `n`,
+  but the warning is not the decision.
+- Re-read the extremes. They are how the last two stripper bugs were found.
+
+### Optional: a phone reviewer
+
+Terminal review only works at the desk. A published artifact with a database
+capability could hold the pool, take verdicts on a phone in spare minutes, and
+be read back into `decisions.jsonl` later. Worth it only if the desk sessions
+turn out not to happen. Not started.
+
+---
+
+## Environment gotchas that will waste time otherwise
+
+- **`biberplus` is not installed by default anywhere here.** The adapter falls
+  back silently and says which backend is live on every `facets` run. Over the
+  SCP pool the two agree at r = 0.97 on D1 and r = 0.76 on D2 — the local D1
+  is effectively the same measurement, the local D2 is rougher. **The two are
+  not interchangeable within one corpus**: `facet-stats.json` records the
+  backend and `facets` refits rather than mixing them.
+- **`biberplus` 0.4.0's `calculate_tag_frequencies` is broken under numpy 2**
+  (`np.array_split` over a DataFrame returns bare arrays; the function
+  swallows the error and returns `None`). `biber.py` counts the per-token tags
+  from `tag_text` itself and does not call it.
+- **Python on the Cowork VM is 3.10** — no `tomllib`, so `sources.toml` is
+  ignored and `pipeline/sources.py` DEFAULTS are used instead. It prints a
+  warning. Keep the two in sync or install `tomli`.
 - **Google Drive sync leaves a zero-byte `.git/index.lock`** that blocks every
   git command. Safe to `rm` when no git process is running.
 - Cull decisions are append-only. **Never rewrite `extracted/decisions.jsonl`.**
 
 ---
 
-## Part 1 — replace the six failure tags
+## Still open, and needing a human
 
-The six (`no-resolution`, `warm-mechanism`, `document-working`,
-`clinical-body`, `scale`, `withheld`) were coined in one session on 2026-09-02
-and are grounded in nothing. See `research/tagging.md` §1. Replace them with
-Biber dimensions, which are the field standard and which **reproduce in this
-corpus** — a PCA over grammatical features gives D1 at 25% of variance.
+- **`seeding-v7.md` refers seven times to `playbook-v2.md`, which does not
+  exist** in the repo or anywhere in git history. PLAN.md previously recorded
+  that its section references "map exactly onto `playbook.md`'s sections".
+  **They do not.** Checked one by one:
 
-### 1.1 `pipeline/biber.py` (new)
+  | seeding-v7 says | `playbook.md` has | verdict |
+  | :-- | :-- | :-- |
+  | enter at §2 | §2 Theme bank | plausible |
+  | §1 sourcing, "collision (§1.2), the found armature (§1.4)" | §1 Ideation, numbered steps 1–12, no §1.2/§1.4 | no |
+  | §3.6 "the marvel budget" | §3.6 Legibility without lawfulness | no |
+  | §5 "the person", §5.3 "exposure is positional" | §5 The setting-a, §5.3 land and title | no |
+  | §6 "shape and ending" | §6 Telling it, §6.7 Endings | close |
+  | §6.7 "the container" | §6.7 Endings (container is §6.3, register §6.6) | no |
+  | §8.3, §8.4 | no §8 at all | no |
 
-```
-features(text) -> dict          raw counts, normalised per word
-dimensions(feats, stats) -> {"d1": z, "d2": z}
-```
-
-- Try `import biberplus` and use its feature extractor. On ImportError fall
-  back to a local implementation of the D1/D2 features only.
-- **D1 Involved vs Informational** — positive: private verbs, contractions,
-  present tense, 1st/2nd person pronouns, discourse particles. Negative: nouns,
-  prepositions, attributive adjectives, mean word length.
-- **D2 Narrative vs Non-narrative** — positive: past tense, 3rd person
-  pronouns, perfect aspect, public verbs. Negative: context-dependent
-  discourse markers.
-- Do **not** implement D3-D6. No evidence they discriminate here, and Biber
-  derived them to separate conversation from academic prose — a far wider
-  spread than this corpus has.
-
-### 1.2 `pipeline facets` (new command)
-
-Dimension scores are corpus-relative, so they need a second pass over the
-whole pool, not a per-passage computation:
-
-1. read every passage in `extracted/exemplars.jsonl`
-2. compute raw features, standardise across the pool, project onto D1 and D2
-3. write back `facets: {"voice": ..., "mode": ..., "d1": z, "d2": z}`
-4. terciles: `voice` = informational | mixed | involved;
-   `mode` = non-narrative | mixed | narrative
-
-Persist the corpus mean/sd to `extracted/facet-stats.json` so a later harvest
-scores consistently instead of silently re-basing.
-
-### 1.3 `pipeline/signals.py`
-
-- Delete `tag_scores`, `tags`, `THRESHOLD`, and the six lexicons that only
-  served them. Keep `withheld` as a single standalone flag — redaction and
-  elision are a genuine register move and are cleanly detectable.
-- **Remove the `0.30 * max(tag_scores)` term from `register_score`** and
-  renormalise the remaining weights. Measured: that term contributes a mean of
-  0.119, is the largest positive term for 199 of 1,024 passages, and changing
-  it swaps 11 of the top 12. It is an unvalidated taxonomy steering what gets
-  read first.
-- Keep `concrete`, `variance`, `flatness`, the adverb/intensifier/dialogue
-  penalties and the sentence-shape term. Those measure prose, not taxonomy.
-- Note: the pool itself does **not** change — selection is bound by the
-  overlap-rejection rule in `top_per_doc`, not by score. Only order changes.
-
-### 1.4 `pipeline/sample.py` — two changes
-
-- `_by_coverage` currently buckets by tag. Re-base on the **facet grid**
-  (voice x mode, 9 cells). This is "clustering retrieval", an established
-  diversity method — the design was right, only the buckets were unfounded.
-- **Fix ordering.** The ICL literature reports demonstration order moving
-  results "from near-random to state-of-the-art". `sample.py` currently emits
-  whatever order the picker produced and does not record it. Make it an
-  explicit `--order-by` parameter (default: ascending d1), and record the
-  realised order in the packet.
-
-### 1.5 Elsewhere
-
-`review.py` (`--tag` filter, export headers), `bank.py` (`kept_by_tag` ->
-`kept_by_facet`), `__main__.py`, `pipeline/README.md`, `extracted/README.md`,
-`.claude/skills/seed-premises/SKILL.md`.
-
-### Acceptance
-
-- `python -m pipeline.selftest` passes.
-- `pipeline harvest --only scp` still gives ~944 passages over ~103 docs.
-- `pipeline facets` fills all 9 cells; report the distribution.
-- Spot-check the extremes of D1 and D2 read as the labels claim. **They did
-  not last time** — the top of D1 was raw CSS, which is how two stripper bugs
-  were found. Always eyeball the extremes.
-
----
-
-## Part 2 — make culling cheap
-
-The real constraint. 944 passages at 30-60s of careful reading each is 8-15
-hours, and the pool grows several-fold once the PDFs are harvested. The
-interface is the bottleneck, not the taxonomy.
-
-Ordered by payoff per unit of work:
-
-### 2.1 Triage mode — the big win
-
-`pipeline review --triage`. Show the **first ~40 words only**. Keys: `p` pass,
-`x` expand to full text, `k` keep. Most rejects are obvious in one sentence;
-paying 400 words to say no is the single largest waste in the current loop.
-Expect this alone to remove over half the reading.
-
-Run it as two passes: fast triage over everything, then a careful pass over
-survivors only.
-
-### 2.2 Comparative mode
-
-`pipeline review --compare`. Show 5 at a time, pick the best one or two, ties
-allowed. Rationale is already in this project's own retired eval README:
-*"Forced choice, ties permitted and encouraged. No numeric scales."* People
-are faster and more consistent comparing than rating in isolation. ~190
-screens instead of 944, and it yields ranking data, which is richer than a
-binary.
-
-Record these as `method: "compare"` in the decision rows so they stay
-distinguishable from absolute verdicts.
-
-### 2.3 Block by similarity
-
-Add `--order cluster`: consecutive passages from the same facet cell. Holds
-calibration steady and kills the context-switching cost of jumping between
-registers. Cheap to add once facets exist.
-
-### 2.4 Stop rules, not completion
-
-Do not aim to label 944. Track marginal keep-rate per 50 reviewed and stop
-when it flattens, or when every facet cell has enough keeps. `pipeline stats`
-should show progress toward a target, not just a count.
-
-### 2.5 Themes need a different shape entirely
-
-432 themes of 1-2 sentences each. One-at-a-time is the wrong interface —
-these want a **dense multi-select list, ~20 per screen**, keep-by-number.
-Whole set is maybe 30-45 minutes. Do not reuse the passage reviewer.
-
-### 2.6 Optional: a phone reviewer
-
-Terminal review only works at the desk. A published artifact with a database
-capability could hold the pool, take verdicts on a phone in spare minutes, and
-be read back into `decisions.jsonl` later. Worth it only if the desk sessions
-turn out not to happen.
-
----
-
-## Part 3 — validate, then prune
-
-Once ~200 verdicts exist:
-
-1. Which facet, if any, predicts a keep? Test it.
-2. Refit `register_score` weights against keeps and passes instead of the
-   hand-set constants.
-3. Drop anything that predicts nothing — including the facets, if they don't.
-
-This is the point of the append-only trail. Nothing above is right because it
-is well-founded; it is right if it predicts Chris.
-
----
-
-## Still open
-
-- **`seeding-v7.md` refers six times to `playbook-v2.md`, which does not exist**
-  in the repo or anywhere in git history. Its §1/§2/§5/§6 references map
-  exactly onto `playbook.md`'s sections, so it is probably a stale name — but
-  seeding-v7 describes it as "composed entirely of kill tests", which
-  contradicts `playbook.md`'s own header. Needs a human decision.
+  `catalogue.md` is not the referent either: it has §1–§6 and no §8. And
+  seeding-v7 describes `playbook-v2.md` as "composed entirely of kill tests"
+  with a "stated default is discard", which contradicts `playbook.md`'s own
+  header ("Nothing here evaluates"). The likeliest reading is that
+  `playbook-v2.md` was a real, differently-structured document that was never
+  committed — but that is a guess, and the fix (repoint, rewrite, or restore)
+  is Chris's call.
 - The Chiang *Exhalation* and adjacent-Watts analysis was deleted with the
   annexes on 2026-09-03 and has no replacement in `sources/texts/`. Recoverable
   from git history if wanted.

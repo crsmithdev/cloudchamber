@@ -169,4 +169,8 @@ def resolve(src: Source, root: str | Path = ".") -> list[Path]:
         return [direct]
     parent = Path(src.path).parent
     pattern = Path(src.path).name
-    return sorted((root / parent).glob(pattern))
+    # A README inside a corpus directory documents the corpus; it is never
+    # source. `sources/texts/scp/*.md` was matching one, and it reached the
+    # pool as a passage.
+    return sorted(f for f in (root / parent).glob(pattern)
+                  if f.stem.lower() != "readme")

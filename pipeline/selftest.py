@@ -2,9 +2,9 @@
 
 Runs the pipeline end to end against a synthetic repo in a temp directory.
 Checks the things that actually break: wikidot stripping, PDF furniture and
-de-hyphenation, window sizing, tag gating, and — the important one — that
-re-harvesting the same material produces the same passage ids, so decisions
-survive a change to the heuristics.
+de-hyphenation, window sizing, Biber dimension polarity, and — the important
+one — that re-harvesting the same material produces the same passage ids and
+does not blank the facets, so decisions survive a change to the heuristics.
 
 No network, no model, no API key. If this passes after a sync, the files
 arrived intact.
@@ -80,7 +80,7 @@ personnel remain in operation as scheduled.
 
 
 def main() -> int:
-    from . import read_pdf, read_scp, signals, themes
+    from . import biber, read_pdf, read_scp, signals, themes
     from .bank import Bank
     from .harvest import score
     from .segment import MAX_WORDS, MIN_WORDS, windows
@@ -102,6 +102,17 @@ def main() -> int:
     check("no stray brackets", not re.search(r"[\[\]]", text.replace("[REDACTED]", "")))
     check("prose survived", doc.word_count() > 150, f"{doc.word_count()} words")
 
+    print("\nsources")
+    from . import sources as sources_mod
+
+    (tmp / "sources" / "texts" / "scp" / "README.md").write_text(
+        "# The SCP corpus\n\nNotes about where these came from.\n",
+        encoding="utf-8",
+    )
+    scp_src = next(s_ for s_ in sources_mod.load(tmp) if s_.id == "scp")
+    matched = [f.name for f in sources_mod.resolve(scp_src, tmp)]
+    check("a corpus README is not a source", matched == ["scp-0000.md"], str(matched))
+
     print("\nsegmentation")
     passages = [score(p) for p in windows(doc)]
     check("passages produced", len(passages) > 0, f"{len(passages)}")
@@ -113,23 +124,58 @@ def main() -> int:
     check("ids are unique", len({p.id for p in passages}) == len(passages))
 
     print("\nsignals")
-    warm = [p for p in passages if "warm-mechanism" in p.tags]
-    check("warm-mechanism fires on warmth+harm", len(warm) > 0)
-    polite = signals.compute(
-        "She smiled and thanked him kindly. She was gentle and careful and "
-        "warm, and she welcomed the patient guest with comfort and care."
+    withheld = signals.compute(
+        "The identity was never determined. [REDACTED] No record was found, "
+        "and the outcome remains unknown... No further detail is available."
     )
-    check(
-        "warm-mechanism does not fire without harm",
-        signals.tag_scores(polite)["warm-mechanism"] < signals.THRESHOLD,
-        f"{signals.tag_scores(polite)['warm-mechanism']}",
+    check("withheld fires on redaction and elision",
+          signals.withheld_score(withheld) >= signals.WITHHELD_THRESHOLD,
+          f"{signals.withheld_score(withheld)}")
+    plain = signals.compute(
+        "She walked to the window and looked at the garden. The light was "
+        "low and the grass was wet. She counted the rows and went back in."
     )
-    year_only = signals.compute("The year was 1994. Then it was 1995, and then 1996.")
-    check("bare years are not big numbers", year_only["big_numbers"] == 0.0)
-    check(
-        "comma-grouped numbers are",
-        signals.compute("A total of 240,000 were processed.")["big_numbers"] > 0,
+    check("withheld does not fire on plain narration",
+          signals.withheld_score(plain) < signals.WITHHELD_THRESHOLD,
+          f"{signals.withheld_score(plain)}")
+    check("the six failure tags are gone",
+          not any(hasattr(signals, n) for n in ("tag_scores", "tags", "THRESHOLD")))
+    check("register_score no longer takes a tag argument",
+          signals.register_score.__code__.co_argcount == 1)
+
+    print(f"\nbiber ({biber.BACKEND} backend)")
+    involved = (
+        "I don't know what you want me to say. I think you already know, and "
+        "I really can't tell you anything else. Well, maybe I can. You know "
+        "how it is. I mean, I feel like we've been here before, haven't we?"
     )
+    informational = (
+        "Containment of the specimen requires maintenance of the isolation "
+        "chamber at a constant temperature. Personnel with authorization for "
+        "the observation of the procedure must record an assessment of the "
+        "condition of the containment apparatus at each interval."
+    )
+    narrative = (
+        "He walked to the window and looked out. She had already gone. He "
+        "said nothing, and then he told her brother what had happened, and "
+        "they drove to the coast, and nobody spoke for an hour."
+    )
+    rows = [biber.features(t) for t in (involved, informational, narrative)]
+    stats = biber.fit(rows)
+    dims = [biber.dimensions(r, stats) for r in rows]
+    check("d1 separates involved from informational",
+          dims[0]["d1"] > dims[1]["d1"], f"{dims[0]['d1']} vs {dims[1]['d1']}")
+    check("d2 separates narrative from informational",
+          dims[2]["d2"] > dims[1]["d2"], f"{dims[2]['d2']} vs {dims[1]['d2']}")
+    check("facets label the poles",
+          biber.facets(rows[0], stats)["voice"] == "involved"
+          and biber.facets(rows[1], stats)["voice"] == "informational",
+          f"{biber.facets(rows[0], stats)} / {biber.facets(rows[1], stats)}")
+    check("stats record the backend", stats["backend"] == biber.BACKEND)
+    check("every cell is a known cell",
+          biber.cell(biber.facets(rows[0], stats)) in biber.CELLS)
+    check("cell tolerates the themes-style facets list",
+          biber.cell(["mechanism"]) == "(unscored)")
 
     print("\npdf adapter")
     pdf_ok = _pdf_check(tmp, read_pdf, check)
@@ -161,6 +207,33 @@ def main() -> int:
     check("re-harvest refreshes all", refreshed2 == len(passages2))
     check("ids stable across re-harvest", set(bank.load()) == first_ids)
     check("decision survived re-harvest", len(bank.history(passages[0].id)) == 2)
+
+    print("\nfacets")
+    from . import facets as facets_mod
+
+    result = facets_mod.score(out=tmp / "extracted", refit=True)
+    pool = bank.load()
+    check("every passage scored", all(p.get("facets") for p in pool.values()))
+    check("stats persisted", (tmp / "extracted" / facets_mod.STATS).exists())
+    check("distribution sums to the pool",
+          sum(result["distribution"].values()) == len(pool))
+    # The one that bites: harvest knows nothing about facets, and a naive
+    # merge would write them all back as {}.
+    bank.merge(passages2)
+    check("facets survive a re-harvest",
+          all(p.get("facets") for p in bank.load().values()))
+
+    print("\ncompare-mode decisions")
+    bank.record(passages[1].id, "keep", method="compare",
+                extra={"group": "g1", "group_size": 5, "picked": 2})
+    row = [r for r in bank.history(passages[1].id)][-1]
+    check("method and group are recorded",
+          row["method"] == "compare" and row["group"] == "g1", str(row))
+    # Three verdicts on the trail: keep, pass (same passage, changed mind),
+    # keep. One whole block of two, and a trailing remainder that is dropped
+    # rather than reported as a rate over one.
+    check("keep rate reports whole blocks only", bank.keep_rate(block=2) == [0.5],
+          str(bank.keep_rate(block=2)))
 
     print()
     if FAILURES:
@@ -220,7 +293,13 @@ p.t {{ text-align:center; font-size:16pt; margin-top:2in }}
         print(f"  --   chromium failed ({type(e).__name__}); pdf adapter not exercised")
         return False
 
-    docs = read_pdf.parse(out, source_prefix="selftest")
+    try:
+        docs = read_pdf.parse(out, source_prefix="selftest")
+    except Exception as e:
+        # No pdftotext and no pdfplumber. Skip rather than take the whole
+        # selftest down with it — everything above this point is unaffected.
+        print(f"  --   no pdf extractor ({type(e).__name__}); adapter not exercised")
+        return False
     check("pdf produced a doc", len(docs) >= 1, f"{len(docs)}")
     if not docs:
         return True

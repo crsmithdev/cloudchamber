@@ -7,11 +7,13 @@ import json
 import sys
 from pathlib import Path
 
+from . import facets as facets_mod
 from . import harvest as harvest_mod
 from . import review as review_mod
 from . import sample as sample_mod
 from . import themes as themes_mod
 from .bank import THEME_DECISIONS, THEMES, Bank
+from .biber import CELLS
 
 
 def main(argv=None):
@@ -26,9 +28,29 @@ def main(argv=None):
     h.add_argument("--per-doc", type=int, default=12,
                    help="best N passages per source document (default 12)")
 
+    f = sub.add_parser("facets", help="score the pool on Biber D1/D2")
+    f.add_argument("--refit", action="store_true",
+                   help="re-fit the corpus statistics instead of reusing them")
+    f.add_argument("--extremes", type=int, default=0, metavar="N",
+                   help="print the N passages at each end of each dimension")
+    # No --themes: a Biber dimension over a one-sentence theme is noise, and
+    # themes.jsonl already uses `facets` for something else entirely.
+
     r = sub.add_parser("review", help="cull the pool: keep / pass / maybe")
-    r.add_argument("--tag", help="only passages carrying this failure tag")
-    r.add_argument("--order", choices=["score", "random", "source"], default="score")
+    r.add_argument("--triage", action="store_true",
+                   help=f"first ~{review_mod.TRIAGE_WORDS} words only; x expands")
+    r.add_argument("--compare", action="store_true",
+                   help="five at a time, pick the best; ties encouraged")
+    r.add_argument("--themes", action="store_true",
+                   help="dense multi-select over the theme bank")
+    r.add_argument("--batch", type=int, default=5, help="screen size for --compare")
+    r.add_argument("--per-screen", type=int, default=20,
+                   help="screen size for --themes")
+    r.add_argument("--facet", help="a cell, a voice or a mode: "
+                                   f"{', '.join(CELLS[:3])}, involved, narrative, …")
+    r.add_argument("--withheld", action="store_true",
+                   help="only passages carrying the withheld flag")
+    r.add_argument("--order", choices=review_mod.ORDERS, default="score")
     r.add_argument("--limit", type=int, default=0)
     r.add_argument("--min-score", type=float, default=0.0)
 
@@ -40,7 +62,9 @@ def main(argv=None):
     d.add_argument("--temperature", type=float, default=0.85)
     d.add_argument("--no-coverage", action="store_true")
     d.add_argument("--include-unlabelled", action="store_true")
-    d.add_argument("--tag")
+    d.add_argument("--facet")
+    d.add_argument("--order-by", choices=sample_mod.ORDERINGS, default="d1",
+                   help="render order of the drawn set (default: ascending d1)")
     d.add_argument("--seed", type=int)
     d.add_argument("--json", action="store_true", help="emit the packet as JSON")
 
@@ -52,6 +76,8 @@ def main(argv=None):
 
     s = sub.add_parser("stats", help="state of the banks")
     s.add_argument("--json", action="store_true")
+    s.add_argument("--target", type=int, default=0, metavar="N",
+                   help="keeps wanted per facet cell; reports what is short")
 
     a = ap.parse_args(argv)
     root = Path(a.root)
@@ -61,9 +87,20 @@ def main(argv=None):
         harvest_mod.harvest(root, only=a.only, min_score=a.min_score,
                             per_doc=a.per_doc, out=out)
 
+    elif a.cmd == "facets":
+        facets_mod.score(root, out=out, refit=a.refit, extremes=a.extremes)
+
     elif a.cmd == "review":
-        review_mod.review(root, out=out, tag=a.tag, order=a.order,
-                          limit=a.limit, min_score=a.min_score)
+        if a.triage and a.compare:
+            sys.exit("--triage and --compare are different modes; pick one")
+        if a.themes:
+            review_mod.review_themes(root, out=out, per_screen=a.per_screen,
+                                     limit=a.limit)
+        else:
+            mode = "triage" if a.triage else "compare" if a.compare else "full"
+            review_mod.review(root, out=out, facet=a.facet, order=a.order,
+                              limit=a.limit, min_score=a.min_score, mode=mode,
+                              batch=a.batch, withheld=a.withheld)
 
     elif a.cmd == "export":
         review_mod.export(root, out=out)
@@ -72,7 +109,8 @@ def main(argv=None):
         packet = sample_mod.draw(
             root, out=out, n_exemplars=a.exemplars, n_themes=a.themes,
             temperature=a.temperature, coverage=not a.no_coverage,
-            include_unlabelled=a.include_unlabelled, tag=a.tag, seed=a.seed,
+            include_unlabelled=a.include_unlabelled, facet=a.facet,
+            order_by=a.order_by, seed=a.seed,
         )
         if a.json:
             print(json.dumps(packet, ensure_ascii=False, indent=2))
@@ -93,7 +131,7 @@ def main(argv=None):
 
     elif a.cmd == "stats":
         sd = Path(a.out) if a.out else root / "extracted"
-        ex = Bank(sd).stats()
+        ex = Bank(sd).stats(target_per_cell=a.target)
         th = Bank(sd, pool=THEMES, decisions=THEME_DECISIONS).stats()
         if a.json:
             print(json.dumps({"exemplars": ex, "themes": th}, indent=2))
@@ -102,9 +140,15 @@ def main(argv=None):
                 print(f"{name}: pool {st['pool']}  keep {st['keep']}  "
                       f"pass {st['pass']}  maybe {st['maybe']}  "
                       f"unlabelled {st['unlabelled']}  sources {st['sources']}")
-                if st["kept_by_tag"]:
-                    for k, v in sorted(st["kept_by_tag"].items(), key=lambda x: -x[1]):
-                        print(f"    {k:20s} {v}")
+                if st["keep_rate"]:
+                    tail = "  ".join(f"{r:.0%}" for r in st["keep_rate"][-8:])
+                    print(f"    keep rate per 50: {tail}")
+                for k, v in sorted(st["kept_by_facet"].items(), key=lambda x: -x[1]):
+                    print(f"    {k:32s} {v}")
+                if st.get("cells_short"):
+                    print(f"    short of {st['target_per_cell']}/cell: "
+                          + ", ".join(f"{c} (-{n})"
+                                      for c, n in st["cells_short"].items()))
 
 
 if __name__ == "__main__":

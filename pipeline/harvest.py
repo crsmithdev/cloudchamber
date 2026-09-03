@@ -93,10 +93,9 @@ def top_per_doc(passages: list[Passage], limit: int, max_overlap: float = 0.5) -
 
 def score(p: Passage) -> Passage:
     s = signals.compute(p.text, p.position)
-    ts = signals.tag_scores(s)
-    p.signals = {**s, "tag_scores": ts}
-    p.tags = signals.tags(ts)
-    p.score = signals.register_score(s, ts)
+    p.signals = s
+    p.withheld = signals.withheld_score(s) >= signals.WITHHELD_THRESHOLD
+    p.score = signals.register_score(s)
     return p
 
 

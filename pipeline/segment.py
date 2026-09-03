@@ -35,7 +35,11 @@ class Passage:
     block_span: tuple[int, int] = (0, 0)
     kinds: list[str] = field(default_factory=list)
     signals: dict = field(default_factory=dict)
-    tags: list[str] = field(default_factory=list)
+    withheld: bool = False
+    # Filled by `pipeline facets`, not by the harvester: a Biber dimension is
+    # a z-score against the whole pool and cannot be computed one passage at a
+    # time. Empty until that second pass runs.
+    facets: dict = field(default_factory=dict)
     score: float = 0.0
 
     def to_dict(self) -> dict:

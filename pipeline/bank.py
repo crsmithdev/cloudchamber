@@ -108,7 +108,10 @@ class Bank:
         """Add new passages, refresh signals on ones already banked.
 
         Returns (added, refreshed). Text is never overwritten — the id is
-        derived from it, so a changed text is a different passage.
+        derived from it, so a changed text is a different passage. Neither are
+        `facets`: they come from `pipeline facets`, which the harvester knows
+        nothing about, and a re-harvest that blanked them would silently empty
+        every coverage bucket in the bank.
         """
         existing = self.load()
         added = refreshed = 0
@@ -118,10 +121,13 @@ class Bank:
             pid = r["id"]
             if pid in existing:
                 keep_first = existing[pid].get("first_seen", now)
+                keep_facets = existing[pid].get("facets") or {}
                 existing[pid].update(
                     {k: v for k, v in r.items() if k != "text"}
                 )
                 existing[pid]["first_seen"] = keep_first
+                if keep_facets:
+                    existing[pid]["facets"] = keep_facets
                 existing[pid]["last_seen"] = now
                 refreshed += 1
             else:
@@ -134,20 +140,26 @@ class Bank:
     # --- decisions ----------------------------------------------------
 
     def record(self, passage_id: str, verdict: str, note: str = "",
-               method: str = "manual") -> None:
-        """Append one verdict. Never overwrites an earlier one."""
+               method: str = "manual", extra: dict | None = None) -> None:
+        """Append one verdict. Never overwrites an earlier one.
+
+        `method` says how the verdict was reached — `manual`, `triage`,
+        `compare` — because they are not the same evidence. A `compare` keep
+        means "best of the five on that screen", which is a ranking, not an
+        absolute judgement, and Part 3 has to be able to tell them apart.
+        """
         if verdict not in {"keep", "pass", "maybe"}:
             raise ValueError(f"verdict must be keep/pass/maybe, got {verdict!r}")
-        append_jsonl(
-            self.decisions_path,
-            [{
-                "id": passage_id,
-                "verdict": verdict,
-                "note": note,
-                "method": method,
-                "at": _now(),
-            }],
-        )
+        row = {
+            "id": passage_id,
+            "verdict": verdict,
+            "note": note,
+            "method": method,
+            "at": _now(),
+        }
+        if extra:
+            row.update(extra)
+        append_jsonl(self.decisions_path, [row])
 
     def verdicts(self) -> dict[str, dict]:
         """Latest verdict per passage. The full history stays on disk."""
@@ -170,26 +182,70 @@ class Bank:
         v = self.verdicts()
         return [p for pid, p in self.load().items() if pid not in v]
 
-    def stats(self) -> dict:
+    def stats(self, target_per_cell: int = 0, block: int = 50) -> dict:
+        """State of the bank, and progress toward a stop rule.
+
+        `pipeline review` is not aiming to label the whole pool — 944 passages
+        at 30-60s each is 8-15 hours, and the pool grows several-fold once the
+        PDFs are harvested. The stop condition is the marginal keep rate going
+        flat, or every facet cell holding enough keeps. Both need the decision
+        order, which is why `decisions.jsonl` is appended and never sorted.
+        """
         pool = self.load()
         v = self.verdicts()
         counts = {"keep": 0, "pass": 0, "maybe": 0}
         for r in v.values():
             counts[r.get("verdict", "pass")] = counts.get(r.get("verdict", "pass"), 0) + 1
-        by_tag: dict[str, int] = {}
+
+        by_cell: dict[str, int] = {}
         for pid, p in pool.items():
             if v.get(pid, {}).get("verdict") != "keep":
                 continue
-            for t in p.get("tags", []) or ["(untagged)"]:
-                by_tag[t] = by_tag.get(t, 0) + 1
-        return {
+            c = _cell(p.get("facets"))
+            by_cell[c] = by_cell.get(c, 0) + 1
+
+        out = {
             "pool": len(pool),
             "labelled": len(v),
             "unlabelled": len(pool) - len(v),
             **counts,
-            "kept_by_tag": by_tag,
+            "kept_by_facet": by_cell,
+            "keep_rate": self.keep_rate(block),
             "sources": len({p.get("source_id", "") for p in pool.values()}),
+            "facetted": sum(1 for p in pool.values() if p.get("facets")),
         }
+        if target_per_cell:
+            from .biber import CELLS
+
+            out["target_per_cell"] = target_per_cell
+            out["cells_short"] = {
+                c: target_per_cell - by_cell.get(c, 0)
+                for c in CELLS
+                if by_cell.get(c, 0) < target_per_cell
+            }
+        return out
+
+    def keep_rate(self, block: int = 50) -> list[float]:
+        """Keep rate per consecutive block of `block` verdicts, in order.
+
+        Flat or falling across the last few blocks is the signal to stop: the
+        pool is sorted by score, so a keep rate that has stopped declining
+        means the sort has stopped helping.
+        """
+        verdicts = [r.get("verdict") for r in read_jsonl(self.decisions_path)
+                    if r.get("verdict")]
+        rates = []
+        for i in range(0, len(verdicts) - block + 1, block):
+            chunk = verdicts[i:i + block]
+            rates.append(round(sum(1 for x in chunk if x == "keep") / len(chunk), 3))
+        return rates
+
+
+def _cell(facet: dict | None) -> str:
+    """`biber.cell`, inlined to keep bank.py free of the import."""
+    if not isinstance(facet, dict) or not facet:
+        return "(unscored)"
+    return f"{facet.get('voice', '?')}/{facet.get('mode', '?')}"
 
 
 def _now() -> str:

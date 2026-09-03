@@ -5,11 +5,23 @@ deliberately dumb right now — mostly random over the kept set, because there
 is not yet enough decision history to steer with, and a clever sampler built
 on no data is just a bias with extra steps.
 
-Two knobs exist so steering is possible later without a rewrite:
+Three knobs exist so steering is possible later without a rewrite:
 
-  --coverage     spread the draw across failure tags rather than sampling flat,
-                 so a packet is not six passages all doing the same thing
+  --coverage     spread the draw across the facet grid rather than sampling
+                 flat, so a packet is not six passages all doing the same thing
   --temperature  0 = strictly highest-scoring, 1 = uniform over eligible
+  --order-by     what order the drawn set is rendered in
+
+Coverage sampling is "clustering retrieval" — cluster, then take one per
+cluster — which is an established diversity method for in-context
+demonstrations (`research/tagging.md` §4). The design was always right; the
+buckets used to be the six invented failure tags and are now the 9-cell
+voice x mode grid from `biber.py`, which is fitted to the corpus.
+
+Order is not cosmetic. The ICL literature reports demonstration order moving
+results "from near-random to state-of-the-art", and this file used to emit
+whatever order the picker happened to produce and record nothing. It is now an
+explicit parameter and the realised order is written into the packet.
 
 Every packet is written to `extracted/packets/` with the ids it drew. When a
 premise from a packet turns out well, the packet says exactly what conditioned
@@ -24,6 +36,7 @@ import time
 from pathlib import Path
 
 from .bank import THEME_DECISIONS, THEMES, Bank, _now
+from .biber import cell
 
 
 def _weighted(pool: list[dict], k: int, temperature: float, rng: random.Random) -> list[dict]:
@@ -50,11 +63,10 @@ def _weighted(pool: list[dict], k: int, temperature: float, rng: random.Random) 
 
 
 def _by_coverage(pool: list[dict], k: int, temperature: float, rng: random.Random) -> list[dict]:
-    """One from each tag before any tag gets a second."""
+    """One from each facet cell before any cell gets a second."""
     buckets: dict[str, list[dict]] = {}
     for p in pool:
-        for t in p.get("tags") or ["(untagged)"]:
-            buckets.setdefault(t, []).append(p)
+        buckets.setdefault(cell(p.get("facets")), []).append(p)
     order = list(buckets)
     rng.shuffle(order)
     picked: list[dict] = []
@@ -77,6 +89,31 @@ def _by_coverage(pool: list[dict], k: int, temperature: float, rng: random.Rando
     return picked
 
 
+# `-d1` would be the natural spelling for descending, but argparse reads a
+# leading dash as the start of the next option. Suffix instead.
+ORDERINGS = ("d1", "d1-desc", "d2", "d2-desc", "score", "score-desc",
+             "random", "picked")
+
+
+def _ordered(rows: list[dict], order_by: str, rng: random.Random) -> list[dict]:
+    """Render order for the drawn set. `picked` keeps whatever the picker did."""
+    if order_by == "picked":
+        return rows
+    if order_by == "random":
+        out = list(rows)
+        rng.shuffle(out)
+        return out
+    desc = order_by.endswith("-desc")
+    key = order_by[:-5] if desc else order_by
+    if key in ("d1", "d2"):
+        def val(r):
+            return (r.get("facets") or {}).get(key, 0.0)
+    else:
+        def val(r):
+            return r.get(key, 0.0)
+    return sorted(rows, key=val, reverse=desc)
+
+
 def draw(
     root: str | Path = ".",
     out: str | Path | None = None,
@@ -85,7 +122,8 @@ def draw(
     temperature: float = 0.85,
     coverage: bool = True,
     include_unlabelled: bool = False,
-    tag: str | None = None,
+    facet: str | None = None,
+    order_by: str = "d1",
     seed: int | None = None,
     write: bool = True,
 ) -> dict:
@@ -96,8 +134,10 @@ def draw(
     pool = bank.kept()
     if include_unlabelled:
         pool += bank.unlabelled()
-    if tag:
-        pool = [p for p in pool if tag in (p.get("tags") or [])]
+    if facet:
+        pool = [p for p in pool
+                if facet in (cell(p.get("facets")), (p.get("facets") or {}).get("voice"),
+                             (p.get("facets") or {}).get("mode"))]
 
     if not pool:
         raise SystemExit(
@@ -106,7 +146,7 @@ def draw(
         )
 
     picker = _by_coverage if coverage else _weighted
-    exemplars = picker(pool, n_exemplars, temperature, rng)
+    exemplars = _ordered(picker(pool, n_exemplars, temperature, rng), order_by, rng)
 
     tbank = Bank(out_dir, pool=THEMES, decisions=THEME_DECISIONS)
     tpool = tbank.kept() or tbank.unlabelled()
@@ -121,9 +161,18 @@ def draw(
             "temperature": temperature,
             "coverage": coverage,
             "include_unlabelled": include_unlabelled,
-            "tag": tag,
+            "facet": facet,
+            "order_by": order_by,
         },
+        # Order matters and is therefore recorded: this list is the sequence
+        # the exemplars were actually rendered in, not a set.
         "exemplar_ids": [p["id"] for p in exemplars],
+        "exemplar_order": [
+            {"id": p["id"], "cell": cell(p.get("facets")),
+             "d1": (p.get("facets") or {}).get("d1"),
+             "d2": (p.get("facets") or {}).get("d2")}
+            for p in exemplars
+        ],
         "theme_ids": [t.get("id") for t in themes],
         "exemplars": exemplars,
         "themes": themes,
@@ -151,6 +200,6 @@ def render(packet: dict) -> str:
             "register. Do not reuse their content.*", ""]
     for p in packet.get("exemplars", []):
         who = p.get("author") or p.get("source_id", "")
-        tags = " ".join(f"[{t}]" for t in p.get("tags", []))
-        out += [f"### {who} — {p.get('title','')}  {tags}", "", p.get("text", ""), ""]
+        out += [f"### {who} — {p.get('title','')}  [{cell(p.get('facets'))}]",
+                "", p.get("text", ""), ""]
     return "\n".join(out)
