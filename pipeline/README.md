@@ -4,7 +4,7 @@ Two extractions, one bank each, one decision trail each.
 
 **Passages** are verbatim prose, 150–400 words, harvested from original
 sources in `sources/texts/`. They condition *how a story reads*. They feed
-`extracted/exemplars.jsonl`.
+`extracted/examples.jsonl`.
 
 **Themes** are abstractions — one sentence carrying a mechanism and a turn.
 They condition *what gets made*. They feed `extracted/themes.jsonl`. The shape
@@ -29,7 +29,7 @@ python -m pipeline review --compare     # five at a time, pick the best
 python -m pipeline review               # careful pass: full text, one at a time
 python -m pipeline review --themes      # dense multi-select over the themes
 python -m pipeline stats --target 8     # progress toward a stop rule
-python -m pipeline export               # kept passages -> extracted/exemplars.md
+python -m pipeline export               # kept passages -> extracted/examples.md
 python -m pipeline draw -n 6 -t 2       # a generation packet, under the default setting
 python -m pipeline draw --setting setting-b   # under a lore setting
 python -m pipeline.selftest             # verify the code works after a sync
@@ -110,7 +110,7 @@ pruned. Every keep and every pass is a row, with a timestamp. Two consequences
 worth stating plainly:
 
 - **The pool is disposable; the decisions are not.** Delete
-  `exemplars.jsonl` and a re-harvest rebuilds it. Delete `decisions.jsonl`
+  `examples.jsonl` and a re-harvest rebuilds it. Delete `decisions.jsonl`
   and the labelled data is gone for good.
 - **Passage ids are content-derived**, from source plus normalized text. Change
   the segmentation heuristics, re-harvest, and every passage whose text is
@@ -374,7 +374,7 @@ things should read it, in rough order of value:
    keep? Anything that predicts nothing gets dropped, including D1 and D2.
 2. **Generation** — suppress ground already mined, so premises stop landing
    near ones already written.
-3. **`exemplars.md`** — promote kept passages into the conditioning set as
+3. **`examples.md`** — promote kept passages into the conditioning set as
    taste moves, instead of freezing at the first cull.
 4. **The scorer and the sampler** — fit `register_score` weights, and the
    render order, against keeps and passes rather than the hand-set constants.

@@ -648,7 +648,7 @@ SF's inherited protagonist is the competent man. **Competence is anti-dread, bec
 **Russ is now closed, and she is the missing spine of this section.** The paywall was a red herring: *Science Fiction Studies* hosts "Towards an Aesthetic of Science Fiction" (*SFS* #6, 2.2, July 1975, pp. 112–19) free in its own archive at DePauw. Her four propositions, verbatim and in order:
 
 > 1. *"That science fiction, like much medieval literature, is didactic."*
-> 2. *"That despite superficial similarities to naturalistic (or other) modern fiction, the protagonists of science fiction are always collective, never individual persons (although individuals often appear as exemplary or representative figures)."*
+> 2. *"That despite superficial similarities to naturalistic (or other) modern fiction, the protagonists of science fiction are always collective, never individual persons (although individuals often appear as exampley or representative figures)."*
 > 3. *"That science fiction's emphasis is always on phenomena—to the point where reviewers and critics can commonly use such phrases as 'the idea as hero.'"*
 > 4. *"That science fiction is not only didactic, but very often awed, worshipful, and religious in tone."*
 

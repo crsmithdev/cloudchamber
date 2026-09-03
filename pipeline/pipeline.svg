@@ -30,7 +30,7 @@ text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 <g class="coral"><rect x="200" y="318" width="280" height="56" rx="8" stroke-width="0.5"/><text class="th" x="340" y="338" text-anchor="middle" dominant-baseline="central">Chris culls</text><text class="ts" x="340" y="356" text-anchor="middle" dominant-baseline="central">Manual, permanently</text></g>
 <line x1="340" y1="374" x2="340" y2="414" class="arr" marker-end="url(#arrow)"/>
 
-<g class="purple"><rect x="60" y="414" width="280" height="56" rx="8" stroke-width="0.5"/><text class="th" x="200" y="434" text-anchor="middle" dominant-baseline="central">exemplars.md</text><text class="ts" x="200" y="452" text-anchor="middle" dominant-baseline="central">Verbatim, six to ten</text></g>
+<g class="purple"><rect x="60" y="414" width="280" height="56" rx="8" stroke-width="0.5"/><text class="th" x="200" y="434" text-anchor="middle" dominant-baseline="central">examples.md</text><text class="ts" x="200" y="452" text-anchor="middle" dominant-baseline="central">Verbatim, six to ten</text></g>
 <g class="purple"><rect x="400" y="414" width="220" height="56" rx="8" stroke-width="0.5"/><text class="th" x="510" y="434" text-anchor="middle" dominant-baseline="central">Dice draw</text><text class="ts" x="510" y="452" text-anchor="middle" dominant-baseline="central">Outside the model</text></g>
 
 <path d="M200 470 L200 490 L300 490 L300 510" class="arr" marker-end="url(#arrow)"/>

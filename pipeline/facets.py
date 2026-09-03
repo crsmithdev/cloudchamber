@@ -42,7 +42,7 @@ def save_stats(out_dir: Path, stats: dict) -> Path:
 def score(
     root: str | Path = ".",
     out: str | Path | None = None,
-    pool: str = "exemplars.jsonl",
+    pool: str = "examples.jsonl",
     refit: bool = False,
     extremes: int = 0,
 ) -> dict:

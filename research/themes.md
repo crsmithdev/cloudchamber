@@ -263,7 +263,7 @@ call.
 
 ---
 
-## 10. Fitness for the actual use — a generation input beside exemplars
+## 10. Fitness for the actual use — a generation input beside examples
 
 §3–§9 rank the methods on whether they produce a theme. That is the wrong
 question on its own: a theme here is consumed by `pipeline draw`, which sets
@@ -281,11 +281,11 @@ That is a live defect, not a hypothetical. The current themes are verbatim SCP
 sentences at a median of 24 words, and `sample.render` prints them immediately
 above six verbatim SCP passages. In the same register, at a similar grain, in
 the same document. The theme block is currently functioning as a second,
-worse exemplar set — diluting the register conditioning the exemplar slot
+worse example set — diluting the register conditioning the example slot
 exists to provide.
 
 **A theme must therefore be formally unlike prose.** Notation, not sentences.
-If it cannot be mistaken for an exemplar it cannot compete with one, and the
+If it cannot be mistaken for an example it cannot compete with one, and the
 structured frame of §8 gets this for free while an abstractive paragraph — the
 tempting default, and what an LLM produces unprompted — gets it exactly wrong.
 
@@ -309,7 +309,7 @@ not combine; roles do.
 | approach | as a generation input | verdict |
 | :-- | :-- | :-- |
 | **Frame with roles** (§8), induced TnT-LLM-style (§6) | notation, combinable, underspecified, corpus-level so the draw has known cardinality | **use this** |
-| Abstractive prose theme | competes with exemplars for register; a worked premise, so maximally fixating | actively harmful |
+| Abstractive prose theme | competes with examples for register; a worked premise, so maximally fixating | actively harmful |
 | Keyphrase | deck-like and combinable, but carries no mechanism, so it seeds nothing about what happens | insufficient alone |
 | Topic model | a word list cannot be drawn against or combined | no |
 
@@ -318,11 +318,11 @@ not combine; roles do.
 Two things fall out that are not about extraction at all:
 
 1. **`sample.render` has the order backwards.** It prints SEED then REGISTER.
-   The skill and `generation.md` §3.3–§3.4 both put exemplars first and the
+   The skill and `generation.md` §3.3–§3.4 both put examples first and the
    constraints last, nearest the ask, because instruction force decays with
    distance from the point of generation while register conditioning does not.
 2. **The two blocks must be visually incommensurable** — the frame as a
-   labelled record, the exemplars as unframed prose. Presentation is doing
+   labelled record, the examples as unframed prose. Presentation is doing
    load-bearing work here, not decoration.
 
 ### The record
@@ -393,7 +393,7 @@ are present but *compressed into the clause chain*, never enumerated.
    that makes the seed live, which is why only 63% → 35% is the gap that
    matters most after portability.
 3. **Brevity already solves the form problem.** §10 worried that a prose theme
-   competes with the exemplars for register conditioning. A 21-word line in a
+   competes with the examples for register conditioning. A 21-word line in a
    bulleted bank is incommensurable with a 200–400 word passage on length and
    formatting alone. Field labels were solving a problem brevity had solved.
 
@@ -452,7 +452,7 @@ the 432 mined rows at 20%.*
    `themes.py`, with a selftest check. This is the cheapest fix in the
    document and it invalidates 61% of the current bank.
 6. **Fix the packet.** `sample.render` prints the seed before the register;
-   both the skill and `generation.md` put the exemplars first and the
+   both the skill and `generation.md` put the examples first and the
    constraints last. Cheap, independent of the rebuild, and worth doing first.
 7. **Adopt two kill tests, both from §2 and §7.** Does it recur in more than
    one document — persistence. Is the mechanism the article's subject rather

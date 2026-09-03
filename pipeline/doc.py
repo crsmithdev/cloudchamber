@@ -82,7 +82,7 @@ _QUOTES = {
 def clean_text(s: str, normalize_quotes: bool = False) -> str:
     """Whitespace and invisible-character hygiene.
 
-    Quote normalization is OFF by default: exemplars are stored verbatim and
+    Quote normalization is OFF by default: examples are stored verbatim and
     typographic quotes are part of the prose. Turn it on only for signal
     computation, never for stored passage text.
     """

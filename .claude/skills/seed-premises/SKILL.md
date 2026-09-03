@@ -35,19 +35,19 @@ Then the seed:
 python -m pipeline draw --setting <id>
 ```
 
-It draws themes only from the setting's sources, renders the exemplars first, the seed second, and the lore file's §9 last as `# CANON`. If it refuses because nothing is banked for the setting, run the brief it names and draft themes before going on; do not substitute themes from another setting.
+It draws themes only from the setting's sources, renders the examples first, the seed second, and the lore file's §9 last as `# CANON`. If it refuses because nothing is banked for the setting, run the brief it names and draft themes before going on; do not substitute themes from another setting.
 
 You do not get to pick. Left to itself a model reaches for the same handful of moves every time and will report having chosen deliberately. If a drawn move looks impossible against the seed, that is the interesting case, not a reason to redraw. Redraw only when two draws are the same move under different numbers.
 
-### 2. Load the exemplars
+### 2. Load the examples
 
-Read `extracted/exemplars.md` in full and hold it. It is written by `python -m pipeline export` from Chris's keeps; if it is missing or empty the cull has not been run yet, and you should say so rather than substituting anything. Those are passages of prose in the target register. They are not instructions: do not summarise them, refer to them, or explain what they demonstrate. They work by conditioning or not at all.
+Read `extracted/examples.md` in full and hold it. It is written by `python -m pipeline export` from Chris's keeps; if it is missing or empty the cull has not been run yet, and you should say so rather than substituting anything. Those are passages of prose in the target register. They are not instructions: do not summarise them, refer to them, or explain what they demonstrate. They work by conditioning or not at all.
 
-**The exemplars do not change with the setting.** They condition how a story reads; the setting changes what it is about. A lore setting with a register problem is a lore file problem (§2), not a reason to look for setting-flavoured prose.
+**The examples do not change with the setting.** They condition how a story reads; the setting changes what it is about. A lore setting with a register problem is a lore file problem (§2), not a reason to look for setting-flavoured prose.
 
 If that file does not exist yet, say so and continue, but expect register drift — the resolution pull is structural and instructions are the weakest instrument against it.
 
-**Never write exemplars yourself, and never let model-written prose into that file.** It regresses to exactly the mean this procedure exists to escape, and the failure is invisible on inspection. Do not substitute `craft.md`, `catalogue.md`, playbook §2 or a lore file — those are criticism, taxonomy and reference, and conditioning on them produces more of the same.
+**Never write examples yourself, and never let model-written prose into that file.** It regresses to exactly the mean this procedure exists to escape, and the failure is invisible on inspection. Do not substitute `craft.md`, `catalogue.md`, playbook §2 or a lore file — those are criticism, taxonomy and reference, and conditioning on them produces more of the same.
 
 ### 3. Check differentiation first, not last
 
@@ -57,7 +57,7 @@ Phrase it to the generator as distance, not prohibition: *generate maximally dis
 
 ### 4. Make the call
 
-Exemplar passages first, drawn constraints second, register floor last — immediately before the ask. Negations decay with distance from the point of generation, so anything that must be excluded belongs in the final lines rather than the preamble. Lore §2 supplies the setting's register sentence in the preamble; the `# CANON` block from the packet goes last of all, after the register floor, positive-framed as it is written.
+Example passages first, drawn constraints second, register floor last — immediately before the ask. Negations decay with distance from the point of generation, so anything that must be excluded belongs in the final lines rather than the preamble. Lore §2 supplies the setting's register sentence in the preamble; the `# CANON` block from the packet goes last of all, after the register floor, positive-framed as it is written.
 
 Ask for a distribution, not a list:
 

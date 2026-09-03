@@ -88,17 +88,17 @@ Precedent worth noticing: the Oblique Strategies deck — 1975, paper — beat C
 
 If a drawn move looks impossible against the seed, that is the interesting case rather than a reason to redraw.
 
-### 3.3 Condition register with exemplars, never with instructions
+### 3.3 Condition register with examples, never with instructions
 
-The pull toward resolution is structural (§1.4). Instructions are the weakest instrument against it; hand-written exemplars are the strongest documented one. Three rules, all load-bearing:
+The pull toward resolution is structural (§1.4). Instructions are the weakest instrument against it; hand-written examples are the strongest documented one. Three rules, all load-bearing:
 
-- **Never model-written.** Model-generated exemplars regress to exactly the mean the technique exists to escape, and the failure is invisible on inspection.
+- **Never model-written.** Model-generated examples regress to exactly the mean the technique exists to escape, and the failure is invisible on inspection.
 - **Strongest last.** Recency carries disproportionate behavioural weight in a few-shot set.
-- **Match the input's tone to the exemplars'**, or the model treats them as decoration.
+- **Match the input's tone to the examples'**, or the model treats them as decoration.
 
-Independent convergence: exemplars that visibly diverge *from each other* also pull a model out of a collapsed mode, by showing it live evidence that its one-true-answer assumption is wrong. So they do two jobs — set register, break collapse.
+Independent convergence: examples that visibly diverge *from each other* also pull a model out of a collapsed mode, by showing it live evidence that its one-true-answer assumption is wrong. So they do two jobs — set register, break collapse.
 
-**A caution specific to this repo.** `craft.md`, `catalogue.md` and playbook §2 are *criticism and taxonomy*. Few-shot conditioning acts on form, so feeding those in as exemplars conditions the model to produce more criticism and taxonomy — more named moves, more confident craft-talk. That is a thing an LLM is already too good at, and a plausible explanation for generated premises that read as competent rather than disturbing. The exemplar slot wants 150–400 words of prose that simply *is* the register, with no framing.
+**A caution specific to this repo.** `craft.md`, `catalogue.md` and playbook §2 are *criticism and taxonomy*. Few-shot conditioning acts on form, so feeding those in as examples conditions the model to produce more criticism and taxonomy — more named moves, more confident craft-talk. That is a thing an LLM is already too good at, and a plausible explanation for generated premises that read as competent rather than disturbing. The example slot wants 150–400 words of prose that simply *is* the register, with no framing.
 
 The corpus for that already exists in `refs/` — the Datlow volumes, Evenson, Langan, Watts, Chiang — plus the SCP material behind the `[S]` tag. Harvesting it is a passage-extraction job, not a writing job. **Nothing distilled or summarised is a substitute**, which is the same distinction `research/literature.md` draws when it keeps `CORPUS.md` out of `refs/`.
 
@@ -148,7 +148,7 @@ Nothing in the playbook has been edited. Recorded here for a deliberate decision
 
 1. **§1.1 gains a draw.** The pull from §2–§5 currently lets whoever is generating choose. Drawing at least one of the four at random, outside the model, is the §3.2 change and it is small.
 2. **§1.9–1.10 gain a batch.** Steps 9 and 10 assume one premise. The batch-blind discipline of §3.5 sits between 8 and 9.
-3. **A new pre-step 0: load exemplars.** Requires `extracted/exemplars.md`, which does not exist yet.
+3. **A new pre-step 0: load examples.** Requires `extracted/examples.md`, which does not exist yet.
 4. **`CLAUDE.md`'s register paragraph wants rewriting per §3.4** — same constraints, positive form, and restated at the point of generation rather than only at the top of the file.
 5. **§1.10's read-back is the right place for a 400-word partial execution** on anything that survives, per the ideation–execution result.
 

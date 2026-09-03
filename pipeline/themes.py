@@ -3,7 +3,7 @@
 A theme is not prose and it is not a span of a source. It is one sentence
 carrying a mechanism and a turn: *the body altered to meet a written
 specification, and the specification is a purchasing document.* Themes seed
-**what gets made**; exemplars condition **how it reads**.
+**what gets made**; examples condition **how it reads**.
 
 The shape is not invented here. `playbook.md` §2-§5 is the only seed format in
 this project with evidence behind it — twenty-five stories came out of it — and

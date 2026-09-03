@@ -1,8 +1,8 @@
 # SELECTION.md
 
 Third stage of the seed pipeline. Drafted 2026-09-02. Still unbuilt as of 2026-09-03 — the harvest and
-exemplar-bank stages it assumed are now `pipeline/`, but nothing here is.
-Companion to `pipeline/` (exemplar sourcing, built 2026-09-02) and `research/generation.md`
+example-bank stages it assumed are now `pipeline/`, but nothing here is.
+Companion to `pipeline/` (example sourcing, built 2026-09-02) and `research/generation.md`
 (the underlying findings). Untested — this is a design, not a validated process.
 
 ## The goal, stated correctly
@@ -41,7 +41,7 @@ Four stages. Each one cheap enough to throw away.
 type, register tag, pressure. Script below. No model involvement. If a drawn
 combination looks impossible, that is the interesting case; do not redraw.
 
-**1. Generate blind.** Exemplars loaded as raw prose, then the drawn seed, then
+**1. Generate blind.** Examples loaded as raw prose, then the drawn seed, then
 verbalized sampling — five responses, stated ceiling 0.10, modal answer
 explicitly excluded. Batch generated in one call without seeing prior batches.
 
@@ -140,9 +140,9 @@ Live A/B on the seed "a setting-a tech company and an ancient biblical demon."
   suffering; demon as notary at a name-change service; demon as an excellent
   onboarding buddy; demon weighing hearts reassigned to e-waste triage.
 
-**Finding worth recording: that gain came from sampling alone.** No exemplars
+**Finding worth recording: that gain came from sampling alone.** No examples
 were loaded in that call. §3.1 is the cheap lever and it works unassisted;
-exemplar conditioning is a separate, unspent multiplier acting on register and
+example conditioning is a separate, unspent multiplier acting on register and
 prose texture rather than premise shape.
 
 Second run, with the SCP-2270 passage loaded, showed the predicted effect —
@@ -152,7 +152,7 @@ Third run, first full draw (hospice pharmacy / union rep / third-person incident
 narrative / document-working / contamination), against SCP-835's register.
 Chris: interesting, not the thing. Correct outcome for a first draw.
 
-## Note on SCP-835 as an exemplar source
+## Note on SCP-835 as an example source
 
 Read this session. The horror is **not** the gore — it is the redaction. The
 black bars carry the load and the narrator's voice cracks around them: warm,

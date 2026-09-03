@@ -1,4 +1,4 @@
-"""Draw a generation packet: some themes as a seed, some exemplars as register.
+"""Draw a generation packet: some themes as a seed, some examples as register.
 
 This is the step that runs when Chris says "come up with an idea". It is
 deliberately dumb right now — mostly random over the kept set, because there
@@ -149,7 +149,7 @@ def lore_section(path: Path, number: int = CANON_SECTION) -> str:
 def draw(
     root: str | Path = ".",
     out: str | Path | None = None,
-    n_exemplars: int = 6,
+    n_examples: int = 6,
     n_themes: int = 2,
     temperature: float = 0.85,
     coverage: bool = True,
@@ -176,12 +176,12 @@ def draw(
 
     if not pool:
         raise SystemExit(
-            "No kept exemplars. Run `pipeline harvest` then `pipeline review` first, "
+            "No kept examples. Run `pipeline harvest` then `pipeline review` first, "
             "or pass --include-unlabelled to draw from the raw pool."
         )
 
     picker = _by_coverage if coverage else _weighted
-    exemplars = _ordered(picker(pool, n_exemplars, temperature, rng), order_by, rng)
+    examples = _ordered(picker(pool, n_examples, temperature, rng), order_by, rng)
 
     tbank = Bank(out_dir, pool=THEMES, decisions=THEME_DECISIONS)
     tpool = tbank.kept() or tbank.unlabelled()
@@ -201,7 +201,7 @@ def draw(
         "drawn_at": _now(),
         "rng_seed": seed,
         "params": {
-            "n_exemplars": n_exemplars,
+            "n_examples": n_examples,
             "n_themes": n_themes,
             "temperature": temperature,
             "coverage": coverage,
@@ -211,16 +211,16 @@ def draw(
             "setting": where.id,
         },
         # Order matters and is therefore recorded: this list is the sequence
-        # the exemplars were actually rendered in, not a set.
-        "exemplar_ids": [p["id"] for p in exemplars],
-        "exemplar_order": [
+        # the examples were actually rendered in, not a set.
+        "example_ids": [p["id"] for p in examples],
+        "example_order": [
             {"id": p["id"], "cell": cell(p.get("facets")),
              **{d: v for d, v in (p.get("facets") or {}).items()
                 if d.startswith("d") and d[1:].isdigit()}}
-            for p in exemplars
+            for p in examples
         ],
         "theme_ids": [t.get("id") for t in themes],
-        "exemplars": exemplars,
+        "examples": examples,
         "themes": themes,
         "lore": where.lore,
         # Recorded verbatim so the packet says what the call was held to,
@@ -243,7 +243,7 @@ def render(packet: dict) -> str:
 
     Register first, seed second, canon last. Instruction force decays with
     distance from the point of generation while register conditioning does
-    not, so the exemplars open and the constraints sit immediately before the
+    not, so the examples open and the constraints sit immediately before the
     ask — the order the seed-premises skill and `research/generation.md`
     §3.3-§3.4 both specify. The canon block is the one part of the packet that
     is a constraint rather than conditioning, which is why it goes last of all.
@@ -253,7 +253,7 @@ def render(packet: dict) -> str:
     out = ["# REGISTER", "",
            "*Passages below are published human prose, verbatim. Match the "
            "register. Do not reuse their content.*", ""]
-    for p in packet.get("exemplars", []):
+    for p in packet.get("examples", []):
         who = p.get("author") or p.get("source_id", "")
         out += [f"### {who} — {p.get('title','')}  [{cell(p.get('facets'))}]",
                 "", p.get("text", ""), ""]

@@ -2,7 +2,7 @@
 
 Three append-friendly JSONL stores under `extracted/`:
 
-  exemplars.jsonl  the candidate pool. One line per passage, keyed by a stable
+  examples.jsonl  the candidate pool. One line per passage, keyed by a stable
                    id derived from source + text, so re-harvesting the same
                    material does not orphan earlier decisions.
   decisions.jsonl  append-only. One line per verdict Chris gives. Never
@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Iterable, Iterator
 
 OUT = Path("extracted")
-EXEMPLARS = "exemplars.jsonl"
+EXAMPLES = "examples.jsonl"
 DECISIONS = "decisions.jsonl"
 THEMES = "themes.jsonl"
 THEME_DECISIONS = "theme-decisions.jsonl"
@@ -91,9 +91,9 @@ def _row(obj) -> dict:
 
 
 class Bank:
-    """The exemplar pool plus its decision history."""
+    """The example pool plus its decision history."""
 
-    def __init__(self, root: str | Path | None = None, pool: str = EXEMPLARS,
+    def __init__(self, root: str | Path | None = None, pool: str = EXAMPLES,
                  decisions: str = DECISIONS):
         self.root = _root(root)
         self.pool_path = self.root / pool

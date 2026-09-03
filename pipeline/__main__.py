@@ -63,10 +63,10 @@ def main(argv=None):
                    help="first port to try (default 3002; walks up if busy)")
     v.add_argument("--no-open", action="store_true", help="do not open a browser")
 
-    sub.add_parser("export", help="write kept passages to extracted/exemplars.md")
+    sub.add_parser("export", help="write kept passages to extracted/examples.md")
 
     d = sub.add_parser("draw", help="draw a generation packet")
-    d.add_argument("-n", "--exemplars", type=int, default=6)
+    d.add_argument("-n", "--examples", type=int, default=6)
     d.add_argument("-t", "--themes", type=int, default=2)
     d.add_argument("--temperature", type=float, default=0.85)
     d.add_argument("--no-coverage", action="store_true")
@@ -129,7 +129,7 @@ def main(argv=None):
     elif a.cmd == "draw":
         _check_facet(a.facet)
         packet = sample_mod.draw(
-            root, out=out, n_exemplars=a.exemplars, n_themes=a.themes,
+            root, out=out, n_examples=a.examples, n_themes=a.themes,
             temperature=a.temperature, coverage=not a.no_coverage,
             include_unlabelled=a.include_unlabelled, facet=a.facet,
             order_by=a.order_by, seed=a.seed, setting=a.setting,
@@ -159,9 +159,9 @@ def main(argv=None):
         ex = Bank(sd).stats(target_per_cell=a.target)
         th = Bank(sd, pool=THEMES, decisions=THEME_DECISIONS).stats()
         if a.json:
-            print(json.dumps({"exemplars": ex, "themes": th}, indent=2))
+            print(json.dumps({"examples": ex, "themes": th}, indent=2))
         else:
-            for name, st in (("exemplars", ex), ("themes", th)):
+            for name, st in (("examples", ex), ("themes", th)):
                 print(f"{name}: pool {st['pool']}  keep {st['keep']}  "
                       f"pass {st['pass']}  maybe {st['maybe']}  "
                       f"unlabelled {st['unlabelled']}  sources {st['sources']}")

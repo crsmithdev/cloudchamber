@@ -110,7 +110,7 @@ standing problem. It is a research programme, not a tagging pass.
 
 ## 4. In-context learning: how demonstrations are actually chosen
 
-The most decision-relevant literature, because selecting *k* exemplars to
+The most decision-relevant literature, because selecting *k* examples to
 condition a generator is exactly what `pipeline draw` does. From *In-context
 Learning with Retrieved Demonstrations: A Survey* (arXiv 2401.11624):
 

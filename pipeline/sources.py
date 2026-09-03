@@ -9,7 +9,7 @@ rather than from source fiction at all.
 A setting is a different kind of thing: what a premise is seeded *under*. It
 names a lore file (`lore/<id>.md`, nine fixed sections) that constrains the
 seed, and the theme sources the seed is drawn from. Exactly one setting is the
-default. The exemplar bank is register and does not vary by setting.
+default. The example bank is register and does not vary by setting.
 
 Config lives in `sources.toml` next to the repo root. The defaults below match
 the current `sources/` layout and are used when no config file is present.
@@ -35,7 +35,7 @@ class Source:
     id: str
     path: str = ""  # glob, relative to repo root
     reader: str = "pdf"  # pdf | scp | markdown | research
-    passages: bool = True  # feed the exemplar bank
+    passages: bool = True  # feed the example bank
     themes: bool = True  # feed the theme bank
     author: str = ""
     kind: str = "fiction"  # fiction | document | criticism | reference | setting

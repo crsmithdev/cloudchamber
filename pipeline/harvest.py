@@ -1,4 +1,4 @@
-"""Harvest passages from sources into the exemplar bank.
+"""Harvest passages from sources into the example bank.
 
 Generous by design. The pool is meant to be larger than Chris wants to read in
 one sitting; `pipeline review` is how it gets read down. Precision is his job,

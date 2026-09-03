@@ -29,7 +29,7 @@ Check `stories/` before developing: whether a story feels like another one alrea
 A story is one file under `stories/`, written by hand. Nothing generates it.
 
 **`extracted/` is the exception, and it has a rule.** `pipeline harvest` fills the
-candidate pool and `pipeline export` writes `extracted/exemplars.md`; both are
+candidate pool and `pipeline export` writes `extracted/examples.md`; both are
 regenerable and neither should be hand-edited. `extracted/decisions.jsonl` is the
 opposite — append-only, tracked, and the only file in the repo that cannot be
 rebuilt from its sources. Never rewrite or prune it. Chris's passes are as

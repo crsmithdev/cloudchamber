@@ -13,7 +13,7 @@ __pycache__/
 #                     Regenerable in principle, but re-fitting it moves every
 #                     passage's facets under decisions already taken against
 #                     them, so the fitted copy is tracked and shared.
-extracted/exemplars.jsonl
+extracted/examples.jsonl
 extracted/themes.jsonl
 extracted/packets/
 

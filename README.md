@@ -55,11 +55,11 @@ research/                    what the project has concluded. See its README
   selection.md               design for the selection stage. Not built
 
 extracted/                   everything the pipeline produced. See its README
-  exemplars.jsonl            the candidate pool (regenerable; gitignored)
+  examples.jsonl            the candidate pool (regenerable; gitignored)
   themes.jsonl               extracted themes (regenerable; gitignored)
   decisions.jsonl            every keep and pass, append-only, TRACKED. The one
                              file here that cannot be rebuilt from anything else
-  exemplars.md               the kept set, written by `pipeline export`
+  examples.md               the kept set, written by `pipeline export`
   packets/                   what each generation call was conditioned on
 
 pipeline/                    the seeding machinery. Two extractions: verbatim
@@ -68,7 +68,7 @@ pipeline/                    the seeding machinery. Two extractions: verbatim
 .claude/skills/
   seed-premises/SKILL.md     how a generation call is shaped: draw the
                              constraints outside the model, condition on
-                             exemplars, ask for a distribution rather than a
+                             examples, ask for a distribution rather than a
                              list, cull before pitching. Wraps playbook 1
                              rather than replacing it
 ```
@@ -113,7 +113,7 @@ and the passed-on list.
 python -m pipeline harvest      # sources/texts/ -> passage candidates
 python -m pipeline themes       # sources/ -> theme candidates
 python -m pipeline review       # the cull: k / p / m / s / b / q
-python -m pipeline export       # kept passages -> extracted/exemplars.md
+python -m pipeline export       # kept passages -> extracted/examples.md
 python -m pipeline draw -n 6    # a generation packet, under the default setting
 python -m pipeline draw --setting setting-b   # under a lore setting
 python -m pipeline.selftest     # verify the code after a sync

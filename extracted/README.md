@@ -1,6 +1,6 @@
-# EXEMPLARS — register conditioning
+# EXAMPLES — register conditioning
 
-*`exemplars.md` is empty until the cull runs. The pool below it is not: `pipeline harvest` fills `exemplars.jsonl` and `pipeline facets` scores it. Reading that pool down is the one thing in the seeding procedure that cannot be automated or delegated to a model.*
+*`examples.md` is empty until the cull runs. The pool below it is not: `pipeline harvest` fills `examples.jsonl` and `pipeline facets` scores it. Reading that pool down is the one thing in the seeding procedure that cannot be automated or delegated to a model.*
 
 ## What goes here
 
@@ -10,7 +10,7 @@ Target: six to ten passages. More is not better — the set has to fit in front 
 
 ## What does not go here
 
-- **Anything a model wrote.** Model-generated exemplars regress to exactly the mean this file exists to escape, and the failure is invisible on inspection. This is the one absolute rule.
+- **Anything a model wrote.** Model-generated examples regress to exactly the mean this file exists to escape, and the failure is invisible on inspection. This is the one absolute rule.
 - **Anything from `craft.md`, `catalogue.md`, playbook §2, or the `research/` annexes.** Those are criticism and taxonomy. Conditioning on them produces more criticism and taxonomy.
 - **Synopses.** A synopsis of a story in the register is not a passage in the register.
 
