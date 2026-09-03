@@ -98,6 +98,18 @@ main{flex:1; min-height:0; overflow:hidden; display:flex; flex-direction:column}
 .chip i{font-style:normal; color:var(--faint)}
 .chip.on i{color:inherit; opacity:.65}
 .chip.on{border-color:var(--accent); color:var(--accent); background:var(--accent-soft)}
+/* Three of the six dimensions have two real poles (voice, mode, reference)
+   and three only measure how much of a thing is present (persuasion,
+   abstraction, elaboration). Colour alone cannot say which end of which —
+   both poles came out identical. So polarity is carried structurally: a
+   two-poled chip is weighted on the side it sits at, and a one-sided chip is
+   filled when the property is present and hollow-dashed when it is absent. */
+.chip.lo{border-left-width:4px}
+.chip.hi{border-right-width:4px}
+.chip.present{background:var(--accent); color:var(--accent-ink);
+  border-color:var(--accent)}
+.chip.absent{border-style:dashed; color:var(--muted); background:none}
+.chip.present i{color:inherit; opacity:.7}
 .chip.wh{border-color:var(--maybe); color:var(--maybe); background:var(--maybe-soft)}
 .prose{font-family:var(--prose); font-size:19px; line-height:1.62; color:var(--ink)}
 .prose p{margin:0 0 .72em}
@@ -146,17 +158,22 @@ kbd{font-family:var(--mono); font-size:11px; background:var(--surface-2);
    unit, which pushes the text right of centre by half the rail. */
 @media (min-width:1500px){
   #deck .card.expanded{display:block; position:relative}
-  #deck .card.expanded .rail-meta{position:absolute; left:0; top:0;
-    width:14em; border-right:1px solid var(--rule)}
+  /* `left:0` resolves against the padding box, whose edge is inside the
+     border — so zero puts the rail flush against the card and eats the
+     margin. Inset it by the card's own horizontal padding. */
+  #deck .card.expanded .rail-meta{position:absolute; left:clamp(20px,2vw,44px);
+    top:0; width:15em; border-right:1px solid var(--rule)}
   #deck .card.expanded .prose{margin:0 auto}
 }
 #deck .rail-meta{display:grid; gap:10px; align-content:start;
   border-right:1px solid var(--rule); padding-right:clamp(16px,1.6vw,28px);
   min-width:0; position:sticky; top:0}
-#deck .rail-meta .title{font-size:clamp(15px,1.05vw,21px); line-height:1.2}
-#deck .rail-meta .by{font-size:12.5px}
-#deck .rail-meta .nums{margin-left:0; line-height:1.7; word-break:break-word}
-#deck .chips{gap:4px}
+#deck .rail-meta .title{font-size:clamp(16px,1.1vw,23px); line-height:1.2}
+#deck .rail-meta .by{font-size:14px}
+#deck .rail-meta .nums{margin-left:0; font-size:12px; line-height:1.75;
+  word-break:break-word}
+#deck .chips{gap:5px}
+#deck .rail-meta .chip{font-size:12px; padding:3px 8px}
 #deck .prose{font-size:clamp(18px,1.15vw,24px); line-height:1.58;
   width:62ch; max-width:100%; min-width:0}
 /* Half the previous type. At that size two thirds of an ultrawide would be a
@@ -332,6 +349,10 @@ const DIMS = ["d1","d2","d3","d4","d5","d6"];
 const POLES = {voice:["informational","involved"], mode:["non-narrative","narrative"],
   reference:["situated","elaborated"], persuasion:["unpersuasive","persuasive"],
   abstraction:["non-abstract","abstract"], elaboration:["unelaborated","elaborated"]};
+// Biber's D1-D3 contrast two ways of writing; D4-D6 only measure how much of
+// one thing is there, and their low label names an absence rather than an
+// opposite. The chips render the two cases differently.
+const TWO_POLED = new Set(["voice", "mode", "reference"]);
 const SCREEN = 20;          // ledger rows per screen
 const FLUSH_MS = 1400;      // undo window before a verdict is written
 const el = id => document.getElementById(id);
@@ -435,12 +456,19 @@ function chipRow(f, withheld){
   // "refe", "abst" — which came from the mockup, where five passages sat in
   // narrow side-by-side columns. There is a rail for them now and the
   // abbreviation bought nothing but "elab unelaborated".
-  const out = FACETS.filter(k => f[k]).map((k, n) => {
-    const on = f[k] === POLES[k][0] || f[k] === POLES[k][1];
-    const z = f[DIMS[FACETS.indexOf(k)]];
+  const out = FACETS.filter(k => f[k]).map(k => {
+    const d = DIMS[FACETS.indexOf(k)];
+    const lo = f[k] === POLES[k][0], hi = f[k] === POLES[k][1];
+    const z = f[d];
     const score = typeof z === "number" ? `  ${z >= 0 ? "+" : ""}${z.toFixed(2)}` : "";
-    return `<span class="chip${on ? " on" : ""}" title="${DIMS[FACETS.indexOf(k)]}` +
-      ` ${esc(k)}${score}"><i>${esc(k)}</i> ${esc(f[k])}</span>`;
+    let cls = "";
+    if (TWO_POLED.has(k)) cls = lo ? " on lo" : hi ? " on hi" : "";
+    else cls = hi ? " on present" : lo ? " absent" : "";
+    const what = TWO_POLED.has(k)
+      ? (lo || hi ? `${d} — this end of two` : `${d} — between the poles`)
+      : (hi ? `${d} — present` : lo ? `${d} — absent` : `${d} — some`);
+    return `<span class="chip${cls}" title="${what}${score}">` +
+      `<i>${esc(k)}</i> ${esc(f[k])}</span>`;
   });
   if (withheld) out.push('<span class="chip wh" title="redaction or elision ' +
     'detected in the text">withheld</span>');
