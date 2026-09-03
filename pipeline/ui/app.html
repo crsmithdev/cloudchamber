@@ -159,8 +159,12 @@ kbd{font-family:var(--mono); font-size:11px; background:var(--surface-2);
 #deck .chips{gap:4px}
 #deck .prose{font-size:clamp(18px,1.15vw,24px); line-height:1.58;
   width:62ch; max-width:100%; min-width:0}
-#deck .card.expanded .prose{width:66vw; max-width:none;
-  font-size:clamp(19px,2vw,52px); line-height:1.42}
+/* Half the previous type. At that size two thirds of an ultrawide would be a
+   185-character line, so the column takes whichever is smaller: an 88-character
+   measure, or the two thirds. Smaller type over the same words covers less
+   area — screen fill is what gives. */
+#deck .card.expanded .prose{width:min(88ch,66vw); max-width:none;
+  font-size:clamp(17px,0.95vw,27px); line-height:1.5}
 #deck footer{flex:none; padding:12px 34px; border-top:1px solid var(--rule);
   background:var(--surface); display:flex; gap:14px; align-items:center; flex-wrap:wrap}
 .rail{flex:none; height:3px; display:flex; background:var(--surface-2)}
@@ -170,7 +174,7 @@ kbd{font-family:var(--mono); font-size:11px; background:var(--surface-2);
 
 @media (max-width:900px){
   #deck .card, #deck .card.expanded{grid-template-columns:minmax(0,1fr); gap:14px}
-  #deck .card.expanded .prose{width:100%; font-size:clamp(18px,4.4vw,26px)}
+  #deck .card.expanded .prose{width:100%; font-size:clamp(17px,4.2vw,22px)}
   #deck .rail-meta{border-right:0; border-bottom:1px solid var(--rule);
     padding-right:0; padding-bottom:12px; position:static}
 }
