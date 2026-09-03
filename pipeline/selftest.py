@@ -91,6 +91,7 @@ personnel remain in operation as scheduled.
 
 def main() -> int:
     from . import biber, read_pdf, read_scp, signals, themes
+    from pathlib import Path
     from .bank import Bank
     from .harvest import score
     from .segment import MAX_WORDS, MIN_WORDS, windows
@@ -227,9 +228,38 @@ def main() -> int:
     pdf_ok = _pdf_check(tmp, read_pdf, check)
 
     print("\nthemes")
-    trows = themes.from_doc(doc)
-    check("themes extracted", len(trows) > 0, f"{len(trows)}")
-    check("themes carry facets", all(t["facets"] for t in trows))
+    check("local sentence extraction is gone",
+          not hasattr(themes, "harvest_local"))
+    try:
+        themes.from_doc(doc)
+        check("from_doc refuses rather than silently returning spans", False)
+    except NotImplementedError:
+        check("from_doc refuses rather than silently returning spans", True)
+
+    # The validator is calibrated against playbook §2; if it rejects its own
+    # reference corpus it is measuring itself.
+    bullets = themes.playbook_bullets(Path.cwd())
+    passing = sum(1 for b in bullets if not themes.check(b))
+    check("playbook §2 passes its own validator",
+          passing / len(bullets) > 0.95, f"{passing}/{len(bullets)}")
+    check("a good theme passes",
+          not themes.check("A debt notice that enrols on delivery rather than "
+                           "on reading, for a sum no one alive could clear."))
+    for bad, why in (
+        ("This occurs through regular postage received by the subject each week.",
+         "opens on a deictic"),
+        ("SCP-2271 manifests as a plain white envelope containing a letter about debt.",
+         "carries a designation"),
+        ("A remedy administered by Doctor Wallace that leaves the treated awake.",
+         "carries a proper noun"),
+        ("Too short.", "too short"),
+    ):
+        check(f"rejected: {why}",
+              any(why.split()[0] in r for r in themes.check(bad)),
+              str(themes.check(bad)))
+    m = themes.measure(bullets)
+    check("measure reports the §2 grain",
+          m["median_words"] == 21 and m["proper_rate"] < 0.05, str(m))
 
     print("\nbank and decision trail")
     bank = Bank(tmp / "extracted")

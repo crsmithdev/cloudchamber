@@ -78,11 +78,15 @@ def main(argv=None):
     d.add_argument("--seed", type=int)
     d.add_argument("--json", action="store_true", help="emit the packet as JSON")
 
-    t = sub.add_parser("themes", help="theme extraction, both intakes")
-    t.add_argument("--only", nargs="*")
-    t.add_argument("--research", metavar="SOURCE_ID", help="emit a research brief")
-    t.add_argument("--ingest", metavar="FILE", help="bank themes from a research session")
+    t = sub.add_parser("themes", help="draft themes into the bank, and audit the grain")
+    t.add_argument("--brief", metavar="SOURCE_ID",
+                   help="emit a drafting brief for a session to work against")
+    t.add_argument("--ingest", metavar="FILE", help="validate and bank drafted themes")
     t.add_argument("--source", help="source id for --ingest")
+    t.add_argument("--force", action="store_true",
+                   help="bank rows that fail validation (they will not be portable)")
+    t.add_argument("--audit", action="store_true",
+                   help="compare the banked themes against the playbook §2 grain")
 
     s = sub.add_parser("stats", help="state of the banks")
     s.add_argument("--json", action="store_true")
@@ -135,14 +139,17 @@ def main(argv=None):
                 print(f"\n<!-- packet: {packet['path']} -->")
 
     elif a.cmd == "themes":
-        if a.research:
-            print(themes_mod.research_brief(a.research, root))
+        if a.brief:
+            print(themes_mod.brief(a.brief, root))
         elif a.ingest:
             if not a.source:
                 sys.exit("--ingest needs --source <id>")
-            themes_mod.ingest(a.ingest, a.source, root, out=out)
+            themes_mod.ingest(a.ingest, a.source, root, out=out, force=a.force)
+        elif a.audit:
+            themes_mod.audit(root, out=out)
         else:
-            themes_mod.harvest_local(root, only=a.only, out=out)
+            sys.exit("themes needs --brief <source>, --ingest <file>, or --audit. "
+                     "Local sentence extraction was removed; see research/themes.md.")
 
     elif a.cmd == "stats":
         sd = Path(a.out) if a.out else root / "extracted"

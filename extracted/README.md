@@ -70,6 +70,18 @@ first thing read was chosen by an unvalidated taxonomy. `research/tagging.md`
 §1 is the replacement and the argument for it. Nothing was ever labelled under
 them, so nothing was lost.
 
+## Themes
+
+`themes.jsonl` is the other bank. A theme is one sentence carrying a mechanism
+and a turn, in the grain of playbook §2 — 9–44 words, no proper nouns, no
+designations, self-contained. `pipeline themes --audit` checks the bank
+against §2; `pipeline/README.md` has the rules.
+
+Themes are drafted by a session against `pipeline themes --brief`, never mined.
+The sentence-matching extractor that filled this file until 2026-09-03 produced
+spans of the source rather than abstractions, and its 432 rows were discarded
+rather than culled.
+
 ## Format
 
 ```

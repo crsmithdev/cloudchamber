@@ -426,6 +426,11 @@ on the table above.
 
 ## Recommendation
 
+*Built 2026-09-03. `pipeline/themes.py` is the rewrite; items 1, 2, 5, 6 and 9
+below are done, and 3 is done as machinery with the corpus pass outstanding.
+The calibration held both ways: playbook §2 passes its own validator at 98%,
+the 432 mined rows at 20%.*
+
 1. **Retire local sentence extraction.** It cannot produce a theme; §1 is not
    a tuning problem. Keep the code in history, drop it from the pipeline, and
    do not re-point the regexes.

@@ -6,8 +6,9 @@ Two extractions, one bank each, one decision trail each.
 sources in `sources/texts/`. They condition *how a story reads*. They feed
 `extracted/exemplars.jsonl`.
 
-**Themes** are abstractions — a mechanism, what it costs, who it is done to.
-They condition *what gets made*. They feed `extracted/themes.jsonl`.
+**Themes** are abstractions — one sentence carrying a mechanism and a turn.
+They condition *what gets made*. They feed `extracted/themes.jsonl`. The shape
+is playbook §2's, measured: see **Themes** below.
 
 A source declares which of the two it feeds. Not every source feeds both: the
 academic literature yields themes only, and the settings (setting-c,
@@ -19,7 +20,9 @@ from source fiction at all.
 ```bash
 python -m pipeline harvest              # sources -> passage candidates
 python -m pipeline facets               # score the pool on Biber D1-D6
-python -m pipeline themes               # sources -> theme candidates
+python -m pipeline themes --brief scp   # a drafting brief for a session
+python -m pipeline themes --ingest f.json --source scp   # validate and bank
+python -m pipeline themes --audit       # grain, against playbook §2
 python -m pipeline serve                # the cull in a browser: the funnel
 python -m pipeline review --triage      # or in the terminal: 40 words, k / p / x
 python -m pipeline review --compare     # five at a time, pick the best
@@ -38,13 +41,66 @@ Scope a run with `--only scp datlow`. Scope a review with `--facet involved`
 (a voice, a mode, or a whole cell like `involved/narrative`), `--withheld`,
 `--order cluster`, `--limit 40`.
 
-For a setting:
+## Themes
+
+A theme is one sentence carrying **a mechanism and a turn**:
+
+> The body altered to meet a written specification, and the specification is a
+> purchasing document.
+
+There is one intake, and a model drafts into it. Local sentence extraction was
+removed on 2026-09-03 — it selected spans of the source, which is extractive
+where the task is abstractive; `research/themes.md` §1 is the post-mortem and
+§11 is the format argument.
 
 ```bash
-python -m pipeline themes --research setting-c > brief.md
-# a Claude session does the reading, writes themes.json
-python -m pipeline themes --ingest themes.json --source setting-c
+python -m pipeline themes --brief scp > brief.md
+# a session reads the sources and drafts themes.json against the brief
+python -m pipeline themes --ingest themes.json --source scp
+python -m pipeline themes --audit
 ```
+
+**The grain is measured, not asserted.** `GRAIN` in `themes.py` is playbook
+§2 — 376 bullets, the only seed format in this project with evidence behind it
+— and `--audit` compares the bank against it on the same six numbers.
+
+Validation is split, because §2 is not uniform:
+
+| enforced per row by `check()` | 100% of §2 |
+| :-- | :-- |
+| 9–44 words, at most two sentences | yes |
+| no proper nouns, no designations | yes |
+| does not open on a deictic | yes |
+
+| reported over the bank by `--audit` | §2 rate |
+| :-- | --: |
+| carries a turn | 63% |
+| names who it is done to | 41% |
+| implies a cost or a no-exit | 19% |
+
+Those three are distributional. A per-row rule for them would be tighter than
+the evidence, and would reject a third of the bank that produced the slate.
+
+The calibration test both ways: **playbook §2 passes its own validator at 98%,
+the 432 mined rows it replaced passed at 20%** — 226 carried a proper noun and
+224 a designation, welding them to the article they came from.
+
+### Drafting
+
+The brief carries the rules, eight real §2 bullets drawn at random as
+few-shot, and the roles to draft *through* rather than store:
+
+```
+mechanism      the process, stated as a process
+subject        who it is done to, and at what scale
+cost           what is given up, and whether it returns
+normalisation  how the setting makes it ordinary
+```
+
+Answer those, then compress to one sentence that implies all four without
+listing them. A labelled record was tried and rejected: it has nowhere to put
+the turn, and two records will not combine the way playbook §1.1 needs two
+entries to.
 
 ## Why the trail matters
 

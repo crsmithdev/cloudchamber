@@ -73,7 +73,9 @@ def _theme(row: dict) -> dict:
     return {
         "id": row["id"],
         "text": row.get("text", ""),
-        "label": row.get("label", ""),
+        # Drafted themes carry a note saying what they abstract; the mined
+        # rows they replaced carried a label. Either can sit in the same slot.
+        "label": row.get("note") or row.get("label", ""),
         "source": row.get("source_id", ""),
         "title": row.get("title", ""),
         "score": row.get("score", 0.0),

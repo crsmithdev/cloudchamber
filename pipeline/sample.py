@@ -189,17 +189,26 @@ def draw(
 
 
 def render(packet: dict) -> str:
-    """The packet as text, ready to sit in front of a generation call."""
-    out = ["# SEED", ""]
-    for t in packet.get("themes", []):
-        out += [f"- **{t.get('label','theme')}** — {t.get('text','')}", ""]
-    if not packet.get("themes"):
-        out += ["*(no themes banked yet)*", ""]
-    out += ["# REGISTER", "",
-            "*Passages below are published human prose, verbatim. Match the "
-            "register. Do not reuse their content.*", ""]
+    """The packet as text, ready to sit in front of a generation call.
+
+    Register first, seed last. Instruction force decays with distance from the
+    point of generation while register conditioning does not, so the exemplars
+    open and the constraints sit immediately before the ask — the order the
+    seed-premises skill and `research/generation.md` §3.3-§3.4 both specify.
+    This file used to emit the seed first, which put six passages of prose
+    between the constraints and the call.
+    """
+    out = ["# REGISTER", "",
+           "*Passages below are published human prose, verbatim. Match the "
+           "register. Do not reuse their content.*", ""]
     for p in packet.get("exemplars", []):
         who = p.get("author") or p.get("source_id", "")
         out += [f"### {who} — {p.get('title','')}  [{cell(p.get('facets'))}]",
                 "", p.get("text", ""), ""]
+
+    out += ["# SEED", ""]
+    for t in packet.get("themes", []):
+        out += [f"- {t.get('text','')}", ""]
+    if not packet.get("themes"):
+        out += ["*(no themes banked yet — `pipeline themes --brief <source>`)*", ""]
     return "\n".join(out)
