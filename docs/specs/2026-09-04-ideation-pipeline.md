@@ -1,0 +1,553 @@
+# Ideation pipeline
+
+Spec derived from the grilling session of 2026-09-04 over `plan.md`. Every
+decision below was put to Chris and answered; the few that were not are under
+Open Questions. The research it rests on is `research/generation.md`,
+`research/themes.md` and `research/tagging.md`; section references below are
+to those files.
+
+## Problem Statement
+
+Chris has a corpus of horror and science fiction (29 PDFs, 110 SCP articles)
+and three setting references, and wants story seeds generated from it that sit
+off the centre of a model's distribution. The previous pipeline extracted
+passages and drafted themes but had no way to record what he thought of them,
+no UI, no view into what a generation run did, and a workflow tangled with
+series doctrine that has since been retired. Its working tree has been deleted
+and the repo reset. Every regeneration currently throws away all judgement
+already made, and the generation steps run inside a session's own context,
+which the research says narrows everything that follows.
+
+## Solution
+
+A two-runtime pipeline. Python reads sources, splits them into stories, cuts
+verbatim passages and scores them on Biber's six register dimensions. TypeScript
+on bun owns everything with state or a model call: the theme bank, the
+append-only verdict log, generation runs as headless `claude -p` subprocesses
+per step, an exported plain-text bank a skill can read, and one local web app
+with a keyboard review queue, a browser over everything extracted, and a run
+viewer that shows every step of a run and holds the human gate.
+
+Everything extracted or drafted is eligible until Chris passes on it. Verdicts
+are keyed by content so they survive re-extraction. A run goes: draw examples
+and a seed, ask for a five-premise tail distribution, execute all five as
+400-word vignettes, gate, reverse-outline the chosen one, then in parallel two
+context vignettes and an ending, and export a packet. Settings constrain a run
+by appending their reference file and declaring extra outline jobs; unrestricted
+mode carries no doctrine at all.
+
+## User Stories
+
+### Sources and extraction
+
+1. As Chris, I want the reset committed with the moved sources tracked, so that
+   history records the starting point and a clean checkout has the corpus.
+2. As Chris, I want a manifest naming each source, its reader, its genre, its
+   author where the file has one, and whether it is in the dev subset, so that
+   extraction is scoped without editing code.
+3. As Chris, I want anthology and collection PDFs split into individual stories
+   using the PDF's embedded outline, so that passages and themes are per story
+   and carry the story's author.
+4. As Chris, I want a PDF with no outline split from its printed contents page,
+   so that the one such book in the corpus still yields stories.
+5. As Chris, I want front matter, back matter, running headers, scan furniture,
+   drop caps and hyphenation handled before segmentation, so that passages are
+   clean prose.
+6. As Chris, I want SCP articles read from their wikidot source with markup
+   stripped, so that no `[[div]]`, module, colour span or table leaks into a
+   passage.
+7. As Chris, I want each story to yield about one passage per thousand words,
+   floored at three and capped at thirty, each 150–400 words on paragraph
+   boundaries, chosen by position-stratified random draw, so that coverage
+   across a story is even and no hand-set score steers the pool.
+8. As Chris, I want every passage scored on Biber D1–D6 with the fit recorded,
+   so that examples can be selected for coverage across voice and mode.
+9. As Chris, I want extraction to be re-runnable at any time, so that a stripper
+   fix rebuilds the pool.
+
+### Themes
+
+10. As Chris, I want a model to draft up to four one-sentence themes per story
+    against the grain rules, so that the theme bank is abstractive rather than
+    quoted.
+11. As Chris, I want each drafted theme validated per row (length, sentence
+    count, no proper nouns or designations, no opening deictic) with rejections
+    recorded, so that the bank keeps its grain.
+12. As Chris, I want a candidate theme checked for redundancy against the bank
+    before admission, so that the bank does not say the same thing twice.
+13. As Chris, I want a theme's attestation count and stories recorded rather
+    than gating on recurrence, so that a one-story theme is still a seed.
+
+### Verdicts
+
+14. As Chris, I want to mark any example, theme or packet keep or pass, with an
+    orthogonal artifact flag and a free-text note, so that my judgement is
+    recorded once and used everywhere.
+15. As Chris, I want verdicts in an append-only tracked log carrying who, when,
+    method and pipeline version, so that a future model can be fitted against
+    them.
+16. As Chris, I want a verdict to reattach to its passage after re-extraction,
+    exactly by content hash and by inheritance when a stripper fix shifts the
+    text, so that a regeneration does not cost me the cull.
+17. As Chris, I want everything not passed and not flagged to be eligible by
+    default, so that the pipeline is usable before any culling.
+
+### Bank
+
+18. As Chris, I want the eligible bank exported to plain files, segmented by
+    source file, with author and genre on every entry, tracked in git, so that
+    a skill can read it without the database.
+19. As Chris, I want to filter examples and seeds by source, author or genre
+    when starting a run, so that I can work in subsets.
+
+### Generation runs
+
+20. As Chris, I want a run to draw six examples stratified across voice/mode
+    cells and a seed drawn at random from eligible themes, with an override to
+    pick a theme or type free text, recorded, so that the draw is the default
+    and the record says when it was not.
+21. As Chris, I want the premise call to ask for five premises with stated
+    probabilities under 0.10, brief reasoning each, the modal answer excluded,
+    and a positive-framed divergence cue, so that the batch is the tail.
+22. As Chris, I want all five premises executed as 400-word vignettes in
+    parallel independent calls, so that the gate judges prose and not pitches.
+23. As Chris, I want a manual gate where I pick one vignette, reject the batch
+    by redrawing everything or by keeping the seed, or flag the call as looking
+    wrong with a note, so that a bad draw and a bad prompt are told apart.
+24. As Chris, I want an auto mode that continues with the lowest stated
+    probability, so that a run can complete unattended without a model judging.
+25. As Chris, I want a reverse outline with debt audit, arithmetic and custody
+    jobs, plus any jobs the setting declares, so that the story is derived
+    before anything else is written.
+26. As Chris, I want two context vignettes with distinct named jobs and an
+    ending of up to 600 words, generated from the outline in parallel and not
+    from each other, so that they are executions rather than a chain.
+27. As Chris, I want a packet directory per run with the chosen vignette,
+    outline, two context vignettes, ending and a trail, tracked in git, so that
+    I can read and diff it and the drafting stage can consume it.
+28. As Chris, I want every step's prompt, model, raw response and parsed output
+    stored with its parent, so that the run viewer shows everything from the
+    request to the packet.
+29. As Chris, I want each stage's model configurable, so that a cheap model can
+    do the same-or-different check and a strong one the premises.
+30. As Chris, I want a run under a setting to have the setting's reference file
+    in every generation prompt with its hard rules last, and its seed filtered
+    to the segments the setting names, so that lore-constrained runs are one
+    flag away.
+31. As Chris, I want unrestricted runs to carry no doctrine beyond the genre
+    named once, so that no filter is built in.
+
+### UI
+
+32. As Chris, I want a keyboard-driven queue that shows one item and takes
+    keep, pass, artifact flag and note, so that culling is fast.
+33. As Chris, I want a browser over all passages and themes with filters on
+    segment, facet cell, verdict and artifact flag, so that I can see what was
+    extracted.
+34. As Chris, I want a run viewer listing runs, showing each step as a tree,
+    expandable to prompt and response, with the five candidates shown as a
+    distribution sorted by stated probability and labelled so that low reads as
+    far from centre, so that I can see what was sampled and what was rejected.
+35. As Chris, I want to start a run from the UI and have the gate block there
+    until I act, so that the UI and the skill drive the same pipeline.
+
+### Skill
+
+36. As Chris, I want one skill that runs extraction, reports status, starts a
+    run under a setting or unrestricted, and reads a packet, so that a session
+    drives the pipeline without touching its internals.
+
+### Housekeeping
+
+37. As Chris, I want the stale `refactor/degrain` worktree and local branch
+    removed, so that no edit targets deleted code.
+
+## Acceptance Criteria
+
+1. WHEN the first commit lands THE repo SHALL show `sources/horror`,
+   `sources/scifi` and `sources/settings` tracked, the old `pipeline/`,
+   `extracted/`, `drafts/`, `series.md`, `catalogue.md`, `seeding-v7.md` and
+   `sources/texts` absent, and `git status` clean.
+2. WHEN `extract` runs with no scope flag THE system SHALL read only manifest
+   entries marked dev: Datlow Vol 01, Evenson *Contagion*, and the ten SCP
+   articles listed in Implementation Decisions. IF a manifest entry names a
+   reader the system lacks THEN extraction SHALL fail naming the entry.
+3. WHEN Vol 01 is read THE system SHALL emit exactly the stories whose outline
+   entries contain an em dash, minus entries matching the front/back-matter
+   list, each with title and author split on the em dash; and SHALL emit an
+   author per story that matches the outline byline verbatim.
+4. WHEN *Contagion* is read THE system SHALL find no outline, parse the page
+   whose text begins `TABLE OF CONTENTS`, and emit one story per contents line
+   with the title and start page; author SHALL be the manifest author.
+5. WHEN any PDF page is read THE system SHALL drop lines appearing in the top or
+   bottom two lines of 25% or more of pages, rejoin words split by line-end
+   hyphens, and merge a lone capital at a story's start with its word.
+   WHEN the dev pool is searched for `Google Original from`, `Digitized by`,
+   or a line that is only a page number THE result SHALL be empty.
+6. WHEN the SCP markup fixture is stripped THE output SHALL equal the fixture's
+   expected text byte for byte, and WHEN the dev pool is searched for `[[`,
+   `]]`, `##`, `@@` or `||` THE result SHALL be empty.
+7. WHEN a story of W words is segmented THE system SHALL emit
+   `clamp(round(W/1000), 3, 30)` passages, each of 150–400 words, each starting
+   and ending on a paragraph boundary, no two overlapping by more than 50% of
+   tokens, drawn one per equal-length stratum of the story with a recorded
+   random seed; WHEN re-run with the same seed THE passages SHALL be identical.
+8. WHEN `facets` runs THE system SHALL store six z-scores per passage, the fit
+   (mean, sd, n, backend) in the store, tercile labels on D1 and D2, and print
+   the range, skew and largest correlation per dimension. IF the pool differs
+   from the fitted n by more than 20% THEN `facets` SHALL warn. IF the backend
+   differs from the fitted one THEN `facets` SHALL refuse without `--refit`.
+9. WHEN `extract` runs a second time on unchanged sources THE system SHALL
+   produce the same passage ids, and WHEN sources are unchanged but a reader
+   changed THE system SHALL replace the pool and reattach verdicts per
+   criterion 16.
+10. WHEN `themes` runs THE system SHALL make one model call per story not yet
+    drafted, with the story's full text, the grain rules and eight few-shot
+    lines from the grain reference, and SHALL accept at most four rows per
+    story regardless of story length.
+11. WHEN a drafted row has fewer than 9 or more than 44 words, more than two
+    sentences, a capitalised token not at sentence start, a designation
+    matching `SCP-\d+` or a bare alphanumeric code, or opens with *this*,
+    *that*, *these*, *those*, *it* or *here* THE system SHALL reject it and
+    store the row with its reason.
+12. WHEN a row passes validation THE system SHALL embed it, retrieve the ten
+    nearest banked themes, and make one model call returning `same:<id>` or
+    `different`. IF `same` THEN THE system SHALL increment that theme's
+    attestation, add the story, and store the candidate as a duplicate of it.
+    IF `different` THEN THE system SHALL bank the candidate with attestation 1.
+13. WHEN a theme is shown anywhere THE system SHALL show its attestation count
+    and story list. THE system SHALL never reject a theme for attestation.
+14. WHEN a verdict is recorded THE system SHALL append one line to the verdict
+    log with `kind` in `{example, theme, packet}`, `verdict` in `{keep, pass}`,
+    `artifact` boolean, `note`, `method` in `{queue, browse, gate, cli}`, `at`,
+    `by`, `pipeline_version`, and never modify or delete an existing line.
+15. WHEN the verdict log is replayed into an empty store THE system SHALL
+    reproduce the same eligibility for every item, and a corrupt line SHALL
+    fail replay naming the line number.
+16. WHEN a passage's id (hash of story id and whitespace-normalised text) is
+    present in the log THE verdict SHALL attach exactly. WHEN a new passage in
+    the same story shares 80% or more of its tokens with a verdicted passage
+    that no longer exists THE system SHALL copy the latest verdict with
+    `inherited_from` set. WHEN neither holds THE passage SHALL be unreviewed.
+17. WHEN an item's latest verdict is absent or keep, and its artifact flag is
+    unset THE item SHALL be eligible. WHEN it is pass or flagged THE item SHALL
+    not be eligible.
+18. WHEN `export` runs THE system SHALL write one file per source segment under
+    the bank directory containing every eligible passage verbatim with source,
+    story, author, genre and facet cell on each entry, plus one themes file
+    with every eligible theme and its attestation; a passed or flagged item
+    SHALL not appear.
+19. WHEN a run is started with `--segment` naming a source, author or genre THE
+    examples and the seed draw SHALL come only from that segment; IF the
+    segment has fewer than six eligible passages THEN the run SHALL fail
+    naming the count.
+20. WHEN a run draws THE system SHALL take one eligible passage from each
+    non-empty voice/mode cell in random order until six are held, then fill at
+    random, and SHALL store the six ids and the seed with `seed_mode` in
+    `{drawn, picked, typed}`.
+21. WHEN the premise step runs THE prompt SHALL contain, in order: the six
+    passages verbatim; the setting file if any; the ask block with the seed,
+    the genre word, the instruction for five premises each with reasoning and a
+    probability under 0.10, the modal exclusion, and the divergence cue as its
+    last lines; and the setting's hard rules last of all if a setting is set.
+    IF the response has fewer than five premises or any probability of 0.10 or
+    above THEN the step SHALL fail with reason `shape` and the run SHALL be
+    flagged.
+22. WHEN premises are parsed THE system SHALL start five execute steps at once,
+    each prompted with the six passages, the seed and only its own premise, and
+    each SHALL store a vignette; a vignette outside 300–500 words SHALL be
+    stored with a `length` warning and not rejected.
+23. WHILE a manual run is at the gate THE run status SHALL be `awaiting_gate`
+    and no later step SHALL exist. WHEN one vignette is chosen THE outline step
+    SHALL start. WHEN reject-redraw is chosen THE system SHALL create a new run
+    with a fresh draw and set `superseded_by` on the old. WHEN reject-keep-seed
+    is chosen THE new run SHALL reuse `seed_text` and draw new examples. WHEN
+    the flag is set THE run SHALL record `flagged` and the note and start
+    nothing.
+24. WHEN an auto run reaches the gate THE system SHALL choose the vignette with
+    the lowest stated probability, ties broken at random, and record
+    `gate_method: auto`.
+25. WHEN the outline step runs THE prompt SHALL contain the chosen vignette,
+    the seed, the three core jobs by name, and the setting's declared jobs if
+    any; THE parsed output SHALL contain one section per job or the step SHALL
+    fail with reason `shape`.
+26. WHEN the outline completes THE system SHALL run one jobs step that names
+    two distinct vignette jobs, then start two context-vignette steps and the
+    ending step at once. Each context step's prompt SHALL contain the outline,
+    the chosen vignette and its job only. The ending's prompt SHALL contain the
+    outline and the chosen vignette only. IF the two jobs are identical strings
+    THEN the jobs step SHALL be retried once and then fail.
+27. WHEN the ending completes THE system SHALL write the packet directory with
+    `vignette.md`, `outline.md`, `context-1.md`, `context-2.md`, `ending.md`
+    and `trail.md`; `trail.md` SHALL list the seed and its mode, the six
+    example ids with source lines, all five premises with reasoning and
+    probability, all five vignettes' ids, the gate method and choice, the
+    setting, the genre and the model per stage.
+28. WHEN any step runs THE system SHALL store its stage, parent step, model,
+    full prompt, raw response, parsed output, status, start and end times, and
+    error text if any, before the next step starts.
+29. WHEN a stage's model is set in config THE step SHALL invoke `claude -p`
+    with that `--model` and record it; WHEN unset THE default model SHALL be
+    used and recorded.
+30. WHEN a run names a setting THE system SHALL read the setting file's front
+    matter for `jobs` and `seed_segments`, filter the seed draw to those
+    segments, append the file body after the examples in every generation
+    prompt, and place the section named by `hard_rules` after everything else.
+31. WHEN a run names no setting THE prompts SHALL contain no text beyond the
+    passages, the seed, the ask block and the genre word.
+32. WHEN the queue view is open THE system SHALL show one unreviewed item with
+    its source line and facet cell; `k` SHALL record keep, `p` pass, `a` toggle
+    the artifact flag, `n` focus the note, and each verdict SHALL advance to
+    the next item within one round trip.
+33. WHEN the browser view is filtered by any combination of segment, facet
+    cell, verdict state and artifact flag THE list SHALL contain only matching
+    items and show the count.
+34. WHEN a run is opened THE viewer SHALL show its steps as a tree in parent
+    order, each expandable to prompt, raw response and parsed output; the
+    premise step SHALL render five rows sorted by probability ascending with
+    the header text `stated probability · lower is further from centre`.
+35. WHEN a run is started from the UI THE server SHALL invoke the same command
+    the CLI does, and WHEN the run reaches the gate THE viewer SHALL present
+    choose, reject-redraw, reject-keep-seed and flag.
+36. WHEN the skill is invoked THE session SHALL be able to run extraction,
+    print status (pool size, bank size, eligible counts per segment, runs by
+    status), start a run with setting, genre, segment, seed and auto flags, and
+    print a packet; the old `seed-premises` skill SHALL not exist.
+37. WHEN housekeeping is done `git worktree list` SHALL not show `degrain` and
+    `git branch` SHALL not show `refactor/degrain`; the remote branch SHALL be
+    untouched.
+
+## Implementation Decisions
+
+### Layout
+
+- `extract/`: the Python package, run as `python -m extract`. Subcommands
+  `read`, `split`, `segment`, `facets`, `embed`. It reads sources and writes
+  rows into the SQLite store; it makes no model call and no network call.
+- `app/`: the bun workspace. `app/cli` (the `fogbelt` command), `app/pipeline`
+  (stages, model adapter, store), `app/server` (Fastify), `app/ui` (React,
+  Vite). One process serves API and UI.
+- `bank/`: tracked. `examples/<source-slug>.md` exports, `themes.md` export,
+  `themes.jsonl` canonical theme bank, `verdicts.jsonl` append-only log.
+- `packets/<run-id>/`: tracked packet directories.
+- `sources/manifest.toml`: one table per source with `path`, `reader`
+  (`pdf` | `scp`), `genre`, optional `author`, `dev` boolean. The settings
+  directory is not in the manifest; settings are addressed by id.
+- `data/`: the SQLite database, gitignored. Rebuildable from sources plus the
+  two tracked JSONL files.
+- `.claude/skills/fogbelt/SKILL.md`: the driving skill. `seed-premises` is
+  deleted.
+- `docs/specs/`: this file and its successors.
+
+### Salvage
+
+Four modules come from git history at HEAD `00f4eec`, copied into `extract/`
+and rewritten to the new interface: `read_pdf` (page reading, drop caps,
+running lines, reflow, contents-page parsing), `segment` (windows), the SCP
+reader with its selftest fixture, and `biber` (biberplus adapter, numpy 2
+workaround, local fallback with probe). The 24-line grain reference from
+`pipeline/grain.md` is salvaged as data for the theme few-shot. Nothing else
+is carried over.
+
+### Splitting
+
+Outline first: level-1 entries from the PDF outline, front and back matter
+dropped by a title list (introduction, contents, publishing details,
+dedication, about the authors, acknowledgment, copyright, about the editor,
+also by), story boundaries at each entry's destination page, title and author
+split on an em dash where present, author otherwise from the manifest. When
+the PDF has no outline the salvaged contents-page parser runs. *Contagion* is
+a Google Books scan with OCR noise and a scanner running line on every page;
+the running-line stripper handles the furniture and the contents parser reads
+dotted leaders with page numbers.
+
+### Dev subset
+
+Datlow *The Best Horror of the Year Volume 01*, Evenson *Contagion and Other
+Stories*, and ten SCP articles chosen one per word-count decile: 2151, 610,
+3929, 5740, 2845, 2000, 3625, 001-djk1-the-children, 4390, 8947 (789 to
+25,256 words).
+
+### Store
+
+SQLite via `bun:sqlite`. Tables: `sources`, `stories`, `passages` (id, story,
+text, word count, position stratum, facets, cell, seed), `facet_fit`,
+`themes` (id, text, attestation, stories, embedding, drafted_at, duplicate_of),
+`theme_rejections`, `verdicts` (mirror of the log), `runs`, `steps`,
+`artifacts`. Passage id is the hash of story id plus whitespace-normalised
+text. Theme id is the hash of the normalised sentence. The log is the source
+of truth for verdicts; the table is a replay.
+
+### Verdict log line
+
+```
+{ id, kind: "example"|"theme"|"packet", target_id, verdict: "keep"|"pass",
+  artifact: boolean, note: string, method: "queue"|"browse"|"gate"|"cli",
+  at: ISO-8601, by: string, pipeline_version: string,
+  inherited_from?: target_id }
+```
+
+Latest line per target wins. Inheritance runs at the end of every extraction,
+comparing new passages in a story against verdicted passage texts that no
+longer exist in that story, at 80% token overlap.
+
+### Model adapter
+
+One function in `app/pipeline`: given a stage name and a prompt, it writes the
+prompt to a file, spawns `claude -p` with `--output-format json`, the stage's
+`--model` if configured, and `CLAUDECODE` unset, captures the response, and
+returns the text. Structured pieces of a response are tagged XML elements
+(`<premise>`, `<probability>`, `<reasoning>`, `<vignette>`, `<job>`,
+`<section name="">`), parsed by the stage. A parse failure retries the call
+once and then fails the step with reason `shape`. The adapter is the one seam
+the tests substitute.
+
+### Stage graph
+
+```
+draw → premises → execute ×5 → gate → outline → jobs → { context ×2, ending } → packet
+```
+
+Fixed in code. Each step row records its parent. Later stages (fact check,
+lore audit, red team, drafting) append to the graph without schema change.
+
+### Prompt order
+
+Examples verbatim first, with no framing text between them. Then the setting
+body if any. Then the ask block: the seed, the genre word, the instruction, the
+ceiling, the modal exclusion, the divergence cue. Then the setting's hard rules
+if any. Nothing negated; every constraint positive-framed. Each step is its own
+subprocess; no step sees another's transcript.
+
+### Settings
+
+A setting is a file under `sources/settings/` with YAML front matter:
+
+```
+id: setting-a
+name: The setting-a
+jobs: [matrix]
+seed_segments: [scp, datlow-01]
+hard_rules: "Hard rules"
+```
+
+`jobs` are appended to the outline's core jobs by name, each with a one-line
+description in the front matter. `seed_segments` filters the seed draw.
+`hard_rules` names the heading whose section goes last in every prompt. The
+existing three files get front matter added; their bodies are untouched. A lore
+audit step is designed as a future stage that checks the outline against the
+setting body; it is not built now.
+
+### UI
+
+React with Vite, served by Fastify from one bun process, dev port at or above
+3002. Views: queue, browser, runs, run detail. API: `GET /api/queue`,
+`POST /api/verdicts`, `GET /api/items`, `GET /api/runs`, `POST /api/runs`,
+`GET /api/runs/:id`, `POST /api/runs/:id/gate`. The server runs the pipeline
+in-process; the CLI calls the same functions.
+
+### Skill
+
+`fogbelt` skill wraps the CLI: `fogbelt extract`, `fogbelt facets`,
+`fogbelt themes`, `fogbelt export`, `fogbelt run`, `fogbelt status`,
+`fogbelt packet <id>`, `fogbelt serve`. The skill never generates in its own
+context; it triggers steps and reads results.
+
+### Rejected alternatives
+
+- Restoring or evolving the old Python tree: the spine it had (draw in Python,
+  doctrine in the playbook) is what the plan replaces.
+- All-TypeScript: pdfplumber and biberplus are Python and work here.
+- In-session generation: fixation across candidates, §3.4.
+- Heuristic or model-chosen passage selection: unvalidated scorer; model
+  annotator without a validation sample, `tagging.md` §2.2.
+- Recurrence as a gate: starves the bank during dev.
+- Embedding threshold alone for redundancy: retrieval alone scores F1 0.36 on
+  recurrence, `themes.md` §3.1.
+- Executing one candidate: gates on a premise, which inverts, §3.8.
+- Any model judging at the gate: 73% ceiling and rubric inversion, §1.4, §3.8.
+- Sequential vignettes then ending: the pilot found them siblings of the
+  outline.
+- Personas now, planning call now: recorded as experiments, not built.
+- Retrieval or distilled rule sheets for settings: no measured benefit and the
+  files fit in a prompt.
+
+## Testing Decisions
+
+Two seams, no test calls a real model.
+
+**Python extraction CLI.** Run `python -m extract` over the dev subset and the
+salvaged SCP markup fixture. Assert on emitted rows: story count and titles for
+Vol 01 against the outline, one story per contents line for *Contagion*,
+author per story, passages per story within floor and cap, every passage in
+150–400 words on paragraph boundaries, overlap under 50%, no surviving markup
+or scan furniture by grep, six facet columns present, determinism under a fixed
+seed. The SCP fixture asserts byte equality against expected text, as the old
+selftest did. Tests that need the PDFs skip with a message when the sources
+directory is absent.
+
+**TypeScript pipeline and HTTP API with a fake model.** The model adapter is
+replaced by one that returns canned responses per stage from fixture files,
+including one malformed premise response and one over-ceiling response. Tests
+run against a temporary database: a full auto run produces the expected step
+tree, artifacts and packet directory; a manual run stops at `awaiting_gate` and
+resumes on each gate action; reject creates a linked run; the flag starts
+nothing; verdict POSTs append log lines and change eligibility; replay of a log
+reproduces eligibility; inheritance attaches at 80% and not at 70%; export
+omits passed and flagged items; segment filters restrict draw; setting front
+matter changes prompt composition and jobs; queue, browser and run endpoints
+return the documented shapes. Run with `bun test`.
+
+Prior art: the old `pipeline/selftest.py` fixture for wikidot markup leaks is
+the model for the Python side.
+
+Verification for every change: the relevant seam's tests run after the last
+edit, from inside the worktree, and the turn reports what ran.
+
+## Out of Scope
+
+- Fact check, lore audit, red team, drafting and assembly stages. The schema
+  admits them; nothing builds them.
+- Cross-vendor pooling and a different-family judge. Waits on an API path.
+- Personas, the planning call, focalization, style embeddings. Recorded as
+  experiments.
+- Any model-assigned label on passages.
+- Anything derived from `stories/`. Not an input, not a filter.
+- Training or fitting anything on the verdict log.
+- Extraction of the 26 PDFs outside the dev subset. Same code; run later.
+- Audio.
+
+## Open Questions
+
+- **API path.** When cross-model pooling or a judge is wanted, Anthropic SDK or
+  OpenRouter, and how a key is held. Unblocked by wanting it.
+- **Embedding model.** A local sentence-transformers model, exact name pinned
+  in the manifest at implementation time after checking what installs cleanly
+  on this machine.
+- **Artifact routing.** A flagged artifact is a stripper bug; the fix loop is
+  manual for now (read flagged items, fix the reader, re-extract, verdicts
+  inherit). A view listing flagged items by source is enough to start.
+- **Genre when a segment spans both.** The run's `--genre` flag is required if
+  the examples' segment is not a single genre directory; otherwise inferred.
+- **Queue order.** Random within source, sources round-robin. Change if it
+  reads badly.
+
+## Further Notes
+
+- The two papers that resisted extraction were read this session. IDEAFix
+  (arXiv:2606.00875): explicit divergence cues beat method-based prompts on
+  novelty and rarity at near-baseline fluency; nothing fixes homogenisation
+  outright. Folded in as the cue line. Seeing the Hivemind (arXiv:2606.09587)
+  is a decoding-time repulsion technique, not applicable through `claude -p`;
+  its one UI finding, that 38% of users read a consensus zone as "optimal
+  responses", is why the distribution view labels probability as distance from
+  centre rather than as a score.
+- The lore-constraint survey found no published system measuring retrieval
+  against full context. The strongest measured design is a fact ledger audited
+  by a model per turn; the best model stayed conflict-free 42% of the time over
+  20 turns. That argues for a check stage, which is the deferred lore audit.
+- Anthology splitting: 28 of 29 PDFs carry embedded outlines with title and
+  author per story. The old contents-page parser is the fallback, exercised by
+  *Contagion*.
+- `research/generation.md` §5 gaps remain gaps: nothing measures horror, tone
+  drift is unstudied. The run viewer is where those get measured, by hand.
