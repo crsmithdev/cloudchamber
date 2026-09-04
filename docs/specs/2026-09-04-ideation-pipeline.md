@@ -107,9 +107,8 @@ mode carries no doctrine at all.
     pick a theme or type free text, recorded, so that the draw is the default
     and the record says when it was not.
 21. As Chris, I want the premise call to ask for five premises with stated
-    probabilities under 0.10, a brief account of how each was reached, the
-    modal answer excluded,
-    and a positive-framed divergence cue, so that the batch is the tail.
+    probabilities under 0.10, the modal answer excluded, and a positive-framed
+    divergence cue, so that the batch is the tail.
 22. As Chris, I want all five premises executed as 400-word vignettes in
     parallel independent calls, so that the gate judges prose and not pitches.
 23. As Chris, I want a manual gate where I pick one vignette, reject the batch
@@ -220,8 +219,10 @@ mode carries no doctrine at all.
 11. WHEN a drafted row has fewer than 9 or more than 44 words, more than two
     sentences, a capitalised token not at sentence start, a designation
     matching `SCP-\d+` or a bare alphanumeric code, or opens with *this*,
-    *that*, *these*, *those*, *it* or *here* THE system SHALL reject it and
-    store the row with its reason.
+    *that*, *these*, *those*, *it* or *here* used as a pointer THE system SHALL
+    reject it and store the row with its reason. A relative opener (*Those
+    who*, *Those kept on*, *That which*) is not a pointer and SHALL pass; the
+    second simulation rejected two good rows on it.
 12. WHEN a row passes validation THE system SHALL embed it, retrieve the ten
     nearest banked themes, and make one model call returning `same:<id>` or
     `different`. IF `same` THEN THE system SHALL increment that theme's
@@ -259,13 +260,14 @@ mode carries no doctrine at all.
     `{drawn, picked, typed}`.
 21. WHEN the premise step runs THE prompt SHALL contain, in order: the six
     passages verbatim; the setting file if any; the ask block with the seed,
-    the genre word, the instruction for five premises each with a `<how>` (two
-    or three sentences on how it was reached) and a probability under 0.10,
-    the modal exclusion, and the divergence cue as its
-    last lines; and the setting's hard rules last of all if a setting is set.
-    IF the response has fewer than five premises or any probability of 0.10 or
-    above THEN the step SHALL fail with reason `shape` and the run SHALL be
-    flagged.
+    the genre word, the instruction for five premises each as a `<text>` under
+    100 words with a `<probability>` under 0.10, the modal exclusion, and the
+    divergence cue as its last lines; and the setting's hard rules last of all
+    if a setting is set. No element asks how a premise was reached. IF the
+    response has fewer than five premises or any probability of 0.10 or above
+    THEN the step SHALL fail with reason `shape` and the run SHALL be flagged.
+    IF a premise text exceeds 120 words THEN it SHALL be stored with a `length`
+    warning and not rejected.
 22. WHEN premises are parsed THE system SHALL start five execute steps at once,
     each prompted with the six passages, the seed and only its own premise, and
     each SHALL store a vignette; a vignette outside 300–500 words SHALL be
@@ -293,22 +295,22 @@ mode carries no doctrine at all.
 27. WHEN the ending completes THE system SHALL write the packet directory with
     `vignette.md`, `outline.md`, `context-1.md`, `context-2.md`, `ending.md`
     and `trail.md`; `trail.md` SHALL list the seed and its mode, the six
-    example ids with source lines, all five premises with their `<how>` and
-    probability, all five vignettes' ids, the gate method and choice, the
+    example ids with source lines, all five premises with their probability, all five vignettes' ids, the gate method and choice, the
     setting, the genre and the model per stage.
 28. WHEN any step runs THE system SHALL store its stage, parent step, model,
     full prompt, raw response, parsed output, status, start and end times, and
     error text if any, before the next step starts.
-29. WHEN a stage's model is set in config THE step SHALL invoke `claude -p`
-    with that `--model` and record it; WHEN unset THE default model SHALL be
-    used and recorded. WHEN any step is invoked THE command line SHALL carry
-    `--bare`, `--no-session-persistence`, `--tools ""`,
-    `--setting-sources ""` and a `--system-prompt`, and the step row SHALL
-    store that system prompt. WHEN a call returns `stop_reason: refusal` THE
+29. WHEN any step is invoked THE command line SHALL carry an explicit
+    `--model` from the stage config (the config SHALL fail to load if a stage
+    has none), `--no-session-persistence`, `--tools ""`,
+    `--setting-sources ""` and a `--system-prompt`, and never `--bare`; the
+    step row SHALL store the model and the system prompt. WHEN a call returns `stop_reason: refusal` THE
     step SHALL rerun once on the stage's `fallback_model`, store both calls,
     and IF the rerun also refuses THEN fail with reason `refusal`, never
-    `shape`. WHEN any prompt template is loaded THE system SHALL fail if it
-    contains the words *reason*, *reasoning*, *think* or *chain of thought*.
+    `shape`. WHEN any prompt template is loaded THE system SHALL fail if the
+    template text (not the story, passage or outline substituted into it)
+    contains *reason*, *reasoning*, *think*, *chain of thought*, or a phrase
+    asking how the model arrived at anything.
 30. WHEN a run names a setting THE system SHALL read the setting file's front
     matter for `jobs` and `seed_segments`, filter the seed draw to those
     segments, append the file body after the examples in every generation
@@ -437,11 +439,15 @@ longer exist in that story, at 80% token overlap.
 
 One function in `app/pipeline`: given a stage name and a prompt, it writes the
 prompt to a file and spawns `claude -p` with `CLAUDECODE` unset and these
-flags: `--output-format json`, `--bare`, `--no-session-persistence`,
-`--tools ""`, `--setting-sources ""`, `--system-prompt <one line per stage>`,
-and the stage's `--model`. Bare mode drops hooks, plugins, skills, MCP, tool
-schemas and both CLAUDE.md files; the simulation measured about 20,000 tokens
-of that per call without it. The per-stage system prompt is stored on the step.
+flags: `--output-format json`, `--no-session-persistence`, `--tools ""`,
+`--setting-sources ""`, `--system-prompt <one line per stage>`, and the stage's
+`--model`, always explicit. Together these drop hooks, plugins, skills, MCP,
+tool schemas and both CLAUDE.md files: measured overhead fell from about 20,000
+tokens per call to 5,757. `--bare` is not used: it skips the stored
+subscription login and returns "Not logged in", so it needs an API key.
+`--setting-sources ""` also drops the configured default model, which is why
+`--model` is mandatory per stage. The per-stage system prompt is stored on the
+step.
 
 Every stage config has `model` and `fallback_model`. The adapter reads
 `stop_reason` from the JSON:
@@ -454,12 +460,18 @@ Every stage config has `model` and `fallback_model`. The adapter reads
 | any other error | fail with the CLI's error text |
 
 Structured pieces of a response are tagged XML elements (`<premise>`,
-`<probability>`, `<how>`, `<vignette>`, `<job>`, `<ending>`,
+`<probability>`, `<text>`, `<vignette>`, `<job>`, `<ending>`,
 `<section name="">`), parsed by the stage. The adapter is the one seam the
 tests substitute.
 
-**Prompt vocabulary rule.** No prompt uses *reason*, *reasoning*, *think*,
-*chain of thought* or asks for a trace of anything. The simulation's outline
+**Prompt vocabulary rule.** No prompt template uses *reason*, *reasoning*,
+*think*, *chain of thought*, or asks how the model arrived at anything. The
+check runs on the template, not the filled prompt: fiction contains *think*.
+The second simulation's premise ask carried a `<how>` element ("two or three
+sentences on how you arrived at it") and Fable refused it under a one-line
+system prompt with the same `reasoning_extraction` category, though it had
+passed the day before under the full Claude Code system prompt. So §3.2's
+chain-of-thought is dropped from the call, not renamed (Open Questions). The simulation's outline
 prompt opened "Reason backward from them" and Fable's `reasoning_extraction`
 safeguard refused it twice with zero output; the same prompt with "Derive from
 them" passed. Prompts say *derive*, *state*, *settle*, *name*.
@@ -585,6 +597,10 @@ edit, from inside the worktree, and the turn reports what ran.
 
 ## Open Questions
 
+- **Chain of thought (§3.2).** Any element that asks the model to account for
+  how it reached a premise trips Fable's safeguard under a minimal system
+  prompt. If the fixation benefit is wanted, it needs a shape that is not an
+  account of arriving; untested. Unblocked by an experiment in the run viewer.
 - **API path.** When cross-model pooling or a judge is wanted, Anthropic SDK or
   OpenRouter, and how a key is held. All calls today run on the claude.ai
   subscription login through the CLI; the cost figures the CLI reports are
@@ -624,5 +640,12 @@ edit, from inside the worktree, and the turn reports what ran.
   this amendment: refusal handling, the Contagion split, contents-page author
   attribution (already covered by the outline path), per-call overhead, and
   theme length. The packet read as a story.
+- **Simulation run 2, 2026-09-04**, with the amendment applied: bare mode
+  breaks login; `--setting-sources ""` drops the default model; the
+  vocabulary check must be scoped to templates; `<how>` is refused; the
+  deictic rule over-rejects relative openers; themes under the under-30 ask ran
+  20–29 words, median 24; page-cue splitting gave Contagion its eight stories;
+  the capped outline passed on Fable at 383/348/372 words. Premises fell back
+  to Opus; everything else ran on Fable.
 - `research/generation.md` §5 gaps remain gaps: nothing measures horror, tone
   drift is unstudied. The run viewer is where those get measured, by hand.
