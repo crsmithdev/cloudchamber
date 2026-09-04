@@ -9,8 +9,13 @@ The shape is not invented here. The playbook's theme bank was the only seed
 format with evidence behind it — twenty-five stories came out of it — and
 `GRAIN` below is that bank measured, frozen before it was retired. `research/themes.md` §11 has the numbers
 and the argument, including why a labelled `mechanism / subject / cost` record
-was tried and rejected: a frame has nowhere to put the turn, and two frames
-will not combine the way playbook §1.1 needs two entries to.
+was tried and rejected: a frame has nowhere to put the turn.
+
+That argument had a second half, and it has expired. It appealed to the
+playbook's ideation pull, which required two banked entries to be combined —
+an idea-generation rule, not a theme-extraction one. The pull was removed on
+2026-09-03 and the requirement went with it. What still combines two themes is
+`draw -t 2`, and nothing now argues for the two.
 
 **Local sentence extraction is gone.** It matched grammatical shapes over
 sentences and banked the sentence, which is extractive where the task is

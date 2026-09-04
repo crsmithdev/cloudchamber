@@ -300,9 +300,11 @@ has to do.
 group-level idea distinctness (Anderson, Shah & Kreminski, C&C 2024), and
 `generation.md` §3.2 draws the moral: randomness sourced outside the generator
 does real work. The theme bank *is* that deck. Decks are made of short
-discrete combinable cards, and playbook §1 requires combination — "at least
+discrete combinable cards, and playbook §1 required combination — "at least
 one must be a combination — two or three entries held together". Paragraphs do
-not combine; roles do.
+not combine; roles do. (That requirement was ideation's, and went with the
+playbook; the deck argument stands on the externally-sourced randomness above,
+which is a property of drawing rather than of combining.)
 
 ### Ranked for this use
 
@@ -387,6 +389,12 @@ are present but *compressed into the clause chain*, never enumerated.
    three entries held together". Two 21-word lines hold together. Two
    four-field records give eight fields and produce mush; the worked
    combination attempted on 2026-09-03 was the weakest artefact in that batch.
+
+   *Expired, 2026-09-04.* §1.1 was the ideation pull, and it was removed with
+   the playbook — an idea-generation requirement was doing the ranking in a
+   theme-extraction argument. Reason 2 below does not depend on it and carries
+   the conclusion on its own. `draw -t 2` is the only combination left, and it
+   is a default rather than a requirement.
 2. **The turn is the payload, and a frame has nowhere to put it.** "…and the
    specification is a purchasing document" lives in the sentence's syntax.
    Decomposing into `mechanism` / `subject` / `cost` destroys exactly the thing
