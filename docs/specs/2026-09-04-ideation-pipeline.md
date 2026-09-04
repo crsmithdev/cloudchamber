@@ -68,11 +68,11 @@ mode carries no doctrine at all.
 ### Themes
 
 10. As Chris, I want a model to draft up to four one-sentence themes per story
-    against the grain rules, so that the theme bank is abstractive rather than
+    against the theme rules, so that the theme bank is abstractive rather than
     quoted.
 11. As Chris, I want each drafted theme validated per row (length, sentence
     count, no proper nouns or designations, no opening deictic) with rejections
-    recorded, so that the bank keeps its grain.
+    recorded, so that the bank keeps its shape.
 12. As Chris, I want a candidate theme checked for redundancy against the bank
     before admission, so that the bank does not say the same thing twice.
 13. As Chris, I want a theme's attestation count and stories recorded rather
@@ -107,7 +107,8 @@ mode carries no doctrine at all.
     pick a theme or type free text, recorded, so that the draw is the default
     and the record says when it was not.
 21. As Chris, I want the premise call to ask for five premises with stated
-    probabilities under 0.10, brief reasoning each, the modal answer excluded,
+    probabilities under 0.10, a brief account of how each was reached, the
+    modal answer excluded,
     and a positive-framed divergence cue, so that the batch is the tail.
 22. As Chris, I want all five premises executed as 400-word vignettes in
     parallel independent calls, so that the gate judges prose and not pitches.
@@ -176,9 +177,13 @@ mode carries no doctrine at all.
    entries contain an em dash, minus entries matching the front/back-matter
    list, each with title and author split on the em dash; and SHALL emit an
    author per story that matches the outline byline verbatim.
-4. WHEN *Contagion* is read THE system SHALL find no outline, parse the page
-   whose text begins `TABLE OF CONTENTS`, and emit one story per contents line
-   with the title and start page; author SHALL be the manifest author.
+4. WHEN *Contagion* is read THE system SHALL find no outline and SHALL emit
+   exactly eight stories from page-level cues, titled The Polygamy of Language,
+   Two Brothers, A Hanging, Internal, Prairie, Contagion, Watson's Boy and By
+   Halves, with part headings `TWO` and `THREE` inside Watson's Boy and not as
+   stories; author SHALL be the manifest author. IF the manifest carries a
+   `stories` list for a source THEN THE system SHALL use it and ignore both the
+   outline and the page cues.
 5. WHEN any PDF page is read THE system SHALL drop lines appearing in the top or
    bottom two lines of 25% or more of pages, rejoin words split by line-end
    hyphens, and merge a lone capital at a story's start with its word.
@@ -202,9 +207,16 @@ mode carries no doctrine at all.
    changed THE system SHALL replace the pool and reattach verdicts per
    criterion 16.
 10. WHEN `themes` runs THE system SHALL make one model call per story not yet
-    drafted, with the story's full text, the grain rules and eight few-shot
-    lines from the grain reference, and SHALL accept at most four rows per
-    story regardless of story length.
+    drafted, with the story's full text, the theme rules stated as properties
+    (abstractive, self-contained, one sentence, under 30 words, mechanism and
+    turn, no names), and SHALL accept at most four rows per story regardless
+    of story length. WHILE fewer than twelve themes carry a keep verdict THE
+    prompt SHALL contain no few-shot lines. WHEN twelve or more do THE prompt
+    SHALL contain eight of them sampled at random, and nothing else as
+    example; no external corpus and no pre-reset material ever enters it. WHEN the run ends THE system
+    SHALL print a word-count histogram and the semicolon and colon rate over
+    the rows banked in that run. The simulation's bank ran 31–43 words, median
+    36, against an ask of 9–44; the histogram is how that is seen.
 11. WHEN a drafted row has fewer than 9 or more than 44 words, more than two
     sentences, a capitalised token not at sentence start, a designation
     matching `SCP-\d+` or a bare alphanumeric code, or opens with *this*,
@@ -247,8 +259,9 @@ mode carries no doctrine at all.
     `{drawn, picked, typed}`.
 21. WHEN the premise step runs THE prompt SHALL contain, in order: the six
     passages verbatim; the setting file if any; the ask block with the seed,
-    the genre word, the instruction for five premises each with reasoning and a
-    probability under 0.10, the modal exclusion, and the divergence cue as its
+    the genre word, the instruction for five premises each with a `<how>` (two
+    or three sentences on how it was reached) and a probability under 0.10,
+    the modal exclusion, and the divergence cue as its
     last lines; and the setting's hard rules last of all if a setting is set.
     IF the response has fewer than five premises or any probability of 0.10 or
     above THEN the step SHALL fail with reason `shape` and the run SHALL be
@@ -268,9 +281,9 @@ mode carries no doctrine at all.
     the lowest stated probability, ties broken at random, and record
     `gate_method: auto`.
 25. WHEN the outline step runs THE prompt SHALL contain the chosen vignette,
-    the seed, the three core jobs by name, and the setting's declared jobs if
-    any; THE parsed output SHALL contain one section per job or the step SHALL
-    fail with reason `shape`.
+    the seed, the three core jobs by name with a cap of 400 words per section,
+    and the setting's declared jobs if any; THE parsed output SHALL contain one
+    section per job or the step SHALL fail with reason `shape`.
 26. WHEN the outline completes THE system SHALL run one jobs step that names
     two distinct vignette jobs, then start two context-vignette steps and the
     ending step at once. Each context step's prompt SHALL contain the outline,
@@ -280,7 +293,7 @@ mode carries no doctrine at all.
 27. WHEN the ending completes THE system SHALL write the packet directory with
     `vignette.md`, `outline.md`, `context-1.md`, `context-2.md`, `ending.md`
     and `trail.md`; `trail.md` SHALL list the seed and its mode, the six
-    example ids with source lines, all five premises with reasoning and
+    example ids with source lines, all five premises with their `<how>` and
     probability, all five vignettes' ids, the gate method and choice, the
     setting, the genre and the model per stage.
 28. WHEN any step runs THE system SHALL store its stage, parent step, model,
@@ -288,7 +301,14 @@ mode carries no doctrine at all.
     error text if any, before the next step starts.
 29. WHEN a stage's model is set in config THE step SHALL invoke `claude -p`
     with that `--model` and record it; WHEN unset THE default model SHALL be
-    used and recorded.
+    used and recorded. WHEN any step is invoked THE command line SHALL carry
+    `--bare`, `--no-session-persistence`, `--tools ""`,
+    `--setting-sources ""` and a `--system-prompt`, and the step row SHALL
+    store that system prompt. WHEN a call returns `stop_reason: refusal` THE
+    step SHALL rerun once on the stage's `fallback_model`, store both calls,
+    and IF the rerun also refuses THEN fail with reason `refusal`, never
+    `shape`. WHEN any prompt template is loaded THE system SHALL fail if it
+    contains the words *reason*, *reasoning*, *think* or *chain of thought*.
 30. WHEN a run names a setting THE system SHALL read the setting file's front
     matter for `jobs` and `seed_segments`, filter the seed draw to those
     segments, append the file body after the examples in every generation
@@ -345,9 +365,10 @@ Four modules come from git history at HEAD `00f4eec`, copied into `extract/`
 and rewritten to the new interface: `read_pdf` (page reading, drop caps,
 running lines, reflow, contents-page parsing), `segment` (windows), the SCP
 reader with its selftest fixture, and `biber` (biberplus adapter, numpy 2
-workaround, local fallback with probe). The 24-line grain reference from
-`pipeline/grain.md` is salvaged as data for the theme few-shot. Nothing else
-is carried over.
+workaround, local fallback with probe). Nothing else is carried over, and no
+pre-reset *content* is: the old grain reference, theme bank, playbook and
+catalogue stay in history. Theme drafting starts zero-shot from the
+property rules and bootstraps its few-shot from kept themes (see Themes).
 
 ### Splitting
 
@@ -355,11 +376,21 @@ Outline first: level-1 entries from the PDF outline, front and back matter
 dropped by a title list (introduction, contents, publishing details,
 dedication, about the authors, acknowledgment, copyright, about the editor,
 also by), story boundaries at each entry's destination page, title and author
-split on an em dash where present, author otherwise from the manifest. When
-the PDF has no outline the salvaged contents-page parser runs. *Contagion* is
-a Google Books scan with OCR noise and a scanner running line on every page;
-the running-line stripper handles the furniture and the contents parser reads
-dotted leaders with page numbers.
+split on an em dash where present, author otherwise from the manifest.
+
+When the PDF has no outline, split on page-level cues: a body page whose first
+non-empty line is short (under 40 characters), all-caps and not a running line
+starts a story, titled by that line. If a printed contents page is found its
+titles are matched fuzzily against those lines to drop false starts (part
+headings like `TWO`, `THREE`) and to confirm coverage; the contents page is
+never the sole source of boundaries, because OCR mangles its page numbers.
+*Contagion* is a Google Books scan: eight stories, each opening on a page with
+an all-caps title, a contents page with five of eight page numbers OCR'd to
+letters, and a scanner running line on every page. The simulation's parser
+took boundaries from the contents page alone and got three stories.
+
+Last resort, for any PDF: the manifest may carry a `stories` list of
+`{title, page}` pairs that overrides both the outline and the page cues.
 
 ### Dev subset
 
@@ -367,6 +398,17 @@ Datlow *The Best Horror of the Year Volume 01*, Evenson *Contagion and Other
 Stories*, and ten SCP articles chosen one per word-count decile: 2151, 610,
 3929, 5740, 2845, 2000, 3625, 001-djk1-the-children, 4390, 8947 (789 to
 25,256 words).
+
+### Themes
+
+Drafting is zero-shot to start: the prompt carries the story and the property
+rules (abstractive, self-contained, one sentence, under 30 words, mechanism
+and turn, no names, no opening deictic) and no examples. Once twelve themes
+carry a keep verdict, eight of them are sampled per call as few-shot. Plotto
+(CC0, 1,852 conflicts) was evaluated and rejected: its lines are plot
+situations with lettered parties, no mechanism and no cost, and would pull
+drafts toward incident. The row validator keeps the 44-word hard cap; the
+histogram printed after each run is how drift toward the cap is seen.
 
 ### Store
 
@@ -394,13 +436,37 @@ longer exist in that story, at 80% token overlap.
 ### Model adapter
 
 One function in `app/pipeline`: given a stage name and a prompt, it writes the
-prompt to a file, spawns `claude -p` with `--output-format json`, the stage's
-`--model` if configured, and `CLAUDECODE` unset, captures the response, and
-returns the text. Structured pieces of a response are tagged XML elements
-(`<premise>`, `<probability>`, `<reasoning>`, `<vignette>`, `<job>`,
-`<section name="">`), parsed by the stage. A parse failure retries the call
-once and then fails the step with reason `shape`. The adapter is the one seam
-the tests substitute.
+prompt to a file and spawns `claude -p` with `CLAUDECODE` unset and these
+flags: `--output-format json`, `--bare`, `--no-session-persistence`,
+`--tools ""`, `--setting-sources ""`, `--system-prompt <one line per stage>`,
+and the stage's `--model`. Bare mode drops hooks, plugins, skills, MCP, tool
+schemas and both CLAUDE.md files; the simulation measured about 20,000 tokens
+of that per call without it. The per-stage system prompt is stored on the step.
+
+Every stage config has `model` and `fallback_model`. The adapter reads
+`stop_reason` from the JSON:
+
+| outcome | action |
+| :-- | :-- |
+| `end_turn`, parse succeeds | step done |
+| `end_turn`, parse fails | retry once on the same model, then fail `shape` |
+| `refusal` | rerun once on `fallback_model`, record both calls, then fail `refusal` |
+| any other error | fail with the CLI's error text |
+
+Structured pieces of a response are tagged XML elements (`<premise>`,
+`<probability>`, `<how>`, `<vignette>`, `<job>`, `<ending>`,
+`<section name="">`), parsed by the stage. The adapter is the one seam the
+tests substitute.
+
+**Prompt vocabulary rule.** No prompt uses *reason*, *reasoning*, *think*,
+*chain of thought* or asks for a trace of anything. The simulation's outline
+prompt opened "Reason backward from them" and Fable's `reasoning_extraction`
+safeguard refused it twice with zero output; the same prompt with "Derive from
+them" passed. Prompts say *derive*, *state*, *settle*, *name*.
+
+**Length caps everywhere.** Every generation ask states a word cap. The outline
+asks for under 400 words per section; Fable produced 25,000 tokens against an
+uncapped ask where Opus produced 2,400 words.
 
 ### Stage graph
 
@@ -478,7 +544,7 @@ Two seams, no test calls a real model.
 
 **Python extraction CLI.** Run `python -m extract` over the dev subset and the
 salvaged SCP markup fixture. Assert on emitted rows: story count and titles for
-Vol 01 against the outline, one story per contents line for *Contagion*,
+Vol 01 against the outline, the eight named stories for *Contagion*,
 author per story, passages per story within floor and cap, every passage in
 150–400 words on paragraph boundaries, overlap under 50%, no surviving markup
 or scan furniture by grep, six facet columns present, determinism under a fixed
@@ -520,7 +586,9 @@ edit, from inside the worktree, and the turn reports what ran.
 ## Open Questions
 
 - **API path.** When cross-model pooling or a judge is wanted, Anthropic SDK or
-  OpenRouter, and how a key is held. Unblocked by wanting it.
+  OpenRouter, and how a key is held. All calls today run on the claude.ai
+  subscription login through the CLI; the cost figures the CLI reports are
+  notional. Unblocked by wanting it.
 - **Embedding model.** A local sentence-transformers model, exact name pinned
   in the manifest at implementation time after checking what installs cleanly
   on this machine.
@@ -547,7 +615,14 @@ edit, from inside the worktree, and the turn reports what ran.
   by a model per turn; the best model stayed conflict-free 42% of the time over
   20 turns. That argues for a check stage, which is the deferred lore audit.
 - Anthology splitting: 28 of 29 PDFs carry embedded outlines with title and
-  author per story. The old contents-page parser is the fallback, exercised by
-  *Contagion*.
+  author per story. Page-level cues are the fallback, exercised by *Contagion*.
+- **Simulation, 2026-09-04.** The whole stage graph was run by hand in the
+  scratchpad against the dev subset, every model step a `claude -p`
+  subprocess: 274 passages, 24 themes, five premises at 0.04–0.07, five
+  vignettes, auto gate, outline, two context vignettes, ending, packet. 19
+  calls, about six minutes, on a subscription login. Five findings went into
+  this amendment: refusal handling, the Contagion split, contents-page author
+  attribution (already covered by the outline path), per-call overhead, and
+  theme length. The packet read as a story.
 - `research/generation.md` §5 gaps remain gaps: nothing measures horror, tone
   drift is unstudied. The run viewer is where those get measured, by hand.
