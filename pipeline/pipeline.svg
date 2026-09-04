@@ -23,7 +23,7 @@ text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 
 <g class="gray"><rect x="30" y="46" width="290" height="52" rx="4"/>
   <text class="th" x="46" y="68">sources/texts/</text>
-  <text class="ts" x="46" y="86">109 SCP articles · 29 anthology PDFs</text></g>
+  <text class="ts" x="46" y="86">109 SCP articles · 29 PDFs, split per story</text></g>
 <g class="gray"><rect x="360" y="46" width="290" height="52" rx="4"/>
   <text class="th" x="376" y="68">sources/summaries/</text>
   <text class="ts" x="376" y="86">reference registers, read by hand</text></g>
@@ -33,7 +33,7 @@ text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 
 <g class="purple"><rect x="30" y="136" width="290" height="52" rx="4"/>
   <text class="th" x="46" y="158">pipeline harvest</text>
-  <text class="ts" x="46" y="176">overlapping windows, best ~1 per 1,000 words of story</text></g>
+  <text class="ts" x="46" y="176">one story at a time, ~1 per 1,000 words</text></g>
 <g class="purple"><rect x="360" y="136" width="290" height="52" rx="4"/>
   <text class="th" x="376" y="158">pipeline themes --brief</text>
   <text class="ts" x="376" y="176">the grain, plus 8 lines from grain.md</text></g>
@@ -53,7 +53,7 @@ text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 
 <g class="teal"><rect x="30" y="316" width="290" height="52" rx="4"/>
   <text class="th" x="46" y="338">examples.jsonl</text>
-  <text class="ts" x="46" y="356">1,016 passages, verbatim, six scores each</text></g>
+  <text class="ts" x="46" y="356">711 passages so far, verbatim, six scores each</text></g>
 <g class="purple"><rect x="360" y="316" width="290" height="52" rx="4"/>
   <text class="th" x="376" y="338">pipeline themes --ingest</text>
   <text class="ts" x="376" y="356">rejects: proper nouns, deixis, wrong length</text></g>
