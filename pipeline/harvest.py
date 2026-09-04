@@ -66,8 +66,22 @@ def _overlap(a: tuple, b: tuple) -> float:
     return shared / smaller if smaller else 0.0
 
 
-def top_per_doc(passages: list[Passage], limit: int, max_overlap: float = 0.5) -> list[Passage]:
-    """Keep the best `limit` windows per document, without near-duplicates.
+# Passages per thousand words of story, and the band it is clamped to. A flat
+# cap took as much from a 1,200-word article as from a 27,000-word one, which
+# over-samples the short and starves the long. One per thousand words is about
+# a fifth of what a story could yield at 150-400 words a window.
+PER_1000 = 1.0
+MIN_PER_STORY = 3
+MAX_PER_STORY = 30
+
+
+def story_quota(words: int, per_1000: float = PER_1000) -> int:
+    """How many passages a story of this length is worth."""
+    return max(MIN_PER_STORY, min(MAX_PER_STORY, round(words * per_1000 / 1000)))
+
+
+def top_per_story(passages: list[Passage], limit: int, max_overlap: float = 0.5) -> list[Passage]:
+    """Keep the best `limit` windows per story, without near-duplicates.
 
     Overlapping windows are how the harvester avoids missing a passage that
     straddles a paragraph boundary, but three windows from the same starting
@@ -77,6 +91,10 @@ def top_per_doc(passages: list[Passage], limit: int, max_overlap: float = 0.5) -
 
     Without this a 110-article SCP run produces ~42,000 candidates, which is
     not a pool anyone culls; it is a pool that gets abandoned.
+
+    A story is one SCP article, or one story inside an anthology — `read_pdf`
+    splits a collection on its table of contents, so the unit is the same on
+    both sides.
     """
     kept: list[Passage] = []
     for p in sorted(passages, key=lambda x: -x.score):
@@ -103,7 +121,7 @@ def harvest(
     root: str | Path = ".",
     only: list[str] | None = None,
     min_score: float = 0.0,
-    per_doc: int = 12,
+    per_1000: float = PER_1000,
     out: str | Path | None = None,
 ) -> dict:
     root = Path(root)
@@ -128,11 +146,11 @@ def harvest(
             scored = [score(p) for p in windows(d)]
             raw += len(scored)
             scored = [p for p in scored if p.score >= min_score]
-            picked.extend(top_per_doc(scored, per_doc))
+            picked.extend(top_per_story(scored, story_quota(d.word_count(), per_1000)))
         all_passages.extend(picked)
         per_source[src.id] = len(picked)
         print(f"{src.id}: {len(docs)} docs -> {len(picked)} passages "
-              f"(from {raw} windows, best {per_doc}/doc)")
+              f"(from {raw} windows, ~{per_1000:g} per 1000 words)")
 
     added, refreshed = bank.merge(all_passages)
     print(f"\nbank: +{added} new, {refreshed} refreshed, pool now {len(bank.load())}")

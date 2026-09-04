@@ -33,7 +33,7 @@ text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 
 <g class="purple"><rect x="30" y="136" width="290" height="52" rx="4"/>
   <text class="th" x="46" y="158">pipeline harvest</text>
-  <text class="ts" x="46" y="176">overlapping windows, best 12 per doc</text></g>
+  <text class="ts" x="46" y="176">overlapping windows, best ~1 per 1,000 words of story</text></g>
 <g class="purple"><rect x="360" y="136" width="290" height="52" rx="4"/>
   <text class="th" x="376" y="158">pipeline themes --brief</text>
   <text class="ts" x="376" y="176">the grain, plus 8 lines from grain.md</text></g>

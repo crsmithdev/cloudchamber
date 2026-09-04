@@ -97,10 +97,40 @@ _LINE_JOIN = re.compile(r"(?<![.!?:;\"”'’])\n(?!\s*\n)(?=[a-z(\"“'])")
 
 
 def _reflow(text: str) -> str:
+    """Rebuild paragraphs from hard-wrapped lines.
+
+    These conversions keep no indentation and put no blank line between
+    paragraphs, so a page arrives as thirty lines all starting at column zero
+    and the whole page became one block. `segment.windows` wants 150-400
+    words, so a 600-word block yielded exactly one truncated passage and most
+    of the prose was never seen.
+
+    The tell is ragged-right: every line inside a paragraph runs to the
+    measure, and only the last one falls short. So a line that ends a sentence
+    *and* stops well before the measure ends a paragraph; anything else is a
+    continuation.
+    """
     text = _HYPHEN_BREAK.sub(r"\1\2", text)
-    # Join lines that clearly continue a sentence; leave real breaks alone.
-    text = _LINE_JOIN.sub(" ", text)
-    return text
+    lines = [l.rstrip() for l in text.split("\n")]
+    widths = sorted(len(l) for l in lines if l.strip())
+    if not widths:
+        return text
+    measure = widths[int(len(widths) * 0.9)]
+    if measure < 20:                       # not wrapped prose; leave it alone
+        return _LINE_JOIN.sub(" ", text)
+
+    paras: list[list[str]] = [[]]
+    for line in lines:
+        st = line.strip()
+        if not st:
+            if paras[-1]:
+                paras.append([])
+            continue
+        paras[-1].append(st)
+        ends_sentence = st.endswith((".", "!", "?", '"', "”", "’", "'"))
+        if ends_sentence and len(st) < measure * 0.85:
+            paras.append([])
+    return "\n\n".join(" ".join(p) for p in paras if p)
 
 
 # --- front / back matter --------------------------------------------------
@@ -136,36 +166,98 @@ def _is_matter(chunk: str) -> bool:
 
 _TITLE_LINE = re.compile(r"^\s{0,20}([A-Z][A-Za-z' ,:!?-]{2,60})\s*$")
 _BYLINE = re.compile(r"^\s*(?:by\s+)?([A-Z][a-z]+(?:\s+[A-Z][a-zA-Z.'-]+){1,3})\s*$")
+# A contents line: "Lowland Sea—Suzy McKee Charnas". Em dash, not hyphen.
+_TOC_LINE = re.compile(r"^\s*(.{2,70}?)\s*[—–]\s*([A-Z][^\d]{2,40})\s*$")
+# An opener's title and byline are set in caps at the top of the page.
+_CAPS_LINE = re.compile(r"^\s*([A-Z][A-Z' ,:!?.\u2019-]{2,60})\s*$")
+
+
+def _norm(s: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", s.lower())
+
+
+def _toc(pages: list[str]) -> list[str]:
+    """Story titles from a table of contents, in order.
+
+    Two forms. An anthology lists `Title—Author`, which is unmistakable. A
+    single-author collection has no bylines to list, so its contents page is a
+    header and then bare titles — looser, and only trusted on a page that says
+    it is the contents.
+    """
+    titles: list[str] = []
+    for page in pages[:40]:
+        lines = [l.rstrip() for l in page.splitlines() if l.strip()]
+        pairs = [m.group(1).strip() for m in
+                 (_TOC_LINE.match(l) for l in lines) if m]
+        if len(pairs) >= 4:
+            titles += pairs
+            continue
+        # `T C` / `ABLE OF ONTENTS` is how a drop cap survives extraction, so
+        # match on the letters rather than on the words.
+        head = _norm(" ".join(lines[:3]))
+        if "contents" in head or "ableofontents" in head:
+            for l in lines[1:]:
+                # Dot leaders and a page number: "A HANGING . . . . . . 41".
+                l = re.sub(r"[\s.·…]{4,}\s*\d*\s*$", "", l).strip()
+                w = l.split()
+                if 1 <= len(w) <= 10 and not l.endswith((",", ";", ":")):
+                    titles.append(l)
+    seen, out = set(), []
+    for t in titles:
+        n = _norm(t)
+        if n and n not in seen and len(n) > 2:
+            seen.add(n); out.append(t)
+    return out
 
 
 def _split_stories(pages: list[str]) -> list[tuple[str, str, str]]:
-    """Best-effort split of an anthology into (title, author, text).
+    """Split an anthology into (title, author, text), one entry per story.
 
-    Looks for a short page that is a title line optionally followed by a
-    byline, which is how these conversions render story openers. When nothing
-    matches, returns one section for the whole file — which is correct for a
-    novel and merely coarse for an anthology.
+    Two strategies. If the book has a table of contents, a page whose first
+    line is one of its titles opens that story — precise, and it survives the
+    typography changing between the contents and the body. Otherwise a page
+    that opens with a title line and a byline starts a section.
+
+    The old rule required the opening page to be nearly empty, on the theory
+    that a story starts on a title page. In these conversions it does not: the
+    title, the byline and the first page of prose share a page, so the rule
+    matched almost nothing and a 418-page anthology came back as three
+    sections, one of them 190,000 words. A novel still returns one section,
+    which is correct.
     """
+    wanted = {_norm(t): t for t in _toc(pages)}
     sections: list[tuple[str, str, list[str]]] = []
+
     for page in pages:
         lines = [l for l in page.splitlines() if l.strip()]
-        head = lines[:4]
         title = author = ""
-        if 1 <= len(lines) <= 12 and head:
-            m = _TITLE_LINE.match(head[0])
-            if m and len(m.group(1).split()) <= 9:
-                title = m.group(1).strip()
-                for l in head[1:3]:
-                    b = _BYLINE.match(l)
+        if lines:
+            first = lines[0].strip()
+            if wanted:
+                # Once only. A collection repeats every title in its story
+                # notes and again in an index, and each repeat would open a
+                # second section for a story already read.
+                hit = wanted.pop(_norm(first), None)
+                if hit:
+                    title = hit
+                    if len(lines) > 1:
+                        b = _BYLINE.match(lines[1]) or _CAPS_LINE.match(lines[1])
+                        if b:
+                            author = b.group(1).strip().title()
+            else:
+                m = _TITLE_LINE.match(first) or _CAPS_LINE.match(first)
+                if m and len(m.group(1).split()) <= 9 and len(lines) > 1:
+                    b = _BYLINE.match(lines[1]) or _CAPS_LINE.match(lines[1])
                     if b:
-                        author = b.group(1).strip()
-                        break
-        if title and (author or len(lines) <= 4):
+                        title, author = m.group(1).strip(), b.group(1).strip().title()
+
+        if title:
             sections.append((title, author, []))
         if sections:
             sections[-1][2].append(page)
         else:
             sections.append(("", "", [page]))
+
     return [(t, a, "\n\f\n".join(p)) for t, a, p in sections]
 
 

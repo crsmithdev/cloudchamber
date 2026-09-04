@@ -33,8 +33,9 @@ def main(argv=None):
     h = sub.add_parser("harvest", help="extract passages from sources into the bank")
     h.add_argument("--only", nargs="*", help="source ids to run")
     h.add_argument("--min-score", type=float, default=0.0)
-    h.add_argument("--per-doc", type=int, default=12,
-                   help="best N passages per source document (default 12)")
+    h.add_argument("--per-1000", type=float, default=1.0, dest="per_1000",
+                   help="passages per 1000 words of story (default 1.0, "
+                        "clamped to 3-30 per story)")
 
     f = sub.add_parser("facets", help="score the pool on Biber D1-D6")
     f.add_argument("--refit", action="store_true",
@@ -73,7 +74,7 @@ def main(argv=None):
 
     if a.cmd == "harvest":
         harvest_mod.harvest(root, only=a.only, min_score=a.min_score,
-                            per_doc=a.per_doc, out=out)
+                            per_1000=a.per_1000, out=out)
 
     elif a.cmd == "facets":
         facets_mod.score(root, out=out, refit=a.refit, extremes=a.extremes)

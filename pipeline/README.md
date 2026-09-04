@@ -31,7 +31,8 @@ python -m pipeline.selftest              # verify the code works after a sync
 `harvest` then `facets`, in that order: a Biber dimension is a z-score against
 the whole pool, so it cannot be computed one passage at a time on the way past.
 
-Scope a harvest with `--only scp datlow`. Scope a draw with `--facet involved`
+Scope a harvest with `--only scp datlow`; `--per-1000` sets how many
+passages a story is worth (default 1.0 per thousand words, clamped to 3–30). Scope a draw with `--facet involved`
 (a voice, a mode, or a whole cell like `involved/narrative`), `--order-by`,
 `--seed`.
 
@@ -101,12 +102,16 @@ listing them. A labelled record was tried and rejected: it has nowhere to put
 the turn, and two records will not combine the way the ideation step needs two
 entries to.
 
-## Why generous
+## Why generous, and per story
 
 The harvester over-produces. Windows overlap, and a passage with no facet at
-all still enters the pool. That is the intended division of labour: recall is
-the machine's job, precision is Chris's. A harvester tuned for precision would
-be making the taste call, which is the one call it must not make.
+all still enters the pool. Recall is the machine's job.
+
+**The unit is one story**, not one file. For SCP that is an article; for an
+anthology it is one story inside it, split on the book's table of contents.
+Each story is worth about one passage per thousand words, floored at 3 and
+capped at 30 — a flat cap took as much from a 1,200-word article as from a
+27,000-word one, which over-samples the short and starves the long.
 
 ## Facets
 
