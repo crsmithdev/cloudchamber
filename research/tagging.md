@@ -1,171 +1,285 @@
-# TAGGING — established practice for classifying passages
+# TAGGING — labelling prose so the labels mean something
 
-*What the literature actually offers for the job `extracted/` does: labelling
-prose passages along axes that (a) describe how they read and (b) can be
-checked for coverage. Compiled 2026-09-03. The six failure tags then in
-`pipeline/signals.py` were coined in one session on 2026-09-02 and were
-grounded in nothing below; this document is the alternative.*
-
-*Adopted 2026-09-03. Recommendations 1, 4 and 5 are implemented —
-`pipeline/biber.py` and `pipeline facets`. Recommendation 3 (focalization) is
-not: the voice axis is D1's, and an LLM annotator has not earned a place next
-to it. Recommendation 6 (validate against `decisions.jsonl`) is waiting on
-verdicts to validate against.*
-
-***Recommendation 2 was overruled the same day.** It says to score D1 and D2
-only and "do not adopt D3-D6 without evidence they discriminate in this
-corpus". All six are now scored. The reasoning was that the corpus is about to
-stop being this corpus: everything below was fitted to 947 SCP containment
-documents, and the anthology PDFs are several times larger and are fiction. A
-dimension that fails to discriminate documents is not thereby shown to fail on
-fiction, and the cost of carrying four extra numbers until Part 3 tests them is
-four columns in a JSONL file. Measured on the SCP pool, none of the six is
-redundant — the largest correlation between any two is -0.53, between D1 and
-D3, which share the nominalisation feature by construction.*
+What published work supports for the job of putting axes on prose passages:
+labels that describe how a passage reads, that can be checked for coverage, and
+that a second party could reproduce. Research pass 2026-09-04. Sources only —
+nothing here is fitted to any particular corpus, and every figure carries the
+work it came from.
 
 ---
 
-## 1. Biber's Multi-Dimensional Analysis — the standard framework
+## 1. The frameworks that already exist
 
-The established empirical method for exactly this problem. Biber (1988,
-*Variation across Speech and Writing*) factor-analysed 67 linguistic features
-across a register-diversified corpus and extracted six dimensions. Features
-that co-occur define a dimension; a text scores on each.
+### 1.1 Register dimensions — the default, and the only one with 35 years of replication
+
+Biber factor-analysed 67 lexico-grammatical features across a
+register-diversified corpus and extracted dimensions from what co-occurs. Six
+dimensions, each a scale rather than a category, and a text scores on all of
+them.
 
 | dimension | positive pole | negative pole |
 | :-- | :-- | :-- |
-| **D1 Involved vs Informational** | private verbs, contractions, present tense, 1st/2nd person, discourse particles | nouns, prepositions, attributive adjectives, long words |
-| **D2 Narrative vs Non-narrative** | past tense, 3rd person, perfect aspect, public verbs | context-dependent discourse markers |
-| **D3 Context-independent vs -dependent reference** | wh-relatives, nominalisations, phrasal coordination | time/place adverbials, general adverbs |
-| **D4 Overt persuasion** | infinitives, prediction modals, suasive verbs, conditionals, necessity modals | — |
-| **D5 Abstract vs Non-abstract** | conjuncts, agentless passives, past participial clauses, by-passives | — |
-| **D6 On-line informational elaboration** | that-clauses as complements, demonstratives, that-relatives | — |
+| **D1** involved vs informational | private verbs, contractions, present tense, 1st/2nd person, discourse particles | nouns, prepositions, attributive adjectives, long words |
+| **D2** narrative vs non-narrative | past tense, 3rd person, perfect aspect, public verbs | context-dependent discourse markers |
+| **D3** context-independent vs -dependent reference | wh-relatives, nominalisations, phrasal coordination | time and place adverbials, general adverbs |
+| **D4** overt persuasion | infinitives, prediction modals, suasive verbs, conditionals | — |
+| **D5** abstract vs non-abstract | conjuncts, agentless passives, past participial clauses, by-passives | — |
+| **D6** on-line informational elaboration | that-complements, demonstratives, that-relatives | — |
 
-**This reproduced in the Fog Belt corpus.** Running a PCA over grammatical
-features (pronoun person, tense, nominalisation, passives, sentence variance —
-chosen *not* to match the six tags, so the test is not circular) across 944 SCP
-passages gives a first dimension at 25% of variance loading on first/second
-person and short words against nominalisation, prepositions and long words.
-That is D1. The third dimension — third person, connectives, progressives
-against necessity modals — is D2. D1 is the most robust and most replicated
-finding in register studies; getting it out of this corpus is a good sign that
-the method transfers.
+D1 is the most replicated result in register studies; substantially the same
+factor recovers across corpora and across languages.
 
-**Caveat worth holding.** Biber's dimensions were derived to separate *wildly*
-different registers — conversation from academic prose. Fog Belt's corpus is
-narrow by comparison. D1 clearly still discriminates here; D3–D6 may not.
+The modern implementation is worth knowing about. **NeuroBiber** predicts 96
+Biber-style features (the original 67 plus 29 later ones) at ~117,000 tokens per
+second, up to 56× faster than existing open-source taggers, recovers Biber's D1
+as a principal component on the CORE corpus, and scores F1 0.77 on PAN 2020
+authorship verification against 0.78 for a fine-tuned RoBERTa bi-encoder. Free,
+with a rule-based fallback library.
 
-### Tooling, all free
+**The caveat that matters when transferring it.** The dimensions were derived to
+separate *wildly* different registers — conversation from academic prose. Inside
+one genre the higher dimensions may not discriminate at all. Whether they do is
+an empirical question about the corpus in hand, answerable by checking the
+pairwise correlations and the spread on each dimension before trusting any of
+them.
 
-- **MAT (Multidimensional Analysis Tagger)**, Nini — replicates Biber's tagger,
-  computes all six dimension scores, and assigns each text to one of Biber's
-  eight text types. Implements the same 67 features.
-- **BiberPlus / Neurobiber**, Jurgens et al. (arXiv 2502.18590) — `pip install
-  biberplus`, plus a transformer that predicts **96 Biber-style features** at
-  ~117k tokens/sec, macro-F1 0.97. On authorship verification it matches a
-  fine-tuned bi-encoder (F1 0.77 vs 0.78) while staying interpretable.
-- **pybiber** (browndw), **biberpy** (ssharoff) — alternative implementations.
+> Biber, *Variation across Speech and Writing*, 1988 · Alkiek, Wegmann, Zhu &
+> Jurgens, *NeuroBiber*, arXiv:2502.18590, February 2025.
 
-*Neither pip nor the Cowork VM could reach PyPI when this was written (proxy
-403). Install from your own terminal.*
+### 1.2 Style embeddings — similarity without topic
 
----
+A separate line learns representations of *how* text is written that are
+deliberately independent of *what* it is about, trained contrastively on the
+distinction "same author or just same topic." StyleDistance supervises this
+directly with synthetic parallel examples varying lexis and syntax under fixed
+content, and ships a benchmark of 40 content-controlled style axes; a 2026
+benchmark suite now aggregates the field. Reported finding worth noting for cost
+reasons: purpose-built embeddings beat LLM prompting at authorship
+representation at a fraction of the compute.
 
-## 2. Genette's focalization — for "who is speaking"
+Use for: "do these two passages read alike," decoupled from "are these two
+passages about the same thing." Not usable for naming *what* the style is —
+these are coordinates, not labels.
 
-Narratology's standard answer to the voice question, and the one axis where an
-LLM annotator is demonstrably good enough.
+> Wegmann et al. 2022 · *StyleDistance*, arXiv:2410.12757 · *STEB*,
+> arXiv:2606.31741.
 
-- **internal** — from a character's perspective; their thoughts and knowledge
-- **external** — an outside narrator; actions, behaviours, settings only
-- **zero** — omniscient, from every perspective
+### 1.3 Narratological axes — focalization is the one that automates
 
-*Says Who? Effective Zero-Shot Annotation of Focalization* (arXiv 2409.11390)
-reports GPT-4o at **F1 84.8%** against human consensus, self-consistent at
-α=0.94 and robust to prompt variation at α=0.74. The number that matters more:
-**trained human annotators only reach Krippendorff's α of 0.55–0.65** on this
-task. Focalization is genuinely hard and genuinely fuzzy, and a model matching
-human consensus is matching a noisy target. Use it, but do not expect a clean
-partition.
+Focalization is the restriction of narrative information to what some
+consciousness can access: **internal** (through a character), **external**
+(observed from outside), **zero** (omniscient). It is a real axis, it is
+annotatable, and it is now automatable.
 
----
+Hicke et al. built 256 evaluation excerpts and 300 training samples from 16
+novels. Trained human annotators reached Krippendorff α 0.55 in the first round
+and 0.65 in the second. Zero-shot GPT-4o scored **F1 84.79%**, self-consistent at
+α 0.94 across runs, and α 0.74 across six prompt variants. Model confidence
+correlated with the cases humans found hard.
 
-## 3. Appraisal theory — for stance and evaluation
+Read that table carefully, because it contains the general lesson for every
+model-assigned label in this document: **the model is far more self-consistent
+than the humans and no more correct.** α 0.94 against itself and 0.85 F1 against
+them. Consistency is not validity — §2.2 makes the same point with a much larger
+sample.
 
-Martin & White (2005), *The Language of Evaluation*. Three systems: **attitude**
-(affect, judgement, appreciation), **engagement** (how other voices are
-admitted), **graduation** (force and focus — turning evaluation up or down).
+> Hicke, Bizzoni, Feldkamp & Kristensen-McLachlan, *Says Who?*, arXiv:2409.11390.
 
-This is the established scheme for what `warm-mechanism` was reaching at:
-warmth as an evaluative stance laid over harm. Graduation in particular is
-close to the flatness signal already in `signals.py`.
+### 1.4 Appraisal — the framework for evaluative stance, and it is hard to annotate
 
-**Recommend against adopting it.** Reliable appraisal annotation is notoriously
-difficult — there is a whole ACL workshop paper on the challenges
-(aclanthology.org/2024.isa-1.17). The scheme is fine-grained, the categories
-are contested at their boundaries, and inter-annotator agreement is the
-standing problem. It is a research programme, not a tagging pass.
+Appraisal theory (systemic functional linguistics) decomposes evaluative
+language into three systems: **Attitude** (affect, judgement, appreciation),
+**Engagement** (how a text positions other voices), and **Graduation** (force —
+intensity or amount; focus — prototypicality).
 
----
+The annotation literature is candid that Attitude is where reliability breaks
+down: identifying which spans are evaluative at all, and then sorting affect from
+judgement from appreciation, is the documented difficulty. Stepwise protocols
+exist specifically to contain it.
 
-## 4. In-context learning: how demonstrations are actually chosen
+Adopt it for the vocabulary, which is better than anything ad hoc. Do not
+adopt it expecting agreement to come free.
 
-The most decision-relevant literature, because selecting *k* examples to
-condition a generator is exactly what `pipeline draw` does. From *In-context
-Learning with Retrieved Demonstrations: A Survey* (arXiv 2401.11624):
+> *Annotating Evaluative Language*, ISA workshop at LREC-COLING 2024,
+> aclanthology 2024.isa-1.17.
 
-- **Similarity-based retrieval dominates the field**, but it is the wrong tool
-  here — there is no query to be similar to. Fog Belt draws a set to establish
-  register, not to match an instance.
-- **Diversity helps**, specifically for "avoiding repetitive demonstrations"
-  and "bringing different perspectives", and it matters most when the model is
-  unfamiliar with the output space — which is the Fog Belt case exactly.
-- **Established diversity methods**: determinantal point processes (DPP),
-  **clustering retrieval — cluster, then take one per cluster**, and
-  coverage-based selection over words or syntactic structures.
-- **Set-level beats instance-level.** Picking each demonstration independently
-  "might not yield the best combination"; iterative selection conditioned on
-  what is already chosen does better.
-- **Ordering is a large effect.** Performance ranges "from near-random to
-  state-of-the-art depending on the order" of demonstrations.
+### 1.5 Sentiment and emotion arcs — a proxy, and known to be one
 
-### What this says about the current pipeline
+Valence sequences over a text are cheap and reveal structure that plot summary
+does not. The critical survey literature in computational literary studies is
+also clear that they measure a proxy: irony, free indirect discourse and
+figurative language are exactly where the measurement degrades, and those are
+not incidental features of literary prose. Transformer-based scoring improves
+this over lexicon methods without removing the objection.
 
-`sample.py --coverage` — one per tag bucket before any bucket gets a second —
-**is** clustering retrieval, the established diversity method. The design is
-right; only the buckets are unfounded. Replace tag buckets with clusters over
-Biber features and the method becomes both principled and self-derived.
+Usable as a coarse shape. Not usable as the ground truth for anything.
 
-**The unhandled finding is ordering.** `sample.py` renders the drawn set in
-whatever order the picker produced. The literature says that alone can move
-results from near-random to best-in-class. Nothing in the pipeline controls it,
-and every packet in `extracted/packets/` should record it.
+> Kim & Klinger, *A Survey on Sentiment and Emotion Analysis for Computational
+> Literary Studies* · *Sentiment Analysis in Literary Studies: A Critical
+> Survey*, DHQ 17.2.
 
 ---
 
-## Recommendation
+## 2. What is known about letting a model do the labelling
 
-1. **Substrate**: Biber features, via BiberPlus, instead of 22 hand-rolled
-   lexical signals. Validated, interpretable, one `pip install`.
-2. **Facets**: score D1 and D2, the two that demonstrably replicate here.
-   Bucket into terciles for coverage. Do not adopt D3–D6 without evidence they
-   discriminate in this corpus.
-3. **Voice**: focalization (internal / external / zero) as an LLM-annotated
-   field, if the voice axis earns its place — with the α=0.55–0.65 human
-   ceiling written down next to it.
-4. **Selection**: keep coverage sampling, re-base the buckets on clusters, and
-   **fix ordering** — make it explicit, recorded, and eventually tested.
-5. **Do not adopt appraisal theory** as a tagging scheme.
-6. **Validate against `decisions.jsonl`**, not against argument. Once a few
-   hundred verdicts exist, check which facet predicts a keep. Anything that
-   predicts nothing gets dropped.
+### 2.1 It is competent and cheap, and its agreement is only moderate
+
+The largest comparison of LLM and human span annotation — quality assessment,
+translation error location, propaganda technique identification, 40,000+
+released annotations — finds LLMs reach only *moderate* inter-annotator
+agreement with humans, while making errors **at a rate similar to skilled
+crowdworkers**, at a fraction of the cost per annotation.
+
+Both halves are load-bearing. The error rate says a model annotator is not
+obviously worse than the humans usually hired for this. The agreement says you
+cannot treat its labels as the humans' labels.
+
+> Kasner, Zouhar, Dušek et al., *LLMs as Span Annotators*, MME workshop 2026,
+> aclanthology 2026.mme-main.1.
+
+### 2.2 Reliability is not validity, and the usual statistics hide the gap
+
+The largest systematic audit to date — 21 judges from 9 providers, 3 benchmarks,
+118 runs, ~541,000 individual judgments — separates *consistency of output* from
+*correctness of judgment* and finds them decoupled:
+
+| finding | figure |
+| :-- | :-- |
+| test–retest reliability coexisting with severe position bias | >0.95 alongside >0.10 |
+| worst case: near-perfect stability, highest position bias | 0.992 / 0.192 |
+| exact-match accuracy overstates chance-corrected agreement | by 33–41 points |
+| judge rank shift across benchmarks | up to 14 positions |
+| verbosity bias, contra the 2023 literature | <0.011 correlation |
+
+Three rules fall straight out. Report chance-corrected agreement, never exact
+match. Never validate an annotator on one benchmark. And a stable annotator is
+not thereby a good one — stability is the thing a broken annotator has most of.
+
+> Norman, Rivera & Hughes, *Reliability without Validity*, arXiv:2606.19544,
+> June 2026.
+
+### 2.3 Closed label sets collapse
+
+Given a fixed label vocabulary and an instruction to use all of it, models
+concentrate predictions on a narrow subset anyway — named and benchmarked as
+instruction-induced label collapse. The instruction does not fix it; it is a
+property of the annotator, not of the prompt.
+
+Practical consequence: **a label distribution is a diagnostic, not an
+afterthought.** If one label carries most of the rows, the vocabulary is not
+discriminating, and no amount of reading individual labels will reveal that.
+
+> *MultiSoc-4D*, arXiv:2605.06940, May 2026.
+
+### 2.4 There is a published procedure for deciding whether to allow it at all
+
+Rather than arguing about it: a statistical procedure exists that determines
+whether an LLM can justifiably replace human annotators *for a given task*,
+along with reproducibility standards (fixed prompts, model versions, comparison
+across prompts and models, released annotations) and field guidelines for
+research use. The recurring recommendation is the same everywhere: label a human
+sample first, compute chance-corrected agreement against it before shipping the
+rubric, and re-sample periodically because the annotator drifts.
+
+> Carlson et al., *Strategic Management Journal* 2026 · *To Err Is Human; To
+> Annotate, SILICON?*, arXiv:2412.14461.
+
+---
+
+## 3. Disagreement is data
+
+The perspectivist line in NLP treats annotator disagreement as signal rather
+than noise, and distinguishes three things usually conflated: **disagreement**
+(observable label variability), **subjectivity** (interpretive dependence on the
+annotator), and **reliability** (an annotator's consistency, independent of their
+stance). A shared task now runs on learning from unaggregated labels — soft label
+distributions, or alignment to specific annotators' viewpoints.
+
+The design consequence for any axis that is a matter of taste: **majority-voting
+to a single label destroys precisely the information the axis exists to
+capture.** Keep the distribution. Low agreement on a subjective axis is a finding
+about the axis, not a defect in the annotators.
+
+> LeWiDi-2025 at NLPerspectives, arXiv:2510.08460 · *Perspectives in Play*,
+> arXiv:2506.20209.
+
+---
+
+## 4. If the labels exist to choose demonstrations
+
+A common downstream use of passage labels is picking few-shot examples. The
+selection literature does not say "pick the most similar ones."
+
+- **Diversity beats similarity on hard work.** Diversity-aware selection wins on
+  complex generation, on out-of-distribution queries and on the harder items
+  within a task; pure top-k similarity wins on simple classification. The split
+  is by task difficulty, not by preference.
+- **Coverage has a formal footing.** Framing selection as conditional mutual
+  information maximisation is monotone submodular, which derives diversity as a
+  consequence rather than as a heuristic.
+- **Correct examples can still hurt.** Task alignment of the demonstration set
+  matters independently of whether the demonstrations are right.
+
+> *The Role of Diversity in In-Context Learning*, arXiv:2505.19426 · *When
+> Correct Demonstrations Hurt*, arXiv:2605.26350 · example selection via
+> conditional mutual information, Springer 2026.
+
+---
+
+## 5. Design rules that follow
+
+1. **Prefer scales to categories.** Every framework with a replication record
+   here — register dimensions, style embeddings, graduation — is continuous.
+   Invented categorical tag sets have neither a derivation nor a coverage test.
+2. **Prefer deterministic features where they exist.** A counted feature costs
+   nothing, does not drift, and does not need a validation sample. Spend the
+   model on what cannot be counted.
+3. **Validate before adopting, on the corpus in hand.** Dimensions derived to
+   separate conversation from academic prose are not thereby informative within
+   one genre. Check spread and inter-dimension correlation.
+4. **Every model-assigned label needs three things**: a human-labelled sample
+   with chance-corrected agreement against it, a usage histogram over the label
+   vocabulary, and a re-check for drift.
+5. **Never report exact-match agreement.** It overstates by 33–41 points.
+6. **Do not aggregate away disagreement on subjective axes.**
+7. **Self-consistency is not evidence of correctness.** It is compatible with
+   being consistently wrong, and the largest audits find exactly that pairing.
+
+---
+
+## 6. Gaps
+
+- **Nothing here validates a scheme on horror or on genre fiction.** The
+  focalization work uses one novelist's corpus; the register work uses
+  register-diversified reference corpora; the appraisal work uses news and
+  institutional discourse.
+- **No published guidance exists on how many dimensions are too many** for a
+  narrow corpus, beyond "check whether they discriminate."
+- **The perspectivist and the LLM-annotator literatures barely talk to each
+  other.** Whether a model can be prompted to emit a *distribution* matching
+  human disagreement — rather than a confident single label — is open.
+- **Style embeddings are unlabelled by construction.** Nothing found this pass
+  maps a point in a style space back to a term a person would use, which is what
+  a legible axis requires.
+
+---
 
 ## Sources
 
-- Biber, D. (1988) *Variation across Speech and Writing*. Dimensions as tabulated in Nini, *The Multidimensional Analysis Tagger* — https://andreanini.com/wp-content/uploads/2019/06/pre-print-the-multidimensional-analysis-tagger.pdf
-- Biber, D. (1993) *Using Register-Diversified Corpora for General Language Studies* — https://gawron.sdsu.edu/functions_of_language/course_core/readings/using_register_diversified_corpora_biber-93.pdf
-- Alkiek, K. et al. (2025) *Neurobiber: Fast and Interpretable Stylistic Feature Extraction* — https://arxiv.org/html/2502.18590v1 · code https://github.com/davidjurgens/biberplus · https://pypi.org/project/biberplus/
-- pybiber — https://browndw.github.io/pybiber/ · biberpy — https://github.com/ssharoff/biberpy
-- *Says Who? Effective Zero-Shot Annotation of Focalization* — https://arxiv.org/html/2409.11390
-- Martin, J.R. & White, P.R.R. (2005) *The Language of Evaluation: Appraisal in English* · challenges — https://aclanthology.org/2024.isa-1.17.pdf
-- Luo, M. et al. (2024) *In-context Learning with Retrieved Demonstrations for Language Models: A Survey* — https://arxiv.org/html/2401.11624v1
+Biber, *Variation across Speech and Writing*, CUP 1988 ·
+Alkiek, Wegmann, Zhu & Jurgens, *NeuroBiber* — https://arxiv.org/abs/2502.18590 ·
+*StyleDistance* — https://arxiv.org/abs/2410.12757 ·
+*STEB: Style Text Embedding Benchmark* — https://arxiv.org/abs/2606.31741 ·
+Hicke, Bizzoni, Feldkamp & Kristensen-McLachlan, *Says Who? Effective Zero-Shot Annotation of Focalization* — https://arxiv.org/abs/2409.11390 ·
+*Annotating Evaluative Language: Challenges and Solutions in Applying Appraisal Theory* — https://aclanthology.org/2024.isa-1.17/ ·
+Kim & Klinger, *A Survey on Sentiment and Emotion Analysis for Computational Literary Studies* — https://arxiv.org/abs/1808.03137 ·
+*Sentiment Analysis in Literary Studies: A Critical Survey*, DHQ 17.2 — https://www.digitalhumanities.org/dhq/vol/17/2/000691/000691.html ·
+Kasner, Zouhar, Dušek et al., *LLMs as Span Annotators* — https://aclanthology.org/2026.mme-main.1/ ·
+Norman, Rivera & Hughes, *Reliability without Validity* — https://arxiv.org/abs/2606.19544 ·
+*MultiSoc-4D: Diagnosing Instruction-Induced Label Collapse* — https://arxiv.org/abs/2605.06940 ·
+*To Err Is Human; To Annotate, SILICON?* — https://arxiv.org/abs/2412.14461 ·
+Carlson et al., *The use of LLMs to annotate data in management research*, Strategic Management Journal 2026 — https://sms.onlinelibrary.wiley.com/doi/10.1002/smj.70023 ·
+*LeWiDi-2025 at NLPerspectives* — https://arxiv.org/abs/2510.08460 ·
+*Perspectives in Play* — https://arxiv.org/abs/2506.20209 ·
+Xiao, Zhao & Huang, *The Role of Diversity in In-Context Learning* — https://arxiv.org/abs/2505.19426 ·
+Qiu, Peng, Yang, Huang & Zhou, *When Correct Demonstrations Hurt* — https://arxiv.org/abs/2605.26350

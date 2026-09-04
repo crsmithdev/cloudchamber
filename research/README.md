@@ -1,18 +1,18 @@
-# research — what the project has concluded
+# research — what the published record supports
 
-Not sources. Nobody wrote these about a book; the project wrote them about its
-own problem, or collected them as evidence for how the work should be done.
+**Everything in this folder comes from research sources only.** These are
+literature reviews, not project documents: each one surveys published work on a
+problem the anthology has, states what the evidence supports, and marks what it
+does not. Nothing here describes this repository, depends on anything outside
+this folder, or is fitted to a particular corpus. Figures carry the work they
+came from, and figures that could not be verified against the source say so.
 
 | file | what it is |
 | :-- | :-- |
-| `craft.md` | the evidence behind playbook §1 and §6 — eight parts, 74 failure modes with the authority attached, and a verification ledger of what is corrected, refuted, and still to be checked in print |
-| `generation.md` | why a generation call is shaped the way it is — mode collapse and where it comes from, what raises output diversity and by how much, why negations decay with distance from the ask, why examples beat instructions on register |
-| `register.md` | the genre terms §0 stands on — grimdark, cosmic horror, the eerie, the abject, body horror, the Aristotle constraint — with the citations §0 does not carry |
-| `setting-a.md` | the specifics behind playbook §5 — fifteen domains of setting-a statutes, bodies, dates, cases. Written in-house and meant to grow |
-| `literature.md` | academic work on what makes horror land. `sources.toml` reads this for themes and never for passages: criticism conditions for criticism |
-| `corpus.md` | award-attested horror free to read online, with the licensing map. Held as a standard to read *against* — deliberately not in `sources/`, and never harvested |
-| `tagging.md` | established practice for classifying passages -- Biber's multi-dimensional analysis and its tooling, Genette focalization, appraisal theory, and what the in-context-learning literature says about choosing a demonstration set. The grounding the six failure tags never had, and the basis of the facets that replaced them on 2026-09-03 |
-| `themes.md` | why the theme extractor produces sentences rather than themes, measured over the 432 banked rows, and what the field does instead -- topic modelling, keyphrase extraction, Braun & Clarke thematic analysis and its LLM-assisted forms, TnT-LLM taxonomy induction, motif detection, frame semantics, propositions. Ends in a rebuild recommendation for `pipeline/themes.py` |
-| `selection.md` | design for the selection stage. **Not built.** The harvest and example-bank stages it assumed are now `pipeline/`; this one is still paper |
+| `generation.md` | why a generation call is shaped the way it is — that diversity collapse is fixed at training rather than at sampling, that the specific failure in fiction is premature resolution, what raises batch diversity and by how much, why negation and long sessions are the wrong instruments, and why no scoring model makes the final cut |
+| `literature.md` | on what grounds horror and SF are judged, and which of those grounds survive translation into an instruction to a blind judge — the convergent criticism, then the evidence that an LLM judge cannot reliably measure the criterion those traditions care most about |
+| `tagging.md` | how to label prose so the labels mean something — register dimensions, style embeddings, focalization, appraisal, and what is known about letting a model do the labelling: moderate agreement, label collapse, and reliability that is not validity |
+| `themes.md` | what a theme is under four incompatible definitions, why extractive methods cannot produce one, what motif indexing and taxonomy induction actually achieve, and why topic-coherence metrics rank backwards against human judgement |
 
-`literature.md` is the only file here the pipeline reads.
+Read `literature.md` and `generation.md` together: they reach the same
+conclusion about model-scored judgement from opposite directions, independently.

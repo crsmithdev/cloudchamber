@@ -1,94 +1,31 @@
-# PLAN — what is left
+OK we are going to create an ideation pipeline for a story generation using the techniques listed in the Generation file in sources/research/generation.md.  To do this we are going to need at least two things. We're going to need the ability to extract examples from texts that are in the sources/horror and sources/scifi directories. This will include both Markdown documents such as the files in sources/horror/scp, and PDF documents that are the rest of the files in there.  These are generally short stories or articles that are the length of short stories, and many of the PDFS are anthologies of multiple short stories. O we need to be able to extract an appropriate amount of example content from each story, in a way that is appropriate for the length of each . We don't want to just take random symbols of a few pieces of text In anthologies, we need to be able to parse that file into individual stories and select text from each story . We also need to be able to extract themes from these stories , according to the instructions in themes.md.  We'll also be tagging what we extract in terms of examples according to the content of tagging.md.  
 
-*Working document. Much of what this file described was built and then
-deliberately removed on 2026-09-03: the decision layer, the reviewers, the
-settings, and the playbook. What follows is trimmed to what is still true.
-`git log` is the record of the rest.*
+Initially, for development , we're just going to use a subset of the content of the horror directory, which means take a couple anthology PDFS and take a few SCP articles, otherwise this will just take far too long while doing development. 
 
----
+Examples extracted and themes generated are obviously going to vary in quality.  Initially this is fine and we'll just use whatever we extract during development, but ultimately I'm going to want to cull What gets generated. We'll also need to probably go through cycles of regenerating things, and there's going to need to be a way to save at least what's been rejected in previous passes that I've made. So if I rejected an example passage, but we need to regenerate all the examples because of say some artifacts that needed to be fixed in generation, beyond a certain point we'll need to have that information about what was called so a bunch of work doesn't have to be redone again. This will also be used in the future possibly For other future unspecified learning or training needs we want that record of what is given a thumbs up or a thumbs down.
 
-## Removed, to be re-added later
+There will ultimately be constraints on things that are generated and by that I mean if you look in the sources directory there's a settings folder. This is going to be used to restrict generated ideas to fit within certain narrative settings so that includes established lore Settings from games like setting-c and setting-b . But it also includes real environments like the setting-a , which the current stories that have been ideated in the Stories folder are set within . So it should be possible to both generate stories in an unrestricted way so any horror or sci-fi story without restriction, or generate say a setting-b story that fits within the lore there. You might need to do some research on ways to do this part specifically I don't think this was covered in the existing research. So let's build this in initially though we'll just do unrestricted stories for the first round of testing and development.
 
-The cull. Keep, pass and maybe, the append-only trail, the terminal reviewer
-(triage / compare / ledger) and the browser one, and `pipeline export`. Both
-banks are pools as they stand. Passage ids are content-derived, so verdicts
-recorded later still attach to the same passages.
+Ultimately a lot of the driving of this is going to be done through a skill with you, and obviously models have to be involved certain points in the process.
 
-## Still to do
+I am going to want a UI for this that does a couple things. One it should be the way in which I accept or reject themes and examples, So it should present an easy and quick way for me to go through these and accept or reject them. It also needs to have a way of flagging for artifacts, particularly in example extraction; I think this will be less of a thing for theme extraction, but I suppose that's possible too. And I want an easy way to browse through all of them that we've extracted as well. Finally there needs to be a way that I can visualize and see what's going on at every stage of the generation pipeline. SO for example when we're doing idea generation we produce a distribution and sample the tail, so I want to be able to see what's in that distribution What could sample and what gets rejected . Anything that happens from the initial request to the whatever is actually produced should be visible there so it's kind of like a workflow visualization .
 
-### Part 3 — validate, then prune
+We need to be able to implement most of what is in the generation document but what we're going to start with is this:
 
-Blocked on the decision layer coming back, and then on ~200 verdicts:
+- Select some number of examples that we've previously extracted
+- Select a seed, which is either an extracted theme, or something directly specify
+- You will generate a distribution and sample the tail from that
+- You will Write 400 words of whatever is selected (Also perhaps it's you'll write 400 words of everything and then sample that i'm not entirely clear on how this works so we'll have to figure it out)
+There will be a gate at that point that's either me proving that 400 word vignette basically , or it will just auto approve and continue to the next step
+- You'll build a reverse outline from that which will help figure out the rest of the story backwards
+- You'll write a couple other vignettes to fill some context
+- And then you'll derive the ending
+- That will get wrapped up into a packet that is basically the seed for a potential story, though it is not the story itself.
 
-1. Which facet, if any, predicts a keep? Test it. Split by `method` first —
-   different review modes are not the same evidence and the trail should say
-   which produced each row.
-2. Refit `register_score` weights against keeps and passes instead of the
-   hand-set constants. Everything in it is still asserted.
-3. Refit the render order in `sample.py` the same way. `--order-by d1` is a
-   default, not a finding.
-4. Drop anything that predicts nothing — including the facets, if they don't.
+For now we'll stop here, although there will be additional parts to this which are basically red teaming and fact checking The packet itself , and then actually writing the story from the packet. So expect that this will happen but we're not going to do it immediately right now. The UI will eventually need to support this.
 
-This is the point of the append-only trail. Nothing above is right because it
-is well-founded; it is right if it predicts Chris.
+Before starting let's go through the gaps on the generation document there are four of them Umm there were at least two papers that didn't get extracted and we should figure that out . Also let's go through the other items in Section 3 And see where and how we can incorporate them even though we're starting now with a simplified version. And I also want you to make sure that when I instructing you to do is actually correct as far as what is there in the research and not a misunderstanding. 
 
-### Harvest the PDFs
+Important to note there aren't really any filters on this right now, and don' and don't build any automatically from Anything in the Stories folder that's already been ideated.
 
-Never done. Only SCP has ever been harvested, and every number in
-`pipeline/README.md` is fitted to 947 SCP passages. When it happens:
-
-- ~~`pdftotext` or `pdfplumber` must be installed.~~ **`pdfplumber` 0.11.10 is
-  now installed** in the user site-packages, and `read_pdf.py` runs. A sample
-  harvest of one Chiang volume on 2026-09-03 produced clean prose with the page
-  furniture stripped.
-- **Story splitting is the open problem, not extraction.** That volume yielded
-  *two* docs — the whole book plus its story-notes — rather than one per story,
-  so `--per-doc 12` caps an entire collection at twelve passages instead of
-  twelve per story. Recall across the PDF corpus will be badly short until
-  `_split_stories` is looked at.
-- **Re-read the D3-D6 table in `pipeline/README.md` afterwards.** Those four
-  dimensions were added *for* this harvest. Their numbers there describe 947
-  containment documents and are not evidence about fiction.
-- **Refit afterwards.** `pipeline facets --refit --extremes 5`. The pool grows
-  several-fold and a baseline fitted on documents does not describe fiction.
-  `facets` warns when the pool has drifted more than 20% from the fitted `n`,
-  but the warning is not the decision.
-- Re-read the extremes. They are how the last two stripper bugs were found.
-
-
-## Environment gotchas that will waste time otherwise
-
-- **`biberplus` is installed here but will not be everywhere.** The adapter
-  falls back and says which backend is live on every `facets` run. Over the
-  SCP pool the two agree at r = 0.96 on D1 down to r = 0.68 on D5; the table
-  is in `pipeline/README.md`. **The two are not interchangeable within one
-  corpus**: `facet-stats.json` records the backend and `facets` refits rather
-  than mixing them.
-- **An import is not proof biberplus works.** It installs cleanly without its
-  spaCy model and then raises on the first passage. `biber.probe()` runs one
-  and downgrades once, loudly.
-- **`biberplus` 0.4.0's `calculate_tag_frequencies` is broken under numpy 2**
-  (`np.array_split` over a DataFrame returns bare arrays; the function
-  swallows the error and returns `None`). `biber.py` counts the per-token tags
-  from `tag_text` itself and does not call it.
-- **Python on the Cowork VM is 3.10** — no `tomllib`, so `sources.toml` is
-  ignored and `pipeline/sources.py` DEFAULTS are used instead. It prints a
-  warning. Keep the two in sync or install `tomli`.
-- **Google Drive sync leaves a zero-byte `.git/index.lock`** that blocks every
-  git command. Safe to `rm` when no git process is running.
-
----
-
-## Still open, and needing a human
-
-- **`seeding-v7.md` refers seven times to `playbook-v2.md`, which never existed
-  in this repo.** `playbook.md` itself has now been retired too, so the
-  references point at nothing twice over. Its §-numbered citations never
-  matched playbook.md's sections either — the comparison is in
-  `git show 014d679:PLAN.md`. Needs a human decision: repoint, rewrite, or cut.
-
-- The Chiang *Exhalation* and adjacent-Watts analysis was deleted with the
-  annexes on 2026-09-03 and has no replacement in `sources/texts/`. Recoverable
-  from git history if wanted.
-- The PDFs are tracked in git (96 MB, largest 19 MB). Fine for GitHub's limits,
-  permanent once pushed. Check repo visibility before `git push`.
+There may be other gaps in the research here There may be areas that could benefit from a web search to see how other people do this with a IS and LL miss in ways that current research that's been done already here hasn't covered .

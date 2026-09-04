@@ -1,11 +1,11 @@
 # Evaluating Horror and SF: What the Literature Supports
 
-A literature review for the anthology evaluation harness. The question is not "how is horror written" but
+A literature review on judging horror and SF premises. The question is not "how is horror written" but
 "on what grounds is it judged," and specifically: which of those grounds survive translation into an
 instruction given to a blind judge panel.
 
-Bottom line up front: **the criticism gives you more than expected, and the computational literature gives
-you worse news than expected.** There is a real, convergent, centuries-old set of criteria for what makes
+Bottom line up front: **the criticism offers more than expected, and the computational literature offers
+worse news than expected.** There is a real, convergent, centuries-old set of criteria for what makes
 a horror premise good. There is also strong published evidence that an LLM judge cannot reliably measure
 the single criterion those traditions care most about — surprise/novelty — and that it is systematically
 biased toward the fluent, conventional text that every one of those traditions calls failure. The protocol
@@ -13,7 +13,7 @@ in §4 is built around that conflict.
 
 ---
 
-## 1. What the criticism actually gives you
+## 1. What the criticism actually offers
 
 ### 1.1 The claims that operationalise
 
@@ -58,9 +58,9 @@ exists *only* for the duration of the uncertainty; resolving it collapses the wo
 ([overview](https://jahsonic.com/TheFantastic.html))
 
 *Judge-ready: partially.* "Does this premise sustain hesitation, or does it resolve on contact?" is a good
-question. But note the structural problem for your harness: Todorov's criterion is about the *duration* of
-an effect across a text, and a premise has no duration. You can only ask whether the premise *affords*
-hesitation. Be honest that this is a proxy.
+question. But note the structural problem for any judging protocol: Todorov's criterion is about the
+*duration* of an effect across a text, and a premise has no duration. The answerable question is only whether
+the premise *affords* hesitation, which is a proxy and should be labelled one.
 
 **Fisher — the weird and the eerie.** The weird: "a weird entity or object is so strange that it makes us
 feel that it should not exist, or at least it should not exist here" — and crucially, the wrongness is in
@@ -81,7 +81,7 @@ ambiguous, the composite."
 [quotes](https://www.supersummary.com/powers-of-horror/important-quotes/))
 
 *Judge-ready: yes, in its negative form.* Kristeva's own sentence is explicitly a rejection of gross-out as
-the criterion — abjection is not filth, it is boundary violation. That gives you a clean instruction for
+the criterion — abjection is not filth, it is boundary violation. That yields a clean instruction for
 distinguishing a premise that violates a category from one that is merely disgusting. Use the contrast, not
 the theory.
 
@@ -132,8 +132,8 @@ monstrous, are strangers to the purpose of Tragedy." Plus: "We must not demand o
 of pleasure, but only that which is proper to it."
 ([Poetics XIV](https://monadnock.net/aristotle/poetics-14.html))
 
-*Judge-ready: yes, as your best anti-gross-out instrument, and it is 2,300 years older than the problem it
-solves.* The *miaron* distinction — shocking rather than moving, spectacle substituting for structure — is
+*Judge-ready: yes — the best anti-gross-out instrument in the review, and 2,300 years older than the problem
+it solves.* The *miaron* distinction — shocking rather than moving, spectacle substituting for structure — is
 exactly the failure mode of an LLM generator reaching for intensity. The third quote is also the strongest
 available argument for *genre-relative* judging: do not ask whether the premise is good writing, ask whether
 it delivers the pleasure proper to horror.
@@ -169,7 +169,7 @@ Carroll's impurity (category jamming), Kristeva's abjection ("what does not resp
 rules... the in-between, the ambiguous, the composite"), and Fisher's weird ("it is our conceptions that
 must be inadequate") are three independent arrivals at the same claim from analytic aesthetics,
 psychoanalysis, and cultural theory respectively. Note that Kristeva and Carroll agree on the *negative*
-too: neither thinks disgust or filth is the criterion. **This is your strongest single criterion.**
+too: neither thinks disgust or filth is the criterion. **This is the strongest single criterion here.**
 
 **C2 — Structure beats spectacle; the shocking is not the horrifying.**
 Aristotle's *miaron* exclusion (c. 335 BCE), Radcliffe's terror/horror distinction (1826), and the
@@ -182,8 +182,8 @@ shock is a failed premise.**
 **C3 — Withheld explanation is productive; absent explanation is not.**
 Radcliffe's obscurity-vs-confusion, Todorov's sustained hesitation, and Fisher's eerie (an unresolved
 question of agency, not an unasked one) all distinguish deliberate withholding from vagueness. This
-convergence is valuable because it names the *near-miss*, and near-misses are what your generator will
-produce most of.
+convergence is valuable because it names the *near-miss*, and near-misses are what a generator produces
+most of.
 
 **C4 — The novum must have consequences.**
 Suvin's cognition requirement, Clute's Thickening (the Sighting is a sentence; the Thickening is the text),
@@ -194,8 +194,8 @@ with no plot").
 
 **C5 — Judge against the genre's proper pleasure, not against literary quality in general.**
 Aristotle ("not any and every kind of pleasure, but only that which is proper to it"), Suvin (SF quality is
-SF-specific), and Joshi (the weird tale judged as a weird tale) agree. Practical consequence: **do not ask
-your panel whether the premise is "good." Ask whether it is good *horror*.** A generic quality question is
+SF-specific), and Joshi (the weird tale judged as a weird tale) agree. Practical consequence: **a panel should
+not be asked whether the premise is "good," but whether it is good *horror*.** A generic quality question is
 the single easiest way to import an LLM judge's bias toward polished, conventional, well-formed prose.
 
 ---
@@ -233,7 +233,7 @@ agent 43.3%. Human experts reached only 56.1% balanced accuracy themselves (vs. 
 evaluating ideas without seeing actual experiment results." They explicitly caution against trusting LLM
 evaluation for this task.
 
-**This is the single most important finding in the review, because the task in that paper is your task:
+**This is the single most important finding in the review, because the task in that paper is the same task:
 blind evaluation of unexecuted premises.**
 
 ### 3.2 Self-preference, and why it points the wrong way for horror
@@ -251,8 +251,8 @@ told which output is its own.
 **A low-perplexity preference is, definitionally, a preference for the expected.** Every criterion in §2 —
 Carroll's category violation, Fisher's "our conceptions must be inadequate," Suvin's estrangement, Radcliffe's
 obscurity — rewards text the model finds *unlikely*. The judge's bias runs directly opposite to the
-criterion. This is not a nuisance bias to be averaged out; it is anti-correlated with the thing you are
-measuring.
+criterion. This is not a nuisance bias to be averaged out; it is anti-correlated with the thing being
+measured.
 
 *Mitigation:* self-preference cannot be fixed by telling the judge to be fair (it operates without
 self-recognition). Use judges from a different model family than the generator, and treat cross-family
@@ -278,16 +278,16 @@ to 77.5% (Zheng et al., Table 12). **Never run a single-order pairwise compariso
 Zheng et al.'s "repetitive list attack" — lengthening answers without adding content — fooled GPT-3.5 and
 Claude-v1 91.3% of the time and GPT-4 8.7% of the time.
 
-More alarming for a premise harness, *Pairwise or Pointwise?*
+More alarming for premise judging, *Pairwise or Pointwise?*
 ([arXiv:2504.14716](https://arxiv.org/html/2504.14716v1)) introduces **"distracted evaluation"**: injecting
 stylistic distractors (assertiveness, prolixity, sycophancy) flipped **pairwise** preferences ~35% of the
 time versus ~9% for absolute scoring. Pairwise judges also refuse ties — 2.4–7.3% tie rates on
 objectively-equivalent responses, against 84.6–93.2% identical scores under absolute scoring.
 
-*Mitigation:* truncate/normalise length before judging (EQ-Bench caps at 4,000 characters). More importantly
-for you: **normalise premise style before judging.** Si et al. did exactly this — an LLM rewrote all ideas
+*Mitigation:* truncate/normalise length before judging (EQ-Bench caps at 4,000 characters). More important
+still: **normalise premise style before judging.** Si et al. did exactly this — an LLM rewrote all ideas
 into a uniform style, after which experts could distinguish AI from human ideas at 50% (chance). Without
-this, you are measuring prose polish.
+this, what is measured is prose polish.
 
 ### 3.5 Judge self-inconsistency
 
@@ -302,7 +302,7 @@ not raw accuracy, which inflates. Note their caveat that disabling temperature s
 
 ### 3.6 The pairwise-vs-absolute question is genuinely contested
 
-Do not let anyone tell you this is settled. The evidence splits **by rater type**:
+This is not settled, whatever is claimed for either side. The evidence splits **by rater type**:
 
 - **For human raters, pairwise is more reliable.** Six radiologists rating CT image quality: ICC 0.785
   (pairwise) vs 0.665 (Likert) on a high-variation set, and 0.562 vs 0.276 on a low-variation set — i.e.
@@ -328,8 +328,10 @@ criteria (Relevance, Coherence, Empathy, Surprise, Engagement, Complexity). Two 
 - Human inter-annotator agreement itself was only ICC2k 0.29 (Coherence) to 0.56 (Complexity) — "fair" to
   "moderate," and the authors note this is normal for NLG evaluation.
 
-**Design consequence:** your harness is more trustworthy as a comparator of playbook variants across many
-premises than as a verdict on any single premise. Say so in the harness's own documentation.
+**Design consequence:** a judge panel is more trustworthy as a comparator of generator configurations across
+many premises than as a verdict on any single premise — and this is a claim about coarsely different
+generators, not about telling two near-identical prompt variants apart. Say so wherever the protocol is
+documented.
 
 ### 3.8 Homogenisation
 
@@ -337,7 +339,7 @@ LLM generations converge on a narrow plot distribution
 ([PNAS 2025, "Echoes in AI"](https://www.pnas.org/doi/10.1073/pnas.2504966122);
 [Homogenizing effect of LLMs on creative diversity](https://www.sciencedirect.com/science/article/pii/S294988212500091X);
 [arXiv:2508.01491](https://arxiv.org/html/2508.01491v2)). Combined with §3.2 (judges prefer low perplexity),
-generator and judge push in the same direction: toward the middle. A harness with no explicit
+generator and judge push in the same direction: toward the middle. A protocol with no explicit
 diversity term will converge and the scores will *rise* as it does.
 
 *Mitigation:* measure inter-premise diversity as a **batch-level metric outside the judge** (embedding
@@ -403,7 +405,7 @@ cliché" — the latter is a novelty judgment and falls under §3.1.
 - **"Did you find this frightening / how much dread did you feel?"** Confabulated affect report. Lovecraft's
   test is not implementable.
 - **"Is this good?" / "Rate overall quality 1–10."** Invites the low-perplexity/polish bias directly
-  (§3.2), and violates C5. If you need a scalar, derive it from §4.1, don't ask for it.
+  (§3.2), and violates C5. A scalar, if one is needed, should be derived from §4.1 rather than asked for.
 - **Fine-grained scales (1–10).** Not reproducible across runs ([arXiv:2510.27106](https://arxiv.org/html/2510.27106v1)).
 - **Any single-order pairwise comparison.** §3.3.
 
@@ -416,8 +418,8 @@ Given the contested evidence in §3.6:
 - **Use pairwise comparison only for same-construct head-to-heads within a matched pair**, with ties
   explicitly permitted and encouraged, both orders run and averaged. Ties must be allowed because §3.4 shows
   LLM pairwise judges manufacture spurious distinctions (2.4–7.3% tie rates on identical-quality items).
-- **Use absolute scoring for nothing that matters.** If you want a leaderboard across playbook variants,
-  build it from aggregated binary rates, which is also where HANNA says automatic evaluation is actually
+- **Use absolute scoring for nothing that matters.** A leaderboard across generator configurations is better
+  built from aggregated binary rates, which is also where HANNA says automatic evaluation is actually
   reliable (system-level, not item-level — §3.7).
 
 ### 4.5 Protocol mechanics
@@ -433,7 +435,7 @@ Given the contested evidence in §3.6:
 | Diversity (§3.8) | Batch-level embedding dispersion, computed outside the judge |
 | Validation | Hold out a human-rated calibration set; if judge–human α < ~0.4, the construct is not measurable — retire it |
 
-That last row is the important one. **Build the human calibration set first.** Without it you cannot
+That last row is the important one. **The human calibration set comes first.** Without it there is no way to
 distinguish a working judge from a confidently wrong one, and every number above says confidently wrong is
 the default state.
 
@@ -455,12 +457,12 @@ Stated plainly, so nobody builds on sand:
    are both properly validated — and both measure **persons, not texts.** MCS measures a stable disposition
    that predicts horror fandom (β = 0.48); it does not score a story. Do not repurpose either as a rubric;
    that would be an unvalidated use of a validated instrument, which is worse than an honest ad-hoc scale.
-3. **How good the finished story will be.** You are judging premises. Si et al.'s follow-up
+3. **How good the finished story will be.** The object judged is a premise. Si et al.'s follow-up
    ([The Ideation–Execution Gap, arXiv:2506.20803](https://arxiv.org/abs/2506.20803)) found that ideas
    rated more novel before execution *did not* retain their advantage once executed. Premise quality is a
    weak predictor of executed quality, in the one domain where this has been measured end-to-end.
 4. **Any single premise's absolute quality.** HANNA: item-level metric correlation is weak; system-level is
-   strong. The harness can rank playbook variants. It should not be quoted on individual premises.
+   strong. A judge panel can rank generator configurations. It should not be quoted on individual premises.
 5. **The ceiling.** Human experts agreed only 56.1% on idea quality
    ([arXiv:2409.04109](https://arxiv.org/html/2409.04109)); human raters on story criteria reached ICC2k
    0.29–0.56 ([HANNA](https://aclanthology.org/2022.coling-1.509/)). **A judge that agrees with humans more

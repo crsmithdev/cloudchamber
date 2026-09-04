@@ -1,190 +1,333 @@
-# GENERATION — what shapes the model's output before craft gets a vote
+# GENERATION — what shapes a generation call
 
-*Compiled 2026-09-02. In-house, like `setting-a.md` — written here rather than distilled from a source annex.*
-
-**Where this sits.** `craft.md` is the human evidence behind playbook §1 and §6: how writers generate and kill premises. `research/literature.md` is the evidence behind judging, and is explicitly downstream of generation — no generator reads it. This file is the third leg and the one that was missing: what the machine does to a premise before craft has any say, and what can be done about it at the point of the call.
-
-It does not grade anything and it is not a rubric. Playbook §1 says what to think about. This says how to sample. The two are orthogonal and both are needed: §1 run through a default generation call produces competent premises, which is the failure mode this file exists to name.
-
-All load-bearing claims below were checked against primary sources on 2026-09-01. Where a number could not be confirmed it is marked and not used.
+Evidence on getting unusual, unresolved and genuinely dark premises out of a
+language model. Research pass 2026-09-04. Every figure traces to the source
+named beside it; where a figure came from a paper's body rather than its
+abstract, or from a summary rather than the paper, it says so.
 
 ---
 
 ## 1. The mechanism
 
-### 1.1 Typicality bias, not ignorance
+### 1.1 The collapse is trained in, not sampled in
 
-Mode collapse originates in the *preference data*, not the algorithm and not the base model. Human annotators rating RLHF pairs systematically prefer familiar-sounding text — a documented mere-exposure effect. The tuned model inherits that preference as a concentration of probability mass on the genre centre.
+Karouzos, Tan & Aletras traced diversity loss through post-training on OLMo 3
+across three recipes, 15 tasks and four diversity metrics. The chain-of-thought
+recipe loses most of its semantic diversity at supervised fine-tuning; the
+broad instruct recipe loses more of it at DPO. The control that settles it:
+suppressing chain-of-thought at inference dropped accuracy on hard tasks and
+left answer-level diversity **unchanged**. Their conclusion — diversity collapse
+is determined during training by data composition and cannot be addressed at
+inference time alone.
 
-The consequence is the reason any of this is actionable: **the strange material is still in the model.** What was damaged is default sampling behaviour, not representation. A bland premise is evidence about the call, not about the ceiling.
+Everything below is therefore about *which part of an already-flattened
+distribution a call reaches*. No decoding knob restores what training removed,
+and a document that promised otherwise would be promising the wrong thing.
 
-The corollary rule: sampling can prove the presence of knowledge but not its absence.
+> arXiv:2604.16027, April 2026.
 
-> Zhang, Yu, Chong, Sicilia, Tomz, Manning, Shi — *Verbalized Sampling*, arXiv:2510.01171
+### 1.2 Where the flattening comes from, and what survives it
 
-### 1.2 It is worse in tuned models, and worse in fiction
+Typicality bias in the preference data: annotators rating pairs prefer text that
+sounds familiar, and the tuned model inherits that preference as mass piled on
+the genre centre. The representation is not destroyed, only the default route to
+it. Direct evidence that it survives: asking a model to verbalize a
+*distribution* rather than produce a sample recovers about **66.8%** of the base
+model's diversity, with no training, at every post-training stage measured.
 
-An information-theoretic comparison across 28 models against professional short fiction: human prose carries **2.03–3.9× higher token-level surprisal** and 2.76–8.82× higher perplexity than matched model continuations. The gap is wider in creative writing than in functional text. Instruction-tuned and reasoning models deviate *further* from human writing than their own base counterparts — the assistant persona is part of the problem, not the cure.
+The rule that follows is worth stating flatly. **A bland batch is evidence about
+the call, not about the ceiling.** Sampling proves presence, never absence.
 
-Same work: an inverted-U between entropy and judged quality. Too predictable is boring, too high-entropy is incoherent. Weirder is not monotonically better; the target zone simply sits well above the default.
+> Zhang, Yu, Chong, Sicilia, Tomz, Manning & Shi, *Verbalized Sampling*,
+> arXiv:2510.01171 — ICML 2026 poster.
 
-> Sui, arXiv:2602.16162. Preprint, no accepted venue as of checking.
+### 1.3 Different vendors are not different enough to substitute for this
 
-### 1.3 Temperature does not fix it
+Wenger & Kenett ran three divergent-thinking tests over 22 models and 102
+people. Population-level variability, models against humans: alternate uses
+0.459 vs 0.738, forward flow 0.534 vs 0.835, divergent association 0.665 vs
+0.819, effect sizes 1.4–2.2. Jiang et al. reach the same shape from the other
+side, naming intra-model repetition and inter-model homogeneity together over
+26K open-ended queries with 31,250 human annotations.
 
-RLHF'd models can go near-deterministic — over 99% confidence on specific tokens *even at high temperature*. The collapse is in the shape of the logit distribution, not in how it is sampled. Turning the dial cannot recover a flattened tail.
+A practitioner benchmark makes it concrete for fiction: ~15,347 flash stories
+from 29 models, and the spread in within-model style diversity across the whole
+field is 0.171 to 0.218. All of them converge on past tense at roughly 100% and
+on linear chronology at 82–99%, while differing substantially on dialogue
+volume and paragraphing.
 
-The diagnostic worth keeping: an over-optimised sentiment reward model once taught a policy that describing a wedding party maximised reward, and it would abandon a story mid-telling — scene break and all — to get to one. A model swerving toward resolution mid-generation is that mechanism. A stronger instruction is not the fix.
+That last pair of numbers is the useful one. The axes where every model agrees
+are the axes worth taking away from it by hand; the axes where they already
+vary need no help.
 
-> Janus, *Mysteries of Mode Collapse*, LessWrong 2022.
+> Wenger & Kenett, arXiv:2501.19361, January 2025 · Jiang et al., *Artificial
+> Hivemind*, arXiv:2510.22954, NeurIPS 2025 D&B (oral) · Mazur, *writing_styles*,
+> stories generated December 2025.
 
-### 1.4 Why this bears on §0 specifically
+### 1.4 The failure that matters here: premature resolution
 
-The pull toward redemption, exposure and resolution is the same distributional concentration expressed as narrative shape. Which means the two properties `research/literature.md` identified as **house conventions rather than universals** — the absent impossibility and the added reckoning — are exactly the two the model will erode without being asked to. The haiku run found a reader will not supply them and will not miss them. This file says the generator will not supply them either, and will actively drift off them, and that instructions are the weakest available instrument against that drift.
+Sui et al. measure narrative tension as unpredictability. At each sentence
+boundary a model generates 100 candidate endings and a judge decides whether
+each matches the real continuation; the fraction that do not is the *no-rate*.
+
+| | professional fiction | top-10 LLMs |
+| :-- | :-- | :-- |
+| mean no-rate | 0.765 | 0.630 |
+| late-stage no-rate | 0.607 | 0.215 |
+| tension retained after a peak | 52% | 23% |
+
+The late-stage row is the finding. Model stories resolve their uncertainty
+early and coast; the gap at the end is nearly three-to-one. And the same
+stories under a conventional creative-writing rubric score **81–84 against
+professional fiction's 78.7** — the rubric ranks it backwards.
+
+It is reachable without being asked for. Structured generation under
+constraints drawn from literary theory moved one frontier model from 0.606 to
+0.747, closing about half the gap.
+
+The same bias at arc level, from a separate line of work: gradual-fall arcs are
+14.6% of human narratives and 1.3% of GPT-4's; the fall-rise-fall arc 9.3%
+against 1.7%; gradual-rise 4.4% of human stories against 13.0% of generated
+ones. Their summary is that model stories are "homogeneously positive and lack
+tension."
+
+> Sui, Zhu, Cheng, West, So, Long & Holtzman, arXiv:2604.09854, April 2026 ·
+> Tian et al., EMNLP 2024, arXiv:2407.13248 (arc percentages are body figures).
+
+### 1.5 Negation is the wrong instrument
+
+Instructing a model not to mention X requires internally activating X, and
+under load the suppression inverts. Circuit tracing puts early layers on
+suppression and middle layers on amplification. Semantic distractors produce
+the strongest rebound; mere repetition the weakest. Released with a 5,000-item
+negation benchmark.
+
+> *Don't Think of the White Bear*, arXiv:2511.12381.
+
+### 1.6 Constraints decay by turn two, and not through forgetting
+
+DriftBench: 38 briefs with hard constraints and banned moves, 24 domains, seven
+current models, 2,146 scored runs. Models restate the constraints back at
+near-perfect accuracy and violate them anyway — a knows-but-violates rate of
+**8% to 99%** depending on model, under identical prompts. **74% of violations
+appear by turn 2.** Under pressure all seven inflate structure, from 9.7 to 14.6
+methodological components. Structured checkpointing helps unevenly (55%→36% on
+one model, 93%→92% on another).
+
+Forgetting does not explain this; the recall probes rule it out. Instruction
+arbitration or late-turn compliance does.
+
+Caveat kept in view: the domain is scientific briefs, not tone. Reading it as
+"a register instruction will not hold across a long session" is an inference,
+and it is flagged as one in §5.
+
+> Kruthof, arXiv:2604.28031, May 2026.
 
 ---
 
-## 2. The evidence, with numbers
+## 2. The ledger
 
 | Finding | Figure | Source |
 | :-- | :-- | :-- |
-| Five AI story ideas raised judged novelty; AI-assisted stories grew more similar to each other | +8.1% | Doshi & Hauser, *Science Advances* 2024 |
-| Ten divergent AI personas preserved story diversity vs a human-only baseline. Within one persona, cosine ≈0.92; across personas, ≈0.20 | 0.92 → 0.20 | Wan & Kalman, arXiv:2504.13868 (preprint) |
-| ChatGPT users' ideas less distinct *from each other* than users of the Oblique Strategies deck. No individual-level gain | 0.24 vs 0.28 | Anderson, Shah & Kreminski, ACM C&C 2024 |
-| Users felt less responsible for AI-aided ideas than card-deck-aided ideas | 48% vs 64% | same |
-| LLM research ideas rated more novel than expert human ideas at pitch stage — ranking **flipped** after execution | −1.05 vs −0.01 | Si, Hashimoto & Yang, arXiv:2506.20803 |
-| Exposure to one AI example raised fixation and produced fewer ideas, less variety, lower originality than no AI at all | below baseline | Wadinambiarachchi et al., CHI 2024 |
-| Best of 35 prompting strategies for idea diversity was chain-of-thought decomposition; persona prompting middling | 0.255 vs human 0.243 | Meincke, Mollick & Terwiesch, arXiv:2402.01727 |
-| Verbalized sampling — asking for a distribution and sampling its tail — vs direct prompting, creative writing, no quality loss | 1.6–2.1× | Zhang et al., arXiv:2510.01171 |
-| Negative instruction can raise the probability of the forbidden content; worse with more intervening context | r ≈ 0.44 | Mann et al., arXiv:2511.12381 |
-| Best off-the-shelf LLM judge agreement with human creative-writing preference | 73% | LitBench, arXiv:2507.00769 |
-| Min-p sampling's diversity claim: significant in 1 of 12 comparisons after correction; 2–10× more tuning than its baselines | 1 / 12 | Schaeffer, Kazdan & Denisov-Blanch, arXiv:2506.13681 — **disputed, do not cite the original** |
+| Diversity collapse is fixed at training by data composition; inference-time suppression of CoT left answer diversity unchanged | — | arXiv:2604.16027 |
+| Verbalized distribution vs direct prompting, creative writing, quality held | 1.6–2.1× | arXiv:2510.01171 |
+| Same, share of base-model diversity recovered post-training | 66.8% | same |
+| Model stories vs professional fiction, late-story unpredictability | 0.215 vs 0.607 | arXiv:2604.09854 |
+| Rubric score for the same comparison — inverted against the metric | 81–84 vs 78.7 | same |
+| Structured constraint-driven generation, one frontier model, mean no-rate | 0.606 → 0.747 | same |
+| Gradual-fall arcs, human corpus vs GPT-4 | 14.6% vs 1.3% | arXiv:2407.13248 |
+| Cross-model output variability vs human, three divergent-thinking tests | 0.46–0.67 vs 0.74–0.84 | arXiv:2501.19361 |
+| Style-diversity spread across 29 models writing flash fiction | 0.171–0.218 | writing_styles |
+| Unique idea combinations: default prompting / +CoT / +ordinary personas / both / humans | 83 / 152 / 193 / **248** / 197 | arXiv:2602.20408 |
+| Fixation slope: default / CoT / personas alone / both / humans (higher is less fixated) | 1.013 / 1.363 / **0.876** / 1.086 / 1.035 | same |
+| First-idea spread, humans vs models — the collective-knowledge gap | 9.17 vs 5.88 | same |
+| Knows-but-violates rate across seven models on hard constraints | 8–99% | arXiv:2604.28031 |
+| Share of constraint violations occurring by turn 2 | 74% | same |
+| Best off-the-shelf LLM judge agreement with human creative preference | 73% | LitBench |
+| Purpose-trained reward models on the same test set | 78% | same |
+| People shown AI examples during ideation: fewer ideas, less variety, lower originality than people shown nothing | below baseline | CHI 2024, N=60 |
 
-**The one that governs the rest.** The AI novelty advantage exists only in the un-executed abstract and inverts once ideas are built. A premise that reads as novel in a list is not the same object as a premise that survives being written. No pitch-stage rubric substitutes for cheap partial execution — which is the same conclusion `research/literature.md` reaches from the judging side, arrived at independently.
-
-**Not settled.** Two results complicate the homogenisation story rather than confirming it. A dynamic experiment with 844 participants and iterated idea chains found high AI exposure *increased* collective diversity over time and reversed a decline that occurred without AI (Ashkinaze et al., CI 2025, arXiv:2401.13481). And the persona result above shows diversity is recoverable. Honest summary: homogenisation is a property of one-shot designs where everyone sees the same suggestions, not an inevitable property of assistance.
-
----
-
-## 3. What to do about it, in order of return
-
-### 3.1 Ask for a distribution, not a list
-
-The highest-return change and the cheapest. Verbalizing a distribution is a different task from sampling one, and instruction-tuning damaged the second far more than the first. Measured at 1.6–2.1× diversity on creative writing with no quality cost, and the gain is **larger** on more capable models — this is not a crutch for a weak one.
-
-The paper's recommended form, verbatim:
-
-> Generate 5 responses to the user query, each within a separate `<response>` tag. Each `<response>` must include a `<text>` and a numeric `<probability>`. Please sample at random from the tails of the distribution, such that the probability of each response is less than 0.10.
-
-Two details make it bite. A stated ceiling — without one the model reports 0.4 and calls it a tail. And an explicit exclusion of the modal response, because "sample the tail" alone is a suggestion the model can satisfy nominally.
-
-Second-order benefit: the stated probability is a free triage signal. High confidence means near the centre whatever the premise claims about itself.
-
-### 3.2 Draw constraints; do not let the model choose them
-
-Left to itself the model reaches for the same handful of moves every time, and will report having chosen deliberately. §2's seventy-eight numbered moves are already a morphological box with seventy-eight columns; what is missing is that the draw happens outside the model.
-
-Precedent worth noticing: the Oblique Strategies deck — 1975, paper — beat ChatGPT on group-level idea distinctness in a controlled study. Randomness sourced outside the generator is doing real work there, and it is the same work here.
-
-If a drawn move looks impossible against the seed, that is the interesting case rather than a reason to redraw.
-
-### 3.3 Condition register with examples, never with instructions
-
-The pull toward resolution is structural (§1.4). Instructions are the weakest instrument against it; hand-written examples are the strongest documented one. Three rules, all load-bearing:
-
-- **Never model-written.** Model-generated examples regress to exactly the mean the technique exists to escape, and the failure is invisible on inspection.
-- **Strongest last.** Recency carries disproportionate behavioural weight in a few-shot set.
-- **Match the input's tone to the examples'**, or the model treats them as decoration.
-
-Independent convergence: examples that visibly diverge *from each other* also pull a model out of a collapsed mode, by showing it live evidence that its one-true-answer assumption is wrong. So they do two jobs — set register, break collapse.
-
-**A caution specific to this repo.** `craft.md`, `catalogue.md` and playbook §2 are *criticism and taxonomy*. Few-shot conditioning acts on form, so feeding those in as examples conditions the model to produce more criticism and taxonomy — more named moves, more confident craft-talk. That is a thing an LLM is already too good at, and a plausible explanation for generated premises that read as competent rather than disturbing. The example slot wants 150–400 words of prose that simply *is* the register, with no framing.
-
-The corpus for that already exists in `refs/` — the Datlow volumes, Evenson, Langan, Watts, Chiang — plus the SCP material behind the `[S]` tag. Harvesting it is a passage-extraction job, not a writing job. **Nothing distilled or summarised is a substitute**, which is the same distinction `research/literature.md` draws when it keeps `CORPUS.md` out of `refs/`.
-
-Open problem, flagged rather than papered over: nobody has documented a technique for *sustaining* bleakness across a long context. Since rebound worsens with intervening context and the sentiment pull is structural, drift toward uplift probably gets worse over a long run — which argues for shorter separately re-anchored passes. Untested.
-
-### 3.4 Move the negations, and change their shape
-
-Instructing a model not to produce something can make it more probable, and the effect worsens with distance between the prohibition and the point of generation. `CLAUDE.md`'s *"Avoid the conventional"* and *"No comedy, and nothing heartwarming"* are the worst configuration available: blanket negation, top of a long file, maximum distance from the ask.
-
-- Positive-frame where possible. *"Every one of these ends with the programme still running and nobody released"* states the same constraint as a thing to hit.
-- Restate anything genuinely excluded in the final lines before generating, not in the preamble.
-- Prefer earned exclusions — have the model produce its defaults, state why they are weak, then generate against that reasoning — to a-priori prohibition.
-- Convert `stories/00-undeveloped.md` and the collision map from *avoid these* to *generate maximally distant from these*. Distance is a computation; avoidance is a suppression task the model is bad at.
-- Accept the ceiling. Banning the top five clichés moves mass to the sixth-most-typical option, not out to the tail. Exclusion is hygiene; the distribution is the lever.
-
-### 3.5 Generate the batch blind
-
-Reading one candidate closely before the others exist measurably narrows everything downstream — the CHI result is that AI-exposed participants produced *fewer, less varied, less original* ideas than participants shown nothing. Generate the full batch before evaluating any of it, and do not develop or extend the first.
-
-This reconciles cleanly with the house rule of one pitch at a time: the batch is the generator's working set, not the pitch. §1.11 is unchanged.
-
-### 3.6 Form as an end-run around the resolution reflex
-
-The most underused technique found, and the one closest to what §4 already does. Ask for the artifact that *implies* a story rather than the story: a review of a book that does not exist, a containment report, a decommissioning schedule, an adjuster's file. These registers carry no narrative expectation — the model pattern-matches *report*, not *story*, and the schema holding the resolution reflex never fires. Reports do not have endings in the way stories do.
-
-Caveat with evidence behind it: the one careful experiment feeding cut-up found text to a commercial model reported it **constantly smoothed** — inserting conjunctions, repairing transitions, refusing broken grammar. Its coherence drive fights collage. Cut outside the model, and forbid it explicitly from resolving a document into a satisfying whole.
-
-Note this collides with §4's standing caution that document-as-monster is at or near capacity. The point here is the *generation-side* benefit of the register, which survives even where the finished story does not use a document at all — *Second Circulation* is the existing proof.
-
-### 3.7 Pool across model families, not personas
-
-One persona generates at cosine ≈0.92 with itself; persona prompting ranked among the *weaker* of 35 tested strategies. Three vendors on one seed beats three characters on one model. Pooling is also what `research/literature.md` already requires on the judging side for a different reason — judge model must differ from generator model.
-
-### 3.8 What to stop doing
-
-- **Persona prompting as a diversity lever.** Middling in the only systematic comparison.
-- **Best-of-N / regenerate-and-pick.** Re-selection systematically favours the most typical-sounding completion. It is an anti-technique here.
-- **Raising temperature to get strangeness.** §1.3.
-- **Citing min-p.** The result failed reanalysis.
-- **Letting a model make the final cut.** 73% agreement with human preference. Tiering, yes; deciding, no — the same conclusion `evals/` reaches independently.
+**The one that governs the rest** is the rubric inversion in row five. An
+instrument that rates model stories above professional fiction on the axis the
+project cares about is not a weak instrument, it is an inverted one. Any
+scoring step that reads a premise back has to be treated as capable of
+preferring exactly the wrong thing, confidently.
 
 ---
 
-## 4. What this implies for playbook §1 — proposed, not applied
+## 3. What to do, in order of return
 
-Nothing in the playbook has been edited. Recorded here for a deliberate decision:
+### 3.1 Ask for a distribution with a stated ceiling
 
-1. **§1.1 gains a draw.** The pull from §2–§5 currently lets whoever is generating choose. Drawing at least one of the four at random, outside the model, is the §3.2 change and it is small.
-2. **§1.9–1.10 gain a batch.** Steps 9 and 10 assume one premise. The batch-blind discipline of §3.5 sits between 8 and 9.
-3. **A new pre-step 0: load examples.** Requires `extracted/examples.md`, which does not exist yet.
-4. **`CLAUDE.md`'s register paragraph wants rewriting per §3.4** — same constraints, positive form, and restated at the point of generation rather than only at the top of the file.
-5. **§1.10's read-back is the right place for a 400-word partial execution** on anything that survives, per the ideation–execution result.
+The cheapest change and the largest single effect: 1.6–2.1× diversity on
+creative writing at no quality cost, and the gain is *larger* on more capable
+models — not a crutch for a weak one. Ask for k responses, each with a numeric
+probability, and require sampling from the tail below an explicit threshold.
 
-The procedure that follows from all of this is implemented as a skill at `.claude/skills/seed-premises/SKILL.md`. It does not modify the playbook; it wraps a call around it.
+Two details carry it. **A stated ceiling** — without a number the model returns
+0.4 and calls it a tail. And **explicit exclusion of the modal answer**, because
+"sample the tail" alone is satisfiable nominally.
+
+Free second-order benefit: the stated probability is a triage signal. High
+confidence means near the centre, whatever the premise claims about itself.
+
+### 3.2 Batch, with reasoning, under ordinary personas — never personas alone
+
+The cleanest result of the pass, and it corrects the usual advice twice over.
+Deng, Brucks & Toubia decompose the diversity gap into two mechanisms:
+**fixation** (early outputs constrain later ones) and **knowledge aggregation**
+(one unified distribution where a human population has partitioned knowledge).
+The second is the larger one — models are not less diverse than an individual
+person, they are dramatically less diverse than a *population* of them.
+
+Chain-of-thought decomposition addresses fixation (slope 1.013 → 1.363).
+Personas address partitioning. **Personas alone make fixation worse** (0.876,
+below the default). Together: 248 unique combinations against a human baseline
+of 197.
+
+And the personas that work are *ordinary* ones — a nurse, a commuter — not
+famous creatives. Ordinary 210 combinations, creative-entrepreneur 164. Asking
+for a visionary's voice returns the genre centre wearing a costume.
+
+### 3.3 Stratify the directions before generating, in one planning call
+
+Rather than generating sequentially and diversifying against what came before,
+one planning call lays out broad semantic directions and generations are
+allocated across them. Ibrahim, Azad & Baten find this gives the best
+diversity–quality–compute frontier, beating self-, peer- and
+representative-anchor regeneration. Anchored regeneration's advantage largely
+disappears once full pipeline token cost is counted rather than just the
+diversity of the final pool.
+
+Stratify along the axes where models converge — tense, chronology, the shape of
+closure — since those are where a hand-drawn constraint buys something (§1.3).
+
+### 3.4 Let the candidates not see each other
+
+Two independent lines converge here. In multi-agent ideation, Chen et al. name
+**structural coupling**: interaction contracts exploration, denser communication
+and larger groups converge sooner, authority-led groups produce less semantic
+diversity than junior-led ones, and stronger, better-aligned models show
+*diminishing marginal diversity* despite higher per-sample quality. On the human
+side, people given AI suggestions during ideation produced fewer, less varied
+and less original ideas than people given no inspiration at all.
+
+So: generate the batch before reading any of it, and do not extend or develop
+the first thing that comes back.
+
+### 3.5 Say what to do; re-anchor rather than accumulate
+
+Negation raises the salience of what it forbids (§1.5), and constraints drift
+by turn two without being forgotten (§1.6). Both point the same way. Phrase
+every constraint positively; keep passes short and separately anchored rather
+than piling correction onto a long session; expect that adding pressure inflates
+structure rather than sharpening it.
+
+### 3.6 Constraints buy strangeness and cost coherence — pay it knowingly
+
+Increasing constraint specificity forces a model off retold training material,
+which is the point; it also degrades story quality, and models struggle to hold
+instruction-following and narrative coherence together at high specificity. The
+same work finds preference tuning helps a model *select* better stories from
+what it has seen and does little for producing what it has not.
+
+Two consequences. A drawn constraint that looks impossible against the seed is
+the interesting case rather than a reason to redraw. And a premise generated
+under heavy constraint should be read for what it *reaches*, not for how well it
+reads — the polish is the part the constraint was paid for.
+
+### 3.7 Sample enough to see a distribution; choose the model per call
+
+Variance decomposition over 12 models × 10 prompts × 100 samples: for
+originality, model choice explains 40.9% and prompt strategy 36.4%, with
+within-model sampling noise at 10.6%; for sheer volume, model choice 51.3% and
+prompt only 4.2%. Prompt effectiveness is model-contingent — the best prompt
+depends on which model runs it. And some models are far more stable across
+samples than others (rank variance 0.18 against 8.32).
+
+A single sample per configuration measures noise. Separately, there is no
+single most-diverse model: which one gives the widest spread varies by prompt
+and domain enough that routing per prompt beats any fixed choice.
+
+Pool across models for that reason — per-call fit and sampling coverage — not
+because vendors disagree (§1.3).
+
+### 3.8 Never let a model make the final cut
+
+Best off-the-shelf judge, 73% agreement with human creative-writing preference;
+purpose-trained reward models 78% on a 2,480-pair test set. Worse, models are
+specifically poorly calibrated on exactly the outputs where human annotators
+disagree with each other — which is the whole territory of taste. And the
+rubric inversion in §1.4 shows a scoring step can rank confidently in the wrong
+direction on the axis that matters.
+
+Tiering and ordering, yes. Deciding, no.
 
 ---
 
-## 5. Coverage gaps
+## 4. What to stop doing
 
-- Reddit was unreachable throughout the research pass; a meaningful share of practitioner discourse plausibly lives there and is unrepresented.
-- science.org and several ACM pages blocked automated access; a small number of figures come from secondary sources and are marked above.
-- A frequently-quoted Doshi & Hauser figure — 5.4% novelty gain in the single-idea condition — could not be confirmed and appears to be a conflation with a similarity metric. It is deliberately absent.
-- No first-person account by a working horror writer of holding a model in an uncomfortable register at the *ideation* stage exists in the public record as of September 2026. Neither does a published kill-test that preserves why an idea died, nor a morphological premise generator. These are open, not merely unfound.
+| | Why |
+| :-- | :-- |
+| One direct prompt for a batch | The single largest recoverable loss (§3.1) |
+| Personas as the diversity lever | Raises fixation on its own (§3.2) |
+| Famous-creative personas | Worse than ordinary ones, 164 vs 210 (§3.2) |
+| Lists of what to avoid | Rebound (§1.5) |
+| Long sessions accumulating correction | 74% of drift by turn 2 (§1.6) |
+| Reading one candidate before the rest exist | Fixation, both sides (§3.4) |
+| Trusting a rubric score | Ranks backwards on tension (§1.4) |
+| Regenerate-and-pick against a model's own preference | Re-selection favours the typical; 73% ceiling (§3.8) |
+| Expecting a decoding parameter to fix any of it | §1.1 |
+
+---
+
+## 5. Gaps
+
+- **Nothing measures horror.** The tension work uses literary short fiction; the
+  ideation work uses product ideas and research briefs. Every transfer to a
+  horror premise in this document is an inference.
+- **Sustaining a bleak register across a long generation is unstudied.** The
+  drift evidence (§1.6) concerns hard constraints in scientific briefs. Whether
+  tone drifts the same way, and whether it drifts *toward uplift* specifically,
+  is unmeasured. The prediction — it does, and shorter re-anchored passes beat
+  one long one — is untested.
+- **Two relevant papers resisted extraction this pass.** A defixation-prompting
+  evaluation framework ranks strategies against each other and its result table
+  could not be read out of the PDF; a consensus-visualisation study asks whether
+  showing users the modal model answer helps or harms their own diversity and
+  its results likewise. Both are worth a second attempt.
+- **The one study of a model steering a writer away from dark material is very
+  small** — 24 scenarios, one model, three annotators who are also the authors.
+  Its figures (sycophancy 91.7%, moralizing 25%, tone policing 20.8%, and
+  hyper-agreeableness on sensitive topics) are a hypothesis worth testing, not
+  numbers to lean on.
+- **No usable practitioner account exists.** Searches for a working horror
+  writer's first-person account of holding a model in an uncomfortable register
+  at the ideation stage return SEO content farms. Still an open hole, not merely
+  an unfound one.
+
+---
 
 ## Sources
 
-Zhang et al., *Verbalized Sampling* — https://arxiv.org/abs/2510.01171 ·
-Doshi & Hauser — https://www.science.org/doi/10.1126/sciadv.adn5290 ·
-Anderson, Shah & Kreminski — https://arxiv.org/abs/2402.01536 ·
-Si, Hashimoto & Yang, *Ideation–Execution Gap* — https://arxiv.org/abs/2506.20803 ·
-Wadinambiarachchi et al., CHI 2024 — https://arxiv.org/abs/2403.11164 ·
-Meincke, Mollick & Terwiesch — https://arxiv.org/abs/2402.01727 ·
-Mann et al., *Don't Think of the White Bear* — https://arxiv.org/abs/2511.12381 ·
-Sui — https://arxiv.org/abs/2602.16162 ·
-Wan & Kalman — https://arxiv.org/abs/2504.13868 ·
-Ashkinaze et al. — https://arxiv.org/abs/2401.13481 ·
-Fein et al., LitBench — https://arxiv.org/abs/2507.00769 ·
-Schaeffer, Kazdan & Denisov-Blanch — https://arxiv.org/abs/2506.13681 ·
-Kirk et al., RLHF and diversity — https://arxiv.org/abs/2310.06452 ·
-Guo et al., *From Pen to Prompt* — https://arxiv.org/abs/2411.03137 ·
-Reza et al., *Co-Writing with AI, on Human Terms* — https://arxiv.org/abs/2504.12488 ·
-Janus, *Mysteries of Mode Collapse* — https://www.lesswrong.com/posts/t9svvNPNmFf5Qa3TA/mysteries-of-mode-collapse ·
-Gwern, *Towards Better LLM Creative Writing* — https://gwern.net/blog/2025/better-llm-writing ·
-Sorrentino, *How LLMs Set My Fiction Free* — https://yalereview.org/article/christopher-sorrentino-machine-stories ·
-*The Five Jobs I Would Actually Give an AI Co-Writer* — https://artisanosalpha.substack.com/p/fiction-writing-with-llms-the-five ·
-Vollmer, *A Field Guide to AI Tells* — https://matthewvollmer.substack.com/p/i-asked-the-machine-to-tell-on-itself ·
-*Add More Darkness* — https://promptingweekly.substack.com/p/add-more-darkness-how-to-knock-the ·
-*Experiments in Generating Cut-up Texts with Commercial AI* — https://electronicbookreview.com/essay/experiments-in-generating-cut-up-texts-with-commercial-ai ·
-Brander, *Generating your own Oblique Strategies* — https://newsletter.squishy.computer/p/prompt-generator
+Karouzos, Tan & Aletras, *Where does output diversity collapse in post-training?* — https://arxiv.org/abs/2604.16027 ·
+Zhang, Yu, Chong, Sicilia, Tomz, Manning & Shi, *Verbalized Sampling* — https://arxiv.org/abs/2510.01171 ·
+Sui, Zhu, Cheng, West, So, Long & Holtzman, *Spoiler Alert: Narrative Forecasting as a Metric for Tension* — https://arxiv.org/abs/2604.09854 ·
+Tian et al., *Are Large Language Models Capable of Generating Human-Level Narratives?*, EMNLP 2024 — https://arxiv.org/abs/2407.13248 ·
+Deng, Brucks & Toubia, *Examining and Addressing Barriers to Diversity in LLM-Generated Ideas* — https://arxiv.org/abs/2602.20408 ·
+Wenger & Kenett, *We're Different, We're the Same: Creative Homogeneity Across LLMs* — https://arxiv.org/abs/2501.19361 ·
+Jiang et al., *Artificial Hivemind*, NeurIPS 2025 D&B — https://arxiv.org/abs/2510.22954 ·
+Kruthof, *Models Recall What They Violate* (DriftBench) — https://arxiv.org/abs/2604.28031 ·
+*Don't Think of the White Bear: Ironic Negation Under Cognitive Load* — https://arxiv.org/abs/2511.12381 ·
+Ibrahim, Azad & Baten, *Anchorless Diversification for Parallel LLM Ideation* — https://arxiv.org/abs/2605.30150 ·
+Chen et al., *Diversity Collapse in Multi-Agent LLM Systems*, ACL 2026 Findings — https://arxiv.org/abs/2604.18005 ·
+Haase, Gonnermann-Müller, Hanel et al., *Within-Model vs Between-Prompt Variability* — https://arxiv.org/abs/2601.21339 (CHI 2026 EA: *It's Not Just the Prompt*) ·
+Liu, Xu, Padmakumar, Ippolito & Choi, *No Single Best Model for Diversity* — https://arxiv.org/abs/2604.02319 ·
+Fein, Russo, Xiang, Jolly, Rafailov & Haber, *LitBench* — https://arxiv.org/abs/2507.00769 ·
+Wadinambiarachchi, Kelly, Pareek, Zhou & Velloso, *The Effects of Generative AI on Design Fixation and Divergent Thinking*, CHI 2024 — https://arxiv.org/abs/2403.11164 ·
+*CS4: Measuring Creativity by Controlling the Number of Story-Writing Constraints* — https://arxiv.org/abs/2410.04197 ·
+Li, Qu & Chang, *Lighting Up or Dimming Down? Dark Patterns of LLMs in Co-Creativity*, AAAI 2026 Spring Symposium — https://arxiv.org/abs/2604.04735 ·
+Carichon, Sharma, Girard, Rampa & Farnadi, *IDEAFix* — https://arxiv.org/abs/2606.00875 ·
+Khan & Wester, *Seeing the Hivemind* — https://arxiv.org/abs/2606.09587 ·
+Dhingra, *Magic, Madness, Heaven, Sin: LLM Output Diversity* — https://arxiv.org/abs/2604.01504 ·
+Mazur, *writing_styles* — https://github.com/lechmazur/writing_styles

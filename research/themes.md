@@ -1,501 +1,239 @@
-# THEMES — what a theme is, and why the extractor is not producing one
+# THEMES — what a theme is, and what it costs to get one out of a corpus
 
-*What the literature offers for the job `pipeline/themes.py` is supposed to do:
-turning a corpus into **abstractions** — a mechanism, what it costs, who it is
-done to — that can seed what gets made. Compiled 2026-09-03, after Chris read
-the theme bank in the Ledger and said the themes looked like sentences. They
-are sentences. This document establishes why, and what the field does instead.*
-
----
-
-## 1. What the extractor actually produces
-
-`themes.py` matches regexes over sentences — `in order to`, `so that`,
-`sacrific\w+`, `routinely`, `subjects?` — and banks the whole sentence. Every
-number below is measured over the 432 rows currently in
-`extracted/themes.jsonl`.
-
-| measurement | value | what it means |
-| :-- | --: | :-- |
-| contains unresolved deixis | **61%** | *this*, *it*, *the subject*, with no antecedent in the row |
-| opens on a deictic | **12%** | the row cannot be read at all without the source article |
-| median length | **24 words** | a sentence, not an abstraction |
-| longest | 61 words | |
-| carry the single label `mechanism` | **72%** | the label vocabulary is not discriminating |
-| content signatures spanning >1 document | **0** | nothing abstracts across the corpus |
-| correlation, themes-per-doc vs doc length | **r = 0.55** | it substantially measures verbosity |
-
-Three of those are fatal on their own.
-
-**Nothing is self-contained.** *"Typically this occurs through regular postage
-routinely received by the subject"* — which occurrence, which subject. The row
-is a pointer into an article, not a statement.
-
-**Nothing spans two documents.** Not one theme signature appears in more than
-one source article. A property held by exactly one document is a detail of
-that document. A theme, on any definition in §3–§5 below, is a thing that
-recurs; the extractor is structurally incapable of finding one because it
-never compares documents to each other.
-
-**Theme count tracks article length.** r = 0.55 against word count over 60
-articles, and the top five documents supply 77 of the 432 rows. A long article
-has more sentences, so it matches more regexes. Thematic richness is not what
-is being counted.
-
-### The category error
-
-The extractor is **extractive** — it selects spans of the source. The task is
-**abstractive** — it needs a statement that is true of the source without
-being in it. No improvement to the regexes closes that gap, because the target
-string does not occur in the input. The current design cannot produce a theme
-by construction, and every remaining section is about what to replace it with
-rather than how to tune it.
+What published work supports for turning a body of text into **abstractions** —
+a mechanism, what it costs, who it is done to — rather than into a pile of
+quotations. Research pass 2026-09-04. Sources only; the design rules at the end
+are marked where they are reasoned rather than cited.
 
 ---
 
-## 2. What counts as a theme — four candidate definitions
+## 1. Four definitions, and they do not agree
 
-Worth fixing before choosing a method, because the four disagree.
+Worth settling before choosing a method, because the four traditions that use
+the word mean different things by it and license different tests.
 
-| tradition | the unit | test for it |
+| tradition | the unit | the test for it |
 | :-- | :-- | :-- |
-| Topic modelling | a distribution over words | co-occurrence |
-| Keyphrase extraction | a noun phrase in the document | salience within the document |
-| Thematic analysis | an interpreted pattern of meaning across a dataset | the analyst can state it and defend it |
-| Motif indexing | the smallest element with the power to persist in tradition | it recurs, and it is striking |
+| **literary thematics** | an abstraction predicated of the work — a claim the work makes or embodies | can it be stated as a proposition the work does not contain verbatim? |
+| **folklore motif** | a concrete recurring narrative element (a magic object, a substituted bride) | does it appear, as an instance, in an index of such elements? |
+| **qualitative research** (reflexive thematic analysis) | a pattern of shared meaning organised around a central concept | is it *constructed* by an analyst across coded extracts, and does it hold across them? |
+| **topic modelling** | a distribution over words | do the top words read as belonging together? |
 
-Fog Belt wants the bottom two. `extracted/README.md` already says so — "a
-mechanism, what it costs, who it is done to" is a proposition with roles, not
-a word cluster and not a noun phrase.
+Two collisions to hold onto. A **motif is not a theme** — it is concrete,
+enumerable and indexable, and that is exactly why it automates (§3.1). A
+**topic is not a theme** — it is a word distribution, and the field's own
+evaluation literature says the resemblance to meaning is weaker than its
+metrics suggest (§4).
 
-Thompson's definition is the sharpest available and is worth adopting as the
-kill test: a motif is *"the smallest element in a tale having a power to
-persist in tradition"*, and it "must have something unusual and striking about
-it". Both halves indict the current bank. Nothing in it persists — no row
-appears twice — and almost nothing in it is striking, because "personnel are
-to be informed" is procedural furniture that matched a procedural regex.
-
----
-
-## 3. Topic modelling — LDA, NMF, BERTopic
-
-The obvious reach, and the wrong tool.
-
-A topic is a ranked word list. It answers *what vocabulary clusters here*, not
-*what mechanism is being described*, and turning a topic into a sentence is a
-separate labelling problem the methods do not solve — with BERTopic,
-"determining a clear title for each topic remains challenging", which is the
-entire difficulty here rather than an afterthought.
-
-It also fails on this corpus's shape. BERTopic's HDBSCAN stage discards
-outliers, which is exactly backwards for a pool whose value is in its tails;
-high-frequency general terms compromise topic specificity, and the SCP corpus
-is saturated with shared institutional vocabulary — *containment*,
-*personnel*, *procedure*, *subject* — that every article shares and that
-carries no thematic information at all. A topic model over this corpus will
-recover the register, which is already measured six ways by `biber.py`.
-
-**Recommend against.** It answers a question nobody asked and answers it with
-the one signal this corpus has least of.
+The qualitative tradition is explicit that themes are *constructed, not found* —
+which makes "extract the themes" a category error inside that tradition
+regardless of what does the extracting.
 
 ---
 
-## 4. Keyphrase extraction — RAKE, YAKE, KeyBERT, PatternRank
+## 2. The category error that makes this hard
 
-Cheaper and also wrong, for a structural reason: the output unit is a phrase
-occurring in the document, which is the extractive failure of §1 with a
-shorter span. *"Blood sacrifice"* is a keyphrase; *"a devotional system whose
-required offering escalates until the devotee is consumed by it"* is a theme.
-The methods cannot produce the second, and it is the second that seeds a
-story.
+**Extractive** methods select spans of the source. **Abstractive** ones produce
+a statement true of the source without occurring in it. Definitions 1 and 3
+above are abstractive; nothing extractive can satisfy them, because the target
+string is not in the input. This is not a tuning problem — no improvement to a
+selector closes a gap of that shape.
 
-Worth knowing anyway, because it is a real ranking of the tools: YAKE is
-purely statistical and has no contextual understanding; RAKE fails to strip
-stop words reliably; KeyBERT selects candidates by n-gram rather than
-part-of-speech pattern, and PatternRank's finding is that PoS-pattern
-candidate selection beats plain noun phrases.
+Models default to the extractive end even when asked for the other one. The
+finding is now reported directly: in an exploratory study of LLM support for
+reflexive thematic analysis, models "appear more likely to produce descriptive
+summaries than to generate interpreted and abstracted themes of meaning," with
+outputs lacking the detail and reflective nuance of the human analysis. (Abstract
+only — the journal blocked full-text retrieval this pass.)
 
-**Recommend against as a theme source.** Possibly useful later as a cheap
-index over the *kept* set, which is a different job.
+The largest system study of LLM-assisted thematic analysis reports the same
+shape from the inside: generated codes and themes "lack the cultural specificity
+and interpretive depth" of human analysis, fluent output invites over-trust from
+less experienced analysts, and — the sharpest observation — analysts' critical
+attention narrows onto *verifying the machine's output* instead of interrogating
+their own reading, which is the opposite of what the method is for.
 
----
-
-## 5. Thematic analysis — the actual method for the actual word
-
-Braun & Clarke's reflexive thematic analysis is the standard qualitative
-procedure for producing themes from a corpus, and its shape is the one this
-pipeline should have: code the data, then build themes *from the codes*, with
-the analyst's interpretation as a declared part of the instrument rather than
-a contaminant. Two properties matter here.
-
-**A theme is a pattern across the dataset, not a unit inside one document.**
-This is the §1 finding restated as method: the codes are per-passage, the
-themes are per-corpus. The current extractor has no second stage at all.
-
-**Interpretation is not optional.** Reflexive TA insists the theme is
-constructed by an analyst, not discovered by a procedure. That is a strong
-argument for the division of labour this repo already runs on — the machine
-proposes, Chris culls, and the cull is the load-bearing step.
-
-### What LLMs do and do not do here
-
-The 2024–2026 literature on LLM-assisted thematic analysis is directly
-relevant and the headline caveat is unusually specific:
-
-- On **deductive** coding — applying a taxonomy that already exists — LLMs
-  perform comparably to humans with low hallucination rates.
-- On **inductive** theme generation they are variable, and the recurring
-  finding is that they "produce descriptive summaries rather than interpreted
-  and abstracted themes of meaning."
-
-That is precisely the failure mode to design against, and it says where the
-model goes: **generating candidates and applying a taxonomy, not deciding what
-the themes are.** A related warning from the reflexive-TA work is worth
-writing down next to it — mandatory model assistance "risks displacing
-reflexivity onto model suggestions rather than the researcher's own analytic
-lens", i.e. if the model's list is the starting point, the taxonomy becomes
-the model's taste. The cull is the mitigation.
+> Vikan, Aryan, Kannelønning, Riegler & Danielsen, *Reflecting on LLM Support in
+> Reflexive Thematic Analysis*, Qualitative Health Research, 2026 ·
+> Sharma, Cochrane & Wallace, *DeTAILS*, arXiv:2510.17575.
 
 ---
 
-## 6. TnT-LLM — the two-phase shape worth copying
+## 3. What the field actually does
 
-Wan et al. (Microsoft / UW, KDD 2024) is the closest published match to what
-this pipeline needs, and its structure is the recommendation:
+### 3.1 Motif indexing — works, because the index exists first
 
-1. **Phase 1 — induce the taxonomy.** A zero-shot, multi-stage reasoning pass
-   over samples of the corpus produces and then *iteratively refines* a label
-   taxonomy. The taxonomy is an output, not an input.
-2. **Phase 2 — assign at scale.** The LLM labels a training sample, and a
-   lightweight classifier does the rest of the corpus cheaply.
+The first computational treatment of motif indexing pairs a folklore corpus with
+a published motif index and detects expressions of indexed motifs in text.
 
-They report more accurate and relevant taxonomies than the baselines on Bing
-Copilot intent data, under both human and automatic evaluation.
+| | |
+| :-- | --: |
+| motifs covered | 200 |
+| positive motif expressions | 2,670 |
+| annotated sentences | 58,450 |
+| fine-tuned Llama3 | **F1 0.85** (P 0.86 / R 0.84) |
+| fine-tuned Mistral | F1 0.81 |
+| off-the-shelf embeddings | F1 0.57–0.65 |
+| retrieve-and-rerank baseline | F1 0.36 |
+| human agreement overall | κ 0.72 |
+| human agreement, complex expression | κ 0.51–0.54 |
+| expressions spanning >1 sentence | 1.1% |
 
-Mapping onto Fog Belt: **phase 1 is the theme bank** — a set of mechanisms
-induced from the corpus and refined, where each theme is a written statement
-rather than a span. **Phase 2 is coverage** — which articles instantiate which
-mechanism, which is what makes `pipeline stats` able to say a theme recurs,
-and what makes Thompson's persistence test computable.
+Three lessons. **Detection against a hand-built index is a solved-ish task, and
+open discovery is not the same task** — the index is what makes it tractable.
+**Retrieval alone is nearly useless here** (0.36), so nearest-neighbour lookup
+against a bank of existing entries will not identify recurrence. And **human
+agreement halves when the expression is complex**, which bounds what any
+automatic scheme can be validated against.
 
-It also fixes the label degeneracy in §1. The six hand-written label words
-(`mechanism`, `cost`, `subject`, `normalized`, `irreversible`) were an
-asserted taxonomy, and 72% of the bank landed in one of them — the same
-failure the six register tags had, for the same reason.
+> Alyami & Finlayson, *Automated Motif Indexing on the Arabian Nights*,
+> arXiv:2603.19283, March 2026.
 
----
+### 3.2 Topic modelling and taxonomy induction — the loop is the contribution
 
-## 7. Motif and trope detection — the closest domain
+Prompt-based topic modelling produces natural-language topic labels rather than
+word lists and aligns better with human-annotated topics than LDA, SeededLDA and
+BERTopic (the frequently quoted coherence figures, 0.74 against 0.64 on
+Wikipedia, come from secondary reporting and were not verified against the paper
+this pass).
 
-Computational folkloristics is the field that has actually tried to extract
-this unit from fiction, and its results are a warning about difficulty rather
-than a method to lift.
+The more useful recent result is architectural. An iterative taxonomy-induction
+framework — density clustering, then LLM synthesis under **global consistency**,
+where each new cluster is evaluated against the topics already accepted before a
+new label is allowed — is scored by human annotators against alternatives:
 
-- Automated motif extraction from narrative is possible with supervised
-  learning, but motifs had been extracted manually until recently, and the
-  Thompson index itself is 46,248 hand-made motifs over 614 collections.
-- A motif *detector* has to model not just whether a motif is mentioned but
-  whether it is being used "in a motific way" — the trolls-under-bridges
-  problem: a text can name a troll without the troll being the motif.
-- Recent work applies LLMs to folktale type assignment at scale, which is
-  §6's phase 2 in this domain.
-- The honest summary from the field: automatic extraction of higher-order
-  content units "has eluded folk narrative studies so far".
-
-Two things to take. The **used-as-a-motif distinction** is the thing to build
-a kill test around: an article that mentions a sacrifice is not an article
-whose mechanism is sacrifice. And the difficulty estimate is a reason to keep
-the human cull rather than to expect a clean pipeline.
-
----
-
-## 8. Frame semantics — the right shape for the record
-
-"A mechanism, what it costs, who it is done to" is not a sentence. It is a
-**frame with roles**, and frame semantics is the established formalism for
-exactly that: semantic role labelling detects "who did what to whom, when and
-where", and FrameNet's 1200+ frames each unite the words that evoke a common
-situation.
-
-This is worth adopting as the *storage shape* of a theme, independent of how
-the theme is generated:
-
-```
-mechanism    what the process does, stated as a process
-subject      who it is done to, and at what scale
-cost         what is given up, and whether it returns
-normalisation how the setting makes it ordinary
-```
-
-Those four are what the current label strings were groping at. As free-text
-labels on a span they did nothing; as required roles on an abstracted
-statement they are a schema a candidate can be checked against — and an
-incomplete frame is a visible defect rather than an invisible one.
-
-Full SRL tooling is not needed to get this. The roles can be required fields
-in the generation step, which is cheaper and more reliable than parsing them
-back out of prose.
-
----
-
-## 9. Propositions — the self-containment criterion
-
-The Dense X Retrieval work (Chen et al., EMNLP 2024) is not about themes, but
-it supplies the missing acceptance test. Its three principles for a
-proposition:
-
-1. **distinct** — corresponds to one piece of meaning, and the set of them
-   composes the meaning of the whole text;
-2. **minimal** — cannot be split further;
-3. **contextualised and self-contained** — carries the context needed to
-   interpret it.
-
-Principle 3 is the one 61% of the current bank fails. It is also trivially
-checkable and belongs in the selftest: a theme that contains an unresolved
-*this* / *it* / *the subject* is rejected at write time, not culled later.
-
-Their empirical result — proposition-granularity indexing beats passage
-granularity for retrieval and downstream QA — is a secondary argument for the
-same unit, since `pipeline draw` retrieves themes to condition a generation
-call.
-
----
-
----
-
-## 10. Fitness for the actual use — a generation input beside examples
-
-§3–§9 rank the methods on whether they produce a theme. That is the wrong
-question on its own: a theme here is consumed by `pipeline draw`, which sets
-it beside 150–400-word verbatim passages in one prompt. `research/generation.md`
-already has the evidence, and it decides the choice more sharply than the
-thematic-analysis literature does.
-
-**Few-shot conditioning acts on form.** §3.3 of that file is explicit, and the
-caution it draws is that feeding in criticism or taxonomy conditions the model
-to produce more criticism and taxonomy. The same mechanism applies to the seed
-block: **anything in the prompt is available for imitation as form, whether or
-not it was put there for its content.**
-
-That is a live defect, not a hypothetical. The current themes are verbatim SCP
-sentences at a median of 24 words, and `sample.render` prints them immediately
-above six verbatim SCP passages. In the same register, at a similar grain, in
-the same document. The theme block is currently functioning as a second,
-worse example set — diluting the register conditioning the example slot
-exists to provide.
-
-**A theme must therefore be formally unlike prose.** Notation, not sentences.
-If it cannot be mistaken for an example it cannot compete with one, and the
-structured frame of §8 gets this for free while an abstractive paragraph — the
-tempting default, and what an LLM produces unprompted — gets it exactly wrong.
-
-**Underspecification is a feature.** Exposure to a single worked example
-raises design fixation and produces fewer, less varied and less original ideas
-than no example at all (Wadinambiarachchi et al., CHI 2024, via
-`generation.md` §2). A theme written as a finished premise is that example. A
-frame states the mechanism and leaves the story undone, which is what a seed
-has to do.
-
-**The deck precedent.** The Oblique Strategies deck beat ChatGPT on
-group-level idea distinctness (Anderson, Shah & Kreminski, C&C 2024), and
-`generation.md` §3.2 draws the moral: randomness sourced outside the generator
-does real work. The theme bank *is* that deck. Decks are made of short
-discrete combinable cards, and playbook §1 required combination — "at least
-one must be a combination — two or three entries held together". Paragraphs do
-not combine; roles do. (That requirement was ideation's, and went with the
-playbook; the deck argument stands on the externally-sourced randomness above,
-which is a property of drawing rather than of combining.)
-
-### Ranked for this use
-
-| approach | as a generation input | verdict |
-| :-- | :-- | :-- |
-| **Frame with roles** (§8), induced TnT-LLM-style (§6) | notation, combinable, underspecified, corpus-level so the draw has known cardinality | **use this** |
-| Abstractive prose theme | competes with examples for register; a worked premise, so maximally fixating | actively harmful |
-| Keyphrase | deck-like and combinable, but carries no mechanism, so it seeds nothing about what happens | insufficient alone |
-| Topic model | a word list cannot be drawn against or combined | no |
-
-### Consequences for the packet
-
-Two things fall out that are not about extraction at all:
-
-1. **`sample.render` has the order backwards.** It prints SEED then REGISTER.
-   The skill and `generation.md` §3.3–§3.4 both put examples first and the
-   constraints last, nearest the ask, because instruction force decays with
-   distance from the point of generation while register conditioning does not.
-2. **The two blocks must be visually incommensurable** — the frame as a
-   labelled record, the examples as unframed prose. Presentation is doing
-   load-bearing work here, not decoration.
-
-### The record
-
-Portable, so it can be drawn against anything. No proper nouns from the
-source: a theme carrying `SCP-2000` drags the model toward that article.
-
-```
-mechanism      the process, as a process           required
-subject        who it is done to, and at what scale required
-cost           what is given up; whether it returns required
-normalisation  how the setting makes it ordinary   optional
-```
-
-Short clauses, not sentences. An incomplete frame is a defect (§8); an
-unresolved deixis is a rejection at write time (§9); a frame appearing in one
-document only is a detail rather than a theme (§7).
-
----
-
-## 11. What the working bank actually looks like — and a correction
-
-§8 proposed a four-field frame and §10 argued for it. **Measured against
-playbook §2, that is over-engineered, and this section supersedes both on the
-storage format.** §2–§5 are the banks that produced twenty-five stories; they
-are the only seed format in this project with evidence behind it, and they are
-not frames.
-
-| | §2 bullets (n=376) | mined `themes.jsonl` (n=432) |
+| method | mean score /5 | chosen best (of 20) |
 | :-- | --: | --: |
-| median words | **21** (p10 15, p90 32) | 24 |
-| a single sentence | 98% | — |
-| carries a turn connective | **63%** | 35% |
-| names who it is done to | **40%** | 17% |
-| implies a cost or a no-exit | **17%** | 6% |
-| contains a proper noun | **0%** | **53%** |
-| opens on a deictic | **0** | 12% |
+| BERTopic | 1.2 | 3 |
+| single-shot LLM labelling | 2.7 | 5 |
+| iterative, globally consistent | **2.8** | **12** |
 
-**The mined bank is already the right length.** That was not the problem. It
-fails on four content properties, and the largest gap is portability: 53% of
-mined rows carry a proper noun from their source, which drags a generation
-call back toward the article the row came from instead of seeding a new one.
+Annotator κ 0.66. Pipeline shape: ~80M documents reduced to 4,510 after
+deduplication and clustering, 72 clusters, synthesised to 14 topics.
 
-What a §2 bullet is, from the bank itself:
+Note the gap between the mean scores (2.7 vs 2.8, nothing) and the head-to-head
+preference (5 vs 12, decisive). What the loop buys is **non-redundancy**, which a
+per-item quality score cannot see. Any single-pass labelling has no mechanism to
+avoid saying the same thing twice.
 
-> The body altered to meet a written specification, and the specification is a
-> purchasing document.
+> Brady & Islam, *Iterative Topic Taxonomy Induction with LLMs*,
+> arXiv:2510.15125.
 
-> The victim who is also the weapon, so that rescuing him and releasing him
-> are the same act, and the humane thing is to leave him where he is forever.
+### 3.3 Thematic analysis with a machine in the loop — fast, and it costs something specific
 
-> The criterion is nine years old, arbitrary, and load-bearing: raise it and
-> the whole series restarts at one.
+DeTAILS implements six phases after Braun & Clarke — background, load, code,
+review codes, generate themes, report — with every phase editable and changes
+propagating forward. Evaluated with 18 qualitative researchers stratified by
+expertise.
 
-One sentence. A mechanism, and a **turn** — the move playbook §1.3 calls the
-slate's signature, where a real thing that works becomes the mechanism. Roles
-are present but *compressed into the clause chain*, never enumerated.
+Analyses finished in ~33 minutes against a typical 7–8 hours. Alignment with
+reference analysis by phase (F1): related concepts 0.86, concept outline 0.98,
+initial coding 0.90, global coding 0.97, reviewing codes 0.90, theme generation
+1.00. Perceived usefulness 4.21/5, workload low-to-moderate.
 
-### Why the single line beats the frame here
+And the failure list is the part to keep: interpretive depth lost, reflexivity
+narrowed to output-checking, over-trust among novices, no backward propagation,
+and fluent justifications that mask uncertainty. Participants estimated "probably
+a week" of checking before they would trust results in publication.
 
-1. **§1.1 requires combination** — "at least one must be a combination, two or
-   three entries held together". Two 21-word lines hold together. Two
-   four-field records give eight fields and produce mush; the worked
-   combination attempted on 2026-09-03 was the weakest artefact in that batch.
+> arXiv:2510.17575.
 
-   *Expired, 2026-09-04.* §1.1 was the ideation pull, and it was removed with
-   the playbook — an idea-generation requirement was doing the ranking in a
-   theme-extraction argument. Reason 2 below does not depend on it and carries
-   the conclusion on its own. `draw -t 2` is the only combination left, and it
-   is a default rather than a requirement.
-2. **The turn is the payload, and a frame has nowhere to put it.** "…and the
-   specification is a purchasing document" lives in the sentence's syntax.
-   Decomposing into `mechanism` / `subject` / `cost` destroys exactly the thing
-   that makes the seed live, which is why only 63% → 35% is the gap that
-   matters most after portability.
-3. **Brevity already solves the form problem.** §10 worried that a prose theme
-   competes with the examples for register conditioning. A 21-word line in a
-   bulleted bank is incommensurable with a 200–400 word passage on length and
-   formatting alone. Field labels were solving a problem brevity had solved.
+### 3.4 Proposition decomposition — the substrate, not the answer
 
-### And the Oblique Strategies result does not argue for generic cards
+A mature line of work splits text into **atomic propositions**: minimal,
+self-contained units, each interpretable without its surrounding context.
+Abstractive proposition segmentation does this as a generation task rather than
+a span-selection one, and the downstream literature (claim decomposition, atomic
+content units, fact verification) is built on the same primitive.
 
-`generation.md` §3.2 cites the deck beating ChatGPT on distinctness. The moral
-it draws is that **randomness sourced outside the generator does real work** —
-not that the cards should be contentless. Fog Belt cannot use contentless
-cards: §1.3 kills any premise without an engine, and a generic card leaves the
-engine to the model, which is precisely where the model reaches for its
-modal move. The §2 grain sits between the oblique card and the worked premise,
-and the evidence for that position is twenty-five stories.
+The transferable property is **self-containedness**, and it is a testable one: a
+unit with an unresolved *this*, *it* or *the subject* is a pointer into its
+source, not a statement. Any theme bank inherits that test for free.
 
-### The spec, restated
+> *Scalable and Domain-General Abstractive Proposition Segmentation*,
+> arXiv:2406.19803 · *A Closer Look at Claim Decomposition*, arXiv:2403.11903.
 
-```
-one sentence, 15-32 words
-a mechanism, and a turn on something that works
-no proper nouns — portable off its source
-self-contained — no unresolved deixis
-implies who it is done to, and what it costs
-```
+### 3.5 Keyphrase extraction — the honest baseline
 
-The roles from §8 survive, but as a **drafting scaffold and an acceptance
-test**, not as the stored object: draft by answering mechanism / subject /
-cost, then compress to one line, then check the line still implies all three.
-The acceptance test is now measurable, and its target is a distribution rather
-than a rule — a mined bank should be statistically indistinguishable from §2
-on the table above.
+Cheap, robust, and extractive by construction. Worth running as a floor. It
+cannot produce §1's definitions 1 or 3, and it should not be expected to.
 
-## Recommendation
+---
 
-*Built 2026-09-03. `pipeline/themes.py` is the rewrite; items 1, 2, 5, 6 and 9
-below are done, and 3 is done as machinery with the corpus pass outstanding.
-The calibration held both ways: playbook §2 passes its own validator at 98%,
-the 432 mined rows at 20%.*
+## 4. The evaluation metrics do not measure what they are used for
 
-1. **Retire local sentence extraction.** It cannot produce a theme; §1 is not
-   a tuning problem. Keep the code in history, drop it from the pipeline, and
-   do not re-point the regexes.
-2. **Store one sentence in the playbook §2 grain — not a frame.** §11
-   supersedes §8 and §10 on this: 21 words, a mechanism and a turn, no proper
-   nouns, self-contained. The four-field record survives as a drafting
-   scaffold and an acceptance test, not as the stored object. Target the §2
-   distribution, which is the only seed format here with evidence behind it.
-3. **Make the research intake the primary path.** `pipeline themes --research`
-   → brief → a session reads → `--ingest` is already the right architecture:
-   a model drafts abstractions, Chris culls. It was built as the fallback for
-   settings whose text is too large to hold; it should be the default for
-   everything.
-4. **Two phases, TnT-LLM shaped.** Induce a taxonomy of mechanisms over the
-   corpus and refine it; then assign articles to it. A theme becomes a
-   corpus-level object with document instances, which is what makes recurrence
-   measurable.
-5. **Enforce self-containment at write time.** Reject unresolved deixis in
-   `themes.py`, with a selftest check. This is the cheapest fix in the
-   document and it invalidates 61% of the current bank.
-6. **Fix the packet.** `sample.render` prints the seed before the register;
-   both the skill and `generation.md` put the examples first and the
-   constraints last. Cheap, independent of the rebuild, and worth doing first.
-7. **Adopt two kill tests, both from §2 and §7.** Does it recur in more than
-   one document — persistence. Is the mechanism the article's subject rather
-   than something it mentions — the motific test.
-8. **Do not adopt topic modelling or keyphrase extraction** as theme sources.
-9. **Re-cull from scratch.** The 432 rows are spans, not themes; a keep on one
-   would be a keep on the wrong kind of object. `theme-decisions.jsonl` does
-   not exist yet, so nothing is lost — and this is the good case, exactly as
-   it was for the six register tags.
+Automated topic coherence has been under sustained attack for years — "the
+incoherence of coherence" — and the 2026 evidence is worse than mixed. Six
+approaches, ~4,000 human annotations in a specialist domain:
 
-The pattern here is the same one `research/tagging.md` found: a component
-invented its own taxonomy, asserted it, and the assertion collapsed into one
-bucket. The fix is the same too — take the unit from a field that has argued
-about it, and validate against Chris's verdicts rather than against argument.
+- Top2Vec took the **highest** automated coherence (C_V 0.72–0.80) and
+  near-perfect automated diversity (0.98–1.00) while scoring **worst** on the
+  human-judged index (0.693).
+- BERTopic took the highest human coherence (0.900 accuracy).
+- Human word-intrusion agreement was 80.3% (κ 0.688) — the humans are reliable
+  enough for the comparison to mean something.
+
+So the ranking inverts between the automated metric and the people. Earlier work
+found automated coherence uncorrelated or negatively correlated with human
+interpretability, and unreliable on short texts and neural models specifically.
+
+**Consequence:** a coherence score is not evidence a theme bank is any good. If
+quality is claimed, it has to be claimed off a human-scored sample, and word
+intrusion is the one protocol with an agreement number attached.
+
+> *When Numbers Tell Half the Story*, arXiv:2603.01945, March 2026 · Hoyle et
+> al., *Is Automated Topic Model Evaluation Broken?*, NeurIPS 2021.
+
+---
+
+## 5. What a usable theme statement looks like
+
+Six properties. Four are supported by the work above; two are marked as reasoned.
+
+| property | test | basis |
+| :-- | :-- | :-- |
+| **abstractive** | the statement does not occur verbatim in any source | §2 |
+| **self-contained** | no unresolved deixis; readable with the source unavailable | §3.4 |
+| **recurrent** | attested in ≥2 documents | §1 — recurrence is what separates a theme from a detail in the folklore and thematic traditions alike |
+| **non-redundant** | compared against every banked entry before admission, not just scored on its own | §3.2 |
+| **discriminating** | the label vocabulary's usage histogram is not concentrated on one value | closed-set collapse is documented for LLM annotation generally; applying it to a theme vocabulary is *reasoned* |
+| **not a function of length** | per-document yield does not correlate with document word count | *reasoned*. A per-sentence matcher necessarily returns more rows for longer documents, which measures verbosity rather than thematic richness. No study found this pass measures it |
+
+And one process rule from §3.3: whatever produces the bank, the person reading it
+should be checking their own reading, not only the machine's output. That failure
+mode is documented and it is invisible from inside.
+
+---
+
+## 6. Gaps
+
+- **No published method does open thematic discovery over fiction.** Motif work
+  needs a pre-existing index; topic work returns word distributions or short
+  labels; thematic analysis assumes a human analyst throughout. The abstractive,
+  cross-document, unindexed case is not covered by anything found.
+- **Nothing measures whether a bank of themes is any use downstream.** Every
+  evaluation above scores themes for coherence or for agreement with a reference
+  reading. Whether a theme, once banked, causes better work is unmeasured.
+- **Multi-sentence and multi-document expression is deliberately out of scope**
+  in the strongest motif result (1.1% of cases, excluded). Cross-document
+  abstraction — the thing definition 1 requires — is exactly what stays unsolved.
+- **The reflexive-thematic-analysis finding is abstract-only here.** The journal
+  blocked retrieval; the claim about descriptive summaries is quoted from the
+  abstract and has not been checked against the study's data.
 
 ---
 
 ## Sources
 
-- Braun, V. & Clarke, V. (2006/2019) *Reflexive thematic analysis* — the standard procedure; codes across a dataset, then themes from codes.
-- Wan, M. et al. (2024) *TnT-LLM: Text Mining at Scale with Large Language Models*, KDD 2024 — https://arxiv.org/abs/2403.12173 · https://dl.acm.org/doi/pdf/10.1145/3637528.3671647
-- Chen, T. et al. (2024) *Dense X Retrieval: What Retrieval Granularity Should We Use?*, EMNLP 2024 — https://arxiv.org/abs/2312.06648 · dataset https://chentong0.github.io/factoid-wiki/
-- *LLM-in-the-loop: Leveraging Large Language Model for Thematic Analysis* — https://arxiv.org/pdf/2310.15100
-- *Large language models for thematic analysis in healthcare research: a blinded mixed-methods comparison with human analysts*, PLOS Digital Health — https://journals.plos.org/digitalhealth/article?id=10.1371%2Fjournal.pdig.0001189
-- *Reflecting on LLM Support in Reflexive Thematic Analysis*, Qualitative Health Research — https://journals.sagepub.com/doi/10.1177/10497323251365211
-- *DeTAILS: Deep Thematic Analysis with Iterative LLM Support* — https://arxiv.org/html/2510.17575v2
-- Karsdorp, F. et al. *Learning a Better Motif Index: Toward Automated Motif Extraction* — https://drops.dagstuhl.de/entities/document/10.4230/OASIcs.CMN.2016.7
-- *Finding Trolls Under Bridges: Preliminary Work on a Motif Detector* — https://arxiv.org/pdf/2204.06085
-- *Large language models for folktale type automation* — https://arxiv.org/pdf/2510.18561
-- *Semantic Role Labeling: A Systematical Survey* (2025) — https://arxiv.org/html/2502.08660v1
-- FrameNet — frame semantics, 1200+ frames; via the SRL survey above.
-- BERTopic — https://www.emergentmind.com/topics/bertopic-based-topic-modeling · short-text limitations, *BERTopic_Teen* — https://www.ncbi.nlm.nih.gov/pmc/articles/PMC12378273/
-- *PatternRank: Leveraging Pretrained Language Models and Part of Speech for Unsupervised Keyphrase Extraction* — https://arxiv.org/pdf/2210.05245
-
-*The Braun & Clarke citation is to the method as it is universally described
-in the LLM-assisted papers above rather than to a copy of the original read
-for this document. Everything else was read at the URL given, except the
-thematic-analysis journal articles, which were read as search abstracts.*
+Braun & Clarke, reflexive thematic analysis (worked example) — https://link.springer.com/article/10.1007/s11135-021-01182-y ·
+Vikan, Aryan, Kannelønning, Riegler & Danielsen, *Reflecting on LLM Support in Reflexive Thematic Analysis*, Qualitative Health Research 2026 — https://journals.sagepub.com/doi/10.1177/10497323251365211 ·
+Sharma, Cochrane & Wallace, *DeTAILS: Deep Thematic Analysis with Iterative LLM Support* — https://arxiv.org/abs/2510.17575 ·
+Alyami & Finlayson, *Automated Motif Indexing on the Arabian Nights* — https://arxiv.org/abs/2603.19283 ·
+*Large language models for folktale type automation based on motifs* — https://arxiv.org/abs/2510.18561 ·
+Pham et al., *TopicGPT: A Prompt-based Topic Modeling Framework*, NAACL 2024 — https://aclanthology.org/2024.naacl-long.164.pdf ·
+Brady & Islam, *Iterative Topic Taxonomy Induction with LLMs* — https://arxiv.org/abs/2510.15125 ·
+*Scalable and Domain-General Abstractive Proposition Segmentation* — https://arxiv.org/abs/2406.19803 ·
+*A Closer Look at Claim Decomposition* — https://arxiv.org/abs/2403.11903 ·
+Prouteau et al., *When Numbers Tell Half the Story: Human-Metric Alignment in Topic Model Evaluation* — https://arxiv.org/abs/2603.01945 ·
+Hoyle et al., *Is Automated Topic Model Evaluation Broken? The Incoherence of Coherence*, NeurIPS 2021 — https://proceedings.neurips.cc/paper/2021/file/0f83556a305d789b1d71815e8ea4f4b0-Paper.pdf ·
+*Narrative Structure in Tropes: A Computational Analysis* — https://arxiv.org/abs/2606.19499

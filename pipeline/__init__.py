@@ -1,1 +1,0 @@
-"""Fog Belt seeding pipeline."""

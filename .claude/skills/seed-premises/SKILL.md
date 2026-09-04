@@ -11,7 +11,7 @@ Read `CLAUDE.md` and `series.md` first. Those say what a Fog Belt premise is. Th
 
 ## Every run is under a setting
 
-A setting says what a premise is about; the examples say how it reads. Its material is a reference register under `sources/summaries/` — `setting-a.md` by default, or `setting-b.md` / `setting-c.md`. The register is read, not drawn from: settings stopped being a pipeline concept on 2026-09-03, when the lore files and the `# CANON` block went with the decision layer.
+A setting says what a premise is about; the examples say how it reads. Its material is a reference register under `sources/settings/` — `setting-a.md` by default, or `setting-b.md` / `setting-c.md`. The register is read, not drawn from: settings stopped being a pipeline concept on 2026-09-03, when the lore files and the `# CANON` block went with the decision layer.
 
 ## Order of operations
 
@@ -58,7 +58,7 @@ Phrase it to the generator as distance, not prohibition: *generate maximally dis
 
 ### 4. Make the call
 
-Example passages first, the seed second, register floor last — immediately before the ask. Negations decay with distance from the point of generation, so anything that must be excluded belongs in the final lines rather than the preamble. The hard rules in `sources/summaries/setting-a.md` go last of all, after the register floor, positive-framed as they are written.
+Example passages first, the seed second, register floor last — immediately before the ask. Negations decay with distance from the point of generation, so anything that must be excluded belongs in the final lines rather than the preamble. The hard rules in `sources/settings/setting-a.md` go last of all, after the register floor, positive-framed as they are written.
 
 Ask for a distribution, not a list:
 
