@@ -177,10 +177,11 @@ _TOC_QUOTED = re.compile(r"^\s*[“\"](.{2,70}?)[”\"]\s*(?:by\b.*)?$")
 _NOT_A_TITLE = re.compile(
     r"^\s*(table of contents|contents|copyright|copyright page|title page|"
     r"cover|dedication|epigraph|acknowledge?ments?|permissions?|about the \w+|"
-    r"also by\b|index|begin reading|newsletter|sign up|praise for|"
+    r"also by\b|other books by|index|begin reading|newsletter|sign up|praise for|"
     r"tom doherty|first published|colophon|front matter|back matter|"
     r"thank you for|or visit us|for email updates|originally published|"
-    r"reprinted by|all rights|introduction\b)", re.I)
+    r"reprinted by|all rights|introduction\b|story notes|notes on the |"
+    r"afterword|foreword|preface)", re.I)
 # A permissions or copyright page carries many "X by Y" lines that are not a
 # contents list. If one of these appears on the page, it is not the contents.
 _NOT_A_TOC_PAGE = re.compile(
@@ -188,13 +189,15 @@ _NOT_A_TOC_PAGE = re.compile(
     r"copyright \u00a9|first appeared in|also edited by|praise for)", re.I)
 # A series backlist ("Also Edited by ...") is a page of bare titles and reads
 # exactly like a contents list. So does a page of review quotes.
-_NOT_A_LIST_PAGE = re.compile(r"^\s*also (edited )?by\b|praise for", re.I | re.M)
+_NOT_A_LIST_PAGE = re.compile(
+    r"^\s*(also (edited )?by|other books by|praise for)\b", re.I)
 # Back matter, which otherwise runs on into the last story of the book and
 # left every anthology's final entry carrying the contributor biographies.
 _END_MATTER = re.compile(
     r"^\s*(about the (author|editor|contributor|translator)s?|"
     r"acknowledge?ments?|honou?rable mentions|also (edited )?by|"
-    r"contributor notes|permissions|copyright|index)\b", re.I)
+    r"contributor notes|story notes|notes on the |afterword|"
+    r"permissions|copyright|index)\b", re.I)
 # An opener's title and byline are set in caps at the top of the page.
 _CAPS_LINE = re.compile(r"^\s*([A-Z][A-Z' ,:!?.\u2019-]{2,60})\s*$")
 
@@ -248,7 +251,7 @@ def _contents(pages: list[str]) -> tuple[list[str], int]:
     last = -1
     for i, page in enumerate(pages[:40]):
         lines = [l.rstrip() for l in page.splitlines() if l.strip()]
-        if not lines or _NOT_A_TOC_PAGE.search(page) or _NOT_A_LIST_PAGE.search(page):
+        if not lines or _NOT_A_TOC_PAGE.search(page) or _NOT_A_LIST_PAGE.match(lines[0]):
             run = 0
             continue
         found = []
@@ -346,6 +349,10 @@ def _title_keys(entry: str):
         tail = words[k:]
         head = " ".join(words[:k])
         if len(tail) > 5 or len(head) < 5:
+            continue
+        # "Part 1: Men Without Women" is a title and its subtitle, not a
+        # title and a byline. A head that ends open never ended a title.
+        if head.rstrip().endswith((":", ";", ",", "\u2014", "\u2013", "-")):
             continue
         if all(_NAME_WORD.match(w) for w in tail):
             yield head, " ".join(tail)
