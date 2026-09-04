@@ -64,6 +64,72 @@ def raw_pages(path: str | Path) -> list[str]:
 _PAGE_NUM = re.compile(r"^\s*[ivxlcdm]{1,7}\s*$|^\s*\d{1,4}\s*$", re.I)
 
 
+_CAPS_RUN = re.compile(r"^[A-Z](?: [A-Z])*$")
+
+
+def _rejoin_dropcaps(page: str) -> str:
+    """Put decorative initials back on the words they were cut from.
+
+    A drop cap is its own text run, so the opening letter of a story arrives
+    on a line by itself and the rest of the word follows on the next one:
+    `S` then `easick and shivering`. A title set with several of them gives
+    `J O O W` over `ust utside ur indows`, which is where 95 stories got
+    their titles from.
+    """
+    lines = page.split("\n")
+    out: list[str] = []
+    i = 0
+    while i < len(lines):
+        head = lines[i].strip()
+        tail = lines[i + 1].strip() if i + 1 < len(lines) else ""
+        merged = _merge_dropcaps(head, tail) if head and tail else ""
+        if merged:
+            out.append(merged)
+            i += 2
+            continue
+        out.append(lines[i])
+        i += 1
+    return "\n".join(out)
+
+
+# A title keeps its small words whole while its neighbours lose their initial,
+# so the count of capitals falls short of the count of words by exactly the
+# number of whole ones. Ordered by how readily a title leaves one unadorned.
+_WHOLE = ("THE", "OF", "AND", "A", "AN", "TO", "FOR", "IN", "ON", "AT",
+          "WITH", "FROM", "BY", "OR", "AS", "IS", "IT")
+
+
+def _merge_dropcaps(head: str, tail: str) -> str:
+    """`A R S` over `T THE IDING CHOOL` is `AT THE RIDING SCHOOL`."""
+    if not _CAPS_RUN.match(head):
+        return ""
+    caps = head.split()
+    words = tail.split()
+    if not words or len(caps) > len(words):
+        return ""
+    # One initial and a word that carries on in lower case: `S` / `easick`.
+    if len(caps) == 1 and tail[0].islower():
+        return caps[0] + tail
+    skips = len(words) - len(caps)
+    if skips:
+        # Some words kept their own first letter. Guessing which by looking
+        # for whole words fails on a fragment that happens to spell one — the
+        # `AS` of `WAS` — so only the readiest candidates are spent.
+        bare = lambda w: w.strip(".,:;!?'\u2019\u201c\u201d\"").upper()
+        ranked = sorted(
+            (i for i, w in enumerate(words) if bare(w) in _WHOLE),
+            key=lambda i: (_WHOLE.index(bare(words[i])), i))
+        if len(ranked) < skips:
+            return ""
+        held = set(ranked[:skips])
+    else:
+        held = set()
+    out, it = [], iter(caps)
+    for i, w in enumerate(words):
+        out.append(w if i in held else next(it) + w)
+    return " ".join(out)
+
+
 def _running_lines(pages: list[str], edge: int = 2, min_share: float = 0.25) -> set[str]:
     """Lines appearing at the top or bottom of many pages are furniture."""
     counter: Counter[str] = Counter()
@@ -358,7 +424,8 @@ def _title_keys(entry: str):
             yield head, " ".join(tail)
 
 
-def _split_stories(pages: list[str]) -> list[tuple[str, str, str]]:
+def _split_stories(pages: list[str], single_author: bool = False
+                   ) -> tuple[list[tuple[str, str, str]], bool]:
     """Split an anthology into (title, author, text), one entry per story.
 
     Two strategies. If the book has a table of contents, a page whose first
@@ -376,7 +443,8 @@ def _split_stories(pages: list[str]) -> list[tuple[str, str, str]]:
     toc, front = _contents(pages)
     keys: dict[str, tuple[int, str, str]] = {}
     for i, entry in enumerate(toc):
-        for cand, by in _title_keys(entry):
+        readings = [(entry, "")] if single_author else list(_title_keys(entry))
+        for cand, by in readings:
             keys.setdefault(_norm(cand), (i, cand, by))
     used: set[int] = set()
     sections: list[tuple[str, str, list[str]]] = []
@@ -394,19 +462,34 @@ def _split_stories(pages: list[str]) -> list[tuple[str, str, str]]:
                 # notes and again in an index, and each repeat would open a
                 # second section for a story already read.
                 hit = keys.get(_norm(first))
+                if hit is None and len(lines) > 1:
+                    # A long title wraps, and the contents holds it whole.
+                    hit = keys.get(_norm(f"{first} {lines[1].strip()}"))
                 if hit and hit[0] not in used:
                     used.add(hit[0])
                     title, author = hit[1], hit[2]
-                    if len(lines) > 1 and not author:
+                    # A collection has one author and states it once. Reading
+                    # the line under the title as a byline there picks up a
+                    # dedication or the second half of the title instead.
+                    if len(lines) > 1 and not author and not single_author:
                         b = _BYLINE.match(lines[1]) or _CAPS_LINE.match(lines[1])
                         if b:
                             author = b.group(1).strip().title()
             else:
                 m = _TITLE_LINE.match(first) or _CAPS_LINE.match(first)
                 if m and len(m.group(1).split()) <= 9 and len(lines) > 1:
-                    b = _BYLINE.match(lines[1]) or _CAPS_LINE.match(lines[1])
-                    if b:
-                        title, author = m.group(1).strip(), b.group(1).strip().title()
+                    second, third = lines[1].strip(), lines[2].strip() if len(lines) > 2 else ""
+                    b = _BYLINE.match(second)
+                    # A long title wraps and the byline drops to the third
+                    # line, where the second one reads as a name it is not.
+                    if not b and third and _BYLINE.match(third) and _CAPS_LINE.match(second):
+                        title = f"{m.group(1).strip()} {second}"
+                        author = _BYLINE.match(third).group(1).strip().title()
+                    else:
+                        b = b or _CAPS_LINE.match(second)
+                        if b:
+                            title = m.group(1).strip()
+                            author = b.group(1).strip().title()
 
         if not title and i > front and lines and _END_MATTER.match(lines[0].strip()):
             sections.append(("", "", []))
@@ -456,10 +539,10 @@ def parse(
     path = Path(path)
     pages = raw_pages(path)
     running = _running_lines(pages)
-    pages = [_strip_furniture(p, running) for p in pages]
+    pages = [_rejoin_dropcaps(_strip_furniture(p, running)) for p in pages]
 
     if split_stories:
-        sections, from_toc = _split_stories(pages)
+        sections, from_toc = _split_stories(pages, bool(author))
     else:
         sections, from_toc = [("", "", "\n\f\n".join(pages))], False
     docs: list[Doc] = []
