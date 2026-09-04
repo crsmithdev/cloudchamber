@@ -76,14 +76,17 @@ A stated ceiling matters. Without one the model reports 0.4 and calls it a tail.
 
 The batch is the working set, not the pitch. Chris sees one paragraph at a time and replies take-it or pass; that rule is unchanged. Cut first:
 
+*(Four more cuts stood here until 2026-09-04: an angle test, a differentiation
+flag, a canon check and the one-impossibility test. The first had no source
+anywhere in the repo, the canon classes were defined in the lore files and went
+with them, and the other two restated documents the run has already read. The
+two below are the ones with evidence behind them; the rest were removed rather
+than repaired.)*
+
 - Drop anything at the high end of the batch's own probabilities. High confidence means near the centre whatever the premise claims about itself.
-- Drop anything that fails the angle test: five readers should get five different stories out of it, and it must not be *directly about* its idea. A premise that is an essay in disguise is dead.
-- Drop anything the differentiation pass flags.
-- **Run the canon check** against the setting's register in `sources/summaries/`. Class every load-bearing element: documented, thin, absent, or open ground. Absent kills. Thin kills unless the element stays off the page. Invention resting on invention kills — one invented element supporting another is how five setting-b pitches were lost. A second marvel on top of the setting's kills. Where canon is silent, the premise has the narrator believe something rather than the story assert it. Under the setting-a this is the fact-check the slate already does: a real mechanism has a citation in `research/setting-a.md` or is marked for one.
-- Run the remainder through the one-impossibility test in `series.md` — one impossibility, an engine, and a turn on something that works. A premise with no engine is a setting.
 - On the last two or three, write 400 words of the strongest. That is the only test shown to discriminate: the novelty advantage of a generated premise lives entirely in the un-executed abstract and inverts once written.
 
-Then pitch the survivor. One paragraph. Do not stack alternatives, do not name the craft moves behind it, do not pre-defend it. A taken premise lands in `stories/` for the setting-a and `stories/<id>/` for any other setting, in the form the README describes, with the setting and the canon class of each load-bearing element in its Notes.
+Then pitch the survivor. One paragraph. Do not stack alternatives, do not name the craft moves behind it, do not pre-defend it. A taken premise lands in `stories/` for the setting-a and `stories/<id>/` for any other setting, in the form the README describes, with the setting named in its Notes.
 
 ### 6. Do not consult the evals
 
