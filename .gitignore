@@ -12,8 +12,11 @@ __pycache__/
 #                     Regenerable in principle, but re-fitting it moves every
 #                     passage's facets under verdicts already recorded against
 #                     them, so the fitted copy is tracked and shared.
+#   themes.jsonl      is not regenerable at all. Passages come back from
+#                     `pipeline harvest`; themes are written by a session
+#                     against the grain and nothing reproduces them. It was
+#                     ignored on the assumption it behaved like the pool.
 extracted/examples.jsonl
-extracted/themes.jsonl
 extracted/packets/
 
 # Agent worktrees

@@ -26,9 +26,12 @@ Check `stories/` before developing: whether a story feels like another one alrea
 
 A story is one file under `stories/`, written by hand. Nothing generates it.
 
-**`extracted/` is regenerable.** `pipeline harvest` fills the passage pool and
-`pipeline themes --ingest` fills the theme bank; both rebuild from their
-sources and neither should be hand-edited. There is no decision layer — keep,
+**`extracted/` is regenerable, with one exception.** `pipeline harvest` fills
+the passage pool from `sources/` and rebuilds it exactly; neither it nor the
+theme bank should be hand-edited. But `extracted/themes.jsonl` is not
+rebuildable: `pipeline themes --ingest` banks lines a session *wrote*, against
+the grain in `pipeline/grain.md`, and nothing reproduces them from a source.
+It is tracked for that reason. There is no decision layer — keep,
 pass and maybe, and the append-only trail under them, were removed on
 2026-09-03 and will be re-added later. Both banks are pools as they stand.
 The three verdicts that existed before the removal went with it, deliberately;
