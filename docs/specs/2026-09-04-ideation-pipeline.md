@@ -558,6 +558,8 @@ subprocess; no step sees another's transcript.
 
 ### Settings
 
+Superseded by `2026-09-05-typed-settings.md`.
+
 A setting is a file under `sources/settings/` with YAML front matter:
 
 ```
