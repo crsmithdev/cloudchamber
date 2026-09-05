@@ -202,6 +202,8 @@ export class Pipeline {
       if (e instanceof StepFailure && e.reason === "shape") this.db.query("UPDATE runs SET flagged = 1, flag_note = ? WHERE id = ?").run(`premise call failed shape: ${e.message}`, runId);
       throw e;
     });
+    // Number the premises from the tail: #1 is the lowest stated probability. Ties keep the model's order.
+    premises.sort((a, b) => a.probability - b.probability);
     premises.forEach((p, i) => this.artifact(step, "premise", p.text, { index: i + 1, probability: p.probability, warnings: words(p.text) > 120 ? ["length"] : [] }));
     await Promise.all(premises.map((p, i) => {
       const ask = fill("executeAsk", { seed, premise: p.text });
@@ -221,8 +223,10 @@ export class Pipeline {
   candidates(runId: string): { step_id: string; index: number; probability: number; premise: string; vignette: string; warnings: string[] }[] {
     const rows = this.db.query(`SELECT a.step_id, a.content, a.meta FROM artifacts a JOIN steps s ON s.id = a.step_id
                                 WHERE s.run_id = ? AND a.kind = 'vignette' AND s.stage = 'execute'`).all(runId) as any[];
-    return rows.map((r) => { const m = JSON.parse(r.meta); return { step_id: r.step_id, index: m.index, probability: m.probability, premise: m.premise, vignette: r.content, warnings: m.warnings ?? [] }; })
-      .sort((a, b) => a.probability - b.probability || a.index - b.index);
+    // Numbered from the tail on read too, so runs recorded before this numbering read the same way.
+    return rows.map((r) => { const m = JSON.parse(r.meta); return { step_id: r.step_id, index: m.index as number, probability: m.probability, premise: m.premise, vignette: r.content, warnings: m.warnings ?? [] }; })
+      .sort((a, b) => a.probability - b.probability || a.index - b.index)
+      .map((c, i) => ({ ...c, index: i + 1 }));
   }
 
   private async autoGate(runId: string): Promise<RunRow> {

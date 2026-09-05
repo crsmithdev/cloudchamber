@@ -3,6 +3,8 @@ import { api, when, type Artifact, type Candidate, type Example, type Facets, ty
 
 type Detail = { run: Run; steps: Step[]; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[] };
 const STAGES = ["premises", "execute", "gate", "outline", "context", "ending", "packet"];
+const LABEL: Record<string, string> = { awaiting_gate: "open", done: "closed" };
+const label = (status: string) => LABEL[status] ?? status;
 const secs = (a: string, b: string | null) => (b ? `${Math.round((Date.parse(b) - Date.parse(a)) / 1000)}s` : "running");
 
 /** Runs in the left pane, each expanding into its step log; the selected run, a step, or the start form in the centre. */
@@ -57,9 +59,10 @@ export function Runs({ status, selected }: { status: Status | null; selected: st
         {runs.length === 0 && <div className="empty">No runs yet.</div>}
         {runs.map((r) => (
           <div key={r.id} className={"runrow" + (r.id === current ? " on" : "") + (r.superseded_by ? " old" : "")} onClick={() => select(r.id)}>
-            <div className="l1"><span className="rid mono">{r.id}</span><span className="when">{when(r.created_at)}</span></div>
-            <div className="l2"><span className={dot(r.status)} />{r.status.replace("_", " ")} · {r.setting ?? "unrestricted"} · {r.genre} · {r.mode}{r.flagged ? <span className="art"> · flagged</span> : null}{r.superseded_by && <span className="dim"> · superseded</span>}</div>
+            <div className="l1"><span className="nm">{r.name ?? r.id}</span><span className="when">{when(r.created_at)}</span></div>
+            <div className="l2"><span className={dot(r.status)} />{label(r.status)} · {r.setting ?? "unrestricted"} · {r.genre} · {r.mode}{r.flagged ? <span className="art"> · flagged</span> : null}{r.superseded_by && <span className="dim"> · superseded</span>}</div>
             <div className="sd">{r.seed_text}</div>
+            <div className="rid mono dim">{r.id}</div>
             {open.has(r.id) && details[r.id] && <Log d={details[r.id]} stepId={r.id === current ? stepId : null} onStep={(id) => { if (r.id !== current) location.hash = `#run/${r.id}`; setStepId(id); }} />}
           </div>))}
       </div>
@@ -67,7 +70,7 @@ export function Runs({ status, selected }: { status: Status | null; selected: st
       {isForm || !current ? <StartForm status={status} /> : !d ? <><div className="pane read">{err ? <div className="err">{err}</div> : <span className="dim">loading…</span>}</div><aside className="pane insp" /></> : (
         <>
           <div className="pane read">
-            <div className="runhd"><h1>{d.run.id}</h1><span className={"badge " + d.run.status}>{d.run.status.replace("_", " ")}</span><span className="dim" style={{ fontSize: 12 }}>{d.run.setting ?? "unrestricted"} · {d.run.genre} · {d.run.mode}{d.run.gate_method ? ` · gate ${d.run.gate_method}` : ""} · seed {d.run.seed_mode}</span></div>
+            <div className="runhd"><h1>{d.run.name ?? d.run.id}</h1><span className="rid mono dim">{d.run.id}</span><span className={"badge " + d.run.status}>{label(d.run.status)}</span><span className="dim" style={{ fontSize: 12 }}>{d.run.setting ?? "unrestricted"} · {d.run.genre} · {d.run.mode}{d.run.gate_method ? ` · gate ${d.run.gate_method}` : ""} · seed {d.run.seed_mode}</span></div>
             {d.run.superseded_by && <div className="dim" style={{ fontSize: 12 }}>superseded by <a href={`#run/${d.run.superseded_by}`} className="mono">{d.run.superseded_by}</a></div>}
             {step ? <StepView step={step} artifacts={d.artifacts.filter((a) => a.step_id === step.id)} chosen={step.id === d.run.chosen_step} onBack={() => setStepId(null)} /> : <RunBody d={d} packet={packet} onChoose={(id) => gate("choose", id)} onVerdict={verdict} />}
           </div>
@@ -118,6 +121,7 @@ function RunBody({ d, packet, onChoose, onVerdict }: { d: Detail; packet: Record
   return (
     <>
       <div className="seed"><small>seed</small>{d.run.seed_text}{d.run.flag_note && <div className="warn" style={{ fontStyle: "normal", fontFamily: "Instrument Sans, system-ui, sans-serif", fontSize: 12.5, marginTop: ".5rem" }}>flagged: {d.run.flag_note}</div>}</div>
+      <div className={"runbody" + (packet ? " two" : "")}><div className="col">
       {cands.length > 0 && <>
         <h2 className="sec">distribution <span>· stated probability · lower is further from centre</span></h2>
         {cands.map((c) => {
@@ -127,25 +131,29 @@ function RunBody({ d, packet, onChoose, onVerdict }: { d: Detail; packet: Record
               <div className="pb"><b>{c.probability.toFixed(2)}<small>#{c.index}</small></b><div className="bar"><i style={{ width: `${(c.probability / maxP) * 100}%` }} /></div>{chosen && <span className="tag">chosen</span>}{c === cands[0] && !chosen && <span className="tag dim">lowest</span>}</div>
               <div className="body">{c.premise}{c.warnings.length > 0 && <span className="warn"> {c.warnings.join(", ")}</span>}
                 <div className={"vig" + (openVig === c.step_id ? " open" : "")} onClick={() => setOpenVig(openVig === c.step_id ? null : c.step_id)} style={{ cursor: "pointer" }}>{c.vignette}</div>
-                {gating && <div className="acts"><button className="btn sm" onClick={() => onChoose(c.step_id)}>choose this one</button></div>}
+                {gating && <div className="acts"><button className="btn sm" title={`Continue with premise ${c.index}: outline, two context vignettes, the ending, then the packet.`} onClick={() => onChoose(c.step_id)}>choose this one</button></div>}
               </div>
             </div>);
         })}
       </>}
-      <h2 className="sec">examples <span>· the {d.examples.length} passages this run drew</span></h2>
+      <h2 className="sec">examples</h2>
       {d.examples.map((e) => (
         <div key={e.id} className="exr">
-          <span style={{ cursor: e.text === null ? "default" : "pointer" }} onClick={() => setOpenEx(openEx === e.id ? null : e.id)}>{e.text === null ? <span className="dim">{e.id} · no longer in the pool</span> : <><b>{e.title}</b> · {e.author || "unknown"} · <span className="cell">{e.cell}</span></>}</span>
-          <span>{e.latest ? <><span className={e.latest.verdict}>{e.latest.verdict}</span>{e.latest.artifact && <span className="art"> · artifact</span>}</> : <span className="dim">—</span>}</span>
+          {e.text === null
+            ? <span className="exhead"><span className="caret" /><span className="dim"><span className="mono">{e.id}</span> · not in the current pool; the passages were re-extracted after this run</span></span>
+            : <button className="exhead" aria-expanded={openEx === e.id} onClick={() => setOpenEx(openEx === e.id ? null : e.id)}><span className={"caret" + (openEx === e.id ? " open" : "")}>▸</span><b>{e.title}</b> · {e.author || "unknown"} · <span className="cell">{e.cell}</span></button>}
+          <span className="exv">{e.latest ? <><span className={e.latest.verdict}>{e.latest.verdict}</span>{e.latest.artifact && <span className="art"> · artifact</span>}</> : <span className="dim">—</span>}</span>
           {openEx === e.id && e.text !== null && <div className="exbody">
             <p className="passage sm">{e.text}</p>
             <div className="acts"><button className="btn sm keep" onClick={() => onVerdict(e, "keep")}>keep</button><button className="btn sm pass" onClick={() => onVerdict(e, "pass")}>pass</button><button className="btn sm art" onClick={() => onVerdict(e, e.latest?.verdict ?? "keep", !e.latest?.artifact)}>{e.latest?.artifact ? "unflag artifact" : "artifact"}</button></div>
           </div>}
         </div>))}
-      {packet && <>
+      </div>
+      {packet && <div className="col">
         <h2 className="sec">packet</h2>
         <div className="packet">{["vignette.md", "outline.md", "context-1.md", "context-2.md", "ending.md", "trail.md"].filter((f) => packet[f]).map((f) => <div className="file" key={f}><div className="fn">{f}</div><p className="passage sm">{packet[f]}</p></div>)}</div>
-      </>}
+      </div>}
+      </div>
     </>
   );
 }
@@ -173,14 +181,14 @@ function Gate({ d, note, setNote, err, onGate }: { d: Detail; note: string; setN
     <>
       <div><h3>gate</h3><dl className="facts" style={{ marginTop: ".5rem" }}><dt>mode</dt><dd>{d.run.mode}</dd><dt>candidates</dt><dd>{d.candidates.length}</dd><dt>lowest</dt><dd className="cell">{lowest ? `#${lowest.index} · ${lowest.probability.toFixed(2)}` : "—"}</dd>{since && <><dt>since</dt><dd>{when(since)}</dd></>}</dl></div>
       <div className="stack">
-        {lowest && <button className="btn primary" onClick={() => onGate("choose", lowest.step_id)}>choose #{lowest.index}, continue</button>}
-        <button className="btn pass" onClick={() => onGate("redraw")}>reject · redraw all</button>
-        <button className="btn pass" onClick={() => onGate("keep-seed")}>reject · keep seed</button>
-        <button className="btn art" onClick={() => onGate("flag")}>flag · call looks wrong</button>
+        {lowest && <button className="btn primary" title={`Continue with premise ${lowest.index}: outline, two context vignettes, the ending, then the packet.`} onClick={() => onGate("choose", lowest.step_id)}>choose #{lowest.index}, continue</button>}
+        <button className="btn pass" title="Close this run as rejected and start a new one with a fresh seed and fresh examples." onClick={() => onGate("redraw")}>reject · redraw all</button>
+        <button className="btn pass" title="Close this run as rejected and start a new one from the same seed, with fresh examples and premises." onClick={() => onGate("keep-seed")}>reject · keep seed</button>
+        <button className="btn art" title="Mark this run as a wrong call for later review. It stays open and nothing else changes." onClick={() => onGate("flag")}>flag · call looks wrong</button>
         <textarea name="gate-note" placeholder="note for the log…" aria-label="Gate note" value={note} onChange={(e) => setNote(e.target.value)} />
         {err && <div className="err">{err}</div>}
       </div>
-      <div><h3>next</h3><dl className="facts" style={{ marginTop: ".5rem" }}><dt>then</dt><dd>outline, two context vignettes and the ending, then the packet</dd></dl></div>
+      <div><h3>after the gate</h3><p className="mute" style={{ margin: ".5rem 0 0", fontSize: 12.5 }}>Outline, two context vignettes and the ending, then the packet.</p></div>
     </>
   );
 }
@@ -189,7 +197,7 @@ function RunFacts({ d, err }: { d: Detail; err: string }) {
   const chosen = d.candidates.find((c) => c.step_id === d.run.chosen_step);
   return (
     <div><h3>run</h3><dl className="facts" style={{ marginTop: ".5rem" }}>
-      <dt>status</dt><dd className={d.run.status === "failed" ? "pass" : ""}>{d.run.status.replace("_", " ")}</dd>
+      <dt>status</dt><dd className={d.run.status === "failed" ? "pass" : ""}>{label(d.run.status)}</dd>
       {d.run.gate_method && <><dt>gate</dt><dd>{d.run.gate_method}</dd></>}
       {chosen && <><dt>chosen</dt><dd className="cell">#{chosen.index} · {chosen.probability.toFixed(2)}</dd></>}
       <dt>started</dt><dd>{when(d.run.created_at)}</dd>
@@ -204,7 +212,7 @@ function PrevRun({ runs, current }: { runs: Run[]; current: string }) {
   const i = runs.findIndex((r) => r.id === current);
   const prev = i >= 0 ? runs[i + 1] : undefined;
   if (!prev) return null;
-  return <div className="foot">previous run <a href={`#run/${prev.id}`} className="mono">{prev.id.slice(-4)}</a> {prev.status.replace("_", " ")}{prev.ended_at ? ` ${when(prev.ended_at)}` : ""}</div>;
+  return <div className="foot">previous run <a href={`#run/${prev.id}`} className="mono">{prev.id.slice(-4)}</a> {label(prev.status)}{prev.ended_at ? ` ${when(prev.ended_at)}` : ""}</div>;
 }
 
 function StartForm({ status }: { status: Status | null }) {

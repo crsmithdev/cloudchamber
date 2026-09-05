@@ -4,6 +4,7 @@
  * manual run until POST /api/runs/:id/gate.
  */
 import Fastify, { type FastifyInstance } from "fastify";
+import { runNames } from "../pipeline/names.ts";
 import type { Db } from "../pipeline/store/db.ts";
 import { Pipeline, type RunOpts, type SeedChoice } from "../pipeline/run.ts";
 import { KINDS, latest, passedStories, record, type Kind, type Method } from "../pipeline/verdicts.ts";
@@ -111,7 +112,7 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean } 
     settings: readdirSync(join(PACKETS, "..", "sources", "settings")).filter((f) => f.endsWith(".md")).map((f) => f.replace(/\.md$/, "")),
   }));
 
-  app.get("/api/runs", async () => pipeline.runs());
+  app.get("/api/runs", async () => { const runs = pipeline.runs(); const names = runNames(runs); return runs.map((r) => ({ ...r, name: names.get(r.id) })); });
 
   app.post<{ Body: { mode?: "auto" | "manual"; setting?: string; genre?: string; source?: string; author?: string; seed?: string; seed_id?: string } }>("/api/runs", async (req, reply) => {
     const b = req.body ?? {};
@@ -131,7 +132,7 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean } 
 
   app.get<{ Params: { id: string } }>("/api/runs/:id", async (req, reply) => {
     try {
-      const run = pipeline.run(req.params.id);
+      const run = { ...pipeline.run(req.params.id), name: runNames(pipeline.runs()).get(req.params.id) };
       return { run, steps: pipeline.steps(run.id), artifacts: pipeline.artifacts(run.id), candidates: pipeline.candidates(run.id), examples: runExamples(db, run.example_ids) };
     } catch (e: any) { return reply.code(404).send({ error: e.message }); }
   });

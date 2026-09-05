@@ -63,9 +63,11 @@ describe("run graph", () => {
     expect(pr.prompt).toContain("A theme with a turn.");
     expect(pr.prompt).toContain("under 0.10");
     expect(pr.prompt).toMatch(/absurd/);
+    // premises are numbered from the tail: #1 is the lowest probability (0.03, model's 2nd), ties keep model order
     const ex = model.calls.filter((c) => c.stage === "execute");
-    expect(ex[0].prompt).toContain("Premise 1 text.");
-    expect(ex[0].prompt).not.toContain("Premise 2 text.");
+    expect(ex[0].prompt).toContain("Premise 2 text.");
+    expect(ex[0].prompt).not.toContain("Premise 1 text.");
+    expect(p.candidates(run.id).map((c) => [c.index, c.probability])).toEqual([[1, 0.03], [2, 0.03], [3, 0.05], [4, 0.06], [5, 0.08]]);
     // gate: lowest probability (0.03, tie between 2 and 4 → rng 0.001 picks the first)
     expect(run.gate_method).toBe("auto");
     const chosen = p.candidates(run.id).find((c) => c.step_id === run.chosen_step)!;
