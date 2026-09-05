@@ -16,7 +16,7 @@ async function j<T>(url: string, init?: RequestInit): Promise<T> {
 export const api = {
   status: () => j<any>("/api/status"),
   facets: () => j<{ sources: { id: string; genre: string }[]; authors: string[]; cells: { cell: string; n: number }[]; settings: string[] }>("/api/facets"),
-  queue: (kind: string, source?: string, mode: QueueMode = "suspects-first") => j<{ remaining: number; suspects: number; items: Item[] }>(`/api/queue?kind=${kind}&n=1${source ? `&source=${encodeURIComponent(source)}` : ""}${mode === "suspects" ? "&suspect=true" : mode === "sample" ? "&sample=true" : ""}`),
+  queue: (kind: string, source?: string, mode: QueueMode = "suspects-first", n = 1) => j<{ remaining: number; suspects: number; items: Item[] }>(`/api/queue?kind=${kind}&n=${n}${source ? `&source=${encodeURIComponent(source)}` : ""}${mode === "suspects" ? "&suspect=true" : mode === "sample" ? "&sample=true" : ""}`),
   verdict: (b: { kind: string; target_id: string; verdict: "keep" | "pass"; artifact: boolean; note: string; method: string }) => j("/api/verdicts", { method: "POST", body: JSON.stringify(b) }),
   items: (q: Record<string, string>) => j<{ total: number; items: Item[] }>(`/api/items?${new URLSearchParams(q)}`),
   runs: () => j<Run[]>("/api/runs"),
@@ -25,3 +25,14 @@ export const api = {
   gate: (id: string, b: { action: string; step_id?: string; note?: string }) => j<any>(`/api/runs/${id}/gate`, { method: "POST", body: JSON.stringify(b) }),
   packet: (id: string) => j<Record<string, string>>(`/api/packets/${id}`),
 };
+
+export type Status = { passages: number; passages_eligible: number; passages_suspect: number; per_source: { source: string; n: number; eligible: number }[]; themes: number; themes_eligible: number; verdicts: number; runs: { status: string; n: number }[] };
+export type Facets = { sources: { id: string; genre: string }[]; authors: string[]; cells: { cell: string; n: number }[]; settings: string[] };
+
+/** "14:54 today" for today's timestamps, otherwise "Sep 4, 03:00". */
+export function when(iso: string): string {
+  const d = new Date(iso);
+  const today = new Date().toDateString() === d.toDateString();
+  const t = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", hour12: false }).format(d);
+  return today ? `${t} today` : `${new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(d)}, ${t}`;
+}
