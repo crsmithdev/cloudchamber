@@ -112,7 +112,7 @@ async function main() {
       break;
     }
     case "replay-themes":
-      console.log(`replayed ${replayThemes(db)} theme event(s); draw \`python -m extract embed\` to restore embeddings`);
+      console.log(`replayed ${replayThemes(db)} theme event(s); run \`python -m extract embed\` to restore embeddings`);
       break;
     case "serve": {
       const { values } = parseArgs({ args: rest, allowPositionals: true, options: { port: { type: "string", default: "3002" } } });
