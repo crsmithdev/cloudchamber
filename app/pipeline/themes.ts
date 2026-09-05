@@ -75,15 +75,26 @@ function logEvent(e: ThemeEvent, log: string) {
   appendFileSync(log, JSON.stringify(e) + "\n");
 }
 
-/** Rebuild the themes table (without embeddings) from bank/themes.jsonl. */
+/**
+ * Rebuild the themes table (without embeddings) from bank/themes.jsonl, and
+ * mark every story in the log as drafted so draftAll does not redraft it. The
+ * log holds no rejections or verbatim repeats, so the replayed counts are the
+ * banked and attested rows only.
+ */
 export function replayThemes(db: Db, log: string = THEME_LOG): number {
   if (!existsSync(log)) return 0;
   db.exec("DELETE FROM themes");
+  db.exec("DELETE FROM theme_drafts");
+  const drafts = new Map<string, { at: string; banked: number; attested: number }>();
   let n = 0;
   for (const raw of readFileSync(log, "utf8").split("\n")) {
     if (!raw.trim()) continue;
     const e = JSON.parse(raw) as ThemeEvent;
     n++;
+    const d = drafts.get(e.story) ?? { at: e.at, banked: 0, attested: 0 };
+    d.at = e.at > d.at ? e.at : d.at;
+    if (e.type === "bank") d.banked++; else d.attested++;
+    drafts.set(e.story, d);
     if (e.type === "bank") {
       db.query("INSERT OR REPLACE INTO themes (id, text, attestation, stories, drafted_at) VALUES (?, ?, 1, ?, ?)").run(e.id, e.text, JSON.stringify([e.story]), e.at);
     } else {
@@ -94,6 +105,8 @@ export function replayThemes(db: Db, log: string = THEME_LOG): number {
       db.query("UPDATE themes SET attestation = attestation + 1, stories = ? WHERE id = ?").run(JSON.stringify(stories), e.id);
     }
   }
+  const ins = db.query("INSERT INTO theme_drafts (story_id, at, drafted, banked, attested, rejected) VALUES (?, ?, ?, ?, ?, 0)");
+  for (const [story, d] of drafts) ins.run(story, d.at, d.banked + d.attested, d.banked, d.attested);
   return n;
 }
 

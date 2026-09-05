@@ -71,9 +71,17 @@ describe("theme drafting", () => {
     const lines = readFileSync(log, "utf8").trim().split("\n").map((l) => JSON.parse(l));
     expect(lines.map((l) => l.type)).toEqual(["bank", "attest", "bank"]);
     db.exec("DELETE FROM themes");
+    db.exec("DELETE FROM theme_drafts");
     expect(replayThemes(db, log)).toBe(3);
     const again = db.query("SELECT id, attestation, stories FROM themes ORDER BY drafted_at").all() as any[];
     expect(again.map((t) => [t.id, t.attestation])).toEqual(banked.map((t) => [t.id, t.attestation]));
+    // the replay marks the logged stories drafted, so draftAll still skips them
+    const drafts = db.query("SELECT story_id, drafted, banked, attested, rejected FROM theme_drafts ORDER BY story_id").all() as any[];
+    expect(drafts).toEqual([
+      { story_id: "scp/a", drafted: 1, banked: 1, attested: 0, rejected: 0 },
+      { story_id: "scp/b", drafted: 2, banked: 1, attested: 1, rejected: 0 },
+    ]);
+    expect(await draftAll(p, {}, fakeEmbed, log)).toEqual([]);
   });
 
   test("few-shot appears once twelve themes carry a keep verdict", () => {
