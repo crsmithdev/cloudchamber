@@ -4,13 +4,14 @@ A story of W words yields clamp(round(W/1000), 3, 30) passages. The prose
 blocks are divided into that many strata of roughly equal word count; in each
 stratum one window is drawn at random: a run of consecutive paragraphs, 150 to
 400 words, starting and ending on a paragraph boundary. A window overlapping an
-already drawn one by more than half its tokens is redrawn. The RNG is seeded, so
-the same story and seed give the same passages. No score decides anything.
+already drawn one by more than half its tokens is redrawn. Windows are anchored to
+paragraph content by hash, so a reader fix that changes one paragraph moves only
+the windows that touch it. No score decides anything.
 """
 
 from __future__ import annotations
 
-import random
+import hashlib
 from dataclasses import dataclass
 
 from .doc import Doc, passage_id
@@ -63,14 +64,22 @@ def _withheld(text: str) -> bool:
     return "█" in text or "[REDACTED]" in text.upper() or "[DATA EXPUNGED]" in text.upper()
 
 
+def _rank(seed: int, text: str, salt: str = "") -> str:
+    return hashlib.sha1(f"{seed}|{salt}|{text}".encode()).hexdigest()
+
+
 def cut(doc: Doc, seed: int = 0) -> list[Passage]:
+    """Windows anchored to content, not to position counts. Within a stratum the
+    start paragraph is the one whose hash of (seed, text) ranks lowest, and the
+    window length is chosen by hash of the start paragraph too. So when a reader
+    fix changes one paragraph, only the windows touching it move; every other
+    story's passages and most of this story's keep their ids, and the verdicts
+    on them stay attached without inheritance."""
     blocks = [b for b in doc.blocks if b.kind in ("prose", "quote") and b.words > 0]
     total = sum(b.words for b in blocks)
     if not blocks or total < MIN_WORDS:
         return []
     n = quota(total)
-    rng = random.Random(f"{doc.source_id}:{seed}")
-    # strata by cumulative words
     bounds, acc, k = [0], 0, 1
     for i, b in enumerate(blocks):
         acc += b.words
@@ -78,32 +87,33 @@ def cut(doc: Doc, seed: int = 0) -> list[Passage]:
             bounds.append(i + 1)
             k += 1
     bounds.append(len(blocks))
+    ranked = sorted(range(len(blocks)), key=lambda i: _rank(seed, blocks[i].text))
     chosen: list[tuple[int, int, int]] = []
-    for s in range(len(bounds) - 1):
-        lo, hi = bounds[s], bounds[s + 1]
-        starts = list(range(lo, hi)) or [lo]
-        for _ in range(TRIES_PER_STRATUM):
-            st = rng.choice(starts)
-            opts = _windows_from(blocks, st)
-            if not opts:
-                continue
-            span = rng.choice(opts)
-            if all(_overlap(span, (a, b), blocks) <= MAX_OVERLAP for a, b, _ in chosen):
-                chosen.append((span[0], span[1], s))
-                break
-    # A stratum that sits inside one oversized paragraph yields nothing. Fill
-    # the quota from anywhere the prose allows before giving up on it.
-    tries = 0
-    while len(chosen) < n and tries < TRIES_PER_STRATUM * n:
-        tries += 1
-        st = rng.randrange(len(blocks))
+
+    def try_start(st: int, stratum: int) -> bool:
         opts = _windows_from(blocks, st)
         if not opts:
-            continue
-        span = rng.choice(opts)
+            return False
+        span = opts[int(_rank(seed, blocks[st].text, "len"), 16) % len(opts)]
         if all(_overlap(span, (a, b), blocks) <= MAX_OVERLAP for a, b, _ in chosen):
-            stratum = next(s for s in range(len(bounds) - 1) if bounds[s] <= st < bounds[s + 1])
             chosen.append((span[0], span[1], stratum))
+            return True
+        return False
+
+    for s in range(len(bounds) - 1):
+        lo, hi = bounds[s], bounds[s + 1]
+        for st in (i for i in ranked if lo <= i < hi):
+            if try_start(st, s):
+                break
+    # A stratum inside one oversized paragraph yields nothing; fill the quota
+    # from the best-ranked starts anywhere before giving up on it.
+    for st in ranked:
+        if len(chosen) >= n:
+            break
+        if any(a == st for a, _, _ in chosen):
+            continue
+        stratum = next(x for x in range(len(bounds) - 1) if bounds[x] <= st < bounds[x + 1])
+        try_start(st, stratum)
     out = []
     for a, b, s in sorted(chosen):
         text = "\n\n".join(blk.text for blk in blocks[a:b])

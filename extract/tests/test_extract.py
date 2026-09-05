@@ -114,3 +114,17 @@ def test_short_paragraphs_and_name_openers_survive(db):
     # the opening title and byline are still removed
     first = db.execute("SELECT text FROM stories WHERE id = 'datlow-01/lowland-sea'").fetchone()[0].split("\n\n")[0]
     assert not first.lower().startswith("lowland sea")
+
+
+def test_windows_are_anchored_to_content():
+    """Insert one paragraph in the middle of a story: only windows touching it move."""
+    from extract.doc import Block, Doc
+    paras = [f"Paragraph {i} " + " ".join(f"w{i}_{j}" for j in range(60)) + "." for i in range(120)]
+    def cut(ps):
+        d = Doc(source_id="x/story", title="S"); d.blocks = [Block(p) for p in ps]
+        return {p.id for p in segment.cut(d.finalize())}
+    a = cut(paras)
+    b = cut(paras[:60] + ["Grenniger shrugged."] + paras[60:])
+    assert len(a) == len(b) == 7
+    assert len(a & b) >= 5, f"only {len(a & b)} of 7 windows survived a one-paragraph insertion"
+    assert cut(paras) == a                       # deterministic
