@@ -25,8 +25,14 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 /* shell */
 .app { display: grid; grid-template-columns: 168px 340px minmax(0, 1fr) 268px; height: 100vh; }
+.app.rail-hidden { grid-template-columns: 40px 340px minmax(0, 1fr) 268px; }
 .app > * { min-width: 0; overflow: auto; }
-.rail { border-right: 1px solid var(--line); padding: 1rem .75rem; display: flex; flex-direction: column; gap: 1.25rem; }
+.rail { position: relative; border-right: 1px solid var(--line); padding: 1rem .75rem; display: flex; flex-direction: column; gap: 1.25rem; }
+.rail.hidden { padding: 2.5rem .25rem 1rem; gap: .5rem; align-items: center; }
+.railtoggle { position: absolute; top: .5rem; right: .4rem; appearance: none; border: 1px solid transparent; background: transparent; color: var(--dim); width: 1.5rem; height: 1.5rem; border-radius: 4px; cursor: pointer; font-size: 14px; line-height: 1; }
+.railtoggle:hover { color: var(--ink); border-color: var(--line); }
+.nav.mini a { justify-content: center; width: 1.75rem; height: 1.75rem; padding: 0; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 12px; position: relative; }
+.nav.mini a i { position: absolute; top: 3px; right: 3px; width: 6px; height: 6px; border-radius: 50%; background: var(--art); }
 .wordmark { padding: 0 .5rem; font: 500 18px/1.1 "Newsreader", Georgia, serif; }
 .wordmark small { display: block; font: 11px/1.4 "Instrument Sans", system-ui, sans-serif; color: var(--dim); }
 .nav a { display: flex; justify-content: space-between; padding: .4rem .5rem; color: var(--mute); text-decoration: none; border-radius: 4px; font-weight: 500; }
@@ -235,9 +241,9 @@ pre { white-space: pre-wrap; background: var(--surface); border: 1px solid var(-
 .form .actions .btn.primary { padding: .6rem 1.25rem; }
 
 @media (max-width: 1100px) {
-  .app { grid-template-columns: 1fr; height: auto; }
+  .app, .app.rail-hidden { grid-template-columns: 1fr; height: auto; }
   .rail, .pane.list, .pane.insp { border: 0; border-bottom: 1px solid var(--line); }
-  .rail { flex-direction: row; align-items: center; flex-wrap: wrap; } .pool { display: none; } .nav { display: flex; gap: .25rem; }
+  .rail, .rail.hidden { flex-direction: row; align-items: center; flex-wrap: wrap; padding: .75rem 2.5rem .75rem 1rem; } .pool { display: none; } .nav { display: flex; gap: .25rem; }
   .pane.read, .pane.read.wide { grid-column: auto; padding: 1.5rem 1rem; }
   .cand { grid-template-columns: 1fr; } .brief { grid-template-columns: 1fr; }
 }
