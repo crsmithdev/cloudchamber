@@ -2,8 +2,9 @@ import { resolve } from "node:path";
 
 /** Repo root: this file lives at app/pipeline/paths.ts. */
 export const ROOT = resolve(import.meta.dir, "..", "..");
-export const BANK = resolve(ROOT, "bank");
-export const PACKETS = resolve(ROOT, "packets");
+/** FOGBELT_BANK and FOGBELT_PACKETS relocate the tracked files; the test preload sets them to a temp dir. */
+export const BANK = process.env.FOGBELT_BANK ?? resolve(ROOT, "bank");
+export const PACKETS = process.env.FOGBELT_PACKETS ?? resolve(ROOT, "packets");
 export const VERDICT_LOG = resolve(BANK, "verdicts.jsonl");
 export const THEME_LOG = resolve(BANK, "themes.jsonl");
 export const SCHEMA = resolve(ROOT, "app", "pipeline", "store", "schema.sql");
