@@ -100,3 +100,17 @@ def test_facets_fitted_and_labelled(db):
 def test_facets_refuse_backend_mix_and_warn_on_drift(db, tmp_path):
     out = run("facets", db=db.execute("PRAGMA database_list").fetchone()[2]).stdout
     assert "existing fit" in out
+
+
+def test_short_paragraphs_and_name_openers_survive(db):
+    """An earlier rule dropped every paragraph under eight words (18.7% of the dev
+    corpus) and stripped the story's title from any paragraph opening with it."""
+    t = db.execute("SELECT text FROM stories WHERE id = 'datlow-01/majorlena'").fetchone()[0]
+    assert "\n\nSchulz was dragging Leroy back up.\n\n" in t
+    assert "Majorlena put her hand over Leroy’s mouth" in t
+    assert "Majorlena had been assessing the road situation." in t
+    short = sum(1 for s in db.execute("SELECT text FROM stories WHERE source_id = 'datlow-01'") for p in s[0].split("\n\n") if len(p.split()) < 8)
+    assert short > 500
+    # the opening title and byline are still removed
+    first = db.execute("SELECT text FROM stories WHERE id = 'datlow-01/lowland-sea'").fetchone()[0].split("\n\n")[0]
+    assert not first.lower().startswith("lowland sea")

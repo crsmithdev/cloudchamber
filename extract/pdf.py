@@ -373,29 +373,46 @@ def split_by_manifest(stories: list[dict], n_pages: int, author: str) -> list[Se
 
 # --- main entry -----------------------------------------------------------
 
+_FURNITURE_ONLY = re.compile(r"^[\s\d.\-–—*_|•·]*$")
+
+
 def _blocks(text: str, title: str, author: str, page0: int) -> list[Block]:
+    """Paragraphs of a section. Every paragraph of prose is kept, however short:
+    "Grenniger shrugged." is a paragraph. Only two things are removed, and only
+    where they occur: the story's own title and byline, which reflow glues onto
+    the opening paragraph, and front/back-matter fragments in the first few
+    blocks. An earlier rule dropped every paragraph under eight words and took
+    18.7% of the dev corpus with it, dialogue mostly."""
     out = []
     title_norm = title.strip().lower()
     page_no = page0 + 1
+    k = 0
     for c in re.split(r"\n\s*\n", text):
         if not c.strip():
             continue
         page_no += c.count("\f")
         body = clean_text(c.replace("\f", " "))
-        if _is_matter(body):
+        if not body or _FURNITURE_ONLY.match(body):
             continue
-        # The story's own title and byline open its first page; reflow glues
-        # them onto the opening paragraph.
-        low = body.lower()
-        if title_norm and low.startswith(title_norm):
-            body = body[len(title):].lstrip(" .,\u2014\u2013-\n")
+        if k < 3 and _is_matter(body):
+            continue
+        if k < 2 and title_norm and body.lower().startswith(title_norm):
+            rest = body[len(title):].lstrip(" .,\u2014\u2013-\n")
             for by in (f"by {author}".lower(), author.lower()):
-                if author and body.lower().startswith(by):
-                    body = body[len(by):].lstrip(" .,\u2014\u2013-\n")
+                if author and rest.lower().startswith(by):
+                    rest = rest[len(by):].lstrip(" .,\u2014\u2013-\n")
                     break
-        if len(body.split()) < 8:
-            continue
+            # Title alone, or title and byline: a heading, not prose.
+            if len(rest.split()) < 4:
+                k += 1
+                continue
+            # Title glued to the opening paragraph: keep the paragraph only if
+            # what follows the title reads as a sentence start, else the title
+            # was the character's name and the paragraph is left whole.
+            if rest[:1].isupper() or rest[:1] in "\"\u201c\u2018'":
+                body = rest
         out.append(Block(body, kind="prose", locator=f"p.{page_no}"))
+        k += 1
     return out
 
 
