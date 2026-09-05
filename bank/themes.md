@@ -1,6 +1,6 @@
 # themes
 
-8 eligible themes. One sentence each; attestation is how many stories drafted it.
+7 eligible themes. One sentence each; attestation is how many stories drafted it.
 
 - A weapon forged from stolen children answers only the man who built it, so the institution that commissioned it inherits a loaded gun it can never fire or destroy.  
   ×1 · scp/scp-001-djk1-the-children · 287543f8da25
@@ -16,5 +16,3 @@
   ×1 · scp/scp-2000 · f1576e87a2fe
 - Repeated fine-tuning of a species to remove its violence eventually removes the stubbornness needed to survive, so the correctors must leave the flaw in place.  
   ×1 · scp/scp-2000 · 220621f2b949
-- A safeguard that guarantees recovery quietly licenses the recklessness it was built to survive, and each rescue spends a tolerance that cannot be measured until exhausted.  
-  ×1 · scp/scp-2000 · 1d4346595493
