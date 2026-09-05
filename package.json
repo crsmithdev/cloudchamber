@@ -1,0 +1,18 @@
+{
+  "name": "fogbelt",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "fogbelt": "bun app/cli/main.ts",
+    "test": "bun test app",
+    "typecheck": "bunx tsc --noEmit"
+  },
+  "dependencies": {
+    "@fastify/static": "^10.1.3",
+    "fastify": "^5.12.3"
+  },
+  "devDependencies": {
+    "bun-types": "^1.4.1",
+    "typescript": "^7.0.2"
+  }
+}

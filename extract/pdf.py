@@ -419,7 +419,9 @@ def read(path: str | Path, source_id: str, author: str = "", genre: str = "",
 
     docs: list[Doc] = []
     for ord_, s in enumerate(secs):
-        text = _reflow("\n\f\n".join(pages[s.start:s.end]))
+        # Pages join on a form feed without a blank line: a page break inside a
+        # paragraph is not a paragraph break, and reflow decides the rest.
+        text = _reflow("\n\f".join(pages[s.start:s.end]))
         blocks = _blocks(text, s.title, s.author, s.start)
         if sum(b.words for b in blocks) < 250:
             continue

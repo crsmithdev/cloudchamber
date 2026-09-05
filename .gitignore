@@ -25,3 +25,5 @@ extracted/packets/
 # Working store: rebuildable from sources/ plus bank/verdicts.jsonl and bank/themes.jsonl
 data/
 .pytest_cache/
+
+node_modules/
