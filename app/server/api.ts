@@ -14,7 +14,15 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { BRIEFS } from "../pipeline/paths.ts";
 
-export type ItemFilter = { kind: Kind; source?: string; author?: string; genre?: string; cell?: string; verdict?: "unreviewed" | "keep" | "pass"; artifact?: boolean; suspect?: boolean; limit?: number; offset?: number };
+export type ItemOrder = "source" | "suspects" | "shuffle";
+export type ItemFilter = { kind: Kind; source?: string; author?: string; genre?: string; cell?: string; verdict?: "unreviewed" | "keep" | "pass"; artifact?: boolean; suspect?: boolean; order?: ItemOrder; seed?: number; limit?: number; offset?: number };
+
+/** A stable pseudo-random key per id, so a shuffled listing pages consistently under one seed. */
+function shuffleKey(id: string, seed: number): number {
+  let h = seed >>> 0;
+  for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 16777619) >>> 0;
+  return h;
+}
 
 /** Passages of a passed story are hidden everywhere; the story row is where they come back. */
 export function listItems(db: Db, f: ItemFilter) {
@@ -41,8 +49,12 @@ export function listItems(db: Db, f: ItemFilter) {
     if (f.suspect !== undefined && (r.suspect?.length > 0) !== f.suspect) return false;
     return true;
   });
+  // Source order is the query's own. Suspects-first keeps that order within each half; shuffle is stable per seed.
+  const ordered = f.order === "suspects" ? [...out].sort((a, b) => (b.suspect?.length ? 1 : 0) - (a.suspect?.length ? 1 : 0))
+    : f.order === "shuffle" ? [...out].sort((a, b) => shuffleKey(a.id, f.seed ?? 0) - shuffleKey(b.id, f.seed ?? 0))
+    : out;
   const offset = f.offset ?? 0, limit = f.limit ?? 50;
-  return { total: out.length, items: out.slice(offset, offset + limit) };
+  return { total: ordered.length, items: ordered.slice(offset, offset + limit) };
 }
 
 export type QueueMode = "suspects-first" | "suspects" | "sample";
@@ -101,6 +113,7 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean } 
       kind: (q.kind ?? "example") as Kind, source: q.source, author: q.author, genre: q.genre, cell: q.cell,
       verdict: q.verdict as any, artifact: q.artifact === undefined ? undefined : q.artifact === "true",
       suspect: q.suspect === undefined ? undefined : q.suspect === "true",
+      order: q.order as ItemOrder | undefined, seed: q.seed ? Number(q.seed) : undefined,
       limit: q.limit ? Number(q.limit) : undefined, offset: q.offset ? Number(q.offset) : undefined,
     });
   });

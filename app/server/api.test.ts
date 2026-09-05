@@ -100,6 +100,15 @@ describe("api", () => {
     expect(q.body.items.filter((i: any) => i.suspect.length)).toHaveLength(2);
     expect((await j("GET", "/api/items?kind=example&suspect=true")).body.total).toBe(3);
     expect((await j("GET", "/api/items?kind=example&suspect=false")).body.total).toBe(15);
+    // items can be ordered suspects-first, or shuffled stably under a seed
+    const sus = (await j("GET", "/api/items?kind=example&order=suspects")).body.items;
+    expect(sus.slice(0, 3).every((i: any) => i.suspect.length > 0)).toBe(true);
+    expect(sus.slice(3).every((i: any) => i.suspect.length === 0)).toBe(true);
+    const ids = (r: any) => r.body.items.map((i: any) => i.id);
+    const s1 = ids(await j("GET", "/api/items?kind=example&order=shuffle&seed=7"));
+    expect(ids(await j("GET", "/api/items?kind=example&order=shuffle&seed=7"))).toEqual(s1);
+    expect(s1).not.toEqual(ids(await j("GET", "/api/items?kind=example")));
+    expect([...s1].sort()).toEqual(ids(await j("GET", "/api/items?kind=example")).sort());
   });
 
   test("start a manual draw, read it, gate it, read the brief", async () => {
