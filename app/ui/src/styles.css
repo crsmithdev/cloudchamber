@@ -151,7 +151,7 @@ caption { text-align: left; color: var(--dim); font-size: 12px; padding-bottom: 
 details.ctx summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: .5rem; font-size: 12px; color: var(--mute); }
 details.ctx summary::-webkit-details-marker { display: none; }
 details.ctx summary .fn { margin: 0; white-space: nowrap; flex: none; }
-details.ctx summary .dim { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+details.ctx summary .dim { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 details.ctx summary .caret { display: inline-block; width: .9rem; color: var(--dim); font-size: 11px; }
 details.ctx[open] summary .caret { transform: rotate(90deg); }
 details.ctx[open] summary { margin-bottom: .6rem; }
@@ -195,8 +195,9 @@ h2.sec span { font-weight: 400; }
 .runbody { display: grid; gap: 0 3rem; align-items: start; }
 .runbody .col { min-width: 0; }
 @container (min-width: 58rem) { .runbody.two { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); } .runbody.two .cand, .runbody.two .exr { max-width: none; } }
-.packet { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; max-width: 58rem; }
-@container (min-width: 58rem) { .runbody.two .packet { grid-template-columns: 1fr; max-width: none; } }
+.packet { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .75rem; max-width: 58rem; }
+.packet .file { min-width: 0; }
+@container (min-width: 58rem) { .runbody.two .packet { grid-template-columns: minmax(0, 1fr); max-width: none; } }
 .packet .file { padding: .9rem 1rem; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
 .packet .file .fn { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 11px; color: var(--dim); margin-bottom: .5rem; }
 pre { white-space: pre-wrap; background: var(--surface); border: 1px solid var(--line); padding: .75rem; border-radius: 4px; max-height: 28rem; overflow: auto; font-size: 12px; margin: .5rem 0 1rem; }

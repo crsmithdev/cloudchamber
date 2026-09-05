@@ -202,9 +202,9 @@ function RunBody({ d, packet, onChoose, onVerdict }: { d: Detail; packet: Record
       </div>
       {packet && <div className="col">
         <h2 className="sec">packet <span>· <a href={api.packetFile(d.run.id, "trail.md")} target="_blank" rel="noopener" className="mono">packets/{d.run.id}/trail.md</a></span></h2>
-        <div className="packet">{PACKET_FILES.filter((f) => packet[f]).map((f) => f.startsWith("context")
-          ? <details className="file ctx" key={f}><summary><span className="caret">▸</span><span className="fn">{f}</span><span className="dim"> · {firstParagraph(packet[f]).slice(0, 80)}…</span></summary><Md className="passage sm" text={packet[f]} /></details>
-          : <div className="file" key={f}><div className="fn">{f}</div><Md className="passage sm" text={packet[f]} /></div>)}</div>
+        <div className="packet">{PACKET_FILES.filter((f) => packet[f]).map((f) => (
+          // Only the outline is open by default: the chosen vignette already sits in the distribution column.
+          <details className="file ctx" key={f} open={f === "outline.md"}><summary><span className="caret">▸</span><span className="fn">{f}</span><span className="dim"> · {firstParagraph(packet[f]).slice(0, 80)}…</span></summary><Md className="passage sm" text={packet[f]} /></details>))}</div>
       </div>}
       </div>
     </>
