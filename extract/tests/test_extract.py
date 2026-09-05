@@ -1,5 +1,6 @@
 """The Python seam: what `python -m extract` leaves in the store for the dev subset."""
 
+import json
 import re
 
 from extract import pdf, segment
@@ -114,6 +115,26 @@ def test_short_paragraphs_and_name_openers_survive(db):
     # the opening title and byline are still removed
     first = db.execute("SELECT text FROM stories WHERE id = 'datlow-01/lowland-sea'").fetchone()[0].split("\n\n")[0]
     assert not first.lower().startswith("lowland sea")
+
+
+def test_artifact_screen_names_its_reasons():
+    ok = "The door was open.\n\nShe went in, and the house was quiet.\n\nNothing moved; I waited.\n\nA man stood there. O lord, she said—\n\n“Go,” he said."
+    assert segment.suspects(ok) == []
+    assert segment.suspects("He walked to the\n\nend of the road.") == ["join"]
+    assert segment.suspects("T he door was open.") == ["dropcap"]
+    assert segment.suspects("A man stood there.\n\nI am here.") == []
+    assert segment.suspects("It was some- thing else.") == ["hyphen"]
+    assert segment.suspects("It was ~ the wa1k home.") == ["ocr"]
+    assert segment.suspects("A page with [[links]] and ## headings.") == ["markup"]
+    assert segment.suspects("T he road went\n\non and on- ward past the ||") == ["join", "dropcap", "hyphen", "ocr", "markup"]
+
+
+def test_suspects_are_stored_as_json_reasons_and_are_a_minority(db):
+    rows = db.execute("SELECT suspect FROM passages").fetchall()
+    marked = [json.loads(r[0]) for r in rows if r[0] is not None]
+    assert all(m and set(m) <= set(segment.SUSPECT_REASONS) for m in marked)
+    assert len(marked) < len(rows) * 0.5, f"{len(marked)} of {len(rows)} passages marked suspect"
+    assert db.execute("PRAGMA user_version").fetchone()[0] == 1
 
 
 def test_windows_are_anchored_to_content():

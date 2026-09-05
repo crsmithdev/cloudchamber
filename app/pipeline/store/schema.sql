@@ -2,6 +2,10 @@
 -- stories, passages and facet_fit; TypeScript (app/) owns the rest.
 -- SQLite is the working store and is rebuildable from sources/ plus
 -- bank/verdicts.jsonl and bank/themes.jsonl.
+--
+-- Every statement is IF NOT EXISTS, so this file only creates. Changes to an
+-- existing table go through the user_version migration in store/db.ts, which
+-- the TypeScript side owns; bump SCHEMA_VERSION there and in extract/store.py.
 
 CREATE TABLE IF NOT EXISTS sources (
   id        TEXT PRIMARY KEY,
@@ -36,6 +40,7 @@ CREATE TABLE IF NOT EXISTS passages (
   position  REAL NOT NULL,             -- 0..1 within the story
   seed      INTEGER NOT NULL,
   withheld  INTEGER NOT NULL DEFAULT 0,
+  suspect   TEXT,                      -- JSON array of artifact-screen reasons, NULL when clean
   d1 REAL, d2 REAL, d3 REAL, d4 REAL, d5 REAL, d6 REAL,
   voice     TEXT,                      -- tercile label on d1
   mode      TEXT,                      -- tercile label on d2
@@ -80,12 +85,12 @@ CREATE TABLE IF NOT EXISTS theme_rejections (
 
 CREATE TABLE IF NOT EXISTS verdicts (                -- replay of bank/verdicts.jsonl
   id               TEXT PRIMARY KEY,
-  kind             TEXT NOT NULL CHECK (kind IN ('example','theme','packet')),
+  kind             TEXT NOT NULL CHECK (kind IN ('example','theme','packet','story')),
   target_id        TEXT NOT NULL,
   verdict          TEXT NOT NULL CHECK (verdict IN ('keep','pass')),
   artifact         INTEGER NOT NULL DEFAULT 0,
   note             TEXT NOT NULL DEFAULT '',
-  method           TEXT NOT NULL CHECK (method IN ('queue','browse','gate','cli')),
+  method           TEXT NOT NULL CHECK (method IN ('queue','browse','gate','cli','run')),
   at               TEXT NOT NULL,
   by               TEXT NOT NULL,
   pipeline_version TEXT NOT NULL,

@@ -25,7 +25,8 @@ may read directly is `bank/examples/*.md` (verbatim passages by source) and
 ./fogbelt runs                        list runs
 ./fogbelt run-show <run>              steps and artifacts
 ./fogbelt packet <run>                print the packet
-./fogbelt verdict <example|theme|packet> <id> <keep|pass> [--artifact] [--note "..."]
+./fogbelt verdict <example|theme|packet|story> <id> <keep|pass> [--artifact] [--note "..."]
+                                      a passed story hides every passage of it
 ./fogbelt serve [--port 3002]         the review UI and run viewer
 ```
 

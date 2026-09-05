@@ -2,6 +2,8 @@
  * The verdict log: bank/verdicts.jsonl, append-only, tracked in git. The
  * `verdicts` table is a replay of it. Latest line per (kind, target) wins.
  * Eligible = latest verdict absent, or keep with the artifact flag unset.
+ * A story verdict covers every passage of the story: a passed story's
+ * passages are ineligible whatever their own verdicts say.
  *
  * Every example verdict carries a snapshot of the passage (story and text) so
  * that inheritance can run from the log alone after a re-extraction.
@@ -13,8 +15,8 @@ import { VERDICT_LOG, now } from "./paths.ts";
 import type { Db } from "./store/db.ts";
 import { pipelineVersion } from "./version.ts";
 
-export type Kind = "example" | "theme" | "packet";
-export type Method = "queue" | "browse" | "gate" | "cli";
+export type Kind = "example" | "theme" | "packet" | "story";
+export type Method = "queue" | "browse" | "gate" | "cli" | "run";
 
 export type Verdict = {
   id: string;
@@ -34,8 +36,8 @@ export type Verdict = {
 export type VerdictInput = Pick<Verdict, "kind" | "target_id" | "verdict" | "method"> &
   Partial<Pick<Verdict, "artifact" | "note" | "by" | "inherited_from" | "snapshot">>;
 
-const KINDS = new Set(["example", "theme", "packet"]);
-const METHODS = new Set(["queue", "browse", "gate", "cli"]);
+export const KINDS = new Set<Kind>(["example", "theme", "packet", "story"]);
+export const METHODS = new Set<Method>(["queue", "browse", "gate", "cli", "run"]);
 
 export function validateLine(raw: string, lineNo: number): Verdict {
   let v: any;
@@ -46,12 +48,12 @@ export function validateLine(raw: string, lineNo: number): Verdict {
   }
   const bad = (what: string) => new Error(`verdicts.jsonl line ${lineNo}: ${what}`);
   if (typeof v.id !== "string") throw bad("missing id");
-  if (!KINDS.has(v.kind)) throw bad(`bad kind ${JSON.stringify(v.kind)}`);
+  if (!KINDS.has(v.kind as Kind)) throw bad(`bad kind ${JSON.stringify(v.kind)}`);
   if (typeof v.target_id !== "string") throw bad("missing target_id");
   if (v.verdict !== "keep" && v.verdict !== "pass") throw bad(`bad verdict ${JSON.stringify(v.verdict)}`);
   if (typeof v.artifact !== "boolean") throw bad("artifact must be boolean");
   if (typeof v.note !== "string") throw bad("note must be a string");
-  if (!METHODS.has(v.method)) throw bad(`bad method ${JSON.stringify(v.method)}`);
+  if (!METHODS.has(v.method as Method)) throw bad(`bad method ${JSON.stringify(v.method)}`);
   for (const k of ["at", "by", "pipeline_version"]) if (typeof v[k] !== "string") throw bad(`missing ${k}`);
   return v as Verdict;
 }
@@ -120,16 +122,22 @@ export function isEligible(l: Latest): boolean {
   return l === null || (l.verdict === "keep" && !l.artifact);
 }
 
-/** SQL fragment selecting target ids of `kind` that are NOT eligible. */
+/** SQL fragment selecting target ids of `kind` that are NOT eligible. Ties on `at` (same second) break on rowid, as `latest` does. */
 export const INELIGIBLE_SQL = `
   SELECT target_id FROM verdicts v WHERE kind = ?
-    AND at = (SELECT max(at) FROM verdicts w WHERE w.kind = v.kind AND w.target_id = v.target_id)
+    AND rowid = (SELECT rowid FROM verdicts w WHERE w.kind = v.kind AND w.target_id = v.target_id ORDER BY at DESC, rowid DESC LIMIT 1)
     AND (verdict = 'pass' OR artifact = 1)`;
 
 export function eligibleIds(db: Db, kind: Kind, candidates: string[]): Set<string> {
   const out = new Set<string>();
   for (const id of candidates) if (isEligible(latest(db, kind, id))) out.add(id);
   return out;
+}
+
+/** Ids of stories whose latest story verdict makes them ineligible. */
+export function passedStories(db: Db): Set<string> {
+  const rows = db.query(INELIGIBLE_SQL).all("story") as { target_id: string }[];
+  return new Set(rows.map((r) => r.target_id));
 }
 
 // --- inheritance ---------------------------------------------------------

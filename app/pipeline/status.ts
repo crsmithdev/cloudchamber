@@ -1,5 +1,6 @@
 import type { Db } from "./store/db.ts";
 import { eligiblePassages, eligibleThemes } from "./bank.ts";
+import { passedStories } from "./verdicts.ts";
 
 export function status(db: Db) {
   const count = (sql: string) => (db.query(sql).get() as any)?.n ?? 0;
@@ -10,8 +11,10 @@ export function status(db: Db) {
   return {
     sources: count("SELECT count(*) AS n FROM sources"),
     stories: count("SELECT count(*) AS n FROM stories"),
+    stories_passed: passedStories(db).size,
     passages: count("SELECT count(*) AS n FROM passages"),
     passages_eligible: eligible.length,
+    passages_suspect: count("SELECT count(*) AS n FROM passages WHERE suspect IS NOT NULL"),
     per_source: perSource.map((r) => ({ ...r, eligible: eligibleBySource.get(r.source) ?? 0 })),
     themes: count("SELECT count(*) AS n FROM themes WHERE duplicate_of IS NULL"),
     themes_eligible: eligibleThemes(db).length,

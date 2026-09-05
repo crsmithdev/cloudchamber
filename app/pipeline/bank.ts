@@ -2,24 +2,25 @@
  * Export the eligible bank to plain files a skill can read without the store.
  *   bank/examples/<source>.md   every eligible passage of that source, verbatim
  *   bank/themes.md              every eligible theme with its attestation
- * Passed or artifact-flagged items never appear. Rebuildable; tracked anyway.
+ * Passed or artifact-flagged items never appear, nor any passage of a passed
+ * story. Rebuildable; tracked anyway.
  */
 import { mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { BANK } from "./paths.ts";
 import type { Db, PassageRow, StoryRow, ThemeRow } from "./store/db.ts";
-import { eligibleIds } from "./verdicts.ts";
+import { INELIGIBLE_SQL, eligibleIds } from "./verdicts.ts";
 
 export type Segment = { source?: string; author?: string; genre?: string };
 
 export function eligiblePassages(db: Db, seg: Segment = {}): (PassageRow & { title: string; author: string; genre: string; source_id: string })[] {
-  const where: string[] = [], args: any[] = [];
+  const where: string[] = [`s.id NOT IN (${INELIGIBLE_SQL})`], args: any[] = ["story"];
   if (seg.source) { where.push("s.source_id = ?"); args.push(seg.source); }
   if (seg.author) { where.push("lower(s.author) = lower(?)"); args.push(seg.author); }
   if (seg.genre) { where.push("s.genre = ?"); args.push(seg.genre); }
   const rows = db.query(
     `SELECT p.*, s.title, s.author, s.genre, s.source_id FROM passages p JOIN stories s ON s.id = p.story_id
-     ${where.length ? "WHERE " + where.join(" AND ") : ""} ORDER BY s.source_id, s.ord, p.position`,
+     WHERE ${where.join(" AND ")} ORDER BY s.source_id, s.ord, p.position`,
   ).all(...args) as any[];
   const ok = eligibleIds(db, "example", rows.map((r) => r.id));
   return rows.filter((r) => ok.has(r.id));

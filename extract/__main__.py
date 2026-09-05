@@ -52,7 +52,7 @@ def cmd_segment(root: Path, con, args) -> None:
     q = "SELECT id, source_id, title, author, text FROM stories" + (" WHERE source_id IN (%s)" % ",".join("?" * len(args.only)) if args.only else "")
     rows = con.execute(q, args.only or []).fetchall()
     from .doc import Block, Doc
-    total = 0
+    total = suspect = 0
     for r in rows:
         doc = Doc(source_id=r["id"], title=r["title"], author=r["author"])
         doc.blocks = [Block(p) for p in r["text"].split("\n\n") if p.strip()]
@@ -60,11 +60,13 @@ def cmd_segment(root: Path, con, args) -> None:
         con.execute("DELETE FROM passages WHERE story_id = ?", (r["id"],))
         ps = segment.cut(doc, seed=args.seed)
         for p in ps:
-            con.execute("INSERT OR REPLACE INTO passages (id, story_id, text, words, stratum, position, seed, withheld, first_seen) VALUES (?,?,?,?,?,?,?,?,?)",
-                        (p.id, p.story_id, p.text, p.words, p.stratum, p.position, p.seed, int(p.withheld), now()))
+            con.execute("INSERT OR REPLACE INTO passages (id, story_id, text, words, stratum, position, seed, withheld, suspect, first_seen) VALUES (?,?,?,?,?,?,?,?,?,?)",
+                        (p.id, p.story_id, p.text, p.words, p.stratum, p.position, p.seed, int(p.withheld),
+                         json.dumps(p.suspect) if p.suspect else None, now()))
         total += len(ps)
+        suspect += sum(1 for p in ps if p.suspect)
     con.commit()
-    print(f"{len(rows)} stories -> {total} passages (seed {args.seed})")
+    print(f"{len(rows)} stories -> {total} passages (seed {args.seed}), {suspect} suspect")
 
 
 def cmd_facets(root: Path, con, args) -> None:

@@ -12,6 +12,7 @@ the windows that touch it. No score decides anything.
 from __future__ import annotations
 
 import hashlib
+import re
 from dataclasses import dataclass
 
 from .doc import Doc, passage_id
@@ -34,6 +35,40 @@ class Passage:
     position: float
     seed: int
     withheld: bool = False
+    suspect: list[str] | None = None    # artifact-screen reasons, None when clean
+
+
+# --- artifact screen ------------------------------------------------------
+# Deterministic marks for the residue a reader leaves. A mark is a reason to
+# look, not a verdict: the queue serves suspects first and Chris decides.
+
+_TERMINAL = re.compile(r"""[.!?…:;"'”’)\]*_—-]\s*$""")
+_LOWER_START = re.compile(r"^[a-z]")
+_DROPCAP = re.compile(r"^(?![IAO] )[A-Z] [a-z]{2,}")           # "T he door" but not "I am", "A man", "O lord"
+_HYPHEN = re.compile(r"[a-z]- [a-z]")                          # "some- thing": a line-end hyphen the reflow kept
+_OCR = re.compile(r"[~|¬]|[a-z]\d[a-z]")                       # scan glyphs; "wa1k"
+_MARKUP = re.compile(r"\[\[|\]\]|##|@@|\|\|")
+
+SUSPECT_REASONS = ("join", "dropcap", "hyphen", "ocr", "markup")
+
+
+def suspects(text: str) -> list[str]:
+    """Reasons a passage looks like reader residue, in SUSPECT_REASONS order; empty when clean."""
+    paras = [p for p in text.split("\n\n") if p.strip()]
+    found = set()
+    for a, b in zip(paras, paras[1:]):
+        if not _TERMINAL.search(a) and _LOWER_START.match(b):
+            found.add("join")
+    for p in paras:
+        if _DROPCAP.match(p):
+            found.add("dropcap")
+    if _HYPHEN.search(text):
+        found.add("hyphen")
+    if _OCR.search(text):
+        found.add("ocr")
+    if _MARKUP.search(text):
+        found.add("markup")
+    return [r for r in SUSPECT_REASONS if r in found]
 
 
 def quota(words: int) -> int:
@@ -118,5 +153,5 @@ def cut(doc: Doc, seed: int = 0) -> list[Passage]:
     for a, b, s in sorted(chosen):
         text = "\n\n".join(blk.text for blk in blocks[a:b])
         out.append(Passage(passage_id(doc.source_id, text), doc.source_id, text, len(text.split()),
-                           s, round(a / max(1, len(blocks) - 1), 4), seed, _withheld(text)))
+                           s, round(a / max(1, len(blocks) - 1), 4), seed, _withheld(text), suspects(text) or None))
     return out

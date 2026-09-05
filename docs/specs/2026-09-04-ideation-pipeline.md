@@ -91,6 +91,9 @@ mode carries no doctrine at all.
     text, so that a regeneration does not cost me the cull.
 17. As Chris, I want everything not passed and not flagged to be eligible by
     default, so that the pipeline is usable before any culling.
+18. As Chris, I want to pass a whole story and have every passage of it drop
+    out, so that the one cull these curated sources need (a story that does not
+    belong) costs one verdict, not thirty.
 
 ### Bank
 
@@ -141,15 +144,21 @@ mode carries no doctrine at all.
 
 32. As Chris, I want a keyboard-driven queue that shows one item and takes
     keep, pass, artifact flag and note, so that culling is fast.
-33. As Chris, I want a browser over all passages and themes with filters on
-    segment, facet cell, verdict and artifact flag, so that I can see what was
-    extracted.
+32a. As Chris, I want the queue to serve first the passages the reader most
+    likely mangled, so that the example queue does its real job, finding
+    artifacts, before it asks me to confirm prose that is yes by default.
+33. As Chris, I want a browser over all passages, stories and themes with
+    filters on segment, facet cell, verdict, artifact flag and suspicion, so
+    that I can see what was extracted and pass a story in one row.
 34. As Chris, I want a run viewer listing runs, showing each step as a tree,
     expandable to prompt and response, with the five candidates shown as a
     distribution sorted by stated probability and labelled so that low reads as
     far from centre, so that I can see what was sampled and what was rejected.
 35. As Chris, I want to start a run from the UI and have the gate block there
     until I act, so that the UI and the skill drive the same pipeline.
+35a. As Chris, I want the six examples a run drew shown in the run viewer with
+    keep, pass and artifact on each, so that a bad example noticed in a trail
+    is culled where I noticed it.
 
 ### Skill
 
@@ -199,6 +208,18 @@ mode carries no doctrine at all.
    nothing; IF the story has fewer than 450 words of paragraphs under 400 words
    per passage owed THEN fewer passages are allowed (a 447-word story yields
    one). WHEN re-run with the same seed THE passages SHALL be identical.
+   Windows are anchored to paragraph content: the start paragraph of each
+   stratum and the window length are chosen by hash of seed and paragraph
+   text, so WHEN a reader fix changes one paragraph THE windows not touching
+   it SHALL keep their ids.
+7a. WHEN a passage is segmented THE system SHALL screen it for reader residue
+   and store the reasons found as a JSON list in `passages.suspect` (NULL
+   when clean): `join` (a paragraph ending without terminal punctuation
+   followed by one opening lowercase), `dropcap` (a paragraph opening with a
+   lone capital before a word, except I, A and O), `hyphen` (a line-end hyphen
+   the reflow kept, `\w- \w`), `ocr` (`~`, `|`, `¬`, or a digit inside a
+   word), `markup` (`[[`, `]]`, `##`, `@@`, `||`). The screen is
+   deterministic and makes no verdict.
 8. WHEN `facets` runs THE system SHALL store six z-scores per passage, the fit
    (mean, sd, n, backend) in the store, tercile labels on D1 and D2, and print
    the range, skew and largest correlation per dimension. IF the pool differs
@@ -234,9 +255,10 @@ mode carries no doctrine at all.
 13. WHEN a theme is shown anywhere THE system SHALL show its attestation count
     and story list. THE system SHALL never reject a theme for attestation.
 14. WHEN a verdict is recorded THE system SHALL append one line to the verdict
-    log with `kind` in `{example, theme, packet}`, `verdict` in `{keep, pass}`,
-    `artifact` boolean, `note`, `method` in `{queue, browse, gate, cli}`, `at`,
-    `by`, `pipeline_version`, and never modify or delete an existing line.
+    log with `kind` in `{example, theme, packet, story}`, `verdict` in
+    `{keep, pass}`, `artifact` boolean, `note`, `method` in
+    `{queue, browse, gate, cli, run}`, `at`, `by`, `pipeline_version`, and
+    never modify or delete an existing line.
 15. WHEN the verdict log is replayed into an empty store THE system SHALL
     reproduce the same eligibility for every item, and a corrupt line SHALL
     fail replay naming the line number.
@@ -247,7 +269,11 @@ mode carries no doctrine at all.
     `inherited_from` set. WHEN neither holds THE passage SHALL be unreviewed.
 17. WHEN an item's latest verdict is absent or keep, and its artifact flag is
     unset THE item SHALL be eligible. WHEN it is pass or flagged THE item SHALL
-    not be eligible.
+    not be eligible. WHEN a story's latest story verdict is pass THE story's
+    passages SHALL not be eligible, SHALL not appear in the queue, the
+    browser's example list, the export or the draw, whatever their own
+    verdicts say, and SHALL return when the story is kept again. Two verdicts
+    in the same second are ordered by insertion.
 18. WHEN `export` runs THE system SHALL write one file per source segment under
     the bank directory containing every eligible passage verbatim with source,
     story, author, genre and facet cell on each entry, plus one themes file
@@ -321,16 +347,27 @@ mode carries no doctrine at all.
 31. WHEN a run names no setting THE prompts SHALL contain no text beyond the
     passages, the seed, the ask block and the genre word.
 32. WHEN the queue view is open THE system SHALL show one unreviewed item with
-    its source line and facet cell; `k` SHALL record keep, `p` pass, `a` toggle
-    the artifact flag, `n` focus the note, and each verdict SHALL advance to
-    the next item within one round trip.
+    its source line, facet cell and suspect reasons; `k` SHALL record keep,
+    `p` pass, `a` toggle the artifact flag, `n` focus the note, and each
+    verdict SHALL advance to the next item within one round trip. By default
+    THE queue SHALL serve suspect passages before clean ones, sources
+    round-robin and random within a source; `GET /api/queue?suspect=true`
+    SHALL serve only suspects and `sample=true` SHALL ignore the screen. The
+    response SHALL carry `remaining` and `suspects` counts.
 33. WHEN the browser view is filtered by any combination of segment, facet
-    cell, verdict state and artifact flag THE list SHALL contain only matching
-    items and show the count.
+    cell, verdict state, artifact flag and suspicion THE list SHALL contain
+    only matching items and show the count. WHEN the browser lists stories
+    (`GET /api/items?kind=story`) each row SHALL carry title, author, source,
+    genre, word count, passage count and latest story verdict, with keep and
+    pass and no artifact flag.
 34. WHEN a run is opened THE viewer SHALL show its steps as a tree in parent
     order, each expandable to prompt, raw response and parsed output; the
     premise step SHALL render five rows sorted by probability ascending with
     the header text `stated probability · lower is further from centre`.
+    `GET /api/runs/:id` SHALL return `examples`: the six drawn passages in
+    draw order with source line, cell and latest verdict (id only, text null,
+    for a passage no longer in the pool); the viewer SHALL show them with
+    keep, pass and artifact, recorded with `method` `run`.
 35. WHEN a run is started from the UI THE server SHALL invoke the same command
     the CLI does, and WHEN the run reaches the gate THE viewer SHALL present
     choose, reject-redraw, reject-keep-seed and flag.
@@ -419,23 +456,37 @@ histogram printed after each run is how drift toward the cap is seen.
 ### Store
 
 SQLite via `bun:sqlite`. Tables: `sources`, `stories`, `passages` (id, story,
-text, word count, position stratum, facets, cell, seed), `facet_fit`,
+text, word count, position stratum, facets, cell, seed, suspect), `facet_fit`,
 `themes` (id, text, attestation, stories, embedding, drafted_at, duplicate_of),
 `theme_rejections`, `verdicts` (mirror of the log), `runs`, `steps`,
 `artifacts`. Passage id is the hash of story id plus whitespace-normalised
 text. Theme id is the hash of the normalised sentence. The log is the source
 of truth for verdicts; the table is a replay.
 
+`schema.sql` only creates (`IF NOT EXISTS`); both runtimes execute it on open.
+A change to an existing table is a migration in `app/pipeline/store/db.ts`
+keyed on `PRAGMA user_version`, owned by the TypeScript side: the verdicts
+table is dropped, recreated and replayed from the log, columns are added with
+`ALTER TABLE`. A fresh store is stamped with the current version. The Python
+side mirrors the version number and refuses a store that is behind, naming
+the `fogbelt` command that migrates it. Version 1 (2026-09-05): `story` kind,
+`run` method, `passages.suspect`.
+
 ### Verdict log line
 
 ```
-{ id, kind: "example"|"theme"|"packet", target_id, verdict: "keep"|"pass",
-  artifact: boolean, note: string, method: "queue"|"browse"|"gate"|"cli",
+{ id, kind: "example"|"theme"|"packet"|"story", target_id,
+  verdict: "keep"|"pass", artifact: boolean, note: string,
+  method: "queue"|"browse"|"gate"|"cli"|"run",
   at: ISO-8601, by: string, pipeline_version: string,
-  inherited_from?: target_id }
+  inherited_from?: target_id, snapshot?: { story_id, text } }
 ```
 
-Latest line per target wins. Inheritance runs at the end of every extraction,
+Latest line per target wins; a tie on `at` breaks on insertion order. A
+`story` verdict's target is the story id; it carries no snapshot and is never
+inherited. Story eligibility is applied as a filter on the story, on top of
+each passage's own verdict, in `eligiblePassages`, so export, draw, status,
+queue and browser all follow from one place. Inheritance runs at the end of every extraction,
 comparing new passages in a story against verdicted passage texts that no
 longer exist in that story, at 80% token overlap.
 
@@ -523,10 +574,12 @@ setting body; it is not built now.
 ### UI
 
 React with Vite, served by Fastify from one bun process, dev port at or above
-3002. Views: queue, browser, runs, run detail. API: `GET /api/queue`,
-`POST /api/verdicts`, `GET /api/items`, `GET /api/runs`, `POST /api/runs`,
-`GET /api/runs/:id`, `POST /api/runs/:id/gate`. The server runs the pipeline
-in-process; the CLI calls the same functions.
+3002. Views: queue, browser, runs, run detail. API: `GET /api/queue`
+(`kind`, `n`, `source`, `suspect=true` | `sample=true`), `POST /api/verdicts`,
+`GET /api/items` (`kind` in example | story | theme | packet, plus filters),
+`GET /api/runs`, `POST /api/runs`, `GET /api/runs/:id` (steps, artifacts,
+candidates, examples), `POST /api/runs/:id/gate`. The server runs the
+pipeline in-process; the CLI calls the same functions.
 
 ### Skill
 
@@ -564,7 +617,8 @@ Vol 01 against the outline, the eight named stories for *Contagion*,
 author per story, passages per story within floor and cap, every passage in
 150–400 words on paragraph boundaries, overlap under 50%, no surviving markup
 or scan furniture by grep, six facet columns present, determinism under a fixed
-seed. The SCP fixture asserts byte equality against expected text, as the old
+seed, windows surviving a one-paragraph insertion, the suspect screen naming
+each reason on a fixture string and marking a minority of the pool. The SCP fixture asserts byte equality against expected text, as the old
 selftest did. Tests that need the PDFs skip with a message when the sources
 directory is absent.
 
@@ -574,8 +628,11 @@ including one malformed premise response and one over-ceiling response. Tests
 run against a temporary database: a full auto run produces the expected step
 tree, artifacts and packet directory; a manual run stops at `awaiting_gate` and
 resumes on each gate action; reject creates a linked run; the flag starts
-nothing; verdict POSTs append log lines and change eligibility; replay of a log
-reproduces eligibility; inheritance attaches at 80% and not at 70%; export
+nothing; verdict POSTs append log lines and change eligibility; a story pass hides
+its passages from items, queue, status and draw; the queue serves suspects
+first, only suspects, or a sample; a run's examples carry verdicts recorded
+with method `run`; a version-0 store migrates in place and replays its log;
+replay of a log reproduces eligibility; inheritance attaches at 80% and not at 70%; export
 omits passed and flagged items; segment filters restrict draw; setting front
 matter changes prompt composition and jobs; queue, browser and run endpoints
 return the documented shapes. Run with `bun test`.
@@ -614,11 +671,15 @@ edit, from inside the worktree, and the turn reports what ran.
   on this machine.
 - **Artifact routing.** A flagged artifact is a stripper bug; the fix loop is
   manual for now (read flagged items, fix the reader, re-extract, verdicts
-  inherit). A view listing flagged items by source is enough to start.
+  inherit). The browser's artifact and suspect filters are the view. The
+  suspect screen's rules are a first list from the residue seen in the dev
+  subset; a rule that marks too much is removed, not tuned.
 - **Genre when a segment spans both.** The run's `--genre` flag is required if
   the examples' segment is not a single genre directory; otherwise inferred.
-- **Queue order.** Random within source, sources round-robin. Change if it
-  reads badly.
+- **Queue order.** Settled 2026-09-05: suspects first, then random within
+  source, sources round-robin. Chris found passages from these sources are
+  yes by default, so the queue's job is artifacts and the story row is the
+  cull.
 
 ## Further Notes
 
@@ -651,5 +712,14 @@ edit, from inside the worktree, and the turn reports what ran.
   20–29 words, median 24; page-cue splitting gave Contagion its eight stories;
   the capped outline passed on Fable at 383/348/372 words. Premises fell back
   to Opus; everything else ran on Fable.
+- **Review pass, 2026-09-05.** After the first nineteen verdicts Chris found
+  the example queue asking the wrong question: the passages are yes by default
+  and the only real finds were reader residue (a dropped short-paragraph rule,
+  18.7% of paragraphs, fixed in `591478e`). Three changes followed: the
+  content-anchored draw (`b47bd3d`), so a reader fix keeps most ids and most
+  verdicts without inheritance; the story verdict, so a source that does not
+  belong is one pass; and the suspect screen with suspects-first queue order.
+  The run viewer took keep, pass and artifact on the drawn examples at the
+  same time, since that is where a bad example is noticed.
 - `research/generation.md` §5 gaps remain gaps: nothing measures horror, tone
   drift is unstudied. The run viewer is where those get measured, by hand.

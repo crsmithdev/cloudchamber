@@ -5,7 +5,8 @@
  *   fogbelt extract [--only ID ...]        read -> segment -> facets, then inherit verdicts
  *   fogbelt status                         pool, bank, eligibility, runs
  *   fogbelt export                         write bank/ from the store
- *   fogbelt verdict <kind> <id> <keep|pass> [--artifact] [--note "..."]
+ *   fogbelt verdict <example|theme|packet|story> <id> <keep|pass> [--artifact] [--note "..."]
+ *                                          a passed story hides all its passages
  *   fogbelt replay                         rebuild the verdicts table from bank/verdicts.jsonl
  *   fogbelt run [--setting ID] [--genre G] [--auto] [--source S] [--author A]
  *               [--seed "text" | --seed-id ID]
@@ -21,7 +22,7 @@ import { openDb } from "../pipeline/store/db.ts";
 import { exportBank } from "../pipeline/bank.ts";
 import { extractAll } from "../pipeline/extract.ts";
 import { status } from "../pipeline/status.ts";
-import { inherit, record, replay, type Kind } from "../pipeline/verdicts.ts";
+import { KINDS, inherit, record, replay, type Kind } from "../pipeline/verdicts.ts";
 import { Pipeline, type SeedChoice } from "../pipeline/run.ts";
 import { ClaudeCli } from "../pipeline/model.ts";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
@@ -63,7 +64,7 @@ async function main() {
         options: { artifact: { type: "boolean", default: false }, note: { type: "string", default: "" } },
       });
       const [kind, id, verdict] = positionals;
-      if (!["example", "theme", "packet"].includes(kind ?? "") || !id || !["keep", "pass"].includes(verdict ?? "")) usage();
+      if (!KINDS.has(kind as Kind) || !id || !["keep", "pass"].includes(verdict ?? "")) usage();
       const v = record(db, { kind: kind as Kind, target_id: id!, verdict: verdict as "keep" | "pass", artifact: values.artifact, note: values.note, method: "cli" });
       console.log(JSON.stringify(v));
       break;

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { api, type Artifact, type Candidate, type Run, type Step } from "./api.ts";
+import { api, type Artifact, type Candidate, type Example, type Run, type Step } from "./api.ts";
 
-type Detail = { run: Run; steps: Step[]; artifacts: Artifact[]; candidates: Candidate[] };
+type Detail = { run: Run; steps: Step[]; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[] };
 
 export function RunDetail({ id }: { id: string }) {
   const [d, setD] = useState<Detail | null>(null);
@@ -13,7 +13,11 @@ export function RunDetail({ id }: { id: string }) {
   useEffect(() => { if (d?.run.status === "done") api.packet(id).then(setPacket).catch(() => {}); }, [d?.run.status, id]);
   if (err) return <div className="fail">{err}</div>;
   if (!d) return <div className="meta">loading…</div>;
-  const { run, steps, artifacts, candidates } = d;
+  const { run, steps, artifacts, candidates, examples } = d;
+  const verdict = async (e: Example, v: "keep" | "pass", artifact = false) => {
+    await api.verdict({ kind: "example", target_id: e.id, verdict: v, artifact, note: "", method: "run" });
+    load();
+  };
   const gate = async (action: string, step_id?: string) => {
     setErr("");
     try { const r = await api.gate(id, { action, step_id, note }); if (r.id && r.id !== id) location.hash = `#run/${r.id}`; else load(); } catch (e: any) { setErr(e.message); }
@@ -69,6 +73,17 @@ export function RunDetail({ id }: { id: string }) {
             {err && <div className="fail meta">{err}</div>}
           </div>)}
       </>}
+
+      <h2>examples <span className="meta">· the six passages this run drew</span></h2>
+      {examples.map((e) => (
+        <details key={e.id} className="card" style={{ padding: ".6rem 1rem" }}>
+          <summary><span className="meta">{e.text === null ? <>{e.id} · no longer in the pool</> : <>{e.source} · {e.title} — {e.author || "unknown"} · <code>{e.cell}</code> · {e.id}</>}</span>
+            {e.latest && <span className={` verdict-${e.latest.verdict}`}> · {e.latest.verdict}{e.latest.artifact && <span className="artifact"> · artifact</span>}</span>}</summary>
+          {e.text !== null && <>
+            <p className="passage" style={{ fontSize: 15 }}>{e.text}</p>
+            <div className="row"><button className="keep" onClick={() => verdict(e, "keep")}>keep</button><button className="pass" onClick={() => verdict(e, "pass")}>pass</button><button className="flag" onClick={() => verdict(e, e.latest?.verdict ?? "keep", !e.latest?.artifact)}>{e.latest?.artifact ? "unflag artifact" : "artifact"}</button></div>
+          </>}
+        </details>))}
 
       {packet && <>
         <h2>packet</h2>
