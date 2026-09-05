@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { openDb } from "../pipeline/store/db.ts";
 import { FakeModel } from "../pipeline/model.ts";
-import { Pipeline } from "../pipeline/run.ts";
+import { Pipeline } from "../pipeline/draw.ts";
 import { buildApi } from "./api.ts";
 
 const CELLS = ["informational", "mixed", "involved"].flatMap((v) => ["non-narrative", "mixed", "narrative"].map((m) => [v, m]));
@@ -24,7 +24,7 @@ async function setup() {
     outline: () => outline, jobs: () => "<job>one thing</job><job>another thing</job>",
     context: () => "<vignette>ctx</vignette>", ending: () => "<ending>end</ending>",
   });
-  const pipeline = new Pipeline(db, model, { packetsDir: join(dir, "packets"), rng: () => 0.001 });
+  const pipeline = new Pipeline(db, model, { briefsDir: join(dir, "briefs"), rng: () => 0.001 });
   const app = buildApi(db, pipeline);
   const j = async (method: "GET" | "POST", url: string, body?: unknown) => {
     const r = await app.inject({ method, url, payload: body as any });
@@ -74,9 +74,9 @@ describe("api", () => {
     expect(new Set(q.body.items.map((i: any) => i.source))).toEqual(new Set(["scp"]));
     const status = await j("GET", "/api/status");
     expect(status.body).toMatchObject({ stories_passed: 1, passages_eligible: 9 });
-    const run = await j("POST", "/api/runs", { mode: "manual", genre: "horror" });
-    expect(run.code).toBe(202);
-    const detail = await j("GET", `/api/runs/${run.body.id}`);
+    const draw = await j("POST", "/api/draws", { mode: "manual", genre: "horror" });
+    expect(draw.code).toBe(202);
+    const detail = await j("GET", `/api/draws/${draw.body.id}`);
     expect(new Set(detail.body.examples.map((e: any) => e.source))).toEqual(new Set(["scp"]));   // the draw skips the passed story
   });
 
@@ -102,55 +102,55 @@ describe("api", () => {
     expect((await j("GET", "/api/items?kind=example&suspect=false")).body.total).toBe(15);
   });
 
-  test("start a manual run, read it, gate it, read the packet", async () => {
+  test("start a manual draw, read it, gate it, read the brief", async () => {
     const { j, pipeline } = await setup();
-    const started = await j("POST", "/api/runs", { mode: "manual", genre: "horror" });
+    const started = await j("POST", "/api/draws", { mode: "manual", genre: "horror" });
     expect(started.code).toBe(202);
     const id = started.body.id;
     expect(id).toBeTruthy();
     // wait for the fake model to reach the gate
-    for (let i = 0; i < 50 && pipeline.run(id).status !== "awaiting_gate"; i++) await Bun.sleep(10);
-    const r = await j("GET", `/api/runs/${id}`);
-    expect(r.body.run.status).toBe("awaiting_gate");
+    for (let i = 0; i < 50 && pipeline.draw(id).status !== "awaiting_gate"; i++) await Bun.sleep(10);
+    const r = await j("GET", `/api/draws/${id}`);
+    expect(r.body.draw.status).toBe("awaiting_gate");
     expect(r.body.examples).toHaveLength(6);
     expect(r.body.examples[0]).toMatchObject({ text: expect.stringMatching(/^passage/), source: expect.any(String), latest: null });
     const ex = r.body.examples[0];
-    await j("POST", "/api/verdicts", { kind: "example", target_id: ex.id, verdict: "pass", method: "run" });
-    const after = await j("GET", `/api/runs/${id}`);
+    await j("POST", "/api/verdicts", { kind: "example", target_id: ex.id, verdict: "pass", method: "draw" });
+    const after = await j("GET", `/api/draws/${id}`);
     expect(after.body.examples[0].latest).toMatchObject({ verdict: "pass" });
     expect(r.body.steps.map((s: any) => s.stage).sort()).toEqual(["execute", "execute", "execute", "execute", "execute", "premises"]);
     expect(r.body.candidates.map((c: any) => c.probability)).toEqual([0.02, 0.03, 0.05, 0.06, 0.08]);
-    const flag = await j("POST", `/api/runs/${id}/gate`, { action: "flag", note: "looks wrong" });
+    const flag = await j("POST", `/api/draws/${id}/gate`, { action: "flag", note: "looks wrong" });
     expect(flag.body.flagged).toBe(1);
-    const chosen = await j("POST", `/api/runs/${id}/gate`, { action: "choose", step_id: r.body.candidates[1].step_id });
+    const chosen = await j("POST", `/api/draws/${id}/gate`, { action: "choose", step_id: r.body.candidates[1].step_id });
     expect(chosen.code).toBe(202);
-    for (let i = 0; i < 50 && pipeline.run(id).status !== "done"; i++) await Bun.sleep(10);
-    const done = await j("GET", `/api/runs/${id}`);
-    expect(done.body.run.status).toBe("done");
-    expect(done.body.run.gate_method).toBe("manual");
+    for (let i = 0; i < 50 && pipeline.draw(id).status !== "done"; i++) await Bun.sleep(10);
+    const done = await j("GET", `/api/draws/${id}`);
+    expect(done.body.draw.status).toBe("done");
+    expect(done.body.draw.gate_method).toBe("manual");
     expect(done.body.artifacts.filter((a: any) => a.kind === "vignette")).toHaveLength(7);   // 5 executed + 2 context
-    const gateAgain = await j("POST", `/api/runs/${id}/gate`, { action: "choose", step_id: r.body.candidates[0].step_id });
+    const gateAgain = await j("POST", `/api/draws/${id}/gate`, { action: "choose", step_id: r.body.candidates[0].step_id });
     expect(gateAgain.code).toBe(400);
-    expect((await j("GET", "/api/runs")).body).toHaveLength(1);
-    expect((await j("GET", "/api/runs/nope")).code).toBe(404);
+    expect((await j("GET", "/api/draws")).body).toHaveLength(1);
+    expect((await j("GET", "/api/draws/nope")).code).toBe(404);
   });
 
-  test("reject at the gate creates a linked run", async () => {
+  test("reject at the gate creates a linked draw", async () => {
     const { j, pipeline } = await setup();
-    const { body: { id } } = await j("POST", "/api/runs", { mode: "manual", genre: "horror", seed: "typed seed" });
-    for (let i = 0; i < 50 && pipeline.run(id).status !== "awaiting_gate"; i++) await Bun.sleep(10);
-    const rej = await j("POST", `/api/runs/${id}/gate`, { action: "keep-seed", note: "flat" });
+    const { body: { id } } = await j("POST", "/api/draws", { mode: "manual", genre: "horror", seed: "typed seed" });
+    for (let i = 0; i < 50 && pipeline.draw(id).status !== "awaiting_gate"; i++) await Bun.sleep(10);
+    const rej = await j("POST", `/api/draws/${id}/gate`, { action: "keep-seed", note: "flat" });
     expect(rej.code).toBe(202);
     expect(rej.body.superseded).toBe(id);
-    expect(pipeline.run(id).status).toBe("rejected");
-    expect(pipeline.run(rej.body.id).seed_text).toBe("typed seed");
+    expect(pipeline.draw(id).status).toBe("rejected");
+    expect(pipeline.draw(rej.body.id).seed_text).toBe("typed seed");
   });
 
-  test("a bad run request is a 400 with the reason", async () => {
+  test("a bad draw request is a 400 with the reason", async () => {
     const { j, db } = await setup();
     db.exec("DELETE FROM passages WHERE story_id = 'd1/b'");
     db.exec("DELETE FROM passages WHERE id IN ('a0','a1','a2','a3')");
-    const r = await j("POST", "/api/runs", { mode: "auto", genre: "horror" });
+    const r = await j("POST", "/api/draws", { mode: "auto", genre: "horror" });
     expect(r.code).toBe(400);
     expect(r.body.error).toMatch(/only 5 eligible passages/);
   });

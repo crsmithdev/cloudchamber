@@ -7,7 +7,7 @@ import { replay } from "../verdicts.ts";
 export type Db = Database;
 
 /** Bump with every change to an existing table, and mirror it in extract/store.py. */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 /** `log` is the verdict log a migration replays from; only tests pass it. */
 export function openDb(path: string = DEFAULT_DB, log?: string): Db {
@@ -15,7 +15,8 @@ export function openDb(path: string = DEFAULT_DB, log?: string): Db {
   const db = new Database(path);
   db.exec("PRAGMA journal_mode=WAL");
   db.exec("PRAGMA foreign_keys=ON");
-  const fresh = !db.query("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'verdicts'").get();
+  const fresh = !hasTable(db, "verdicts");
+  if (!fresh) renameBeforeSchema(db);
   const schema = readFileSync(SCHEMA, "utf8");
   db.exec(schema);
   if (fresh) db.exec(`PRAGMA user_version = ${SCHEMA_VERSION}`);
@@ -26,6 +27,31 @@ export function openDb(path: string = DEFAULT_DB, log?: string): Db {
 function userVersion(db: Db): number {
   return (db.query("PRAGMA user_version").get() as any).user_version;
 }
+function hasTable(db: Db, name: string): boolean {
+  return !!db.query("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?").get(name);
+}
+function columns(db: Db, table: string): string[] {
+  return (db.query(`PRAGMA table_info(${table})`).all() as any[]).map((c) => c.name);
+}
+
+/**
+ * Renames that must happen before schema.sql runs, or its CREATE TABLE IF NOT
+ * EXISTS would leave an empty table under the new name beside the old one.
+ *
+ *   1 -> 2  runs became draws; steps.run_id became steps.draw_id.
+ */
+function renameBeforeSchema(db: Db) {
+  if (userVersion(db) < 2 && hasTable(db, "runs")) {
+    if (hasTable(db, "draws")) {
+      const n = (db.query("SELECT count(*) AS n FROM draws").get() as any).n;
+      if (n > 0) throw new Error("store has both runs and a non-empty draws table; resolve by hand");
+      db.exec("DROP TABLE draws");
+    }
+    db.exec("ALTER TABLE runs RENAME TO draws");
+    if (columns(db, "steps").includes("run_id")) db.exec("ALTER TABLE steps RENAME COLUMN run_id TO draw_id");
+    db.exec("DROP INDEX IF EXISTS steps_run");
+  }
+}
 
 /**
  * Bring an existing store up to SCHEMA_VERSION. The verdicts table is a replay
@@ -33,15 +59,23 @@ function userVersion(db: Db): number {
  *
  *   0 -> 1  verdicts.kind gains 'story', verdicts.method gains 'run';
  *           passages gains the suspect column.
+ *   1 -> 2  verdicts.kind 'packet' is 'brief' and method 'run' is 'draw';
+ *           artifacts of kind 'packet' are 'brief'. Tables were renamed above.
  */
 function migrate(db: Db, schema: string, log?: string) {
   if (userVersion(db) < 1) {
     db.exec("DROP TABLE verdicts");
     db.exec(schema);
-    const cols = (db.query("PRAGMA table_info(passages)").all() as any[]).map((c) => c.name);
-    if (!cols.includes("suspect")) db.exec("ALTER TABLE passages ADD COLUMN suspect TEXT");
+    if (!columns(db, "passages").includes("suspect")) db.exec("ALTER TABLE passages ADD COLUMN suspect TEXT");
     replay(db, log);
     db.exec("PRAGMA user_version = 1");
+  }
+  if (userVersion(db) < 2) {
+    db.exec("DROP TABLE verdicts");
+    db.exec(schema);
+    replay(db, log);
+    db.exec("UPDATE artifacts SET kind = 'brief' WHERE kind = 'packet'");
+    db.exec("PRAGMA user_version = 2");
   }
 }
 

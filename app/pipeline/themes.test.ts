@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { openDb, type Db } from "./store/db.ts";
 import { FakeModel } from "./model.ts";
-import { Pipeline } from "./run.ts";
+import { Pipeline } from "./draw.ts";
 import { draftAll, draftStory, fewshotLines, replayThemes, validateTheme, type Embedder } from "./themes.ts";
 import { record } from "./verdicts.ts";
 
@@ -48,7 +48,7 @@ describe("theme drafting", () => {
       ],
       redundancy: (p: string) => /keeps its people by expelling/.test(p) ? `same: ${/\[([0-9a-f]{12})\]/.exec(p)![1]}` : "different",
     });
-    const p = new Pipeline(db, model, { packetsDir: dir });
+    const p = new Pipeline(db, model, { briefsDir: dir });
     const r1 = await draftStory(p, "scp/a", fakeEmbed, log);
     expect(r1).toMatchObject({ drafted: 2, banked: 1, attested: 0 });
     expect(r1.rejected[0].why).toEqual(["deictic opener"]);

@@ -9,7 +9,7 @@ from pathlib import Path
 
 SCHEMA = Path("app/pipeline/store/schema.sql")
 # Mirrors SCHEMA_VERSION in app/pipeline/store/db.ts, which owns migrations.
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 
 def now() -> str:

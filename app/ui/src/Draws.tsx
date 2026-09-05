@@ -1,40 +1,40 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { marked } from "marked";
-import { api, when, type Artifact, type Candidate, type Example, type Facets, type Run, type Status, type Step } from "./api.ts";
+import { api, when, type Artifact, type Candidate, type Example, type Facets, type Draw, type Status, type Step } from "./api.ts";
 
-type Detail = { run: Run; steps: Step[]; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[] };
-const STAGES = ["premises", "execute", "gate", "outline", "context", "ending", "packet"];
+type Detail = { draw: Draw; steps: Step[]; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[] };
+const STAGES = ["premises", "execute", "gate", "outline", "context", "ending", "brief"];
 const LABEL: Record<string, string> = { awaiting_gate: "open", done: "closed" };
 const label = (status: string) => LABEL[status] ?? status;
 const secs = (a: string, b: string | null) => (b ? `${Math.round((Date.parse(b) - Date.parse(a)) / 1000)}s` : "running");
-const choose = (index: number) => `Continue with premise ${index}: outline, two context vignettes, the ending, then the packet.`;
+const choose = (index: number) => `Continue with premise ${index}: outline, two context vignettes, the ending, then the brief.`;
 
-/** Model output and packet files are markdown written by this pipeline; rendered as written. */
+/** Model output and brief files are markdown written by this pipeline; rendered as written. */
 function Md({ text, className = "" }: { text: string; className?: string }) {
   const html = useMemo(() => marked.parse(text, { async: false }) as string, [text]);
   return <div className={"md " + className} dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
-/** Runs in the left pane, each expanding into its facts and step log; the selected run, a step, or the start form fills the rest. */
-export function Runs({ status, selected }: { status: Status | null; selected: string | undefined }) {
-  const [runs, setRuns] = useState<Run[]>([]);
+/** Draws in the left pane, each expanding into its facts and step log; the selected draw, a step, or the start form fills the rest. */
+export function Draws({ status, selected }: { status: Status | null; selected: string | undefined }) {
+  const [draws, setDraws] = useState<Draw[]>([]);
   const [details, setDetails] = useState<Record<string, Detail>>({});
   const [open, setOpen] = useState<Set<string>>(new Set());
   const [stepId, setStepId] = useState<string | null>(null);
-  const [packet, setPacket] = useState<Record<string, string> | null>(null);
+  const [brief, setBrief] = useState<Record<string, string> | null>(null);
   const [note, setNote] = useState("");
   const [err, setErr] = useState("");
 
-  const loadRuns = () => api.runs().then(setRuns).catch(() => {});
-  useEffect(() => { loadRuns(); const t = setInterval(loadRuns, 3000); return () => clearInterval(t); }, []);
+  const loadDraws = () => api.draws().then(setDraws).catch(() => {});
+  useEffect(() => { loadDraws(); const t = setInterval(loadDraws, 3000); return () => clearInterval(t); }, []);
 
-  // With nothing chosen, land on the run that needs attention, else the newest; with no runs, the form.
-  const current = selected ?? (runs.find((r) => r.status === "awaiting_gate") ?? runs[0])?.id ?? (runs.length ? undefined : "new");
+  // With nothing chosen, land on the draw that needs attention, else the newest; with no draws, the form.
+  const current = selected ?? (draws.find((r) => r.status === "awaiting_gate") ?? draws[0])?.id ?? (draws.length ? undefined : "new");
   const isForm = current === "new";
-  const loadDetail = (id: string) => api.run(id).then((d) => setDetails((m) => ({ ...m, [id]: d }))).catch((e) => setErr(e.message));
+  const loadDetail = (id: string) => api.draw(id).then((d) => setDetails((m) => ({ ...m, [id]: d }))).catch((e) => setErr(e.message));
   useEffect(() => {
     if (!current || isForm) return;
-    setStepId(null); setPacket(null); setErr("");
+    setStepId(null); setBrief(null); setErr("");
     setOpen((o) => new Set(o).add(current));
     loadDetail(current);
     const t = setInterval(() => loadDetail(current), 2500);
@@ -42,38 +42,38 @@ export function Runs({ status, selected }: { status: Status | null; selected: st
   }, [current]);
   useEffect(() => { for (const id of open) if (!details[id]) loadDetail(id); }, [open]);
   const d = current && !isForm ? details[current] : undefined;
-  useEffect(() => { if (d?.run.status === "done" && !packet) api.packet(d.run.id).then(setPacket).catch(() => {}); }, [d?.run.status]);
+  useEffect(() => { if (d?.draw.status === "done" && !brief) api.brief(d.draw.id).then(setBrief).catch(() => {}); }, [d?.draw.status]);
 
   const select = (id: string) => {
     if (id === current) setOpen((o) => { const n = new Set(o); n.has(id) ? n.delete(id) : n.add(id); return n; });
-    else location.hash = `#run/${id}`;
+    else location.hash = `#draw/${id}`;
   };
   const gate = async (action: string, step_id?: string) => {
     if (!d) return;
     setErr("");
-    try { const r = await api.gate(d.run.id, { action, step_id, note }); setNote(""); if (r.id && r.id !== d.run.id) location.hash = `#run/${r.id}`; else loadDetail(d.run.id); loadRuns(); } catch (e: any) { setErr(e.message); }
+    try { const r = await api.gate(d.draw.id, { action, step_id, note }); setNote(""); if (r.id && r.id !== d.draw.id) location.hash = `#draw/${r.id}`; else loadDetail(d.draw.id); loadDraws(); } catch (e: any) { setErr(e.message); }
   };
   const verdict = async (e: Example, v: "keep" | "pass", artifact = false) => {
-    await api.verdict({ kind: "example", target_id: e.id, verdict: v, artifact, note: "", method: "run" });
-    if (d) loadDetail(d.run.id);
+    await api.verdict({ kind: "example", target_id: e.id, verdict: v, artifact, note: "", method: "draw" });
+    if (d) loadDetail(d.draw.id);
   };
   const step = d && stepId ? d.steps.find((s) => s.id === stepId) : undefined;
-  const dot = (s: string) => "st " + (s === "awaiting_gate" ? "wait" : s === "failed" ? "fail" : s === "running" ? "run" : "");
+  const dot = (s: string) => "st " + (s === "awaiting_gate" ? "wait" : s === "failed" ? "fail" : s === "running" ? "running" : "");
 
   return (
     <>
       <div className="pane list">
-        <div className="newrun"><a className="btn primary" href="#runs/new" style={{ textDecoration: "none" }}>New run</a></div>
-        {runs.length === 0 && <div className="empty">No runs yet.</div>}
-        {runs.map((r) => (
-          <div key={r.id} className={"runrow" + (r.id === current ? " on" : "") + (r.superseded_by ? " old" : "")} onClick={() => select(r.id)}>
+        <div className="newdraw"><a className="btn primary" href="#draws/new" style={{ textDecoration: "none" }}>New draw</a></div>
+        {draws.length === 0 && <div className="empty">No draws yet.</div>}
+        {draws.map((r) => (
+          <div key={r.id} className={"drawrow" + (r.id === current ? " on" : "") + (r.superseded_by ? " old" : "")} onClick={() => select(r.id)}>
             <div className="l1"><span className="nm">{r.name ?? r.id}</span><span className="when">{when(r.created_at)}</span></div>
             <div className="l2"><span className={dot(r.status)} />{label(r.status)} · {r.setting ?? "unrestricted"} · {r.genre} · {r.mode}{r.flagged ? <span className="art"> · flagged</span> : null}{r.superseded_by && <span className="dim"> · superseded</span>}</div>
             <div className="sd">{r.seed_text}</div>
             <div className="rid mono dim">{r.id}</div>
             {open.has(r.id) && details[r.id] && <>
               <RowFacts d={details[r.id]} />
-              <Log d={details[r.id]} stepId={r.id === current ? stepId : null} onStep={(id) => { if (r.id !== current) location.hash = `#run/${r.id}`; setStepId(id); }} />
+              <Log d={details[r.id]} stepId={r.id === current ? stepId : null} onStep={(id) => { if (r.id !== current) location.hash = `#draw/${r.id}`; setStepId(id); }} />
             </>}
           </div>))}
       </div>
@@ -81,10 +81,10 @@ export function Runs({ status, selected }: { status: Status | null; selected: st
       {isForm || !current ? <StartForm status={status} /> : (
         <div className="pane read span">
           {!d ? (err ? <div className="err">{err}</div> : <span className="dim">loading…</span>) : <>
-            <div className="runhd"><h1>{d.run.name ?? d.run.id}</h1><span className="rid mono dim">{d.run.id}</span><span className={"badge " + d.run.status}>{label(d.run.status)}</span><span className="dim" style={{ fontSize: 12 }}>{d.run.setting ?? "unrestricted"} · {d.run.genre} · {d.run.mode}{d.run.gate_method ? ` · gate ${d.run.gate_method}` : ""} · seed {d.run.seed_mode}</span></div>
-            {d.run.superseded_by && <div className="dim" style={{ fontSize: 12 }}>superseded by <a href={`#run/${d.run.superseded_by}`} className="mono">{d.run.superseded_by}</a></div>}
-            {d.run.status === "awaiting_gate" && !step && <GateBar d={d} note={note} setNote={setNote} err={err} onGate={gate} />}
-            {step ? <StepView step={step} artifacts={d.artifacts.filter((a) => a.step_id === step.id)} chosen={step.id === d.run.chosen_step} onBack={() => setStepId(null)} /> : <RunBody d={d} packet={packet} onChoose={(id) => gate("choose", id)} onVerdict={verdict} />}
+            <div className="drawhd"><h1>{d.draw.name ?? d.draw.id}</h1><span className="rid mono dim">{d.draw.id}</span><span className={"badge " + d.draw.status}>{label(d.draw.status)}</span><span className="dim" style={{ fontSize: 12 }}>{d.draw.setting ?? "unrestricted"} · {d.draw.genre} · {d.draw.mode}{d.draw.gate_method ? ` · gate ${d.draw.gate_method}` : ""} · seed {d.draw.seed_mode}</span></div>
+            {d.draw.superseded_by && <div className="dim" style={{ fontSize: 12 }}>superseded by <a href={`#draw/${d.draw.superseded_by}`} className="mono">{d.draw.superseded_by}</a></div>}
+            {d.draw.status === "awaiting_gate" && !step && <GateBar d={d} note={note} setNote={setNote} err={err} onGate={gate} />}
+            {step ? <StepView step={step} artifacts={d.artifacts.filter((a) => a.step_id === step.id)} chosen={step.id === d.draw.chosen_step} onBack={() => setStepId(null)} /> : <DrawBody d={d} brief={brief} onChoose={(id) => gate("choose", id)} onVerdict={verdict} />}
           </>}
         </div>
       )}
@@ -93,24 +93,24 @@ export function Runs({ status, selected }: { status: Status | null; selected: st
 }
 
 function RowFacts({ d }: { d: Detail }) {
-  const chosen = d.candidates.find((c) => c.step_id === d.run.chosen_step);
+  const chosen = d.candidates.find((c) => c.step_id === d.draw.chosen_step);
   const lowest = d.candidates[0];
   const since = d.steps.reduce((m, s) => (s.ended_at && s.ended_at > m ? s.ended_at : m), "");
   const failed = d.steps.filter((s) => s.status === "failed").length;
   return (
     <dl className="facts rowfacts" onClick={(e) => e.stopPropagation()}>
-      {d.run.status === "awaiting_gate" ? <>
+      {d.draw.status === "awaiting_gate" ? <>
         <dt>candidates</dt><dd>{d.candidates.length}</dd>
         {lowest && <><dt>lowest</dt><dd className="cell">#{lowest.index} · {lowest.probability.toFixed(2)}</dd></>}
         {since && <><dt>waiting since</dt><dd>{when(since)}</dd></>}
       </> : <>
-        {d.run.gate_method && <><dt>gate</dt><dd>{d.run.gate_method}</dd></>}
+        {d.draw.gate_method && <><dt>gate</dt><dd>{d.draw.gate_method}</dd></>}
         {chosen && <><dt>chosen</dt><dd className="cell">#{chosen.index} · {chosen.probability.toFixed(2)}</dd></>}
-        <dt>started</dt><dd>{when(d.run.created_at)}</dd>
-        {d.run.ended_at && <><dt>ended</dt><dd>{when(d.run.ended_at)}</dd></>}
+        <dt>started</dt><dd>{when(d.draw.created_at)}</dd>
+        {d.draw.ended_at && <><dt>ended</dt><dd>{when(d.draw.ended_at)}</dd></>}
         <dt>steps</dt><dd>{d.steps.length}{failed ? <span className="pass"> · {failed} failed</span> : null}</dd>
       </>}
-      {d.run.flagged ? <><dt>flag</dt><dd className="art">{d.run.flag_note || "flagged"}</dd></> : null}
+      {d.draw.flagged ? <><dt>flag</dt><dd className="art">{d.draw.flag_note || "flagged"}</dd></> : null}
     </dl>
   );
 }
@@ -120,9 +120,9 @@ function GateBar({ d, note, setNote, err, onGate }: { d: Detail; note: string; s
   return (
     <div className="gatebar" role="group" aria-label="Gate">
       {lowest && <button className="btn primary" title={choose(lowest.index)} onClick={() => onGate("choose", lowest.step_id)}>choose #{lowest.index}, continue</button>}
-      <button className="btn pass" title="Close this run as rejected and start a new one with a fresh seed and fresh examples." onClick={() => onGate("redraw")}>reject · redraw all</button>
-      <button className="btn pass" title="Close this run as rejected and start a new one from the same seed, with fresh examples and premises." onClick={() => onGate("keep-seed")}>reject · keep seed</button>
-      <button className="btn art" title="Mark this run as a wrong call for later review. It stays open and nothing else changes." onClick={() => onGate("flag")}>flag · call looks wrong</button>
+      <button className="btn pass" title="Close this draw as rejected and start a new one with a fresh seed and fresh examples." onClick={() => onGate("redraw")}>reject · redraw all</button>
+      <button className="btn pass" title="Close this draw as rejected and start a new one from the same seed, with fresh examples and premises." onClick={() => onGate("keep-seed")}>reject · keep seed</button>
+      <button className="btn art" title="Mark this draw as a wrong call for later review. It stays open and nothing else changes." onClick={() => onGate("flag")}>flag · call looks wrong</button>
       <input type="text" name="gate-note" placeholder="note for the log…" aria-label="Gate note" value={note} onChange={(e) => setNote(e.target.value)} />
       {err && <div className="err" style={{ flexBasis: "100%" }}>{err}</div>}
     </div>
@@ -137,43 +137,43 @@ function Log({ d, stepId, onStep }: { d: Detail; stepId: string | null; onStep: 
   walk(null, 0);
   const cand = new Map(d.candidates.map((c) => [c.step_id, c]));
   const seen = new Set(d.steps.map((s) => s.stage));
-  const inFlight = d.run.status === "awaiting_gate" || d.run.status === "running";
+  const inFlight = d.draw.status === "awaiting_gate" || d.draw.status === "running";
   return (
     <div className="log" onClick={(e) => e.stopPropagation()}>
       {flat.map(({ s, depth }) => {
         const c = cand.get(s.id);
         return (
           <button key={s.id} className={"step" + (s.id === stepId ? " on" : "")} style={{ paddingLeft: `${0.4 + depth}rem` }} onClick={() => onStep(s.id)}>
-            <span className={"st " + (s.status === "failed" ? "fail" : s.status === "running" ? "run" : "")} />
-            <span className="n">{s.stage}<small>{c ? ` · #${c.index} · ${c.probability.toFixed(2)}` : ""}{s.attempt > 1 ? ` · attempt ${s.attempt}` : ""}{s.fail_reason ? ` · ${s.fail_reason}` : ""}{s.id === d.run.chosen_step ? " · chosen" : ""}</small></span>
+            <span className={"st " + (s.status === "failed" ? "fail" : s.status === "running" ? "running" : "")} />
+            <span className="n">{s.stage}<small>{c ? ` · #${c.index} · ${c.probability.toFixed(2)}` : ""}{s.attempt > 1 ? ` · attempt ${s.attempt}` : ""}{s.fail_reason ? ` · ${s.fail_reason}` : ""}{s.id === d.draw.chosen_step ? " · chosen" : ""}</small></span>
             <span className="d">{secs(s.started_at, s.ended_at)}</span>
           </button>);
       })}
-      {d.run.status === "awaiting_gate" && <div className="step"><span className="st wait" /><span className="n">gate<small> · {d.run.mode}</small></span><span className="d">waiting</span></div>}
-      {inFlight && STAGES.filter((st) => !seen.has(st) && st !== "gate" && st !== "packet").map((st) => <div key={st} className="step todo"><span className="st todo" /><span className="n">{st}</span><span className="d">—</span></div>)}
-      {inFlight && <div className="step todo"><span className="st todo" /><span className="n">packet</span><span className="d">—</span></div>}
-      {d.run.status === "done" && <div className="step"><span className="st" /><span className="n">packet<small> · exported</small></span><span className="d">{d.run.ended_at ? when(d.run.ended_at).replace(" today", "") : ""}</span></div>}
+      {d.draw.status === "awaiting_gate" && <div className="step"><span className="st wait" /><span className="n">gate<small> · {d.draw.mode}</small></span><span className="d">waiting</span></div>}
+      {inFlight && STAGES.filter((st) => !seen.has(st) && st !== "gate" && st !== "brief").map((st) => <div key={st} className="step todo"><span className="st todo" /><span className="n">{st}</span><span className="d">—</span></div>)}
+      {inFlight && <div className="step todo"><span className="st todo" /><span className="n">brief</span><span className="d">—</span></div>}
+      {d.draw.status === "done" && <div className="step"><span className="st" /><span className="n">brief<small> · exported</small></span><span className="d">{d.draw.ended_at ? when(d.draw.ended_at).replace(" today", "") : ""}</span></div>}
     </div>
   );
 }
 
-const PACKET_FILES = ["outline.md", "vignette.md", "context-1.md", "context-2.md", "ending.md"];
+const BRIEF_FILES = ["outline.md", "vignette.md", "context-1.md", "context-2.md", "ending.md"];
 const firstParagraph = (s: string) => s.trim().split(/\n\s*\n/)[0].replace(/[*_#>`]/g, "");
 
-function RunBody({ d, packet, onChoose, onVerdict }: { d: Detail; packet: Record<string, string> | null; onChoose: (stepId: string) => void; onVerdict: (e: Example, v: "keep" | "pass", artifact?: boolean) => void }) {
-  const [openVig, setOpenVig] = useState<string | null>(d.run.chosen_step);
+function DrawBody({ d, brief, onChoose, onVerdict }: { d: Detail; brief: Record<string, string> | null; onChoose: (stepId: string) => void; onVerdict: (e: Example, v: "keep" | "pass", artifact?: boolean) => void }) {
+  const [openVig, setOpenVig] = useState<string | null>(d.draw.chosen_step);
   const [openEx, setOpenEx] = useState<string | null>(null);
   const cands = d.candidates;
   const maxP = Math.max(...cands.map((c) => c.probability), 0.01);
-  const gating = d.run.status === "awaiting_gate";
+  const gating = d.draw.status === "awaiting_gate";
   return (
     <>
-      <div className="seed"><small>seed</small>{d.run.seed_text}{d.run.flag_note && <div className="warn" style={{ fontStyle: "normal", fontFamily: "Instrument Sans, system-ui, sans-serif", fontSize: 12.5, marginTop: ".5rem" }}>flagged: {d.run.flag_note}</div>}</div>
-      <div className={"runbody" + (packet ? " two" : "")}><div className="col">
+      <div className="seed"><small>seed</small>{d.draw.seed_text}{d.draw.flag_note && <div className="warn" style={{ fontStyle: "normal", fontFamily: "Instrument Sans, system-ui, sans-serif", fontSize: 12.5, marginTop: ".5rem" }}>flagged: {d.draw.flag_note}</div>}</div>
+      <div className={"drawbody" + (brief ? " two" : "")}><div className="col">
       {cands.length > 0 && <>
         <h2 className="sec">distribution <span>· stated probability · lower is further from centre</span></h2>
         {cands.map((c) => {
-          const chosen = c.step_id === d.run.chosen_step;
+          const chosen = c.step_id === d.draw.chosen_step;
           const isOpen = openVig === c.step_id;
           return (
             <div key={c.step_id} className={"cand" + (chosen ? " chosen" : "")}>
@@ -191,7 +191,7 @@ function RunBody({ d, packet, onChoose, onVerdict }: { d: Detail; packet: Record
       {d.examples.map((e) => (
         <div key={e.id} className="exr">
           {e.text === null
-            ? <span className="exhead"><span className="caret" /><span className="dim"><span className="mono">{e.id}</span> · not in the current pool; the passages were re-extracted after this run</span></span>
+            ? <span className="exhead"><span className="caret" /><span className="dim"><span className="mono">{e.id}</span> · not in the current pool; the passages were re-extracted after this draw</span></span>
             : <button className="exhead" aria-expanded={openEx === e.id} onClick={() => setOpenEx(openEx === e.id ? null : e.id)}><span className={"caret" + (openEx === e.id ? " open" : "")}>▸</span><b>{e.title}</b> · {e.author || "unknown"} · <span className="cell">{e.cell}</span></button>}
           <span className="exv">{e.latest ? <><span className={e.latest.verdict}>{e.latest.verdict}</span>{e.latest.artifact && <span className="art"> · artifact</span>}</> : <span className="dim">—</span>}</span>
           {openEx === e.id && e.text !== null && <div className="exbody">
@@ -200,11 +200,11 @@ function RunBody({ d, packet, onChoose, onVerdict }: { d: Detail; packet: Record
           </div>}
         </div>))}
       </div>
-      {packet && <div className="col">
-        <h2 className="sec">packet <span>· <a href={api.packetFile(d.run.id, "trail.md")} target="_blank" rel="noopener" className="mono">packets/{d.run.id}/trail.md</a></span></h2>
-        <div className="packet">{PACKET_FILES.filter((f) => packet[f]).map((f) => (
+      {brief && <div className="col">
+        <h2 className="sec">brief <span>· <a href={api.briefFile(d.draw.id, "trail.md")} target="_blank" rel="noopener" className="mono">briefs/{d.draw.id}/trail.md</a></span></h2>
+        <div className="brief">{BRIEF_FILES.filter((f) => brief[f]).map((f) => (
           // Only the outline is open by default: the chosen vignette already sits in the distribution column.
-          <details className="file ctx" key={f} open={f === "outline.md"}><summary><span className="caret">▸</span><span className="fn">{f}</span><span className="dim"> · {firstParagraph(packet[f]).slice(0, 80)}…</span></summary><Md className="passage sm" text={packet[f]} /></details>))}</div>
+          <details className="file ctx" key={f} open={f === "outline.md"}><summary><span className="caret">▸</span><span className="fn">{f}</span><span className="dim"> · {firstParagraph(brief[f]).slice(0, 80)}…</span></summary><Md className="passage sm" text={brief[f]} /></details>))}</div>
       </div>}
       </div>
     </>
@@ -215,7 +215,7 @@ function StepView({ step, artifacts, chosen, onBack }: { step: Step; artifacts: 
   const raw = (() => { if (!step.raw_response) return null; try { return JSON.parse(step.raw_response).result ?? step.raw_response; } catch { return step.raw_response; } })();
   return (
     <div className="stepview">
-      <button className="back" onClick={onBack}>← back to the run</button>
+      <button className="back" onClick={onBack}>← back to the draw</button>
       <div className="kv"><b className="mono">{step.stage}</b><span className={step.status === "failed" ? "pass" : ""}>{step.status}{step.fail_reason ? ` (${step.fail_reason})` : ""}</span><span className="mono">{step.model}</span><span>{secs(step.started_at, step.ended_at)}</span>{step.attempt > 1 && <span>attempt {step.attempt}</span>}{chosen && <span className="keep">chosen</span>}</div>
       {step.error && <div className="err" style={{ marginBottom: "1rem" }}>{step.error}</div>}
       <h2 className="sec">system</h2><div className="mute" style={{ fontSize: 12.5 }}>{step.system_prompt}</div>
@@ -236,20 +236,20 @@ function StartForm({ status }: { status: Status | null }) {
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setForm({ ...form, [k]: e.target.value });
   const start = async (e: React.FormEvent) => {
     e.preventDefault(); setErr(""); setBusy(true);
-    try { const { id } = await api.startRun(form); location.hash = `#run/${id}`; } catch (e: any) { setErr(e.message); } finally { setBusy(false); }
+    try { const { id } = await api.startDraw(form); location.hash = `#draw/${id}`; } catch (e: any) { setErr(e.message); } finally { setBusy(false); }
   };
   const eligible = new Map(status?.per_source.map((s) => [s.source, s.eligible]) ?? []);
   return (
     <div className="pane read span">
       <form className="form" onSubmit={start}>
-        <h1>Start a run</h1>
-        <p className="lede">Draws six eligible passages and a seed, asks for five premises off the centre of the distribution, writes each as a 400-word vignette, then stops at the gate for you. After the gate: a reverse outline, two context vignettes, the ending, and a packet in <span className="mono">packets/</span>.</p>
+        <h1>Start a draw</h1>
+        <p className="lede">Pulls six eligible passages and a seed, asks for five premises off the centre of the distribution, writes each as a 400-word vignette, then stops at the gate for you. After the gate: a reverse outline, two context vignettes, the ending, and a brief in <span className="mono">briefs/</span>.</p>
         <div className="field"><span className="lbl">Gate</span><div className="seg" role="group" aria-label="Gate"><button type="button" aria-pressed={form.mode === "manual"} onClick={() => setForm({ ...form, mode: "manual" })}>Manual</button><button type="button" aria-pressed={form.mode === "auto"} onClick={() => setForm({ ...form, mode: "auto" })}>Auto</button></div><span className="help">Manual waits for you after the vignettes. Auto takes the lowest-probability premise and keeps going.</span></div>
         <div className="field"><label htmlFor="setting">Setting</label><select id="setting" className="sel" value={form.setting ?? ""} onChange={set("setting")}><option value="">Unrestricted</option>{facets?.settings.map((s) => <option key={s}>{s}</option>)}</select><span className="help">A setting appends its reference file to every prompt and adds its outline jobs.</span></div>
         <div className="field"><label htmlFor="genre">Genre</label><select id="genre" className="sel" value={form.genre} onChange={set("genre")}><option>horror</option><option>scifi</option></select></div>
         <div className="field"><label htmlFor="source">Examples from</label><select id="source" className="sel" value={form.source ?? ""} onChange={set("source")}><option value="">All sources{status ? ` · ${status.passages_eligible} eligible` : ""}</option>{facets?.sources.map((s) => <option key={s.id} value={s.id}>{s.id}{eligible.has(s.id) ? ` · ${eligible.get(s.id)}` : ""}</option>)}</select></div>
         <div className="field"><label htmlFor="seed">Seed</label><textarea id="seed" name="seed" value={form.seed ?? ""} onChange={set("seed")} placeholder="Leave empty to draw a theme from the bank, or type one…" /><span className="help">{status ? `${status.themes_eligible} eligible themes in the bank. ` : ""}A typed seed is logged as “typed”, a drawn one as “drawn”.</span></div>
-        <div className="actions"><button type="submit" className="btn primary" disabled={busy}>{busy ? "Starting…" : "Start run"}</button><span className="dim" style={{ fontSize: 12.5 }}>About a minute to the gate, a few more to a packet.</span>{err && <div className="err" style={{ flexBasis: "100%" }}>{err}</div>}</div>
+        <div className="actions"><button type="submit" className="btn primary" disabled={busy}>{busy ? "Starting…" : "Start draw"}</button><span className="dim" style={{ fontSize: 12.5 }}>About a minute to the gate, a few more to a brief.</span>{err && <div className="err" style={{ flexBasis: "100%" }}>{err}</div>}</div>
       </form>
     </div>
   );

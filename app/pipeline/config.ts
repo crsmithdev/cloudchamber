@@ -5,7 +5,7 @@ export type StageConfig = { model: string; fallback: string; system: string };
 
 export const STAGES: StageName[] = ["themes", "redundancy", "premises", "execute", "outline", "jobs", "context", "ending"];
 
-/** Run parameters decided in the spec. */
+/** Draw parameters decided in the spec. */
 export const RUN = {
   k: 5,                 // premises per batch
   ceiling: 0.10,        // stated probability must be under this

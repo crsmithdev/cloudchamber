@@ -1,7 +1,7 @@
 /**
  * Prompt templates. Static text only; the story, passages, seed and outline
  * are substituted at call time and are never checked. The vocabulary rule
- * runs over every template at load: nothing here may ask the model to
+ * draws over every template at load: nothing here may ask the model to
  * reason, think, or account for how it arrived at anything. Fable's
  * safeguard refuses that shape with zero output.
  */

@@ -3,18 +3,18 @@
  * fogbelt — the one command the skill and the UI drive.
  *
  *   fogbelt extract [--only ID ...]        read -> segment -> facets, then inherit verdicts
- *   fogbelt status                         pool, bank, eligibility, runs
+ *   fogbelt status                         pool, bank, eligibility, draws
  *   fogbelt export                         write bank/ from the store
- *   fogbelt verdict <example|theme|packet|story> <id> <keep|pass> [--artifact] [--note "..."]
+ *   fogbelt verdict <example|theme|brief|story> <id> <keep|pass> [--artifact] [--note "..."]
  *                                          a passed story hides all its passages
  *   fogbelt replay                         rebuild the verdicts table from bank/verdicts.jsonl
- *   fogbelt run [--setting ID] [--genre G] [--auto] [--source S] [--author A]
+ *   fogbelt draw [--setting ID] [--genre G] [--auto] [--source S] [--author A]
  *               [--seed "text" | --seed-id ID]
- *   fogbelt gate <run> choose <execute-step> | redraw | keep-seed | flag  [--note "..."]
+ *   fogbelt gate <draw> choose <execute-step> | redraw | keep-seed | flag  [--note "..."]
  *   fogbelt themes [--only SRC ...] [--limit N]   draft themes for stories not yet drafted
- *   fogbelt runs                           list runs
- *   fogbelt run-show <run>                 steps and artifacts of one run
- *   fogbelt packet <run>                   print the packet
+ *   fogbelt draws                           list draws
+ *   fogbelt draw-show <draw>                 steps and artifacts of one draw
+ *   fogbelt brief <draw>                   print the brief
  *   fogbelt serve [--port N]               API and UI on 127.0.0.1 (default 3002)
  */
 import { parseArgs } from "node:util";
@@ -23,11 +23,11 @@ import { exportBank } from "../pipeline/bank.ts";
 import { extractAll } from "../pipeline/extract.ts";
 import { status } from "../pipeline/status.ts";
 import { KINDS, inherit, record, replay, type Kind } from "../pipeline/verdicts.ts";
-import { Pipeline, type SeedChoice } from "../pipeline/run.ts";
+import { Pipeline, type SeedChoice } from "../pipeline/draw.ts";
 import { ClaudeCli } from "../pipeline/model.ts";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { PACKETS, now } from "../pipeline/paths.ts";
+import { BRIEFS, now } from "../pipeline/paths.ts";
 import { draftAll, histogram, replayThemes } from "../pipeline/themes.ts";
 
 const [cmd, ...rest] = process.argv.slice(2);
@@ -72,7 +72,7 @@ async function main() {
     case "replay":
       console.log(`replayed ${replay(db)} verdict(s)`);
       break;
-    case "run": {
+    case "draw": {
       const { values } = parseArgs({
         args: rest, allowPositionals: true,
         options: { setting: { type: "string" }, genre: { type: "string" }, auto: { type: "boolean", default: false },
@@ -80,24 +80,24 @@ async function main() {
       });
       const seed: SeedChoice = values.seed ? { mode: "typed", text: values.seed } : values["seed-id"] ? { mode: "picked", themeId: values["seed-id"] } : { mode: "drawn" };
       const segment = values.source || values.author ? { source: values.source, author: values.author } : undefined;
-      const run = await pipeline().start({ mode: values.auto ? "auto" : "manual", setting: values.setting, genre: values.genre, segment, seed });
-      console.log(JSON.stringify(run, null, 2));
-      if (run.status === "awaiting_gate") {
+      const draw = await pipeline().start({ mode: values.auto ? "auto" : "manual", setting: values.setting, genre: values.genre, segment, seed });
+      console.log(JSON.stringify(draw, null, 2));
+      if (draw.status === "awaiting_gate") {
         console.log("\ncandidates, by stated probability:");
-        for (const c of pipeline().candidates(run.id)) console.log(`  ${c.probability}  ${c.step_id}  ${c.premise.slice(0, 100)}…`);
-        console.log(`\nfogbelt gate ${run.id} choose <step> | redraw | keep-seed | flag --note "..."`);
+        for (const c of pipeline().candidates(draw.id)) console.log(`  ${c.probability}  ${c.step_id}  ${c.premise.slice(0, 100)}…`);
+        console.log(`\nfogbelt gate ${draw.id} choose <step> | redraw | keep-seed | flag --note "..."`);
       }
       break;
     }
     case "gate": {
       const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, options: { note: { type: "string", default: "" } } });
-      const [runId, action, stepId] = positionals;
+      const [drawId, action, stepId] = positionals;
       const p = pipeline();
-      if (!runId || !action) usage();
-      const out = action === "choose" ? await p.choose(runId!, stepId!)
-        : action === "redraw" ? await p.reject(runId!, "redraw", values.note)
-        : action === "keep-seed" ? await p.reject(runId!, "keep-seed", values.note)
-        : action === "flag" ? p.flag(runId!, values.note) : usage();
+      if (!drawId || !action) usage();
+      const out = action === "choose" ? await p.choose(drawId!, stepId!)
+        : action === "redraw" ? await p.reject(drawId!, "redraw", values.note)
+        : action === "keep-seed" ? await p.reject(drawId!, "keep-seed", values.note)
+        : action === "flag" ? p.flag(drawId!, values.note) : usage();
       console.log(JSON.stringify(out, null, 2));
       break;
     }
@@ -112,7 +112,7 @@ async function main() {
       break;
     }
     case "replay-themes":
-      console.log(`replayed ${replayThemes(db)} theme event(s); run \`python -m extract embed\` to restore embeddings`);
+      console.log(`replayed ${replayThemes(db)} theme event(s); draw \`python -m extract embed\` to restore embeddings`);
       break;
     case "serve": {
       const { values } = parseArgs({ args: rest, allowPositionals: true, options: { port: { type: "string", default: "3002" } } });
@@ -121,18 +121,18 @@ async function main() {
       console.log(`fogbelt serving on http://127.0.0.1:${values.port}`);
       return;
     }
-    case "runs":
-      for (const r of pipeline().runs()) console.log(`${r.id}  ${r.status.padEnd(13)} ${r.mode.padEnd(6)} ${r.setting ?? "-"}  ${r.seed_text.slice(0, 70)}`);
+    case "draws":
+      for (const r of pipeline().draws()) console.log(`${r.id}  ${r.status.padEnd(13)} ${r.mode.padEnd(6)} ${r.setting ?? "-"}  ${r.seed_text.slice(0, 70)}`);
       break;
-    case "run-show": {
-      const p = pipeline(); const [runId] = rest;
-      if (!runId) usage();
-      console.log(JSON.stringify({ run: p.run(runId!), steps: p.steps(runId!).map((s) => ({ ...s, prompt: `${s.prompt.length} chars`, raw_response: s.raw_response ? `${s.raw_response.length} chars` : null })), artifacts: p.artifacts(runId!).map((a) => ({ ...a, content: a.content.slice(0, 120) })) }, null, 2));
+    case "draw-show": {
+      const p = pipeline(); const [drawId] = rest;
+      if (!drawId) usage();
+      console.log(JSON.stringify({ draw: p.draw(drawId!), steps: p.steps(drawId!).map((s) => ({ ...s, prompt: `${s.prompt.length} chars`, raw_response: s.raw_response ? `${s.raw_response.length} chars` : null })), artifacts: p.artifacts(drawId!).map((a) => ({ ...a, content: a.content.slice(0, 120) })) }, null, 2));
       break;
     }
-    case "packet": {
-      const [runId] = rest; const dir = join(PACKETS, runId ?? "");
-      if (!runId || !existsSync(dir)) usage();
+    case "brief": {
+      const [drawId] = rest; const dir = join(BRIEFS, drawId ?? "");
+      if (!drawId || !existsSync(dir)) usage();
       for (const f of ["trail.md", "vignette.md", "outline.md", "context-1.md", "context-2.md", "ending.md"]) if (existsSync(join(dir, f))) console.log(`\n\n# ${f}\n\n${readFileSync(join(dir, f), "utf8")}`);
       break;
     }

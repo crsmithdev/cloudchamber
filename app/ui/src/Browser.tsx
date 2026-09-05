@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { api, type Facets, type Item, type Status } from "./api.ts";
 
 const PAGE = 25;
-type Kind = "example" | "story" | "theme" | "packet";
+type Kind = "example" | "story" | "theme" | "brief";
 
 /** Facets on the left, the table across the rest. */
 export function Browser({ status, onVerdict }: { status: Status | null; onVerdict: () => void }) {
@@ -26,13 +26,13 @@ export function Browser({ status, onVerdict }: { status: Status | null; onVerdic
   );
   const bySource = new Map(status?.per_source.map((s) => [s.source, s]) ?? []);
   const withItems = kind === "example" || kind === "story";
-  const label: Record<Kind, string> = { example: "passages", story: "stories", theme: "themes", packet: "packets" };
+  const label: Record<Kind, string> = { example: "passages", story: "stories", theme: "themes", brief: "briefs" };
 
   return (
     <>
       <div className="pane list">
         <div className="filters">
-          {(["example", "story", "theme", "packet"] as Kind[]).map((k) => <button key={k} className="chip" aria-pressed={pressed(kind === k)} onClick={() => { setKind(k); setF({}); setOffset(0); }}>{label[k]}</button>)}
+          {(["example", "story", "theme", "brief"] as Kind[]).map((k) => <button key={k} className="chip" aria-pressed={pressed(kind === k)} onClick={() => { setKind(k); setF({}); setOffset(0); }}>{label[k]}</button>)}
         </div>
         {withItems && facets && <>
           <div className="facet"><h3>source</h3><Opt k="source" v="" label="all" n={status?.passages} />{facets.sources.map((s) => <Opt key={s.id} k="source" v={s.id} n={kind === "example" ? bySource.get(s.id)?.n : undefined} />)}</div>
@@ -66,7 +66,7 @@ export function Browser({ status, onVerdict }: { status: Status | null; onVerdic
               <td className="w">{kind === "example" ? <><b>{it.title}</b>{it.author} · {it.source} · {it.words}w</>
                 : kind === "story" ? <><b>{it.title}</b>{it.author} · {it.source} · {it.words}w · {it.passages} passages</>
                 : kind === "theme" ? <><b>×{it.attestation}</b>{it.stories && JSON.parse(it.stories).join(", ")}</>
-                : <><b>{it.setting ?? "unrestricted"} · {it.genre}</b><a href={`#run/${it.id}`} className="mono">{it.id}</a></>}</td>
+                : <><b>{it.setting ?? "unrestricted"} · {it.genre}</b><a href={`#draw/${it.id}`} className="mono">{it.id}</a></>}</td>
               <td className="c">{it.cell && <span className="cell">{it.cell}</span>}{it.suspect?.length ? <div className="warn" style={{ fontSize: 11.5 }}>{it.suspect.join(", ")}</div> : null}</td>
               <td className="v">{it.latest ? <><span className={it.latest.verdict}>{it.latest.verdict}</span>{it.latest.artifact && <span className="art"> · artifact</span>}{it.latest.inherited_from && <span className="dim"> · inherited</span>}{it.latest.note && <div className="dim">{it.latest.note}</div>}</> : <span className="dim">—</span>}</td>
               <td className="a" onClick={(e) => e.stopPropagation()}>

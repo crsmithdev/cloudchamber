@@ -1,5 +1,9 @@
 # Ideation pipeline
 
+> Terminology, 2026-09-05: what this spec calls a *run* is now a *draw*, and a
+> *packet* is a *brief*, in the store, the CLI, the API, the skill and the UI.
+> The text below keeps the words it was written with.
+
 Spec derived from the grilling session of 2026-09-04 over `plan.md`. Every
 decision below was put to Chris and answered; the few that were not are under
 Open Questions. The research it rests on is `research/generation.md`,

@@ -85,12 +85,12 @@ CREATE TABLE IF NOT EXISTS theme_rejections (
 
 CREATE TABLE IF NOT EXISTS verdicts (                -- replay of bank/verdicts.jsonl
   id               TEXT PRIMARY KEY,
-  kind             TEXT NOT NULL CHECK (kind IN ('example','theme','packet','story')),
+  kind             TEXT NOT NULL CHECK (kind IN ('example','theme','brief','story')),
   target_id        TEXT NOT NULL,
   verdict          TEXT NOT NULL CHECK (verdict IN ('keep','pass')),
   artifact         INTEGER NOT NULL DEFAULT 0,
   note             TEXT NOT NULL DEFAULT '',
-  method           TEXT NOT NULL CHECK (method IN ('queue','browse','gate','cli','run')),
+  method           TEXT NOT NULL CHECK (method IN ('queue','browse','gate','cli','draw')),
   at               TEXT NOT NULL,
   by               TEXT NOT NULL,
   pipeline_version TEXT NOT NULL,
@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS verdicts (                -- replay of bank/verdicts.
 );
 CREATE INDEX IF NOT EXISTS verdicts_target ON verdicts(kind, target_id, at);
 
-CREATE TABLE IF NOT EXISTS runs (
+CREATE TABLE IF NOT EXISTS draws (
   id            TEXT PRIMARY KEY,
   setting       TEXT,
   genre         TEXT NOT NULL,
@@ -113,14 +113,14 @@ CREATE TABLE IF NOT EXISTS runs (
   chosen_step   TEXT,
   flagged       INTEGER NOT NULL DEFAULT 0,
   flag_note     TEXT NOT NULL DEFAULT '',
-  superseded_by TEXT REFERENCES runs(id),
+  superseded_by TEXT REFERENCES draws(id),
   created_at    TEXT NOT NULL,
   ended_at      TEXT
 );
 
 CREATE TABLE IF NOT EXISTS steps (
   id            TEXT PRIMARY KEY,
-  run_id        TEXT REFERENCES runs(id),  -- NULL for theme drafting, which is not a run
+  draw_id        TEXT REFERENCES draws(id),  -- NULL for theme drafting, which is not a draw
   story_id      TEXT,                      -- set for theme drafting
   parent_id     TEXT REFERENCES steps(id),
   stage         TEXT NOT NULL,
@@ -136,12 +136,12 @@ CREATE TABLE IF NOT EXISTS steps (
   ended_at      TEXT,
   error         TEXT
 );
-CREATE INDEX IF NOT EXISTS steps_run ON steps(run_id);
+CREATE INDEX IF NOT EXISTS steps_draw ON steps(draw_id);
 
 CREATE TABLE IF NOT EXISTS artifacts (
   id       TEXT PRIMARY KEY,
   step_id  TEXT NOT NULL REFERENCES steps(id),
-  kind     TEXT NOT NULL,              -- premise | vignette | outline | job | ending | packet
+  kind     TEXT NOT NULL,              -- premise | vignette | outline | job | ending | brief
   content  TEXT NOT NULL,
   meta     TEXT NOT NULL DEFAULT '{}'  -- JSON
 );

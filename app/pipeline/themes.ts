@@ -14,7 +14,7 @@ import { fill } from "./prompts.ts";
 import { tags, words } from "./model.ts";
 import { ROOT, THEME_LOG, now } from "./paths.ts";
 import type { Db, ThemeRow } from "./store/db.ts";
-import type { Pipeline } from "./run.ts";
+import type { Pipeline } from "./draw.ts";
 import { eligibleIds } from "./verdicts.ts";
 
 export type Embedder = (texts: string[]) => Promise<number[][]>;
@@ -187,7 +187,7 @@ export async function draftAll(p: Pipeline, opts: { only?: string[]; limit?: num
 
 export function histogram(db: Db, since: string): string {
   const rows = db.query("SELECT text FROM themes WHERE duplicate_of IS NULL AND drafted_at >= ?").all(since) as { text: string }[];
-  if (!rows.length) return "no themes banked this run";
+  if (!rows.length) return "no themes banked this draw";
   const ws = rows.map((r) => words(r.text)).sort((a, b) => a - b);
   const bins = new Map<number, number>();
   for (const w of ws) bins.set(Math.floor(w / 5) * 5, (bins.get(Math.floor(w / 5) * 5) ?? 0) + 1);

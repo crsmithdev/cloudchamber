@@ -19,7 +19,7 @@ export function status(db: Db) {
     themes: count("SELECT count(*) AS n FROM themes WHERE duplicate_of IS NULL"),
     themes_eligible: eligibleThemes(db).length,
     verdicts: count("SELECT count(*) AS n FROM verdicts"),
-    runs: db.query("SELECT status, count(*) AS n FROM runs GROUP BY status").all(),
+    draws: db.query("SELECT status, count(*) AS n FROM draws GROUP BY status").all(),
     facet_fit: db.query("SELECT backend, n, fitted_at FROM facet_fit WHERE id = 1").get(),
   };
 }

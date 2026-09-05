@@ -6,7 +6,7 @@
  * passages are ineligible whatever their own verdicts say.
  *
  * Every example verdict carries a snapshot of the passage (story and text) so
- * that inheritance can run from the log alone after a re-extraction.
+ * that inheritance can draw from the log alone after a re-extraction.
  */
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname } from "node:path";
@@ -15,8 +15,8 @@ import { VERDICT_LOG, now } from "./paths.ts";
 import type { Db } from "./store/db.ts";
 import { pipelineVersion } from "./version.ts";
 
-export type Kind = "example" | "theme" | "packet" | "story";
-export type Method = "queue" | "browse" | "gate" | "cli" | "run";
+export type Kind = "example" | "theme" | "brief" | "story";
+export type Method = "queue" | "browse" | "gate" | "cli" | "draw";
 
 export type Verdict = {
   id: string;
@@ -36,8 +36,8 @@ export type Verdict = {
 export type VerdictInput = Pick<Verdict, "kind" | "target_id" | "verdict" | "method"> &
   Partial<Pick<Verdict, "artifact" | "note" | "by" | "inherited_from" | "snapshot">>;
 
-export const KINDS = new Set<Kind>(["example", "theme", "packet", "story"]);
-export const METHODS = new Set<Method>(["queue", "browse", "gate", "cli", "run"]);
+export const KINDS = new Set<Kind>(["example", "theme", "brief", "story"]);
+export const METHODS = new Set<Method>(["queue", "browse", "gate", "cli", "draw"]);
 
 export function validateLine(raw: string, lineNo: number): Verdict {
   let v: any;

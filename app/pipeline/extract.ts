@@ -1,4 +1,4 @@
-/** Run the Python extraction seam. */
+/** Draw the Python extraction seam. */
 import { ROOT } from "./paths.ts";
 
 export function runExtract(args: string[], db?: string): { ok: boolean; out: string } {

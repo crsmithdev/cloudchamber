@@ -93,14 +93,14 @@ describe("story verdicts", () => {
 });
 
 describe("store migration", () => {
-  test("a version-0 store gains the story kind, the run method and the suspect column, and replays the log", () => {
+  test("a version-0 store gains the story kind, the draw method and the suspect column, and replays the log", () => {
     const dir = mkdtempSync(join(tmpdir(), "fogbelt-mig-"));
     const path = join(dir, "old.db"), log = join(dir, "verdicts.jsonl");
     const old = new Database(path);
     old.exec(`CREATE TABLE sources (id TEXT PRIMARY KEY, path TEXT NOT NULL, reader TEXT NOT NULL, genre TEXT NOT NULL, author TEXT NOT NULL DEFAULT '', license TEXT NOT NULL DEFAULT '', dev INTEGER NOT NULL DEFAULT 0, read_at TEXT);
       CREATE TABLE stories (id TEXT PRIMARY KEY, source_id TEXT NOT NULL REFERENCES sources(id), ord INTEGER NOT NULL, title TEXT NOT NULL, author TEXT NOT NULL DEFAULT '', genre TEXT NOT NULL, words INTEGER NOT NULL, text TEXT NOT NULL, locator TEXT NOT NULL DEFAULT '', split_by TEXT NOT NULL DEFAULT '');
       CREATE TABLE passages (id TEXT PRIMARY KEY, story_id TEXT NOT NULL REFERENCES stories(id), text TEXT NOT NULL, words INTEGER NOT NULL, stratum INTEGER NOT NULL, position REAL NOT NULL, seed INTEGER NOT NULL, withheld INTEGER NOT NULL DEFAULT 0, d1 REAL, d2 REAL, d3 REAL, d4 REAL, d5 REAL, d6 REAL, voice TEXT, mode TEXT, first_seen TEXT NOT NULL);
-      CREATE TABLE verdicts (id TEXT PRIMARY KEY, kind TEXT NOT NULL CHECK (kind IN ('example','theme','packet')), target_id TEXT NOT NULL, verdict TEXT NOT NULL CHECK (verdict IN ('keep','pass')), artifact INTEGER NOT NULL DEFAULT 0, note TEXT NOT NULL DEFAULT '', method TEXT NOT NULL CHECK (method IN ('queue','browse','gate','cli')), at TEXT NOT NULL, by TEXT NOT NULL, pipeline_version TEXT NOT NULL, inherited_from TEXT);
+      CREATE TABLE verdicts (id TEXT PRIMARY KEY, kind TEXT NOT NULL CHECK (kind IN ('example','theme','brief')), target_id TEXT NOT NULL, verdict TEXT NOT NULL CHECK (verdict IN ('keep','pass')), artifact INTEGER NOT NULL DEFAULT 0, note TEXT NOT NULL DEFAULT '', method TEXT NOT NULL CHECK (method IN ('queue','browse','gate','cli')), at TEXT NOT NULL, by TEXT NOT NULL, pipeline_version TEXT NOT NULL, inherited_from TEXT);
       INSERT INTO sources VALUES ('src', 'x', 'pdf', 'horror', '', '', 0, NULL);
       INSERT INTO stories VALUES ('src/a', 'src', 0, 'A', 'Ann', 'horror', 900, 'x', '', '');
       INSERT INTO passages (id, story_id, text, words, stratum, position, seed, first_seen) VALUES ('p1', 'src/a', 'one', 1, 0, 0, 0, 'now');`);
@@ -113,10 +113,35 @@ describe("store migration", () => {
     expect((db.query("PRAGMA table_info(passages)").all() as any[]).map((c) => c.name)).toContain("suspect");
     expect(db.query("SELECT text FROM passages WHERE id = 'p1'").get()).toEqual({ text: "one" });
     expect(latest(db, "example", "p1")?.verdict).toBe("pass");         // replayed from the log, not lost with the table
-    expect(() => record(db, { kind: "story", target_id: "src/a", verdict: "pass", method: "run" }, log)).not.toThrow();
+    expect(() => record(db, { kind: "story", target_id: "src/a", verdict: "pass", method: "draw" }, log)).not.toThrow();
     const again = openDb(path, log);                                     // idempotent
     expect((again.query("PRAGMA user_version").get() as any).user_version).toBe(SCHEMA_VERSION);
     expect(again.query("SELECT count(*) AS n FROM verdicts").get()).toEqual({ n: 2 });
+  });
+  test("a version-1 store renames runs to draws, run_id to draw_id, and packet kinds to brief", () => {
+    const dir = mkdtempSync(join(tmpdir(), "fogbelt-mig2-"));
+    const path = join(dir, "v1.db"), log = join(dir, "verdicts.jsonl");
+    writeFileSync(log, "");
+    const old = new Database(path);
+    old.exec(`CREATE TABLE verdicts (id TEXT PRIMARY KEY, kind TEXT NOT NULL, target_id TEXT NOT NULL, verdict TEXT NOT NULL, artifact INTEGER NOT NULL DEFAULT 0, note TEXT NOT NULL DEFAULT '', method TEXT NOT NULL, at TEXT NOT NULL, by TEXT NOT NULL, pipeline_version TEXT NOT NULL, inherited_from TEXT);
+      CREATE TABLE runs (id TEXT PRIMARY KEY, setting TEXT, genre TEXT NOT NULL, mode TEXT NOT NULL, segment TEXT, seed_mode TEXT NOT NULL, seed_text TEXT NOT NULL, seed_theme_id TEXT, example_ids TEXT NOT NULL, status TEXT NOT NULL, gate_method TEXT, chosen_step TEXT, flagged INTEGER NOT NULL DEFAULT 0, flag_note TEXT NOT NULL DEFAULT '', superseded_by TEXT REFERENCES runs(id), created_at TEXT NOT NULL, ended_at TEXT);
+      CREATE TABLE steps (id TEXT PRIMARY KEY, run_id TEXT REFERENCES runs(id), story_id TEXT, parent_id TEXT REFERENCES steps(id), stage TEXT NOT NULL, model TEXT NOT NULL, system_prompt TEXT NOT NULL, prompt TEXT NOT NULL, raw_response TEXT, parsed TEXT, status TEXT NOT NULL, fail_reason TEXT, attempt INTEGER NOT NULL DEFAULT 1, started_at TEXT NOT NULL, ended_at TEXT, error TEXT);
+      CREATE INDEX steps_run ON steps(run_id);
+      CREATE TABLE artifacts (id TEXT PRIMARY KEY, step_id TEXT NOT NULL REFERENCES steps(id), kind TEXT NOT NULL, content TEXT NOT NULL, meta TEXT NOT NULL DEFAULT '{}');
+      INSERT INTO runs (id, genre, mode, seed_mode, seed_text, example_ids, status, created_at) VALUES ('r1', 'horror', 'manual', 'drawn', 'A seed.', '[]', 'done', 'now');
+      INSERT INTO steps (id, run_id, stage, model, system_prompt, prompt, status, started_at) VALUES ('s1', 'r1', 'outline', 'm', '', '', 'done', 'now');
+      INSERT INTO artifacts (id, step_id, kind, content) VALUES ('a1', 's1', 'packet', '/tmp/x');
+      PRAGMA user_version = 1;`);
+    old.close();
+    const db = openDb(path, log);
+    expect((db.query("PRAGMA user_version").get() as any).user_version).toBe(2);
+    expect(db.query("SELECT seed_text FROM draws WHERE id = 'r1'").get()).toEqual({ seed_text: "A seed." });
+    expect(db.query("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'runs'").get()).toBeNull();
+    expect(db.query("SELECT draw_id FROM steps WHERE id = 's1'").get()).toEqual({ draw_id: "r1" });
+    expect(db.query("SELECT kind FROM artifacts WHERE id = 'a1'").get()).toEqual({ kind: "brief" });
+    expect(() => record(db, { kind: "brief", target_id: "r1", verdict: "keep", method: "draw" }, log)).not.toThrow();
+    const again = openDb(path, log);                                     // idempotent
+    expect(again.query("SELECT count(*) AS n FROM draws").get()).toEqual({ n: 1 });
   });
 });
 

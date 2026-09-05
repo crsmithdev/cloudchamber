@@ -1,7 +1,7 @@
 /**
- * A readable name for a run, built from its seed. Three salient words of the
- * seed in the order they appear, lowercased and hyphenated; runs that share a
- * seed get -2, -3 … in order of creation. Deterministic over the set of runs,
+ * A readable name for a draw, built from its seed. Three salient words of the
+ * seed in the order they appear, lowercased and hyphenated; draws that share a
+ * seed get -2, -3 … in order of creation. Deterministic over the set of draws,
  * so nothing is stored.
  */
 const STOP = new Set(["about", "after", "again", "against", "because", "before", "being", "between", "could", "every", "might", "never", "often", "other", "should", "since", "still", "their", "there", "these", "they", "thing", "things", "those", "through", "under", "until", "until", "where", "which", "while", "whose", "would", "without", "within"]);
@@ -13,8 +13,8 @@ export function seedSlug(seed: string): string {
   return (picked.length ? picked : fallback.length ? fallback : ["untitled"]).join("-");
 }
 
-export function runNames(runs: { id: string; seed_text: string; created_at: string }[]): Map<string, string> {
-  const ordered = [...runs].sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));
+export function drawNames(draws: { id: string; seed_text: string; created_at: string }[]): Map<string, string> {
+  const ordered = [...draws].sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));
   const seen = new Map<string, number>();
   const out = new Map<string, string>();
   for (const r of ordered) {
