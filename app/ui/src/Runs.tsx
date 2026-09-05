@@ -157,7 +157,7 @@ function Log({ d, stepId, onStep }: { d: Detail; stepId: string | null; onStep: 
   );
 }
 
-const PACKET_FILES = ["vignette.md", "outline.md", "context-1.md", "context-2.md", "ending.md"];
+const PACKET_FILES = ["outline.md", "vignette.md", "context-1.md", "context-2.md", "ending.md"];
 const firstParagraph = (s: string) => s.trim().split(/\n\s*\n/)[0].replace(/[*_#>`]/g, "");
 
 function RunBody({ d, packet, onChoose, onVerdict }: { d: Detail; packet: Record<string, string> | null; onChoose: (stepId: string) => void; onVerdict: (e: Example, v: "keep" | "pass", artifact?: boolean) => void }) {
