@@ -24,6 +24,7 @@ export const api = {
   startRun: (b: Record<string, string | undefined>) => j<{ id: string }>("/api/runs", { method: "POST", body: JSON.stringify(b) }),
   gate: (id: string, b: { action: string; step_id?: string; note?: string }) => j<any>(`/api/runs/${id}/gate`, { method: "POST", body: JSON.stringify(b) }),
   packet: (id: string) => j<Record<string, string>>(`/api/packets/${id}`),
+  packetFile: (id: string, file: string) => `/api/packets/${id}/${file}`,
 };
 
 export type Status = { passages: number; passages_eligible: number; passages_suspect: number; per_source: { source: string; n: number; eligible: number }[]; themes: number; themes_eligible: number; verdicts: number; runs: { status: string; n: number }[] };

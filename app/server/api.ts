@@ -164,6 +164,12 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean } 
     return files;
   });
 
+  app.get<{ Params: { id: string; file: string } }>("/api/packets/:id/:file", async (req, reply) => {
+    const path = join(PACKETS, req.params.id, req.params.file);
+    if (req.params.file.includes("/") || req.params.file.includes("..") || !existsSync(path)) return reply.code(404).send({ error: "no such packet file" });
+    return reply.type("text/plain; charset=utf-8").send(readFileSync(path, "utf8"));
+  });
+
   app.post("/api/export", async () => exportBank(db));
 
   (app as any).running = running;
