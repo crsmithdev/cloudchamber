@@ -20,7 +20,9 @@ may read directly is `bank/examples/*.md` (verbatim passages by source) and
 ./fogbelt extract [--only ID ...]     read -> segment -> facets, inherit verdicts, export bank/
 ./fogbelt themes [--only SRC] [--limit N]   draft themes for stories not yet drafted
 ./fogbelt status                      pool, bank, eligibility per source, draws by status
-./fogbelt draw [--setting ID] [--genre horror|scifi] [--auto] [--source SRC] [--author A] [--seed "text" | --seed-id ID]
+./fogbelt draw [--setting ID [--domains a,b]] [--genre horror|scifi] [--auto] [--source SRC] [--author A] [--seed "text" | --seed-id ID]
+./fogbelt setting lint <id>            check a setting file; one finding per line, exit 1
+./fogbelt distill <id> [--domain SLUG] fill a setting's empty or redraft-marked sections from its reference/
 ./fogbelt gate <draw> choose <execute-step> | redraw | keep-seed | flag [--note "..."]
 ./fogbelt draws                        list draws
 ./fogbelt draw-show <draw>              steps and artifacts
@@ -32,6 +34,18 @@ may read directly is `bank/examples/*.md` (verbatim passages by source) and
 
 Extraction with no `--only` reads the dev subset from `sources/manifest.toml`.
 Source ids are the manifest's table names (`scp`, `datlow-01`, `evenson-contagion`, ...).
+
+## Settings
+
+A setting is `sources/settings/<id>.md`: five setting-wide sections (Matrix,
+Hard rules, Do not build, Open ground, Jobs) and under `## Domains` any number
+of domains, each with Frame, Mechanisms, Roles, Institutions, Instruments,
+Clocks, Places, Vocabulary and Sources. A draw picks `draw` domains (front
+matter, default 2) and each stage loads only its slice, hard rules last.
+`sources/settings/<id>/reference/` holds the imported lore; it never enters a
+draw prompt. Chris writes headings, Frames and Sources; `distill` fills the
+rest from the reference files and `lint` runs before any draw or distill. The
+spec is `docs/specs/2026-09-05-typed-settings.md`.
 
 ## A draw
 

@@ -8,8 +8,10 @@
  *   fogbelt verdict <example|theme|brief|story> <id> <keep|pass> [--artifact] [--note "..."]
  *                                          a passed story hides all its passages
  *   fogbelt replay                         rebuild the verdicts table from bank/verdicts.jsonl
- *   fogbelt draw [--setting ID] [--genre G] [--auto] [--source S] [--author A]
+ *   fogbelt draw [--setting ID [--domains a,b]] [--genre G] [--auto] [--source S] [--author A]
  *               [--seed "text" | --seed-id ID]
+ *   fogbelt setting lint <id>              check a setting file; exit 1 with one finding per line
+ *   fogbelt distill <id> [--domain SLUG]   fill a setting's empty or redraft-marked sections from its reference/
  *   fogbelt gate <draw> choose <execute-step> | redraw | keep-seed | flag  [--note "..."]
  *   fogbelt themes [--only SRC ...] [--limit N]   draft themes for stories not yet drafted
  *   fogbelt draws                           list draws
@@ -29,6 +31,8 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { BRIEFS, now } from "../pipeline/paths.ts";
 import { draftAll, histogram, replayThemes } from "../pipeline/themes.ts";
+import { formatFinding, lintFile, loadSetting } from "../pipeline/settings.ts";
+import { distill } from "../pipeline/distill.ts";
 
 const [cmd, ...rest] = process.argv.slice(2);
 
@@ -75,12 +79,14 @@ async function main() {
     case "draw": {
       const { values } = parseArgs({
         args: rest, allowPositionals: true,
-        options: { setting: { type: "string" }, genre: { type: "string" }, auto: { type: "boolean", default: false },
+        options: { setting: { type: "string" }, domains: { type: "string" }, genre: { type: "string" }, auto: { type: "boolean", default: false },
           source: { type: "string" }, author: { type: "string" }, seed: { type: "string" }, "seed-id": { type: "string" } },
       });
+      if (values.domains && !values.setting) usage();
       const seed: SeedChoice = values.seed ? { mode: "typed", text: values.seed } : values["seed-id"] ? { mode: "picked", themeId: values["seed-id"] } : { mode: "drawn" };
       const segment = values.source || values.author ? { source: values.source, author: values.author } : undefined;
-      const draw = await pipeline().start({ mode: values.auto ? "auto" : "manual", setting: values.setting, genre: values.genre, segment, seed });
+      const domains = values.domains ? values.domains.split(",").map((d) => d.trim()).filter(Boolean) : undefined;
+      const draw = await pipeline().start({ mode: values.auto ? "auto" : "manual", setting: values.setting, domains, genre: values.genre, segment, seed });
       console.log(JSON.stringify(draw, null, 2));
       if (draw.status === "awaiting_gate") {
         console.log("\ncandidates, by stated probability:");
@@ -114,6 +120,21 @@ async function main() {
     case "replay-themes":
       console.log(`replayed ${replayThemes(db)} theme event(s); run \`python -m extract embed\` to restore embeddings`);
       break;
+    case "setting": {
+      const [action, sid] = rest;
+      if (action !== "lint" || !sid) usage();
+      const findings = lintFile(sid!);
+      if (findings.length) { for (const f of findings) console.log(formatFinding(f)); process.exit(1); }
+      console.log(`${sid}: ${loadSetting(sid!).domains.length} domains, clean`);
+      break;
+    }
+    case "distill": {
+      const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, options: { domain: { type: "string" } } });
+      const [sid] = positionals;
+      if (!sid) usage();
+      for (const line of await distill(pipeline(), sid!, { domain: values.domain })) console.log(line);
+      break;
+    }
     case "serve": {
       const { values } = parseArgs({ args: rest, allowPositionals: true, options: { port: { type: "string", default: "3002" } } });
       const { serve } = await import("../server/index.ts");

@@ -5,8 +5,10 @@ import { BRIEFS } from "./paths.ts";
 import type { Db } from "./store/db.ts";
 import type { StageConfig, StageName } from "./config.ts";
 import { pipelineVersion } from "./version.ts";
+import { loadSetting } from "./settings.ts";
+import { SETTINGS } from "./paths.ts";
 
-export function writeBrief(db: Db, drawId: string, stages: Record<StageName, StageConfig>, base: string = BRIEFS): string {
+export function writeBrief(db: Db, drawId: string, stages: Record<StageName, StageConfig>, base: string = BRIEFS, settingsDir: string = SETTINGS): string {
   const draw = db.query("SELECT * FROM draws WHERE id = ?").get(drawId) as any;
   const steps = db.query("SELECT * FROM steps WHERE draw_id = ? ORDER BY started_at, rowid").all(drawId) as any[];
   const arts = db.query("SELECT a.*, s.stage FROM artifacts a JOIN steps s ON s.id = a.step_id WHERE s.draw_id = ? ORDER BY s.started_at, a.rowid").all(drawId) as any[];
@@ -28,10 +30,12 @@ export function writeBrief(db: Db, drawId: string, stages: Record<StageName, Sta
   const modelByStage = new Map<string, string>();
   for (const s of steps) if (s.status === "done") modelByStage.set(s.stage, s.model);
   const refusals = steps.filter((s) => s.fail_reason === "refusal").map((s) => `${s.stage} on ${s.model}`);
+  const domains = domainLines(draw.setting, draw.domains, settingsDir);
   const trail = [
     `# Trail — ${drawId}`, "",
     `setting: ${draw.setting ?? "none (unrestricted)"} · genre: ${draw.genre} · mode: ${draw.mode} · segment: ${draw.segment ?? "all"}`, "",
     `## seed (${draw.seed_mode}${draw.seed_theme_id ? `, theme ${draw.seed_theme_id}` : ""})`, "", draw.seed_text, "",
+    ...(domains ? ["## domains", "", ...domains, ""] : []),
     "## examples", "", ...examples, "",
     "## premises, by stated probability", "",
     ...cands.map(({ a, m }) => `- **${m.probability}** [${m.index}]${a.step_id === draw.chosen_step ? " ← chosen" : ""} vignette ${a.id}${m.warnings?.length ? ` (${m.warnings.join(", ")})` : ""}: ${m.premise}`), "",
@@ -43,4 +47,16 @@ export function writeBrief(db: Db, drawId: string, stages: Record<StageName, Sta
   ];
   w("trail.md", trail.join("\n"));
   return dir;
+}
+
+/** One line per drawn domain, by heading; slugs when the setting file cannot be read. Null when unrestricted. */
+function domainLines(setting: string | null, domains: string | null, settingsDir: string): string[] | null {
+  if (!setting || !domains) return null;
+  const slugs = JSON.parse(domains) as string[];
+  try {
+    const s = loadSetting(setting, settingsDir);
+    return slugs.map((x) => `- ${s.domains.find((d) => d.slug === x)?.heading ?? x}`);
+  } catch {
+    return slugs.map((x) => `- ${x}`);
+  }
 }

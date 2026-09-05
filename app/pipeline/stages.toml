@@ -13,6 +13,11 @@ model = "claude-sonnet-5"
 fallback = "claude-opus-5"
 system = "You compare short sentences for restated meaning. Output only what is asked."
 
+[distill]
+model = "claude-fable-5-1"
+fallback = "claude-opus-5"
+system = "You classify reference material into typed sections. Output only the tags asked for."
+
 [premises]
 model = "claude-fable-5-1"
 fallback = "claude-opus-5"

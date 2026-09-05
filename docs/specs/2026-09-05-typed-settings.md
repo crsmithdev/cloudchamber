@@ -332,13 +332,15 @@ from the lore already gathered.
     `sources/settings/setting-a/reference/<slug>.md` per domain holding that
     domain's former Evidence bullets verbatim, and
     `sources/settings/setting-a/reference/artifacts.md` holding the former
-    Artifacts section verbatim, each with front matter `topic`, `sources`
-    citing the setting file, `fetched: 2026-09-05`; the count of `[?]` marks
+    Artifacts section verbatim, and `about.md` holding the former preamble and
+    domains introduction, each with front matter `topic`, `sources` citing the
+    setting file, `fetched: 2026-09-05`; the count of `[?]` marks
     across the reference files SHALL equal the count in the setting file
     before migration; every domain's Sources SHALL name its own file and
     `artifacts.md`.
 36. WHEN the migrated setting-a front matter is read THE keys SHALL be `id`,
-    `name`, `draw: 2`, `seed_segments: []` and THE body's `## Jobs` SHALL hold
+    `name`, `draw: 2`, `seed_segments: []`, `names: true` (its Instruments and
+    Places name real offices and towns) and THE body's `## Jobs` SHALL hold
     `- matrix: <the former front matter description>`.
 37. WHEN setting-a distill runs THE command SHALL be run once per domain with
     `--domain` and each result committed after review; THE final state SHALL

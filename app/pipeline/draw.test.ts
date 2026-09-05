@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { existsSync, mkdtempSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { settingsFixture } from "./settings.fixture.ts";
+import { words } from "./model.ts";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { openDb, type Db } from "./store/db.ts";
@@ -36,9 +38,9 @@ const script = (over: Record<string, any> = {}) => ({
   ...over,
 });
 
-function pipe(db: Db, dir: string, s = script(), rng = () => 0.001) {
+function pipe(db: Db, dir: string, s = script(), rng = () => 0.001, settingsDir?: string) {
   const model = new FakeModel(s);
-  return { model, p: new Pipeline(db, model, { rng, briefsDir: join(dir, "briefs") }) };
+  return { model, p: new Pipeline(db, model, { rng, briefsDir: join(dir, "briefs"), settingsDir }) };
 }
 
 describe("draw graph", () => {
@@ -166,30 +168,81 @@ describe("draw graph", () => {
     expect(p.draws()[0].status).toBe("failed");
   });
 
-  test("a setting appends its body after the examples, its hard rules last, and adds outline jobs", async () => {
+  test("a setting is sliced by stage: two drawn domains, the loaded sections only, hard rules last, jobs on the outline", async () => {
     const { db, dir } = fixture();
-    const { p, model } = pipe(db, dir, script({ outline: [outline(["matrix"])] }));
-    const draw = await p.start({ mode: "auto", genre: "horror", setting: "setting-a" });
+    const sdir = settingsFixture(dir);
+    const { p, model } = pipe(db, dir, script({ outline: [outline(["matrix"])] }), () => 0.001, sdir);
+    const draw = await p.start({ mode: "auto", genre: "horror", setting: "fog" });
     expect(draw.status).toBe("done");
-    const pr = model.calls.find((c) => c.stage === "premises")!.prompt;
-    const iEx = pr.indexOf("horror passage"), iBody = pr.indexOf("The setting-a matrix is structural"), iAsk = pr.indexOf("Generate five premises"), iRules = pr.lastIndexOf("## Hard rules");
-    expect(iEx).toBeLessThan(iBody);
-    expect(iBody).toBeLessThan(iAsk);
-    expect(iAsk).toBeLessThan(iRules);
-    expect(pr.slice(iRules)).toContain("Nothing resolves");
-    const ol = model.calls.find((c) => c.stage === "outline")!.prompt;
-    expect(ol).toContain('<section name="matrix">');
+    expect(JSON.parse(draw.domains!)).toEqual(["land-and-title", "labour"]);     // rng 0.001 picks the first remaining twice
+    const call = (stage: string) => model.calls.find((c) => c.stage === stage)!.prompt;
+    const lastHeading = (pr: string) => [...pr.matchAll(/^#{2,4} .+$/gm)].pop()![0];
+    const has = (pr: string, xs: string[]) => { for (const x of xs) expect(pr).toContain(x); };
+    const hasNot = (pr: string, xs: string[]) => { for (const x of xs) expect(pr).not.toContain(x); };
+    // premises: examples, Matrix, Do not build, Open ground, domain Frame/Mechanisms/Roles, ask, Hard rules last
+    const pr = call("premises");
+    expect(pr.indexOf("horror passage")).toBeLessThan(pr.indexOf("## Matrix"));
+    expect(pr.indexOf("## Matrix")).toBeLessThan(pr.indexOf("Generate five premises"));
+    has(pr, ["## Matrix", "## Do not build", "## Open ground", "### 1. Land and title", "### 6. Labour", "#### Frame", "#### Mechanisms", "#### Roles", "A boundary called to a willow", "the deputy"]);
+    hasNot(pr, ["#### Institutions", "#### Instruments", "#### Clocks", "#### Places", "#### Vocabulary", "#### Sources", "## Jobs", "### 12. Death", "reference/", "Probate Code"]);
+    expect(lastHeading(pr)).toBe("## Hard rules");
+    expect(pr.slice(pr.indexOf("## Hard rules"))).toContain("Nothing resolves");
+    // execute: nouns, not mechanisms
+    const ex = call("execute");
+    has(ex, ["## Matrix", "## Do not build", "#### Frame", "#### Roles", "#### Instruments", "#### Places", "#### Vocabulary", "the diseño"]);
+    hasNot(ex, ["#### Mechanisms", "#### Institutions", "#### Clocks", "#### Sources", "## Open ground", "## Jobs"]);
+    expect(lastHeading(ex)).toBe("## Hard rules");
+    // outline: institutions, instruments, clocks; the setting job as a section ask; head first
+    const ol = call("outline");
+    expect(ol.indexOf("Seed:")).toBeLessThan(ol.indexOf("## Matrix"));
+    expect(ol.indexOf("## Matrix")).toBeLessThan(ol.indexOf("Write one section per job"));
+    has(ol, ["#### Frame", "#### Mechanisms", "#### Institutions", "#### Instruments", "#### Clocks", '<section name="matrix">', "The county recorder", "the weekly settlement sheet"]);
+    hasNot(ol, ["#### Roles", "#### Places", "#### Vocabulary", "#### Sources", "## Open ground", "## Jobs"]);
+    expect(lastHeading(ol)).toBe("## Hard rules");
+    // jobs, context, ending: institutions, instruments, clocks, vocabulary after the head
+    for (const stage of ["jobs", "context", "ending"]) {
+      const t = call(stage);
+      expect(t.indexOf("Section debt audit body.")).toBeLessThan(t.indexOf("## Matrix"));
+      has(t, ["#### Frame", "#### Institutions", "#### Instruments", "#### Clocks", "#### Vocabulary"]);
+      hasNot(t, ["#### Mechanisms", "#### Roles", "#### Places", "#### Sources", "## Open ground", "## Jobs"]);
+      expect(lastHeading(t)).toBe("## Hard rules");
+    }
+    // the draw row, the brief
     expect(readFileSync(join(dir, "briefs", draw.id, "outline.md"), "utf8")).toContain("## matrix");
+    const trail = readFileSync(join(dir, "briefs", draw.id, "trail.md"), "utf8");
+    expect(trail).toContain("## domains\n\n- 1. Land and title\n- 6. Labour");
+    expect(words(pr)).toBeLessThan(5000);
   });
 
-  test("a setting with an empty hard_rules line draws without hard rules", async () => {
+  test("the domain draw is independent of the seed, pinnable, and refuses a bad slug or a draw over the count", async () => {
     const { db, dir } = fixture();
-    const { p, model } = pipe(db, dir);
-    const draw = await p.start({ mode: "auto", genre: "horror", setting: "setting-b" });
-    expect(draw.status).toBe("done");
-    const pr = model.calls.find((c) => c.stage === "premises")!.prompt;
-    expect(pr).toContain("setting-b");
-    expect(pr).not.toContain("## Hard rules");
+    const sdir = settingsFixture(dir);
+    const twice = { premises: [premises(), premises()], outline: [outline(["matrix"]), outline(["matrix"])], jobs: [script().jobs[0], script().jobs[0]], ending: [script().ending[0], script().ending[0]] };
+    const { p } = pipe(db, dir, script(twice), () => 0.001, sdir);
+    const a = await p.start({ mode: "auto", genre: "horror", setting: "fog", seed: { mode: "typed", text: "one seed" } });
+    const b = await p.start({ mode: "auto", genre: "horror", setting: "fog", seed: { mode: "typed", text: "another seed" } });
+    expect(a.domains).toBe(b.domains);
+    const { p: p2, model } = pipe(db, dir, script({ outline: [outline(["matrix"])] }), () => 0.001, sdir);
+    const c = await p2.start({ mode: "auto", genre: "horror", setting: "fog", domains: ["labour", "death-and-its-administration"] });
+    expect(JSON.parse(c.domains!)).toEqual(["labour", "death-and-its-administration"]);
+    const pr = model.calls.find((x) => x.stage === "premises")!.prompt;
+    expect(pr.indexOf("### 6. Labour")).toBeLessThan(pr.indexOf("### 12. Death and its administration"));
+    expect(pr).not.toContain("### 1. Land and title");
+    await expect(p2.start({ mode: "auto", genre: "horror", setting: "fog", domains: ["nope"] })).rejects.toThrow("setting fog: no domain nope");
+    await expect(p2.start({ mode: "auto", genre: "horror", domains: ["labour"] })).rejects.toThrow(/--domains needs --setting/);
+    writeFileSync(join(sdir, "fog.md"), readFileSync(join(sdir, "fog.md"), "utf8").replace("draw: 2", "draw: 4"));
+    await expect(p2.start({ mode: "auto", genre: "horror", setting: "fog" })).rejects.toThrow("setting fog: draw 4 exceeds 3 domains");
+    expect(p2.draws().filter((d) => d.status === "running")).toHaveLength(0);   // nothing inserted before the failure
+  });
+
+  test("a setting that fails lint is refused before any model call, naming the findings", async () => {
+    const { db, dir } = fixture();
+    const sdir = settingsFixture(dir);
+    writeFileSync(join(sdir, "fog.md"), readFileSync(join(sdir, "fog.md"), "utf8").replace("#### Clocks\n\nnone\n\n#### Places", "#### Places"));
+    const { p, model } = pipe(db, dir, script(), () => 0.001, sdir);
+    await expect(p.start({ mode: "auto", genre: "horror", setting: "fog" })).rejects.toThrow(/land-and-title › Clocks: missing/);
+    expect(model.calls).toHaveLength(0);
+    expect(p.draws()).toHaveLength(0);
   });
 
   test("unrestricted prompts carry nothing beyond passages, seed, ask and genre", async () => {

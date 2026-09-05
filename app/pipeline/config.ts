@@ -1,9 +1,9 @@
 import stagesToml from "./stages.toml";
 
-export type StageName = "themes" | "redundancy" | "premises" | "execute" | "outline" | "jobs" | "context" | "ending";
+export type StageName = "themes" | "redundancy" | "distill" | "premises" | "execute" | "outline" | "jobs" | "context" | "ending";
 export type StageConfig = { model: string; fallback: string; system: string };
 
-export const STAGES: StageName[] = ["themes", "redundancy", "premises", "execute", "outline", "jobs", "context", "ending"];
+export const STAGES: StageName[] = ["themes", "redundancy", "distill", "premises", "execute", "outline", "jobs", "context", "ending"];
 
 /** Draw parameters decided in the spec. */
 export const RUN = {
@@ -16,6 +16,7 @@ export const RUN = {
   outlineSectionWords: 400,
   endingWords: 600,
   coreJobs: ["debt audit", "arithmetic", "custody"] as const,
+  distillWords: 60000,  // a domain whose reference files exceed this is refused, not chunked
 };
 
 export function loadStages(): Record<StageName, StageConfig> {

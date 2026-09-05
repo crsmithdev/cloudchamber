@@ -13,7 +13,8 @@ import { RUN, loadStages, type StageConfig, type StageName } from "./config.ts";
 import { compose, fill } from "./prompts.ts";
 import { sections, tag, tags, words, type ModelAdapter } from "./model.ts";
 import { eligiblePassages, eligibleThemes, type Segment } from "./bank.ts";
-import { loadSetting, type Setting } from "./settings.ts";
+import { hardRules, loadChecked, pickDomains, slice, type Domain, type GenStage, type Setting } from "./settings.ts";
+import { SETTINGS } from "./paths.ts";
 import { now } from "./paths.ts";
 import { pipelineVersion } from "./version.ts";
 import type { Db } from "./store/db.ts";
@@ -27,11 +28,12 @@ export type DrawOpts = {
   segment?: Segment;
   seed?: SeedChoice;
   seedRng?: () => number;
+  domains?: string[];    // pin the setting's domains by slug; drawn by rng when absent
 };
 
 export type DrawRow = {
   id: string; setting: string | null; genre: string; mode: "auto" | "manual"; segment: string | null;
-  seed_mode: string; seed_text: string; seed_theme_id: string | null; example_ids: string; status: string;
+  seed_mode: string; seed_text: string; seed_theme_id: string | null; example_ids: string; domains: string | null; status: string;
   gate_method: string | null; chosen_step: string | null; flagged: number; flag_note: string;
   superseded_by: string | null; created_at: string; ended_at: string | null;
 };
@@ -52,10 +54,23 @@ const id = (n = 6) => randomBytes(n).toString("hex");
 export class Pipeline {
   stages: Record<StageName, StageConfig>;
   briefsDir: string | undefined;
-  constructor(public db: Db, public model: ModelAdapter, opts: { stages?: Record<StageName, StageConfig>; rng?: () => number; briefsDir?: string } = {}) {
+  settingsDir: string;
+  constructor(public db: Db, public model: ModelAdapter, opts: { stages?: Record<StageName, StageConfig>; rng?: () => number; briefsDir?: string; settingsDir?: string } = {}) {
     this.stages = opts.stages ?? loadStages();
     this.rng = opts.rng ?? Math.random;
     this.briefsDir = opts.briefsDir;
+    this.settingsDir = opts.settingsDir ?? SETTINGS;
+  }
+
+  /** The setting's text for one stage, or undefined when unrestricted. */
+  private settingFor(stage: GenStage, setting?: Setting, domains: Domain[] = []): { slice: string; hardRules: string } | undefined {
+    return setting ? { slice: slice(setting, domains, stage), hardRules: hardRules(setting) } : undefined;
+  }
+
+  private loadDrawSetting(draw: { setting: string | null; domains: string | null }): { setting?: Setting; domains: Domain[] } {
+    if (!draw.setting) return { domains: [] };
+    const setting = loadChecked(draw.setting, this.settingsDir);
+    return { setting, domains: pickDomains(setting, this.rng, JSON.parse(draw.domains ?? "[]")) };
   }
   rng: () => number;
 
@@ -166,17 +181,19 @@ export class Pipeline {
   // --- the draw ---------------------------------------------------------------
 
   async start(opts: DrawOpts): Promise<DrawRow> {
-    const setting = opts.setting ? loadSetting(opts.setting) : undefined;
+    if (opts.domains?.length && !opts.setting) throw new Error("draw: --domains needs --setting");
+    const setting = opts.setting ? loadChecked(opts.setting, this.settingsDir) : undefined;
+    const domains = setting ? pickDomains(setting, this.rng, opts.domains) : [];
     const examples = this.drawExamples(opts.segment);
     const seed = this.drawSeed(opts.seed, setting);
     const genre = this.inferGenre(opts, examples);
     const drawId = `${now().replace(/[-:TZ]/g, "").slice(0, 15)}-${id(2)}`;
-    this.db.query(`INSERT INTO draws (id, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, status, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?)`)
+    this.db.query(`INSERT INTO draws (id, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, domains, status, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?)`)
       .run(drawId, setting?.id ?? null, genre, opts.mode, opts.segment ? JSON.stringify(opts.segment) : null,
-        seed.mode, seed.text, seed.themeId, JSON.stringify(examples.map((e) => e.id)), now());
+        seed.mode, seed.text, seed.themeId, JSON.stringify(examples.map((e) => e.id)), setting ? JSON.stringify(domains.map((d) => d.slug)) : null, now());
     try {
-      await this.premisesAndExecute(drawId, examples.map((e) => e.text), seed.text, genre, setting);
+      await this.premisesAndExecute(drawId, examples.map((e) => e.text), seed.text, genre, setting, domains);
     } catch (e) {
       this.fail(drawId, e);
       throw e;
@@ -186,9 +203,10 @@ export class Pipeline {
     return draw;
   }
 
-  private async premisesAndExecute(drawId: string, examples: string[], seed: string, genre: string, setting?: Setting) {
+  private async premisesAndExecute(drawId: string, examples: string[], seed: string, genre: string, setting?: Setting, domains: Domain[] = []) {
     const ask = fill("premisesAsk", { genre, seed });
-    const prompt = compose(examples, ask, setting);
+    const head = examples.join("\n\n");
+    const prompt = compose(head, ask, this.settingFor("premises", setting, domains));
     const { step, value: premises } = await this.invoke(drawId, null, "premises", prompt, (text) => {
       const ps = tags(text, "premise").map((p) => ({ text: tag(p, "text"), probability: Number(tag(p, "probability")) }));
       if (ps.length !== RUN.k) throw new Error(`expected ${RUN.k} premises, got ${ps.length}`);
@@ -207,7 +225,7 @@ export class Pipeline {
     premises.forEach((p, i) => this.artifact(step, "premise", p.text, { index: i + 1, probability: p.probability, warnings: words(p.text) > 120 ? ["length"] : [] }));
     await Promise.all(premises.map((p, i) => {
       const ask = fill("executeAsk", { seed, premise: p.text });
-      return this.invoke(drawId, step.id, "execute", compose(examples, ask, setting), (text) => {
+      return this.invoke(drawId, step.id, "execute", compose(head, ask, this.settingFor("execute", setting, domains)), (text) => {
         const v = tag(text, "vignette");
         if (!v) throw new Error("no <vignette> tag");
         return v;
@@ -281,11 +299,13 @@ export class Pipeline {
 
   private async develop(drawId: string, c: { step_id: string; premise: string; vignette: string }) {
     const draw = this.draw(drawId);
-    const setting = draw.setting ? loadSetting(draw.setting) : undefined;
+    const { setting, domains } = this.loadDrawSetting(draw);
     const settingJobs = (setting?.jobs ?? []).map((j) => fill("settingJob", { name: j.name, description: j.description })).join("");
     const jobNames = [...RUN.coreJobs, ...(setting?.jobs ?? []).map((j) => j.name.toLowerCase())];
+    const outlineHead = fill("outlineHead", { seed: draw.seed_text, premise: c.premise, vignette: c.vignette });
+    const outlineSetting = this.settingFor("outline", setting, domains);   // the Jobs section reaches the outline as its <section> asks
     const { step: outlineStep, value: outline } = await this.invoke(drawId, c.step_id, "outline",
-      fill("outline", { seed: draw.seed_text, premise: c.premise, vignette: c.vignette, settingJobs }), (text) => {
+      compose(outlineHead, fill("outlineAsk", { settingJobs }), outlineSetting), (text) => {
         const secs = sections(text);
         for (const j of jobNames) if (!secs[j]) throw new Error(`missing <section name="${j}">`);
         return secs;
@@ -293,7 +313,8 @@ export class Pipeline {
     const outlineText = Object.entries(outline).map(([n, body]) => `## ${n}\n\n${body}`).join("\n\n");
     this.artifact(outlineStep, "outline", outlineText, { jobs: jobNames, words: Object.fromEntries(Object.entries(outline).map(([n, b]) => [n, words(b)])) });
     const head = fill("head", { outline: outlineText, vignette: c.vignette });
-    const { step: jobsStep, value: jobs } = await this.invoke(drawId, outlineStep.id, "jobs", head + fill("jobs", {}), (text) => {
+    const after = (stage: GenStage, ask: string) => compose(head, ask, this.settingFor(stage, setting, domains), "");
+    const { step: jobsStep, value: jobs } = await this.invoke(drawId, outlineStep.id, "jobs", after("jobs", fill("jobs", {})), (text) => {
       const js = tags(text, "job");
       if (js.length !== RUN.contextVignettes) throw new Error(`expected ${RUN.contextVignettes} jobs, got ${js.length}`);
       if (new Set(js.map((j) => j.toLowerCase())).size !== js.length) throw new Error("identical jobs");
@@ -301,14 +322,14 @@ export class Pipeline {
     });
     jobs.forEach((j, i) => this.artifact(jobsStep, "job", j, { index: i + 1 }));
     await Promise.all([
-      ...jobs.map((job, i) => this.invoke(drawId, outlineStep.id, "context", head + fill("context", { job }), (text) => {
+      ...jobs.map((job, i) => this.invoke(drawId, outlineStep.id, "context", after("context", fill("context", { job })), (text) => {
         const v = tag(text, "vignette"); if (!v) throw new Error("no <vignette> tag"); return v;
       }).then((r) => this.artifact(r.step, "vignette", r.value, { index: i + 1, job, warnings: words(r.value) > 500 ? ["length"] : [] }))),
-      this.invoke(drawId, outlineStep.id, "ending", head + fill("ending", {}), (text) => {
+      this.invoke(drawId, outlineStep.id, "ending", after("ending", fill("ending", {})), (text) => {
         const e = tag(text, "ending"); if (!e) throw new Error("no <ending> tag"); return e;
       }).then((r) => this.artifact(r.step, "ending", r.value, { warnings: words(r.value) > 650 ? ["length"] : [] })),
     ]);
-    const dir = writeBrief(this.db, drawId, this.stages, this.briefsDir);
+    const dir = writeBrief(this.db, drawId, this.stages, this.briefsDir, this.settingsDir);
     this.db.query("UPDATE draws SET status = 'done', ended_at = ? WHERE id = ?").run(now(), drawId);
     this.artifact(outlineStep, "brief", dir, {});
   }

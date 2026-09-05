@@ -108,6 +108,7 @@ CREATE TABLE IF NOT EXISTS draws (
   seed_text     TEXT NOT NULL,
   seed_theme_id TEXT,
   example_ids   TEXT NOT NULL,         -- JSON array
+  domains       TEXT,                  -- JSON array of the setting's drawn domain slugs; NULL when unrestricted
   status        TEXT NOT NULL,         -- running | awaiting_gate | done | failed | rejected
   gate_method   TEXT,                  -- auto | manual
   chosen_step   TEXT,

@@ -37,6 +37,12 @@ export const NEAREST = 10;
 
 const RELATIVE_OPENER = /^(Those|These|That|This)\s+(who|whom|whose|which|kept|held|left|made|born|sent|given|taken|chosen|bought|sold|paid|owed|entrusted|charged|hired|passed|spared|raised)\b/;
 
+/** Capitalised words not at the start of the text or of a sentence, `I` excepted. */
+export function properNouns(text: string): string[] {
+  const t = text.replace(/\s+/g, " ").trim();
+  return [...t.matchAll(/(?<![.!?:;]\s)(?<!^)\b([A-Z][a-z]+)/g)].map((m) => m[1]).filter((c) => c !== "I");
+}
+
 export function validateTheme(text: string): string[] {
   const t = text.replace(/\s+/g, " ").trim();
   const why: string[] = [];
@@ -44,7 +50,7 @@ export function validateTheme(text: string): string[] {
   if (w < 9 || w > 44) why.push(`${w} words`);
   const sents = (t.match(/[.!?](\s|$)/g) ?? []).length;
   if (sents > 2) why.push(`${sents} sentences`);
-  const caps = [...t.matchAll(/(?<![.!?:;]\s)(?<!^)\b([A-Z][a-z]+)/g)].map((m) => m[1]).filter((c) => c !== "I");
+  const caps = properNouns(t);
   if (caps.length) why.push(`proper noun ${caps.join(",")}`);
   if (/\bSCP-\d+\b/i.test(t) || /\b[A-Z]{1,4}-\d+\b/.test(t)) why.push("designation");
   if (/^(This|That|These|Those|It|Here)\b/.test(t) && !RELATIVE_OPENER.test(t)) why.push("deictic opener");

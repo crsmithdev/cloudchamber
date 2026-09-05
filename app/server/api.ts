@@ -127,10 +127,12 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean } 
 
   app.get("/api/draws", async () => { const draws = pipeline.draws(); const names = drawNames(draws); return draws.map((r) => ({ ...r, name: names.get(r.id) })); });
 
-  app.post<{ Body: { mode?: "auto" | "manual"; setting?: string; genre?: string; source?: string; author?: string; seed?: string; seed_id?: string } }>("/api/draws", async (req, reply) => {
+  app.post<{ Body: { mode?: "auto" | "manual"; setting?: string; domains?: string; genre?: string; source?: string; author?: string; seed?: string; seed_id?: string } }>("/api/draws", async (req, reply) => {
     const b = req.body ?? {};
     const seed: SeedChoice = b.seed ? { mode: "typed", text: b.seed } : b.seed_id ? { mode: "picked", themeId: b.seed_id } : { mode: "drawn" };
-    const opts: DrawOpts = { mode: b.mode ?? "manual", setting: b.setting || undefined, genre: b.genre || undefined, seed,
+    const domains = b.domains ? b.domains.split(",").map((d) => d.trim()).filter(Boolean) : undefined;
+    if (domains?.length && !b.setting) return reply.code(400).send({ error: "domains need a setting" });
+    const opts: DrawOpts = { mode: b.mode ?? "manual", setting: b.setting || undefined, domains, genre: b.genre || undefined, seed,
       segment: b.source || b.author ? { source: b.source || undefined, author: b.author || undefined } : undefined };
     try {
       // The draw and validation are synchronous-ish and fail fast; the model steps continue after we reply.
