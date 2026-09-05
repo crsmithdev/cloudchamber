@@ -58,7 +58,8 @@ export function loadSetting(id: string): Setting {
   const path = join(ROOT, "sources", "settings", `${id}.md`);
   if (!existsSync(path)) throw new Error(`setting ${id}: no file at sources/settings/${id}.md`);
   const { meta, body } = parseFrontMatter(readFileSync(path, "utf8"));
-  const heading: string = meta.hard_rules ?? "";
+  // An empty `hard_rules:` line parses as [] like any empty value; only a string names a heading.
+  const heading: string = typeof meta.hard_rules === "string" ? meta.hard_rules : "";
   let hardRules = "";
   if (heading) {
     const re = new RegExp(`^(#{1,6})\\s+${heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`, "im");

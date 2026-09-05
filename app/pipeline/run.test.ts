@@ -180,6 +180,16 @@ describe("run graph", () => {
     expect(readFileSync(join(dir, "packets", run.id, "outline.md"), "utf8")).toContain("## matrix");
   });
 
+  test("a setting with an empty hard_rules line runs without hard rules", async () => {
+    const { db, dir } = fixture();
+    const { p, model } = pipe(db, dir);
+    const run = await p.start({ mode: "auto", genre: "horror", setting: "setting-b" });
+    expect(run.status).toBe("done");
+    const pr = model.calls.find((c) => c.stage === "premises")!.prompt;
+    expect(pr).toContain("setting-b");
+    expect(pr).not.toContain("## Hard rules");
+  });
+
   test("unrestricted prompts carry nothing beyond passages, seed, ask and genre", async () => {
     const { db, dir } = fixture();
     const { p, model } = pipe(db, dir);
