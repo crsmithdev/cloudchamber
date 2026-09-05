@@ -1,0 +1,173 @@
+# What extraction reads. One table per source.
+#   reader   pdf | scp
+#   author   set for single-author collections; anthologies take it per story from the outline
+#   dev      part of the development subset (`extract` with no scope reads only these)
+#   dev_only for a glob source, the file stems that count as dev
+#   stories  optional override: [{title = "...", page = N}, ...] replaces outline and page cues
+
+[source.scp]
+path = "sources/horror/scp/scp-*.md"
+reader = "scp"
+genre = "horror"
+license = "CC BY-SA 3.0"
+dev = true
+dev_only = ["scp-2151", "scp-610", "scp-3929", "scp-5740", "scp-2845", "scp-2000", "scp-3625", "scp-001-djk1-the-children", "scp-4390", "scp-8947"]
+
+[source.evenson-contagion]
+path = "sources/horror/Brian Evenson - Contagion and Other Stories.pdf"
+reader = "pdf"
+genre = "horror"
+author = "Brian Evenson"
+dev = true
+
+[source.evenson-good-night-sleep-tight]
+path = "sources/horror/Brian Evenson - Good Night Sleep Tight.pdf"
+reader = "pdf"
+genre = "horror"
+author = "Brian Evenson"
+
+[source.evenson-solution]
+path = "sources/horror/Brian Evenson - Solution.pdf"
+reader = "pdf"
+genre = "horror"
+author = "Brian Evenson"
+
+[source.evenson-the-glassy-burning-floor-of-hell]
+path = "sources/horror/Brian Evenson - The Glassy Burning Floor of Hell.pdf"
+reader = "pdf"
+genre = "horror"
+author = "Brian Evenson"
+
+[source.datlow-body-shocks]
+path = "sources/horror/Ellen Datlow - Body Shocks.pdf"
+reader = "pdf"
+genre = "horror"
+
+[source.datlow-darkness-two-decades-of-modern-horror]
+path = "sources/horror/Ellen Datlow - Darkness Two Decades of Modern Horror.pdf"
+reader = "pdf"
+genre = "horror"
+
+[source.datlow-01]
+path = "sources/horror/Ellen Datlow - The Best Horror of the Year Volume 01.pdf"
+reader = "pdf"
+genre = "horror"
+dev = true
+
+[source.datlow-02]
+path = "sources/horror/Ellen Datlow - The Best Horror of the Year Volume 02.pdf"
+reader = "pdf"
+genre = "horror"
+
+[source.datlow-03]
+path = "sources/horror/Ellen Datlow - The Best Horror of the Year Volume 03.pdf"
+reader = "pdf"
+genre = "horror"
+
+[source.datlow-04]
+path = "sources/horror/Ellen Datlow - The Best Horror of the Year Volume 04.pdf"
+reader = "pdf"
+genre = "horror"
+
+[source.datlow-05]
+path = "sources/horror/Ellen Datlow - The Best Horror of the Year Volume 05.pdf"
+reader = "pdf"
+genre = "horror"
+
+[source.datlow-06]
+path = "sources/horror/Ellen Datlow - The Best Horror of the Year Volume 06.pdf"
+reader = "pdf"
+genre = "horror"
+
+[source.datlow-07]
+path = "sources/horror/Ellen Datlow - The Best Horror of the Year Volume 07.pdf"
+reader = "pdf"
+genre = "horror"
+
+[source.datlow-08]
+path = "sources/horror/Ellen Datlow - The Best Horror of the Year Volume 08.pdf"
+reader = "pdf"
+genre = "horror"
+
+[source.datlow-09]
+path = "sources/horror/Ellen Datlow - The Best Horror of the Year Volume 09.pdf"
+reader = "pdf"
+genre = "horror"
+
+[source.datlow-12]
+path = "sources/horror/Ellen Datlow - The Best Horror of the Year Volume 12.pdf"
+reader = "pdf"
+genre = "horror"
+
+[source.datlow-13]
+path = "sources/horror/Ellen Datlow - The Best Horror of the Year Volume 13.pdf"
+reader = "pdf"
+genre = "horror"
+
+[source.datlow-14]
+path = "sources/horror/Ellen Datlow - The Best Horror of the Year Volume 14.pdf"
+reader = "pdf"
+genre = "horror"
+
+[source.datlow-15]
+path = "sources/horror/Ellen Datlow - The Best Horror of the Year Volume 15.pdf"
+reader = "pdf"
+genre = "horror"
+
+[source.datlow-16]
+path = "sources/horror/Ellen Datlow - The Best Horror of the Year Volume 16.pdf"
+reader = "pdf"
+genre = "horror"
+
+[source.datlow-17]
+path = "sources/horror/Ellen Datlow - The Best Horror of the Year Volume 17.pdf"
+reader = "pdf"
+genre = "horror"
+
+[source.langan-lost-in-the-dark]
+path = "sources/horror/John Langan - Lost in the Dark and Other Excursions.pdf"
+reader = "pdf"
+genre = "horror"
+author = "John Langan"
+
+[source.langan-sefira]
+path = "sources/horror/John Langan - Sefira and Other Betrayals.pdf"
+reader = "pdf"
+genre = "horror"
+author = "John Langan"
+
+[source.langan-the-fisherman]
+path = "sources/horror/John Langan - The Fisherman.pdf"
+reader = "pdf"
+genre = "horror"
+author = "John Langan"
+
+[source.langan-the-wide-carnivorous-sky]
+path = "sources/horror/John Langan - The Wide Carnivorous Sky.pdf"
+reader = "pdf"
+genre = "horror"
+author = "John Langan"
+
+[source.king-skeleton-crew]
+path = "sources/horror/Stephen King - Skeleton Crew.pdf"
+reader = "pdf"
+genre = "horror"
+author = "Stephen King"
+
+[source.watts-blindsight]
+path = "sources/scifi/Peter Watts - Blindsight.pdf"
+reader = "pdf"
+genre = "scifi"
+author = "Peter Watts"
+
+[source.watts-echopraxia]
+path = "sources/scifi/Peter Watts - Echopraxia.pdf"
+reader = "pdf"
+genre = "scifi"
+author = "Peter Watts"
+
+[source.chiang-stories-of-your-life]
+path = "sources/scifi/Ted Chiang - Stories of Your Life and Others.pdf"
+reader = "pdf"
+genre = "scifi"
+author = "Ted Chiang"

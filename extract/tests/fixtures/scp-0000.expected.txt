@@ -1,0 +1,21 @@
+[heading] SCP-0000 - A Test
+
+[heading] A Heading Run
+
+[heading] Second Level
+
+[heading] Third Level
+
+[meta] 
+
+[prose] Literal spans must unwrap, and the empty spacer disappears.
+
+[prose] Special Containment Procedures: Subjects are to be processed at the intake facility on a standard weekly interval. Personnel are not to be informed of the disposal protocol.
+
+[prose] Description: The procedure is administered to residents of the district in order to reduce the recorded population, which means the cohort is permanently unable to leave. The observed effect is routine and unremarkable. Records indicate 1994 as the first year of operation, and the total processed stands at 240,000 across the region. Personnel reported no further detail; the identity of the authorizing officer was never determined and remains unaccounted for.
+
+[prose] She was gentle with them. She thanked each subject by name, and she was careful with the incision, and the wound was clean, and the bodies were recorded and buried in the standard manner before the next intake.
+
+[prose] A link to Site-81 must survive as its label, with no stray brackets left behind.
+
+[prose] The screening continues. It continues each morning, indefinitely, and the personnel remain in operation as scheduled.

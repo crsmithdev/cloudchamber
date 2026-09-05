@@ -194,8 +194,11 @@ mode carries no doctrine at all.
 7. WHEN a story of W words is segmented THE system SHALL emit
    `clamp(round(W/1000), 3, 30)` passages, each of 150–400 words, each starting
    and ending on a paragraph boundary, no two overlapping by more than 50% of
-   tokens, drawn one per equal-length stratum of the story with a recorded
-   random seed; WHEN re-run with the same seed THE passages SHALL be identical.
+   tokens, drawn one per equal-word stratum of the story with a recorded
+   random seed, then filled from anywhere in the story when a stratum yields
+   nothing; IF the story has fewer than 450 words of paragraphs under 400 words
+   per passage owed THEN fewer passages are allowed (a 447-word story yields
+   one). WHEN re-run with the same seed THE passages SHALL be identical.
 8. WHEN `facets` runs THE system SHALL store six z-scores per passage, the fit
    (mean, sd, n, backend) in the store, tercile labels on D1 and D2, and print
    the range, skew and largest correlation per dimension. IF the pool differs
@@ -344,7 +347,8 @@ mode carries no doctrine at all.
 ### Layout
 
 - `extract/`: the Python package, run as `python -m extract`. Subcommands
-  `read`, `split`, `segment`, `facets`, `embed`. It reads sources and writes
+  `read` (which splits: a PDF is read into stories, not into a file),
+  `segment`, `facets`, `embed`. It reads sources and writes
   rows into the SQLite store; it makes no model call and no network call.
 - `app/`: the bun workspace. `app/cli` (the `fogbelt` command), `app/pipeline`
   (stages, model adapter, store), `app/server` (Fastify), `app/ui` (React,
