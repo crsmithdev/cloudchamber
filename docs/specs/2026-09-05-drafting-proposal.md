@@ -3,21 +3,20 @@
 A proposal, not a spec. It lays out the stages after a brief — checking it,
 repairing it, writing the story, checking the story — with the evidence for
 each choice and the decisions still open. It is written to be grilled; the
-spec follows the grilling. Research is in `research/drafting.md` (new this
-pass), `research/generation.md` and `research/literature.md`. The one piece
-of local prior art is the pair of review passes run over the concept slate on
-2026-08-28 and 2026-08-29, whose method is at `redteam.md` in commit
-`24aef1e` and whose findings sit in every `stories/*.md`; its *method* is
-reused below, its *content* is not an input to anything.
+spec follows the grilling. Everything here derives from `research/drafting.md`
+(new this pass), `research/generation.md` and `research/literature.md`, and
+from the shape of the brief the ideation pipeline already produces. Nothing
+is taken from the review passes run over the retired concept slate; that
+material is not an input.
 
 ## Where it starts
 
 A draw ends in `briefs/<draw>/`: the chosen 400-word vignette, an outline in
 three sections (debt audit, arithmetic, custody, plus any setting job), two
 context vignettes, an ending of up to 600 words, and a trail. About 2,400
-words of prose and 1,000 of structure. The outline already contains two
-things the checks below need: the arithmetic section is a fact ledger, and the
-debt audit is a derivation whose validity can be tested.
+words of prose and 1,000 of structure. Two properties of the outline do work
+below: the arithmetic section is a list of settled facts, and the debt audit
+is a derivation whose validity can be tested.
 
 The brief is a seed, not a story. Its vignettes were written to test whether
 the structure can be executed, not to be scenes.
@@ -25,292 +24,355 @@ the structure can be executed, not to be scenes.
 ## The graph
 
 ```
-brief → check ×N (parallel, independent)
-      → rank (one call per checker: the one finding that breaks the premise)
-      → GATE 1: repair | hold | pass
-      → repair (re-derive one outline section or one vignette; fresh call) → check again, once
-      → schedule (beats: what is known, what is withheld, when)
-      → scene ×M (sequential, each a fresh call)
+brief → check ×K (parallel, independent, each sampled S times)
+      → GATE 1: accept findings | hold | pass
+      → repair (re-derive the outline with accepted findings as constraints; fresh call) → check again, once
+      → schedule (beats: what is known, what is withheld, until when; form fixed)
+      → scene ×M (each a fresh call)
       → screen ×M (ledger, structure, slop; per scene)
       → GATE 2: keep | rewrite scene k | pass
       → story
-      → slate (batch sameness over finished stories, outside any judge)
+      → slate (batch measurement over kept stories, outside any judge)
 ```
 
 Two gates, both Chris. No model decides anything; every model output is a
 finding with a quote, a derived document, or prose.
 
 Checks run before drafting because checking is reliable on short text and
-falls to chance on long text (`drafting.md` §1.1), and because a fixed
-mechanism costs one outline call on a brief and eight scene calls on a
-story.
+falls to chance on long text (`drafting.md` §1.1), and because a corrected
+mechanism costs one outline call on a brief and M scene calls on a story.
+
+## Configuration
+
+Length and structure are configuration, not constants. A file
+`app/pipeline/draft.toml` holds the defaults; any key can be overridden per
+draw on the command line or in the UI, and the values used are written to the
+trail. Named profiles bundle a set of overrides.
+
+```toml
+[length]
+words = 5000            # target for the whole story
+tolerance = 0.2         # stored with a warning outside ±20%
+
+[beats]
+count = "auto"          # or an integer; auto lets the schedule choose within min..max
+min = 5
+max = 10
+words_min = 400         # per-beat cap range the schedule assigns from
+words_max = 800
+
+[form]                  # "auto" = the schedule derives it from the brief and states it
+tense = "auto"          # past | present
+person = "auto"         # first | second | third
+chronology = "auto"     # linear | nonlinear
+container = "auto"      # prose | document | interleaved
+ending = "brief"        # brief: the brief's ending is the last beat; open: the schedule may re-derive it
+
+[structure]
+template = "auto"       # auto | <name under [structure.templates]> | from:<story-id>
+
+[structure.templates.frame]
+beats = ["frame, opening", "inside, first", "inside, turn", "inside, last", "frame, closing"]
+
+[scenes]
+order = "sequential"    # sequential | parallel
+
+[checks]
+enabled = ["claims", "derivation", "ledger", "structure", "resemblance"]
+samples = 3             # independent runs per checker
+keep_if = 2             # a finding is reported when it recurs in at least this many runs
+
+[screens]
+enabled = ["ledger", "structure", "slop"]
+slop_baseline = "pool"  # the passage pool is the human baseline
+
+[repair]
+rounds = 1              # automatic rounds before the gate sees it again
+
+[profiles.flash]
+length.words = 1500
+beats.count = 3
+
+[profiles.novelette]
+length.words = 12000
+beats.min = 10
+beats.max = 18
+```
+
+`structure.template` has three modes. `auto`: the schedule derives beats from
+the brief. A named template: the beats are the template's slots, each a job
+the schedule fills, the way a setting's `jobs` fill outline sections today.
+`from:<story-id>`: one extra call extracts the beat structure of a corpus
+story — per beat its action, technique and function — and the schedule adapts
+that structure to the brief. The third mode is the warm-up stage of the
+pipeline that closed half the tension gap (`drafting.md` §1.4), and it means a
+Datlow story's shape can be the template for a draft without any of its text
+entering a prompt.
+
+Command line: `fogbelt draft <draw> [--profile P] [--words N] [--beats N]
+[--tense T] [--person P] [--container C] [--structure S] [--order O]`, and
+`fogbelt check <draw> [--checks a,b,c] [--samples N]`.
 
 ## Stage 1 — check
 
-Several checkers, each its own headless call, none seeing another's output,
-all reading the same brief. Each returns findings in one shape:
+K checkers, each its own headless call, none seeing another's output, all
+reading the same brief. Each checker runs S times independently with sampling
+on; a finding is reported when it recurs in at least `keep_if` runs, matched
+by overlap of the quoted span. Recurrence across independent samples is the
+filter, in place of a stated confidence: judges are inconsistent with
+themselves run to run and majority vote across samples is the mitigation
+(`literature.md` §3.5), and a self-reported confidence is the number the
+evaluation literature says to ignore (`literature.md` §3).
+
+Every finding has one shape:
 
 ```
 <finding>
-  <kind>fact | lore | derivation | ledger | structure | cliché | prior-art</kind>
-  <quote>verbatim span from the brief</quote>
-  <claim>what the brief asserts</claim>
-  <what-holds>what is actually the case, or "unverifiable"</what-holds>
-  <source>URL and quoted line, or "none"</source>
-  <carries>premise | mechanism | detail</carries>
-  <how-noticed>who would catch it</how-noticed>
-  <smallest-fix>one sentence, positive form</smallest-fix>
+  <checker>claims | derivation | ledger | structure | resemblance</checker>
+  <span>verbatim quote from the brief; two quotes for a contradiction</span>
+  <statement>what the span asserts, in one sentence</statement>
+  <result>supported | contradicted | unverifiable | contradicts:<other span> | absent | present</result>
+  <evidence>URL and quoted line, or a second quote from the brief, or none</evidence>
+  <invalidates>debt audit | arithmetic | custody | <setting job> | none</invalidates>
+  <replacement>a positive statement that would hold, one sentence</replacement>
 </finding>
 ```
 
-`carries` is the ranking axis, taken from the 2026-08-29 panels' own rule
-("on impact rather than certainty"). Stated confidence is not asked for:
-`literature.md` §3 says it is noise, and the 08-29 panels disagreed on it for
-the same claim (13's 220 words a minute, certain and correct at once).
-`source: none` is allowed and is what it says; a fact finding with no source
-is reported as unsourced, never as certain.
+`invalidates` is the ranking: which outline section would have to change if
+the finding stands. It is a structural question the checker answers by
+pointing at the outline, not a severity it estimates. Findings are shown to
+the gate ordered debt audit first, then arithmetic, custody, setting jobs,
+none. `replacement` is phrased positively because the repair prompt will
+carry it verbatim and negation raises the salience of what it forbids
+(`generation.md` §1.5). A finding with `evidence: none` is shown as
+unsupported.
+
+A checker also returns what it examined — the list of claims extracted, the
+list of facts in the ledger, the questions asked — so that an empty result is
+auditable. Models are wrong most of the time when they say a text has no
+problems (`drafting.md` §1.3); a checker that reports nothing has to show
+what it looked at.
 
 The checkers:
 
-**fact.** Extract only verifiable claims about the actual world — statute,
+**claims.** Extract only verifiable claims about the actual world — statute,
 procedure, rate, count, date, place, named institution — from the outline and
 vignettes, one extraction call; then one call per claim with web search,
-returning source and quote or unverifiable (`drafting.md` §1.10, §3.4). For
-a run under `setting-a` the setting's evidence and its `[?]` marks are in
-scope; the setting body already says which specifics it wants confirmed.
-Needs the adapter to allow search tools for this stage only (see Adapter).
+returning supported, contradicted or unverifiable with a source and a quoted
+line (`drafting.md` §1.10). Under a fictional setting the setting body is the
+first source and an allowlist of domains in the setting's front matter the
+second; this is the lore audit the ideation spec deferred, as the same
+checker with a different corpus. Not run on an unrestricted draw unless
+enabled. Needs the adapter to allow search tools for this checker only.
 
-**lore.** The same shape as fact, for a run under a fictional setting: the
-setting body is the first authority and an allowlist of wiki domains the
-second. This is the lore audit the ideation spec deferred; it is fact-check
-with a different corpus, not a new stage.
+**derivation.** Read the debt audit and test it against the rest of the
+brief: is exactly one impossibility bought, does each assertion in the
+vignettes and ending follow from it, is any assertion a second impossibility.
+Read the arithmetic and do every sum. This is the check the outline was
+built to make possible; its output is contradictions with two quotes.
 
-**derivation.** Read the debt audit and test it: is there one impossibility,
-does everything else follow from it, is there a second one wearing a
-metaphor. Read the arithmetic and do the sums. This is the check the outline
-step was built to make possible.
+**ledger.** Extract the facts the outline settles — names, numbers, dates,
+places, who holds what, who knows what — into a ledger; then check each
+vignette and the ending against the ledger and against each other,
+pairwise, quoting both sides. Category-guided extraction then pairwise
+contradiction with quoted evidence is the design that beat professional
+readers threefold on recall (`drafting.md` §1.2). Categories, in the order
+errors are most common: time (absolute, duration, order, cause), factual
+detail (names, quantities, appearance), character knowledge and memory,
+world rules, perspective.
 
-**ledger.** Extract the facts the outline settles (names, numbers, dates,
-places, who holds what, who knows what) into a ledger; check each vignette
-and the ending against the ledger and against each other, pairwise, with
-quotes on both sides (`drafting.md` §1.2). Taxonomy: timeline, character
-knowledge, world rules, factual detail, perspective. Factual and temporal
-first.
+**structure.** The seven binary questions the evaluation review found
+answerable — threat, category violation, agency question, obscure or
+confused, thickening, spectacle dependence, consequence — each with a
+required quote (`literature.md` §4.1). Reported as a profile of present and
+absent, never summed.
 
-**structure.** The seven binary questions from `literature.md` §4.1 —
-threat, category violation, agency question, obscure-or-confused,
-thickening, spectacle dependence, consequence — each with a required quote.
-Reported as a profile, never summed.
+**resemblance.** Retrieval, not judgement: match the brief against an
+enumerated file of overused premises (the editorial lists in
+`literature.md` §4.2) and name the entry; separately name the nearest
+published work, title and author, with one sentence on what is shared.
+Both are checkable by Chris. Neither asks whether the brief is original,
+which the judge cannot measure (`literature.md` §4.3).
 
-**cliché.** Retrieval against the Strange Horizons and Clarkesworld lists,
-stored as an enumerated file; the checker names the list entry matched and
-quotes the brief. Not "is this a cliché" (`literature.md` §4.2).
-
-**prior-art.** Name the nearest published story or film, title and author,
-and state in one sentence what the brief shares with it. This is a retrieval
-Chris can check, which is different from asking the model whether the brief
-is original (`literature.md` §4.3).
-
-What is not a checker: anything that reads the brief against a doctrine.
-The 2026-08-28 pass produced about twenty findings per story; on review 92
-were relabelled "playbook conformance" and 14 "load-bearing lens", and
-eleven of twenty-four appendices recommended the same shape — one prompt
-defect reported eleven times. What survived unchanged was domain and factual
-findings, internal logic, prior art and sameness. Those four are the checker
-list above. No checker asks whether the brief is good, frightening or
-original.
-
-**rank.** After all checkers return, one call per checker with its own
-findings only: name the single finding that, unfixed, breaks the premise
-rather than a detail. Feedback models produce specific local findings and
-miss the biggest one unless asked for it separately (`drafting.md` §1.3).
-The ranked finding from each checker is what the gate shows first.
+No checker reads the brief against a doctrine, a house style, or another
+brief. No checker asks whether the brief is good, frightening or original.
 
 ## Gate 1
 
-Chris sees the ranked findings, then all findings grouped by checker, each
-with its quote and its smallest fix. Actions:
+Chris sees findings ordered by what they invalidate, grouped by checker,
+each with its span, evidence and replacement, and each checker's examined
+list behind a fold. Actions:
 
 | action | effect |
 | :-- | :-- |
-| repair | chosen findings become positive constraints in a repair step |
+| accept finding | its replacement goes into the repair constraints |
+| dismiss finding | recorded with a note; a re-check does not raise it again |
 | hold | brief stays, findings stored, nothing runs |
 | pass | brief verdict `pass`, existing log |
 | flag | the check call looked wrong; note; nothing runs |
 
-Repair is chosen per finding, not per brief: a fact finding with a smallest
-fix that improves the story (the 08-29 panels found several: "the record
-exists because the landlord bought it") is accepted; a finding Chris
-disagrees with is dismissed with a note. Dismissed findings are recorded so a
-second check does not raise them again.
+Acceptance is per finding. When at least one is accepted, repair runs.
 
 ## Stage 2 — repair
 
 One fresh call re-derives the outline from the chosen vignette, the seed,
-and a `corrections` block holding the accepted findings' smallest fixes in
-positive form ("The calendar is juvenile dependency; the reporter is
-mandated by Welf. & Inst. Code §347"). The context vignettes and ending are
-regenerated from the new outline as before. The chosen vignette is kept
-unless a finding names it; then it is regenerated from its premise with the
-corrections and the gate sees it again.
+and a `constraints` block holding the accepted replacements verbatim. The
+context vignettes and ending are regenerated from the new outline as before.
+The chosen vignette is kept unless a finding's span is inside it; then it is
+regenerated from its premise with the constraints and the gate sees it
+again.
 
-Bounded: one repair round runs automatically, followed by one more check.
-A second round is Chris asking for it. Pressure inflates structure rather
-than sharpening it (`generation.md` §1.6); private revision that does not
-see other revisions is the shape that held diversity (`drafting.md` §1.8),
-and here the only revision is the outline's.
-
-The repaired brief is a new brief directory with `repaired_from` in the
-trail, the way a redraw sets `superseded_by`.
+Bounded: `repair.rounds` runs automatically, each followed by one check. A
+further round is Chris asking for it. Accumulated pressure inflates structure
+rather than sharpening it (`generation.md` §1.6); the shape that held
+diversity under revision was one private revision from the original plus
+feedback, never a revision of a revision (`drafting.md` §1.8). The repaired
+brief is a new brief directory with `repaired_from` in the trail, as a
+redraw sets `superseded_by`.
 
 ## Stage 3 — schedule
 
-One call derives the beat sheet from the brief: M beats, each stating its
-job, what the reader knows at its end, what is still withheld and until
-which beat, what is at stake, and which brief vignette if any it absorbs.
-The ending is the last beat and is derived already; the schedule's work is
-what stays hidden until it. This is the beat layer that closed half the
-tension gap (`drafting.md` §1.4).
+One call derives the beat sheet from the brief under the configured
+`[beats]`, `[form]` and `[structure]`. Per beat: its job, its word cap, what
+the reader knows at its end, what is still withheld and until which beat,
+what is at stake, and which brief vignette if any it absorbs. This is the
+beat layer that closed half the tension gap (`drafting.md` §1.4): tension is
+a property of the information schedule, and the schedule is a document.
 
-The schedule also fixes the axes every model converges on and a hand-drawn
-choice buys something (`generation.md` §1.3): tense, person, chronology,
-container form (prose, document, interleaved). The brief's ending often
-implies the form (b6dd ends on a custody log); the schedule states it.
-
-Beats are executions of the outline, not discovery. Word cap per beat is
-stated. M and the total length are open (see Open Questions).
+The schedule states tense, person, chronology and container. Where the
+config says `auto` it derives them from the brief and says so; where the
+config fixes them it obeys. These are the axes every model converges on
+(`generation.md` §1.3) and the ones a hand-drawn choice buys most from.
+With `ending = "brief"` the last beat is the brief's ending and the
+schedule's work is what stays hidden until it.
 
 ## Stage 4 — scenes
 
-One call per beat, sequential, each a fresh subprocess. The prompt carries:
-the six example passages the draw used (from the trail, so the register is
-continuous with the brief), the outline, the ledger, the schedule, the full
-text so far, and this beat's entry only. Nothing continues a transcript;
-this is the re-anchoring the drift evidence asks for (`generation.md` §3.5,
-`drafting.md` §3.5). Word cap per scene in the ask.
+One call per beat, each a fresh subprocess. The prompt carries: the six
+example passages the draw used (from the trail, so the register is
+continuous with the brief), the outline, the ledger, the schedule, and this
+beat's entry. Under `order = "sequential"` it also carries the text so far;
+under `parallel` it does not, and all M run at once. Nothing continues a
+transcript; each scene is re-anchored (`generation.md` §3.5). The beat's word
+cap is in the ask.
 
-Parallel scenes from the schedule are the alternative: the diversity work
-predicts more variety, the practitioner default predicts seams. Untested
-either way (`drafting.md` §5). Sequential is proposed as the default and
-parallel as an experiment the draw viewer can show side by side.
+Sequential is the practitioner default and what the decomposition evidence
+was measured on (`drafting.md` §1.9); parallel is what the diversity work
+predicts more variety from. Unmeasured against each other (`drafting.md`
+§5), which is why it is a switch and the draw viewer shows either.
 
 Scenes are never polished. A polish pass homogenises style and mutes voice
 (`drafting.md` §1.7). The only rewrite is a scene regenerated from its beat
-with a finding as a positive constraint.
+with a finding's replacement as a constraint.
 
 ## Stage 5 — screen
 
-Per scene, after all scenes exist:
+Per scene, after all scenes exist, each screen its own call or its own
+deterministic pass:
 
-**ledger.** The scene against the ledger and against the previous scene,
-same checker as Stage 1, same shape.
+**ledger.** The scene against the ledger and against the previous scene:
+the Stage 1 checker, same finding shape, `invalidates` pointing at the beat
+instead of the outline section.
 
-**structure.** Presence checks with quotes, from the features that
-separate machine fiction from human fiction at 93% on structure alone
-(`drafting.md` §1.5): does the narrator state the theme; is emotion rendered
-as bodily sensation; does the scene resolve what the schedule said to
-withhold; is the protagonist allowed to be wrong. On the last scene: does
-the ending tidy everything. Flags with locations, not a score.
+**structure.** Presence checks with quotes, drawn from the features that
+separate machine fiction from human fiction on structure alone
+(`drafting.md` §1.5): the narrator states the theme; emotion is rendered as
+bodily sensation; the scene reveals what the schedule withholds; the
+protagonist is never wrong. On the last scene: the ending resolves
+everything. Flags with locations, not a score.
 
 **slop.** Deterministic, outside any model: over-represented words, "not X
-but Y", trigrams, against the passage pool as the human baseline
-(`drafting.md` §1.6). Paragraph-length trend across scenes, since
-fragmentation late in a draft is the known degradation. Runs like the
-suspect screen: it marks, it does not judge.
+but Y" constructions and trigrams scored against `slop_baseline`
+(`drafting.md` §1.6); paragraph-length trend across scenes, since
+fragmentation late in a draft is the known degradation. It marks; it does
+not judge.
 
 ## Gate 2
 
 Chris reads the story with the screen flags beside it. Actions: keep
-(verdict on the story), rewrite scene k (fresh call, the flag as a positive
-constraint, then screen again), pass. A kept story is exported to a stories
-directory the pipeline owns, with the brief id, the schedule and the trail;
-`stories/` as it stands is the retired concept slate and is not that
-directory.
+(verdict on the draft), rewrite scene k (fresh call, the flag's replacement
+as a constraint, then screen k and k+1 again), pass. A kept story is
+exported to a directory the pipeline owns, with the brief id, the schedule,
+the configuration used and the trail. `stories/` as it stands is the retired
+concept slate and is not that directory.
 
 ## Stage 6 — slate
 
-Over every kept story, tabulated by extraction (one call per story, quotes
-required) and by regex where it can be: narrator person and gender, tense,
-chronology, container form, ending shape, the closing clause's construction,
-the last word. The 2026-08-29 pass found the concept slate collided on
-temperature rather than premise — one narrator in twenty-three costumes,
-fourteen endings of one sentence shape, "correctly" closing five, "nobody"
-closing four, twelve of twenty-four relocatable to Denver without changing a
-sentence — and none of that is visible from inside one story. It is a
-batch-level measurement outside any judge (`literature.md` §3.8), reported
-as a table, not a verdict.
+Over every kept story, a table built by extraction and by regex, one call
+per story with quotes required, never a judge asked whether stories are
+alike. Columns are the dimensions the structural fingerprint work found
+discriminating (`drafting.md` §1.5) and the axes models converge on
+(`generation.md` §1.3): narrator person, tense, chronology, container,
+whether the theme is stated, whether the ending resolves, subplot present,
+protagonist wrong at any point, the closing sentence's construction, the
+last word. Beside it, embedding dispersion over the stories. Sameness is a
+corpus-level measurement outside any judge (`literature.md` §3.8) and this
+is its table. It reports; it decides nothing.
 
-Whether the twenty-four concepts join that table is an open question; the
+Whether the retired concepts join the table is an open question; the
 standing rule is that nothing in `stories/` is an input or a filter.
 
 ## Adapter
 
-- A stage may declare `tools` in `stages.toml`; the fact and lore stages
-  declare web search and fetch, every other stage keeps `--tools ""`. The
-  step row stores the tool list.
+- A stage may declare `tools` in `stages.toml`; the claims checker declares
+  web search and fetch, every other stage keeps `--tools ""`. The step row
+  stores the tool list.
 - The vocabulary rule holds: checkers *verify*, *cite*, *state*, *name*;
-  none is asked how it reached anything. The 08-29 fact-check format
-  (claim, what is actually true, how a reader would notice, smallest fix)
-  is already in that vocabulary.
+  none is asked how it reached anything.
 - Every check prompt states an output cap, as the generation prompts do.
 - Judge family ≠ generator family is still wanted for every checker
   (`literature.md` §3.2) and still waits on the API path. Until then the
-  checkers run on Fable against Fable's briefs, and the proposal says so on
-  every findings view.
+  checkers run on Fable against Fable's briefs, and every findings view
+  says so.
 
 ## Store, UI, skill
 
-- New stage names on `steps`: `check-<kind>`, `rank`, `repair`, `schedule`,
-  `scene`, `screen-<kind>`, `slate`. New artifact kinds: `finding`,
-  `schedule`, `scene`, `story`. No schema change beyond the enum on
-  `artifacts.kind`, per the ideation spec's stage-graph note.
+- New stage names on `steps`: `check-<checker>`, `repair`, `schedule`,
+  `scene`, `screen-<screen>`, `slate`. New artifact kinds: `finding`,
+  `schedule`, `scene`, `draft`. No schema change beyond the enum on
+  `artifacts.kind`.
 - Verdict kinds: `brief` exists. Add `draft` for the finished story; the
   existing `story` kind is a corpus story and stays what it is. A dismissed
   finding is a verdict of kind `finding`, `pass`, with the note.
-- Draw viewer: a findings pane (ranked first, then by checker, quote and fix
-  on each, dismiss and accept per row); a schedule view; the story as a
-  scene tree with screen flags inline; gate bars for both gates. The slate
-  table is its own view.
-- Skill: `fogbelt check <draw>`, `fogbelt gate <draw> repair|hold|pass`,
-  `fogbelt draft <draw>`, `fogbelt story <id>`, `fogbelt slate`.
+- Draw viewer: a findings pane ordered by what they invalidate, accept and
+  dismiss per row, examined lists behind a fold; a schedule view showing
+  the form and the withholding per beat; the story as a scene tree with
+  screen flags inline; gate bars for both gates; the configuration used on
+  the draw. The slate table is its own view.
+- Skill: `fogbelt check <draw>`, `fogbelt gate <draw> accept <finding>... |
+  dismiss <finding> | hold | pass`, `fogbelt draft <draw> [overrides]`,
+  `fogbelt story <id>`, `fogbelt slate`.
 
 ## Open Questions
 
 For the grilling. Each has a proposed answer.
 
-1. **Target length.** The corpus runs 3,000–8,000 words a story. Proposed:
-   4,000–6,000, six to nine beats of 500–700 words. Nothing in the research
-   fixes this; the beat scaffold was measured at EQ-Bench lengths.
+1. **Default length and beats.** Proposed defaults above: 5,000 words, five
+   to ten beats of 400–800. The beat scaffold was measured at EQ-Bench
+   prompt lengths; nothing fixes the number.
 2. **Do the brief's vignettes go into the story?** Proposed: the schedule
-   decides per vignette (absorbed into a beat, or dropped). They were written
-   as tests of the structure and read as scenes by accident.
-3. **Sequential or parallel scenes.** Proposed: sequential by default,
-   parallel as a viewer experiment. Unmeasured either way.
-4. **Which checks are on by default.** Proposed: all seven on a `setting-a`
-   run (fact), all seven on a lore run (lore replaces fact), five on an
-   unrestricted run (no fact, no lore).
+   decides per vignette. They were written as tests of the structure.
+3. **Sequential or parallel scenes by default.** Proposed: sequential.
+   Unmeasured either way; the switch exists so the viewer can compare.
+4. **Samples per checker.** Proposed: three, keep at two. Cost is K × S
+   calls per check; with five checkers that is fifteen plus one per claim.
 5. **Does a repair regenerate the context vignettes and ending, or only the
-   outline?** Proposed: all of them, since they were derived from the
-   outline and a changed outline makes them stale. Cost: three calls.
-6. **The slate and the concept slate.** Do the twenty-four concepts sit in
-   the sameness table so a new story is measured against them? The standing
-   rule says no. Proposed: no, until the pipeline has produced enough stories
-   for the table to say anything; revisit then.
-7. **Fact-check sources.** Open web via the CLI's search tool, or a curated
-   allowlist per setting (statutes, court rules, the setting-c and setting-b
-   wikis)? Proposed: open web for `setting-a`, allowlist for lore settings,
-   the list in the setting's front matter.
-8. **Rewrite scope at Gate 2.** One scene at a time only, or allow "rewrite
-   from scene k onward"? Proposed: one scene; the sequential draft means a
-   changed scene k can invalidate k+1, so the screen re-runs on k+1 and Chris
-   decides.
-9. **Auto mode.** Should `--auto` run check → repair → draft unattended, and
-   with what defaults at Gate 1? Proposed: auto accepts every fact finding
-   with a source and every derivation finding, dismisses the rest, one repair
-   round, drafts, stops at Gate 2. No model judges; the rule is mechanical.
-10. **Story export.** Where kept stories live and what the file carries.
-    Proposed: `stories-out/<draw>/story.md` plus `schedule.md`,
-    `findings.md`, `trail.md`, tracked; name to be chosen.
+   outline?** Proposed: all of them; they were derived from the outline.
+6. **The slate and the retired concepts.** Proposed: no, until the pipeline
+   has produced enough stories for the table to say anything.
+7. **Claims sources.** Proposed: open web under `setting-a`, an allowlist in
+   the setting's front matter under a lore setting.
+8. **Rewrite scope at Gate 2.** Proposed: one scene; under sequential order
+   a changed scene k can invalidate k+1, so the screen re-runs on k+1 and
+   Chris decides.
+9. **Auto mode.** Proposed: `--auto` accepts every finding that recurs in
+   all S samples and carries evidence, dismisses the rest, runs
+   `repair.rounds`, drafts, and stops at Gate 2. Mechanical; no model judges.
+10. **Story export.** Proposed: `drafts/<draw>/story.md` plus `schedule.md`,
+    `findings.md`, `config.toml`, `trail.md`, tracked.
+11. **Structure templates.** Which named templates ship, if any, and whether
+    `from:<story-id>` is in the first cut. Proposed: `auto` and `from:` in
+    the first cut, templates as a file Chris edits.
 
 ## What this does not do
 
