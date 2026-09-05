@@ -22,7 +22,9 @@ export function App() {
   return (
     <div className={"app" + (railHidden ? " rail-hidden" : "")}>
       <aside className={"rail" + (railHidden ? " hidden" : "")}>
-        <button className="railtoggle" aria-pressed={railHidden ? "true" : "false"} aria-label={railHidden ? "Show the sidebar" : "Hide the sidebar"} title={railHidden ? "Show the sidebar" : "Hide the sidebar"} onClick={() => setRailHidden((v) => !v)}>{railHidden ? "›" : "‹"}</button>
+        <button className="railtoggle" aria-pressed={railHidden ? "true" : "false"} aria-label={railHidden ? "Show the sidebar" : "Hide the sidebar"} title={railHidden ? "Show the sidebar" : "Hide the sidebar"} onClick={() => setRailHidden((v) => !v)}>
+          <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">{railHidden ? <path d="M6 3l5 5-5 5" /> : <path d="M10 3L5 8l5 5" />}</svg>
+        </button>
         {!railHidden && <>
           <div className="wordmark">Fog Belt<small>ideation pipeline</small></div>
           <nav className="nav" aria-label="Sections">

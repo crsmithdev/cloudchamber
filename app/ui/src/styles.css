@@ -29,8 +29,10 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .app > * { min-width: 0; overflow: auto; }
 .rail { position: relative; border-right: 1px solid var(--line); padding: 1rem .75rem; display: flex; flex-direction: column; gap: 1.25rem; }
 .rail.hidden { padding: 2.5rem .25rem 1rem; gap: .5rem; align-items: center; }
-.railtoggle { position: absolute; top: .5rem; right: .4rem; appearance: none; border: 1px solid transparent; background: transparent; color: var(--dim); width: 1.5rem; height: 1.5rem; border-radius: 4px; cursor: pointer; font-size: 14px; line-height: 1; }
-.railtoggle:hover { color: var(--ink); border-color: var(--line); }
+.railtoggle { position: absolute; top: .45rem; right: .35rem; appearance: none; border: 1px solid transparent; background: transparent; color: var(--mute); width: 2rem; height: 2rem; border-radius: 5px; cursor: pointer; display: grid; place-items: center; padding: 0; }
+.railtoggle svg { width: 18px; height: 18px; display: block; }
+.railtoggle:hover { color: var(--ink); border-color: var(--line); background: var(--raised); }
+.rail.hidden .railtoggle { right: .25rem; }
 .nav.mini a { justify-content: center; width: 1.75rem; height: 1.75rem; padding: 0; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 12px; position: relative; }
 .nav.mini a i { position: absolute; top: 3px; right: 3px; width: 6px; height: 6px; border-radius: 50%; background: var(--art); }
 .wordmark { padding: 0 .5rem; font: 500 18px/1.1 "Newsreader", Georgia, serif; }
