@@ -61,6 +61,15 @@ CREATE TABLE IF NOT EXISTS themes (
   duplicate_of TEXT REFERENCES themes(id)
 );
 
+CREATE TABLE IF NOT EXISTS theme_drafts (        -- one row per story drafted
+  story_id   TEXT PRIMARY KEY,
+  at         TEXT NOT NULL,
+  drafted    INTEGER NOT NULL,
+  banked     INTEGER NOT NULL,
+  attested   INTEGER NOT NULL,             -- rows folded into an existing theme
+  rejected   INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS theme_rejections (
   id       INTEGER PRIMARY KEY AUTOINCREMENT,
   story_id TEXT NOT NULL,
@@ -106,7 +115,8 @@ CREATE TABLE IF NOT EXISTS runs (
 
 CREATE TABLE IF NOT EXISTS steps (
   id            TEXT PRIMARY KEY,
-  run_id        TEXT NOT NULL REFERENCES runs(id),
+  run_id        TEXT REFERENCES runs(id),  -- NULL for theme drafting, which is not a run
+  story_id      TEXT,                      -- set for theme drafting
   parent_id     TEXT REFERENCES steps(id),
   stage         TEXT NOT NULL,
   model         TEXT NOT NULL,

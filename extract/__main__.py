@@ -79,6 +79,12 @@ def cmd_embed(root: Path, con, args) -> None:
     except ModuleNotFoundError:
         raise SystemExit("embed: sentence-transformers is not installed (pip install --user --break-system-packages sentence-transformers)")
     import numpy as np
+    if args.stdin:
+        texts = json.load(sys.stdin)
+        model = SentenceTransformer(args.model)
+        vecs = model.encode(texts, normalize_embeddings=True)
+        json.dump([[round(float(x), 6) for x in v] for v in vecs], sys.stdout)
+        return
     rows = con.execute("SELECT id, text FROM themes WHERE embedding IS NULL").fetchall()
     if not rows:
         print("embed: nothing to do")
@@ -100,6 +106,7 @@ def main(argv=None) -> int:
     s = sub.add_parser("segment"); s.add_argument("--only", nargs="*"); s.add_argument("--seed", type=int, default=0)
     f = sub.add_parser("facets"); f.add_argument("--refit", action="store_true")
     e = sub.add_parser("embed"); e.add_argument("--model", default="sentence-transformers/all-MiniLM-L6-v2")
+    e.add_argument("--stdin", action="store_true", help="embed a JSON array of texts from stdin; print vectors as JSON")
     args = ap.parse_args(argv)
     root = Path(args.root).resolve()
     con = open_db(root, args.db)

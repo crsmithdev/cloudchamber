@@ -27,3 +27,4 @@ data/
 .pytest_cache/
 
 node_modules/
+app/ui/dist/

@@ -1,0 +1,44 @@
+# Model per stage. Every stage names a model explicitly: `--setting-sources ""`
+# drops the CLI's configured default, so nothing is inherited. `fallback` is
+# used once when the first model refuses. `system` is the one-line system
+# prompt for the headless call; it is stored on every step row.
+
+[themes]
+model = "claude-fable-5-1"
+fallback = "claude-opus-5"
+system = "You draft one-sentence themes from a story. Output only the tags asked for."
+
+[redundancy]
+model = "claude-sonnet-5"
+fallback = "claude-opus-5"
+system = "You compare short sentences for restated meaning. Output only what is asked."
+
+[premises]
+model = "claude-fable-5-1"
+fallback = "claude-opus-5"
+system = "You generate story premises. Output only the tags asked for."
+
+[execute]
+model = "claude-fable-5-1"
+fallback = "claude-opus-5"
+system = "You write prose fiction. Output only the tag asked for."
+
+[outline]
+model = "claude-fable-5-1"
+fallback = "claude-opus-5"
+system = "You derive story structure from prose. Output only the tags asked for."
+
+[jobs]
+model = "claude-fable-5-1"
+fallback = "claude-opus-5"
+system = "You plan vignettes from a story's structure. Output only the tags asked for."
+
+[context]
+model = "claude-fable-5-1"
+fallback = "claude-opus-5"
+system = "You write prose fiction. Output only the tag asked for."
+
+[ending]
+model = "claude-fable-5-1"
+fallback = "claude-opus-5"
+system = "You write prose fiction. Output only the tag asked for."
