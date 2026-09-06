@@ -60,6 +60,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .chip[aria-pressed="true"] { background: var(--raised); color: var(--ink); border-color: var(--dim); }
 .chip:hover { color: var(--ink); }
 .chip.sel { padding: .15rem .35rem; }
+.chips { display: flex; flex-wrap: wrap; gap: .35rem; padding-top: .25rem; }
 .row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .25rem .75rem; padding: .7rem .75rem; border-bottom: 1px solid var(--line); cursor: pointer; }
 .row:hover { background: var(--raised); }
 .row.on { background: var(--raised); box-shadow: inset 2px 0 0 var(--accent); }

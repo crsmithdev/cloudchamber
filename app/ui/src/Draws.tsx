@@ -233,10 +233,17 @@ function StartForm({ status }: { status: Status | null }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   useEffect(() => { api.facets().then(setFacets); }, []);
+  const [domains, setDomains] = useState<{ draw: number; list: { slug: string; heading: string }[] } | null>(null);
+  const [pinned, setPinned] = useState<string[]>([]);
+  useEffect(() => {
+    setPinned([]); setDomains(null);
+    if (form.setting) api.setting(form.setting).then((s) => setDomains({ draw: s.draw, list: s.domains })).catch(() => setDomains(null));
+  }, [form.setting]);
+  const togglePin = (slug: string) => setPinned((p) => p.includes(slug) ? p.filter((x) => x !== slug) : [...p, slug]);
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setForm({ ...form, [k]: e.target.value });
   const start = async (e: React.FormEvent) => {
     e.preventDefault(); setErr(""); setBusy(true);
-    try { const { id } = await api.startDraw(form); location.hash = `#draw/${id}`; } catch (e: any) { setErr(e.message); } finally { setBusy(false); }
+    try { const { id } = await api.startDraw({ ...form, domains: pinned.length ? pinned.join(",") : undefined }); location.hash = `#draw/${id}`; } catch (e: any) { setErr(e.message); } finally { setBusy(false); }
   };
   const eligible = new Map(status?.per_source.map((s) => [s.source, s.eligible]) ?? []);
   return (
@@ -246,6 +253,7 @@ function StartForm({ status }: { status: Status | null }) {
         <p className="lede">Pulls six eligible passages and a seed, asks for five premises off the centre of the distribution, writes each as a 400-word vignette, then stops at the gate for you. After the gate: a reverse outline, two context vignettes, the ending, and a brief in <span className="mono">briefs/</span>.</p>
         <div className="field"><span className="lbl">Gate</span><div className="seg" role="group" aria-label="Gate"><button type="button" aria-pressed={form.mode === "manual"} onClick={() => setForm({ ...form, mode: "manual" })}>Manual</button><button type="button" aria-pressed={form.mode === "auto"} onClick={() => setForm({ ...form, mode: "auto" })}>Auto</button></div><span className="help">Manual waits for you after the vignettes. Auto takes the lowest-probability premise and keeps going.</span></div>
         <div className="field"><label htmlFor="setting">Setting</label><select id="setting" className="sel" value={form.setting ?? ""} onChange={set("setting")}><option value="">Unrestricted</option>{facets?.settings.map((s) => <option key={s}>{s}</option>)}</select><span className="help">A setting draws two of its domains and slices its sections into each stage; hard rules go last.</span></div>
+        {form.setting && domains && <div className="field"><span className="lbl">Domains</span><div className="chips" role="group" aria-label="Domains">{domains.list.map((d) => <button key={d.slug} type="button" className="chip" aria-pressed={pinned.includes(d.slug)} onClick={() => togglePin(d.slug)}>{d.heading}</button>)}</div><span className="help">{pinned.length ? `Pinned: ${pinned.join(", ")}, in this order.` : `None pinned: ${domains.draw} drawn at random.`}</span></div>}
         <div className="field"><label htmlFor="genre">Genre</label><select id="genre" className="sel" value={form.genre} onChange={set("genre")}><option>horror</option><option>scifi</option></select></div>
         <div className="field"><label htmlFor="source">Examples from</label><select id="source" className="sel" value={form.source ?? ""} onChange={set("source")}><option value="">All sources{status ? ` · ${status.passages_eligible} eligible` : ""}</option>{facets?.sources.map((s) => <option key={s.id} value={s.id}>{s.id}{eligible.has(s.id) ? ` · ${eligible.get(s.id)}` : ""}</option>)}</select></div>
         <div className="field"><label htmlFor="seed">Seed</label><textarea id="seed" name="seed" value={form.seed ?? ""} onChange={set("seed")} placeholder="Leave empty to draw a theme from the bank, or type one…" /><span className="help">{status ? `${status.themes_eligible} eligible themes in the bank. ` : ""}A typed seed is logged as “typed”, a drawn one as “drawn”.</span></div>

@@ -13,6 +13,7 @@ import { exportBank } from "../pipeline/bank.ts";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { BRIEFS } from "../pipeline/paths.ts";
+import { loadSetting } from "../pipeline/settings.ts";
 
 export type ItemOrder = "source" | "suspects" | "shuffle";
 export type ItemFilter = { kind: Kind; source?: string; author?: string; genre?: string; cell?: string; verdict?: "unreviewed" | "keep" | "pass"; artifact?: boolean; suspect?: boolean; order?: ItemOrder; seed?: number; limit?: number; offset?: number };
@@ -143,6 +144,14 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean } 
     } catch (e: any) {
       return reply.code(400).send({ error: e.message });
     }
+  });
+
+  /** A setting's domains for the start form's pin field; the setting is read from the pipeline's settings directory. */
+  app.get<{ Params: { id: string } }>("/api/settings/:id", async (req, reply) => {
+    try {
+      const s = loadSetting(req.params.id, pipeline.settingsDir);
+      return { id: s.id, name: s.name, draw: s.draw, domains: s.domains.map((d) => ({ slug: d.slug, heading: d.heading })) };
+    } catch (e: any) { return reply.code(404).send({ error: e.message }); }
   });
 
   app.get<{ Params: { id: string } }>("/api/draws/:id", async (req, reply) => {

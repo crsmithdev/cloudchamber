@@ -6,6 +6,7 @@ import { openDb } from "../pipeline/store/db.ts";
 import { FakeModel } from "../pipeline/model.ts";
 import { Pipeline } from "../pipeline/draw.ts";
 import { buildApi } from "./api.ts";
+import { settingsFixture } from "../pipeline/settings.fixture.ts";
 
 const CELLS = ["informational", "mixed", "involved"].flatMap((v) => ["non-narrative", "mixed", "narrative"].map((m) => [v, m]));
 const premises = `<premise><text>P1</text><probability>0.05</probability></premise><premise><text>P2</text><probability>0.02</probability></premise><premise><text>P3</text><probability>0.08</probability></premise><premise><text>P4</text><probability>0.03</probability></premise><premise><text>P5</text><probability>0.06</probability></premise>`;
@@ -24,7 +25,7 @@ async function setup() {
     outline: () => outline, jobs: () => "<job>one thing</job><job>another thing</job>",
     context: () => "<vignette>ctx</vignette>", ending: () => "<ending>end</ending>",
   });
-  const pipeline = new Pipeline(db, model, { briefsDir: join(dir, "briefs"), rng: () => 0.001 });
+  const pipeline = new Pipeline(db, model, { briefsDir: join(dir, "briefs"), rng: () => 0.001, settingsDir: settingsFixture(dir) });
   const app = buildApi(db, pipeline);
   const j = async (method: "GET" | "POST", url: string, body?: unknown) => {
     const r = await app.inject({ method, url, payload: body as any });
@@ -153,6 +154,23 @@ describe("api", () => {
     expect(rej.body.superseded).toBe(id);
     expect(pipeline.draw(id).status).toBe("rejected");
     expect(pipeline.draw(rej.body.id).seed_text).toBe("typed seed");
+  });
+
+  test("a setting's domains are listed, pinned on a draw, and a bad pin is a 400", async () => {
+    const { j } = await setup();
+    const s = await j("GET", "/api/settings/fog");
+    expect(s.code).toBe(200);
+    expect(s.body.draw).toBe(2);
+    expect(s.body.domains.map((d: any) => d.slug)).toEqual(["land-and-title", "labour", "death-and-its-administration"]);
+    expect((await j("GET", "/api/settings/nope")).code).toBe(404);
+    const bad = await j("POST", "/api/draws", { mode: "manual", genre: "horror", setting: "fog", domains: "labour,nope" });
+    expect(bad.code).toBe(400);
+    expect(bad.body.error).toBe("setting fog: no domain nope");
+    expect((await j("POST", "/api/draws", { mode: "manual", genre: "horror", domains: "labour" })).body.error).toBe("domains need a setting");
+    const { body: { id } } = await j("POST", "/api/draws", { mode: "manual", genre: "horror", setting: "fog", domains: "labour,land-and-title" });
+    await new Promise((r) => setTimeout(r, 100));
+    const d = await j("GET", `/api/draws/${id}`);
+    expect(JSON.parse(d.body.draw.domains)).toEqual(["labour", "land-and-title"]);
   });
 
   test("a bad draw request is a 400 with the reason", async () => {

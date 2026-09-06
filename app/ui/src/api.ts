@@ -18,6 +18,7 @@ export const api = {
   verdict: (b: { kind: string; target_id: string; verdict: "keep" | "pass"; artifact: boolean; note: string; method: string }) => j("/api/verdicts", { method: "POST", body: JSON.stringify(b) }),
   items: (q: Record<string, string>) => j<{ total: number; items: Item[] }>(`/api/items?${new URLSearchParams(q)}`),
   draws: () => j<Draw[]>("/api/draws"),
+  setting: (id: string) => j<{ id: string; name: string; draw: number; domains: { slug: string; heading: string }[] }>(`/api/settings/${id}`),
   draw: (id: string) => j<{ draw: Draw; steps: Step[]; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[] }>(`/api/draws/${id}`),
   startDraw: (b: Record<string, string | undefined>) => j<{ id: string }>("/api/draws", { method: "POST", body: JSON.stringify(b) }),
   gate: (id: string, b: { action: string; step_id?: string; note?: string }) => j<any>(`/api/draws/${id}/gate`, { method: "POST", body: JSON.stringify(b) }),
