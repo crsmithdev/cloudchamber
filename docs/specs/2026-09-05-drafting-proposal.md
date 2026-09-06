@@ -82,6 +82,11 @@ enabled = ["claims", "derivation", "ledger", "structure", "resemblance"]
 samples = 3             # independent runs per checker
 keep_if = 2             # a finding is reported when it recurs in at least this many runs
 
+[checks.structure]
+samples = 1             # per-checker override; structure and resemblance were identical across samples
+[checks.resemblance]
+samples = 1
+
 [screens]
 enabled = ["ledger", "structure", "slop"]
 slop_baseline = "pool"  # the passage pool is the human baseline
@@ -107,7 +112,8 @@ story — per beat its action, technique and function — and the schedule adapt
 that structure to the brief. The third mode is the warm-up stage of the
 pipeline that closed half the tension gap (`drafting.md` §1.4), and it means a
 Datlow story's shape can be the template for a draft without any of its text
-entering a prompt.
+entering a prompt. Decided: the first cut ships `auto` only; the key is
+parsed and the other two modes are on the revisit list.
 
 Command line: `fogbelt draft <draw> [--profile P] [--words N] [--beats N]
 [--tense T] [--person P] [--container C] [--structure S] [--order O]`, and
@@ -170,11 +176,18 @@ then one call per claim with web search, returning supported, contradicted
 or unverifiable with a source and a quoted line (`drafting.md` §1.10). That
 a place or institution exists is not a claim: asked loosely, the simulation's
 extractor spent ten of twelve claims on existence and missed the one
-distance that was wrong by a factor of five. Under a fictional setting the setting body is the
-first source and an allowlist of domains in the setting's front matter the
-second; this is the lore audit the ideation spec deferred, as the same
-checker with a different corpus. Not run on an unrestricted draw unless
-enabled. Needs the adapter to allow search tools for this checker only.
+distance that was wrong by a factor of five. Where the checker verifies is
+a property of the setting, declared in its front matter as `claims: world |
+reference`. `world`: web search, one call per claim, URL and quoted line;
+`setting-a` declares it, since the world outranks its reference files however
+well they are rebuilt. `reference`: the reference files of the domains the
+draw pinned, listed in their Sources sections, are in the prompt and the
+evidence is a quoted line from a file; no tools. This is the lore audit the
+ideation spec deferred, as the same checker with a different corpus, and it
+is the first stage other than distill to read `reference/`. Absent key: the
+checker does not run, which is also the unrestricted case. A reference-first
+pass under `world` is on the revisit list. Needs the adapter to allow search
+tools for this checker only.
 
 **derivation.** Read the debt audit and test it against the rest of the
 brief: is exactly one impossibility bought, does each assertion in the
@@ -235,8 +248,15 @@ the place renamed, and the outline re-derived from it was a different brief.
 
 Then one fresh call re-derives the outline from the kept or rewritten
 vignette, the seed, and a `constraints` block holding the accepted
-replacements verbatim. The context vignettes and ending are regenerated
-from the new outline as before.
+replacements verbatim. The context vignettes are regenerated from the new
+outline as before. The ending gets the chosen vignette's rule: it is kept
+unless an accepted finding's span is inside it or its `invalidates` pointer
+is arithmetic or custody, the two sections it derives from; then one call
+rewrites it from itself under the replacements, same length. The ending is
+one sampled call, so regenerating it would be a different ending even where
+the outline did not change, and with `ending = "brief"` it is the last beat
+the schedule withholds toward. The old and new ending are shown side by
+side at the post-repair check.
 
 A repair introduces contradictions of its own: the simulation's repair
 removed all five accepted findings and the re-check found three new ones of
@@ -304,10 +324,26 @@ instead of the outline section.
 
 **structure.** Presence checks with quotes, drawn from the features that
 separate machine fiction from human fiction on structure alone
-(`drafting.md` §1.5): the narrator states the theme; emotion is rendered as
-bodily sensation; the scene reveals what the schedule withholds; the
-protagonist is never wrong. On the last scene: the ending resolves
-everything. Flags with locations, not a score.
+(`drafting.md` §1.5). The list is fixed and the same for every scene; no
+model chooses it and no key configures it. The per-scene inputs are the
+scene, its beat entry, and the withheld list. On scenes 1 to M−1:
+
+| question | present when |
+| :-- | :-- |
+| theme-stated | the narrator or a character states what the story means or what its lesson is |
+| bodily-emotion | an emotion is conveyed as a bodily sensation |
+| withheld-revealed | an item the schedule withholds past this beat is stated as fact the reader now knows; implication and foreshadowing are not reveals, and the quote must contain the statement |
+| protagonist-never-wrong | the point-of-view character is nowhere mistaken, unfair or at fault |
+| resolved | the scene settles a question the schedule keeps open for a later beat |
+
+On scene M, `resolved` is replaced by `resolves-everything`: no question the
+story raised is left open. The withheld list for scene k is filtered
+deterministically from the schedule's per-beat `until` fields to `until >
+k`; the simulation's screen already had that list and still flagged a line
+that hinted at the next beat's item, which is why the definition of a
+reveal is the tightened one above. The classifier's subplot feature is a
+story-level question and lives in the slate table, not here. Flags with
+locations, not a score.
 
 **slop.** Deterministic, outside any model: a fixed slop lexicon with
 proper nouns excluded, the "not X but Y" rate against `slop_baseline`,
@@ -347,6 +383,10 @@ standing rule is that nothing in `stories/` is an input or a filter.
 - A stage may declare `tools` in `stages.toml`; the claims checker declares
   web search and fetch, every other stage keeps `--tools ""`. The step row
   stores the tool list.
+- Settings: `claims` joins the front-matter keys. The check stage gets a
+  loading row in `settings.ts` that includes Sources; under `claims:
+  reference` the resolved reference files of the pinned domains go into the
+  claims prompt.
 - The vocabulary rule holds: checkers *verify*, *cite*, *state*, *name*;
   none is asked how it reached anything.
 - Every check prompt states an output cap, as the generation prompts do.
@@ -375,25 +415,44 @@ standing rule is that nothing in `stories/` is an input or a filter.
 
 ## Open Questions
 
-For the grilling. Each has a proposed answer.
+Grilled 2026-09-05. Each carries its proposed answer and, where Chris has
+answered, the decision. Three are still open.
 
-1. **Default length and beats.** Proposed defaults above: 5,000 words, five
-   to ten beats of 400–800. The beat scaffold was measured at EQ-Bench
-   prompt lengths; nothing fixes the number.
+1. **Default length and beats.** Proposed: 5,000 words, five to ten beats
+   of 400–800. The beat scaffold was measured at EQ-Bench prompt lengths;
+   nothing fixes the number. *Decided: as proposed.*
 2. **Do the brief's vignettes go into the story?** Proposed: the schedule
-   decides per vignette. They were written as tests of the structure.
+   decides per vignette, one beat each. They were written as tests of the
+   structure. *Decided: as proposed.*
 3. **Sequential or parallel scenes by default.** Proposed: sequential,
    which the simulation ran: eight scenes, every one under its cap, the
    withholding held. Parallel is untried; the switch exists so the viewer
-   can compare.
-4. **Samples per checker.** Proposed: three, keep at two. Cost is K × S
-   calls per check; with five checkers that is fifteen plus one per claim.
+   can compare. *Decided: as proposed; parallel default on the revisit
+   list.*
+4. **Samples per checker.** Proposed: three, keep at two, for derivation
+   and ledger; one for structure and resemblance, which were identical
+   across all three samples and cost six calls a check for nothing. Cost is
+   K × S calls per check. *Decided: as proposed, with the per-checker
+   override in `[checks.<checker>]`.*
 5. **Does a repair regenerate the context vignettes and ending, or only the
-   outline?** Proposed: all of them; they were derived from the outline.
+   outline?** The ending is one sampled call from the outline, so
+   regenerating it is a different ending even where the outline did not
+   change, and `ending = "brief"` makes it the beat the schedule withholds
+   toward. Proposed: regenerate the context vignettes; keep the ending unless
+   a finding's span is inside it or its pointer is arithmetic or custody,
+   then rewrite it from itself. Always keeping it would have kept the
+   simulation's defect, which was in the ending. *Decided: as proposed.*
 6. **The slate and the retired concepts.** Proposed: no, until the pipeline
-   has produced enough stories for the table to say anything.
-7. **Claims sources.** Proposed: open web under `setting-a`, an allowlist in
-   the setting's front matter under a lore setting.
+   has produced enough stories for the table to say anything. *Decided: as
+   proposed; on the revisit list.*
+7. **Claims authority per setting.** The proposal split by id. With the
+   setting-a reference rebuild, `setting-a` has a `reference/` of the same
+   shape as the lore settings and its sections were distilled from it the
+   same way; what differs is authority. Proposed: front matter `claims:
+   world | reference`, absent means off; `setting-a` sets `world`.
+   Alternatives: reference-first then web (revisit list); reference only for
+   every setting, which discards the one checker path the simulation showed
+   working every time. *Decided: as proposed.*
 8. **Rewrite scope at Gate 2.** Proposed: one scene; under sequential order
    a changed scene k can invalidate k+1, so the screen re-runs on k+1 and
    Chris decides.
@@ -402,17 +461,40 @@ For the grilling. Each has a proposed answer.
    `repair.rounds`, drafts, and stops at Gate 2. Mechanical; no model judges.
 10. **Story export.** Proposed: `drafts/<draw>/story.md` plus `schedule.md`,
     `findings.md`, `config.toml`, `trail.md`, tracked.
-11. **Structure templates.** Which named templates ship, if any, and whether
-    `from:<story-id>` is in the first cut. Proposed: `auto` and `from:` in
-    the first cut, templates as a file Chris edits.
-12. **The withheld-revealed screen question.** The simulation flagged beat
-    5's own scheduled reveal as a leak. Proposed: the question is scoped to
-    the items the schedule lists as withheld *after* this beat, and the
-    prompt carries only that list.
+11. **Structure templates.** Which modes ship in the first cut. Proposed:
+    `auto` and `from:`. *Decided: `auto` only; `from:<story-id>` and named
+    templates on the revisit list.*
+12. **The withheld-revealed screen question.** The simulation's screen for
+    scene 5 already carried only the items withheld after beat 5 and still
+    flagged a line that hinted at beat 6's item without stating it. The
+    screen could not tell foreshadowing from revealing, and a story that
+    never hints at what it withholds has no tension. Proposed: keep the
+    deterministic list and tighten the question: a reveal is the withheld
+    item stated as fact, and the quote must contain the statement.
+    *Decided: as proposed.*
 13. **Theme statement.** The narrator stated the mechanism in four of eight
     scenes, each with a quote, which is the machine-fiction tell measured at
     77% against 52%. Proposed: Gate 2 shows it and Chris decides; the scene
-    prompt does not forbid it, since negation raises salience.
+    prompt says nothing about it, since negation raises salience and a
+    positive instruction changes every scene call before anyone has measured
+    whether it lowers the rate or flattens the prose. *Decided: as proposed;
+    the positive instruction on the revisit list once the rate over several
+    drafts is known.*
+
+## Revisit
+
+Decided against for the first cut, to be looked at again with drafts in
+hand. Not a backlog of work; a list of things the evidence did not settle.
+
+| item | from | look again when |
+| :-- | :-- | :-- |
+| parallel scenes as the default | Q3 | the viewer has shown sequential and parallel drafts of one schedule side by side |
+| per-checker sample counts | Q4 | structure or resemblance disagrees with itself on some brief |
+| retired concepts in the slate table | Q6 | enough kept drafts exist for dispersion to mean anything |
+| reference-first pass under `claims: world` | Q7 | a `world` check has run on several briefs and shows whether briefs contradict the docs they were distilled from |
+| `from:<story-id>` and named structure templates | Q11 | `auto` schedules have been read for a few drafts |
+| a positive instruction in the scene prompt about rendering the mechanism | Q13 | the theme-stated rate is known over several drafts |
+| a configurable structure-screen question list | Stage 5 | a question proves useless or a missing one proves needed |
 
 ## Further Notes
 
