@@ -154,7 +154,7 @@ export function Log({ d, stepId, onStep }: { d: Detail; stepId: string | null; o
       {inFlight && STAGES.filter((st) => !seen.has(st) && st !== "gate" && st !== "brief").map((st) => <div key={st} className="step todo"><span className="st todo" /><span className="n">{st}</span><span className="d">—</span></div>)}
       {inFlight && <div className="step todo"><span className="st todo" /><span className="n">brief</span><span className="d">—</span></div>}
       {(d.draw.status === "done" || developed) && <div className="step"><span className="st" /><span className="n">brief<small> · exported</small></span><span className="d">{d.draw.ended_at ? when(d.draw.ended_at).replace(" today", "") : ""}</span></div>}
-      {developed && <a className="step" href={`#develop/${d.draw.id}`} style={{ textDecoration: "none" }}><span className={"st " + (d.draw.status.startsWith("awaiting") ? "wait" : "")} /><span className="n">develop a brief<small> · {label(d.draw.status)}</small></span><span className="d">→</span></a>}
+      {developed && <a className="step" href={`#develop/${d.draw.id}`} style={{ textDecoration: "none" }}><span className={"st " + (d.draw.status.startsWith("awaiting") ? "wait" : "")} /><span className="n">develop<small> · {label(d.draw.status)}</small></span><span className="d">→</span></a>}
     </div>
   );
 }

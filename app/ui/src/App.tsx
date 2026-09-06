@@ -33,14 +33,14 @@ export function App() {
           <nav className="nav" aria-label="Sections">
             <a href="#browse" className={view === "browse" ? "on" : ""}>browse</a>
             <a href="#draws" className={drawsView ? "on" : ""}>ideate {drawsOpen > 0 && <span>{drawsOpen} open</span>}</a>
-            <a href="#develop" className={developView ? "on" : ""}>develop a brief {developOpen > 0 && <span>{developOpen} open</span>}</a>
+            <a href="#develop" className={developView ? "on" : ""}>develop {developOpen > 0 && <span>{developOpen} open</span>}</a>
           </nav>
           {status && <div className="pool"><b>{status.passages_eligible}</b>/{status.passages} passages<br /><b>{status.themes_eligible}</b>/{status.themes} themes<br /><b>{status.verdicts}</b> verdicts</div>}
         </>}
         {railHidden && <nav className="nav mini" aria-label="Sections">
           <a href="#browse" className={view === "browse" ? "on" : ""} title="browse">b</a>
           <a href="#draws" className={drawsView ? "on" : ""} title={"ideate" + (drawsOpen > 0 ? ` · ${drawsOpen} open` : "")}>i{drawsOpen > 0 && <i />}</a>
-          <a href="#develop" className={developView ? "on" : ""} title={"develop a brief" + (developOpen > 0 ? ` · ${developOpen} open` : "")}>d{developOpen > 0 && <i />}</a>
+          <a href="#develop" className={developView ? "on" : ""} title={"develop" + (developOpen > 0 ? ` · ${developOpen} open` : "")}>d{developOpen > 0 && <i />}</a>
         </nav>}
       </aside>
       {view === "browse" && <Browser status={status} onVerdict={refresh} />}
