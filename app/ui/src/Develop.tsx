@@ -14,6 +14,10 @@ const RUNNING = new Set(["checking", "repairing", "drafting"]);
 const dot = (s: string) => "st " + (DEVELOP_OPEN.has(s) ? "wait" : s === "failed" ? "fail" : RUNNING.has(s) ? "running" : s === "repaired" ? "rep" : s === "done" ? "todo" : "");
 const badge = (s: string) => "badge " + (DEVELOP_OPEN.has(s) ? "awaiting_gate" : RUNNING.has(s) ? "running" : s === "drafted" ? "done" : s === "failed" ? "failed" : "");
 const INVALIDATES = ["debt audit", "arithmetic", "custody"];
+/** A quoted span is shown between the row's own quotation marks; a span the model already quoted would show two. */
+const unquote = (s: string) => s.trim().replace(/^["“”'‘’]+|["“”'‘’]+$/g, "");
+/** Markdown from the outline stage opens paragraphs with a label and a colon; the label reads better set bold. */
+const boldLabels = (md: string) => md.replace(/^([A-Z][A-Za-z0-9 ,'’/&-]{0,40}):(?=\s)/gm, "**$1:**");
 
 export function Develop({ selected }: { selected: string | undefined }) {
   const [draws, setDraws] = useState<Draw[]>([]);
@@ -94,7 +98,7 @@ function BriefFiles({ id, open = "outline.md" }: { id: string; open?: string }) 
   if (!brief) return <span className="dim">loading…</span>;
   return (
     <div className="brief" style={{ gridTemplateColumns: "minmax(0, 1fr)" }}>{BRIEF_FILES.filter((f) => brief[f]).map((f) => (
-      <details className="file ctx" key={f} open={f === open}><summary><span className="caret">▸</span><span className="fn">{f}</span><span className="dim"> · {firstParagraph(brief[f]).slice(0, 80)}…</span></summary><Md className="passage sm" text={brief[f]} /></details>))}</div>
+      <details className="file ctx" key={f} open={f === open}><summary><span className="caret">▸</span><span className="fn">{f}</span><span className="dim"> · {firstParagraph(brief[f]).slice(0, 80)}…</span></summary><Md className="passage sm" text={boldLabels(brief[f])} /></details>))}</div>
   );
 }
 
@@ -190,7 +194,7 @@ function FindingRow({ f, S, selected, onToggle, onDismiss, readOnly }: { f: Find
         <div className="ck">{f.checkers.map((c) => <span key={c}>{c}</span>)}</div>
       </div>
       <div className="body">
-        <div className="span">{f.span}</div>
+        <div className="span">{unquote(f.span)}</div>
         <div>{f.statement}</div>
         <div className="kv"><b>result</b><span className="mono" style={{ fontSize: 11.5 }}>{f.result}</span><b>evidence</b><span>{f.evidence}</span><b>replacement</b><span className="rep">{f.replacement}</span></div>
       </div>
@@ -207,6 +211,19 @@ function FindingRow({ f, S, selected, onToggle, onDismiss, readOnly }: { f: Find
 }
 
 const STRUCTURE_Q = ["threat", "category-violation", "agency", "obscurity", "thickening", "spectacle", "consequence"];
+/** The seven questions as the checker is asked them (app/pipeline/prompts.ts, checkStructure). */
+const STRUCTURE_DEF: Record<string, string> = {
+  threat: "Something in the brief would harm or endanger someone in it.",
+  "category-violation": "A boundary is violated: between living and dead, self and other, inside and outside, one thing and another. Not: something is disgusting.",
+  agency: "There is an unresolved question of what is acting: something acting with no visible actor, or an actor-shaped absence.",
+  obscurity: "What is withheld is withheld deliberately and legibly, leaving something for the imagination to enlarge. Absent means the brief is merely underspecified.",
+  thickening: "The brief contains material for development beyond its own statement, rather than a single image or a single reveal.",
+  spectacle: "The brief's entire payload is a shock, a gross-out or a final twist.",
+  consequence: "The point of departure from the actual has its consequences taken seriously.",
+};
+const STRUCTURE_TIP = "Seven binary questions about the brief, from the evaluation review's list of what a judge can answer with a quote. Each is present or absent with one verbatim quote; they are a profile, never summed into a score.";
+const RESEMBLANCE_TIP = "Retrieval, not judgement: the brief is matched against the enumerated list of overused premises in app/pipeline/premises.md, and the nearest published work is named with one sentence on what is shared. Nothing is asked about originality.";
+const PREMISES_FILE = "app/pipeline/premises.md";
 
 function Profiles({ f, settingJobs }: { f: Findings; settingJobs: string[] }) {
   const structure = f.profiles.find((p) => p.checker === "structure");
@@ -215,15 +232,15 @@ function Profiles({ f, settingJobs }: { f: Findings; settingJobs: string[] }) {
   return (
     <>
       {structure?.answers && <>
-        <h2 className="sec">structure <span>· present / absent · never summed</span></h2>
-        <div className="profile">{STRUCTURE_Q.map((q) => <div key={q} className={structure.answers![q]?.answer === "present" ? "on" : ""} title={structure.answers![q]?.quote}>{q.replace("category-violation", "category")}</div>)}</div>
+        <h2 className="sec" title={STRUCTURE_TIP}>structure <span>· present / absent · never summed</span></h2>
+        <div className="profile">{STRUCTURE_Q.map((q) => <div key={q} className={structure.answers![q]?.answer === "present" ? "on" : ""} title={`${STRUCTURE_DEF[q]}\n\n${structure.answers![q]?.answer ?? ""}: “${structure.answers![q]?.quote ?? ""}”`}>{q.replace("category-violation", "category")}</div>)}</div>
         <details className="ctx" style={{ marginTop: ".6rem" }}><summary><span className="caret">▸</span><span className="fn">quotes</span></summary>
-          <dl className="facts" style={{ marginTop: ".5rem" }}>{STRUCTURE_Q.map((q) => <React.Fragment key={q}><dt>{q}</dt><dd className="serif" style={{ fontStyle: "italic" }}>{structure.answers![q]?.quote}</dd></React.Fragment>)}</dl></details>
+          <dl className="facts" style={{ marginTop: ".5rem" }}>{STRUCTURE_Q.map((q) => <React.Fragment key={q}><dt title={STRUCTURE_DEF[q]}>{q}</dt><dd className="serif" style={{ fontStyle: "italic" }}>{structure.answers![q]?.quote}</dd></React.Fragment>)}</dl></details>
       </>}
       {resemblance && <>
-        <h2 className="sec">resemblance <span>· retrieval, not judgement</span></h2>
+        <h2 className="sec" title={RESEMBLANCE_TIP}>resemblance <span>· retrieval, not judgement · against <span className="mono">{PREMISES_FILE}</span></span></h2>
         {(resemblance.matches ?? []).length === 0 && <div className="note">no list entry matched</div>}
-        {(resemblance.matches ?? []).map((m, i) => <div key={i} className="note" style={{ marginBottom: 4 }}>matches <span style={{ color: "var(--ink)" }}>{m.entry}</span> <span className="dim">· “{m.span}”</span></div>)}
+        {(resemblance.matches ?? []).map((m, i) => <div key={i} className="note" style={{ marginBottom: 4 }} title={`Entry ${/^\d+/.exec(m.entry)?.[0] ?? "?"} of ${PREMISES_FILE}, quoted by the checker verbatim; the span is where the brief matches it.`}>matches <span className="mono dim">{PREMISES_FILE.split("/").pop()} </span><span style={{ color: "var(--ink)" }}>{m.entry}</span> <span className="dim">· “{unquote(m.span)}”</span></div>)}
         {resemblance.nearest && <div className="note" style={{ marginTop: 6 }}>nearest <span style={{ color: "var(--ink)" }}>{resemblance.nearest.title}</span>, {resemblance.nearest.author} <span className="dim">· {resemblance.nearest.shared}</span></div>}
       </>}
     </>
