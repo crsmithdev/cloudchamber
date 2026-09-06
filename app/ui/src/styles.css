@@ -250,3 +250,100 @@ pre { white-space: pre-wrap; background: var(--surface); border: 1px solid var(-
   .cand { grid-template-columns: 1fr; } .brief { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: no-preference) { .chip, .btn, .nav a { transition: color .12s, background-color .12s, border-color .12s; } }
+
+/* develop a brief (docs/specs/2026-09-05-drafting-pipeline.md) */
+.st.rep { background: var(--dim); }
+.gatesep { width: 1px; height: 22px; background: var(--line); margin: 0 .25rem; }
+.gatebar .rewrite { display: inline-flex; align-items: center; gap: .4rem; }
+.gatebar .rewrite .sel { min-width: 0; padding: .3rem 1.6rem .3rem .6rem; }
+.btn.primary.keepbg { background: var(--keep); }
+.picker { display: grid; gap: 2px; margin-top: .5rem; }
+.picker .opt { appearance: none; border: 1px solid var(--line); background: var(--raised); color: var(--ink); padding: .45rem .6rem; border-radius: 4px; cursor: pointer; display: flex; justify-content: space-between; gap: .5rem; text-align: left; font-size: 13px; }
+.picker .opt:hover { border-color: var(--dim); }
+.finding { display: grid; grid-template-columns: 7.75rem minmax(0, 1fr) auto; gap: 1rem; padding: .8rem 0; border-top: 1px solid var(--line); }
+.finding.acc { background: linear-gradient(90deg, color-mix(in srgb, var(--keep) 10%, transparent), transparent 70%); margin: 0 -1rem; padding-left: 1rem; padding-right: 1rem; }
+.finding.dis > * { opacity: .55; }
+.finding .rec { display: flex; flex-direction: column; gap: .35rem; }
+.finding .dots { display: flex; gap: 4px; align-items: center; }
+.finding .dots i { width: 9px; height: 9px; border-radius: 50%; border: 1px solid var(--dim); display: inline-block; }
+.finding .dots i.on { background: var(--accent); border-color: var(--accent); }
+.finding .dots b { font-size: 12px; font-weight: 600; margin-left: 4px; }
+.finding .ptr { font-size: 11px; color: var(--accent); font-family: "IBM Plex Mono", ui-monospace, monospace; }
+.finding .ptr.none { color: var(--dim); }
+.finding .ck { display: flex; gap: 4px; flex-wrap: wrap; }
+.finding .ck span { font-size: 10.5px; font-family: "IBM Plex Mono", ui-monospace, monospace; color: var(--mute); border: 1px solid var(--line); border-radius: 3px; padding: 0 5px; }
+.finding .body { font-size: 12.5px; line-height: 1.55; display: grid; gap: .3rem; min-width: 0; }
+.finding .span { font: italic 14.5px/1.5 "Newsreader", Georgia, serif; color: var(--ink); }
+.finding .span::before { content: "“"; color: var(--dim); } .finding .span::after { content: "”"; color: var(--dim); }
+.finding .kv { display: grid; grid-template-columns: 5.2rem minmax(0, 1fr); gap: 2px 10px; font-size: 12px; color: var(--mute); }
+.finding .kv b { color: var(--dim); font-weight: 500; }
+.finding .kv .rep { color: var(--ink); }
+.finding .acts { display: flex; flex-direction: column; gap: .35rem; align-items: stretch; min-width: 6rem; }
+.finding .acts .state { font-size: 11px; font-family: "IBM Plex Mono", ui-monospace, monospace; text-align: right; }
+.claim { display: grid; grid-template-columns: 6rem minmax(0, 1fr); gap: .75rem; padding: .5rem 0; border-top: 1px solid var(--line); font-size: 12.5px; }
+.claim .r { font-size: 11.5px; }
+.claim .ev { color: var(--dim); font-size: 11.5px; overflow-wrap: anywhere; }
+.profile { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.profile div { border-top: 2px solid var(--line); padding-top: .35rem; font-size: 11px; color: var(--mute); font-family: "IBM Plex Mono", ui-monospace, monospace; overflow: hidden; text-overflow: ellipsis; }
+.profile div.on { border-top-color: var(--accent); color: var(--ink); }
+.note { font-size: 12px; color: var(--dim); }
+.judge { margin-top: 1.75rem; padding-top: .75rem; border-top: 1px solid var(--line); font-size: 12px; color: var(--dim); font-family: "IBM Plex Mono", ui-monospace, monospace; }
+.cons { padding: .75rem 1rem; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 12px; line-height: 1.7; }
+.cons .fn { color: var(--dim); }
+button.fold { appearance: none; border: 0; background: transparent; padding: 0; color: var(--mute); display: flex; align-items: center; gap: .5rem; font-size: 12px; cursor: pointer; text-align: left; }
+button.fold .caret { display: inline-block; width: .9rem; color: var(--dim); font-size: 11px; }
+button.fold .caret.open { transform: rotate(90deg); }
+.form-chips { margin: .75rem 0 .25rem; }
+.form-chips .chip { font-size: 11px; }
+.chartwrap { overflow-x: auto; }
+.chart { display: grid; gap: 6px 3px; align-items: center; font-size: 12px; min-width: 32rem; }
+.chart .h { color: var(--dim); font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 11px; text-align: center; padding-bottom: 4px; border-bottom: 1px solid var(--line); }
+.chart .lbl { color: var(--mute); padding-right: .75rem; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chart .c { height: 18px; border-radius: 2px; }
+.chart .held { background: color-mix(in srgb, var(--ink) 10%, transparent); }
+.chart .rev { background: var(--accent); }
+.beat { display: grid; grid-template-columns: 7.25rem minmax(0, 1fr); gap: 1rem; padding: .8rem 0; border-top: 1px solid var(--line); }
+.beat .n { display: flex; flex-direction: column; gap: .35rem; }
+.beat .n b { font-size: 15px; font-weight: 600; } .beat .n b small { color: var(--dim); font-weight: 400; font-size: 11px; margin-left: .4rem; }
+.beat .bar { height: 6px; background: var(--raised); border-radius: 2px; overflow: hidden; } .beat .bar i { display: block; height: 100%; background: var(--mute); }
+.beat .bar i.over { background: var(--art); }
+.beat .tag { font-size: 11px; color: var(--accent); font-family: "IBM Plex Mono", ui-monospace, monospace; }
+.beat .body { font-size: 12.5px; line-height: 1.55; display: grid; gap: .25rem; min-width: 0; }
+.beat .body .job { font: 14px/1.5 "Newsreader", Georgia, serif; color: var(--ink); }
+.beat .body .kv { display: grid; grid-template-columns: 4.25rem minmax(0, 1fr); gap: 2px 10px; color: var(--mute); font-size: 12px; }
+.beat .body .kv b { color: var(--dim); font-weight: 500; }
+.scene { max-width: 40rem; margin-bottom: .5rem; }
+.scene .hd { display: flex; gap: .75rem; align-items: baseline; margin: 1.5rem 0 .5rem; font-size: 11.5px; color: var(--dim); font-family: "IBM Plex Mono", ui-monospace, monospace; flex-wrap: wrap; }
+.scene .hd b { color: var(--mute); font-weight: 500; }
+.scene .hd .over { color: var(--art); }
+.scene .prose { font: 15.5px/1.6 "Newsreader", Georgia, serif; text-wrap: pretty; }
+.scene .prose p { margin: 0 0 .9em; }
+.flag { display: grid; grid-template-columns: 9.25rem minmax(0, 1fr) auto; gap: .75rem; padding: .5rem .75rem; margin: .4rem 0; background: var(--surface); border: 1px solid var(--line); border-radius: 5px; font-size: 12px; align-items: start; }
+.flag .k { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 11px; color: var(--art); }
+.flag .k small { display: block; color: var(--dim); }
+.flag .q { font: italic 13.5px/1.5 "Newsreader", Georgia, serif; color: var(--ink); }
+.flag .rep { color: var(--mute); margin-top: 2px; }
+.flag .rep b { color: var(--dim); font-weight: 500; }
+.tree { display: grid; gap: 2px; }
+.tree .row { display: grid; grid-template-columns: 1.4rem minmax(0, 1fr) 3rem 4rem; gap: .5rem; padding: .35rem .5rem; border-radius: 4px; font-size: 12px; align-items: center; color: var(--mute); text-decoration: none; border: 0; cursor: pointer; }
+.tree .row:hover { background: var(--raised); }
+.tree .row.on { background: var(--raised); color: var(--ink); }
+.tree .row .b { color: var(--dim); }
+.tree .row .j { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tree .row .w { font-size: 11px; text-align: right; font-variant-numeric: tabular-nums; }
+.tree .row .f { display: flex; gap: 3px; justify-content: flex-end; }
+.tree .row .f i, .note .dotl, .note .dots2 { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: var(--art); }
+.tree .row .f i.l, .note .dotl { background: var(--pass); }
+.note .dots2 { margin-left: .75rem; }
+.slop { display: grid; gap: .6rem; font-size: 12px; }
+.slop .k { color: var(--dim); font-size: 11.5px; margin-bottom: .2rem; }
+.slop .lex { display: flex; flex-wrap: wrap; gap: 4px; }
+.slop .lex span { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 11px; border: 1px solid var(--line); border-radius: 3px; padding: 1px 6px; color: var(--mute); }
+.slop .lex span b { color: var(--ink); font-weight: 500; }
+.slop .paras { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 3px; align-items: end; height: 42px; }
+.slop .paras i { display: block; background: var(--raised); border-radius: 2px 2px 0 0; }
+.slop .paras i.hi { background: var(--mute); }
+/* the develop pane splits earlier than ideate's: its right column is a tree and two summaries, not a second brief */
+@container (min-width: 50rem) { .pane.read.dev .drawbody.two { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); } }
+.nav a { flex-wrap: wrap; }
+@media (max-width: 1100px) { .finding { grid-template-columns: 1fr; } .flag { grid-template-columns: 1fr; } }

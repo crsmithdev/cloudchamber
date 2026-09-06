@@ -101,7 +101,7 @@ async function sampled(p: Pipeline, drawId: string, parts: BriefParts, stage: an
     store?.(r.step, r.value, r.sample);
     for (const f of (r.value.findings ?? []) as Finding[]) findings.push({ ...f, sample: r.sample });
   }
-  return { checker, clusters: cluster(findings, s.keep_if, parts.settingJobs), firstStep: results[0].step };
+  return { checker, clusters: cluster(findings, s.keep_if, parts.settingJobs, drawId), firstStep: results[0].step };
 }
 
 const RESULTS = new Set(["supported", "contradicted", "unverifiable"]);
@@ -124,7 +124,7 @@ async function runClaims(p: Pipeline, drawId: string, parts: BriefParts, brief: 
   }));
   const contradicted = verified.filter((f) => f.result === "contradicted");
   const clusters: Cluster[] = contradicted.map((f) => ({
-    id: findingId("claims", f.span), checkers: ["claims"], samples: [1], n: 1, span: f.span, statement: f.statement, result: f.result,
+    id: findingId("claims", f.span, drawId), checkers: ["claims"], samples: [1], n: 1, span: f.span, statement: f.statement, result: f.result,
     evidence: f.evidence, invalidates: f.invalidates || "none", replacement: f.replacement, reported: true,
   }));
   return { checker: "claims", clusters, firstStep: step };

@@ -455,3 +455,21 @@ describe("templates and store", () => {
     for (const n of ["check-derivation", "check-ledger", "check-structure", "check-resemblance", "repair-vignette", "repair-outline", "repair-ending", "schedule", "scene", "screen-ledger", "screen-structure"]) expect((s as any)[n].model).toMatch(/^claude-/);
   });
 });
+
+describe("finding ids are scoped by draw", () => {
+  test("two draws with the same span do not share verdicts; a repaired draw's re-check does not inherit its source's accepted findings", async () => {
+    const { p, d, draw } = await drawn(draftScript({ "check-ledger": [...ledgerSamples(), ...ledgerSamples()], "check-derivation": [...derivationSamples(), ...derivationSamples()] }));
+    await d.check(draw.id);
+    const [a] = d.findings(draw.id).findings;
+    const next = await d.accept(draw.id, [a.id]);
+    // the repaired draw's re-check reports the same span again (same fixture); it must be open there, not accepted
+    const again = d.findings(next.id).findings;
+    expect(again.length).toBeGreaterThan(0);
+    expect(again[0].span).toBe(a.span);
+    expect(again[0].id).not.toBe(a.id);
+    expect(again.every((f) => f.decision === "open")).toBe(true);
+    const out = await d.draft(next.id);                                   // not "accepted findings pending repair"
+    expect(out.status).toBe("awaiting_draft_gate");
+    expect(p.draw(draw.id).status).toBe("repaired");
+  });
+});

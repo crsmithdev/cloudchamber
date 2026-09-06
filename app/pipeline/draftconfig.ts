@@ -91,6 +91,8 @@ export function validate(c: DraftConfig): void {
   if (!(Number.isInteger(c.repair.rounds) && c.repair.rounds >= 0)) bad("repair.rounds must be a non-negative integer");
 }
 
+export function profileNames(defaults: any = draftToml): string[] { return Object.keys(defaults.profiles ?? {}); }
+
 /** Samples for one checker or screen: the per-name table overrides the group default. */
 export function samplesFor(group: { samples: number; keep_if: number } & Record<string, unknown>, name: string): { samples: number; keep_if: number } {
   const own = group[name] as { samples?: number; keep_if?: number } | undefined;

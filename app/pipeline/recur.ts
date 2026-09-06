@@ -56,9 +56,13 @@ export function same(a: { span: string; statement: string }, b: { span: string; 
 
 export const normalise = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
 
-/** Stable across re-checks: the same checker quoting the same span gets the same id. */
-export function findingId(checker: string, span: string): string {
-  return "f-" + createHash("sha1").update(`${checker}|${normalise(span)}`).digest("hex").slice(0, 8);
+/**
+ * Stable across re-checks of one draw: the same checker quoting the same span
+ * gets the same id. Scoped by draw, so a repaired brief that keeps a sentence
+ * does not inherit the verdicts recorded against its source.
+ */
+export function findingId(checker: string, span: string, scope = ""): string {
+  return "f-" + createHash("sha1").update(`${scope}|${checker}|${normalise(span)}`).digest("hex").slice(0, 8);
 }
 
 /** Parse every <finding> in a checker's response. Missing fields are empty strings; a finding with no span is dropped. */
@@ -77,7 +81,7 @@ export function invalidatesRank(inv: string, settingJobs: string[] = []): number
 }
 
 /** Cluster one checker's findings across its samples. Sorted by n descending, then by what the finding invalidates. */
-export function cluster(findings: Finding[], keepIf: number, settingJobs: string[] = []): Cluster[] {
+export function cluster(findings: Finding[], keepIf: number, settingJobs: string[] = [], scope = ""): Cluster[] {
   const groups: Finding[][] = [];
   for (const f of findings) {
     const g = groups.find((c) => same(c[0], f));
@@ -87,7 +91,7 @@ export function cluster(findings: Finding[], keepIf: number, settingJobs: string
     const samples = [...new Set(g.map((f) => f.sample))].sort((a, b) => a - b);
     const first = g[0];
     return {
-      id: findingId(first.checker, first.span), checkers: [first.checker], samples, n: samples.length,
+      id: findingId(first.checker, first.span, scope), checkers: [first.checker], samples, n: samples.length,
       span: first.span, statement: first.statement, result: first.result, evidence: first.evidence, invalidates: first.invalidates, replacement: first.replacement,
       reported: samples.length >= keepIf,
     };

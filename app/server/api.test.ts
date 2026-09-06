@@ -239,3 +239,14 @@ describe("api: check, gate 1, draft, gate 2", () => {
     expect((await j2("POST", `/api/draws/${d2.id}/gate`, { action: "sing" })).code).toBe(400);
   });
 });
+
+describe("api: draft config", () => {
+  test("serves the drafting defaults and the profile names for the settings form", async () => {
+    const { j } = await setup();
+    const r = await j("GET", "/api/draft-config");
+    expect(r.code).toBe(200);
+    expect(r.body.defaults.length.words).toBe(5000);
+    expect(r.body.defaults.beats).toMatchObject({ count: "auto", min: 5, max: 10 });
+    expect(r.body.profiles).toEqual(["flash", "novelette"]);
+  });
+});

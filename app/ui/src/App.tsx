@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { api, type Status } from "./api.ts";
 import { Browser } from "./Browser.tsx";
 import { Draws } from "./Draws.tsx";
+import { Develop, DEVELOP_OPEN } from "./Develop.tsx";
 
 function useHash() {
   const [h, setH] = useState(location.hash.slice(1) || "browse");
@@ -16,7 +17,9 @@ export function App() {
   useEffect(() => { refresh(); }, [hash]);
   const [view, arg] = hash.split("/");
   const drawsView = view === "draws" || view === "draw";
+  const developView = view === "develop";
   const drawsOpen = status?.draws.filter((r) => r.status === "awaiting_gate" || r.status === "running").reduce((a, r) => a + r.n, 0) ?? 0;
+  const developOpen = status?.draws.filter((r) => DEVELOP_OPEN.has(r.status)).reduce((a, r) => a + r.n, 0) ?? 0;
   const [railHidden, setRailHidden] = useState(() => { try { return localStorage.getItem("fb-rail") === "hidden"; } catch { return false; } });
   useEffect(() => { try { localStorage.setItem("fb-rail", railHidden ? "hidden" : "shown"); } catch {} }, [railHidden]);
   return (
@@ -30,16 +33,19 @@ export function App() {
           <nav className="nav" aria-label="Sections">
             <a href="#browse" className={view === "browse" ? "on" : ""}>browse</a>
             <a href="#draws" className={drawsView ? "on" : ""}>ideate {drawsOpen > 0 && <span>{drawsOpen} open</span>}</a>
+            <a href="#develop" className={developView ? "on" : ""}>develop a brief {developOpen > 0 && <span>{developOpen} open</span>}</a>
           </nav>
           {status && <div className="pool"><b>{status.passages_eligible}</b>/{status.passages} passages<br /><b>{status.themes_eligible}</b>/{status.themes} themes<br /><b>{status.verdicts}</b> verdicts</div>}
         </>}
         {railHidden && <nav className="nav mini" aria-label="Sections">
           <a href="#browse" className={view === "browse" ? "on" : ""} title="browse">b</a>
           <a href="#draws" className={drawsView ? "on" : ""} title={"ideate" + (drawsOpen > 0 ? ` · ${drawsOpen} open` : "")}>i{drawsOpen > 0 && <i />}</a>
+          <a href="#develop" className={developView ? "on" : ""} title={"develop a brief" + (developOpen > 0 ? ` · ${developOpen} open` : "")}>d{developOpen > 0 && <i />}</a>
         </nav>}
       </aside>
       {view === "browse" && <Browser status={status} onVerdict={refresh} />}
       {drawsView && <Draws status={status} selected={view === "draw" ? arg : arg === "new" ? "new" : undefined} />}
+      {developView && <Develop selected={arg} />}
     </div>
   );
 }

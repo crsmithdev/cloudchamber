@@ -36,7 +36,7 @@ may read directly is `bank/examples/*.md` (verbatim passages by source) and
 ./fogbelt gate <draw> keep | rewrite <k> [--finding ID] | pass
 ./fogbelt verdict <example|theme|brief|story> <id> <keep|pass> [--artifact] [--note "..."]
                                       a passed story hides every passage of it
-./fogbelt serve [--port 3002]         the review UI and draw viewer
+./fogbelt serve [--port 3002]         the review UI, the draw viewer, and develop a brief (gates 1 and 2)
 ```
 
 Extraction with no `--only` reads the dev subset from `sources/manifest.toml`.

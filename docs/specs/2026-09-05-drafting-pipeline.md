@@ -261,8 +261,10 @@ statement. Order: `n` descending, then `invalidates` in the order debt
 audit, arithmetic, custody, any setting job, none.
 
 Finding id: `f-` plus the first eight hex characters of the SHA-1 of
-`checker + "|" + normalised span`, so the same defect found on a re-check
-has the same id.
+`draw id + "|" + checker + "|" + normalised span` (screen findings scope by
+draw and beat), so the same defect found on a re-check of the same draw has
+the same id, while a repaired brief that keeps a sentence does not inherit
+the verdicts recorded against its source.
 
 ### Checkers
 

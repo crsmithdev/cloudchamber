@@ -2,15 +2,15 @@ import React, { useEffect, useMemo, useState } from "react";
 import { marked } from "marked";
 import { api, when, type Artifact, type Candidate, type Example, type Facets, type Draw, type Status, type Step } from "./api.ts";
 
-type Detail = { draw: Draw; steps: Step[]; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[] };
+export type Detail = { draw: Draw; steps: Step[]; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[] };
 const STAGES = ["premises", "execute", "gate", "outline", "context", "ending", "brief"];
-const LABEL: Record<string, string> = { awaiting_gate: "open", done: "closed" };
-const label = (status: string) => LABEL[status] ?? status;
-const secs = (a: string, b: string | null) => (b ? `${Math.round((Date.parse(b) - Date.parse(a)) / 1000)}s` : "running");
+export const LABEL: Record<string, string> = { awaiting_gate: "open", done: "brief", awaiting_check_gate: "gate 1", awaiting_draft_gate: "gate 2", checking: "checking", repairing: "repairing", drafting: "drafting", drafted: "drafted", passed: "passed", repaired: "repaired" };
+export const label = (status: string) => LABEL[status] ?? status;
+export const secs = (a: string, b: string | null) => (b ? `${Math.round((Date.parse(b) - Date.parse(a)) / 1000)}s` : "running");
 const choose = (index: number) => `Continue with premise ${index}: outline, two context vignettes, the ending, then the brief.`;
 
 /** Model output and brief files are markdown written by this pipeline; rendered as written. */
-function Md({ text, className = "" }: { text: string; className?: string }) {
+export function Md({ text, className = "" }: { text: string; className?: string }) {
   const html = useMemo(() => marked.parse(text, { async: false }) as string, [text]);
   return <div className={"md " + className} dangerouslySetInnerHTML={{ __html: html }} />;
 }
@@ -129,7 +129,7 @@ function GateBar({ d, note, setNote, err, onGate }: { d: Detail; note: string; s
   );
 }
 
-function Log({ d, stepId, onStep }: { d: Detail; stepId: string | null; onStep: (id: string) => void }) {
+export function Log({ d, stepId, onStep }: { d: Detail; stepId: string | null; onStep: (id: string) => void }) {
   const byParent = new Map<string | null, Step[]>();
   for (const s of d.steps) { const k = s.parent_id; if (!byParent.has(k)) byParent.set(k, []); byParent.get(k)!.push(s); }
   const flat: { s: Step; depth: number }[] = [];
@@ -138,6 +138,7 @@ function Log({ d, stepId, onStep }: { d: Detail; stepId: string | null; onStep: 
   const cand = new Map(d.candidates.map((c) => [c.step_id, c]));
   const seen = new Set(d.steps.map((s) => s.stage));
   const inFlight = d.draw.status === "awaiting_gate" || d.draw.status === "running";
+  const developed = !["awaiting_gate", "running", "done", "failed", "rejected"].includes(d.draw.status);
   return (
     <div className="log" onClick={(e) => e.stopPropagation()}>
       {flat.map(({ s, depth }) => {
@@ -152,13 +153,14 @@ function Log({ d, stepId, onStep }: { d: Detail; stepId: string | null; onStep: 
       {d.draw.status === "awaiting_gate" && <div className="step"><span className="st wait" /><span className="n">gate<small> · {d.draw.mode}</small></span><span className="d">waiting</span></div>}
       {inFlight && STAGES.filter((st) => !seen.has(st) && st !== "gate" && st !== "brief").map((st) => <div key={st} className="step todo"><span className="st todo" /><span className="n">{st}</span><span className="d">—</span></div>)}
       {inFlight && <div className="step todo"><span className="st todo" /><span className="n">brief</span><span className="d">—</span></div>}
-      {d.draw.status === "done" && <div className="step"><span className="st" /><span className="n">brief<small> · exported</small></span><span className="d">{d.draw.ended_at ? when(d.draw.ended_at).replace(" today", "") : ""}</span></div>}
+      {(d.draw.status === "done" || developed) && <div className="step"><span className="st" /><span className="n">brief<small> · exported</small></span><span className="d">{d.draw.ended_at ? when(d.draw.ended_at).replace(" today", "") : ""}</span></div>}
+      {developed && <a className="step" href={`#develop/${d.draw.id}`} style={{ textDecoration: "none" }}><span className={"st " + (d.draw.status.startsWith("awaiting") ? "wait" : "")} /><span className="n">develop a brief<small> · {label(d.draw.status)}</small></span><span className="d">→</span></a>}
     </div>
   );
 }
 
 const BRIEF_FILES = ["outline.md", "vignette.md", "context-1.md", "context-2.md", "ending.md"];
-const firstParagraph = (s: string) => s.trim().split(/\n\s*\n/)[0].replace(/[*_#>`]/g, "");
+export const firstParagraph = (s: string) => s.trim().split(/\n\s*\n/)[0].replace(/[*_#>`]/g, "");
 
 function DrawBody({ d, brief, onChoose, onVerdict }: { d: Detail; brief: Record<string, string> | null; onChoose: (stepId: string) => void; onVerdict: (e: Example, v: "keep" | "pass", artifact?: boolean) => void }) {
   const [openVig, setOpenVig] = useState<string | null>(d.draw.chosen_step);
@@ -211,7 +213,7 @@ function DrawBody({ d, brief, onChoose, onVerdict }: { d: Detail; brief: Record<
   );
 }
 
-function StepView({ step, artifacts, chosen, onBack }: { step: Step; artifacts: Artifact[]; chosen: boolean; onBack: () => void }) {
+export function StepView({ step, artifacts, chosen, onBack }: { step: Step; artifacts: Artifact[]; chosen: boolean; onBack: () => void }) {
   const raw = (() => { if (!step.raw_response) return null; try { return JSON.parse(step.raw_response).result ?? step.raw_response; } catch { return step.raw_response; } })();
   return (
     <div className="stepview">

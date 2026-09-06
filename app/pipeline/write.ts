@@ -159,7 +159,7 @@ export async function runScreens(p: Pipeline, drawId: string, parts: BriefParts,
         return { findings: parseFindings(t, "ledger", i + 1), examined: tag(t, "examined") };
       }).then((r) => ({ ...r, sample: i + 1 })))).then((rs) => {
         const all: Finding[] = rs.flatMap((r) => r.value.findings.map((f: Finding) => ({ ...f, sample: r.sample })));
-        for (const c of cluster(all, keep_if).filter((c) => c.reported)) {
+        for (const c of cluster(all, keep_if, [], `${drawId}/${k}`).filter((c) => c.reported)) {
           const { reported: _r, ...meta } = c;
           p.artifact(rs[0].step, "finding", c.statement, { ...meta, invalidates: String(k), pass, source: "screen", screen: "ledger", beat: k });
           findings.push({ ...c, invalidates: String(k) });
