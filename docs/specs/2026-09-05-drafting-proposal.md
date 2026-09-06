@@ -138,14 +138,22 @@ Every finding has one shape:
 </finding>
 ```
 
-`invalidates` is the ranking: which outline section would have to change if
+`invalidates` is a pointer: which outline section would have to change if
 the finding stands. It is a structural question the checker answers by
-pointing at the outline, not a severity it estimates. Findings are shown to
-the gate ordered debt audit first, then arithmetic, custody, setting jobs,
-none. `replacement` is phrased positively because the repair prompt will
-carry it verbatim and negation raises the salience of what it forbids
-(`generation.md` §1.5). A finding with `evidence: none` is shown as
-unsupported.
+pointing at the outline, not a severity it estimates. In the simulation it
+was reliable for the debt audit and labelled `none` on findings that plainly
+bore on the arithmetic, so the gate orders by recurrence first and the
+pointer second: 3/3 findings, then 2/3, and within each debt audit, then
+arithmetic, custody, setting jobs, none. Before ordering, findings from
+different checkers are merged by span overlap; derivation and ledger report
+the same top findings and would otherwise show twice.
+
+`replacement` is one factual sentence in the outline's register, phrased
+positively because the repair prompt carries it verbatim and negation raises
+the salience of what it forbids (`generation.md` §1.5). It is never a line
+of dialogue or a scene: the simulation's replacements carried names and
+speech from the context vignettes, and those then governed the repair. A
+finding with `evidence: none` is shown as unsupported.
 
 A checker also returns what it examined — the list of claims extracted, the
 list of facts in the ledger, the questions asked — so that an empty result is
@@ -155,11 +163,14 @@ what it looked at.
 
 The checkers:
 
-**claims.** Extract only verifiable claims about the actual world — statute,
-procedure, rate, count, date, place, named institution — from the outline and
-vignettes, one extraction call; then one call per claim with web search,
-returning supported, contradicted or unverifiable with a source and a quoted
-line (`drafting.md` §1.10). Under a fictional setting the setting body is the
+**claims.** Extract only verifiable claims about the actual world — a
+quantity, a price, a date, a distance, a procedure, a statute, a relation
+between named places — from the outline and vignettes, one extraction call;
+then one call per claim with web search, returning supported, contradicted
+or unverifiable with a source and a quoted line (`drafting.md` §1.10). That
+a place or institution exists is not a claim: asked loosely, the simulation's
+extractor spent ten of twelve claims on existence and missed the one
+distance that was wrong by a factor of five. Under a fictional setting the setting body is the
 first source and an allowlist of domains in the setting's front matter the
 second; this is the lore audit the ideation spec deferred, as the same
 checker with a different corpus. Not run on an unrestricted draw unless
@@ -215,12 +226,21 @@ Acceptance is per finding. When at least one is accepted, repair runs.
 
 ## Stage 2 — repair
 
-One fresh call re-derives the outline from the chosen vignette, the seed,
-and a `constraints` block holding the accepted replacements verbatim. The
-context vignettes and ending are regenerated from the new outline as before.
-The chosen vignette is kept unless a finding's span is inside it; then it is
-regenerated from its premise with the constraints and the gate sees it
-again.
+The chosen vignette is Chris's pick at the gate and survives repair as
+material. If a finding's span is inside it, one call rewrites it from
+itself: the vignette in the prompt, the accepted replacements as
+constraints, the same length. It is never regenerated from the premise; the
+simulation did that and got a different story, with the roles swapped and
+the place renamed, and the outline re-derived from it was a different brief.
+
+Then one fresh call re-derives the outline from the kept or rewritten
+vignette, the seed, and a `constraints` block holding the accepted
+replacements verbatim. The context vignettes and ending are regenerated
+from the new outline as before.
+
+A repair introduces contradictions of its own: the simulation's repair
+removed all five accepted findings and the re-check found three new ones of
+the same kind. The check after repair is not optional.
 
 Bounded: `repair.rounds` runs automatically, each followed by one check. A
 further round is Chris asking for it. Accumulated pressure inflates structure
@@ -246,6 +266,11 @@ config fixes them it obeys. These are the axes every model converges on
 With `ending = "brief"` the last beat is the brief's ending and the
 schedule's work is what stays hidden until it.
 
+Each brief vignette is named by at most one beat's `absorbs`, or the step
+fails `shape` and is retried once. The simulation's schedule spread the
+chosen vignette over three beats and the ending over two, and every one of
+those scene prompts then carried the same material block.
+
 ## Stage 4 — scenes
 
 One call per beat, each a fresh subprocess. The prompt carries: the six
@@ -268,7 +293,10 @@ with a finding's replacement as a constraint.
 ## Stage 5 — screen
 
 Per scene, after all scenes exist, each screen its own call or its own
-deterministic pass:
+deterministic pass. The model screens run `samples` times with `keep_if`,
+as the checkers do: a single-sample ledger screen in the simulation returned
+twenty findings over eight scenes, several of them real and several of them
+pedantry, with nothing to tell them apart.
 
 **ledger.** The scene against the ledger and against the previous scene:
 the Stage 1 checker, same finding shape, `invalidates` pointing at the beat
@@ -281,11 +309,13 @@ bodily sensation; the scene reveals what the schedule withholds; the
 protagonist is never wrong. On the last scene: the ending resolves
 everything. Flags with locations, not a score.
 
-**slop.** Deterministic, outside any model: over-represented words, "not X
-but Y" constructions and trigrams scored against `slop_baseline`
-(`drafting.md` §1.6); paragraph-length trend across scenes, since
-fragmentation late in a draft is the known degradation. It marks; it does
-not judge.
+**slop.** Deterministic, outside any model: a fixed slop lexicon with
+proper nouns excluded, the "not X but Y" rate against `slop_baseline`,
+trigrams repeated in the draft and absent from the baseline, and the
+paragraph-length trend across scenes, since fragmentation late in a draft is
+the known degradation (`drafting.md` §1.6). A raw word-ratio against the
+pool is not a screen: in the simulation it ranked the characters' names and
+the story's subject nouns and nothing else. It marks; it does not judge.
 
 ## Gate 2
 
@@ -352,8 +382,10 @@ For the grilling. Each has a proposed answer.
    prompt lengths; nothing fixes the number.
 2. **Do the brief's vignettes go into the story?** Proposed: the schedule
    decides per vignette. They were written as tests of the structure.
-3. **Sequential or parallel scenes by default.** Proposed: sequential.
-   Unmeasured either way; the switch exists so the viewer can compare.
+3. **Sequential or parallel scenes by default.** Proposed: sequential,
+   which the simulation ran: eight scenes, every one under its cap, the
+   withholding held. Parallel is untried; the switch exists so the viewer
+   can compare.
 4. **Samples per checker.** Proposed: three, keep at two. Cost is K × S
    calls per check; with five checkers that is fifteen plus one per claim.
 5. **Does a repair regenerate the context vignettes and ending, or only the
@@ -373,6 +405,56 @@ For the grilling. Each has a proposed answer.
 11. **Structure templates.** Which named templates ship, if any, and whether
     `from:<story-id>` is in the first cut. Proposed: `auto` and `from:` in
     the first cut, templates as a file Chris edits.
+12. **The withheld-revealed screen question.** The simulation flagged beat
+    5's own scheduled reveal as a leak. Proposed: the question is scoped to
+    the items the schedule lists as withheld *after* this beat, and the
+    prompt carries only that list.
+13. **Theme statement.** The narrator stated the mechanism in four of eight
+    scenes, each with a quote, which is the machine-fiction tell measured at
+    77% against 52%. Proposed: Gate 2 shows it and Chris decides; the scene
+    prompt does not forbid it, since negation raises salience.
+
+## Further Notes
+
+**Simulation, 2026-09-05.** The whole graph was run by hand in the
+scratchpad against brief `20260905030027-b6dd` (unrestricted horror), every
+model step a `claude -p` subprocess with the adapter's flags, gate 1 under
+the auto rule of Q9, config at the defaults above. About sixty calls, about
+fifteen minutes of wall time, on a subscription login.
+
+| stage | calls | time | outcome |
+| :-- | :-- | :-- | :-- |
+| check (derivation, ledger, structure, resemblance) × 3 samples | 12 | 85 s wall; derivation and ledger 65–85 s each, structure 9–13 s, resemblance 23–31 s | 46 findings → 22 clusters → 15 reported at ≥ 2/3, 9 at 3/3 |
+| claims: extract, then verify on Sonnet with search | 1 + 12 | 21 s; 12–17 s per claim, 2–3 turns | 10 supported, 2 contradicted; every call returned a URL and a line |
+| gate 1, auto rule | 0 | — | 5 findings accepted after cross-checker merge |
+| repair: vignette, outline, jobs, context × 2, ending | 6 | 4.5 min | a different story (see Stage 2); re-check found 5 new clusters at ≥ 2/3 |
+| schedule | 1 | 80 s | 8 beats, caps summing to exactly 5,000; form derived and stated |
+| scenes, sequential | 8 | 26–37 s each | 4,989 words, every scene under its cap; last prompt ≈ 9,500 words |
+| screens: ledger, structure, one sample | 16 | 70 s wall | ledger 20 findings; structure flagged theme-stated in 4 of 8 |
+| slop, deterministic | 0 | < 1 s | see Stage 5 |
+
+What held: the checkers found the real defect in the brief (the ending has
+the director fire the reliquary; the debt audit says only the assembler
+can) in every sample of both checkers, and found the seam between the two
+parallel context vignettes (the twelfth relic named differently in each).
+The structure profile was identical across three samples and the
+resemblance checker returned the same list entry three times. The claims
+checker's tool path works under `--tools WebSearch,WebFetch --allowedTools
+WebSearch,WebFetch`. The schedule scheduled: the instrument's wording
+appears only in the scene of the beat that reveals it, every scene closes
+on a log entry as the derived form said, and the last line is the derived
+one.
+
+What broke, and is amended above: repair regenerated the chosen vignette
+from the premise and re-cast the story; replacements carried prose;
+findings duplicated across checkers; `invalidates` was `none` below the
+debt audit; claim extraction chose existence over quantity; the schedule
+absorbed one vignette into three beats; single-sample screens had no
+filter; the word-ratio slop screen ranked proper nouns.
+
+Not simulated: a lore setting, parallel scenes, a Gate 2 rewrite, the
+slate, `from:<story-id>`. Outputs are in the session scratchpad and not
+tracked.
 
 ## What this does not do
 
