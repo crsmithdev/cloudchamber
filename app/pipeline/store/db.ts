@@ -7,7 +7,7 @@ import { replay } from "../verdicts.ts";
 export type Db = Database;
 
 /** Bump with every change to an existing table, and mirror it in extract/store.py. */
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 /** `log` is the verdict log a migration replays from; only tests pass it. */
 export function openDb(path: string = DEFAULT_DB, log?: string): Db {
@@ -62,6 +62,8 @@ function renameBeforeSchema(db: Db) {
  *   1 -> 2  verdicts.kind 'packet' is 'brief' and method 'run' is 'draw';
  *           artifacts of kind 'packet' are 'brief'. Tables were renamed above.
  *   2 -> 3  draws gains the domains column (typed settings).
+ *   3 -> 4  verdicts.kind gains 'finding' and 'draft'; draws gains repaired_from
+ *           and draft_config; steps gains tools (drafting pipeline).
  */
 function migrate(db: Db, schema: string, log?: string) {
   if (userVersion(db) < 1) {
@@ -81,6 +83,15 @@ function migrate(db: Db, schema: string, log?: string) {
   if (userVersion(db) < 3) {
     if (!columns(db, "draws").includes("domains")) db.exec("ALTER TABLE draws ADD COLUMN domains TEXT");
     db.exec("PRAGMA user_version = 3");
+  }
+  if (userVersion(db) < 4) {
+    db.exec("DROP TABLE verdicts");
+    db.exec(schema);
+    replay(db, log);
+    if (!columns(db, "draws").includes("repaired_from")) db.exec("ALTER TABLE draws ADD COLUMN repaired_from TEXT REFERENCES draws(id)");
+    if (!columns(db, "draws").includes("draft_config")) db.exec("ALTER TABLE draws ADD COLUMN draft_config TEXT");
+    if (!columns(db, "steps").includes("tools")) db.exec("ALTER TABLE steps ADD COLUMN tools TEXT NOT NULL DEFAULT ''");
+    db.exec("PRAGMA user_version = 4");
   }
 }
 

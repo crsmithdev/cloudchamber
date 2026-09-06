@@ -182,3 +182,60 @@ describe("api", () => {
     expect(r.body.error).toMatch(/only 5 eligible passages/);
   });
 });
+
+describe("api: check, gate 1, draft, gate 2", () => {
+  test("check → findings → dismiss → draft → story → keep, through the routes", async () => {
+    const { draftScript } = await import("../pipeline/drafting.fixture.ts");
+    const dir = mkdtempSync(join(tmpdir(), "fogbelt-api-draft-"));
+    const db = openDb(join(dir, "t.db"));
+    db.exec(`INSERT INTO sources (id, path, reader, genre) VALUES ('scp', 'x', 'scp', 'horror')`);
+    db.exec(`INSERT INTO stories (id, source_id, ord, title, author, genre, words, text) VALUES ('scp/a', 'scp', 0, 'A', 'Ann', 'horror', 9000, 'x')`);
+    const ins = db.query("INSERT INTO passages (id, story_id, text, words, stratum, position, seed, first_seen, voice, mode) VALUES (?, ?, ?, 200, 0, 0, 0, 'now', ?, ?)");
+    CELLS.forEach(([v, m], i) => ins.run(`a${i}`, "scp/a", `passage a${i}`, v, m));
+    const model = new FakeModel(draftScript());
+    const pipeline = new Pipeline(db, model, { briefsDir: join(dir, "briefs"), rng: () => 0.001 });
+    const { Drafting } = await import("../pipeline/drafting.ts");
+    const app = buildApi(db, pipeline, { drafting: new Drafting(pipeline, { draftsDir: join(dir, "drafts") }) });
+    const j = async (method: "GET" | "POST", url: string, body?: unknown) => { const r = await app.inject({ method, url, payload: body as any }); return { code: r.statusCode, body: r.json() }; };
+    const wait = async (id: string, status: string) => { for (let i = 0; i < 200 && pipeline.draw(id).status !== status; i++) await Bun.sleep(10); expect(pipeline.draw(id).status).toBe(status); };
+    const draw = await pipeline.start({ mode: "auto", genre: "horror", seed: { mode: "typed", text: "seed" } });
+    expect((await j("POST", `/api/draws/${draw.id}/draft`, { auto: false })).code).toBe(202);   // allowed from done; runs in the background
+    await wait(draw.id, "awaiting_draft_gate");
+    // a second draw goes through the check first
+    const model2 = new FakeModel(draftScript());
+    const p2 = new Pipeline(db, model2, { briefsDir: join(dir, "briefs"), rng: () => 0.001 });
+    const app2 = buildApi(db, p2, { drafting: new Drafting(p2, { draftsDir: join(dir, "drafts") }) });
+    const j2 = async (method: "GET" | "POST", url: string, body?: unknown) => { const r = await app2.inject({ method, url, payload: body as any }); return { code: r.statusCode, body: r.json() }; };
+    const d2 = await p2.start({ mode: "auto", genre: "horror", seed: { mode: "typed", text: "seed two" } });
+    const c = await j2("POST", `/api/draws/${d2.id}/check`, {});
+    expect(c.code).toBe(202);
+    for (let i = 0; i < 200 && p2.draw(d2.id).status !== "awaiting_check_gate"; i++) await Bun.sleep(10);
+    const f = await j2("GET", `/api/draws/${d2.id}/findings`);
+    expect(f.code).toBe(200);
+    expect(f.body.findings).toHaveLength(2);
+    expect(f.body.judge).toBe("checked on fable; judge and generator share a family");
+    const dis = await j2("POST", `/api/draws/${d2.id}/gate`, { action: "dismiss", finding: f.body.findings[1].id, note: "fine" });
+    expect(dis.code).toBe(200);
+    expect(dis.body.decision).toBe("dismissed");
+    expect((await j2("POST", `/api/draws/${d2.id}/gate`, { action: "accept" })).code).toBe(400);
+    expect((await j2("POST", `/api/draws/${d2.id}/gate`, { action: "hold" })).body.status).toBe("awaiting_check_gate");
+    expect((await j2("POST", `/api/draws/${d2.id}/draft`, { overrides: { "scenes.order": "parallel" } })).code).toBe(202);
+    for (let i = 0; i < 200 && p2.draw(d2.id).status !== "awaiting_draft_gate"; i++) await Bun.sleep(10);
+    expect(p2.draw(d2.id).status).toBe("awaiting_draft_gate");
+    const story = await j2("GET", `/api/draws/${d2.id}/story`);
+    expect(story.code).toBe(200);
+    expect(story.body.text).toContain("Scene 1 opens.");
+    expect(story.body.scenes).toHaveLength(8);
+    expect(story.body.profiles.find((x: any) => x.beat === 5).flags).toEqual(["theme-stated"]);
+    const rw = await j2("POST", `/api/draws/${d2.id}/gate`, { action: "rewrite", beat: 3 });
+    expect(rw.code).toBe(202);
+    for (let i = 0; i < 200 && p2.draw(d2.id).status !== "awaiting_draft_gate"; i++) await Bun.sleep(10);
+    const kept = await j2("POST", `/api/draws/${d2.id}/gate`, { action: "keep", note: "ship it" });
+    expect(kept.code).toBe(200);
+    expect(kept.body.draw.status).toBe("drafted");
+    expect(kept.body.dir).toBe(join(dir, "drafts", d2.id));
+    expect((await j2("GET", `/api/draws/${d2.id}`)).body.draw.status).toBe("drafted");
+    expect((await j2("POST", `/api/draws/${d2.id}/draft`, {})).code).toBe(400);
+    expect((await j2("POST", `/api/draws/${d2.id}/gate`, { action: "sing" })).code).toBe(400);
+  });
+});

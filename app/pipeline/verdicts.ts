@@ -15,7 +15,7 @@ import { VERDICT_LOG, now } from "./paths.ts";
 import type { Db } from "./store/db.ts";
 import { pipelineVersion } from "./version.ts";
 
-export type Kind = "example" | "theme" | "brief" | "story";
+export type Kind = "example" | "theme" | "brief" | "story" | "finding" | "draft";
 export type Method = "queue" | "browse" | "gate" | "cli" | "draw";
 
 export type Verdict = {
@@ -36,7 +36,7 @@ export type Verdict = {
 export type VerdictInput = Pick<Verdict, "kind" | "target_id" | "verdict" | "method"> &
   Partial<Pick<Verdict, "artifact" | "note" | "by" | "inherited_from" | "snapshot">>;
 
-export const KINDS = new Set<Kind>(["example", "theme", "brief", "story"]);
+export const KINDS = new Set<Kind>(["example", "theme", "brief", "story", "finding", "draft"]);
 export const METHODS = new Set<Method>(["queue", "browse", "gate", "cli", "draw"]);
 
 export function validateLine(raw: string, lineNo: number): Verdict {

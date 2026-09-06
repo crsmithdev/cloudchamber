@@ -6,4 +6,5 @@ import { tmpdir } from "node:os";
 const dir = mkdtempSync(join(tmpdir(), "fogbelt-test-"));
 process.env.FOGBELT_BANK = join(dir, "bank");
 process.env.FOGBELT_BRIEFS = join(dir, "briefs");
+process.env.FOGBELT_DRAFTS = join(dir, "drafts");
 process.env.FOGBELT_DB = join(dir, "test.db");

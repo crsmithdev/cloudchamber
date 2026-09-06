@@ -17,6 +17,11 @@
  *   fogbelt draws                           list draws
  *   fogbelt draw-show <draw>                 steps and artifacts of one draw
  *   fogbelt brief <draw>                   print the brief
+ *   fogbelt check <draw> [--checks a,b] [--samples N]   run the checkers over a brief; stops at gate 1
+ *   fogbelt findings <draw> [--examined]   the reported findings of the latest check, ordered
+ *   fogbelt gate <draw> accept <finding>... | dismiss <finding> | hold | pass | keep | rewrite <k> [--finding ID]  [--note "..."]
+ *   fogbelt draft <draw> [--auto] [--profile P] [--words N] [--beats N] [--tense T] [--person P] [--chronology C] [--container C] [--order O]
+ *   fogbelt story <draw>                   the draft with its screen flags inline
  *   fogbelt serve [--port N]               API and UI on 127.0.0.1 (default 3002)
  */
 import { parseArgs } from "node:util";
@@ -33,6 +38,8 @@ import { BRIEFS, now } from "../pipeline/paths.ts";
 import { draftAll, histogram, replayThemes } from "../pipeline/themes.ts";
 import { formatFinding, lintFile, loadSetting } from "../pipeline/settings.ts";
 import { distill } from "../pipeline/distill.ts";
+import { Drafting } from "../pipeline/drafting.ts";
+import type { Overrides } from "../pipeline/draftconfig.ts";
 
 const [cmd, ...rest] = process.argv.slice(2);
 
@@ -44,6 +51,21 @@ function usage(code = 1): never {
 async function main() {
   const db = openDb();
   const pipeline = () => new Pipeline(db, new ClaudeCli());
+  const drafting = () => new Drafting(pipeline());
+  const printFindings = (drawId: string, examined = false) => {
+    const f = drafting().findings(drawId);
+    if (!f.pass) { console.log("no check has run"); return; }
+    console.log(`check pass ${f.pass} · ${f.findings.length} reported`);
+    for (const x of f.findings) {
+      console.log(`\n${x.id}  ${x.checkers.join("+")} ×${x.n}  [${x.invalidates}]  ${x.decision}${x.note ? `: ${x.note}` : ""}`);
+      console.log(`  span: ${x.span}`); console.log(`  ${x.statement}`); console.log(`  result: ${x.result} · evidence: ${x.evidence}`); console.log(`  replacement: ${x.replacement}`);
+    }
+    const claims = f.claims as any[];
+    console.log(`\nclaims: ${claims.length ? claims.map((c) => `${c.result} · ${c.statement}`).join("\n        ") : "off (no authority declared)"}`);
+    for (const pr of f.profiles as any[]) console.log(`\n${pr.checker}: ${pr.checker === "structure" ? Object.entries(pr.answers).map(([q, a]: any) => `${q}=${a.answer}`).join(" ") : `${pr.matches?.length ?? 0} matches · nearest ${pr.nearest?.title ?? "?"} (${pr.nearest?.author ?? "?"})`}`);
+    if (examined) for (const e of f.examined) console.log(`\n== ${e.stage} · sample ${e.sample}\n${e.examined}`);
+    if (f.judge) console.log(`\n${f.judge}`);
+  };
   switch (cmd) {
     case "extract": {
       const { values } = parseArgs({ args: rest, options: { only: { type: "string", multiple: true } }, allowPositionals: true });
@@ -96,15 +118,59 @@ async function main() {
       break;
     }
     case "gate": {
-      const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, options: { note: { type: "string", default: "" } } });
-      const [drawId, action, stepId] = positionals;
-      const p = pipeline();
+      const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, options: { note: { type: "string", default: "" }, finding: { type: "string" } } });
+      const [drawId, action, ...args] = positionals;
+      const p = pipeline(), d = drafting();
       if (!drawId || !action) usage();
-      const out = action === "choose" ? await p.choose(drawId!, stepId!)
+      const out = action === "choose" ? await p.choose(drawId!, args[0]!)
         : action === "redraw" ? await p.reject(drawId!, "redraw", values.note)
         : action === "keep-seed" ? await p.reject(drawId!, "keep-seed", values.note)
-        : action === "flag" ? p.flag(drawId!, values.note) : usage();
+        : action === "flag" ? p.flag(drawId!, values.note)
+        : action === "accept" ? (args.length ? await d.accept(drawId!, args, { note: values.note }) : usage())
+        : action === "dismiss" ? (args[0] ? d.dismiss(drawId!, args[0], values.note) : usage())
+        : action === "hold" ? d.hold(drawId!)
+        : action === "pass" ? (p.draw(drawId!).status === "awaiting_draft_gate" ? d.passDraft(drawId!, values.note) : d.passBrief(drawId!, values.note))
+        : action === "keep" ? d.keep(drawId!, values.note)
+        : action === "rewrite" ? (args[0] ? await d.rewrite(drawId!, Number(args[0]), values.finding) : usage())
+        : usage();
       console.log(JSON.stringify(out, null, 2));
+      if (action === "accept") { console.log(`\nrepaired brief ${(out as any).id}; re-check findings:`); printFindings((out as any).id); }
+      break;
+    }
+    case "check": {
+      const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, options: { checks: { type: "string" }, samples: { type: "string" } } });
+      const [drawId] = positionals;
+      if (!drawId) usage();
+      const r = await drafting().check(drawId!, { checks: values.checks?.split(",").map((x) => x.trim()).filter(Boolean), samples: values.samples ? Number(values.samples) : undefined });
+      printFindings(drawId!);
+      console.log(`\nfogbelt gate ${drawId} accept <finding>... | dismiss <finding> --note "..." | hold | pass | flag  ·  fogbelt draft ${drawId}  (${r.findings.length} reported)`);
+      break;
+    }
+    case "findings": {
+      const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, options: { examined: { type: "boolean", default: false } } });
+      if (!positionals[0]) usage();
+      printFindings(positionals[0], values.examined);
+      break;
+    }
+    case "draft": {
+      const { values, positionals } = parseArgs({
+        args: rest, allowPositionals: true,
+        options: { auto: { type: "boolean", default: false }, profile: { type: "string" }, words: { type: "string" }, beats: { type: "string" }, tense: { type: "string" }, person: { type: "string" }, chronology: { type: "string" }, container: { type: "string" }, order: { type: "string" } },
+      });
+      const [drawId] = positionals;
+      if (!drawId) usage();
+      const map: Record<string, string> = { words: "length.words", beats: "beats.count", tense: "form.tense", person: "form.person", chronology: "form.chronology", container: "form.container", order: "scenes.order" };
+      const overrides: Overrides = {};
+      for (const [flag, key] of Object.entries(map)) if ((values as any)[flag] !== undefined) overrides[key] = (values as any)[flag];
+      const draw = await drafting().draft(drawId!, { auto: values.auto, profile: values.profile, overrides: Object.keys(overrides).length ? overrides : undefined });
+      console.log(JSON.stringify(draw, null, 2));
+      console.log(`\nfogbelt story ${draw.id}  ·  fogbelt gate ${draw.id} keep | rewrite <k> [--finding ID] | pass`);
+      break;
+    }
+    case "story": {
+      const [drawId] = rest;
+      if (!drawId) usage();
+      console.log(drafting().story(drawId!));
       break;
     }
     case "themes": {
@@ -143,7 +209,7 @@ async function main() {
       return;
     }
     case "draws":
-      for (const r of pipeline().draws()) console.log(`${r.id}  ${r.status.padEnd(13)} ${r.mode.padEnd(6)} ${r.setting ?? "-"}  ${r.seed_text.slice(0, 70)}`);
+      for (const r of pipeline().draws()) console.log(`${r.id}  ${r.status.padEnd(19)} ${r.mode.padEnd(6)} ${r.setting ?? "-"}  ${r.repaired_from ? `(repairs ${r.repaired_from}) ` : ""}${r.seed_text.slice(0, 70)}`);
       break;
     case "draw-show": {
       const p = pipeline(); const [drawId] = rest;
@@ -154,7 +220,7 @@ async function main() {
     case "brief": {
       const [drawId] = rest; const dir = join(BRIEFS, drawId ?? "");
       if (!drawId || !existsSync(dir)) usage();
-      for (const f of ["trail.md", "vignette.md", "outline.md", "context-1.md", "context-2.md", "ending.md"]) if (existsSync(join(dir, f))) console.log(`\n\n# ${f}\n\n${readFileSync(join(dir, f), "utf8")}`);
+      for (const f of ["trail.md", "vignette.md", "outline.md", "context-1.md", "context-2.md", "ending.md", "ending.previous.md"]) if (existsSync(join(dir, f))) console.log(`\n\n# ${f}\n\n${readFileSync(join(dir, f), "utf8")}`);
       break;
     }
     default:

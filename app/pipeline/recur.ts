@@ -1,0 +1,118 @@
+/**
+ * Recurrence instead of confidence. A checker runs S times with sampling on;
+ * its findings are clustered by span overlap and a cluster is reported when
+ * it recurs in at least keep_if distinct samples. The same rule merges
+ * clusters across checkers and excludes findings Chris has dismissed.
+ *
+ * Tokens are the lowercase [a-z0-9]+ runs of a string; overlap is
+ * |A ∩ B| / min(|A|, |B|) over the token sets. A finding joins the first
+ * cluster whose first member's span overlaps its span at 0.5, or whose
+ * statement overlaps at 0.6.
+ */
+import { createHash } from "node:crypto";
+import { tag, tags } from "./model.ts";
+
+export const SPAN_OVERLAP = 0.5;
+export const STATEMENT_OVERLAP = 0.6;
+export const INVALIDATES_ORDER = ["debt audit", "arithmetic", "custody"];
+
+export type Finding = {
+  checker: string;
+  sample: number;
+  span: string;
+  statement: string;
+  result: string;
+  evidence: string;
+  invalidates: string;
+  replacement: string;
+};
+
+export type Cluster = {
+  id: string;
+  checkers: string[];
+  samples: number[];
+  n: number;
+  span: string;
+  statement: string;
+  result: string;
+  evidence: string;
+  invalidates: string;
+  replacement: string;
+  reported: boolean;
+};
+
+export function toks(s: string): Set<string> { return new Set(s.toLowerCase().match(/[a-z0-9]+/g) ?? []); }
+
+export function overlap(a: string, b: string): number {
+  const A = toks(a), B = toks(b);
+  let shared = 0;
+  for (const t of A) if (B.has(t)) shared++;
+  return shared / Math.max(1, Math.min(A.size, B.size));
+}
+
+export function same(a: { span: string; statement: string }, b: { span: string; statement: string }): boolean {
+  return overlap(a.span, b.span) >= SPAN_OVERLAP || overlap(a.statement, b.statement) >= STATEMENT_OVERLAP;
+}
+
+export const normalise = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+
+/** Stable across re-checks: the same checker quoting the same span gets the same id. */
+export function findingId(checker: string, span: string): string {
+  return "f-" + createHash("sha1").update(`${checker}|${normalise(span)}`).digest("hex").slice(0, 8);
+}
+
+/** Parse every <finding> in a checker's response. Missing fields are empty strings; a finding with no span is dropped. */
+export function parseFindings(text: string, checker: string, sample: number): Finding[] {
+  return tags(text, "finding").map((f) => ({
+    checker, sample,
+    span: tag(f, "span") ?? "", statement: tag(f, "statement") ?? "", result: tag(f, "result") ?? "",
+    evidence: tag(f, "evidence") ?? "none", invalidates: (tag(f, "invalidates") ?? "none").toLowerCase(), replacement: tag(f, "replacement") ?? "",
+  })).filter((f) => f.span);
+}
+
+export function invalidatesRank(inv: string, settingJobs: string[] = []): number {
+  const order = [...INVALIDATES_ORDER, ...settingJobs.map((j) => j.toLowerCase())];
+  const i = order.indexOf(inv.toLowerCase());
+  return i >= 0 ? i : inv === "none" || !inv ? order.length + 1 : order.length;
+}
+
+/** Cluster one checker's findings across its samples. Sorted by n descending, then by what the finding invalidates. */
+export function cluster(findings: Finding[], keepIf: number, settingJobs: string[] = []): Cluster[] {
+  const groups: Finding[][] = [];
+  for (const f of findings) {
+    const g = groups.find((c) => same(c[0], f));
+    if (g) g.push(f); else groups.push([f]);
+  }
+  const out = groups.map((g) => {
+    const samples = [...new Set(g.map((f) => f.sample))].sort((a, b) => a - b);
+    const first = g[0];
+    return {
+      id: findingId(first.checker, first.span), checkers: [first.checker], samples, n: samples.length,
+      span: first.span, statement: first.statement, result: first.result, evidence: first.evidence, invalidates: first.invalidates, replacement: first.replacement,
+      reported: samples.length >= keepIf,
+    };
+  });
+  return order(out, settingJobs);
+}
+
+export function order(cs: Cluster[], settingJobs: string[] = []): Cluster[] {
+  return [...cs].sort((a, b) => b.n - a.n || invalidatesRank(a.invalidates, settingJobs) - invalidatesRank(b.invalidates, settingJobs));
+}
+
+/** Merge reported clusters from several checkers: the first kept, both checkers listed, n the greater. */
+export function merge(all: Cluster[], settingJobs: string[] = []): Cluster[] {
+  const out: Cluster[] = [];
+  for (const c of order(all, settingJobs)) {
+    const hit = out.find((o) => same(o, c));
+    if (!hit) { out.push({ ...c, checkers: [...c.checkers] }); continue; }
+    for (const k of c.checkers) if (!hit.checkers.includes(k)) hit.checkers.push(k);
+    hit.n = Math.max(hit.n, c.n);
+    if (hit.evidence === "none" && c.evidence !== "none") hit.evidence = c.evidence;
+  }
+  return order(out, settingJobs);
+}
+
+/** Drop clusters that overlap a dismissed finding by the same rule. */
+export function excludeDismissed<T extends { span: string; statement: string }>(cs: T[], dismissed: { span: string; statement: string }[]): T[] {
+  return cs.filter((c) => !dismissed.some((d) => same(c, d)));
+}

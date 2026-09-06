@@ -1,9 +1,17 @@
 import stagesToml from "./stages.toml";
 
-export type StageName = "themes" | "redundancy" | "distill" | "premises" | "execute" | "outline" | "jobs" | "context" | "ending";
-export type StageConfig = { model: string; fallback: string; system: string };
+export type GenStageName = "themes" | "redundancy" | "distill" | "premises" | "execute" | "outline" | "jobs" | "context" | "ending";
+export type CheckStageName = "check-derivation" | "check-ledger" | "check-structure" | "check-resemblance" | "check-claims-extract" | "check-claims-verify";
+export type DraftStageName = "repair-vignette" | "repair-outline" | "repair-ending" | "schedule" | "scene" | "screen-ledger" | "screen-structure";
+export type StageName = GenStageName | CheckStageName | DraftStageName;
+/** `tools` is the comma-separated list a call may use; absent or empty means `--tools ""`. */
+export type StageConfig = { model: string; fallback: string; system: string; tools?: string };
 
-export const STAGES: StageName[] = ["themes", "redundancy", "distill", "premises", "execute", "outline", "jobs", "context", "ending"];
+export const STAGES: StageName[] = [
+  "themes", "redundancy", "distill", "premises", "execute", "outline", "jobs", "context", "ending",
+  "check-derivation", "check-ledger", "check-structure", "check-resemblance", "check-claims-extract", "check-claims-verify",
+  "repair-vignette", "repair-outline", "repair-ending", "schedule", "scene", "screen-ledger", "screen-structure",
+];
 
 /** Draw parameters decided in the spec. */
 export const RUN = {
@@ -17,6 +25,8 @@ export const RUN = {
   endingWords: 600,
   coreJobs: ["debt audit", "arithmetic", "custody"] as const,
   distillWords: 60000,  // a domain whose reference files exceed this is refused, not chunked
+  sceneCapSlack: 0.10,  // a scene over its cap by more than this carries the over_cap warning
+  spanWords: 30,        // a finding's quoted span is under this
 };
 
 export function loadStages(): Record<StageName, StageConfig> {
@@ -27,7 +37,7 @@ export function loadStages(): Record<StageName, StageConfig> {
     if (!c || !c.model || !c.fallback || !c.system) {
       throw new Error(`stages.toml: stage ${s} must name model, fallback and system`);
     }
-    out[s] = { model: c.model, fallback: c.fallback, system: c.system };
+    out[s] = { model: c.model, fallback: c.fallback, system: c.system, ...(c.tools ? { tools: c.tools } : {}) };
   }
   return out;
 }

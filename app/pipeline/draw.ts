@@ -35,12 +35,12 @@ export type DrawRow = {
   id: string; setting: string | null; genre: string; mode: "auto" | "manual"; segment: string | null;
   seed_mode: string; seed_text: string; seed_theme_id: string | null; example_ids: string; domains: string | null; status: string;
   gate_method: string | null; chosen_step: string | null; flagged: number; flag_note: string;
-  superseded_by: string | null; created_at: string; ended_at: string | null;
+  superseded_by: string | null; repaired_from: string | null; draft_config: string | null; created_at: string; ended_at: string | null;
 };
 export type StepRow = {
   id: string; draw_id: string | null; parent_id: string | null; stage: string; model: string; system_prompt: string;
   prompt: string; raw_response: string | null; parsed: string | null; status: string; fail_reason: string | null;
-  attempt: number; started_at: string; ended_at: string | null; error: string | null;
+  attempt: number; tools: string; started_at: string; ended_at: string | null; error: string | null;
 };
 
 export class StepFailure extends Error {
@@ -63,11 +63,12 @@ export class Pipeline {
   }
 
   /** The setting's text for one stage, or undefined when unrestricted. */
-  private settingFor(stage: GenStage, setting?: Setting, domains: Domain[] = []): { slice: string; hardRules: string } | undefined {
+  settingFor(stage: GenStage, setting?: Setting, domains: Domain[] = []): { slice: string; hardRules: string } | undefined {
     return setting ? { slice: slice(setting, domains, stage), hardRules: hardRules(setting) } : undefined;
   }
 
-  private loadDrawSetting(draw: { setting: string | null; domains: string | null }): { setting?: Setting; domains: Domain[] } {
+  /** The draw's setting and pinned domains, linted; unrestricted draws get no setting and no domains. */
+  loadDrawSetting(draw: { setting: string | null; domains: string | null }): { setting?: Setting; domains: Domain[] } {
     if (!draw.setting) return { domains: [] };
     const setting = loadChecked(draw.setting, this.settingsDir);
     return { setting, domains: pickDomains(setting, this.rng, JSON.parse(draw.domains ?? "[]")) };
@@ -76,14 +77,24 @@ export class Pipeline {
 
   // --- steps -----------------------------------------------------------------
 
-  private insertStep(draw: string | null, parent: string | null, stage: StageName, model: string, system: string, prompt: string, attempt: number, storyId: string | null = null): StepRow {
+  private insertStep(draw: string | null, parent: string | null, stage: string, model: string, system: string, prompt: string, attempt: number, storyId: string | null = null, tools = ""): StepRow {
     const row: StepRow = {
       id: `${stage}-${id(4)}`, draw_id: draw, parent_id: parent, stage, model, system_prompt: system, prompt,
-      raw_response: null, parsed: null, status: "running", fail_reason: null, attempt, started_at: now(), ended_at: null, error: null,
+      raw_response: null, parsed: null, status: "running", fail_reason: null, attempt, tools, started_at: now(), ended_at: null, error: null,
     };
-    this.db.query(`INSERT INTO steps (id, draw_id, story_id, parent_id, stage, model, system_prompt, prompt, status, attempt, started_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'running', ?, ?)`)
-      .run(row.id, draw, storyId, parent, stage, model, system, prompt, attempt, row.started_at);
+    this.db.query(`INSERT INTO steps (id, draw_id, story_id, parent_id, stage, model, system_prompt, prompt, status, attempt, tools, started_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'running', ?, ?, ?)`)
+      .run(row.id, draw, storyId, parent, stage, model, system, prompt, attempt, tools, row.started_at);
+    return row;
+  }
+
+  /**
+   * A step that made no model call: a brief piece carried over by a repair, or
+   * a deterministic screen. `model` names what stood in for the call.
+   */
+  recordStep(draw: string, parent: string | null, stage: StageName | "screen-slop", model: "copied" | "deterministic", parsed: unknown = null): StepRow {
+    const row = this.insertStep(draw, parent, stage, model, "", "", 1);
+    this.finishStep(row, { status: "done", parsed: parsed === null ? null : JSON.stringify(parsed) });
     return row;
   }
 
@@ -93,12 +104,17 @@ export class Pipeline {
       .run(step.raw_response, step.parsed, step.status, step.fail_reason, step.error, step.model, step.ended_at, step.id);
   }
 
-  /** One stage call with the spec's retry table. Returns the successful step and its parsed value. */
-  async invoke<T>(draw: string | null, parent: string | null, stage: StageName, prompt: string, parse: (text: string) => T, storyId: string | null = null): Promise<{ step: StepRow; value: T }> {
+  /**
+   * One stage call with the spec's retry table. Returns the successful step and
+   * its parsed value. `tools` overrides the stage's declared tool list; the
+   * claims verifier passes "" under `claims: reference`.
+   */
+  async invoke<T>(draw: string | null, parent: string | null, stage: StageName, prompt: string, parse: (text: string) => T, storyId: string | null = null, tools?: string): Promise<{ step: StepRow; value: T }> {
     const cfg = this.stages[stage];
+    const allowed = tools ?? cfg.tools ?? "";
     const attempt = async (model: string, n: number): Promise<{ step: StepRow; value?: T; outcome: "ok" | "shape" | "refusal" | "error" }> => {
-      const step = this.insertStep(draw, parent, stage, model, cfg.system, prompt, n, storyId);
-      const r = await this.model.call(stage, cfg.system, prompt, model);
+      const step = this.insertStep(draw, parent, stage, model, cfg.system, prompt, n, storyId, allowed);
+      const r = await this.model.call(stage, cfg.system, prompt, model, allowed);
       step.raw_response = r.raw;
       step.model = r.model || model;
       if (r.stop === "refusal") { this.finishStep(step, { status: "failed", fail_reason: "refusal", error: r.text.slice(0, 500) }); return { step, outcome: "refusal" }; }
@@ -119,7 +135,7 @@ export class Pipeline {
     throw new StepFailure(r.outcome, `${stage} failed: ${r.outcome}${r.step.error ? ` (${r.step.error.slice(0, 200)})` : ""}`, r.step);
   }
 
-  private artifact(step: StepRow, kind: string, content: string, meta: Record<string, unknown> = {}): string {
+  artifact(step: StepRow, kind: string, content: string, meta: Record<string, unknown> = {}): string {
     const aid = `${kind}-${id(4)}`;
     this.db.query("INSERT INTO artifacts (id, step_id, kind, content, meta) VALUES (?, ?, ?, ?, ?)").run(aid, step.id, kind, content, JSON.stringify(meta));
     return aid;
@@ -334,7 +350,7 @@ export class Pipeline {
     this.artifact(outlineStep, "brief", dir, {});
   }
 
-  private fail(drawId: string, e: unknown) {
+  fail(drawId: string, e: unknown) {
     this.db.query("UPDATE draws SET status = 'failed', flag_note = coalesce(nullif(flag_note, ''), ?), ended_at = ? WHERE id = ?")
       .run(String((e as any)?.message ?? e).slice(0, 500), now(), drawId);
   }

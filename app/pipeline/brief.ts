@@ -18,9 +18,12 @@ export function writeBrief(db: Db, drawId: string, stages: Record<StageName, Sta
   mkdirSync(dir, { recursive: true });
   const w = (name: string, body: string) => writeFileSync(join(dir, name), body.trimEnd() + "\n");
   w("vignette.md", chosen?.content ?? "");
-  w("outline.md", byKind("outline")[0]?.content ?? "");
+  const outline = byKind("outline").at(-1);
+  w("outline.md", outline?.content ?? "");
   byKind("vignette", "context").forEach((a, i) => w(`context-${i + 1}.md`, `*Job: ${JSON.parse(a.meta).job}*\n\n${a.content}`));
-  w("ending.md", byKind("ending")[0]?.content ?? "");
+  const ending = byKind("ending").at(-1);
+  w("ending.md", ending?.content ?? "");
+  if (ending && JSON.parse(ending.meta).previous) w("ending.previous.md", JSON.parse(ending.meta).previous);
 
   const examples = (JSON.parse(draw.example_ids) as string[]).map((pid) => {
     const p = db.query("SELECT p.id, p.voice, p.mode, p.words, s.title, s.author, s.source_id FROM passages p JOIN stories s ON s.id = p.story_id WHERE p.id = ?").get(pid) as any;
@@ -31,8 +34,12 @@ export function writeBrief(db: Db, drawId: string, stages: Record<StageName, Sta
   for (const s of steps) if (s.status === "done") modelByStage.set(s.stage, s.model);
   const refusals = steps.filter((s) => s.fail_reason === "refusal").map((s) => `${s.stage} on ${s.model}`);
   const domains = domainLines(draw.setting, draw.domains, settingsDir);
+  const repaired: string[] = draw.repaired_from
+    ? ["## repaired_from", "", draw.repaired_from, "", ...((JSON.parse(outline?.meta ?? "{}").constraints as string[] | undefined) ?? []).map((c) => `- ${c}`), ""]
+    : [];
   const trail = [
-    `# Trail — ${drawId}`, "",
+    `# Trail${draw.repaired_from ? " (repaired)" : ""} — ${drawId}`, "",
+    ...repaired,
     `setting: ${draw.setting ?? "none (unrestricted)"} · genre: ${draw.genre} · mode: ${draw.mode} · segment: ${draw.segment ?? "all"}`, "",
     `## seed (${draw.seed_mode}${draw.seed_theme_id ? `, theme ${draw.seed_theme_id}` : ""})`, "", draw.seed_text, "",
     ...(domains ? ["## domains", "", ...domains, ""] : []),

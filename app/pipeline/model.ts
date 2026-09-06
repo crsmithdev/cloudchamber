@@ -3,8 +3,10 @@
  *
  * Every call is a headless `claude -p` subprocess with CLAUDECODE unset and
  * `--output-format json --no-session-persistence --tools "" --setting-sources ""
- * --system-prompt <stage line> --model <explicit>`. Never `--bare`: it skips the
- * stored subscription login.
+ * --system-prompt <stage line> --model <explicit>`. A stage that declares tools
+ * gets `--tools X --allowedTools X` instead of the empty list; both are needed
+ * for a headless call to reach a tool. Never `--bare`: it skips the stored
+ * subscription login.
  */
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -21,19 +23,21 @@ export type ModelResult = {
 };
 
 export interface ModelAdapter {
-  call(stage: string, system: string, prompt: string, model: string): Promise<ModelResult>;
+  /** `tools` is a comma-separated list passed as both --tools and --allowedTools; empty or absent seals the call. */
+  call(stage: string, system: string, prompt: string, model: string, tools?: string): Promise<ModelResult>;
 }
 
 export class ClaudeCli implements ModelAdapter {
   constructor(private timeoutMs = 15 * 60 * 1000) {}
 
-  async call(stage: string, system: string, prompt: string, model: string): Promise<ModelResult> {
+  async call(stage: string, system: string, prompt: string, model: string, tools = ""): Promise<ModelResult> {
     const dir = mkdtempSync(join(tmpdir(), "fogbelt-call-"));
     const promptPath = join(dir, `${stage}.prompt`);
     writeFileSync(promptPath, prompt);
     const env = { ...process.env } as Record<string, string | undefined>;
     delete env.CLAUDECODE;
-    const args = ["claude", "-p", "--output-format", "json", "--no-session-persistence", "--tools", "",
+    const args = ["claude", "-p", "--output-format", "json", "--no-session-persistence", "--tools", tools,
+      ...(tools ? ["--allowedTools", tools] : []),
       "--setting-sources", "", "--system-prompt", system, "--model", model];
     const t0 = Date.now();
     const proc = Bun.spawn(args, { env: env as any, stdin: Bun.file(promptPath), stdout: "pipe", stderr: "pipe" });
@@ -54,11 +58,11 @@ export class ClaudeCli implements ModelAdapter {
 
 /** Canned responses for tests: a queue per stage, or a function. */
 export class FakeModel implements ModelAdapter {
-  calls: { stage: string; system: string; prompt: string; model: string }[] = [];
+  calls: { stage: string; system: string; prompt: string; model: string; tools: string }[] = [];
   constructor(private script: Record<string, (string | Partial<ModelResult>)[] | ((prompt: string, model: string) => string | Partial<ModelResult>)>) {}
 
-  async call(stage: string, system: string, prompt: string, model: string): Promise<ModelResult> {
-    this.calls.push({ stage, system, prompt, model });
+  async call(stage: string, system: string, prompt: string, model: string, tools = ""): Promise<ModelResult> {
+    this.calls.push({ stage, system, prompt, model, tools });
     const s = this.script[stage];
     if (!s) throw new Error(`FakeModel: no script for stage ${stage}`);
     const next = typeof s === "function" ? s(prompt, model) : s.shift();

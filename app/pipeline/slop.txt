@@ -1,0 +1,71 @@
+# Slop lexicon: one lowercase word or phrase per line. Counted by the slop
+# screen against the passage pool; proper nouns are excluded by the screen.
+# Seeded from the Antislop over-representation lists (research/drafting.md
+# §1.6). Chris's file: add and remove lines freely.
+tapestry
+testament
+delve
+palpable
+unwavering
+whisper
+whispered
+whispers
+echo
+echoed
+echoes
+shiver
+shivered
+shivers
+flicker
+flickered
+flickering
+hum
+hummed
+humming
+thrum
+thrummed
+sentinel
+labyrinth
+labyrinthine
+symphony
+cacophony
+juxtaposition
+ministrations
+gossamer
+ethereal
+visceral
+guttural
+metallic tang
+copper tang
+a testament to
+in the heart of
+the weight of
+something shifted
+a beat
+a moment
+a heartbeat
+for a moment
+in that moment
+somewhere
+maybe
+perhaps
+the silence stretched
+the air was thick
+thick with
+ozone
+crackled
+bone-deep
+the realization
+realization hit
+knuckles white
+white-knuckled
+jaw tightened
+breath hitched
+breath caught
+let out a breath
+didn't realize
+hadn't realized
+unspoken
+unreadable
+inexplicably
+undeniable

@@ -14,6 +14,8 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { BRIEFS } from "../pipeline/paths.ts";
 import { loadSetting } from "../pipeline/settings.ts";
+import { Drafting } from "../pipeline/drafting.ts";
+import type { Overrides } from "../pipeline/draftconfig.ts";
 
 export type ItemOrder = "source" | "suspects" | "shuffle";
 export type ItemFilter = { kind: Kind; source?: string; author?: string; genre?: string; cell?: string; verdict?: "unreviewed" | "keep" | "pass"; artifact?: boolean; suspect?: boolean; order?: ItemOrder; seed?: number; limit?: number; offset?: number };
@@ -92,9 +94,10 @@ export function drawExamples(db: Db, exampleIds: string) {
   });
 }
 
-export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean } = {}): FastifyInstance {
+export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; drafting?: Drafting } = {}): FastifyInstance {
   const app = Fastify({ logger: opts.logger ?? false });
   const running = new Map<string, Promise<unknown>>();
+  const drafting = opts.drafting ?? new Drafting(pipeline);
 
   app.get("/api/status", async () => status(db));
 
@@ -161,11 +164,28 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean } 
     } catch (e: any) { return reply.code(404).send({ error: e.message }); }
   });
 
-  app.post<{ Params: { id: string }; Body: { action: "choose" | "redraw" | "keep-seed" | "flag"; step_id?: string; note?: string } }>("/api/draws/:id/gate", async (req, reply) => {
-    const { action, step_id, note = "" } = req.body ?? ({} as any);
+  app.post<{ Params: { id: string }; Body: { action: string; step_id?: string; note?: string; findings?: string[]; finding?: string; beat?: number } }>("/api/draws/:id/gate", async (req, reply) => {
+    const { action, step_id, note = "", findings, finding, beat } = req.body ?? ({} as any);
     const id = req.params.id;
     try {
       if (action === "flag") return pipeline.flag(id, note);
+      // gate 1 and gate 2 (docs/specs/2026-09-05-drafting-pipeline.md); the long ones continue after the reply
+      if (action === "accept") {
+        if (!findings?.length) return reply.code(400).send({ error: "findings required" });
+        const p = drafting.accept(id, findings, { note });
+        running.set(id, p.catch(() => undefined));
+        return reply.code(202).send({ id, status: "repairing" });
+      }
+      if (action === "dismiss") { if (!finding) return reply.code(400).send({ error: "finding required" }); return drafting.dismiss(id, finding, note); }
+      if (action === "hold") return drafting.hold(id);
+      if (action === "pass") return pipeline.draw(id).status === "awaiting_draft_gate" ? drafting.passDraft(id, note) : drafting.passBrief(id, note);
+      if (action === "keep") return drafting.keep(id, note);
+      if (action === "rewrite") {
+        if (!beat) return reply.code(400).send({ error: "beat required" });
+        const p = drafting.rewrite(id, Number(beat), finding);
+        running.set(id, p.catch(() => undefined));
+        return reply.code(202).send({ id, status: "drafting" });
+      }
       if (action === "choose") {
         if (!step_id) return reply.code(400).send({ error: "step_id required" });
         const draw = pipeline.draw(id);
@@ -176,8 +196,37 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean } 
         return reply.code(202).send({ id, status: "running" });
       }
       if (action === "redraw" || action === "keep-seed") { const next = await pipeline.reject(id, action, note); return reply.code(202).send({ id: next.id, superseded: id }); }
-      return reply.code(400).send({ error: "action must be choose | redraw | keep-seed | flag" });
+      return reply.code(400).send({ error: "action must be choose | redraw | keep-seed | flag | accept | dismiss | hold | pass | keep | rewrite" });
     } catch (e: any) { return reply.code(400).send({ error: e.message }); }
+  });
+
+  app.post<{ Params: { id: string }; Body: { checks?: string[]; samples?: number } }>("/api/draws/:id/check", async (req, reply) => {
+    const id = req.params.id;
+    try {
+      pipeline.draw(id);
+      const p = drafting.check(id, { checks: req.body?.checks, samples: req.body?.samples });
+      running.set(id, p.catch(() => undefined));
+      return reply.code(202).send({ id, status: "checking" });
+    } catch (e: any) { return reply.code(400).send({ error: e.message }); }
+  });
+
+  app.post<{ Params: { id: string }; Body: { auto?: boolean; profile?: string; overrides?: Overrides } }>("/api/draws/:id/draft", async (req, reply) => {
+    const id = req.params.id;
+    try {
+      const d = pipeline.draw(id);
+      if (!["done", "awaiting_check_gate"].includes(d.status)) return reply.code(400).send({ error: `draw ${id} is ${d.status}, not done | awaiting_check_gate` });
+      const p = drafting.draft(id, { auto: !!req.body?.auto, profile: req.body?.profile, overrides: req.body?.overrides });
+      running.set(id, p.catch(() => undefined));
+      return reply.code(202).send({ id, status: "drafting" });
+    } catch (e: any) { return reply.code(400).send({ error: e.message }); }
+  });
+
+  app.get<{ Params: { id: string } }>("/api/draws/:id/findings", async (req, reply) => {
+    try { return drafting.findings(req.params.id); } catch (e: any) { return reply.code(404).send({ error: e.message }); }
+  });
+
+  app.get<{ Params: { id: string } }>("/api/draws/:id/story", async (req, reply) => {
+    try { return { ...drafting.view(req.params.id), text: drafting.story(req.params.id) }; } catch (e: any) { return reply.code(404).send({ error: e.message }); }
   });
 
   app.get<{ Params: { id: string } }>("/api/briefs/:id", async (req, reply) => {

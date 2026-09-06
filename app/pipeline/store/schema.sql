@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS theme_rejections (
 
 CREATE TABLE IF NOT EXISTS verdicts (                -- replay of bank/verdicts.jsonl
   id               TEXT PRIMARY KEY,
-  kind             TEXT NOT NULL CHECK (kind IN ('example','theme','brief','story')),
+  kind             TEXT NOT NULL CHECK (kind IN ('example','theme','brief','story','finding','draft')),
   target_id        TEXT NOT NULL,
   verdict          TEXT NOT NULL CHECK (verdict IN ('keep','pass')),
   artifact         INTEGER NOT NULL DEFAULT 0,
@@ -110,11 +110,14 @@ CREATE TABLE IF NOT EXISTS draws (
   example_ids   TEXT NOT NULL,         -- JSON array
   domains       TEXT,                  -- JSON array of the setting's drawn domain slugs; NULL when unrestricted
   status        TEXT NOT NULL,         -- running | awaiting_gate | done | failed | rejected
+                                       -- | awaiting_check_gate | repairing | repaired | drafting | awaiting_draft_gate | drafted | passed
   gate_method   TEXT,                  -- auto | manual
   chosen_step   TEXT,
   flagged       INTEGER NOT NULL DEFAULT 0,
   flag_note     TEXT NOT NULL DEFAULT '',
   superseded_by TEXT REFERENCES draws(id),
+  repaired_from TEXT REFERENCES draws(id),   -- the brief this one repairs
+  draft_config  TEXT,                  -- JSON: the resolved draft.toml values a draft ran under
   created_at    TEXT NOT NULL,
   ended_at      TEXT
 );
@@ -133,6 +136,7 @@ CREATE TABLE IF NOT EXISTS steps (
   status        TEXT NOT NULL,         -- running | done | failed
   fail_reason   TEXT,                  -- shape | refusal | error
   attempt       INTEGER NOT NULL DEFAULT 1,
+  tools         TEXT NOT NULL DEFAULT '',   -- comma-separated tool list the call was allowed
   started_at    TEXT NOT NULL,
   ended_at      TEXT,
   error         TEXT
@@ -143,6 +147,7 @@ CREATE TABLE IF NOT EXISTS artifacts (
   id       TEXT PRIMARY KEY,
   step_id  TEXT NOT NULL REFERENCES steps(id),
   kind     TEXT NOT NULL,              -- premise | vignette | outline | job | ending | brief
+                                       -- | finding | ledger | profile | claim | schedule | scene | slop | draft
   content  TEXT NOT NULL,
   meta     TEXT NOT NULL DEFAULT '{}'  -- JSON
 );

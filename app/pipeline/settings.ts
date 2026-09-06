@@ -40,7 +40,10 @@ export type DomainSection = (typeof DOMAIN_SECTIONS)[number];
 export const FILLABLE: DomainSection[] = ["Mechanisms", "Roles", "Institutions", "Instruments", "Clocks", "Places", "Vocabulary"];
 /** Sections a proper noun may appear in when the setting is masked. */
 export const NAMED: DomainSection[] = ["Institutions", "Sources"];
-export const FRONT_MATTER_KEYS = ["id", "name", "draw", "seed_segments", "names"];
+export const FRONT_MATTER_KEYS = ["id", "name", "draw", "seed_segments", "names", "claims"];
+/** Where the claims checker verifies: the web, or the pinned domains' reference files. Absent: the checker does not run. */
+export const CLAIMS_VALUES = ["world", "reference"] as const;
+export type ClaimsAuthority = (typeof CLAIMS_VALUES)[number];
 export const DEFAULT_DRAW = 2;
 export const REDRAFT = "<!-- redraft -->";
 
@@ -52,6 +55,7 @@ export type Setting = {
   draw: number;
   seedSegments: string[];
   names: boolean;
+  claims: ClaimsAuthority | null;
   sections: Record<SettingSection, string>;
   jobs: { name: string; description: string }[];
   domains: Domain[];
@@ -148,6 +152,7 @@ export function parseSetting(text: string, id: string, dir: string = SETTINGS): 
     draw: meta.draw ? Number(meta.draw) : DEFAULT_DRAW,
     seedSegments: parseList(meta.seed_segments),
     names: meta.names === "true",
+    claims: (CLAIMS_VALUES as readonly string[]).includes(meta.claims) ? (meta.claims as ClaimsAuthority) : null,
     sections, jobs, domains, meta, dir,
   };
 }
@@ -164,6 +169,24 @@ export function loadSetting(id: string, dir: string = SETTINGS): Setting {
 /** The heading titles a domain's Sources lines resolve to: `reference/<file>.md`, first token of each line. */
 export function sourceFiles(domain: Domain): string[] {
   return domain.sections.Sources.split("\n").map((l) => /^-?\s*(reference\/\S+\.md)/.exec(l)?.[1]).filter((x): x is string => !!x);
+}
+
+/**
+ * The reference files the pinned domains' Sources lines name, read in full,
+ * each in a <reference name="..."> tag. Only the claims verifier under
+ * `claims: reference` reads this; no generation stage does.
+ */
+export function referenceText(setting: Setting, domains: Domain[]): string {
+  const seen = new Set<string>();
+  const parts: string[] = [];
+  for (const d of domains) for (const f of sourceFiles(d)) {
+    if (seen.has(f)) continue;
+    seen.add(f);
+    const path = join(setting.dir, setting.id, f);
+    if (!existsSync(path)) continue;
+    parts.push(`<reference name="${f}">\n${readFileSync(path, "utf8").trim()}\n</reference>`);
+  }
+  return parts.join("\n\n");
 }
 
 // --- slicing ---------------------------------------------------------------
@@ -212,6 +235,7 @@ export function lintSetting(text: string, id: string, fileExists: (rel: string) 
   const s = parseSetting(text, id);
   for (const k of Object.keys(s.meta)) if (!FRONT_MATTER_KEYS.includes(k)) out.push({ domain: "front matter", section: k, reason: `unknown key ${k}` });
   if (s.meta.draw && !(Number.isInteger(s.draw) && s.draw > 0)) out.push({ domain: "front matter", section: "draw", reason: `draw must be a positive integer, got ${s.meta.draw}` });
+  if (s.meta.claims !== undefined && !(CLAIMS_VALUES as readonly string[]).includes(s.meta.claims)) out.push({ domain: "front matter", section: "claims", reason: `claims must be ${CLAIMS_VALUES.join(" | ")}, got ${s.meta.claims}` });
   const { bodyStart } = parseFrontMatter(text);
   const top = new Set(headings(text, bodyStart).filter((h) => h.level === 2).map((h) => h.title));
   for (const name of [...SETTING_SECTIONS, "Domains"]) if (!top.has(name)) out.push({ domain: "setting", section: name, reason: "missing" });

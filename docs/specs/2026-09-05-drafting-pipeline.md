@@ -439,8 +439,9 @@ applies as at a hand gate. Verdicts carry method `draw`.
 
 ### Store
 
-- `draws`: new statuses `awaiting_check_gate`, `repairing`, `drafting`,
-  `awaiting_draft_gate`, `drafted`, `passed`, `repaired`; new columns
+- `draws`: new statuses `checking`, `awaiting_check_gate`, `repairing`,
+  `drafting`, `awaiting_draft_gate`, `drafted`, `passed`, `repaired`
+  (`checking` is transient, as `running` is); new columns
   `repaired_from TEXT REFERENCES draws(id)` and `draft_config TEXT`.
 - `steps`: new column `tools TEXT NOT NULL DEFAULT ''`; new stage names as
   in the stages table.
@@ -555,6 +556,11 @@ edit, from inside the worktree, and the turn reports what ran.
   up to about 2,700 words each fit a prompt; a setting with larger reference
   files or more pinned domains may not. No cap is set; the distill stage's
   60,000-word refusal is the precedent if one is needed.
+- **A draft without a check.** `fogbelt draft` on a draw in `done` has no
+  ledger for the scene and screen prompts, so it runs one ledger extraction
+  (a single `check-ledger` step storing only the ledger) before the schedule.
+  Whether that should instead force a full check is open; the spec lets the
+  draft proceed.
 - **`ending = "open"`.** Parsed and passed to the schedule prompt; whether
   the schedule's derived ending then replaces the brief's ending as
   material is not decided, since `brief` is the default and the only mode

@@ -47,3 +47,74 @@ system = "You write prose fiction. Output only the tag asked for."
 model = "claude-fable-5-1"
 fallback = "claude-opus-5"
 system = "You write prose fiction. Output only the tag asked for."
+
+# --- checking and drafting (docs/specs/2026-09-05-drafting-pipeline.md) -------
+# `tools` is passed as both --tools and --allowedTools; stages without it run
+# sealed. Only the claims verifier reaches the web, and only when the setting
+# declares `claims: world`; under `reference` the same stage runs with no tools.
+
+[check-derivation]
+model = "claude-fable-5-1"
+fallback = "claude-opus-5"
+system = "You check a story plan's derivation against its own text. Output only the tags asked for."
+
+[check-ledger]
+model = "claude-fable-5-1"
+fallback = "claude-opus-5"
+system = "You check prose against a ledger of settled facts. Output only the tags asked for."
+
+[check-structure]
+model = "claude-fable-5-1"
+fallback = "claude-opus-5"
+system = "You answer binary questions about a story plan with quotes. Output only the tags asked for."
+
+[check-resemblance]
+model = "claude-fable-5-1"
+fallback = "claude-opus-5"
+system = "You match a story plan against a list. Output only the tags asked for."
+
+[check-claims-extract]
+model = "claude-fable-5-1"
+fallback = "claude-opus-5"
+system = "You extract checkable claims about the actual world from fiction. Output only the tags asked for."
+
+[check-claims-verify]
+model = "claude-sonnet-5"
+fallback = "claude-opus-5"
+system = "You verify one claim against a source. Output only the tag asked for."
+tools = "WebSearch,WebFetch"
+
+[repair-vignette]
+model = "claude-fable-5-1"
+fallback = "claude-opus-5"
+system = "You write prose fiction. Output only the tag asked for."
+
+[repair-outline]
+model = "claude-fable-5-1"
+fallback = "claude-opus-5"
+system = "You derive story structure from prose. Output only the tags asked for."
+
+[repair-ending]
+model = "claude-fable-5-1"
+fallback = "claude-opus-5"
+system = "You write prose fiction. Output only the tag asked for."
+
+[schedule]
+model = "claude-fable-5-1"
+fallback = "claude-opus-5"
+system = "You derive a story's schedule from its plan. Output only the tags asked for."
+
+[scene]
+model = "claude-fable-5-1"
+fallback = "claude-opus-5"
+system = "You write prose fiction. Output only the tag asked for."
+
+[screen-ledger]
+model = "claude-fable-5-1"
+fallback = "claude-opus-5"
+system = "You check prose against a ledger. Output only the tags asked for."
+
+[screen-structure]
+model = "claude-fable-5-1"
+fallback = "claude-opus-5"
+system = "You answer binary questions about a scene with quotes. Output only the tags asked for."
