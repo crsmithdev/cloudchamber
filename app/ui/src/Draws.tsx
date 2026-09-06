@@ -168,8 +168,8 @@ function DrawBody({ d, brief, onChoose, onVerdict }: { d: Detail; brief: Record<
   const gating = d.draw.status === "awaiting_gate";
   return (
     <>
-      <div className="seed"><small>seed</small>{d.draw.seed_text}{d.draw.flag_note && <div className="warn" style={{ fontStyle: "normal", fontFamily: "Instrument Sans, system-ui, sans-serif", fontSize: 12.5, marginTop: ".5rem" }}>flagged: {d.draw.flag_note}</div>}</div>
       <div className={"drawbody" + (brief ? " two" : "")}><div className="col">
+      <div className="seed"><small>seed</small>{d.draw.seed_text}{d.draw.flag_note && <div className="warn" style={{ fontStyle: "normal", fontFamily: "Instrument Sans, system-ui, sans-serif", fontSize: 12.5, marginTop: ".5rem" }}>flagged: {d.draw.flag_note}</div>}</div>
       {cands.length > 0 && <>
         <h2 className="sec">distribution <span>· stated probability · lower is further from centre</span></h2>
         {cands.map((c) => {
