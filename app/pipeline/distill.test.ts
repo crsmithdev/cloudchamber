@@ -98,6 +98,16 @@ describe("distill", () => {
     expect(d.sections.Places).toBe("none");
   });
 
+  test("lines past a section's cap are dropped and counted; the prompt states the cap and the specificity rule", async () => {
+    const { db, sdir, read } = setup();
+    const model = new FakeModel({ distill: () => sec("Clocks", Array.from({ length: 11 }, (_, i) => `an interval of ${i + 1} years under the recorder's act`)) });
+    const p = new Pipeline(db, model, { settingsDir: sdir });
+    expect(await distill(p, "fog", { domain: "land-and-title" })).toEqual(["land-and-title › Clocks: 8 lines (3 over the cap of 8 dropped)"]);
+    expect(parseSetting(read(), "fog").domains[0].sections.Clocks.split("\n")).toHaveLength(8);
+    expect(model.calls[0].prompt).toContain('<section name="Clocks">: up to 8 lines.');
+    expect(model.calls[0].prompt).toContain("A line that would be true of any city, any empire or any war is not written");
+  });
+
   test("a domain over the word budget is refused without a call; the others proceed", async () => {
     const { db, sdir, read } = setup();
     writeFileSync(join(sdir, "fog", "reference", "land-and-title.md"), "---\ntopic: x\n---\n" + "word ".repeat(60001));

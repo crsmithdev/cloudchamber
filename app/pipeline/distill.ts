@@ -82,9 +82,11 @@ export async function distill(p: Pipeline, id: string, opts: DistillOpts = {}): 
         if (why.length) out.push(`${d.slug} › ${s}: dropped ${line.slice(0, 40)}… (${[...new Set(why)].join(", ")})`);
         else kept.push(line);
       }
-      const body = kept.length ? kept.map((l) => `- ${l}`).join("\n") : "none";
-      if (!kept.length) out.push(`${d.slug} › ${s}: nothing survived`);
-      else out.push(`${d.slug} › ${s}: ${kept.length} lines`);
+      const cap = RUN.distillCaps[s] ?? Infinity;
+      const capped = kept.slice(0, cap);
+      const body = capped.length ? capped.map((l) => `- ${l}`).join("\n") : "none";
+      if (!capped.length) out.push(`${d.slug} › ${s}: nothing survived`);
+      else out.push(`${d.slug} › ${s}: ${capped.length} lines${kept.length > cap ? ` (${kept.length - cap} over the cap of ${cap} dropped)` : ""}`);
       text = replaceSection(text, id, d.slug, s, body);
     }
     writeFileSync(path, text);

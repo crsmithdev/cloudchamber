@@ -104,20 +104,20 @@ Sections to fill, one <section name="..."> tag each, holding a markdown list of 
 
 {definitions}
 {mask}
-Every line is derived from the reference below and would survive the reference being removed: no citations, no URLs, no bracketed marks. Output only the tags.
+Every line is specific to this setting: it names or rests on a body, instrument, statute, place, date or figure in the reference below, and it belongs to this domain's frame, not a neighbouring one. A line that would be true of any city, any empire or any war is not written; fewer lines is the right answer when the reference runs out. Every line would survive the reference being removed: no citations, no URLs, no bracketed marks. Output only the tags.
 
 <reference>
 {reference}
 </reference>`,
 
   distillDefinitions: {
-    Mechanisms: `<section name="Mechanisms">: up to eight lines. Each is one sentence, nine to forty words, carrying a mechanism and a turn: state the process, name who it is done to, and imply what it costs or why there is no exit. No names, no designations. Do not open on this, that, it or here.`,
-    Roles: `<section name="Roles">: positions a mechanism happens to, never identities: the deputy, the driver, the heir. One line per role, a noun phrase, with the office or instrument that defines the position.`,
-    Institutions: `<section name="Institutions">: bodies. One line per body: what it issues, whom it answers to, what it cannot do.`,
-    Instruments: `<section name="Instruments">: documents and forms. One line per instrument: its name, who issues it, who reads it, and the consequence of filing it late or wrong.`,
-    Clocks: `<section name="Clocks">: intervals, deadlines, sunsets, handovers and rotations. One line per clock: the interval and what it governs.`,
-    Places: `<section name="Places">: specific places. One line per place: what it does, never what it looks like.`,
-    Vocabulary: `<section name="Vocabulary">: the setting's own words for things. One line per term: the term, a colon, and a gloss under twelve words.`,
+    Mechanisms: `<section name="Mechanisms">: up to ${RUN.distillCaps.Mechanisms} lines. Each is one sentence, nine to forty words, carrying a mechanism and a turn: state the process, name who it is done to, and imply what it costs or why there is no exit. No names, no designations. Do not open on this, that, it or here.`,
+    Roles: `<section name="Roles">: up to ${RUN.distillCaps.Roles} lines. Positions a mechanism happens to, never identities: the deputy, the driver, the heir. One line per role, a noun phrase, with the office or instrument that defines the position.`,
+    Institutions: `<section name="Institutions">: up to ${RUN.distillCaps.Institutions} lines. Bodies. One line per body: what it issues, whom it answers to, what it cannot do.`,
+    Instruments: `<section name="Instruments">: up to ${RUN.distillCaps.Instruments} lines. Documents and forms. One line per instrument: its name, who issues it, who reads it, and the consequence of filing it late or wrong.`,
+    Clocks: `<section name="Clocks">: up to ${RUN.distillCaps.Clocks} lines. Intervals, deadlines, sunsets, handovers and rotations. One line per clock: the interval and what it governs.`,
+    Places: `<section name="Places">: up to ${RUN.distillCaps.Places} lines. Specific places. One line per place: what it does, never what it looks like.`,
+    Vocabulary: `<section name="Vocabulary">: up to ${RUN.distillCaps.Vocabulary} lines. The setting's own words for things. One line per term: the term, a colon, and a gloss under twelve words.`,
   } as Record<string, string>,
 
   distillMask: `
