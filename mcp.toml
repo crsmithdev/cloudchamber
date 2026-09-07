@@ -1,0 +1,158 @@
+# The tools voice-bridge-mcp exposes for this project. Each runs the fogbelt
+# command shown, in this directory, and returns what it printed.
+
+description = """
+Fog Belt is a story-ideation pipeline. A draw takes a seed and six example passages, produces five premises, executes each as a 400-word vignette, and waits at the gate. Chris chooses one at the gate; the draw then derives an outline, two context vignettes and an ending, and exports a brief. A finished brief is checked (gate 1: accept or dismiss findings by id, hold, pass) and then drafted into scenes (gate 2: keep, rewrite one scene, pass).
+
+Rules. Never choose, accept, dismiss, keep or pass at any gate unless Chris says to, and never guess a step or finding id: read it from the tool output. You do not write premises, vignettes or stories yourself; the pipeline does. draw, check and draft take minutes and return a job id; when Chris asks whether it is done, read the job. When a draw is awaiting the gate, use candidates to read the five in full; when reading candidates aloud, read the premise, then the vignette, in the order printed, without summarising. Draw ids look like 20260906203231-7923; Chris may refer to a draw by its seed words, so match those against the draws list.
+"""
+
+[tools.status]
+description = "The pool, the bank, eligibility per source, and how many draws are in each status."
+command = ["./fogbelt", "status"]
+
+[tools.draws]
+description = "Every draw, newest first: id, status, mode, setting, and the seed. Statuses: awaiting_gate (choose a candidate), running, done (brief exported), awaiting_check_gate (gate 1), awaiting_draft_gate (gate 2), rejected, flagged."
+command = ["./fogbelt", "draws"]
+
+[tools.draw]
+description = "Start a draw. Produces five premises and vignettes, then stops at the gate. With no arguments the draw is unrestricted. Do not pass auto unless Chris says so; it skips the gate by taking the lowest stated probability."
+command = ["./fogbelt", "draw"]
+background = true
+[tools.draw.args.genre]
+description = "horror or scifi"
+enum = ["horror", "scifi"]
+flag = "--genre"
+[tools.draw.args.setting]
+description = "a typed setting id: setting-a, setting-b, setting-c"
+flag = "--setting"
+[tools.draw.args.domains]
+description = "comma-separated domain slugs of the setting to pin"
+flag = "--domains"
+[tools.draw.args.source]
+description = "bias the example passages to one source: scp, datlow-01, evenson-contagion"
+flag = "--source"
+[tools.draw.args.author]
+description = "bias the example passages to one author"
+flag = "--author"
+[tools.draw.args.seed]
+description = "a seed sentence Chris dictates, instead of drawing one from the theme bank"
+flag = "--seed"
+[tools.draw.args.auto]
+description = "skip the gate mechanically"
+type = "boolean"
+flag = "--auto"
+
+[tools.candidates]
+description = "The five candidates of a draw awaiting the gate, in full: premise and vignette each, sorted by stated probability, with the step id needed to choose one."
+command = ["./fogbelt", "candidates"]
+[tools.candidates.args.draw]
+description = "the draw id"
+position = 1
+required = true
+
+[tools.draw_show]
+description = "The steps and artifacts of one draw: which stages ran, which failed and why."
+command = ["./fogbelt", "draw-show"]
+[tools.draw_show.args.draw]
+position = 1
+required = true
+
+[tools.choose]
+description = "Choose a candidate at the gate. The draw then derives the outline, context vignettes and ending in the background; the brief is ready when draws shows it done."
+command = ["./fogbelt", "gate"]
+background = true
+[tools.choose.args.draw]
+position = 1
+required = true
+[tools.choose.args.verb]
+position = 2
+fixed = "choose"
+[tools.choose.args.step]
+description = "the execute step id of the candidate, from candidates"
+position = 3
+required = true
+
+[tools.reject]
+description = "Reject a draw at the gate: redraw draws a fresh seed and examples, keep-seed keeps the seed and redraws examples. Both start a new draw in the background."
+command = ["./fogbelt", "gate"]
+background = true
+[tools.reject.args.draw]
+position = 1
+required = true
+[tools.reject.args.how]
+position = 2
+required = true
+enum = ["redraw", "keep-seed"]
+[tools.reject.args.note]
+flag = "--note"
+
+[tools.brief]
+description = "Print a finished brief: trail, chosen vignette, outline, two context vignettes and the ending."
+command = ["./fogbelt", "brief"]
+[tools.brief.args.draw]
+position = 1
+required = true
+
+[tools.check]
+description = "Run the checkers over a finished brief. Reports findings that recur and waits at gate 1."
+command = ["./fogbelt", "check"]
+background = true
+[tools.check.args.draw]
+position = 1
+required = true
+
+[tools.findings]
+description = "The findings of the latest check on a draw, each with its id, span, statement, evidence and replacement."
+command = ["./fogbelt", "findings"]
+[tools.findings.args.draw]
+position = 1
+required = true
+
+[tools.gate]
+description = "Work a gate on Chris's instruction. Gate 1: accept <finding ids> (repairs into a new draw and re-checks, in the background), dismiss <finding id>, hold, pass, flag. Gate 2: keep (exports the draft), rewrite <scene number>, pass."
+command = ["./fogbelt", "gate"]
+background = true
+[tools.gate.args.draw]
+position = 1
+required = true
+[tools.gate.args.action]
+position = 2
+required = true
+enum = ["accept", "dismiss", "hold", "pass", "flag", "keep", "rewrite"]
+[tools.gate.args.targets]
+description = "finding ids for accept or dismiss; the scene number for rewrite"
+position = 3
+variadic = true
+[tools.gate.args.note]
+flag = "--note"
+[tools.gate.args.finding]
+description = "for rewrite: the flag id whose replacement guides the rewrite"
+flag = "--finding"
+
+[tools.draft]
+description = "Draft a story from a checked brief: schedule, one scene per beat, screens, then gate 2. auto works gate 1 mechanically first."
+command = ["./fogbelt", "draft"]
+background = true
+[tools.draft.args.draw]
+position = 1
+required = true
+[tools.draft.args.auto]
+type = "boolean"
+flag = "--auto"
+[tools.draft.args.profile]
+description = "a named drafting profile"
+flag = "--profile"
+[tools.draft.args.words]
+description = "target length in words"
+flag = "--words"
+[tools.draft.args.beats]
+description = "number of beats"
+flag = "--beats"
+
+[tools.story]
+description = "The drafted story with its screen flags inline."
+command = ["./fogbelt", "story"]
+[tools.story.args.draw]
+position = 1
+required = true

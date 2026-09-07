@@ -16,6 +16,7 @@
  *   fogbelt themes [--only SRC ...] [--limit N]   draft themes for stories not yet drafted
  *   fogbelt draws                           list draws
  *   fogbelt draw-show <draw>                 steps and artifacts of one draw
+ *   fogbelt candidates <draw>              the five candidates in full, by stated probability
  *   fogbelt brief <draw>                   print the brief
  *   fogbelt check <draw> [--checks a,b] [--samples N]   run the checkers over a brief; stops at gate 1
  *   fogbelt findings <draw> [--examined]   the reported findings of the latest check, ordered
@@ -215,6 +216,15 @@ async function main() {
       const p = pipeline(); const [drawId] = rest;
       if (!drawId) usage();
       console.log(JSON.stringify({ draw: p.draw(drawId!), steps: p.steps(drawId!).map((s) => ({ ...s, prompt: `${s.prompt.length} chars`, raw_response: s.raw_response ? `${s.raw_response.length} chars` : null })), artifacts: p.artifacts(drawId!).map((a) => ({ ...a, content: a.content.slice(0, 120) })) }, null, 2));
+      break;
+    }
+    case "candidates": {
+      const p = pipeline(); const [drawId] = rest;
+      if (!drawId) usage();
+      const cs = p.candidates(drawId!);
+      if (!cs.length) { console.log(`draw ${drawId} has no candidates (status ${p.draw(drawId!).status})`); break; }
+      for (const c of cs) console.log(`\n\n# candidate ${c.index} · step ${c.step_id} · probability ${c.probability}${c.warnings.length ? ` · warnings: ${c.warnings.join("; ")}` : ""}\n\n## premise\n\n${c.premise}\n\n## vignette\n\n${c.vignette}`);
+      console.log(`\nfogbelt gate ${drawId} choose <step> | redraw | keep-seed | flag --note "..."`);
       break;
     }
     case "brief": {
