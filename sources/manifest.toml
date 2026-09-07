@@ -159,6 +159,8 @@ path = "sources/scifi/Peter Watts - Blindsight.pdf"
 reader = "pdf"
 genre = "scifi"
 author = "Peter Watts"
+# The outline names only the prologue twice; the parts are on these pages.
+stories = [{title = "Prologue", page = 11}, {title = "Theseus", page = 16}, {title = "Rorschach", page = 125}, {title = "Charybdis", page = 323}, {title = "Acknowledgments", page = 328}]
 
 [source.watts-echopraxia]
 path = "sources/scifi/Peter Watts - Echopraxia.pdf"

@@ -238,19 +238,51 @@ class Section:
     method: str         # outline | cues | manifest | single
 
 
-# Outline entries and cue lines that are not stories.
+# Outline entries and cue lines that are not stories: front and back matter,
+# and the subsections of a year's-best summation, which some volumes outline
+# flat beside the stories.
 _NOT_A_STORY = re.compile(
-    r"^\s*(the best (of|horror)|introduction|contents|table of contents|publishing details|"
-    r"title page|copyright|dedication|epigraph|acknowledge?ments?|acknowledgment of copyright|"
+    r"^\s*(the best (of|horror)|introduction(?!\s+to\s)|contents|table of contents|publishing details|"
+    r"title( page)?$|copyright|dedication|epigraph|epigram|acknowledge?ments?|acknowledgment (of copyright|is made)|"
     r"about the (authors?|editor|translator)|also by|other books by|also edited by|permissions?|"
-    r"praise for|cover|index|story notes|notes on the|afterword|foreword|preface|"
-    r"a note on the type|colophon|newsletter|sign up|begin reading|half.?title|frontispiece)\b",
+    r"praise for|critical acclaim|cover|index|story notes|notes( and references)?$|notes on the|afterword|foreword|preface|"
+    r"a note on the type|colophon|newsletter|sign up|begin reading|half.?title|frontispiece|front ?matter|"
+    r"illustration|publication history|funder|the publisher|titles available|"
+    r"summation|honou?rable mentions|author bios|"
+    r"awards$|notable novels|also noted$|anthologies$|mixed-genre|single-author collections$|"
+    r"journals, newsletters|poetry$|nonfiction books$|chapbooks and limited editions$|odds and ends$)\b",
     re.I)
-_EM = re.compile(r"\s*[—–]\s*")
+# An outline entry that marks a section inside a story rather than a story:
+# a bare numeral or number word, optionally with a colon or period and a name.
+_SECTION_MARK = re.compile(
+    r"^\s*(?:[IVXLC]+|\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|"
+    r"thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|chapter\s+\d+)\s*(?:$|[.:]\s)",
+    re.I)
+# "Chapter 4 In a Cavern, In a Canyon": a story title behind a chapter number.
+_CHAPTER_PREFIX = re.compile(r"^\s*chapter\s+\d+\s+(?=\S)", re.I)
+_EM = re.compile(r"\s*(?:[—–]|\s--?\s)\s*")
+_NAME = re.compile(r"^[A-Z][\w.'’-]*(?:\s+[A-Z][\w.'’-]*){1,3}$")
+
+
+def _byline(title: str, author: str) -> tuple[str, str]:
+    """Split "Title — Author", "Title -- Author", "Title - Author" or
+    "Title: Author" when the source has no author of its own."""
+    if author:
+        return title, author
+    if _EM.search(title):
+        t, a = _EM.split(title, 1)
+        return t.strip(), a.strip()
+    if ": " in title:
+        t, a = title.rsplit(": ", 1)
+        if _NAME.match(a.strip()):
+            return t.strip(), a.strip()
+    return title, author
 
 
 def outline_entries(path: Path) -> list[tuple[str, int]]:
-    """(title, page index) for every level-1 outline entry, in document order."""
+    """(title, page index) for every outline entry at the shallowest level
+    that holds more than one, in document order. A book whose only level-1
+    entry is its own title keeps its stories one level down."""
     from pdfminer.pdfdocument import PDFDocument, PDFNoOutlines
     from pdfminer.pdfpage import PDFPage
     from pdfminer.pdfparser import PDFParser
@@ -264,8 +296,10 @@ def outline_entries(path: Path) -> list[tuple[str, int]]:
         except PDFNoOutlines:
             return []
         pageids = {pg.pageid: i for i, pg in enumerate(PDFPage.create_pages(doc))}
+        counts = Counter(level for level, *_ in outlines)
+        use = min((lv for lv, n in counts.items() if n > 1), default=1)
         for level, title, dest, action, _se in outlines:
-            if level != 1:
+            if level != use:
                 continue
             d = dest
             if d is None and action is not None:
@@ -287,16 +321,20 @@ def outline_entries(path: Path) -> list[tuple[str, int]]:
 
 
 def split_by_outline(entries: list[tuple[str, int]], n_pages: int, author: str) -> list[Section]:
+    """A section per entry. Matter entries bound their neighbours but are not
+    emitted; section marks inside a story are dropped so the story runs on
+    through them."""
     entries = sorted(entries, key=lambda e: e[1])
+    bounds = [(t, p) for t, p in entries if not _SECTION_MARK.match(t)]
     secs: list[Section] = []
-    for i, (title, page) in enumerate(entries):
-        end = entries[i + 1][1] if i + 1 < len(entries) else n_pages
+    for i, (title, page) in enumerate(bounds):
+        end = bounds[i + 1][1] if i + 1 < len(bounds) else n_pages
         if _NOT_A_STORY.match(title):
             continue
-        t, a = title, author
-        if not author and _EM.search(title):
-            t, a = _EM.split(title, 1)
-        secs.append(Section(t.strip(), a.strip(), page, end, "outline"))
+        t, a = _byline(_CHAPTER_PREFIX.sub("", title), author)
+        if t.isupper():
+            t = t.title().replace("'S ", "'s ")
+        secs.append(Section(t, a, page, end, "outline"))
     return secs
 
 
@@ -368,7 +406,7 @@ def split_by_manifest(stories: list[dict], n_pages: int, author: str) -> list[Se
     st = sorted(stories, key=lambda s: s["page"])
     return [Section(s["title"], s.get("author", author), s["page"] - 1,
                     (st[i + 1]["page"] - 1) if i + 1 < len(st) else n_pages, "manifest")
-            for i, s in enumerate(st)]
+            for i, s in enumerate(st) if not _NOT_A_STORY.match(s["title"])]
 
 
 # --- main entry -----------------------------------------------------------

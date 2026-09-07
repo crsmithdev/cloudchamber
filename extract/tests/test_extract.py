@@ -1,6 +1,7 @@
 """The Python seam: what `python -m extract` leaves in the store for the dev subset."""
 
 import json
+import pytest
 import re
 
 from extract import pdf, segment
@@ -149,3 +150,32 @@ def test_windows_are_anchored_to_content():
     assert len(a) == len(b) == 7
     assert len(a & b) >= 5, f"only {len(a & b)} of 7 windows survived a one-paragraph insertion"
     assert cut(paras) == a                       # deterministic
+
+
+def test_outline_drops_matter_and_runs_stories_through_section_marks():
+    entries = [("Summation 2010", 0), ("Awards", 2), ("Odds and Ends", 5), ("AT THE RIDING SCHOOL", 10), ("One", 10),
+               ("Two", 14), ("MR. PIGSNY", 20), ("I", 20), ("II", 25), ("THE REVEL", 30), ("1. The Chase", 30),
+               ("12. Six Drawings", 40), ("Honorable Mentions", 50), ("Author Bios", 55)]
+    secs = pdf.split_by_outline(entries, 60, "")
+    assert [(s.title, s.start, s.end) for s in secs] == [
+        ("At The Riding School", 10, 20), ("Mr. Pigsny", 20, 30), ("The Revel", 30, 50)]
+
+
+def test_outline_bylines_in_every_house_style_and_chapter_prefixes():
+    entries = [("Redwater - Simon Bestwick", 0), ("Come Closer -- Gemma Files", 1), ("Gate 9—Jeffrey Ford", 2),
+               ("Jacqueline Ess: Her Will and Testament: Clive Barker", 3), ("Chapter 4 In a Cavern, In a Canyon", 4),
+               ("Introduction to the Body in Fairy Tales", 5), ("Introduction", 6)]
+    secs = pdf.split_by_outline(entries, 7, "")
+    assert [(s.title, s.author) for s in secs] == [
+        ("Redwater", "Simon Bestwick"), ("Come Closer", "Gemma Files"), ("Gate 9", "Jeffrey Ford"),
+        ("Jacqueline Ess: Her Will and Testament", "Clive Barker"), ("In a Cavern, In a Canyon", ""),
+        ("Introduction to the Body in Fairy Tales", "")]
+    assert pdf.split_by_outline([("Part 1: Men Without Women", 0), ("I: How Fishing Saved My Life", 0), ("II: Rungs", 3)], 9, "John Langan")[0].end == 9
+
+
+def test_nested_outline_uses_the_shallowest_populated_level():
+    chiang = SOURCES / "scifi" / "Ted Chiang - Stories of Your Life and Others.pdf"
+    if not chiang.exists():
+        pytest.skip("chiang not present")
+    titles = [t for t, _ in pdf.outline_entries(chiang)]
+    assert titles[:2] == ["Table Of Contents", "Tower of Babylon"] and "Acknowledgments" not in titles
