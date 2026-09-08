@@ -9,7 +9,7 @@ import type { Db } from "../pipeline/store/db.ts";
 import { Pipeline, type DrawOpts, type SeedChoice } from "../pipeline/draw.ts";
 import { KINDS, latest, passedStories, record, type Kind, type Method } from "../pipeline/verdicts.ts";
 import { status } from "../pipeline/status.ts";
-import { exportBank } from "../pipeline/bank.ts";
+import { exportBank, sourceLabel } from "../pipeline/bank.ts";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { BRIEFS } from "../pipeline/paths.ts";
@@ -123,7 +123,8 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
   });
 
   app.get("/api/facets", async () => ({
-    sources: db.query("SELECT id, genre FROM sources").all(),
+    sources: (db.query("SELECT id, genre, path FROM sources ORDER BY id").all() as { id: string; genre: string; path: string }[])
+      .map((s) => ({ id: s.id, genre: s.genre, ...sourceLabel(s.id, s.path) })),
     authors: db.query("SELECT DISTINCT author FROM stories WHERE author <> '' ORDER BY author").all().map((r: any) => r.author),
     cells: db.query("SELECT voice || '/' || mode AS cell, count(*) AS n FROM passages GROUP BY cell").all(),
     settings: readdirSync(join(BRIEFS, "..", "sources", "settings")).filter((f) => f.endsWith(".md")).map((f) => f.replace(/\.md$/, "")),
@@ -136,8 +137,9 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     const seed: SeedChoice = b.seed ? { mode: "typed", text: b.seed } : b.seed_id ? { mode: "picked", themeId: b.seed_id } : { mode: "drawn" };
     const domains = b.domains ? b.domains.split(",").map((d) => d.trim()).filter(Boolean) : undefined;
     if (domains?.length && !b.setting) return reply.code(400).send({ error: "domains need a setting" });
+    const sources = b.source ? b.source.split(",").map((s) => s.trim()).filter(Boolean) : [];
     const opts: DrawOpts = { mode: b.mode ?? "manual", setting: b.setting || undefined, domains, genre: b.genre || undefined, seed,
-      segment: b.source || b.author ? { source: b.source || undefined, author: b.author || undefined } : undefined };
+      segment: sources.length || b.author ? { source: sources.length ? sources : undefined, author: b.author || undefined } : undefined };
     try {
       // The draw and validation are synchronous-ish and fail fast; the model steps continue after we reply.
       const started = pipeline.start(opts);
@@ -160,7 +162,7 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
   app.get<{ Params: { id: string } }>("/api/draws/:id", async (req, reply) => {
     try {
       const draw = { ...pipeline.draw(req.params.id), name: drawNames(pipeline.draws()).get(req.params.id) };
-      return { draw, steps: pipeline.steps(draw.id), artifacts: pipeline.artifacts(draw.id), candidates: pipeline.candidates(draw.id), examples: drawExamples(db, draw.example_ids) };
+      return { draw, steps: pipeline.steps(draw.id), artifacts: pipeline.artifacts(draw.id), candidates: pipeline.candidates(draw.id), examples: drawExamples(db, draw.example_ids), forks: pipeline.forks(draw.id) };
     } catch (e: any) { return reply.code(404).send({ error: e.message }); }
   });
 
@@ -195,8 +197,16 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
         running.set(id, p.catch(() => undefined));
         return reply.code(202).send({ id, status: "running" });
       }
+      if (action === "fork") {
+        if (!step_id) return reply.code(400).send({ error: "step_id required" });
+        // the fork row exists before its first model call, so the id is readable well inside the race
+        const started = pipeline.fork(id, step_id);
+        const forkId = await Promise.race([started.then((r) => r.id), new Promise<string>((res) => setTimeout(() => res(pipeline.forks(id).find((f) => f.step_id === step_id)?.id ?? ""), 300))]);
+        running.set(forkId, started.catch(() => undefined));
+        return reply.code(202).send({ id: forkId, forked_from: id });
+      }
       if (action === "redraw" || action === "keep-seed") { const next = await pipeline.reject(id, action, note); return reply.code(202).send({ id: next.id, superseded: id }); }
-      return reply.code(400).send({ error: "action must be choose | redraw | keep-seed | flag | accept | dismiss | hold | pass | keep | rewrite" });
+      return reply.code(400).send({ error: "action must be choose | fork | redraw | keep-seed | flag | accept | dismiss | hold | pass | keep | rewrite" });
     } catch (e: any) { return reply.code(400).send({ error: e.message }); }
   });
 

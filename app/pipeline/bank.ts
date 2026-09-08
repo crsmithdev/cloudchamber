@@ -11,11 +11,27 @@ import { BANK } from "./paths.ts";
 import type { Db, PassageRow, StoryRow, ThemeRow } from "./store/db.ts";
 import { INELIGIBLE_SQL, eligibleIds } from "./verdicts.ts";
 
-export type Segment = { source?: string; author?: string; genre?: string };
+export type Segment = { source?: string | string[]; author?: string; genre?: string };
+
+/** A segment's sources as a list; one source and none are the same shape as many. */
+export const sourceIds = (source: Segment["source"]): string[] => (Array.isArray(source) ? source : source ? [source] : []);
+
+/**
+ * A source's display name, read off its own file: "Ellen Datlow - The Best
+ * Horror of the Year Volume 01" is that volume under that editor, so the
+ * start form can group the anthologies together. A glob or a file with no
+ * author in its name falls back to the id.
+ */
+export function sourceLabel(id: string, path: string): { group: string; title: string } {
+  const base = (path.split("/").pop() ?? "").replace(/\.[A-Za-z0-9]+$/, "");
+  const m = /^(.+?) - (.+)$/.exec(base);
+  return m ? { group: m[1].trim(), title: m[2].trim() } : { group: id, title: id };
+}
 
 export function eligiblePassages(db: Db, seg: Segment = {}): (PassageRow & { title: string; author: string; genre: string; source_id: string })[] {
   const where: string[] = [`s.id NOT IN (${INELIGIBLE_SQL})`], args: any[] = ["story"];
-  if (seg.source) { where.push("s.source_id = ?"); args.push(seg.source); }
+  const sources = sourceIds(seg.source);
+  if (sources.length) { where.push(`s.source_id IN (${sources.map(() => "?").join(", ")})`); args.push(...sources); }
   if (seg.author) { where.push("lower(s.author) = lower(?)"); args.push(seg.author); }
   if (seg.genre) { where.push("s.genre = ?"); args.push(seg.genre); }
   const rows = db.query(

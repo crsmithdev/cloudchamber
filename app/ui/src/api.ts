@@ -1,7 +1,7 @@
 export type Latest = { verdict: "keep" | "pass"; artifact: boolean; note: string; at: string; inherited_from: string | null } | null;
 export type Item = { id: string; text: string; words?: number; cell?: string; suspect?: string[]; title?: string; author?: string; genre?: string; source?: string; passages?: number; attestation?: number; stories?: string; latest: Latest; setting?: string; status?: string };
 export type Example = { id: string; text: string | null; words?: number; cell?: string; title?: string; author?: string; source?: string; story_id?: string; latest: Latest };
-export type Draw = { id: string; name?: string; setting: string | null; genre: string; mode: string; segment: string | null; seed_mode: string; seed_text: string; example_ids: string; domains: string | null; status: string; gate_method: string | null; chosen_step: string | null; flagged: number; flag_note: string; superseded_by: string | null; repaired_from: string | null; draft_config: string | null; created_at: string; ended_at: string | null };
+export type Draw = { id: string; name?: string; setting: string | null; genre: string; mode: string; segment: string | null; seed_mode: string; seed_text: string; example_ids: string; domains: string | null; status: string; gate_method: string | null; chosen_step: string | null; flagged: number; flag_note: string; superseded_by: string | null; repaired_from: string | null; forked_from: string | null; draft_config: string | null; created_at: string; ended_at: string | null };
 export type Finding = { id: string; artifact_id: string; checkers: string[]; samples: number[]; n: number; span: string; statement: string; result: string; evidence: string; invalidates: string; replacement: string; pass: string; source: "check" | "screen"; screen?: string; beat?: number; decision: "accepted" | "dismissed" | "open"; note: string };
 export type Claim = { statement: string; span: string; result: string; evidence: string; authority: string };
 export type Profile = { checker?: string; answers?: Record<string, { answer: string; quote: string }>; matches?: { entry: string; span: string }[]; nearest?: { title: string; author: string; shared: string }; beat?: number; flags?: string[] };
@@ -14,6 +14,8 @@ export type DraftConfig = { length: { words: number; tolerance: number }; beats:
 export type Step = { id: string; parent_id: string | null; stage: string; model: string; system_prompt: string; prompt: string; raw_response: string | null; parsed: string | null; status: string; fail_reason: string | null; attempt: number; started_at: string; ended_at: string | null; error: string | null };
 export type Artifact = { id: string; step_id: string; kind: string; content: string; meta: string };
 export type Candidate = { step_id: string; index: number; probability: number; premise: string; vignette: string; warnings: string[] };
+/** A draw forked off this one, and the candidate's execute step it develops. */
+export type Fork = { id: string; status: string; step_id: string; index: number };
 
 async function j<T>(url: string, init?: RequestInit): Promise<T> {
   const r = await fetch(url, { headers: { "content-type": "application/json" }, ...init });
@@ -23,12 +25,12 @@ async function j<T>(url: string, init?: RequestInit): Promise<T> {
 }
 export const api = {
   status: () => j<any>("/api/status"),
-  facets: () => j<{ sources: { id: string; genre: string }[]; authors: string[]; cells: { cell: string; n: number }[]; settings: string[] }>("/api/facets"),
+  facets: () => j<Facets>("/api/facets"),
   verdict: (b: { kind: string; target_id: string; verdict: "keep" | "pass"; artifact: boolean; note: string; method: string }) => j("/api/verdicts", { method: "POST", body: JSON.stringify(b) }),
   items: (q: Record<string, string>) => j<{ total: number; items: Item[] }>(`/api/items?${new URLSearchParams(q)}`),
   draws: () => j<Draw[]>("/api/draws"),
   setting: (id: string) => j<{ id: string; name: string; draw: number; domains: { slug: string; heading: string }[] }>(`/api/settings/${id}`),
-  draw: (id: string) => j<{ draw: Draw; steps: Step[]; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[] }>(`/api/draws/${id}`),
+  draw: (id: string) => j<{ draw: Draw; steps: Step[]; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] }>(`/api/draws/${id}`),
   startDraw: (b: Record<string, string | undefined>) => j<{ id: string }>("/api/draws", { method: "POST", body: JSON.stringify(b) }),
   gate: (id: string, b: { action: string; step_id?: string; note?: string; findings?: string[]; finding?: string; beat?: number }) => j<any>(`/api/draws/${id}/gate`, { method: "POST", body: JSON.stringify(b) }),
   check: (id: string) => j<{ id: string; status: string }>(`/api/draws/${id}/check`, { method: "POST", body: "{}" }),
@@ -41,7 +43,8 @@ export const api = {
 };
 
 export type Status = { passages: number; passages_eligible: number; passages_suspect: number; per_source: { source: string; n: number; eligible: number }[]; themes: number; themes_eligible: number; verdicts: number; draws: { status: string; n: number }[] };
-export type Facets = { sources: { id: string; genre: string }[]; authors: string[]; cells: { cell: string; n: number }[]; settings: string[] };
+export type Source = { id: string; genre: string; group: string; title: string };
+export type Facets = { sources: Source[]; authors: string[]; cells: { cell: string; n: number }[]; settings: string[] };
 
 /** "14:54 today" for today's timestamps, otherwise "Sep 4, 03:00". */
 export function when(iso: string): string {

@@ -116,6 +116,41 @@ describe("draw graph", () => {
     await expect(p.choose(draw.id, cs[0].step_id)).rejects.toThrow(/not awaiting_gate/);
   });
 
+  test("fork develops a second candidate as a draw of its own", async () => {
+    const { db, dir } = fixture();
+    const twice = script({                                            // the fork develops a second time
+      outline: [outline(), outline()],
+      jobs: Array(2).fill("<job>Test the first thing: scene one.</job><job>Test a second thing: scene two.</job>"),
+      ending: Array(2).fill("<ending>The last beat.</ending>"),
+    });
+    const { p } = pipe(db, dir, twice);
+    const draw = await p.start({ mode: "manual", genre: "horror", seed: { mode: "typed", text: "a typed seed" } });
+    const cs = p.candidates(draw.id);
+    await expect(p.fork(draw.id, cs[1].step_id)).rejects.toThrow(/awaiting the gate/);
+    await p.choose(draw.id, cs[0].step_id);
+    expect(p.forks(draw.id)).toEqual([]);
+    const fork = await p.fork(draw.id, cs[1].step_id);
+    expect(fork.status).toBe("done");
+    expect(fork.forked_from).toBe(draw.id);
+    expect(fork.seed_text).toBe("a typed seed");
+    expect(fork.example_ids).toBe(p.draw(draw.id).example_ids);
+    // the candidate crossed over without a model call, and the fork developed from it
+    const steps = p.steps(fork.id);
+    const execute = steps.find((s) => s.stage === "execute")!;
+    expect(execute.model).toBe("copied");
+    expect(fork.chosen_step).toBe(execute.id);
+    expect(steps.map((s) => s.stage).sort()).toEqual(["context", "context", "ending", "execute", "jobs", "outline"]);
+    const dirF = join(dir, "briefs", fork.id);
+    expect(readFileSync(join(dirF, "vignette.md"), "utf8").trim()).toBe(cs[1].vignette.trim());
+    const trail = readFileSync(join(dirF, "trail.md"), "utf8");
+    expect(trail).toContain("(forked)");
+    expect(trail).toContain(`${draw.id}, its candidate 2`);
+    // the source draw knows which candidates are developed and refuses to develop one twice
+    expect(p.forks(draw.id)).toEqual([{ id: fork.id, status: "done", step_id: cs[1].step_id, index: 2 }]);
+    await expect(p.fork(draw.id, cs[1].step_id)).rejects.toThrow(/already developed/);
+    await expect(p.fork(draw.id, cs[0].step_id)).rejects.toThrow(/itself developed/);
+  });
+
   test("reject: redraw and keep-seed create linked draws; flag starts nothing", async () => {
     const { db, dir } = fixture();
     const s = script({ premises: [premises(), premises(), premises()] });

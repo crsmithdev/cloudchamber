@@ -35,7 +35,7 @@ export type DrawRow = {
   id: string; setting: string | null; genre: string; mode: "auto" | "manual"; segment: string | null;
   seed_mode: string; seed_text: string; seed_theme_id: string | null; example_ids: string; domains: string | null; status: string;
   gate_method: string | null; chosen_step: string | null; flagged: number; flag_note: string;
-  superseded_by: string | null; repaired_from: string | null; draft_config: string | null; created_at: string; ended_at: string | null;
+  superseded_by: string | null; repaired_from: string | null; forked_from: string | null; draft_config: string | null; created_at: string; ended_at: string | null;
 };
 export type StepRow = {
   id: string; draw_id: string | null; parent_id: string | null; stage: string; model: string; system_prompt: string;
@@ -304,6 +304,46 @@ export class Pipeline {
     this.db.query("UPDATE draws SET superseded_by = ? WHERE id = ?").run(next.id, drawId);
     if (how === "keep-seed") this.db.query("UPDATE draws SET seed_mode = ? WHERE id = ?").run(draw.seed_mode, next.id);
     return this.draw(next.id);
+  }
+
+  /**
+   * Develop a second candidate of a draw that already chose one. The fork is a
+   * draw of its own — the same seed, examples, setting and domains — carrying
+   * the candidate's premise and vignette across as a copied step, so every
+   * later stage reads it the way it reads any other draw.
+   */
+  async fork(drawId: string, executeStepId: string): Promise<DrawRow> {
+    const src = this.draw(drawId);
+    if (src.status === "awaiting_gate") throw new Error(`draw ${drawId} is awaiting the gate; choose a candidate instead of forking`);
+    if (!src.chosen_step) throw new Error(`draw ${drawId} chose no candidate; there is nothing to fork from`);
+    if (executeStepId === src.chosen_step) throw new Error(`draw ${drawId} was itself developed from that candidate`);
+    const c = this.candidates(drawId).find((x) => x.step_id === executeStepId);
+    if (!c) throw new Error(`draw ${drawId}: no execute step ${executeStepId}`);
+    const already = this.forks(drawId).find((f) => f.step_id === executeStepId);
+    if (already) throw new Error(`draw ${drawId}: candidate #${c.index} is already developed as ${already.id}`);
+    const newId = `${now().replace(/[-:TZ]/g, "").slice(0, 15)}-${id(2)}`;
+    this.db.query(`INSERT INTO draws (id, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, domains, status, gate_method, forked_from, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', 'manual', ?, ?)`)
+      .run(newId, src.setting, src.genre, src.mode, src.segment, src.seed_mode, src.seed_text, src.seed_theme_id, src.example_ids, src.domains, drawId, now());
+    const step = this.recordStep(newId, null, "execute", "copied", c.premise);
+    this.artifact(step, "vignette", c.vignette, { index: c.index, probability: c.probability, premise: c.premise, warnings: c.warnings, forked_from: executeStepId });
+    this.db.query("UPDATE draws SET chosen_step = ? WHERE id = ?").run(step.id, newId);
+    try {
+      await this.develop(newId, { step_id: step.id, premise: c.premise, vignette: c.vignette });
+    } catch (e) {
+      this.fail(newId, e);
+      throw e;
+    }
+    return this.draw(newId);
+  }
+
+  /** The draws forked off this one, each with the execute step of the candidate it develops. */
+  forks(drawId: string): { id: string; status: string; step_id: string; index: number }[] {
+    const rows = this.db.query(`SELECT d.id, d.status, a.meta FROM draws d
+                                JOIN steps s ON s.draw_id = d.id AND s.stage = 'execute'
+                                JOIN artifacts a ON a.step_id = s.id AND a.kind = 'vignette'
+                                WHERE d.forked_from = ? ORDER BY d.created_at`).all(drawId) as any[];
+    return rows.map((r) => { const m = JSON.parse(r.meta); return { id: r.id, status: r.status, step_id: m.forked_from as string, index: m.index as number }; });
   }
 
   flag(drawId: string, note: string): DrawRow {

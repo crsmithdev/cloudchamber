@@ -30,7 +30,7 @@ flag = "--setting"
 description = "comma-separated domain slugs of the setting to pin"
 flag = "--domains"
 [tools.draw.args.source]
-description = "bias the example passages to one source: scp, datlow-01, evenson-contagion"
+description = "bias the example passages to one or more sources, comma-separated: scp, datlow-01, evenson-contagion"
 flag = "--source"
 [tools.draw.args.author]
 description = "bias the example passages to one author"

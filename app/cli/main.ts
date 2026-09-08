@@ -8,11 +8,11 @@
  *   fogbelt verdict <example|theme|brief|story> <id> <keep|pass> [--artifact] [--note "..."]
  *                                          a passed story hides all its passages
  *   fogbelt replay                         rebuild the verdicts table from bank/verdicts.jsonl
- *   fogbelt draw [--setting ID [--domains a,b]] [--genre G] [--auto] [--source S] [--author A]
+ *   fogbelt draw [--setting ID [--domains a,b]] [--genre G] [--auto] [--source S[,S]] [--author A]
  *               [--seed "text" | --seed-id ID]
  *   fogbelt setting lint <id>              check a setting file; exit 1 with one finding per line
  *   fogbelt distill <id> [--domain SLUG]   fill a setting's empty or redraft-marked sections from its reference/
- *   fogbelt gate <draw> choose <execute-step> | redraw | keep-seed | flag  [--note "..."]
+ *   fogbelt gate <draw> choose <execute-step> | fork <execute-step> | redraw | keep-seed | flag  [--note "..."]
  *   fogbelt themes [--only SRC ...] [--limit N]   draft themes for stories not yet drafted
  *   fogbelt draws                           list draws
  *   fogbelt draw-show <draw>                 steps and artifacts of one draw
@@ -107,14 +107,15 @@ async function main() {
       });
       if (values.domains && !values.setting) usage();
       const seed: SeedChoice = values.seed ? { mode: "typed", text: values.seed } : values["seed-id"] ? { mode: "picked", themeId: values["seed-id"] } : { mode: "drawn" };
-      const segment = values.source || values.author ? { source: values.source, author: values.author } : undefined;
+      const sources = values.source ? values.source.split(",").map((s) => s.trim()).filter(Boolean) : [];
+      const segment = sources.length || values.author ? { source: sources.length ? sources : undefined, author: values.author } : undefined;
       const domains = values.domains ? values.domains.split(",").map((d) => d.trim()).filter(Boolean) : undefined;
       const draw = await pipeline().start({ mode: values.auto ? "auto" : "manual", setting: values.setting, domains, genre: values.genre, segment, seed });
       console.log(JSON.stringify(draw, null, 2));
       if (draw.status === "awaiting_gate") {
         console.log("\ncandidates, by stated probability:");
         for (const c of pipeline().candidates(draw.id)) console.log(`  ${c.probability}  ${c.step_id}  ${c.premise.slice(0, 100)}…`);
-        console.log(`\nfogbelt gate ${draw.id} choose <step> | redraw | keep-seed | flag --note "..."`);
+        console.log(`\nfogbelt gate ${draw.id} choose <step> | fork <step> | redraw | keep-seed | flag --note "..."`);
       }
       break;
     }
@@ -124,6 +125,7 @@ async function main() {
       const p = pipeline(), d = drafting();
       if (!drawId || !action) usage();
       const out = action === "choose" ? await p.choose(drawId!, args[0]!)
+        : action === "fork" ? await p.fork(drawId!, args[0]!)
         : action === "redraw" ? await p.reject(drawId!, "redraw", values.note)
         : action === "keep-seed" ? await p.reject(drawId!, "keep-seed", values.note)
         : action === "flag" ? p.flag(drawId!, values.note)

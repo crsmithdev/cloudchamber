@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { marked } from "marked";
-import { api, when, type Artifact, type Candidate, type Example, type Facets, type Draw, type Status, type Step } from "./api.ts";
+import { api, when, type Artifact, type Candidate, type Example, type Facets, type Draw, type Fork, type Source, type Status, type Step } from "./api.ts";
 
-export type Detail = { draw: Draw; steps: Step[]; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[] };
+export type Detail = { draw: Draw; steps: Step[]; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] };
 const STAGES = ["premises", "execute", "gate", "outline", "context", "ending", "brief"];
 export const LABEL: Record<string, string> = { awaiting_gate: "open", done: "brief", awaiting_check_gate: "gate 1", awaiting_draft_gate: "gate 2", checking: "checking", repairing: "repairing", drafting: "drafting", drafted: "drafted", passed: "passed", repaired: "repaired" };
 export const label = (status: string) => LABEL[status] ?? status;
 export const secs = (a: string, b: string | null) => (b ? `${Math.round((Date.parse(b) - Date.parse(a)) / 1000)}s` : "running");
 const choose = (index: number) => `Continue with premise ${index}: outline, two context vignettes, the ending, then the brief.`;
+const develop = (index: number) => `Develop premise ${index} as a draw of its own: the same seed and examples, its own outline, context vignettes, ending and brief.`;
 
 /** Model output and brief files are markdown written by this pipeline; rendered as written. */
 export function Md({ text, className = "" }: { text: string; className?: string }) {
@@ -45,8 +46,9 @@ export function Draws({ status, selected }: { status: Status | null; selected: s
   useEffect(() => { if (d?.draw.status === "done" && !brief) api.brief(d.draw.id).then(setBrief).catch(() => {}); }, [d?.draw.status]);
 
   const select = (id: string) => {
-    if (id === current) setOpen((o) => { const n = new Set(o); n.has(id) ? n.delete(id) : n.add(id); return n; });
-    else location.hash = `#draw/${id}`;
+    if (id !== current) { location.hash = `#draw/${id}`; return; }
+    if (stepId) { setStepId(null); return; }   // a step log is open: back to the draw before collapsing the row
+    setOpen((o) => { const n = new Set(o); n.has(id) ? n.delete(id) : n.add(id); return n; });
   };
   const gate = async (action: string, step_id?: string) => {
     if (!d) return;
@@ -63,12 +65,12 @@ export function Draws({ status, selected }: { status: Status | null; selected: s
   return (
     <>
       <div className="pane list">
-        <div className="newdraw"><a className="btn primary" href="#draws/new" style={{ textDecoration: "none" }}>New draw</a></div>
+        <div className="newdraw"><a className="btn primary" href="#draws/new" style={{ textDecoration: "none" }}>Draw</a></div>
         {draws.length === 0 && <div className="empty">No draws yet.</div>}
         {draws.map((r) => (
           <div key={r.id} className={"drawrow" + (r.id === current ? " on" : "") + (r.superseded_by ? " old" : "")} onClick={() => select(r.id)}>
             <div className="l1"><span className="nm">{r.name ?? r.id}</span><span className="when">{when(r.created_at)}</span></div>
-            <div className="l2"><span className={dot(r.status)} />{label(r.status)} · {r.setting ?? "unrestricted"} · {r.genre} · {r.mode}{r.flagged ? <span className="art"> · flagged</span> : null}{r.superseded_by && <span className="dim"> · superseded</span>}</div>
+            <div className="l2"><span className={dot(r.status)} />{label(r.status)} · {r.setting ?? "unrestricted"} · {r.genre} · {r.mode}{r.flagged ? <span className="art"> · flagged</span> : null}{r.forked_from && <span className="dim"> · fork</span>}{r.superseded_by && <span className="dim"> · superseded</span>}</div>
             <div className="sd">{r.seed_text}</div>
             <div className="rid mono dim">{r.id}</div>
             {open.has(r.id) && details[r.id] && <>
@@ -82,9 +84,10 @@ export function Draws({ status, selected }: { status: Status | null; selected: s
         <div className="pane read span">
           {!d ? (err ? <div className="err">{err}</div> : <span className="dim">loading…</span>) : <>
             <div className="drawhd"><h1>{d.draw.name ?? d.draw.id}</h1><span className="rid mono dim">{d.draw.id}</span><span className={"badge " + d.draw.status}>{label(d.draw.status)}</span><span className="dim" style={{ fontSize: 12 }}>{d.draw.setting ?? "unrestricted"}{d.draw.domains ? ` · ${(JSON.parse(d.draw.domains) as string[]).join(" + ")}` : ""} · {d.draw.genre} · {d.draw.mode}{d.draw.gate_method ? ` · gate ${d.draw.gate_method}` : ""} · seed {d.draw.seed_mode}</span></div>
+            {d.draw.forked_from && <div className="dim" style={{ fontSize: 12 }}>forked from <a href={`#draw/${d.draw.forked_from}`} className="mono">{d.draw.forked_from}</a></div>}
             {d.draw.superseded_by && <div className="dim" style={{ fontSize: 12 }}>superseded by <a href={`#draw/${d.draw.superseded_by}`} className="mono">{d.draw.superseded_by}</a></div>}
             {d.draw.status === "awaiting_gate" && !step && <GateBar d={d} note={note} setNote={setNote} err={err} onGate={gate} />}
-            {step ? <StepView step={step} artifacts={d.artifacts.filter((a) => a.step_id === step.id)} chosen={step.id === d.draw.chosen_step} onBack={() => setStepId(null)} /> : <DrawBody d={d} brief={brief} onChoose={(id) => gate("choose", id)} onVerdict={verdict} />}
+            {step ? <StepView step={step} artifacts={d.artifacts.filter((a) => a.step_id === step.id)} chosen={step.id === d.draw.chosen_step} onBack={() => setStepId(null)} /> : <DrawBody d={d} brief={brief} onChoose={(id) => gate("choose", id)} onFork={(id) => gate("fork", id)} onVerdict={verdict} />}
           </>}
         </div>
       )}
@@ -120,10 +123,10 @@ function GateBar({ d, note, setNote, err, onGate }: { d: Detail; note: string; s
   return (
     <div className="gatebar" role="group" aria-label="Gate">
       {lowest && <button className="btn primary" title={choose(lowest.index)} onClick={() => onGate("choose", lowest.step_id)}>choose #{lowest.index}, continue</button>}
-      <button className="btn pass" title="Close this draw as rejected and start a new one with a fresh seed and fresh examples." onClick={() => onGate("redraw")}>reject · redraw all</button>
-      <button className="btn pass" title="Close this draw as rejected and start a new one from the same seed, with fresh examples and premises." onClick={() => onGate("keep-seed")}>reject · keep seed</button>
-      <button className="btn art" title="Mark this draw as a wrong call for later review. It stays open and nothing else changes." onClick={() => onGate("flag")}>flag · call looks wrong</button>
-      <input type="text" name="gate-note" placeholder="note for the log…" aria-label="Gate note" value={note} onChange={(e) => setNote(e.target.value)} />
+      <button className="btn pass" title="Close this draw as rejected and start a new one with a fresh seed and fresh examples." onClick={() => onGate("redraw")}>Reject</button>
+      <button className="btn pass" title="Close this draw as rejected and start a new one from the same seed, with fresh examples and premises." onClick={() => onGate("keep-seed")}>Redraw</button>
+      <button className="btn art" title="Mark this draw as a wrong call for later review. It stays open and nothing else changes." onClick={() => onGate("flag")}>Flag</button>
+      <input type="text" name="gate-note" placeholder="note" aria-label="Gate note" value={note} onChange={(e) => setNote(e.target.value)} />
       {err && <div className="err" style={{ flexBasis: "100%" }}>{err}</div>}
     </div>
   );
@@ -162,7 +165,7 @@ export function Log({ d, stepId, onStep }: { d: Detail; stepId: string | null; o
 const BRIEF_FILES = ["outline.md", "vignette.md", "context-1.md", "context-2.md", "ending.md"];
 export const firstParagraph = (s: string) => s.trim().split(/\n\s*\n/)[0].replace(/[*_#>`]/g, "");
 
-function DrawBody({ d, brief, onChoose, onVerdict }: { d: Detail; brief: Record<string, string> | null; onChoose: (stepId: string) => void; onVerdict: (e: Example, v: "keep" | "pass", artifact?: boolean) => void }) {
+function DrawBody({ d, brief, onChoose, onFork, onVerdict }: { d: Detail; brief: Record<string, string> | null; onChoose: (stepId: string) => void; onFork: (stepId: string) => void; onVerdict: (e: Example, v: "keep" | "pass", artifact?: boolean) => void }) {
   const [openVig, setOpenVig] = useState<string | null>(d.draw.chosen_step);
   const [openEx, setOpenEx] = useState<string | null>(null);
   const cands = d.candidates;
@@ -173,18 +176,21 @@ function DrawBody({ d, brief, onChoose, onVerdict }: { d: Detail; brief: Record<
       <div className={"drawbody" + (brief ? " two" : "")}><div className="col">
       <div className="seed"><small>seed</small>{d.draw.seed_text}{d.draw.flag_note && <div className="warn" style={{ fontStyle: "normal", fontFamily: "Instrument Sans, system-ui, sans-serif", fontSize: 12.5, marginTop: ".5rem" }}>flagged: {d.draw.flag_note}</div>}</div>
       {cands.length > 0 && <>
-        <h2 className="sec">distribution <span>· stated probability · lower is further from centre</span></h2>
+        <h2 className="sec">distribution <span>· lowest to highest probability</span></h2>
         {cands.map((c) => {
           const chosen = c.step_id === d.draw.chosen_step;
+          const fork = d.forks.find((f) => f.step_id === c.step_id);
           const isOpen = openVig === c.step_id;
           return (
             <div key={c.step_id} className={"cand" + (chosen ? " chosen" : "")}>
-              <div className="pb"><b>{c.probability.toFixed(2)}<small>#{c.index}</small></b><div className="bar"><i style={{ width: `${(c.probability / maxP) * 100}%` }} /></div>{chosen && <span className="tag">chosen</span>}{c === cands[0] && !chosen && <span className="tag dim">lowest</span>}</div>
+              <div className="pb"><b>{c.probability.toFixed(2)}<small>#{c.index}</small></b><div className="bar"><i style={{ width: `${(c.probability / maxP) * 100}%` }} /></div>{chosen && <span className="tag">chosen</span>}{c === cands[0] && !chosen && <span className="tag dim">lowest</span>}
+                {gating && <button className="btn sm" title={choose(c.index)} onClick={() => onChoose(c.step_id)}>choose</button>}
+                {fork && <a className="tag" href={`#draw/${fork.id}`}>developed →</a>}
+                {!gating && !chosen && !fork && d.draw.chosen_step && <button className="btn sm" title={develop(c.index)} onClick={() => onFork(c.step_id)}>develop too</button>}</div>
               <div className="body">{c.premise}{c.warnings.length > 0 && <span className="warn"> {c.warnings.join(", ")}</span>}
                 <button className="vigtoggle" aria-expanded={isOpen} onClick={() => setOpenVig(isOpen ? null : c.step_id)}>
                   {isOpen ? <Md className="vig open" text={c.vignette} /> : <div className="vig">{firstParagraph(c.vignette)}</div>}
                 </button>
-                {gating && <div className="acts"><button className="btn sm" title={choose(c.index)} onClick={() => onChoose(c.step_id)}>choose this one</button></div>}
               </div>
             </div>);
         })}
@@ -195,10 +201,12 @@ function DrawBody({ d, brief, onChoose, onVerdict }: { d: Detail; brief: Record<
           {e.text === null
             ? <span className="exhead"><span className="caret" /><span className="dim"><span className="mono">{e.id}</span> · not in the current pool; the passages were re-extracted after this draw</span></span>
             : <button className="exhead" aria-expanded={openEx === e.id} onClick={() => setOpenEx(openEx === e.id ? null : e.id)}><span className={"caret" + (openEx === e.id ? " open" : "")}>▸</span><b>{e.title}</b> · {e.author || "unknown"} · <span className="cell">{e.cell}</span></button>}
-          <span className="exv">{e.latest ? <><span className={e.latest.verdict}>{e.latest.verdict}</span>{e.latest.artifact && <span className="art"> · artifact</span>}</> : <span className="dim">—</span>}</span>
+          <span className="exv">{e.latest && <><span className={e.latest.verdict}>{e.latest.verdict === "pass" ? "excluded" : "kept"}</span>{e.latest.artifact && <span className="art"> · artifact</span>}</>}</span>
           {openEx === e.id && e.text !== null && <div className="exbody">
             <p className="passage sm">{e.text}</p>
-            <div className="acts"><button className="btn sm keep" onClick={() => onVerdict(e, "keep")}>keep</button><button className="btn sm pass" onClick={() => onVerdict(e, "pass")}>pass</button><button className="btn sm art" onClick={() => onVerdict(e, e.latest?.verdict ?? "keep", !e.latest?.artifact)}>{e.latest?.artifact ? "unflag artifact" : "artifact"}</button></div>
+            <div className="acts">{e.latest?.verdict === "pass"
+              ? <button className="btn sm keep" title="Put this passage back in the pool for future draws." onClick={() => onVerdict(e, "keep")}>include</button>
+              : <button className="btn sm pass" title="Drop this passage from the pool for every future draw. This draw is unaffected." onClick={() => onVerdict(e, "pass")}>exclude</button>}<button className="btn sm art" onClick={() => onVerdict(e, e.latest?.verdict ?? "keep", !e.latest?.artifact)}>{e.latest?.artifact ? "unflag artifact" : "artifact"}</button></div>
           </div>}
         </div>))}
       </div>
@@ -235,6 +243,7 @@ function StartForm({ status }: { status: Status | null }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   useEffect(() => { api.facets().then(setFacets); }, []);
+  const [sources, setSources] = useState<string[]>([]);
   const [domains, setDomains] = useState<{ draw: number; list: { slug: string; heading: string }[] } | null>(null);
   const [pinned, setPinned] = useState<string[]>([]);
   useEffect(() => {
@@ -242,10 +251,20 @@ function StartForm({ status }: { status: Status | null }) {
     if (form.setting) api.setting(form.setting).then((s) => setDomains({ draw: s.draw, list: s.domains })).catch(() => setDomains(null));
   }, [form.setting]);
   const togglePin = (slug: string) => setPinned((p) => p.includes(slug) ? p.filter((x) => x !== slug) : [...p, slug]);
+  // sources grouped by the author or editor on the file, so a whole shelf goes in or out at once
+  const groups = useMemo(() => {
+    const m = new Map<string, Source[]>();
+    for (const s of facets?.sources ?? []) { if (!m.has(s.group)) m.set(s.group, []); m.get(s.group)!.push(s); }
+    return [...m].sort((a, b) => a[0].localeCompare(b[0]));
+  }, [facets]);
+  const toggleSource = (id: string) => setSources((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id]);
+  const toggleGroup = (rows: Source[]) => setSources((s) => rows.every((r) => s.includes(r.id))
+    ? s.filter((x) => !rows.some((r) => r.id === x))
+    : [...s, ...rows.map((r) => r.id).filter((id) => !s.includes(id))]);
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setForm({ ...form, [k]: e.target.value });
   const start = async (e: React.FormEvent) => {
     e.preventDefault(); setErr(""); setBusy(true);
-    try { const { id } = await api.startDraw({ ...form, domains: pinned.length ? pinned.join(",") : undefined }); location.hash = `#draw/${id}`; } catch (e: any) { setErr(e.message); } finally { setBusy(false); }
+    try { const { id } = await api.startDraw({ ...form, source: sources.join(",") || undefined, domains: pinned.length ? pinned.join(",") : undefined }); location.hash = `#draw/${id}`; } catch (e: any) { setErr(e.message); } finally { setBusy(false); }
   };
   const eligible = new Map(status?.per_source.map((s) => [s.source, s.eligible]) ?? []);
   return (
@@ -257,9 +276,20 @@ function StartForm({ status }: { status: Status | null }) {
         <div className="field"><label htmlFor="setting">Setting</label><select id="setting" className="sel" value={form.setting ?? ""} onChange={set("setting")}><option value="">Unrestricted</option>{facets?.settings.map((s) => <option key={s}>{s}</option>)}</select><span className="help">A setting draws two of its domains and slices its sections into each stage; hard rules go last.</span></div>
         {form.setting && domains && <div className="field"><span className="lbl">Domains</span><div className="chips" role="group" aria-label="Domains">{domains.list.map((d) => <button key={d.slug} type="button" className="chip" aria-pressed={pinned.includes(d.slug)} onClick={() => togglePin(d.slug)}>{d.heading}</button>)}</div><span className="help">{pinned.length ? `Pinned: ${pinned.join(", ")}, in this order.` : `None pinned: ${domains.draw} drawn at random.`}</span></div>}
         <div className="field"><label htmlFor="genre">Genre</label><select id="genre" className="sel" value={form.genre} onChange={set("genre")}><option>horror</option><option>scifi</option></select></div>
-        <div className="field"><label htmlFor="source">Examples from</label><select id="source" className="sel" value={form.source ?? ""} onChange={set("source")}><option value="">All sources{status ? ` · ${status.passages_eligible} eligible` : ""}</option>{facets?.sources.map((s) => <option key={s.id} value={s.id}>{s.id}{eligible.has(s.id) ? ` · ${eligible.get(s.id)}` : ""}</option>)}</select></div>
+        <div className="field"><span className="lbl">Examples from</span>
+          <div className="srcs" role="group" aria-label="Sources">{groups.map(([g, rows]) => (
+            <div key={g} className="srcgroup">
+              <button type="button" className="grouphd" aria-pressed={rows.every((r) => sources.includes(r.id))} onClick={() => toggleGroup(rows)}>{g}</button>
+              <div className="chips">{rows.map((r) => (
+                <button key={r.id} type="button" className="chip" aria-pressed={sources.includes(r.id)} title={r.id} onClick={() => toggleSource(r.id)}>{r.title}{eligible.has(r.id) ? <span className="dim"> · {eligible.get(r.id)}</span> : null}</button>))}
+              </div>
+            </div>))}
+          </div>
+          <span className="help">{sources.length
+            ? `${sources.reduce((n, id) => n + (eligible.get(id) ?? 0), 0)} eligible passages across ${sources.length} source${sources.length > 1 ? "s" : ""}.`
+            : `None selected: all ${status?.passages_eligible ?? ""} eligible passages.`}</span></div>
         <div className="field"><label htmlFor="seed">Seed</label><textarea id="seed" name="seed" value={form.seed ?? ""} onChange={set("seed")} placeholder="Leave empty to draw a theme from the bank, or type one…" /><span className="help">{status ? `${status.themes_eligible} eligible themes in the bank. ` : ""}A typed seed is logged as “typed”, a drawn one as “drawn”.</span></div>
-        <div className="actions"><button type="submit" className="btn primary" disabled={busy}>{busy ? "Starting…" : "Start draw"}</button><span className="dim" style={{ fontSize: 12.5 }}>About a minute to the gate, a few more to a brief.</span>{err && <div className="err" style={{ flexBasis: "100%" }}>{err}</div>}</div>
+        <div className="actions"><button type="submit" className="btn primary" disabled={busy}>{busy ? "Starting…" : "Start"}</button><span className="dim" style={{ fontSize: 12.5 }}>About a minute to the gate, a few more to a brief.</span>{err && <div className="err" style={{ flexBasis: "100%" }}>{err}</div>}</div>
       </form>
     </div>
   );

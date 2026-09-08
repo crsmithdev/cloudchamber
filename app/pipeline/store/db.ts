@@ -7,7 +7,7 @@ import { replay } from "../verdicts.ts";
 export type Db = Database;
 
 /** Bump with every change to an existing table, and mirror it in extract/store.py. */
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 /** `log` is the verdict log a migration replays from; only tests pass it. */
 export function openDb(path: string = DEFAULT_DB, log?: string): Db {
@@ -64,6 +64,7 @@ function renameBeforeSchema(db: Db) {
  *   2 -> 3  draws gains the domains column (typed settings).
  *   3 -> 4  verdicts.kind gains 'finding' and 'draft'; draws gains repaired_from
  *           and draft_config; steps gains tools (drafting pipeline).
+ *   4 -> 5  draws gains forked_from: a second candidate developed on its own.
  */
 function migrate(db: Db, schema: string, log?: string) {
   if (userVersion(db) < 1) {
@@ -92,6 +93,10 @@ function migrate(db: Db, schema: string, log?: string) {
     if (!columns(db, "draws").includes("draft_config")) db.exec("ALTER TABLE draws ADD COLUMN draft_config TEXT");
     if (!columns(db, "steps").includes("tools")) db.exec("ALTER TABLE steps ADD COLUMN tools TEXT NOT NULL DEFAULT ''");
     db.exec("PRAGMA user_version = 4");
+  }
+  if (userVersion(db) < 5) {
+    if (!columns(db, "draws").includes("forked_from")) db.exec("ALTER TABLE draws ADD COLUMN forked_from TEXT REFERENCES draws(id)");
+    db.exec("PRAGMA user_version = 5");
   }
 }
 
