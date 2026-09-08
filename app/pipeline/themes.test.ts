@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { openDb, type Db } from "./store/db.ts";
 import { FakeModel } from "./model.ts";
 import { Pipeline } from "./draw.ts";
-import { draftAll, draftStory, fewshotLines, replayThemes, validateTheme, type Embedder } from "./themes.ts";
+import { draftAll, draftStory, failures, fewshotLines, replayThemes, validateTheme, type Embedder } from "./themes.ts";
 import { record } from "./verdicts.ts";
 
 function fixture(): { db: Db; dir: string; log: string } {
@@ -82,6 +82,26 @@ describe("theme drafting", () => {
       { story_id: "scp/b", drafted: 2, banked: 1, attested: 1, rejected: 0 },
     ]);
     expect(await draftAll(p, {}, fakeEmbed, log)).toEqual([]);
+  });
+
+  test("a story the model refuses is recorded, skipped and not retried", async () => {
+    const { db, dir, log } = fixture();
+    const model = new FakeModel({
+      themes: (prompt: string) => /Story A text/.test(prompt)
+        ? { stop: "refusal" as const, text: "safeguards flagged this message. Details: `[bio]`" }
+        : themes("A quarantine that judges by position rather than symptom turns whoever steps outside into a carrier by definition."),
+      redundancy: () => "different",
+    });
+    const p = new Pipeline(db, model, { briefsDir: dir });
+    const reports = await draftAll(p, {}, fakeEmbed, log);
+    expect(reports.map((r) => r.story)).toEqual(["scp/b"]);                    // the batch went on
+    expect(model.calls.filter((c) => c.stage === "themes").map((c) => c.model))
+      .toEqual(["claude-opus-5", "claude-fable-5-1", "claude-opus-5"]);        // refused, fell back, refused, then story B
+    expect(db.query("SELECT story_id, stage, reason FROM theme_failures").all())
+      .toEqual([{ story_id: "scp/a", stage: "themes", reason: "refusal" }]);
+    expect(failures(db, "")).toHaveLength(1);
+    expect(failures(db, "")[0]).toContain("SKIPPED scp/a: themes refusal");
+    expect(await draftAll(p, {}, fakeEmbed, log)).toEqual([]);                 // neither story is retried
   });
 
   test("few-shot appears once twelve themes carry a keep verdict", () => {

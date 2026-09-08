@@ -75,6 +75,14 @@ CREATE TABLE IF NOT EXISTS theme_drafts (        -- one row per story drafted
   rejected   INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS theme_failures (      -- one row per story draftAll gave up on
+  story_id TEXT PRIMARY KEY,
+  stage    TEXT NOT NULL,
+  reason   TEXT NOT NULL,                   -- shape, refusal or error
+  error    TEXT NOT NULL,
+  at       TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS theme_rejections (
   id       INTEGER PRIMARY KEY AUTOINCREMENT,
   story_id TEXT NOT NULL,

@@ -14,7 +14,7 @@ import { fill } from "./prompts.ts";
 import { tags, words } from "./model.ts";
 import { ROOT, THEME_LOG, now } from "./paths.ts";
 import type { Db, ThemeRow } from "./store/db.ts";
-import type { Pipeline } from "./draw.ts";
+import { StepFailure, type Pipeline } from "./draw.ts";
 import { eligibleIds } from "./verdicts.ts";
 
 export type Embedder = (texts: string[]) => Promise<number[][]>;
@@ -183,12 +183,41 @@ export async function draftStory(p: Pipeline, storyId: string, embed: Embedder =
   return report;
 }
 
+/**
+ * Draft every story not already drafted or given up on. A story whose model
+ * call fails — the safeguards refuse a passage, the shape never parses — is
+ * recorded in theme_failures and skipped here and by every later run, so one
+ * story cannot end a batch of six hundred. Clear its row to try it again.
+ *
+ * Progress goes to stdout as it happens: the reports below are printed only
+ * once the whole batch is done, which tells you nothing while it runs.
+ */
 export async function draftAll(p: Pipeline, opts: { only?: string[]; limit?: number } = {}, embed: Embedder = pythonEmbedder, log: string = THEME_LOG): Promise<DraftReport[]> {
   const where = opts.only?.length ? `AND source_id IN (${opts.only.map(() => "?").join(",")})` : "";
-  const rows = p.db.query(`SELECT id FROM stories WHERE id NOT IN (SELECT story_id FROM theme_drafts) ${where} ORDER BY source_id, ord ${opts.limit ? `LIMIT ${opts.limit}` : ""}`).all(...(opts.only ?? [])) as { id: string }[];
+  const rows = p.db.query(`SELECT id FROM stories WHERE id NOT IN (SELECT story_id FROM theme_drafts) AND id NOT IN (SELECT story_id FROM theme_failures) ${where} ORDER BY source_id, ord ${opts.limit ? `LIMIT ${opts.limit}` : ""}`).all(...(opts.only ?? [])) as { id: string }[];
   const out: DraftReport[] = [];
-  for (const r of rows) out.push(await draftStory(p, r.id, embed, log));
+  for (const [i, r] of rows.entries()) {
+    const at = `[${i + 1}/${rows.length}] ${r.id}`;
+    try {
+      const report = await draftStory(p, r.id, embed, log);
+      out.push(report);
+      console.log(`${at}: ${report.banked} banked, ${report.attested} attested, ${report.rejected.length} rejected`);
+    } catch (e) {
+      const reason = e instanceof StepFailure ? e.reason : "error";
+      const stage = e instanceof StepFailure ? e.step.stage : "themes";
+      const error = String((e as any)?.message ?? e);
+      p.db.query("INSERT OR REPLACE INTO theme_failures (story_id, stage, reason, error, at) VALUES (?, ?, ?, ?, ?)")
+        .run(r.id, stage, reason, error.slice(0, 1000), now());
+      console.log(`${at}: SKIPPED ${stage} ${reason}`);
+    }
+  }
   return out;
+}
+
+/** The stories given up on since `since`, one line each. */
+export function failures(db: Db, since: string): string[] {
+  const rows = db.query("SELECT story_id, stage, reason, error FROM theme_failures WHERE at >= ? ORDER BY at").all(since) as { story_id: string; stage: string; reason: string; error: string }[];
+  return rows.map((r) => `SKIPPED ${r.story_id}: ${r.stage} ${r.reason} :: ${r.error.replace(/\s+/g, " ").slice(0, 160)}`);
 }
 
 export function histogram(db: Db, since: string): string {

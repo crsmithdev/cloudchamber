@@ -36,7 +36,7 @@ import { ClaudeCli } from "../pipeline/model.ts";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { BRIEFS, now } from "../pipeline/paths.ts";
-import { draftAll, histogram, replayThemes } from "../pipeline/themes.ts";
+import { draftAll, failures, histogram, replayThemes } from "../pipeline/themes.ts";
 import { formatFinding, lintFile, loadSetting } from "../pipeline/settings.ts";
 import { distill } from "../pipeline/distill.ts";
 import { Drafting } from "../pipeline/drafting.ts";
@@ -179,6 +179,7 @@ async function main() {
       const since = now();
       const reports = await draftAll(pipeline(), { only: values.only, limit: values.limit ? Number(values.limit) : undefined });
       for (const r of reports) console.log(`${r.story}: ${r.drafted} drafted, ${r.banked} banked, ${r.attested} attested, ${r.rejected.length} rejected${r.rejected.map((x) => `\n    REJ ${x.why.join("; ")} :: ${x.text.slice(0, 80)}`).join("")}`);
+      for (const f of failures(db, since)) console.log(f);
       console.log(histogram(db, since));
       const ex = exportBank(db);
       console.log(`exported ${ex.themes} themes to bank/`);
