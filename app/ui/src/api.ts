@@ -31,6 +31,8 @@ export const api = {
   draws: (archived = false) => j<Draw[]>(`/api/draws${archived ? "?archived=true" : ""}`),
   setting: (id: string) => j<{ id: string; name: string; draw: number; domains: { slug: string; heading: string }[] }>(`/api/settings/${id}`),
   draw: (id: string) => j<{ draw: Draw; steps: Step[]; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] }>(`/api/draws/${id}`),
+  like: (id: string) => j<Like>(`/api/draws/${id}/like`),
+  deleteDraw: (id: string) => j<{ deleted: string }>(`/api/draws/${id}`, { method: "DELETE" }),
   startDraw: (b: Record<string, string | undefined>) => j<{ id: string }>("/api/draws", { method: "POST", body: JSON.stringify(b) }),
   gate: (id: string, b: { action: string; step_id?: string; note?: string; findings?: string[]; finding?: string; beat?: number }) => j<any>(`/api/draws/${id}/gate`, { method: "POST", body: JSON.stringify(b) }),
   check: (id: string) => j<{ id: string; status: string }>(`/api/draws/${id}/check`, { method: "POST", body: "{}" }),
@@ -44,6 +46,13 @@ export const api = {
 
 export type Status = { passages: number; passages_eligible: number; passages_suspect: number; per_source: { source: string; n: number; eligible: number }[]; themes: number; themes_eligible: number; verdicts: number; draws: { status: string; n: number }[] };
 export type Source = { id: string; genre: string; group: string; title: string };
+/** The options one draw was made with, for a form that starts another like it. */
+export type Like = {
+  mode: string; setting?: string; genre?: string; sampling?: string; domains?: string[];
+  segment?: { source?: string | string[]; author?: string };
+  seed?: { mode: "picked"; themeId: string } | { mode: "typed"; text: string };
+  seed_text: string;
+};
 export type SamplingMode = { mode: string; floor: number; ceiling: number };
 export type Facets = { sources: Source[]; authors: string[]; cells: { cell: string; n: number }[]; settings: string[]; genres: Record<string, string[]>; sampling: SamplingMode[] };
 

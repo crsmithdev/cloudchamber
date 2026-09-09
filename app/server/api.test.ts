@@ -27,7 +27,7 @@ async function setup() {
   });
   const pipeline = new Pipeline(db, model, { briefsDir: join(dir, "briefs"), rng: () => 0.001, settingsDir: settingsFixture(dir) });
   const app = buildApi(db, pipeline);
-  const j = async (method: "GET" | "POST", url: string, body?: unknown) => {
+  const j = async (method: "GET" | "POST" | "DELETE", url: string, body?: unknown) => {
     const r = await app.inject({ method, url, payload: body as any });
     return { code: r.statusCode, body: r.json() };
   };
@@ -145,15 +145,19 @@ describe("api", () => {
     expect((await j("GET", "/api/draws/nope")).code).toBe(404);
   });
 
-  test("reject at the gate creates a linked draw", async () => {
+  test("a draw's options are readable for another like it, and a spent draw is deletable", async () => {
     const { j, pipeline } = await setup();
     const { body: { id } } = await j("POST", "/api/draws", { mode: "manual", genre: "horror", seed: "typed seed" });
     for (let i = 0; i < 50 && pipeline.draw(id).status !== "awaiting_gate"; i++) await Bun.sleep(10);
-    const rej = await j("POST", `/api/draws/${id}/gate`, { action: "keep-seed", note: "flat" });
-    expect(rej.code).toBe(202);
-    expect(rej.body.superseded).toBe(id);
-    expect(pipeline.draw(id).status).toBe("rejected");
-    expect(pipeline.draw(rej.body.id).seed_text).toBe("typed seed");
+    const like = await j("GET", `/api/draws/${id}/like`);
+    expect(like.code).toBe(200);
+    expect(like.body).toMatchObject({ mode: "manual", genre: "horror", sampling: "tail", seed: { mode: "typed", text: "typed seed" } });
+    expect((await j("GET", "/api/draws/nope/like")).code).toBe(404);
+    expect((await j("POST", `/api/draws/${id}/gate`, { action: "keep-seed" })).code).toBe(400);
+    const del = await j("DELETE", `/api/draws/${id}`);
+    expect(del.body.deleted).toBe(id);
+    expect((await j("GET", "/api/draws")).body).toHaveLength(0);
+    expect((await j("DELETE", `/api/draws/${id}`)).code).toBe(400);
   });
 
   test("an archived draw leaves the list, keeps its name, and comes back", async () => {

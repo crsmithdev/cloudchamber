@@ -28,11 +28,21 @@
 >   be developed as a fork: a draw of its own with the same seed, examples,
 >   setting, domains and sampling, carrying the candidate's premise and vignette
 >   across as a copied execute step and linked by `forked_from`.
+> - **Rejecting (US 23, REQ 35).** There is no reject, and no `rejected` status
+>   is written any more. A draw nobody chooses from simply stays at the gate;
+>   archive takes it out of the way and it stays choosable. What reject was for
+>   is now three separate acts: *redraw* opens the draw form filled from this
+>   draw's options and starts nothing until you press Start, so sampling, genre,
+>   domains, sources and the seed can all be changed first; *flag* records that
+>   the call looked wrong, with its note; *delete* removes a draw and its steps
+>   outright, and refuses on one that developed a candidate — that is what
+>   archive is for. On the CLI and the Voice Bridge, redraw is
+>   `fogbelt draw --like <draw>`, whose other arguments override the copy.
 > - **The trail (REQ 27).** Also carries the sampling mode, and `## forked_from`
 >   on a fork.
 > - **The viewer (REQ 34).** The distribution header reads `lowest to highest
 >   probability`, and choosing is per candidate, in the probability column;
->   the gate bar carries only reject, redraw, flag, a note and archive. A
+>   the gate bar carries redraw, flag, a note, archive and delete. A
 >   draw's example rows offer one `exclude` toggle, which reads `include` once
 >   the passage is out of the pool, rather than keep and pass: an example is
 >   eligible until it is excluded, so keep was a no-op there. The artifact

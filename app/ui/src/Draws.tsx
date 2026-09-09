@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { marked } from "marked";
 import { api, when, type Artifact, type Candidate, type Example, type Facets, type Draw, type Fork, type Source, type Status, type Step } from "./api.ts";
 
@@ -27,7 +27,7 @@ export function Md({ text, className = "" }: { text: string; className?: string 
 }
 
 /** Draws in the left pane, each expanding into its facts and step log; the selected draw, a step, or the start form fills the rest. */
-export function Draws({ status, selected }: { status: Status | null; selected: string | undefined }) {
+export function Draws({ status, selected, like }: { status: Status | null; selected: string | undefined; like?: string }) {
   const [draws, setDraws] = useState<Draw[]>([]);
   const [details, setDetails] = useState<Record<string, Detail>>({});
   const [open, setOpen] = useState<Set<string>>(new Set());
@@ -70,6 +70,10 @@ export function Draws({ status, selected }: { status: Status | null; selected: s
     setErr("");
     try { const r = await api.gate(d.draw.id, { action, step_id, note }); setNote(""); if (r.id && r.id !== d.draw.id) location.hash = `#draw/${r.id}`; else loadDetail(d.draw.id); loadDraws(); } catch (e: any) { setErr(e.message); }
   };
+  const remove = async () => {
+    if (!d || !confirm(`Delete ${d.draw.name ?? d.draw.id} and every step under it? There is no undo.`)) return;
+    try { await api.deleteDraw(d.draw.id); location.hash = "#draws"; loadDraws(); } catch (e: any) { setErr(e.message); }
+  };
   const verdict = async (e: Example, v: "keep" | "pass", artifact = false, note = "") => {
     await api.verdict({ kind: "example", target_id: e.id, verdict: v, artifact, note, method: "draw" });
     if (d) loadDetail(d.draw.id);
@@ -96,7 +100,7 @@ export function Draws({ status, selected }: { status: Status | null; selected: s
           </div>))}
       </div>
 
-      {isForm || !current ? <StartForm status={status} /> : (
+      {isForm || !current ? <StartForm status={status} like={like} /> : (
         <div className="pane read span">
           {!d ? (err ? <div className="err">{err}</div> : <span className="dim">loading…</span>) : <>
             <div className="drawhd"><h1>{d.draw.name ?? d.draw.id}</h1><span className="rid mono dim">{d.draw.id}</span><span className={"badge " + d.draw.status}>{label(d.draw.status)}</span><span className="meta">
@@ -107,8 +111,8 @@ export function Draws({ status, selected }: { status: Status | null; selected: s
             {d.draw.forked_from && <div className="dim" style={{ fontSize: 12 }}>forked from <a href={`#draw/${d.draw.forked_from}`} className="mono">{d.draw.forked_from}</a></div>}
             {d.draw.superseded_by && <div className="dim" style={{ fontSize: 12 }}>superseded by <a href={`#draw/${d.draw.superseded_by}`} className="mono">{d.draw.superseded_by}</a></div>}
             {d.draw.status === "awaiting_gate" && !step
-              ? <GateBar d={d} note={note} setNote={setNote} err={err} onGate={gate} />
-              : !step && <div className="gatebar"><ArchiveButton d={d} onGate={gate} />{err && <div className="err" style={{ flexBasis: "100%" }}>{err}</div>}</div>}
+              ? <GateBar d={d} note={note} setNote={setNote} err={err} onGate={gate} onDelete={remove} />
+              : !step && <div className="gatebar"><DrawTools d={d} onGate={gate} onDelete={remove} />{err && <div className="err" style={{ flexBasis: "100%" }}>{err}</div>}</div>}
             {step ? <StepView step={step} artifacts={d.artifacts.filter((a) => a.step_id === step.id)} chosen={step.id === d.draw.chosen_step} onBack={() => setStepId(null)} /> : <DrawBody d={d} brief={brief} onChoose={(id) => gate("choose", id)} onFork={(id) => gate("fork", id)} onVerdict={verdict} />}
           </>}
         </div>
@@ -140,21 +144,24 @@ function RowFacts({ d }: { d: Detail }) {
   );
 }
 
-function ArchiveButton({ d, onGate }: { d: Detail; onGate: (action: string) => void }) {
+function DrawTools({ d, onGate, onDelete }: { d: Detail; onGate: (action: string) => void; onDelete: () => void }) {
   return (
-    <button className="btn sm quiet" title={d.draw.archived_at ? "Put this draw back in the list." : "Hide this draw from the lists. Nothing else about it changes."}
-      onClick={() => onGate(d.draw.archived_at ? "unarchive" : "archive")}>{d.draw.archived_at ? "unarchive" : "archive"}</button>
+    <>
+      <button className="btn sm quiet" title={d.draw.archived_at ? "Put this draw back in the list." : "Hide this draw from the lists. Nothing else about it changes."}
+        onClick={() => onGate(d.draw.archived_at ? "unarchive" : "archive")}>{d.draw.archived_at ? "unarchive" : "archive"}</button>
+      <button className="btn sm quiet" title={d.draw.chosen_step ? "This draw produced a brief; archive it instead." : "Remove this draw and every step under it. There is no undo."}
+        disabled={!!d.draw.chosen_step} onClick={onDelete}>delete</button>
+    </>
   );
 }
 
-function GateBar({ d, note, setNote, err, onGate }: { d: Detail; note: string; setNote: (s: string) => void; err: string; onGate: (action: string, stepId?: string) => void }) {
+function GateBar({ d, note, setNote, err, onGate, onDelete }: { d: Detail; note: string; setNote: (s: string) => void; err: string; onGate: (action: string, stepId?: string) => void; onDelete: () => void }) {
   return (
     <div className="gatebar" role="group" aria-label="Gate">
-      <button className="btn pass" title="Close this draw as rejected and start a new one with a fresh seed and fresh examples." onClick={() => onGate("redraw")}>Reject</button>
-      <button className="btn pass" title="Close this draw as rejected and start a new one from the same seed, with fresh examples and premises." onClick={() => onGate("keep-seed")}>Redraw</button>
+      <a className="btn pass" href={`#draws/new/${d.draw.id}`} title="Open the draw form with this draw's options, to start another like it. This one stays open." style={{ textDecoration: "none" }}>Redraw</a>
       <button className="btn art" title="Mark this draw as a wrong call for later review. It stays open and nothing else changes." onClick={() => onGate("flag")}>Flag</button>
       <input type="text" name="gate-note" placeholder="note" aria-label="Gate note" value={note} onChange={(e) => setNote(e.target.value)} />
-      <ArchiveButton d={d} onGate={onGate} />
+      <DrawTools d={d} onGate={onGate} onDelete={onDelete} />
       {err && <div className="err" style={{ flexBasis: "100%" }}>{err}</div>}
     </div>
   );
@@ -271,7 +278,7 @@ export function StepView({ step, artifacts, chosen, onBack }: { step: Step; arti
   );
 }
 
-function StartForm({ status }: { status: Status | null }) {
+function StartForm({ status, like }: { status: Status | null; like?: string }) {
   const [facets, setFacets] = useState<Facets | null>(null);
   const [form, setForm] = useState<Record<string, string>>({ mode: "manual", sampling: "tail" });
   const [genreParts, setGenreParts] = useState<string[]>([]);
@@ -281,10 +288,32 @@ function StartForm({ status }: { status: Status | null }) {
   const [sources, setSources] = useState<string[]>([]);
   const [domains, setDomains] = useState<{ draw: number; list: { slug: string; heading: string }[] } | null>(null);
   const [pinned, setPinned] = useState<string[]>([]);
+  // pins to apply once the setting's domains arrive; a ref, so the fetch below cannot race the state that fills it
+  const wantPinned = useRef<string[]>([]);
   useEffect(() => {
     setPinned([]); setDomains(null);
-    if (form.setting) api.setting(form.setting).then((s) => setDomains({ draw: s.draw, list: s.domains })).catch(() => setDomains(null));
+    if (!form.setting) return;
+    api.setting(form.setting).then((s) => {
+      setDomains({ draw: s.draw, list: s.domains });
+      setPinned(wantPinned.current.filter((slug) => s.domains.some((d) => d.slug === slug)));
+      wantPinned.current = [];
+    }).catch(() => setDomains(null));
   }, [form.setting]);
+  // "redraw": every option of the draw this one is being started from
+  const [seedTouched, setSeedTouched] = useState(false);
+  const [themeId, setThemeId] = useState("");
+  useEffect(() => {
+    if (!like) return;
+    api.like(like).then((o) => {
+      setForm({ mode: o.mode, sampling: o.sampling ?? "tail", setting: o.setting ?? "", genre: o.genre ?? "", seed: o.seed_text });
+      wantPinned.current = o.domains ?? [];
+      setGenreParts([]);
+      setSeedTouched(false);
+      setThemeId(o.seed?.mode === "picked" ? o.seed.themeId : "");
+      const s = o.segment?.source;
+      setSources(Array.isArray(s) ? s : s ? [s] : []);
+    }).catch((e) => setErr(e.message));
+  }, [like]);
   const togglePin = (slug: string) => setPinned((p) => p.includes(slug) ? p.filter((x) => x !== slug) : [...p, slug]);
   // the chips are shortcuts into one free-text field: picking several joins them, typing clears them
   const toggleGenre = (v: string) => {
@@ -306,13 +335,21 @@ function StartForm({ status }: { status: Status | null }) {
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setForm({ ...form, [k]: e.target.value });
   const start = async (e: React.FormEvent) => {
     e.preventDefault(); setErr(""); setBusy(true);
-    try { const { id } = await api.startDraw({ ...form, source: sources.join(",") || undefined, domains: pinned.length ? pinned.join(",") : undefined }); location.hash = `#draw/${id}`; } catch (e: any) { setErr(e.message); } finally { setBusy(false); }
+    const keepsTheme = !!themeId && !seedTouched;
+    try {
+      const { id } = await api.startDraw({
+        ...form, seed: keepsTheme ? undefined : form.seed, seed_id: keepsTheme ? themeId : undefined,
+        source: sources.join(",") || undefined, domains: pinned.length ? pinned.join(",") : undefined,
+      });
+      location.hash = `#draw/${id}`;
+    } catch (e: any) { setErr(e.message); } finally { setBusy(false); }
   };
   const eligible = new Map(status?.per_source.map((s) => [s.source, s.eligible]) ?? []);
   return (
     <div className="pane read span">
       <form className="form" onSubmit={start}>
-        <h1>Start a draw</h1>
+        <h1>{like ? "Redraw" : "Start a draw"}</h1>
+        {like && <p className="lede" style={{ marginBottom: ".75rem" }}>Every option below comes from <a href={`#draw/${like}`} className="mono">{like}</a>, which stays open. Change what you want and start.</p>}
         <p className="lede">Pulls six eligible passages and a seed, asks for five premises off the centre of the distribution, writes each as a 400-word vignette, then stops at the gate for you. After the gate: a reverse outline, two context vignettes, the ending, and a brief in <span className="mono">briefs/</span>.</p>
         <div className="field"><span className="lbl">Gate</span><div className="seg" role="group" aria-label="Gate"><button type="button" aria-pressed={form.mode === "manual"} onClick={() => setForm({ ...form, mode: "manual" })}>Manual</button><button type="button" aria-pressed={form.mode === "auto"} onClick={() => setForm({ ...form, mode: "auto" })}>Auto</button></div><span className="help">Manual waits for you after the vignettes. Auto takes the lowest-probability premise and keeps going.</span></div>
         <div className="field"><label htmlFor="setting">Setting</label><select id="setting" className="sel" value={form.setting ?? ""} onChange={set("setting")}><option value="">Unrestricted</option>{facets?.settings.map((s) => <option key={s}>{s}</option>)}</select><span className="help">A setting draws two of its domains and slices its sections into each stage; hard rules go last.</span></div>
@@ -344,7 +381,7 @@ function StartForm({ status }: { status: Status | null }) {
           <span className="help">{sources.length
             ? `${sources.reduce((n, id) => n + (eligible.get(id) ?? 0), 0)} eligible passages across ${sources.length} source${sources.length > 1 ? "s" : ""}.`
             : `None selected: all ${status?.passages_eligible ?? ""} eligible passages.`}</span></div>
-        <div className="field"><label htmlFor="seed">Seed</label><textarea id="seed" name="seed" value={form.seed ?? ""} onChange={set("seed")} placeholder="Leave empty to draw a theme from the bank, or type one…" /><span className="help">{status ? `${status.themes_eligible} eligible themes in the bank. ` : ""}A typed seed is logged as “typed”, a drawn one as “drawn”.</span></div>
+        <div className="field"><label htmlFor="seed">Seed</label><textarea id="seed" name="seed" value={form.seed ?? ""} onChange={(e) => { setSeedTouched(true); setForm({ ...form, seed: e.target.value }); }} placeholder="Leave empty to draw a theme from the bank, or type one…" /><span className="help">{status ? `${status.themes_eligible} eligible themes in the bank. ` : ""}A typed seed is logged as “typed”, a drawn one as “drawn”.</span></div>
         <div className="actions"><button type="submit" className="btn primary" disabled={busy}>{busy ? "Starting…" : "Start"}</button><span className="dim" style={{ fontSize: 12.5 }}>About a minute to the gate, a few more to a brief.</span>{err && <div className="err" style={{ flexBasis: "100%" }}>{err}</div>}</div>
       </form>
     </div>

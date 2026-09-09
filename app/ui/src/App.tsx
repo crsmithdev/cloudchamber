@@ -15,7 +15,7 @@ export function App() {
   const [status, setStatus] = useState<Status | null>(null);
   const refresh = () => api.status().then(setStatus).catch(() => {});
   useEffect(() => { refresh(); }, [hash]);
-  const [view, arg] = hash.split("/");
+  const [view, arg, arg2] = hash.split("/");
   const drawsView = view === "draws" || view === "draw";
   const developView = view === "develop";
   const drawsOpen = status?.draws.filter((r) => r.status === "awaiting_gate" || r.status === "running").reduce((a, r) => a + r.n, 0) ?? 0;
@@ -44,7 +44,7 @@ export function App() {
         </nav>}
       </aside>
       {view === "browse" && <Browser status={status} onVerdict={refresh} />}
-      {drawsView && <Draws status={status} selected={view === "draw" ? arg : arg === "new" ? "new" : undefined} />}
+      {drawsView && <Draws status={status} selected={view === "draw" ? arg : arg === "new" ? "new" : undefined} like={arg === "new" ? arg2 : undefined} />}
       {developView && <Develop selected={arg} />}
     </div>
   );

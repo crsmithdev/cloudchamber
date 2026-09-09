@@ -2,9 +2,9 @@
 # command shown, in this directory, and returns what it printed.
 
 description = """
-Fog Belt is a story-ideation pipeline. A draw takes a seed and six example passages, produces five premises, executes each as a 400-word vignette, and waits at the gate. Chris chooses one at the gate; the draw then derives an outline, two context vignettes and an ending, and exports a brief. A finished brief is checked (gate 1: accept or dismiss findings by id, hold, pass) and then drafted into scenes (gate 2: keep, rewrite one scene, pass).
+Fog Belt is a story-ideation pipeline. A draw takes a seed and six example passages, produces five premises, executes each as a 400-word vignette, and waits at the gate. A draw it is not worth choosing from just stays at the gate; archive hides it, redraw starts another like it, delete removes it. Chris chooses one at the gate; the draw then derives an outline, two context vignettes and an ending, and exports a brief. A finished brief is checked (gate 1: accept or dismiss findings by id, hold, pass) and then drafted into scenes (gate 2: keep, rewrite one scene, pass).
 
-Rules. Never choose, accept, dismiss, keep or pass at any gate unless Chris says to, and never guess a step or finding id: read it from the tool output. You do not write premises, vignettes or stories yourself; the pipeline does. draw, check and draft take minutes and return a job id; when Chris asks whether it is done, read the job. When a draw is awaiting the gate, use candidates to read the five in full; when reading candidates aloud, read the premise, then the vignette, in the order printed, without summarising. Draw ids look like 20260906203231-7923; Chris may refer to a draw by its seed words, so match those against the draws list.
+Rules. Never choose, accept, dismiss, keep, pass, archive or delete at any gate unless Chris says to, and never guess a step or finding id: read it from the tool output. You do not write premises, vignettes or stories yourself; the pipeline does. draw, check and draft take minutes and return a job id; when Chris asks whether it is done, read the job. When a draw is awaiting the gate, use candidates to read the five in full; when reading candidates aloud, read the premise, then the vignette, in the order printed, without summarising. Draw ids look like 20260906203231-7923; Chris may refer to a draw by its seed words, so match those against the draws list.
 """
 
 [tools.status]
@@ -80,19 +80,28 @@ description = "the execute step id of the candidate, from candidates"
 position = 3
 required = true
 
-[tools.reject]
-description = "Reject a draw at the gate: redraw draws a fresh seed and examples, keep-seed keeps the seed and redraws examples. Both start a new draw in the background."
-command = ["./fogbelt", "gate"]
+[tools.redraw]
+description = "Start another draw on an existing draw's options: same seed, setting, domains, genre, sampling and sources. The draw it copies is left open and untouched. Any argument of draw may be given as well, and overrides the copy."
+command = ["./fogbelt", "draw"]
 background = true
-[tools.reject.args.draw]
+[tools.redraw.args.like]
+description = "the draw to take the options from"
+flag = "--like"
+required = true
+[tools.redraw.args.sampling]
+description = "override where in the distribution the premises are asked for"
+enum = ["tail", "off-centre", "standard"]
+flag = "--sampling"
+[tools.redraw.args.seed]
+description = "override the seed with one Chris dictates"
+flag = "--seed"
+
+[tools.delete]
+description = "Remove a draw and every step under it. Only for a draw that never developed a candidate; one that produced a brief is archived instead. There is no undo, so never call this unless Chris says to."
+command = ["./fogbelt", "delete"]
+[tools.delete.args.draw]
 position = 1
 required = true
-[tools.reject.args.how]
-position = 2
-required = true
-enum = ["redraw", "keep-seed"]
-[tools.reject.args.note]
-flag = "--note"
 
 [tools.brief]
 description = "Print a finished brief: trail, chosen vignette, outline, two context vignettes and the ending."

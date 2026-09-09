@@ -151,24 +151,44 @@ describe("draw graph", () => {
     await expect(p.fork(draw.id, cs[0].step_id)).rejects.toThrow(/itself developed/);
   });
 
-  test("reject: redraw and keep-seed create linked draws; flag starts nothing", async () => {
+  test("like starts another draw on the same options and leaves the first open", async () => {
     const { db, dir } = fixture();
-    const s = script({ premises: [premises(), premises(), premises()] });
-    const { p } = pipe(db, dir, s);
-    const draw = await p.start({ mode: "manual", genre: "horror", seed: { mode: "typed", text: "a typed seed" } });
+    const band = premises([0.12, 0.20, 0.30, 0.15, 0.25]);
+    const { p } = pipe(db, dir, script({ premises: [band, band] }));
+    const draw = await p.start({ mode: "manual", genre: "horror", sampling: "off-centre", seed: { mode: "typed", text: "a typed seed" } });
     const flagged = p.flag(draw.id, "call looks wrong");
     expect(flagged.flagged).toBe(1);
-    expect(flagged.status).toBe("awaiting_gate");
-    const next = await p.reject(draw.id, "keep-seed", "flat batch");
-    expect(next.seed_text).toBe("a typed seed");
-    expect(next.seed_mode).toBe("typed");
-    expect(p.draw(draw.id).status).toBe("rejected");
-    expect(p.draw(draw.id).superseded_by).toBe(next.id);
-    expect(JSON.parse(next.example_ids)).toHaveLength(6);
-    const third = await p.reject(next.id, "redraw");
-    expect(third.seed_mode).toBe("drawn");
-    expect(third.seed_text).toBe("A theme with a turn.");
-    expect(p.draw(next.id).superseded_by).toBe(third.id);
+    expect(flagged.status).toBe("awaiting_gate");            // a flag closes nothing and starts nothing
+    const again = await p.start(p.like(draw.id));
+    expect([again.seed_text, again.seed_mode, again.sampling, again.genre]).toEqual(["a typed seed", "typed", "off-centre", "horror"]);
+    expect(JSON.parse(again.example_ids)).toHaveLength(6);
+    expect(p.draw(draw.id).status).toBe("awaiting_gate");    // the draw it came from is untouched
+    expect(p.draw(draw.id).superseded_by).toBeNull();
+    // a seed drawn from the bank comes back as the theme, so the copy is recorded as drawn too
+    db.query(`INSERT INTO draws (id, name, genre, mode, seed_mode, seed_text, seed_theme_id, example_ids, sampling, status, created_at)
+              VALUES ('d1', 'n', 'horror', 'auto', 'drawn', 'A theme with a turn.', 't1', '[]', 'tail', 'awaiting_gate', 'now')`).run();
+    expect(p.like("d1").seed).toEqual({ mode: "picked", themeId: "t1" });
+  });
+
+  test("delete removes a draw that never developed, and refuses one that did", async () => {
+    const { db, dir } = fixture();
+    const { p } = pipe(db, dir, script({ premises: [premises(), premises()] }));
+    const draw = await p.start({ mode: "manual", genre: "horror" });
+    expect(p.steps(draw.id).length).toBeGreaterThan(0);
+    expect(p.artifacts(draw.id).length).toBeGreaterThan(0);
+    // a draw another draw points at keeps its links
+    db.query("INSERT INTO draws (id, name, genre, mode, seed_mode, seed_text, example_ids, status, created_at, superseded_by) VALUES ('later', 'n', 'horror', 'manual', 'drawn', 'x', '[]', 'done', 'now', ?)").run(draw.id);
+    expect(() => p.delete(draw.id)).toThrow(/referenced by later/);
+    db.query("DELETE FROM draws WHERE id = 'later'").run();
+    p.delete(draw.id);
+    expect(() => p.draw(draw.id)).toThrow(/no draw/);
+    expect(p.steps(draw.id)).toHaveLength(0);
+    expect(p.artifacts(draw.id)).toHaveLength(0);
+    expect(p.draws()).toHaveLength(0);
+    // one that reached the gate and was chosen is part of the record on disk
+    const kept = await p.start({ mode: "auto", genre: "horror" });
+    expect(kept.chosen_step).toBeTruthy();
+    expect(() => p.delete(kept.id)).toThrow(/archive it instead/);
   });
 
   test("shape failures retry once on the same model then fail and flag the draw", async () => {

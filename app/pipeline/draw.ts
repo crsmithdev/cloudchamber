@@ -301,21 +301,34 @@ export class Pipeline {
     return this.draw(drawId);
   }
 
-  async reject(drawId: string, how: "redraw" | "keep-seed", note = ""): Promise<DrawRow> {
+  /**
+   * The options a draw was made with, for starting another like it. The seed
+   * comes back as the theme it was drawn from where there was one, so a redraw
+   * of a drawn seed is still recorded as drawn.
+   */
+  like(drawId: string): DrawOpts {
     const draw = this.draw(drawId);
-    if (draw.status !== "awaiting_gate") throw new Error(`draw ${drawId} is ${draw.status}, not awaiting_gate`);
-    const opts: DrawOpts = {
+    return {
       mode: draw.mode, setting: draw.setting ?? undefined, genre: draw.genre, sampling: draw.sampling as Sampling,
+      domains: draw.domains ? (JSON.parse(draw.domains) as string[]) : undefined,
       segment: draw.segment ? JSON.parse(draw.segment) : undefined,
-      seed: how === "keep-seed"
-        ? (draw.seed_theme_id ? { mode: "picked", themeId: draw.seed_theme_id } : { mode: "typed", text: draw.seed_text })
-        : { mode: "drawn" },
+      seed: draw.seed_theme_id ? { mode: "picked", themeId: draw.seed_theme_id } : { mode: "typed", text: draw.seed_text },
     };
-    this.db.query("UPDATE draws SET status = 'rejected', flag_note = ?, ended_at = ? WHERE id = ?").run(note, now(), drawId);
-    const next = await this.start({ ...opts, mode: "manual" });
-    this.db.query("UPDATE draws SET superseded_by = ? WHERE id = ?").run(next.id, drawId);
-    if (how === "keep-seed") this.db.query("UPDATE draws SET seed_mode = ? WHERE id = ?").run(draw.seed_mode, next.id);
-    return this.draw(next.id);
+  }
+
+  /**
+   * Remove a draw and everything recorded under it. Only for draws that never
+   * became a brief: one that did is part of the record on disk and is archived
+   * instead. A draw another draw points at is refused, so no link is orphaned.
+   */
+  delete(drawId: string): void {
+    const draw = this.draw(drawId);
+    if (draw.chosen_step) throw new Error(`draw ${drawId} developed a candidate; archive it instead of deleting it`);
+    const linked = this.db.query("SELECT id FROM draws WHERE superseded_by = ? OR repaired_from = ? OR forked_from = ?").all(drawId, drawId, drawId) as { id: string }[];
+    if (linked.length) throw new Error(`draw ${drawId} is referenced by ${linked.map((r) => r.id).join(", ")}`);
+    this.db.query("DELETE FROM artifacts WHERE step_id IN (SELECT id FROM steps WHERE draw_id = ?)").run(drawId);
+    this.db.query("DELETE FROM steps WHERE draw_id = ?").run(drawId);
+    this.db.query("DELETE FROM draws WHERE id = ?").run(drawId);
   }
 
   /**

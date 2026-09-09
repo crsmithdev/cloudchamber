@@ -154,6 +154,15 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     }
   });
 
+  /** The options one draw was made with, for a form that starts another like it. */
+  app.get<{ Params: { id: string } }>("/api/draws/:id/like", async (req, reply) => {
+    try { return { ...pipeline.like(req.params.id), seed_text: pipeline.draw(req.params.id).seed_text }; } catch (e: any) { return reply.code(404).send({ error: e.message }); }
+  });
+
+  app.delete<{ Params: { id: string } }>("/api/draws/:id", async (req, reply) => {
+    try { pipeline.delete(req.params.id); return { deleted: req.params.id }; } catch (e: any) { return reply.code(400).send({ error: e.message }); }
+  });
+
   /** A setting's domains for the start form's pin field; the setting is read from the pipeline's settings directory. */
   app.get<{ Params: { id: string } }>("/api/settings/:id", async (req, reply) => {
     try {
@@ -209,8 +218,7 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
         running.set(forkId, started.catch(() => undefined));
         return reply.code(202).send({ id: forkId, forked_from: id });
       }
-      if (action === "redraw" || action === "keep-seed") { const next = await pipeline.reject(id, action, note); return reply.code(202).send({ id: next.id, superseded: id }); }
-      return reply.code(400).send({ error: "action must be choose | fork | redraw | keep-seed | flag | archive | unarchive | accept | dismiss | hold | pass | keep | rewrite" });
+      return reply.code(400).send({ error: "action must be choose | fork | flag | archive | unarchive | accept | dismiss | hold | pass | keep | rewrite" });
     } catch (e: any) { return reply.code(400).send({ error: e.message }); }
   });
 

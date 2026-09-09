@@ -11,10 +11,12 @@ const DOC = `fogbelt — the one command the skill and the UI drive.
                                           a passed story hides all its passages
    fogbelt replay                         rebuild the verdicts table from bank/verdicts.jsonl
    fogbelt draw [--setting ID [--domains a,b]] [--genre G] [--sampling M] [--auto] [--source S[,S]] [--author A]
-               [--seed "text" | --seed-id ID]
+               [--seed "text" | --seed-id ID] [--like DRAW]
+                                          --like takes another draw's options; the rest override it
    fogbelt setting lint <id>              check a setting file; exit 1 with one finding per line
    fogbelt distill <id> [--domain SLUG]   fill a setting's empty or redraft-marked sections from its reference/
-   fogbelt gate <draw> choose <execute-step> | fork <execute-step> | redraw | keep-seed | flag | archive | unarchive  [--note "..."]
+   fogbelt gate <draw> choose <execute-step> | fork <execute-step> | flag | archive | unarchive  [--note "..."]
+   fogbelt delete <draw>                  remove a draw that never produced a brief
    fogbelt themes [--only SRC ...] [--limit N]   draft themes for stories not yet drafted
    fogbelt draws [--archived]              list draws, archived ones included with the flag
    fogbelt draw-show <draw>                 steps and artifacts of one draw
@@ -34,7 +36,7 @@ import { exportBank } from "../pipeline/bank.ts";
 import { extractAll } from "../pipeline/extract.ts";
 import { status } from "../pipeline/status.ts";
 import { KINDS, inherit, record, replay, type Kind } from "../pipeline/verdicts.ts";
-import { Pipeline, type SeedChoice } from "../pipeline/draw.ts";
+import { Pipeline, type DrawOpts, type SeedChoice } from "../pipeline/draw.ts";
 import type { Sampling } from "../pipeline/config.ts";
 import { ClaudeCli } from "../pipeline/model.ts";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
@@ -112,7 +114,7 @@ async function main() {
     case "draw": {
       const { values } = parseArgs({
         args: rest, allowPositionals: true,
-        options: { setting: { type: "string" }, domains: { type: "string" }, genre: { type: "string" }, sampling: { type: "string" }, auto: { type: "boolean", default: false },
+        options: { setting: { type: "string" }, domains: { type: "string" }, genre: { type: "string" }, sampling: { type: "string" }, like: { type: "string" }, auto: { type: "boolean", default: false },
           source: { type: "string" }, author: { type: "string" }, seed: { type: "string" }, "seed-id": { type: "string" } },
       });
       if (values.domains && !values.setting) usage();
@@ -120,13 +122,22 @@ async function main() {
       const sources = values.source ? values.source.split(",").map((s) => s.trim()).filter(Boolean) : [];
       const segment = sources.length || values.author ? { source: sources.length ? sources : undefined, author: values.author } : undefined;
       const domains = values.domains ? values.domains.split(",").map((d) => d.trim()).filter(Boolean) : undefined;
-      const draw = await pipeline().start({ mode: values.auto ? "auto" : "manual", setting: values.setting, domains, genre: values.genre,
-        sampling: values.sampling as Sampling | undefined, segment, seed });
+      const base = values.like ? pipeline().like(values.like) : {};
+      const draw = await pipeline().start({
+        ...base,
+        mode: values.auto ? "auto" : values.like ? (base as DrawOpts).mode : "manual",
+        ...(values.setting ? { setting: values.setting } : {}),
+        ...(domains ? { domains } : {}),
+        ...(values.genre ? { genre: values.genre } : {}),
+        ...(values.sampling ? { sampling: values.sampling as Sampling } : {}),
+        ...(segment ? { segment } : {}),
+        ...(values.seed || values["seed-id"] ? { seed } : {}),
+      });
       console.log(JSON.stringify(draw, null, 2));
       if (draw.status === "awaiting_gate") {
         console.log("\ncandidates, by stated probability:");
         for (const c of pipeline().candidates(draw.id)) console.log(`  ${c.probability}  ${c.step_id}  ${c.premise.slice(0, 100)}…`);
-        console.log(`\nfogbelt gate ${draw.id} choose <step> | fork <step> | redraw | keep-seed | flag --note "..."`);
+        console.log(`\nfogbelt gate ${draw.id} choose <step> | fork <step> | flag --note "..."`);
       }
       break;
     }
@@ -137,8 +148,6 @@ async function main() {
       if (!drawId || !action) usage();
       const out = action === "choose" ? await p.choose(drawId!, args[0]!)
         : action === "fork" ? await p.fork(drawId!, args[0]!)
-        : action === "redraw" ? await p.reject(drawId!, "redraw", values.note)
-        : action === "keep-seed" ? await p.reject(drawId!, "keep-seed", values.note)
         : action === "flag" ? p.flag(drawId!, values.note)
         : action === "archive" ? p.archive(drawId!)
         : action === "unarchive" ? p.archive(drawId!, false)
@@ -225,6 +234,13 @@ async function main() {
       console.log(`fogbelt serving on http://127.0.0.1:${values.port}`);
       return;
     }
+    case "delete": {
+      const [drawId] = rest;
+      if (!drawId) usage();
+      pipeline().delete(drawId!);
+      console.log(`deleted ${drawId}`);
+      break;
+    }
     case "draws":
       for (const r of pipeline().draws(rest.includes("--archived"))) {
         console.log(`${r.id}  ${(r.name ?? "").padEnd(30)} ${r.status.padEnd(19)} ${r.mode.padEnd(6)} ${r.setting ?? "-"}  ${r.archived_at ? "(archived) " : ""}${r.repaired_from ? `(repairs ${r.repaired_from}) ` : ""}${r.seed_text.slice(0, 60)}`);
@@ -242,7 +258,7 @@ async function main() {
       const cs = p.candidates(drawId!);
       if (!cs.length) { console.log(`draw ${drawId} has no candidates (status ${p.draw(drawId!).status})`); break; }
       for (const c of cs) console.log(`\n\n# candidate ${c.index} · step ${c.step_id} · probability ${c.probability}${c.warnings.length ? ` · warnings: ${c.warnings.join("; ")}` : ""}\n\n## premise\n\n${c.premise}\n\n## vignette\n\n${c.vignette}`);
-      console.log(`\nfogbelt gate ${drawId} choose <step> | redraw | keep-seed | flag --note "..."`);
+      console.log(`\nfogbelt gate ${drawId} choose <step> | fork <step> | flag --note "..."`);
       break;
     }
     case "brief": {
