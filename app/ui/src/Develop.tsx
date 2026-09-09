@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api, when, type Draw, type DraftConfig, type Finding, type Findings, type Story, type Step } from "./api.ts";
-import { Log, Md, StepView, firstParagraph, label, type Detail } from "./Draws.tsx";
+import { Caret, Log, Md, StepView, firstParagraph, label, type Detail } from "./Draws.tsx";
 
 /**
  * Develop a brief: the stages after a brief (docs/specs/2026-09-05-drafting-pipeline.md).
@@ -98,7 +98,7 @@ function BriefFiles({ id, open = "outline.md" }: { id: string; open?: string }) 
   if (!brief) return <span className="dim">loading…</span>;
   return (
     <div className="brief" style={{ gridTemplateColumns: "minmax(0, 1fr)" }}>{BRIEF_FILES.filter((f) => brief[f]).map((f) => (
-      <details className="file ctx" key={f} open={f === open}><summary><span className="caret">▸</span><span className="fn">{f}</span><span className="dim"> · {firstParagraph(brief[f]).slice(0, 80)}…</span></summary><Md className="passage sm" text={boldLabels(brief[f])} /></details>))}</div>
+      <details className="file ctx" key={f} open={f === open}><summary><Caret /><span className="fn">{f}</span><span className="dim"> · {firstParagraph(brief[f]).slice(0, 80)}…</span></summary><Md className="passage sm" text={boldLabels(brief[f])} /></details>))}</div>
   );
 }
 
@@ -173,7 +173,7 @@ function GateOne({ d, onAct, onDraft }: { d: Detail; onAct: (fn: () => Promise<a
         {f && <Profiles f={f} settingJobs={settingJobs} />}
         {f && f.examined.length > 0 && <>
           <h2 className="sec">examined <span>· what an empty result would have looked at</span></h2>
-          <button className="fold" aria-expanded={examined} onClick={() => setExamined((e) => !e)}><span className={"caret" + (examined ? " open" : "")}>▸</span><span className="fn mono">{f.examined.length} lists</span><span className="dim">· {[...new Set(f.examined.map((e) => e.stage))].join(", ")}</span></button>
+          <button className="fold" aria-expanded={examined} onClick={() => setExamined((e) => !e)}><Caret open={examined} /><span className="fn mono">{f.examined.length} lists</span><span className="dim">· {[...new Set(f.examined.map((e) => e.stage))].join(", ")}</span></button>
           {examined && f.examined.map((e, i) => <div key={i} className="mono dim" style={{ fontSize: 11.5, lineHeight: 1.7, padding: ".25rem 0 .25rem 1.4rem", whiteSpace: "pre-wrap" }}><span className="mute">{e.stage} · sample {e.sample}</span>{"\n"}{e.examined}</div>)}
         </>}
         <h2 className="sec">brief <span>· <a href={api.briefFile(id, "trail.md")} target="_blank" rel="noopener" className="mono">briefs/{id}/trail.md</a></span></h2>
@@ -234,7 +234,7 @@ function Profiles({ f, settingJobs }: { f: Findings; settingJobs: string[] }) {
       {structure?.answers && <>
         <h2 className="sec" title={STRUCTURE_TIP}>structure <span>· present / absent · never summed</span></h2>
         <div className="profile">{STRUCTURE_Q.map((q) => <div key={q} className={structure.answers![q]?.answer === "present" ? "on" : ""} title={`${STRUCTURE_DEF[q]}\n\n${structure.answers![q]?.answer ?? ""}: “${structure.answers![q]?.quote ?? ""}”`}>{q.replace("category-violation", "category")}</div>)}</div>
-        <details className="ctx" style={{ marginTop: ".6rem" }}><summary><span className="caret">▸</span><span className="fn">quotes</span></summary>
+        <details className="ctx" style={{ marginTop: ".6rem" }}><summary><Caret /><span className="fn">quotes</span></summary>
           <dl className="facts" style={{ marginTop: ".5rem" }}>{STRUCTURE_Q.map((q) => <React.Fragment key={q}><dt title={STRUCTURE_DEF[q]}>{q}</dt><dd className="serif" style={{ fontStyle: "italic" }}>{structure.answers![q]?.quote}</dd></React.Fragment>)}</dl></details>
       </>}
       {resemblance && <>

@@ -31,9 +31,13 @@
 > - **The trail (REQ 27).** Also carries the sampling mode, and `## forked_from`
 >   on a fork.
 > - **The viewer (REQ 34).** The distribution header reads `lowest to highest
->   probability`. A draw's example rows offer one `exclude` toggle, which reads
->   `include` once the passage is out of the pool, rather than keep and pass: an
->   example is eligible until it is excluded, so keep was a no-op there.
+>   probability`, and choosing is per candidate, in the probability column;
+>   the gate bar carries only reject, redraw, flag, a note and archive. A
+>   draw's example rows offer one `exclude` toggle, which reads `include` once
+>   the passage is out of the pool, rather than keep and pass: an example is
+>   eligible until it is excluded, so keep was a no-op there. The artifact
+>   flag is `flag` / `unflag` there, with a note field beside it; the stored
+>   verdict fields are unchanged.
 > - **Archiving (new).** A draw at any status can be archived, which takes it
 >   out of both lists, out of the browse view and out of the status counts and
 >   changes nothing else: `archived_at` on the row, reversible, and the draw is

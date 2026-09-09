@@ -15,6 +15,11 @@ const SAMPLING_HELP: Record<string, string> = {
 };
 const develop = (index: number) => `Develop premise ${index} as a draw of its own: the same seed and examples, its own outline, context vignettes, ending and brief.`;
 
+/** The disclosure chevron. Rotated by CSS on `.open`, or by the parent `details[open]`. */
+export function Caret({ open }: { open?: boolean }) {
+  return <span className={"caret icon" + (open ? " open" : "")} aria-hidden="true">chevron_right</span>;
+}
+
 /** Model output and brief files are markdown written by this pipeline; rendered as written. */
 export function Md({ text, className = "" }: { text: string; className?: string }) {
   const html = useMemo(() => marked.parse(text, { async: false }) as string, [text]);
@@ -65,8 +70,8 @@ export function Draws({ status, selected }: { status: Status | null; selected: s
     setErr("");
     try { const r = await api.gate(d.draw.id, { action, step_id, note }); setNote(""); if (r.id && r.id !== d.draw.id) location.hash = `#draw/${r.id}`; else loadDetail(d.draw.id); loadDraws(); } catch (e: any) { setErr(e.message); }
   };
-  const verdict = async (e: Example, v: "keep" | "pass", artifact = false) => {
-    await api.verdict({ kind: "example", target_id: e.id, verdict: v, artifact, note: "", method: "draw" });
+  const verdict = async (e: Example, v: "keep" | "pass", artifact = false, note = "") => {
+    await api.verdict({ kind: "example", target_id: e.id, verdict: v, artifact, note, method: "draw" });
     if (d) loadDetail(d.draw.id);
   };
   const step = d && stepId ? d.steps.find((s) => s.id === stepId) : undefined;
@@ -94,11 +99,16 @@ export function Draws({ status, selected }: { status: Status | null; selected: s
       {isForm || !current ? <StartForm status={status} /> : (
         <div className="pane read span">
           {!d ? (err ? <div className="err">{err}</div> : <span className="dim">loading…</span>) : <>
-            <div className="drawhd"><h1>{d.draw.name ?? d.draw.id}</h1><span className="rid mono dim">{d.draw.id}</span><span className={"badge " + d.draw.status}>{label(d.draw.status)}</span><span className="dim" style={{ fontSize: 12 }}>{d.draw.setting ?? "unrestricted"}{d.draw.domains ? ` · ${(JSON.parse(d.draw.domains) as string[]).join(" + ")}` : ""} · {d.draw.genre} · {d.draw.sampling} · {d.draw.mode}{d.draw.gate_method ? ` · gate ${d.draw.gate_method}` : ""} · seed {d.draw.seed_mode}</span>
-              <button className="btn sm quiet" title={d.draw.archived_at ? "Put this draw back in the list." : "Hide this draw from the lists. Nothing else about it changes."} onClick={() => gate(d.draw.archived_at ? "unarchive" : "archive")}>{d.draw.archived_at ? "unarchive" : "archive"}</button></div>
+            <div className="drawhd"><h1>{d.draw.name ?? d.draw.id}</h1><span className="rid mono dim">{d.draw.id}</span><span className={"badge " + d.draw.status}>{label(d.draw.status)}</span><span className="meta">
+                <span><i>setting</i> {d.draw.setting ?? "unrestricted"}</span>
+                {d.draw.domains && <span><i>domains</i> {(JSON.parse(d.draw.domains) as string[]).join(" + ")}</span>}
+                <span><i>genre</i> {d.draw.genre}</span>
+                <span><i>sampling</i> {d.draw.sampling}</span></span></div>
             {d.draw.forked_from && <div className="dim" style={{ fontSize: 12 }}>forked from <a href={`#draw/${d.draw.forked_from}`} className="mono">{d.draw.forked_from}</a></div>}
             {d.draw.superseded_by && <div className="dim" style={{ fontSize: 12 }}>superseded by <a href={`#draw/${d.draw.superseded_by}`} className="mono">{d.draw.superseded_by}</a></div>}
-            {d.draw.status === "awaiting_gate" && !step && <GateBar d={d} note={note} setNote={setNote} err={err} onGate={gate} />}
+            {d.draw.status === "awaiting_gate" && !step
+              ? <GateBar d={d} note={note} setNote={setNote} err={err} onGate={gate} />
+              : !step && <div className="gatebar"><ArchiveButton d={d} onGate={gate} />{err && <div className="err" style={{ flexBasis: "100%" }}>{err}</div>}</div>}
             {step ? <StepView step={step} artifacts={d.artifacts.filter((a) => a.step_id === step.id)} chosen={step.id === d.draw.chosen_step} onBack={() => setStepId(null)} /> : <DrawBody d={d} brief={brief} onChoose={(id) => gate("choose", id)} onFork={(id) => gate("fork", id)} onVerdict={verdict} />}
           </>}
         </div>
@@ -130,15 +140,21 @@ function RowFacts({ d }: { d: Detail }) {
   );
 }
 
+function ArchiveButton({ d, onGate }: { d: Detail; onGate: (action: string) => void }) {
+  return (
+    <button className="btn sm quiet" title={d.draw.archived_at ? "Put this draw back in the list." : "Hide this draw from the lists. Nothing else about it changes."}
+      onClick={() => onGate(d.draw.archived_at ? "unarchive" : "archive")}>{d.draw.archived_at ? "unarchive" : "archive"}</button>
+  );
+}
+
 function GateBar({ d, note, setNote, err, onGate }: { d: Detail; note: string; setNote: (s: string) => void; err: string; onGate: (action: string, stepId?: string) => void }) {
-  const lowest = d.candidates[0];
   return (
     <div className="gatebar" role="group" aria-label="Gate">
-      {lowest && <button className="btn primary" title={choose(lowest.index)} onClick={() => onGate("choose", lowest.step_id)}>choose #{lowest.index}, continue</button>}
       <button className="btn pass" title="Close this draw as rejected and start a new one with a fresh seed and fresh examples." onClick={() => onGate("redraw")}>Reject</button>
       <button className="btn pass" title="Close this draw as rejected and start a new one from the same seed, with fresh examples and premises." onClick={() => onGate("keep-seed")}>Redraw</button>
       <button className="btn art" title="Mark this draw as a wrong call for later review. It stays open and nothing else changes." onClick={() => onGate("flag")}>Flag</button>
       <input type="text" name="gate-note" placeholder="note" aria-label="Gate note" value={note} onChange={(e) => setNote(e.target.value)} />
+      <ArchiveButton d={d} onGate={onGate} />
       {err && <div className="err" style={{ flexBasis: "100%" }}>{err}</div>}
     </div>
   );
@@ -177,9 +193,10 @@ export function Log({ d, stepId, onStep }: { d: Detail; stepId: string | null; o
 const BRIEF_FILES = ["outline.md", "vignette.md", "context-1.md", "context-2.md", "ending.md"];
 export const firstParagraph = (s: string) => s.trim().split(/\n\s*\n/)[0].replace(/[*_#>`]/g, "");
 
-function DrawBody({ d, brief, onChoose, onFork, onVerdict }: { d: Detail; brief: Record<string, string> | null; onChoose: (stepId: string) => void; onFork: (stepId: string) => void; onVerdict: (e: Example, v: "keep" | "pass", artifact?: boolean) => void }) {
+function DrawBody({ d, brief, onChoose, onFork, onVerdict }: { d: Detail; brief: Record<string, string> | null; onChoose: (stepId: string) => void; onFork: (stepId: string) => void; onVerdict: (e: Example, v: "keep" | "pass", artifact?: boolean, note?: string) => void }) {
   const [openVig, setOpenVig] = useState<string | null>(d.draw.chosen_step);
   const [openEx, setOpenEx] = useState<string | null>(null);
+  const [exNote, setExNote] = useState<Record<string, string>>({});
   const cands = d.candidates;
   const maxP = Math.max(...cands.map((c) => c.probability), 0.01);
   const gating = d.draw.status === "awaiting_gate";
@@ -212,13 +229,18 @@ function DrawBody({ d, brief, onChoose, onFork, onVerdict }: { d: Detail; brief:
         <div key={e.id} className="exr">
           {e.text === null
             ? <span className="exhead"><span className="caret" /><span className="dim"><span className="mono">{e.id}</span> · not in the current pool; the passages were re-extracted after this draw</span></span>
-            : <button className="exhead" aria-expanded={openEx === e.id} onClick={() => setOpenEx(openEx === e.id ? null : e.id)}><span className={"caret" + (openEx === e.id ? " open" : "")}>▸</span><b>{e.title}</b> · {e.author || "unknown"} · <span className="cell">{e.cell}</span></button>}
-          <span className="exv">{e.latest && <><span className={e.latest.verdict}>{e.latest.verdict === "pass" ? "excluded" : "kept"}</span>{e.latest.artifact && <span className="art"> · artifact</span>}</>}</span>
+            : <button className="exhead" aria-expanded={openEx === e.id} onClick={() => setOpenEx(openEx === e.id ? null : e.id)}><Caret open={openEx === e.id} /><b>{e.title}</b> · {e.author || "unknown"} · <span className="cell">{e.cell}</span></button>}
+          <span className="exv">{e.latest?.artifact ? <span className="art">flagged</span> : null}</span>
           {openEx === e.id && e.text !== null && <div className="exbody">
             <p className="passage sm">{e.text}</p>
-            <div className="acts">{e.latest?.verdict === "pass"
-              ? <button className="btn sm keep" title="Put this passage back in the pool for future draws." onClick={() => onVerdict(e, "keep")}>include</button>
-              : <button className="btn sm pass" title="Drop this passage from the pool for every future draw. This draw is unaffected." onClick={() => onVerdict(e, "pass")}>exclude</button>}<button className="btn sm art" onClick={() => onVerdict(e, e.latest?.verdict ?? "keep", !e.latest?.artifact)}>{e.latest?.artifact ? "unflag artifact" : "artifact"}</button></div>
+            <div className="acts">
+              {e.latest?.verdict === "pass"
+                ? <button className="btn sm keep" title="Put this passage back in the pool for future draws." onClick={() => onVerdict(e, "keep", e.latest?.artifact ?? false, exNote[e.id] ?? "")}>include</button>
+                : <button className="btn sm pass" title="Drop this passage from the pool for every future draw. This draw is unaffected." onClick={() => onVerdict(e, "pass", e.latest?.artifact ?? false, exNote[e.id] ?? "")}>exclude</button>}
+              <button className="btn sm art" title="Mark this passage as an extraction artifact: it leaves the pool and the note says what the reader got wrong."
+                onClick={() => onVerdict(e, e.latest?.verdict ?? "keep", !e.latest?.artifact, exNote[e.id] ?? "")}>{e.latest?.artifact ? "unflag" : "flag"}</button>
+              <input type="text" placeholder="note" aria-label="Example note" value={exNote[e.id] ?? ""} onChange={(ev) => setExNote((m) => ({ ...m, [e.id]: ev.target.value }))} />
+            </div>
           </div>}
         </div>))}
       </div>
@@ -226,7 +248,7 @@ function DrawBody({ d, brief, onChoose, onFork, onVerdict }: { d: Detail; brief:
         <h2 className="sec">brief <span>· <a href={api.briefFile(d.draw.id, "trail.md")} target="_blank" rel="noopener" className="mono">briefs/{d.draw.id}/trail.md</a></span></h2>
         <div className="brief">{BRIEF_FILES.filter((f) => brief[f]).map((f) => (
           // Only the outline is open by default: the chosen vignette already sits in the distribution column.
-          <details className="file ctx" key={f} open={f === "outline.md"}><summary><span className="caret">▸</span><span className="fn">{f}</span><span className="dim"> · {firstParagraph(brief[f]).slice(0, 80)}…</span></summary><Md className="passage sm" text={brief[f]} /></details>))}</div>
+          <details className="file ctx" key={f} open={f === "outline.md"}><summary><Caret /><span className="fn">{f}</span><span className="dim"> · {firstParagraph(brief[f]).slice(0, 80)}…</span></summary><Md className="passage sm" text={brief[f]} /></details>))}</div>
       </div>}
       </div>
     </>

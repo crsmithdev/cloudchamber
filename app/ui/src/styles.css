@@ -19,6 +19,8 @@ a { color: inherit; }
 button, input, select, textarea { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .mono, kbd, code { font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; }
+/* Material Symbols, addressed by ligature. Sized in em so an icon tracks the text beside it. */
+.icon { font-family: "Material Symbols Rounded"; font-size: 1.35em; line-height: 1; font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 20; -webkit-font-smoothing: antialiased; user-select: none; }
 .serif { font-family: "Newsreader", Georgia, serif; font-optical-sizing: auto; }
 .tnum { font-variant-numeric: tabular-nums; }
 .keep { color: var(--keep); } .pass { color: var(--pass); } .art { color: var(--art); } .mute { color: var(--mute); } .dim { color: var(--dim); }
@@ -30,7 +32,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .rail { position: relative; border-right: 1px solid var(--line); padding: 1rem .75rem; display: flex; flex-direction: column; gap: 1.25rem; }
 .rail.hidden { padding: 2.5rem .25rem 1rem; gap: .5rem; align-items: center; }
 .railtoggle { position: absolute; top: .45rem; right: .35rem; appearance: none; border: 1px solid transparent; background: transparent; color: var(--mute); width: 2rem; height: 2rem; border-radius: 5px; cursor: pointer; display: grid; place-items: center; padding: 0; }
-.railtoggle svg { width: 18px; height: 18px; display: block; }
+.railtoggle .icon { font-size: 20px; display: block; }
 .railtoggle:hover { color: var(--ink); border-color: var(--line); background: var(--raised); }
 .rail.hidden .railtoggle { right: .25rem; }
 .nav.mini a { justify-content: center; width: 1.75rem; height: 1.75rem; padding: 0; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 12px; position: relative; }
@@ -180,12 +182,14 @@ details.ctx summary { cursor: pointer; list-style: none; display: flex; align-it
 details.ctx summary::-webkit-details-marker { display: none; }
 details.ctx summary .fn { margin: 0; white-space: nowrap; flex: none; }
 details.ctx summary .dim { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-details.ctx summary .caret { display: inline-block; width: 1rem; color: var(--dim); font-size: 13px; }
+details.ctx summary .caret { display: inline-block; width: 1.1rem; color: var(--dim); }
 details.ctx[open] summary .caret { transform: rotate(90deg); }
 details.ctx[open] summary { margin-bottom: .6rem; }
 .drawhd { display: flex; gap: 1rem; align-items: baseline; flex-wrap: wrap; margin-bottom: .35rem; }
 .drawhd h1 { font-size: 18px; font-weight: 600; margin: 0; letter-spacing: -.01em; }
 .drawhd .rid { font-size: 12px; }
+.drawhd .meta { display: flex; flex-wrap: wrap; gap: .15rem 1rem; font-size: 12px; color: var(--mute); }
+.drawhd .meta i { font-style: normal; color: var(--dim); margin-right: .35rem; }
 .badge { font-size: 11px; padding: .1rem .5rem; border-radius: 3px; font-family: "IBM Plex Mono", ui-monospace, monospace; background: color-mix(in srgb, var(--mute) 20%, transparent); color: var(--mute); }
 .badge.awaiting_gate { background: color-mix(in srgb, var(--art) 20%, transparent); color: var(--art); }
 .badge.done { background: color-mix(in srgb, var(--keep) 20%, transparent); color: var(--keep); }
@@ -216,11 +220,12 @@ h2.sec span { font-weight: 400; }
 .exr .exhead { flex: 1; min-width: 0; display: flex; align-items: center; gap: .5rem; padding: .5rem 0; text-align: left; appearance: none; border: 0; background: transparent; color: var(--mute); cursor: default; }
 .exr button.exhead { cursor: pointer; }
 .exr button.exhead:hover b { color: var(--accent); }
-.exr .caret { display: inline-block; width: 1rem; color: var(--dim); font-size: 13px; }
+.exr .caret { display: inline-block; width: 1.1rem; color: var(--dim); }
 .exr .caret.open { transform: rotate(90deg); }
 .exr .exv { white-space: nowrap; }
 .exr .exbody { flex-basis: 100%; }
-.exr .exbody .acts { display: flex; gap: .5rem; margin: .5rem 0; }
+.exr .exbody .acts { display: flex; gap: .5rem; margin: .5rem 0; align-items: center; }
+.exr .exbody .acts input[type="text"] { flex: 1; min-width: 8rem; width: auto; }
 .pane.read { container-type: inline-size; }
 .drawbody { display: grid; gap: 0 3rem; align-items: start; }
 .drawbody .col { min-width: 0; }
@@ -301,7 +306,7 @@ pre { white-space: pre-wrap; background: var(--surface); border: 1px solid var(-
 .cons { padding: .75rem 1rem; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 12px; line-height: 1.7; }
 .cons .fn { color: var(--dim); }
 button.fold { appearance: none; border: 0; background: transparent; padding: 0; color: var(--mute); display: flex; align-items: center; gap: .5rem; font-size: 12px; cursor: pointer; text-align: left; }
-button.fold .caret { display: inline-block; width: 1rem; color: var(--dim); font-size: 13px; }
+button.fold .caret { display: inline-block; width: 1.1rem; color: var(--dim); }
 button.fold .caret.open { transform: rotate(90deg); }
 .form-chips { margin: .75rem 0 .25rem; }
 .form-chips .chip { font-size: 11px; }

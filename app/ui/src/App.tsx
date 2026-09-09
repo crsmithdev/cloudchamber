@@ -26,7 +26,7 @@ export function App() {
     <div className={"app" + (railHidden ? " rail-hidden" : "")}>
       <aside className={"rail" + (railHidden ? " hidden" : "")}>
         <button className="railtoggle" aria-pressed={railHidden ? "true" : "false"} aria-label={railHidden ? "Show the sidebar" : "Hide the sidebar"} title={railHidden ? "Show the sidebar" : "Hide the sidebar"} onClick={() => setRailHidden((v) => !v)}>
-          <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">{railHidden ? <path d="M6 3l5 5-5 5" /> : <path d="M10 3L5 8l5 5" />}</svg>
+          <span className="icon" aria-hidden="true">{railHidden ? "chevron_right" : "chevron_left"}</span>
         </button>
         {!railHidden && <>
           <div className="wordmark">Fog Belt<small>ideation pipeline</small></div>
@@ -35,7 +35,7 @@ export function App() {
             <a href="#draws" className={drawsView ? "on" : ""}>ideate</a>
             <a href="#develop" className={developView ? "on" : ""}>develop</a>
           </nav>
-          {status && <div className="pool"><b>{status.passages_eligible}</b>/{status.passages} passages<br /><b>{status.themes_eligible}</b>/{status.themes} themes<br /><b>{status.verdicts}</b> verdicts</div>}
+          {status && <div className="pool"><b>{status.passages_eligible}</b>/{status.passages} passages<br /><b>{status.themes_eligible}</b>/{status.themes} themes</div>}
         </>}
         {railHidden && <nav className="nav mini" aria-label="Sections">
           <a href="#browse" className={view === "browse" ? "on" : ""} title="browse">b</a>
