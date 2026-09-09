@@ -22,6 +22,9 @@ extracted/packets/
 # Agent worktrees
 .worktrees/
 
+# Scratch a session serves from the repo: mockups and the like
+tmp/
+
 # Working store: rebuildable from sources/ plus bank/verdicts.jsonl and bank/themes.jsonl
 data/
 .pytest_cache/
