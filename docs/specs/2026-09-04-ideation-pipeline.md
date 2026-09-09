@@ -37,9 +37,13 @@
 > - **Archiving (new).** A draw at any status can be archived, which takes it
 >   out of both lists, out of the browse view and out of the status counts and
 >   changes nothing else: `archived_at` on the row, reversible, and the draw is
->   still reachable by id. The list offers `show N archived`; names stay
->   deterministic over every draw, archived or not, so hiding one never
->   renumbers another.
+>   still reachable by id. The list offers `show N archived`.
+> - **Draw names (new).** A draw's name — three salient words of its seed, with
+>   `-2`, `-3` … for draws that slug the same way — is written to the row when
+>   the draw is created and never recomputed. It was derived on every read from
+>   the whole list, which made it a function of every other draw; a name is now
+>   the draw's own, and nothing that happens to another can change it. Suffixes
+>   are never reused.
 > - **The skill (REQ 36).** The Voice Bridge also takes `--domains` and
 >   `--sampling`, and a `knobs` tool prints every tunable and its live values.
 >   `fogbelt help` prints the same on the CLI; `docs/knobs.md` is that output.

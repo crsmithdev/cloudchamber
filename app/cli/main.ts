@@ -227,7 +227,7 @@ async function main() {
     }
     case "draws":
       for (const r of pipeline().draws(rest.includes("--archived"))) {
-        console.log(`${r.id}  ${r.status.padEnd(19)} ${r.mode.padEnd(6)} ${r.setting ?? "-"}  ${r.archived_at ? "(archived) " : ""}${r.repaired_from ? `(repairs ${r.repaired_from}) ` : ""}${r.seed_text.slice(0, 70)}`);
+        console.log(`${r.id}  ${(r.name ?? "").padEnd(30)} ${r.status.padEnd(19)} ${r.mode.padEnd(6)} ${r.setting ?? "-"}  ${r.archived_at ? "(archived) " : ""}${r.repaired_from ? `(repairs ${r.repaired_from}) ` : ""}${r.seed_text.slice(0, 60)}`);
       }
       break;
     case "draw-show": {

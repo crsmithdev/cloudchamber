@@ -423,7 +423,7 @@ describe("templates and store", () => {
     }
   });
 
-  test("a version-3 store migrates to 7: finding and draft verdicts, repaired_from, draft_config, tools, forked_from, sampling, archived_at", () => {
+  test("a version-3 store migrates to 8: finding and draft verdicts, repaired_from, draft_config, tools, forked_from, sampling, archived_at, name", () => {
     const dir = mkdtempSync(join(tmpdir(), "fogbelt-mig4-"));
     const path = join(dir, "v3.db"), log = join(dir, "verdicts.jsonl");
     writeFileSync(log, "");
@@ -438,8 +438,9 @@ describe("templates and store", () => {
     old.close();
     const db: Db = openDb(path, log);
     expect((db.query("PRAGMA user_version").get() as any).user_version).toBe(SCHEMA_VERSION);
-    expect(SCHEMA_VERSION).toBe(7);
-    expect(db.query("SELECT repaired_from, draft_config, forked_from, sampling, archived_at FROM draws WHERE id = 'r1'").get()).toEqual({ repaired_from: null, draft_config: null, forked_from: null, sampling: "tail", archived_at: null });
+    expect(SCHEMA_VERSION).toBe(8);
+    expect(db.query("SELECT repaired_from, draft_config, forked_from, sampling, archived_at, name FROM draws WHERE id = 'r1'").get())
+      .toEqual({ repaired_from: null, draft_config: null, forked_from: null, sampling: "tail", archived_at: null, name: "seed" });
     expect(db.query("SELECT tools FROM steps WHERE id = 's1'").get()).toEqual({ tools: "" });
     expect(() => record(db, { kind: "finding", target_id: "f-abc", verdict: "pass", method: "gate", note: "x" }, log)).not.toThrow();
     expect(() => record(db, { kind: "draft", target_id: "r1", verdict: "keep", method: "gate" }, log)).not.toThrow();

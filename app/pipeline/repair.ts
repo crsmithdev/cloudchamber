@@ -14,6 +14,7 @@ import { now } from "./paths.ts";
 import { writeBrief } from "./brief.ts";
 import { briefParts } from "./briefparts.ts";
 import { normalise } from "./recur.ts";
+import { nextName } from "./names.ts";
 import type { FindingView } from "./briefparts.ts";
 
 export type Accepted = Pick<FindingView, "id" | "span" | "invalidates" | "replacement">;
@@ -39,9 +40,10 @@ export async function repair(p: Pipeline, drawId: string, accepted: Accepted[]):
   const parts = briefParts(p, drawId);
   const src = parts.draw;
   const newId = `${now().replace(/[-:TZ]/g, "").slice(0, 15)}-${randomBytes(2).toString("hex")}`;
-  p.db.query(`INSERT INTO draws (id, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, domains, sampling, status, gate_method, repaired_from, created_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?, ?, ?)`)
-    .run(newId, src.setting, src.genre, src.mode, src.segment, src.seed_mode, src.seed_text, src.seed_theme_id, src.example_ids, src.domains, src.sampling, src.gate_method, drawId, now());
+  const name = nextName((p.db.query("SELECT name FROM draws WHERE name IS NOT NULL").all() as { name: string }[]).map((r) => r.name), src.seed_text);
+  p.db.query(`INSERT INTO draws (id, name, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, domains, sampling, status, gate_method, repaired_from, created_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?, ?, ?)`)
+    .run(newId, name, src.setting, src.genre, src.mode, src.segment, src.seed_mode, src.seed_text, src.seed_theme_id, src.example_ids, src.domains, src.sampling, src.gate_method, drawId, now());
   p.db.query("UPDATE draws SET status = 'repairing' WHERE id = ?").run(drawId);
   try {
     await develop(p, newId, parts, accepted);

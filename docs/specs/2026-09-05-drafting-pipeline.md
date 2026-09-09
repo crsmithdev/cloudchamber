@@ -11,8 +11,10 @@ differ, this file wins.
 > - **REQ 28, Schema.** The store is at version 7. Version 5 adds
 >   `draws.forked_from`, a second candidate of one draw developed on its own;
 >   version 6 adds `draws.sampling`, which is `tail` for every row made before
->   it; version 7 adds `draws.archived_at`. All three are plain `ALTER TABLE`s;
->   none touches the verdict replay.
+>   it; version 7 adds `draws.archived_at`; version 8 adds `draws.name` and
+>   backfills it with the names the UI had been deriving, so no draw is
+>   renamed. All four are plain `ALTER TABLE`s; none touches the verdict
+>   replay.
 
 ## Problem Statement
 

@@ -4,7 +4,6 @@
  * manual draw until POST /api/draws/:id/gate.
  */
 import Fastify, { type FastifyInstance } from "fastify";
-import { drawNames } from "../pipeline/names.ts";
 import type { Db } from "../pipeline/store/db.ts";
 import { Pipeline, type DrawOpts, type SeedChoice } from "../pipeline/draw.ts";
 import { KINDS, latest, passedStories, record, type Kind, type Method } from "../pipeline/verdicts.ts";
@@ -133,10 +132,7 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     sampling: SAMPLING.map((mode) => ({ mode, ...BANDS[mode] })),
   }));
 
-  app.get<{ Querystring: { archived?: string } }>("/api/draws", async (req) => {
-    const names = drawNames(pipeline.draws(true));
-    return pipeline.draws(req.query.archived === "true").map((r) => ({ ...r, name: names.get(r.id) }));
-  });
+  app.get<{ Querystring: { archived?: string } }>("/api/draws", async (req) => pipeline.draws(req.query.archived === "true"));
 
   app.post<{ Body: { mode?: "auto" | "manual"; setting?: string; domains?: string; genre?: string; sampling?: string; source?: string; author?: string; seed?: string; seed_id?: string } }>("/api/draws", async (req, reply) => {
     const b = req.body ?? {};
@@ -168,7 +164,7 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
 
   app.get<{ Params: { id: string } }>("/api/draws/:id", async (req, reply) => {
     try {
-      const draw = { ...pipeline.draw(req.params.id), name: drawNames(pipeline.draws(true)).get(req.params.id) };
+      const draw = pipeline.draw(req.params.id);
       return { draw, steps: pipeline.steps(draw.id), artifacts: pipeline.artifacts(draw.id), candidates: pipeline.candidates(draw.id), examples: drawExamples(db, draw.example_ids), forks: pipeline.forks(draw.id) };
     } catch (e: any) { return reply.code(404).send({ error: e.message }); }
   });

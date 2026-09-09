@@ -17,6 +17,7 @@ import { hardRules, loadChecked, pickDomains, slice, type Domain, type GenStage,
 import { SETTINGS } from "./paths.ts";
 import { now } from "./paths.ts";
 import { pipelineVersion } from "./version.ts";
+import { nextName } from "./names.ts";
 import type { Db } from "./store/db.ts";
 import { writeBrief } from "./brief.ts";
 
@@ -33,7 +34,7 @@ export type DrawOpts = {
 };
 
 export type DrawRow = {
-  id: string; setting: string | null; genre: string; mode: "auto" | "manual"; segment: string | null;
+  id: string; name: string; setting: string | null; genre: string; mode: "auto" | "manual"; segment: string | null;
   seed_mode: string; seed_text: string; seed_theme_id: string | null; example_ids: string; domains: string | null; sampling: string; status: string;
   gate_method: string | null; chosen_step: string | null; flagged: number; flag_note: string;
   superseded_by: string | null; repaired_from: string | null; forked_from: string | null; draft_config: string | null; archived_at: string | null; created_at: string; ended_at: string | null;
@@ -184,6 +185,12 @@ export class Pipeline {
     return { mode: "drawn", text: t.text, themeId: t.id };
   }
 
+  /** The name a new draw takes, free of every name already written. */
+  private nameFor(seed: string): string {
+    const rows = this.db.query("SELECT name FROM draws WHERE name IS NOT NULL").all() as { name: string }[];
+    return nextName(rows.map((r) => r.name), seed);
+  }
+
   private pick<T>(xs: T[]): T { return xs[Math.floor(this.rng() * xs.length)]; }
   private shuffle<T>(xs: T[]): T[] { const a = [...xs]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(this.rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
@@ -208,9 +215,9 @@ export class Pipeline {
     const seed = this.drawSeed(opts.seed, setting);
     const genre = this.inferGenre(opts, examples);
     const drawId = `${now().replace(/[-:TZ]/g, "").slice(0, 15)}-${id(2)}`;
-    this.db.query(`INSERT INTO draws (id, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, domains, sampling, status, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?)`)
-      .run(drawId, setting?.id ?? null, genre, opts.mode, opts.segment ? JSON.stringify(opts.segment) : null,
+    this.db.query(`INSERT INTO draws (id, name, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, domains, sampling, status, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?)`)
+      .run(drawId, this.nameFor(seed.text), setting?.id ?? null, genre, opts.mode, opts.segment ? JSON.stringify(opts.segment) : null,
         seed.mode, seed.text, seed.themeId, JSON.stringify(examples.map((e) => e.id)), setting ? JSON.stringify(domains.map((d) => d.slug)) : null, sampling, now());
     try {
       await this.premisesAndExecute(drawId, examples.map((e) => e.text), seed.text, genre, sampling, setting, domains);
@@ -327,9 +334,9 @@ export class Pipeline {
     const already = this.forks(drawId).find((f) => f.step_id === executeStepId);
     if (already) throw new Error(`draw ${drawId}: candidate #${c.index} is already developed as ${already.id}`);
     const newId = `${now().replace(/[-:TZ]/g, "").slice(0, 15)}-${id(2)}`;
-    this.db.query(`INSERT INTO draws (id, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, domains, sampling, status, gate_method, forked_from, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', 'manual', ?, ?)`)
-      .run(newId, src.setting, src.genre, src.mode, src.segment, src.seed_mode, src.seed_text, src.seed_theme_id, src.example_ids, src.domains, src.sampling, drawId, now());
+    this.db.query(`INSERT INTO draws (id, name, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, domains, sampling, status, gate_method, forked_from, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', 'manual', ?, ?)`)
+      .run(newId, this.nameFor(src.seed_text), src.setting, src.genre, src.mode, src.segment, src.seed_mode, src.seed_text, src.seed_theme_id, src.example_ids, src.domains, src.sampling, drawId, now());
     const step = this.recordStep(newId, null, "execute", "copied", c.premise);
     this.artifact(step, "vignette", c.vignette, { index: c.index, probability: c.probability, premise: c.premise, warnings: c.warnings, forked_from: executeStepId });
     this.db.query("UPDATE draws SET chosen_step = ? WHERE id = ?").run(step.id, newId);

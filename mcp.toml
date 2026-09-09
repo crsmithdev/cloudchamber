@@ -12,7 +12,7 @@ description = "The pool, the bank, eligibility per source, and how many draws ar
 command = ["./fogbelt", "status"]
 
 [tools.draws]
-description = "Every draw, newest first: id, status, mode, setting, and the seed. Statuses: awaiting_gate (choose a candidate), running, done (brief exported), awaiting_check_gate (gate 1), awaiting_draft_gate (gate 2), rejected, flagged."
+description = "Every draw, newest first: id, name, status, mode, setting, and the seed. The name is three words of the seed, so it is what Chris says when he names a draw. Statuses: awaiting_gate (choose a candidate), running, done (brief exported), awaiting_check_gate (gate 1), awaiting_draft_gate (gate 2), rejected, flagged. Archived draws are left out."
 command = ["./fogbelt", "draws"]
 
 [tools.draw]

@@ -3,11 +3,12 @@ import { mkdirSync, readFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { DEFAULT_DB, SCHEMA } from "../paths.ts";
 import { replay } from "../verdicts.ts";
+import { drawNames } from "../names.ts";
 
 export type Db = Database;
 
 /** Bump with every change to an existing table, and mirror it in extract/store.py. */
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 8;
 
 /** `log` is the verdict log a migration replays from; only tests pass it. */
 export function openDb(path: string = DEFAULT_DB, log?: string): Db {
@@ -67,6 +68,8 @@ function renameBeforeSchema(db: Db) {
  *   4 -> 5  draws gains forked_from: a second candidate developed on its own.
  *   5 -> 6  draws gains sampling; every draw made before it sampled the tail.
  *   6 -> 7  draws gains archived_at: hidden from the lists, otherwise untouched.
+ *   7 -> 8  draws gains name, backfilled with the names the UI was deriving,
+ *           so no draw is renamed by the change.
  */
 function migrate(db: Db, schema: string, log?: string) {
   if (userVersion(db) < 1) {
@@ -107,6 +110,13 @@ function migrate(db: Db, schema: string, log?: string) {
   if (userVersion(db) < 7) {
     if (!columns(db, "draws").includes("archived_at")) db.exec("ALTER TABLE draws ADD COLUMN archived_at TEXT");
     db.exec("PRAGMA user_version = 7");
+  }
+  if (userVersion(db) < 8) {
+    if (!columns(db, "draws").includes("name")) db.exec("ALTER TABLE draws ADD COLUMN name TEXT");
+    const rows = db.query("SELECT id, seed_text, created_at FROM draws").all() as { id: string; seed_text: string; created_at: string }[];
+    const upd = db.query("UPDATE draws SET name = ? WHERE id = ?");
+    for (const [id, name] of drawNames(rows)) upd.run(name, id);
+    db.exec("PRAGMA user_version = 8");
   }
 }
 

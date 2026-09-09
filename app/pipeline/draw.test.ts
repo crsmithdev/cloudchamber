@@ -316,6 +316,21 @@ describe("draw graph", () => {
     await expect(p2.start({ mode: "auto", genre: "horror", sampling: "middle" as any })).rejects.toThrow(/not tail \| off-centre \| standard/);
   });
 
+  test("a name is written once, and no later draw can change it", async () => {
+    const { db, dir } = fixture();
+    const { p } = pipe(db, dir, script({ premises: [premises(), premises(), premises()] }));
+    const seed = { mode: "typed", text: "a covenant buried in a land grant" } as const;
+    const a = await p.start({ mode: "manual", genre: "horror", seed });
+    const b = await p.start({ mode: "manual", genre: "horror", seed });
+    expect([a.name, b.name]).toEqual(["covenant-buried-grant", "covenant-buried-grant-2"]);
+    // an archived draw keeps its name and its number: the next draw is 3, not 2 again
+    p.archive(a.id);
+    const c = await p.start({ mode: "manual", genre: "horror", seed });
+    expect(c.name).toBe("covenant-buried-grant-3");
+    expect(p.draw(a.id).name).toBe("covenant-buried-grant");
+    expect(p.draw(b.id).name).toBe("covenant-buried-grant-2");
+  });
+
   test("archiving hides a draw from the list and changes nothing else about it", async () => {
     const { db, dir } = fixture();
     const { p } = pipe(db, dir);
