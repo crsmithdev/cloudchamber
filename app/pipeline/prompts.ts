@@ -5,7 +5,7 @@
  * reason, think, or account for how it arrived at anything. Fable's
  * safeguard refuses that shape with zero output.
  */
-import { RUN } from "./config.ts";
+import { BANDS, RUN } from "./config.ts";
 
 const FORBIDDEN = /\b(reason|reasoning|reasons|think|thinking|chain of thought|how you arrived|how it was reached|how you reached)\b/i;
 
@@ -38,7 +38,14 @@ Candidate: {candidate}
 
 {seed}
 
-Each premise goes in a <premise> tag containing a <text> (one paragraph, under ${RUN.premiseWords} words, the pitch itself) and a <probability>: your estimate of how likely this premise is as a response to this seed. Sample from the tail of the distribution: every probability must be under ${RUN.ceiling.toFixed(2)}. The premise most writers would reach for given this seed belongs to someone else's batch, not this one. Be bold and unconventional, even to the point of absurdity. Output only the five tags.`,
+Each premise goes in a <premise> tag containing a <text> (one paragraph, under ${RUN.premiseWords} words, the pitch itself) and a <probability>: your estimate of how likely this premise is as a response to this seed. {sampling} Output only the five tags.`,
+
+  /** One per sampling mode: the band, and the register that goes with it. */
+  samplingAsk: {
+    tail: `Sample from the tail of the distribution: every probability must be under ${BANDS.tail.ceiling.toFixed(2)}. The premise most writers would reach for given this seed belongs to someone else's batch, not this one. Be bold and unconventional, even to the point of absurdity.`,
+    "off-centre": `Sample off the centre of the distribution: every probability must be between ${BANDS["off-centre"].floor.toFixed(2)} and ${BANDS["off-centre"].ceiling.toFixed(2)}. Not the premise most writers would reach for first, but one that stays recognisably inside the tradition this seed belongs to.`,
+    standard: `Sample from the centre of the distribution: every probability must be over ${BANDS.standard.floor.toFixed(2)}. The strongest conventional treatment of this seed: the premise a good writer would reach for and execute well, not an unusual one.`,
+  },
 
   executeAsk: `Seed: {seed}
 

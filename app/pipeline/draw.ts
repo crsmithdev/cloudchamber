@@ -9,8 +9,8 @@
  * probability, never a judgement.
  */
 import { randomBytes } from "node:crypto";
-import { RUN, loadStages, type StageConfig, type StageName } from "./config.ts";
-import { compose, fill } from "./prompts.ts";
+import { BANDS, DEFAULT_SAMPLING, RUN, isSampling, loadStages, type Sampling, type StageConfig, type StageName } from "./config.ts";
+import { TEMPLATES, compose, fill } from "./prompts.ts";
 import { sections, tag, tags, words, type ModelAdapter } from "./model.ts";
 import { eligiblePassages, eligibleThemes, type Segment } from "./bank.ts";
 import { hardRules, loadChecked, pickDomains, slice, type Domain, type GenStage, type Setting } from "./settings.ts";
@@ -27,13 +27,14 @@ export type DrawOpts = {
   genre?: string;
   segment?: Segment;
   seed?: SeedChoice;
+  sampling?: Sampling;   // where in the stated distribution the premises are asked for
   seedRng?: () => number;
   domains?: string[];    // pin the setting's domains by slug; drawn by rng when absent
 };
 
 export type DrawRow = {
   id: string; setting: string | null; genre: string; mode: "auto" | "manual"; segment: string | null;
-  seed_mode: string; seed_text: string; seed_theme_id: string | null; example_ids: string; domains: string | null; status: string;
+  seed_mode: string; seed_text: string; seed_theme_id: string | null; example_ids: string; domains: string | null; sampling: string; status: string;
   gate_method: string | null; chosen_step: string | null; flagged: number; flag_note: string;
   superseded_by: string | null; repaired_from: string | null; forked_from: string | null; draft_config: string | null; created_at: string; ended_at: string | null;
 };
@@ -186,30 +187,33 @@ export class Pipeline {
   private pick<T>(xs: T[]): T { return xs[Math.floor(this.rng() * xs.length)]; }
   private shuffle<T>(xs: T[]): T[] { const a = [...xs]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(this.rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
+  /** The genre asked for, or, with none asked for, the one most of the drawn examples carry. */
   private inferGenre(opts: DrawOpts, examples: { genre: string }[]): string {
     if (opts.genre) return opts.genre;
     if (opts.segment?.genre) return opts.segment.genre;
-    const genres = new Set(examples.map((e) => e.genre));
-    if (genres.size === 1) return [...genres][0];
-    throw new Error(`draw: examples span genres ${[...genres].join(", ")}; pass --genre`);
+    const counts = new Map<string, number>();
+    for (const e of examples) counts.set(e.genre, (counts.get(e.genre) ?? 0) + 1);
+    return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0][0];
   }
 
   // --- the draw ---------------------------------------------------------------
 
   async start(opts: DrawOpts): Promise<DrawRow> {
     if (opts.domains?.length && !opts.setting) throw new Error("draw: --domains needs --setting");
+    const sampling = opts.sampling ?? DEFAULT_SAMPLING;
+    if (!isSampling(sampling)) throw new Error(`draw: sampling ${sampling} is not tail | off-centre | standard`);
     const setting = opts.setting ? loadChecked(opts.setting, this.settingsDir) : undefined;
     const domains = setting ? pickDomains(setting, this.rng, opts.domains) : [];
     const examples = this.drawExamples(opts.segment);
     const seed = this.drawSeed(opts.seed, setting);
     const genre = this.inferGenre(opts, examples);
     const drawId = `${now().replace(/[-:TZ]/g, "").slice(0, 15)}-${id(2)}`;
-    this.db.query(`INSERT INTO draws (id, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, domains, status, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?)`)
+    this.db.query(`INSERT INTO draws (id, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, domains, sampling, status, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?)`)
       .run(drawId, setting?.id ?? null, genre, opts.mode, opts.segment ? JSON.stringify(opts.segment) : null,
-        seed.mode, seed.text, seed.themeId, JSON.stringify(examples.map((e) => e.id)), setting ? JSON.stringify(domains.map((d) => d.slug)) : null, now());
+        seed.mode, seed.text, seed.themeId, JSON.stringify(examples.map((e) => e.id)), setting ? JSON.stringify(domains.map((d) => d.slug)) : null, sampling, now());
     try {
-      await this.premisesAndExecute(drawId, examples.map((e) => e.text), seed.text, genre, setting, domains);
+      await this.premisesAndExecute(drawId, examples.map((e) => e.text), seed.text, genre, sampling, setting, domains);
     } catch (e) {
       this.fail(drawId, e);
       throw e;
@@ -219,8 +223,9 @@ export class Pipeline {
     return draw;
   }
 
-  private async premisesAndExecute(drawId: string, examples: string[], seed: string, genre: string, setting?: Setting, domains: Domain[] = []) {
-    const ask = fill("premisesAsk", { genre, seed });
+  private async premisesAndExecute(drawId: string, examples: string[], seed: string, genre: string, sampling: Sampling, setting?: Setting, domains: Domain[] = []) {
+    const band = BANDS[sampling];
+    const ask = fill("premisesAsk", { genre, seed, sampling: TEMPLATES.samplingAsk[sampling] });
     const head = examples.join("\n\n");
     const prompt = compose(head, ask, this.settingFor("premises", setting, domains));
     const { step, value: premises } = await this.invoke(drawId, null, "premises", prompt, (text) => {
@@ -229,7 +234,7 @@ export class Pipeline {
       for (const p of ps) {
         if (!p.text) throw new Error("premise without <text>");
         if (!Number.isFinite(p.probability)) throw new Error("premise without a numeric <probability>");
-        if (p.probability >= RUN.ceiling) throw new Error(`probability ${p.probability} is not under ${RUN.ceiling}`);
+        if (p.probability < band.floor || p.probability >= band.ceiling) throw new Error(`probability ${p.probability} is outside the ${sampling} band ${band.floor}–${band.ceiling}`);
       }
       return ps as { text: string; probability: number }[];
     }).catch((e) => {
@@ -293,7 +298,7 @@ export class Pipeline {
     const draw = this.draw(drawId);
     if (draw.status !== "awaiting_gate") throw new Error(`draw ${drawId} is ${draw.status}, not awaiting_gate`);
     const opts: DrawOpts = {
-      mode: draw.mode, setting: draw.setting ?? undefined, genre: draw.genre,
+      mode: draw.mode, setting: draw.setting ?? undefined, genre: draw.genre, sampling: draw.sampling as Sampling,
       segment: draw.segment ? JSON.parse(draw.segment) : undefined,
       seed: how === "keep-seed"
         ? (draw.seed_theme_id ? { mode: "picked", themeId: draw.seed_theme_id } : { mode: "typed", text: draw.seed_text })
@@ -322,9 +327,9 @@ export class Pipeline {
     const already = this.forks(drawId).find((f) => f.step_id === executeStepId);
     if (already) throw new Error(`draw ${drawId}: candidate #${c.index} is already developed as ${already.id}`);
     const newId = `${now().replace(/[-:TZ]/g, "").slice(0, 15)}-${id(2)}`;
-    this.db.query(`INSERT INTO draws (id, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, domains, status, gate_method, forked_from, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', 'manual', ?, ?)`)
-      .run(newId, src.setting, src.genre, src.mode, src.segment, src.seed_mode, src.seed_text, src.seed_theme_id, src.example_ids, src.domains, drawId, now());
+    this.db.query(`INSERT INTO draws (id, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, domains, sampling, status, gate_method, forked_from, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', 'manual', ?, ?)`)
+      .run(newId, src.setting, src.genre, src.mode, src.segment, src.seed_mode, src.seed_text, src.seed_theme_id, src.example_ids, src.domains, src.sampling, drawId, now());
     const step = this.recordStep(newId, null, "execute", "copied", c.premise);
     this.artifact(step, "vignette", c.vignette, { index: c.index, probability: c.probability, premise: c.premise, warnings: c.warnings, forked_from: executeStepId });
     this.db.query("UPDATE draws SET chosen_step = ? WHERE id = ?").run(step.id, newId);

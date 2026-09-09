@@ -1,0 +1,8 @@
+# Shortcuts for {genre} in the premises ask. Each key is a group the start
+# form renders; picking several joins them with " and ". Free text is always
+# accepted, and nothing here constrains the pipeline: the value reaches one
+# sentence of one prompt and is recorded on the draw.
+
+basics = ["horror", "scifi"]
+horror = ["cosmic horror", "weird fiction", "body horror", "folk horror", "quiet horror", "ghost story", "gothic", "ecohorror"]
+scifi = ["hard scifi", "first contact", "posthuman", "bureaucratic scifi", "space opera"]

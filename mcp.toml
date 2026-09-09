@@ -20,9 +20,12 @@ description = "Start a draw. Produces five premises and vignettes, then stops at
 command = ["./fogbelt", "draw"]
 background = true
 [tools.draw.args.genre]
-description = "horror or scifi"
-enum = ["horror", "scifi"]
+description = "free text for the premises ask: horror, scifi, cosmic horror, weird fiction, body horror, hard scifi, or a blend like 'cosmic horror and hard scifi'. Left out, it follows the examples drawn."
 flag = "--genre"
+[tools.draw.args.sampling]
+description = "where in the stated distribution the five premises are asked for: tail is the strangest and the default, standard the most conventional"
+enum = ["tail", "off-centre", "standard"]
+flag = "--sampling"
 [tools.draw.args.setting]
 description = "a typed setting id: setting-a, setting-b, setting-c"
 flag = "--setting"
@@ -42,6 +45,10 @@ flag = "--seed"
 description = "skip the gate mechanically"
 type = "boolean"
 flag = "--auto"
+
+[tools.knobs]
+description = "Every tunable and its live values: the settings and their domain slugs, the genre shortcuts, the sampling modes, the example sources, the drafting defaults and the model per stage. Read this before guessing an argument to draw."
+command = ["./fogbelt", "help", "--md"]
 
 [tools.candidates]
 description = "The five candidates of a draw awaiting the gate, in full: premise and vignette each, sorted by stated probability, with the step id needed to choose one."

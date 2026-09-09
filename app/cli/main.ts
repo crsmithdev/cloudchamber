@@ -1,30 +1,33 @@
 #!/usr/bin/env bun
-/**
- * fogbelt — the one command the skill and the UI drive.
- *
- *   fogbelt extract [--only ID ...]        read -> segment -> facets, then inherit verdicts
- *   fogbelt status                         pool, bank, eligibility, draws
- *   fogbelt export                         write bank/ from the store
- *   fogbelt verdict <example|theme|brief|story> <id> <keep|pass> [--artifact] [--note "..."]
- *                                          a passed story hides all its passages
- *   fogbelt replay                         rebuild the verdicts table from bank/verdicts.jsonl
- *   fogbelt draw [--setting ID [--domains a,b]] [--genre G] [--auto] [--source S[,S]] [--author A]
- *               [--seed "text" | --seed-id ID]
- *   fogbelt setting lint <id>              check a setting file; exit 1 with one finding per line
- *   fogbelt distill <id> [--domain SLUG]   fill a setting's empty or redraft-marked sections from its reference/
- *   fogbelt gate <draw> choose <execute-step> | fork <execute-step> | redraw | keep-seed | flag  [--note "..."]
- *   fogbelt themes [--only SRC ...] [--limit N]   draft themes for stories not yet drafted
- *   fogbelt draws                           list draws
- *   fogbelt draw-show <draw>                 steps and artifacts of one draw
- *   fogbelt candidates <draw>              the five candidates in full, by stated probability
- *   fogbelt brief <draw>                   print the brief
- *   fogbelt check <draw> [--checks a,b] [--samples N]   run the checkers over a brief; stops at gate 1
- *   fogbelt findings <draw> [--examined]   the reported findings of the latest check, ordered
- *   fogbelt gate <draw> accept <finding>... | dismiss <finding> | hold | pass | keep | rewrite <k> [--finding ID]  [--note "..."]
- *   fogbelt draft <draw> [--auto] [--profile P] [--words N] [--beats N] [--tense T] [--person P] [--chronology C] [--container C] [--order O]
- *   fogbelt story <draw>                   the draft with its screen flags inline
- *   fogbelt serve [--port N]               API and UI on 127.0.0.1 (default 3002)
- */
+/** fogbelt — the one command the skill and the UI drive. `fogbelt help` prints DOC below, then every tunable value. */
+import { asMarkdown, asText, knobs } from "../pipeline/knobs.ts";
+
+const DOC = `fogbelt — the one command the skill and the UI drive.
+
+   fogbelt extract [--only ID ...]        read -> segment -> facets, then inherit verdicts
+   fogbelt status                         pool, bank, eligibility, draws
+   fogbelt export                         write bank/ from the store
+   fogbelt verdict <example|theme|brief|story> <id> <keep|pass> [--artifact] [--note "..."]
+                                          a passed story hides all its passages
+   fogbelt replay                         rebuild the verdicts table from bank/verdicts.jsonl
+   fogbelt draw [--setting ID [--domains a,b]] [--genre G] [--sampling M] [--auto] [--source S[,S]] [--author A]
+               [--seed "text" | --seed-id ID]
+   fogbelt setting lint <id>              check a setting file; exit 1 with one finding per line
+   fogbelt distill <id> [--domain SLUG]   fill a setting's empty or redraft-marked sections from its reference/
+   fogbelt gate <draw> choose <execute-step> | fork <execute-step> | redraw | keep-seed | flag  [--note "..."]
+   fogbelt themes [--only SRC ...] [--limit N]   draft themes for stories not yet drafted
+   fogbelt draws                           list draws
+   fogbelt draw-show <draw>                 steps and artifacts of one draw
+   fogbelt candidates <draw>              the five candidates in full, by stated probability
+   fogbelt brief <draw>                   print the brief
+   fogbelt check <draw> [--checks a,b] [--samples N]   run the checkers over a brief; stops at gate 1
+   fogbelt findings <draw> [--examined]   the reported findings of the latest check, ordered
+   fogbelt gate <draw> accept <finding>... | dismiss <finding> | hold | pass | keep | rewrite <k> [--finding ID]  [--note "..."]
+   fogbelt draft <draw> [--auto] [--profile P] [--words N] [--beats N] [--tense T] [--person P] [--chronology C] [--container C] [--order O]
+   fogbelt story <draw>                   the draft with its screen flags inline
+   fogbelt serve [--port N]               API and UI on 127.0.0.1 (default 3002)
+   fogbelt help [--md]                    this, then every tunable value, live\n`;
+
 import { parseArgs } from "node:util";
 import { openDb } from "../pipeline/store/db.ts";
 import { exportBank } from "../pipeline/bank.ts";
@@ -32,6 +35,7 @@ import { extractAll } from "../pipeline/extract.ts";
 import { status } from "../pipeline/status.ts";
 import { KINDS, inherit, record, replay, type Kind } from "../pipeline/verdicts.ts";
 import { Pipeline, type SeedChoice } from "../pipeline/draw.ts";
+import type { Sampling } from "../pipeline/config.ts";
 import { ClaudeCli } from "../pipeline/model.ts";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -45,7 +49,8 @@ import type { Overrides } from "../pipeline/draftconfig.ts";
 const [cmd, ...rest] = process.argv.slice(2);
 
 function usage(code = 1): never {
-  console.error((import.meta as any).__doc ?? "usage: fogbelt <extract|status|export|verdict|replay> ...");
+  console.error("usage: fogbelt <extract|status|export|verdict|replay|draw|gate|draws|candidates|draw-show|brief|check|findings|draft|story|themes|setting|distill|serve|help>");
+  console.error("run `fogbelt help` for the full grammar and the tunable values");
   process.exit(code);
 }
 
@@ -68,6 +73,11 @@ async function main() {
     if (f.judge) console.log(`\n${f.judge}`);
   };
   switch (cmd) {
+    case "help": case "--help": case "-h": {
+      const sections = knobs(db);
+      console.log(rest.includes("--md") ? asMarkdown(sections) : `${DOC}\n${asText(sections)}`);
+      break;
+    }
     case "extract": {
       const { values } = parseArgs({ args: rest, options: { only: { type: "string", multiple: true } }, allowPositionals: true });
       for (const line of extractAll(values.only ?? [])) console.log(line);
@@ -102,7 +112,7 @@ async function main() {
     case "draw": {
       const { values } = parseArgs({
         args: rest, allowPositionals: true,
-        options: { setting: { type: "string" }, domains: { type: "string" }, genre: { type: "string" }, auto: { type: "boolean", default: false },
+        options: { setting: { type: "string" }, domains: { type: "string" }, genre: { type: "string" }, sampling: { type: "string" }, auto: { type: "boolean", default: false },
           source: { type: "string" }, author: { type: "string" }, seed: { type: "string" }, "seed-id": { type: "string" } },
       });
       if (values.domains && !values.setting) usage();
@@ -110,7 +120,8 @@ async function main() {
       const sources = values.source ? values.source.split(",").map((s) => s.trim()).filter(Boolean) : [];
       const segment = sources.length || values.author ? { source: sources.length ? sources : undefined, author: values.author } : undefined;
       const domains = values.domains ? values.domains.split(",").map((d) => d.trim()).filter(Boolean) : undefined;
-      const draw = await pipeline().start({ mode: values.auto ? "auto" : "manual", setting: values.setting, domains, genre: values.genre, segment, seed });
+      const draw = await pipeline().start({ mode: values.auto ? "auto" : "manual", setting: values.setting, domains, genre: values.genre,
+        sampling: values.sampling as Sampling | undefined, segment, seed });
       console.log(JSON.stringify(draw, null, 2));
       if (draw.status === "awaiting_gate") {
         console.log("\ncandidates, by stated probability:");

@@ -41,7 +41,7 @@ export function writeBrief(db: Db, drawId: string, stages: Record<StageName, Sta
   const trail = [
     `# Trail${draw.repaired_from ? " (repaired)" : draw.forked_from ? " (forked)" : ""} — ${drawId}`, "",
     ...repaired, ...forked,
-    `setting: ${draw.setting ?? "none (unrestricted)"} · genre: ${draw.genre} · mode: ${draw.mode} · segment: ${draw.segment ?? "all"}`, "",
+    `setting: ${draw.setting ?? "none (unrestricted)"} · genre: ${draw.genre} · sampling: ${draw.sampling} · mode: ${draw.mode} · segment: ${draw.segment ?? "all"}`, "",
     `## seed (${draw.seed_mode}${draw.seed_theme_id ? `, theme ${draw.seed_theme_id}` : ""})`, "", draw.seed_text, "",
     ...(domains ? ["## domains", "", ...domains, ""] : []),
     "## examples", "", ...examples, "",

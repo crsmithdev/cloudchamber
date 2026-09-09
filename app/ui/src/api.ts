@@ -1,7 +1,7 @@
 export type Latest = { verdict: "keep" | "pass"; artifact: boolean; note: string; at: string; inherited_from: string | null } | null;
 export type Item = { id: string; text: string; words?: number; cell?: string; suspect?: string[]; title?: string; author?: string; genre?: string; source?: string; passages?: number; attestation?: number; stories?: string; latest: Latest; setting?: string; status?: string };
 export type Example = { id: string; text: string | null; words?: number; cell?: string; title?: string; author?: string; source?: string; story_id?: string; latest: Latest };
-export type Draw = { id: string; name?: string; setting: string | null; genre: string; mode: string; segment: string | null; seed_mode: string; seed_text: string; example_ids: string; domains: string | null; status: string; gate_method: string | null; chosen_step: string | null; flagged: number; flag_note: string; superseded_by: string | null; repaired_from: string | null; forked_from: string | null; draft_config: string | null; created_at: string; ended_at: string | null };
+export type Draw = { id: string; name?: string; setting: string | null; genre: string; sampling: string; mode: string; segment: string | null; seed_mode: string; seed_text: string; example_ids: string; domains: string | null; status: string; gate_method: string | null; chosen_step: string | null; flagged: number; flag_note: string; superseded_by: string | null; repaired_from: string | null; forked_from: string | null; draft_config: string | null; created_at: string; ended_at: string | null };
 export type Finding = { id: string; artifact_id: string; checkers: string[]; samples: number[]; n: number; span: string; statement: string; result: string; evidence: string; invalidates: string; replacement: string; pass: string; source: "check" | "screen"; screen?: string; beat?: number; decision: "accepted" | "dismissed" | "open"; note: string };
 export type Claim = { statement: string; span: string; result: string; evidence: string; authority: string };
 export type Profile = { checker?: string; answers?: Record<string, { answer: string; quote: string }>; matches?: { entry: string; span: string }[]; nearest?: { title: string; author: string; shared: string }; beat?: number; flags?: string[] };
@@ -44,7 +44,8 @@ export const api = {
 
 export type Status = { passages: number; passages_eligible: number; passages_suspect: number; per_source: { source: string; n: number; eligible: number }[]; themes: number; themes_eligible: number; verdicts: number; draws: { status: string; n: number }[] };
 export type Source = { id: string; genre: string; group: string; title: string };
-export type Facets = { sources: Source[]; authors: string[]; cells: { cell: string; n: number }[]; settings: string[] };
+export type SamplingMode = { mode: string; floor: number; ceiling: number };
+export type Facets = { sources: Source[]; authors: string[]; cells: { cell: string; n: number }[]; settings: string[]; genres: Record<string, string[]>; sampling: SamplingMode[] };
 
 /** "14:54 today" for today's timestamps, otherwise "Sep 4, 03:00". */
 export function when(iso: string): string {

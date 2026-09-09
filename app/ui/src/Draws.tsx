@@ -8,6 +8,11 @@ export const LABEL: Record<string, string> = { awaiting_gate: "open", done: "bri
 export const label = (status: string) => LABEL[status] ?? status;
 export const secs = (a: string, b: string | null) => (b ? `${Math.round((Date.parse(b) - Date.parse(a)) / 1000)}s` : "running");
 const choose = (index: number) => `Continue with premise ${index}: outline, two context vignettes, the ending, then the brief.`;
+const SAMPLING_HELP: Record<string, string> = {
+  tail: "The strangest readings of the seed: premises nobody else would file.",
+  "off-centre": "Off the centre but inside the tradition: unusual without being absurd.",
+  standard: "The strongest conventional treatment: what a good writer would reach for.",
+};
 const develop = (index: number) => `Develop premise ${index} as a draw of its own: the same seed and examples, its own outline, context vignettes, ending and brief.`;
 
 /** Model output and brief files are markdown written by this pipeline; rendered as written. */
@@ -83,7 +88,7 @@ export function Draws({ status, selected }: { status: Status | null; selected: s
       {isForm || !current ? <StartForm status={status} /> : (
         <div className="pane read span">
           {!d ? (err ? <div className="err">{err}</div> : <span className="dim">loading…</span>) : <>
-            <div className="drawhd"><h1>{d.draw.name ?? d.draw.id}</h1><span className="rid mono dim">{d.draw.id}</span><span className={"badge " + d.draw.status}>{label(d.draw.status)}</span><span className="dim" style={{ fontSize: 12 }}>{d.draw.setting ?? "unrestricted"}{d.draw.domains ? ` · ${(JSON.parse(d.draw.domains) as string[]).join(" + ")}` : ""} · {d.draw.genre} · {d.draw.mode}{d.draw.gate_method ? ` · gate ${d.draw.gate_method}` : ""} · seed {d.draw.seed_mode}</span></div>
+            <div className="drawhd"><h1>{d.draw.name ?? d.draw.id}</h1><span className="rid mono dim">{d.draw.id}</span><span className={"badge " + d.draw.status}>{label(d.draw.status)}</span><span className="dim" style={{ fontSize: 12 }}>{d.draw.setting ?? "unrestricted"}{d.draw.domains ? ` · ${(JSON.parse(d.draw.domains) as string[]).join(" + ")}` : ""} · {d.draw.genre} · {d.draw.sampling} · {d.draw.mode}{d.draw.gate_method ? ` · gate ${d.draw.gate_method}` : ""} · seed {d.draw.seed_mode}</span></div>
             {d.draw.forked_from && <div className="dim" style={{ fontSize: 12 }}>forked from <a href={`#draw/${d.draw.forked_from}`} className="mono">{d.draw.forked_from}</a></div>}
             {d.draw.superseded_by && <div className="dim" style={{ fontSize: 12 }}>superseded by <a href={`#draw/${d.draw.superseded_by}`} className="mono">{d.draw.superseded_by}</a></div>}
             {d.draw.status === "awaiting_gate" && !step && <GateBar d={d} note={note} setNote={setNote} err={err} onGate={gate} />}
@@ -239,7 +244,8 @@ export function StepView({ step, artifacts, chosen, onBack }: { step: Step; arti
 
 function StartForm({ status }: { status: Status | null }) {
   const [facets, setFacets] = useState<Facets | null>(null);
-  const [form, setForm] = useState<Record<string, string>>({ mode: "manual", genre: "horror" });
+  const [form, setForm] = useState<Record<string, string>>({ mode: "manual", sampling: "tail" });
+  const [genreParts, setGenreParts] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   useEffect(() => { api.facets().then(setFacets); }, []);
@@ -251,6 +257,13 @@ function StartForm({ status }: { status: Status | null }) {
     if (form.setting) api.setting(form.setting).then((s) => setDomains({ draw: s.draw, list: s.domains })).catch(() => setDomains(null));
   }, [form.setting]);
   const togglePin = (slug: string) => setPinned((p) => p.includes(slug) ? p.filter((x) => x !== slug) : [...p, slug]);
+  // the chips are shortcuts into one free-text field: picking several joins them, typing clears them
+  const toggleGenre = (v: string) => {
+    const next = genreParts.includes(v) ? genreParts.filter((x) => x !== v) : [...genreParts, v];
+    setGenreParts(next);
+    setForm({ ...form, genre: next.join(" and ") });
+  };
+  const typeGenre = (e: React.ChangeEvent<HTMLInputElement>) => { setGenreParts([]); setForm({ ...form, genre: e.target.value }); };
   // sources grouped by the author or editor on the file, so a whole shelf goes in or out at once
   const groups = useMemo(() => {
     const m = new Map<string, Source[]>();
@@ -275,7 +288,21 @@ function StartForm({ status }: { status: Status | null }) {
         <div className="field"><span className="lbl">Gate</span><div className="seg" role="group" aria-label="Gate"><button type="button" aria-pressed={form.mode === "manual"} onClick={() => setForm({ ...form, mode: "manual" })}>Manual</button><button type="button" aria-pressed={form.mode === "auto"} onClick={() => setForm({ ...form, mode: "auto" })}>Auto</button></div><span className="help">Manual waits for you after the vignettes. Auto takes the lowest-probability premise and keeps going.</span></div>
         <div className="field"><label htmlFor="setting">Setting</label><select id="setting" className="sel" value={form.setting ?? ""} onChange={set("setting")}><option value="">Unrestricted</option>{facets?.settings.map((s) => <option key={s}>{s}</option>)}</select><span className="help">A setting draws two of its domains and slices its sections into each stage; hard rules go last.</span></div>
         {form.setting && domains && <div className="field"><span className="lbl">Domains</span><div className="chips" role="group" aria-label="Domains">{domains.list.map((d) => <button key={d.slug} type="button" className="chip" aria-pressed={pinned.includes(d.slug)} onClick={() => togglePin(d.slug)}>{d.heading}</button>)}</div><span className="help">{pinned.length ? `Pinned: ${pinned.join(", ")}, in this order.` : `None pinned: ${domains.draw} drawn at random.`}</span></div>}
-        <div className="field"><label htmlFor="genre">Genre</label><select id="genre" className="sel" value={form.genre} onChange={set("genre")}><option>horror</option><option>scifi</option></select></div>
+        <div className="field"><span className="lbl">Sampling</span><div className="seg" role="group" aria-label="Sampling">{(facets?.sampling ?? []).map((s) => (
+          <button key={s.mode} type="button" aria-pressed={form.sampling === s.mode} onClick={() => setForm({ ...form, sampling: s.mode })}>{s.mode}</button>))}
+          </div><span className="help">{SAMPLING_HELP[form.sampling] ?? ""} Stated probability {form.sampling === "standard" ? "over 0.35" : form.sampling === "off-centre" ? "0.10 to 0.35" : "under 0.10"}.</span></div>
+        <div className="field"><label htmlFor="genre">Genre</label>
+          <div className="genrefield">
+          <div className="srcs" role="group" aria-label="Genre">{Object.entries(facets?.genres ?? {}).map(([g, vs]) => (
+            <div key={g} className="srcgroup"><span className="grouphd" aria-hidden="true">{g}</span>
+              <div className="chips">{vs.map((v) => (
+                <button key={v} type="button" className="chip" aria-pressed={genreParts.includes(v)} onClick={() => toggleGenre(v)}>{v}</button>))}
+              </div>
+            </div>))}
+          </div>
+          <input id="genre" name="genre" type="text" value={form.genre ?? ""} placeholder="Empty: taken from the examples drawn" onChange={typeGenre} />
+          </div>
+          <span className="help">Chips fill the field, joined with “and”; type over it for anything else. It reaches one line of the premises ask.</span></div>
         <div className="field"><span className="lbl">Examples from</span>
           <div className="srcs" role="group" aria-label="Sources">{groups.map(([g, rows]) => (
             <div key={g} className="srcgroup">

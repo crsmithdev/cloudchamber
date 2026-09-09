@@ -1,4 +1,5 @@
 import stagesToml from "./stages.toml";
+import genresToml from "./genres.toml";
 
 export type GenStageName = "themes" | "redundancy" | "distill" | "premises" | "execute" | "outline" | "jobs" | "context" | "ending";
 export type CheckStageName = "check-derivation" | "check-ledger" | "check-structure" | "check-resemblance" | "check-claims-extract" | "check-claims-verify";
@@ -13,10 +14,28 @@ export const STAGES: StageName[] = [
   "repair-vignette", "repair-outline", "repair-ending", "schedule", "scene", "screen-ledger", "screen-structure",
 ];
 
+/** The start form's genre shortcuts, by group. Free text is accepted; this list only saves typing. */
+export const GENRES = genresToml as Record<string, string[]>;
+
+export const SAMPLING = ["tail", "off-centre", "standard"] as const;
+export type Sampling = (typeof SAMPLING)[number];
+export const DEFAULT_SAMPLING: Sampling = "tail";
+export const isSampling = (s: string): s is Sampling => (SAMPLING as readonly string[]).includes(s);
+
+/**
+ * The stated-probability band each sampling mode asks for and accepts. The
+ * band is only half of it: the prose that goes with each, in prompts.ts, is
+ * what actually moves the premises, since the model states the number itself.
+ */
+export const BANDS: Record<Sampling, { floor: number; ceiling: number }> = {
+  tail: { floor: 0, ceiling: 0.10 },
+  "off-centre": { floor: 0.10, ceiling: 0.35 },
+  standard: { floor: 0.35, ceiling: 1 },
+};
+
 /** Draw parameters decided in the spec. */
 export const RUN = {
   k: 5,                 // premises per batch
-  ceiling: 0.10,        // stated probability must be under this
   examples: 6,          // passages in front of every generation call
   contextVignettes: 2,
   premiseWords: 100,    // asked; stored with a warning above 120

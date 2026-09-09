@@ -289,12 +289,39 @@ describe("draw graph", () => {
     expect(pr.split("\n\n").length).toBeLessThanOrEqual(6 + 3);   // six passages plus the ask block
   });
 
-  test("draw fails naming the count when a segment is thin; genre must be given when examples span both", async () => {
+  test("draw fails naming the count when a segment is thin; genre follows the examples when none is asked for", async () => {
     const { db, dir } = fixture();
     db.exec("DELETE FROM passages WHERE id IN ('h0','h1','h2','h3','h4')");
-    const { p } = pipe(db, dir);
+    const { p, model } = pipe(db, dir);
     await expect(p.start({ mode: "auto", segment: { source: "scp" } })).rejects.toThrow(/only 4 eligible passages.*6 needed/);
-    await expect(p.start({ mode: "auto" })).rejects.toThrow(/span genres.*--genre/);
+    db.exec("DELETE FROM passages WHERE id IN ('h5','h6')");            // four of the six drawn are now scifi
+    const draw = await p.start({ mode: "auto" });
+    expect(draw.genre).toBe("scifi");
+    expect(model.calls.find((c) => c.stage === "premises")!.prompt).toContain("for a scifi story");
+  });
+
+  test("sampling moves the band and the register the premises are asked in", async () => {
+    const { db, dir } = fixture();
+    const { p, model } = pipe(db, dir, script({ premises: [premises([0.40, 0.55, 0.38, 0.62, 0.44])] }));
+    const draw = await p.start({ mode: "manual", genre: "horror", sampling: "standard" });
+    expect(draw.sampling).toBe("standard");
+    const ask = model.calls.find((c) => c.stage === "premises")!.prompt;
+    expect(ask).toContain("Sample from the centre of the distribution");
+    expect(ask).toContain("over 0.35");
+    expect(ask).not.toMatch(/absurd/);
+    expect(p.candidates(draw.id).map((c) => c.probability)).toEqual([0.38, 0.40, 0.44, 0.55, 0.62]);
+    // the band is enforced both ways: a tail premise is a shape failure under standard
+    const { p: p2 } = pipe(db, dir, script({ premises: [premises([0.40, 0.55, 0.05, 0.62, 0.44]), premises([0.40, 0.55, 0.05, 0.62, 0.44])] }));
+    await expect(p2.start({ mode: "auto", genre: "horror", sampling: "standard" })).rejects.toThrow(StepFailure);
+    await expect(p2.start({ mode: "auto", genre: "horror", sampling: "middle" as any })).rejects.toThrow(/not tail \| off-centre \| standard/);
+  });
+
+  test("a tail draw is what the default is, and says so", async () => {
+    const { db, dir } = fixture();
+    const { p, model } = pipe(db, dir);
+    const draw = await p.start({ mode: "manual", genre: "horror" });
+    expect(draw.sampling).toBe("tail");
+    expect(model.calls.find((c) => c.stage === "premises")!.prompt).toContain("Sample from the tail of the distribution");
   });
 
   test("templates reject the forbidden vocabulary", () => {

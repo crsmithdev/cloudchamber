@@ -1,6 +1,11 @@
 import { describe, expect, test } from "bun:test";
+import { mkdtempSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { openDb, type Db } from "./store/db.ts";
 import { eligiblePassages, sourceLabel } from "./bank.ts";
+import { asMarkdown, asText, knobs } from "./knobs.ts";
+import { settingsFixture } from "./settings.fixture.ts";
 
 function fixture(): Db {
   const db = openDb(":memory:");
@@ -31,5 +36,19 @@ describe("the example pool", () => {
       .toEqual({ group: "Ellen Datlow", title: "The Best Horror of the Year Volume 01" });
     expect(sourceLabel("watts-blindsight", "sources/scifi/Peter Watts - Blindsight.pdf")).toEqual({ group: "Peter Watts", title: "Blindsight" });
     expect(sourceLabel("scp", "sources/horror/scp/scp-*.md")).toEqual({ group: "scp", title: "scp" });
+  });
+});
+
+describe("the knobs", () => {
+  test("every tunable is read from the files, not written down", () => {
+    const dir = mkdtempSync(join(tmpdir(), "fogbelt-knobs-"));
+    const sections = knobs(fixture(), settingsFixture(dir));
+    const by = (title: string) => sections.find((s) => s.title === title)!;
+    expect(by("settings and their domains").rows).toEqual([["fog", "draw 2 · land-and-title, labour, death-and-its-administration"]]);
+    expect(by("sampling").rows.map((r) => r[0])).toEqual(["tail", "off-centre", "standard"]);
+    expect(by("genre shortcuts").rows.map((r) => r[0])).toContain("basics");
+    expect(by("example sources").rows.map((r) => r[0])).toEqual(["datlow-01", "scp", "watts-blindsight"]);
+    expect(asText(sections)).toContain("— sampling —");
+    expect(asMarkdown(sections)).toContain("| `--sampling` |");
   });
 });

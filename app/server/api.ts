@@ -9,6 +9,7 @@ import type { Db } from "../pipeline/store/db.ts";
 import { Pipeline, type DrawOpts, type SeedChoice } from "../pipeline/draw.ts";
 import { KINDS, latest, passedStories, record, type Kind, type Method } from "../pipeline/verdicts.ts";
 import { status } from "../pipeline/status.ts";
+import { BANDS, GENRES, SAMPLING } from "../pipeline/config.ts";
 import { exportBank, sourceLabel } from "../pipeline/bank.ts";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
@@ -128,17 +129,20 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     authors: db.query("SELECT DISTINCT author FROM stories WHERE author <> '' ORDER BY author").all().map((r: any) => r.author),
     cells: db.query("SELECT voice || '/' || mode AS cell, count(*) AS n FROM passages GROUP BY cell").all(),
     settings: readdirSync(join(BRIEFS, "..", "sources", "settings")).filter((f) => f.endsWith(".md")).map((f) => f.replace(/\.md$/, "")),
+    genres: GENRES,
+    sampling: SAMPLING.map((mode) => ({ mode, ...BANDS[mode] })),
   }));
 
   app.get("/api/draws", async () => { const draws = pipeline.draws(); const names = drawNames(draws); return draws.map((r) => ({ ...r, name: names.get(r.id) })); });
 
-  app.post<{ Body: { mode?: "auto" | "manual"; setting?: string; domains?: string; genre?: string; source?: string; author?: string; seed?: string; seed_id?: string } }>("/api/draws", async (req, reply) => {
+  app.post<{ Body: { mode?: "auto" | "manual"; setting?: string; domains?: string; genre?: string; sampling?: string; source?: string; author?: string; seed?: string; seed_id?: string } }>("/api/draws", async (req, reply) => {
     const b = req.body ?? {};
     const seed: SeedChoice = b.seed ? { mode: "typed", text: b.seed } : b.seed_id ? { mode: "picked", themeId: b.seed_id } : { mode: "drawn" };
     const domains = b.domains ? b.domains.split(",").map((d) => d.trim()).filter(Boolean) : undefined;
     if (domains?.length && !b.setting) return reply.code(400).send({ error: "domains need a setting" });
     const sources = b.source ? b.source.split(",").map((s) => s.trim()).filter(Boolean) : [];
-    const opts: DrawOpts = { mode: b.mode ?? "manual", setting: b.setting || undefined, domains, genre: b.genre || undefined, seed,
+    const opts: DrawOpts = { mode: b.mode ?? "manual", setting: b.setting || undefined, domains, genre: b.genre || undefined,
+      sampling: (b.sampling || undefined) as DrawOpts["sampling"], seed,
       segment: sources.length || b.author ? { source: sources.length ? sources : undefined, author: b.author || undefined } : undefined };
     try {
       // The draw and validation are synchronous-ish and fail fast; the model steps continue after we reply.

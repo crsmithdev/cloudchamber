@@ -66,6 +66,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .grouphd { appearance: none; border: 0; background: transparent; color: var(--dim); font-size: 11.5px; text-align: right; padding: .3rem 0 0; cursor: pointer; }
 .grouphd[aria-pressed="true"] { color: var(--accent); }
 .grouphd:hover { color: var(--ink); }
+.genrefield { display: flex; flex-direction: column; gap: .5rem; }
+.genrefield .srcs { padding-top: 0; }
 .row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .25rem .75rem; padding: .7rem .75rem; border-bottom: 1px solid var(--line); cursor: pointer; }
 .row:hover { background: var(--raised); }
 .row.on { background: var(--raised); box-shadow: inset 2px 0 0 var(--accent); }
