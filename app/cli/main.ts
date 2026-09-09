@@ -14,9 +14,9 @@ const DOC = `fogbelt — the one command the skill and the UI drive.
                [--seed "text" | --seed-id ID]
    fogbelt setting lint <id>              check a setting file; exit 1 with one finding per line
    fogbelt distill <id> [--domain SLUG]   fill a setting's empty or redraft-marked sections from its reference/
-   fogbelt gate <draw> choose <execute-step> | fork <execute-step> | redraw | keep-seed | flag  [--note "..."]
+   fogbelt gate <draw> choose <execute-step> | fork <execute-step> | redraw | keep-seed | flag | archive | unarchive  [--note "..."]
    fogbelt themes [--only SRC ...] [--limit N]   draft themes for stories not yet drafted
-   fogbelt draws                           list draws
+   fogbelt draws [--archived]              list draws, archived ones included with the flag
    fogbelt draw-show <draw>                 steps and artifacts of one draw
    fogbelt candidates <draw>              the five candidates in full, by stated probability
    fogbelt brief <draw>                   print the brief
@@ -140,6 +140,8 @@ async function main() {
         : action === "redraw" ? await p.reject(drawId!, "redraw", values.note)
         : action === "keep-seed" ? await p.reject(drawId!, "keep-seed", values.note)
         : action === "flag" ? p.flag(drawId!, values.note)
+        : action === "archive" ? p.archive(drawId!)
+        : action === "unarchive" ? p.archive(drawId!, false)
         : action === "accept" ? (args.length ? await d.accept(drawId!, args, { note: values.note }) : usage())
         : action === "dismiss" ? (args[0] ? d.dismiss(drawId!, args[0], values.note) : usage())
         : action === "hold" ? d.hold(drawId!)
@@ -224,7 +226,9 @@ async function main() {
       return;
     }
     case "draws":
-      for (const r of pipeline().draws()) console.log(`${r.id}  ${r.status.padEnd(19)} ${r.mode.padEnd(6)} ${r.setting ?? "-"}  ${r.repaired_from ? `(repairs ${r.repaired_from}) ` : ""}${r.seed_text.slice(0, 70)}`);
+      for (const r of pipeline().draws(rest.includes("--archived"))) {
+        console.log(`${r.id}  ${r.status.padEnd(19)} ${r.mode.padEnd(6)} ${r.setting ?? "-"}  ${r.archived_at ? "(archived) " : ""}${r.repaired_from ? `(repairs ${r.repaired_from}) ` : ""}${r.seed_text.slice(0, 70)}`);
+      }
       break;
     case "draw-show": {
       const p = pipeline(); const [drawId] = rest;

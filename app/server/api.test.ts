@@ -156,6 +156,24 @@ describe("api", () => {
     expect(pipeline.draw(rej.body.id).seed_text).toBe("typed seed");
   });
 
+  test("an archived draw leaves the list, keeps its name, and comes back", async () => {
+    const { j, pipeline } = await setup();
+    const { body: { id } } = await j("POST", "/api/draws", { mode: "manual", genre: "horror", seed: "one shared seed" });
+    for (let i = 0; i < 50 && pipeline.draw(id).status !== "awaiting_gate"; i++) await Bun.sleep(10);
+    pipeline.db.query("INSERT INTO draws (id, genre, mode, seed_mode, seed_text, example_ids, status, created_at) VALUES ('later', 'horror', 'manual', 'typed', 'one shared seed', '[]', 'done', '2027-01-01T00:00:00Z')").run();
+    const named = (rows: any[]) => Object.fromEntries(rows.map((r) => [r.id, r.name]));
+    const before = named((await j("GET", "/api/draws?archived=true")).body);
+    expect((await j("POST", `/api/draws/${id}/gate`, { action: "archive" })).body.archived_at).toBeTruthy();
+    const list = await j("GET", "/api/draws");
+    expect(list.body.map((r: any) => r.id)).toEqual(["later"]);
+    // names are deterministic over every draw, so hiding one must not renumber the others
+    expect(named((await j("GET", "/api/draws?archived=true")).body)).toEqual(before);
+    expect(named(list.body).later).toBe(before.later);
+    expect((await j("GET", `/api/draws/${id}`)).code).toBe(200);
+    await j("POST", `/api/draws/${id}/gate`, { action: "unarchive" });
+    expect((await j("GET", "/api/draws")).body).toHaveLength(2);
+  });
+
   test("a setting's domains are listed, pinned on a draw, and a bad pin is a 400", async () => {
     const { j } = await setup();
     const s = await j("GET", "/api/settings/fog");

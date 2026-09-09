@@ -40,7 +40,7 @@ export function listItems(db: Db, f: ItemFilter) {
                   FROM stories s LEFT JOIN passages p ON p.story_id = s.id GROUP BY s.id ORDER BY s.source_id, s.ord`).all() as any[]
     : f.kind === "theme"
       ? db.query(`SELECT id, text, attestation, stories, drafted_at, duplicate_of FROM themes WHERE duplicate_of IS NULL ORDER BY drafted_at`).all() as any[]
-      : db.query(`SELECT id, seed_text AS text, setting, genre, status, created_at FROM draws WHERE status = 'done' ORDER BY created_at DESC`).all() as any[];
+      : db.query(`SELECT id, seed_text AS text, setting, genre, status, created_at FROM draws WHERE status = 'done' AND archived_at IS NULL ORDER BY created_at DESC, rowid DESC`).all() as any[];
   const withVerdict = rows.map((r) => ({ ...r, latest: latest(db, f.kind, r.id) }));
   const out = withVerdict.filter((r) => {
     if (f.source && r.source !== f.source) return false;
@@ -133,7 +133,10 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     sampling: SAMPLING.map((mode) => ({ mode, ...BANDS[mode] })),
   }));
 
-  app.get("/api/draws", async () => { const draws = pipeline.draws(); const names = drawNames(draws); return draws.map((r) => ({ ...r, name: names.get(r.id) })); });
+  app.get<{ Querystring: { archived?: string } }>("/api/draws", async (req) => {
+    const names = drawNames(pipeline.draws(true));
+    return pipeline.draws(req.query.archived === "true").map((r) => ({ ...r, name: names.get(r.id) }));
+  });
 
   app.post<{ Body: { mode?: "auto" | "manual"; setting?: string; domains?: string; genre?: string; sampling?: string; source?: string; author?: string; seed?: string; seed_id?: string } }>("/api/draws", async (req, reply) => {
     const b = req.body ?? {};
@@ -165,7 +168,7 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
 
   app.get<{ Params: { id: string } }>("/api/draws/:id", async (req, reply) => {
     try {
-      const draw = { ...pipeline.draw(req.params.id), name: drawNames(pipeline.draws()).get(req.params.id) };
+      const draw = { ...pipeline.draw(req.params.id), name: drawNames(pipeline.draws(true)).get(req.params.id) };
       return { draw, steps: pipeline.steps(draw.id), artifacts: pipeline.artifacts(draw.id), candidates: pipeline.candidates(draw.id), examples: drawExamples(db, draw.example_ids), forks: pipeline.forks(draw.id) };
     } catch (e: any) { return reply.code(404).send({ error: e.message }); }
   });
@@ -175,6 +178,7 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     const id = req.params.id;
     try {
       if (action === "flag") return pipeline.flag(id, note);
+      if (action === "archive" || action === "unarchive") return pipeline.archive(id, action === "archive");
       // gate 1 and gate 2 (docs/specs/2026-09-05-drafting-pipeline.md); the long ones continue after the reply
       if (action === "accept") {
         if (!findings?.length) return reply.code(400).send({ error: "findings required" });
@@ -210,7 +214,7 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
         return reply.code(202).send({ id: forkId, forked_from: id });
       }
       if (action === "redraw" || action === "keep-seed") { const next = await pipeline.reject(id, action, note); return reply.code(202).send({ id: next.id, superseded: id }); }
-      return reply.code(400).send({ error: "action must be choose | fork | redraw | keep-seed | flag | accept | dismiss | hold | pass | keep | rewrite" });
+      return reply.code(400).send({ error: "action must be choose | fork | redraw | keep-seed | flag | archive | unarchive | accept | dismiss | hold | pass | keep | rewrite" });
     } catch (e: any) { return reply.code(400).send({ error: e.message }); }
   });
 

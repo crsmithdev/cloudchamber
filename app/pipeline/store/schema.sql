@@ -128,6 +128,7 @@ CREATE TABLE IF NOT EXISTS draws (
   repaired_from TEXT REFERENCES draws(id),   -- the brief this one repairs
   forked_from   TEXT REFERENCES draws(id),   -- the draw whose candidate this one develops
   draft_config  TEXT,                  -- JSON: the resolved draft.toml values a draft ran under
+  archived_at   TEXT,                  -- set to hide the draw from the lists; nothing else changes
   created_at    TEXT NOT NULL,
   ended_at      TEXT
 );

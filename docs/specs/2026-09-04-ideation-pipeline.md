@@ -34,6 +34,12 @@
 >   probability`. A draw's example rows offer one `exclude` toggle, which reads
 >   `include` once the passage is out of the pool, rather than keep and pass: an
 >   example is eligible until it is excluded, so keep was a no-op there.
+> - **Archiving (new).** A draw at any status can be archived, which takes it
+>   out of both lists, out of the browse view and out of the status counts and
+>   changes nothing else: `archived_at` on the row, reversible, and the draw is
+>   still reachable by id. The list offers `show N archived`; names stay
+>   deterministic over every draw, archived or not, so hiding one never
+>   renumbers another.
 > - **The skill (REQ 36).** The Voice Bridge also takes `--domains` and
 >   `--sampling`, and a `knobs` tool prints every tunable and its live values.
 >   `fogbelt help` prints the same on the CLI; `docs/knobs.md` is that output.

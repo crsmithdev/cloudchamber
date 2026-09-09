@@ -7,7 +7,7 @@ import { replay } from "../verdicts.ts";
 export type Db = Database;
 
 /** Bump with every change to an existing table, and mirror it in extract/store.py. */
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 
 /** `log` is the verdict log a migration replays from; only tests pass it. */
 export function openDb(path: string = DEFAULT_DB, log?: string): Db {
@@ -66,6 +66,7 @@ function renameBeforeSchema(db: Db) {
  *           and draft_config; steps gains tools (drafting pipeline).
  *   4 -> 5  draws gains forked_from: a second candidate developed on its own.
  *   5 -> 6  draws gains sampling; every draw made before it sampled the tail.
+ *   6 -> 7  draws gains archived_at: hidden from the lists, otherwise untouched.
  */
 function migrate(db: Db, schema: string, log?: string) {
   if (userVersion(db) < 1) {
@@ -102,6 +103,10 @@ function migrate(db: Db, schema: string, log?: string) {
   if (userVersion(db) < 6) {
     if (!columns(db, "draws").includes("sampling")) db.exec("ALTER TABLE draws ADD COLUMN sampling TEXT NOT NULL DEFAULT 'tail'");
     db.exec("PRAGMA user_version = 6");
+  }
+  if (userVersion(db) < 7) {
+    if (!columns(db, "draws").includes("archived_at")) db.exec("ALTER TABLE draws ADD COLUMN archived_at TEXT");
+    db.exec("PRAGMA user_version = 7");
   }
 }
 

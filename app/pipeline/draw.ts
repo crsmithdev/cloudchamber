@@ -36,7 +36,7 @@ export type DrawRow = {
   id: string; setting: string | null; genre: string; mode: "auto" | "manual"; segment: string | null;
   seed_mode: string; seed_text: string; seed_theme_id: string | null; example_ids: string; domains: string | null; sampling: string; status: string;
   gate_method: string | null; chosen_step: string | null; flagged: number; flag_note: string;
-  superseded_by: string | null; repaired_from: string | null; forked_from: string | null; draft_config: string | null; created_at: string; ended_at: string | null;
+  superseded_by: string | null; repaired_from: string | null; forked_from: string | null; draft_config: string | null; archived_at: string | null; created_at: string; ended_at: string | null;
 };
 export type StepRow = {
   id: string; draw_id: string | null; parent_id: string | null; stage: string; model: string; system_prompt: string;
@@ -351,6 +351,13 @@ export class Pipeline {
     return rows.map((r) => { const m = JSON.parse(r.meta); return { id: r.id, status: r.status, step_id: m.forked_from as string, index: m.index as number }; });
   }
 
+  /** Hide a draw from the lists, or put it back. Nothing else about it changes, and it stays reachable by id. */
+  archive(drawId: string, archived = true): DrawRow {
+    this.draw(drawId);
+    this.db.query("UPDATE draws SET archived_at = ? WHERE id = ?").run(archived ? now() : null, drawId);
+    return this.draw(drawId);
+  }
+
   flag(drawId: string, note: string): DrawRow {
     this.db.query("UPDATE draws SET flagged = 1, flag_note = ? WHERE id = ?").run(note, drawId);
     return this.draw(drawId);
@@ -408,7 +415,9 @@ export class Pipeline {
     return r;
   }
   // created_at is second-resolution, so two draws started in one second need the insertion order to break the tie
-  draws(): DrawRow[] { return this.db.query("SELECT * FROM draws ORDER BY created_at DESC, rowid DESC").all() as DrawRow[]; }
+  draws(archived = false): DrawRow[] {
+    return this.db.query(`SELECT * FROM draws ${archived ? "" : "WHERE archived_at IS NULL "}ORDER BY created_at DESC, rowid DESC`).all() as DrawRow[];
+  }
   steps(drawId: string): StepRow[] { return this.db.query("SELECT * FROM steps WHERE draw_id = ? ORDER BY started_at, rowid").all(drawId) as StepRow[]; }
   artifacts(drawId: string) {
     return this.db.query("SELECT a.* FROM artifacts a JOIN steps s ON s.id = a.step_id WHERE s.draw_id = ? ORDER BY s.started_at, a.rowid").all(drawId) as { id: string; step_id: string; kind: string; content: string; meta: string }[];

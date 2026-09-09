@@ -29,13 +29,18 @@ export function Draws({ status, selected }: { status: Status | null; selected: s
   const [stepId, setStepId] = useState<string | null>(null);
   const [brief, setBrief] = useState<Record<string, string> | null>(null);
   const [note, setNote] = useState("");
+  const [showArchived, setShowArchived] = useState(false);
   const [err, setErr] = useState("");
 
-  const loadDraws = () => api.draws().then(setDraws).catch(() => {});
+  const loadDraws = () => api.draws(true).then(setDraws).catch(() => {});
   useEffect(() => { loadDraws(); const t = setInterval(loadDraws, 3000); return () => clearInterval(t); }, []);
 
+  // Archived draws stay out of the list until asked for, and the open one stays visible whatever its state.
+  const archived = draws.filter((r) => r.archived_at).length;
   // With nothing chosen, land on the draw that needs attention, else the newest; with no draws, the form.
-  const current = selected ?? (draws.find((r) => r.status === "awaiting_gate") ?? draws[0])?.id ?? (draws.length ? undefined : "new");
+  const live = draws.filter((r) => !r.archived_at);
+  const current = selected ?? (live.find((r) => r.status === "awaiting_gate") ?? live[0])?.id ?? (live.length ? undefined : "new");
+  const shown = draws.filter((r) => showArchived || !r.archived_at || r.id === current);
   const isForm = current === "new";
   const loadDetail = (id: string) => api.draw(id).then((d) => setDetails((m) => ({ ...m, [id]: d }))).catch((e) => setErr(e.message));
   useEffect(() => {
@@ -70,12 +75,13 @@ export function Draws({ status, selected }: { status: Status | null; selected: s
   return (
     <>
       <div className="pane list">
-        <div className="newdraw"><a className="btn primary" href="#draws/new" style={{ textDecoration: "none" }}>Draw</a></div>
-        {draws.length === 0 && <div className="empty">No draws yet.</div>}
-        {draws.map((r) => (
-          <div key={r.id} className={"drawrow" + (r.id === current ? " on" : "") + (r.superseded_by ? " old" : "")} onClick={() => select(r.id)}>
+        <div className="newdraw"><a className="btn primary" href="#draws/new" style={{ textDecoration: "none" }}>Draw</a>
+          {archived > 0 && <button className="btn sm quiet" onClick={() => setShowArchived((v) => !v)}>{showArchived ? "hide" : "show"} {archived} archived</button>}</div>
+        {shown.length === 0 && <div className="empty">No draws yet.</div>}
+        {shown.map((r) => (
+          <div key={r.id} className={"drawrow" + (r.id === current ? " on" : "") + (r.superseded_by || r.archived_at ? " old" : "")} onClick={() => select(r.id)}>
             <div className="l1"><span className="nm">{r.name ?? r.id}</span><span className="when">{when(r.created_at)}</span></div>
-            <div className="l2"><span className={dot(r.status)} />{label(r.status)} · {r.setting ?? "unrestricted"} · {r.genre} · {r.mode}{r.flagged ? <span className="art"> · flagged</span> : null}{r.forked_from && <span className="dim"> · fork</span>}{r.superseded_by && <span className="dim"> · superseded</span>}</div>
+            <div className="l2"><span className={dot(r.status)} />{label(r.status)} · {r.setting ?? "unrestricted"} · {r.genre} · {r.mode}{r.flagged ? <span className="art"> · flagged</span> : null}{r.forked_from && <span className="dim"> · fork</span>}{r.superseded_by && <span className="dim"> · superseded</span>}{r.archived_at && <span className="dim"> · archived</span>}</div>
             <div className="sd">{r.seed_text}</div>
             <div className="rid mono dim">{r.id}</div>
             {open.has(r.id) && details[r.id] && <>
@@ -88,7 +94,8 @@ export function Draws({ status, selected }: { status: Status | null; selected: s
       {isForm || !current ? <StartForm status={status} /> : (
         <div className="pane read span">
           {!d ? (err ? <div className="err">{err}</div> : <span className="dim">loading…</span>) : <>
-            <div className="drawhd"><h1>{d.draw.name ?? d.draw.id}</h1><span className="rid mono dim">{d.draw.id}</span><span className={"badge " + d.draw.status}>{label(d.draw.status)}</span><span className="dim" style={{ fontSize: 12 }}>{d.draw.setting ?? "unrestricted"}{d.draw.domains ? ` · ${(JSON.parse(d.draw.domains) as string[]).join(" + ")}` : ""} · {d.draw.genre} · {d.draw.sampling} · {d.draw.mode}{d.draw.gate_method ? ` · gate ${d.draw.gate_method}` : ""} · seed {d.draw.seed_mode}</span></div>
+            <div className="drawhd"><h1>{d.draw.name ?? d.draw.id}</h1><span className="rid mono dim">{d.draw.id}</span><span className={"badge " + d.draw.status}>{label(d.draw.status)}</span><span className="dim" style={{ fontSize: 12 }}>{d.draw.setting ?? "unrestricted"}{d.draw.domains ? ` · ${(JSON.parse(d.draw.domains) as string[]).join(" + ")}` : ""} · {d.draw.genre} · {d.draw.sampling} · {d.draw.mode}{d.draw.gate_method ? ` · gate ${d.draw.gate_method}` : ""} · seed {d.draw.seed_mode}</span>
+              <button className="btn sm quiet" title={d.draw.archived_at ? "Put this draw back in the list." : "Hide this draw from the lists. Nothing else about it changes."} onClick={() => gate(d.draw.archived_at ? "unarchive" : "archive")}>{d.draw.archived_at ? "unarchive" : "archive"}</button></div>
             {d.draw.forked_from && <div className="dim" style={{ fontSize: 12 }}>forked from <a href={`#draw/${d.draw.forked_from}`} className="mono">{d.draw.forked_from}</a></div>}
             {d.draw.superseded_by && <div className="dim" style={{ fontSize: 12 }}>superseded by <a href={`#draw/${d.draw.superseded_by}`} className="mono">{d.draw.superseded_by}</a></div>}
             {d.draw.status === "awaiting_gate" && !step && <GateBar d={d} note={note} setNote={setNote} err={err} onGate={gate} />}

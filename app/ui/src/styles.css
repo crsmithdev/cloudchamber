@@ -140,7 +140,8 @@ tr.item.on td:first-child { box-shadow: inset 2px 0 0 var(--accent); }
 .tblhead .toggle:hover { color: var(--ink); }
 
 /* draws */
-.newdraw { padding: .75rem; border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 1; background: var(--surface); }
+.newdraw { display: flex; gap: .5rem; align-items: center; padding: .75rem; border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 1; background: var(--surface); }
+.newdraw .btn.primary { flex: 1; }
 .drawrow { display: grid; gap: .2rem; padding: .7rem .75rem; border-bottom: 1px solid var(--line); cursor: pointer; }
 .drawrow:hover { background: var(--raised); }
 .drawrow.on { box-shadow: inset 2px 0 0 var(--accent); }

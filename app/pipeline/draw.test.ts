@@ -316,6 +316,23 @@ describe("draw graph", () => {
     await expect(p2.start({ mode: "auto", genre: "horror", sampling: "middle" as any })).rejects.toThrow(/not tail \| off-centre \| standard/);
   });
 
+  test("archiving hides a draw from the list and changes nothing else about it", async () => {
+    const { db, dir } = fixture();
+    const { p } = pipe(db, dir);
+    const ins = db.query("INSERT INTO draws (id, genre, mode, seed_mode, seed_text, example_ids, status, created_at) VALUES (?, 'horror', 'manual', 'drawn', 'A seed.', '[]', 'done', ?)");
+    ins.run("one", "2026-09-08T12:00:00Z");
+    ins.run("two", "2026-09-08T12:00:01Z");
+    const archived = p.archive("two");
+    expect(archived.archived_at).toBeTruthy();
+    expect(archived.status).toBe("done");
+    expect(p.draws().map((r) => r.id)).toEqual(["one"]);
+    expect(p.draws(true).map((r) => r.id)).toEqual(["two", "one"]);
+    expect(p.draw("two").id).toBe("two");                       // still reachable by id
+    expect(p.archive("two", false).archived_at).toBeNull();
+    expect(p.draws().map((r) => r.id)).toEqual(["two", "one"]);
+    expect(() => p.archive("nope")).toThrow(/no draw nope/);
+  });
+
   test("draws made in the same second list newest first", async () => {
     const { db, dir } = fixture();
     const { p } = pipe(db, dir);
