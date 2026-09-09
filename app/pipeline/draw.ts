@@ -407,7 +407,8 @@ export class Pipeline {
     if (!r) throw new Error(`no draw ${drawId}`);
     return r;
   }
-  draws(): DrawRow[] { return this.db.query("SELECT * FROM draws ORDER BY created_at DESC").all() as DrawRow[]; }
+  // created_at is second-resolution, so two draws started in one second need the insertion order to break the tie
+  draws(): DrawRow[] { return this.db.query("SELECT * FROM draws ORDER BY created_at DESC, rowid DESC").all() as DrawRow[]; }
   steps(drawId: string): StepRow[] { return this.db.query("SELECT * FROM steps WHERE draw_id = ? ORDER BY started_at, rowid").all(drawId) as StepRow[]; }
   artifacts(drawId: string) {
     return this.db.query("SELECT a.* FROM artifacts a JOIN steps s ON s.id = a.step_id WHERE s.draw_id = ? ORDER BY s.started_at, a.rowid").all(drawId) as { id: string; step_id: string; kind: string; content: string; meta: string }[];

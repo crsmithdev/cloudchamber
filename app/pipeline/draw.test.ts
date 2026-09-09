@@ -316,6 +316,16 @@ describe("draw graph", () => {
     await expect(p2.start({ mode: "auto", genre: "horror", sampling: "middle" as any })).rejects.toThrow(/not tail \| off-centre \| standard/);
   });
 
+  test("draws made in the same second list newest first", async () => {
+    const { db, dir } = fixture();
+    const { p } = pipe(db, dir);
+    const at = "2026-09-08T12:00:00Z";
+    for (const id of ["aaa", "zzz", "mmm"]) {
+      db.query("INSERT INTO draws (id, genre, mode, seed_mode, seed_text, example_ids, status, created_at) VALUES (?, 'horror', 'manual', 'drawn', 'A seed.', '[]', 'done', ?)").run(id, at);
+    }
+    expect(p.draws().map((r) => r.id)).toEqual(["mmm", "zzz", "aaa"]);
+  });
+
   test("a tail draw is what the default is, and says so", async () => {
     const { db, dir } = fixture();
     const { p, model } = pipe(db, dir);

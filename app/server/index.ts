@@ -14,7 +14,7 @@ export async function serve(port: number, opts: { db?: string; uiDir?: string } 
   const app = buildApi(db, pipeline, { logger: false });
   const ui = opts.uiDir ?? join(ROOT, "app", "ui", "dist");
   if (!existsSync(ui) && !opts.uiDir) {
-    const b = Bun.spawnSync(["bun", "draw", "ui:build"], { cwd: ROOT, stdout: "pipe", stderr: "pipe" });
+    const b = Bun.spawnSync(["bun", "run", "ui:build"], { cwd: ROOT, stdout: "pipe", stderr: "pipe" });
     if (!b.success) console.error(`ui build failed:\n${b.stderr.toString().slice(-800)}`);
   }
   if (existsSync(ui)) {
