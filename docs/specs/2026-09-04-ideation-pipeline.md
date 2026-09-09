@@ -4,6 +4,40 @@
 > *packet* is a *brief*, in the store, the CLI, the API, the skill and the UI.
 > The text below keeps the words it was written with.
 
+> Amendments, 2026-09-08. The decisions below stand as they were taken; where
+> this list and the text disagree, this list is the code.
+>
+> - **Sampling (US 21, REQ 21, Prompt order).** The premise ask is one of three
+>   modes, not a fixed tail. `tail` is what the text describes — every
+>   probability under 0.10, the modal answer excluded, the divergence cue — and
+>   is the default; `off-centre` asks for 0.10 to 0.35 inside the tradition the
+>   seed belongs to; `standard` asks for over 0.35 and for the conventional
+>   treatment, openly. Each mode carries its own band *and* its own register,
+>   because the model states the probability itself and the prose is what moves
+>   it. A premise outside its mode's band is the `shape` failure REQ 21 names.
+>   The mode is `--sampling`, stored on the draw and printed in the trail.
+> - **Genre (REQ 19, REQ 21, Open Questions).** Genre never filtered the example
+>   pool: a segment is a source or an author, and `--genre` is free text that
+>   reaches one line of the premise ask and nothing else. The open question
+>   *genre when a segment spans both* is closed the other way: with no genre
+>   asked for, the draw records the genre most of its six drawn examples carry
+>   rather than failing. The form offers the shortcuts in `genres.toml`, several
+>   of which join into a blend.
+> - **Examples (REQ 19).** `--source` takes several sources, comma-separated.
+> - **The gate (REQ 35).** Once a candidate is chosen, any of the other four can
+>   be developed as a fork: a draw of its own with the same seed, examples,
+>   setting, domains and sampling, carrying the candidate's premise and vignette
+>   across as a copied execute step and linked by `forked_from`.
+> - **The trail (REQ 27).** Also carries the sampling mode, and `## forked_from`
+>   on a fork.
+> - **The viewer (REQ 34).** The distribution header reads `lowest to highest
+>   probability`. A draw's example rows offer one `exclude` toggle, which reads
+>   `include` once the passage is out of the pool, rather than keep and pass: an
+>   example is eligible until it is excluded, so keep was a no-op there.
+> - **The skill (REQ 36).** The Voice Bridge also takes `--domains` and
+>   `--sampling`, and a `knobs` tool prints every tunable and its live values.
+>   `fogbelt help` prints the same on the CLI; `docs/knobs.md` is that output.
+
 Spec derived from the grilling session of 2026-09-04 over `plan.md`. Every
 decision below was put to Chris and answered; the few that were not are under
 Open Questions. The research it rests on is `research/generation.md`,

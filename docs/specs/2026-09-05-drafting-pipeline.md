@@ -5,6 +5,14 @@ from the grilled proposal `2026-09-05-drafting-proposal.md` and the sixteen
 decisions recorded there on 2026-09-05. Where this file and the proposal
 differ, this file wins.
 
+> Amendments, 2026-09-08.
+>
+> - **REQ 9, Repair.** The new draw row also copies `sampling`.
+> - **REQ 28, Schema.** The store is at version 6. Version 5 adds
+>   `draws.forked_from`, a second candidate of one draw developed on its own;
+>   version 6 adds `draws.sampling`, which is `tail` for every row made before
+>   it. Both are plain `ALTER TABLE`s; neither touches the verdict replay.
+
 ## Problem Statement
 
 A draw ends in a brief: a chosen vignette, an outline in three sections plus
