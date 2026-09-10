@@ -377,6 +377,8 @@ describe("draw graph", () => {
     expect(stageOf(db, p.draw(fork.id))).toBe("check");
     record(db, { kind: "draft", target_id: fork.id, verdict: "pass", method: "gate" });
     expect(stageOf(db, p.draw(fork.id))).toBe("write");
+    // a repair sets chosen_step a few seconds in; the link to the brief it repairs holds the stage until then
+    expect(stageOf(db, { id: "x", status: "running", chosen_step: null, repaired_from: draw.id })).toBe("check");
   });
 
   test("archiving hides a draw from the list and changes nothing else about it", async () => {

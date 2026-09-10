@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api, when, type Draw, type DraftConfig, type Finding, type Findings, type Story, type Step } from "./api.ts";
-import { Caret, Log, Md, StepView, firstParagraph, label, type Detail } from "./Draws.tsx";
+import { Caret, DrawMetaItems, Log, Md, StepView, firstParagraph, label, type Detail } from "./Draws.tsx";
 
 /**
  * Develop a brief: the stages after a brief (docs/specs/2026-09-05-drafting-pipeline.md).
@@ -61,10 +61,13 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
       <div className="pane read span dev">
         {!current ? <div className="empty">{stage === "check" ? "Nothing to check yet." : "Nothing to write yet."}</div> : !d ? (err ? <div className="err">{err}</div> : <span className="dim">loading…</span>) : <>
           <div className="drawhd"><h1>{d.draw.name ?? d.draw.id}</h1><span className="rid mono dim">{d.draw.id}</span><span className={badge(d.draw.status)}>{d.draw.status === "done" ? "brief" : label(d.draw.status)}</span>
-            {d.origin && <span className="meta"><span><i>{d.origin.id === d.draw.id ? "candidate" : "from"}</i>{d.origin.id === d.draw.id
-              ? <a href={`#draw/${d.origin.id}`}>#{d.origin.index}{d.origin.probability != null ? ` · ${d.origin.probability.toFixed(2)}` : ""}</a>
-              : <a href={`#draw/${d.origin.id}`}>{d.origin.name ?? d.origin.id}{d.origin.index ? ` #${d.origin.index}` : ""}</a>}</span></span>}
-            <span className="dim" style={{ fontSize: 12 }}>{d.draw.setting ?? "unrestricted"} · {d.draw.genre} · {d.draw.mode}{d.draw.repaired_from ? <> · repairs <a href={`#${stage}/${d.draw.repaired_from}`} className="mono">{d.draw.repaired_from}</a></> : null}{d.draw.superseded_by ? <> · superseded by <a href={`#${stage}/${d.draw.superseded_by}`} className="mono">{d.draw.superseded_by}</a></> : null}</span></div>
+            <span className="meta">
+              {d.origin && <span><i>{d.origin.id === d.draw.id ? "candidate" : "from"}</i>{d.origin.id === d.draw.id
+                ? <a href={`#draw/${d.origin.id}`}>#{d.origin.index}{d.origin.probability != null ? ` · ${d.origin.probability.toFixed(2)}` : ""}</a>
+                : <a href={`#draw/${d.origin.id}`}>{d.origin.name ?? d.origin.id}{d.origin.index ? ` #${d.origin.index}` : ""}</a>}</span>}
+              <DrawMetaItems d={d} />
+              {d.draw.repaired_from && <span><i>repairs</i> <a href={`#${stage}/${d.draw.repaired_from}`} className="mono">{d.draw.repaired_from}</a></span>}
+              {d.draw.superseded_by && <span><i>superseded by</i> <a href={`#${stage}/${d.draw.superseded_by}`} className="mono">{d.draw.superseded_by}</a></span>}</span></div>
           {err && <div className="err">{err}</div>}
           {step ? <StepView step={step} artifacts={d.artifacts.filter((a) => a.step_id === step.id)} chosen={false} onBack={() => setStepId(null)} />
             : settings ? <DraftSettings d={d} onClose={() => setSettings(false)} onDraft={(b) => act(async () => { await api.draft(d.draw.id, b); location.hash = `#write/${d.draw.id}`; })} />

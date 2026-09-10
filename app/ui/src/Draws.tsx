@@ -15,6 +15,18 @@ const SAMPLING_HELP: Record<string, string> = {
 };
 const develop = (index: number) => `Develop premise ${index} as a draw of its own: the same seed and examples, its own outline, context vignettes, ending and brief.`;
 
+/** The keys every stage prints about a draw: what it was drawn under. */
+export function DrawMetaItems({ d }: { d: Detail }) {
+  return (
+    <>
+      <span><i>setting</i> {d.draw.setting ?? "unrestricted"}</span>
+      {d.draw.domains && <span><i>domains</i> {(JSON.parse(d.draw.domains) as string[]).join(" + ")}</span>}
+      <span><i>genre</i> {d.draw.genre}</span>
+      <span><i>sampling</i> {d.draw.sampling}</span>
+    </>
+  );
+}
+
 /** The disclosure chevron. Rotated by CSS on `.open`, or by the parent `details[open]`. */
 export function Caret({ open }: { open?: boolean }) {
   return <span className={"caret icon" + (open ? " open" : "")} aria-hidden="true">chevron_right</span>;
@@ -101,11 +113,7 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
       {isForm || !current ? <StartForm status={status} like={like} /> : (
         <div className="pane read span">
           {!d ? (err ? <div className="err">{err}</div> : <span className="dim">loading…</span>) : <>
-            <div className="drawhd"><h1>{d.draw.name ?? d.draw.id}</h1><span className="rid mono dim">{d.draw.id}</span><span className={"badge " + d.draw.status}>{label(d.draw.status)}</span><span className="meta">
-                <span><i>setting</i> {d.draw.setting ?? "unrestricted"}</span>
-                {d.draw.domains && <span><i>domains</i> {(JSON.parse(d.draw.domains) as string[]).join(" + ")}</span>}
-                <span><i>genre</i> {d.draw.genre}</span>
-                <span><i>sampling</i> {d.draw.sampling}</span></span></div>
+            <div className="drawhd"><h1>{d.draw.name ?? d.draw.id}</h1><span className="rid mono dim">{d.draw.id}</span><span className={"badge " + d.draw.status}>{label(d.draw.status)}</span><span className="meta"><DrawMetaItems d={d} /></span></div>
             {d.draw.forked_from && <div className="dim" style={{ fontSize: 12 }}>forked from <a href={`#draw/${d.draw.forked_from}`} className="mono">{d.draw.forked_from}</a></div>}
             {d.draw.superseded_by && <div className="dim" style={{ fontSize: 12 }}>superseded by <a href={`#draw/${d.draw.superseded_by}`} className="mono">{d.draw.superseded_by}</a></div>}
             {d.draw.status === "awaiting_gate" && !step

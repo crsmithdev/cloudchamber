@@ -17,10 +17,10 @@ const CHECK = new Set(["done", "checking", "awaiting_check_gate", "repairing", "
 const WRITE = new Set(["drafting", "awaiting_draft_gate", "drafted"]);
 
 /** Gate 1 and gate 2 both write `passed`; the verdict they wrote says which one it was. */
-export function stageOf(db: Db, draw: Pick<DrawRow, "id" | "status" | "chosen_step">): Stage {
+export function stageOf(db: Db, draw: Pick<DrawRow, "id" | "status" | "chosen_step" | "repaired_from">): Stage {
   if (WRITE.has(draw.status)) return "write";
   if (draw.status === "passed") return latest(db, "draft", draw.id) ? "write" : "check";
-  if (CHECK.has(draw.status) || draw.chosen_step) return "check";
+  if (CHECK.has(draw.status) || draw.chosen_step || draw.repaired_from) return "check";
   return "ideate";
 }
 
