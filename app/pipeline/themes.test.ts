@@ -57,7 +57,7 @@ describe("theme drafting", () => {
     expect(model.calls.filter((c) => c.stage === "redundancy")).toHaveLength(0); // empty bank, nothing to compare
     const r2 = await draftStory(p, "scp/b", fakeEmbed, log);
     expect(r2).toMatchObject({ drafted: 2, banked: 1, attested: 1 });
-    const banked = db.query("SELECT id, text, attestation, stories FROM themes WHERE duplicate_of IS NULL ORDER BY drafted_at").all() as any[];
+    const banked = db.query("SELECT id, text, attestation, stories FROM themes WHERE duplicate_of IS NULL ORDER BY drafted_at, rowid").all() as any[];
     expect(banked).toHaveLength(2);
     expect(banked[0].attestation).toBe(2);
     expect(JSON.parse(banked[0].stories)).toEqual(["scp/a", "scp/b"]);

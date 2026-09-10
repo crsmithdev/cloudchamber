@@ -42,8 +42,36 @@ export function eligiblePassages(db: Db, seg: Segment = {}): (PassageRow & { tit
   return rows.filter((r) => ok.has(r.id));
 }
 
+/**
+  * How many passages are eligible, in total and per source. The status view
+  * wants the counts, not four thousand rows of prose, and a theme row carries
+  * its embedding.
+  */
+export function eligibleCounts(db: Db): { passages: number; themes: number; bySource: Map<string, number> } {
+  // count them all, then subtract the few that are out. A NOT IN on p.id costs the
+  // covering index and the scan goes from 50ms to 400; an IN on a handful does not.
+  const ids = (kind: string) => (db.query(INELIGIBLE_SQL).all(kind) as { target_id: string }[]).map((r) => r.target_id);
+  const list = (xs: string[]) => xs.map(() => "?").join(", ");
+  const bySource = new Map<string, number>();
+  const all = db.query(`SELECT s.source_id AS source, count(*) AS n FROM passages p JOIN stories s ON s.id = p.story_id GROUP BY s.source_id`).all() as { source: string; n: number }[];
+  for (const r of all) bySource.set(r.source, r.n);
+  const badStories = ids("story"), badExamples = ids("example"), badThemes = ids("theme");
+  const drop = (source: string, n: number) => bySource.set(source, (bySource.get(source) ?? 0) - n);
+  // one lookup per ineligible item, each on a primary key. An OR across the two tables scans instead.
+  const perStory = db.query("SELECT source_id AS source, (SELECT count(*) FROM passages p WHERE p.story_id = stories.id) AS n FROM stories WHERE id = ?");
+  for (const id of badStories) { const r = perStory.get(id) as { source: string; n: number } | null; if (r) drop(r.source, r.n); }
+  const perPassage = db.query("SELECT s.source_id AS source, s.id AS story FROM passages p JOIN stories s ON s.id = p.story_id WHERE p.id = ?");
+  const gone = new Set(badStories);
+  for (const id of badExamples) { const r = perPassage.get(id) as { source: string; story: string } | null; if (r && !gone.has(r.story)) drop(r.source, 1); }
+  const live = (db.query("SELECT count(*) AS n FROM themes WHERE duplicate_of IS NULL").get() as { n: number }).n;
+  const outThemes = badThemes.length
+    ? (db.query(`SELECT count(*) AS n FROM themes WHERE duplicate_of IS NULL AND id IN (${list(badThemes)})`).get(...badThemes) as { n: number }).n
+    : 0;
+  return { passages: [...bySource.values()].reduce((a, n) => a + n, 0), themes: live - outThemes, bySource };
+}
+
 export function eligibleThemes(db: Db): ThemeRow[] {
-  const rows = db.query("SELECT * FROM themes WHERE duplicate_of IS NULL ORDER BY drafted_at").all() as ThemeRow[];
+  const rows = db.query("SELECT * FROM themes WHERE duplicate_of IS NULL ORDER BY drafted_at, rowid").all() as ThemeRow[];
   const ok = eligibleIds(db, "theme", rows.map((r) => r.id));
   return rows.filter((r) => ok.has(r.id));
 }

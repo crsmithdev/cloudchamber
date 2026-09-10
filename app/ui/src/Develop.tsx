@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api, when, type Draw, type DraftConfig, type Finding, type Findings, type Story, type Step } from "./api.ts";
-import { Caret, DrawMetaItems, Log, Md, StepView, firstParagraph, label, type Detail } from "./Draws.tsx";
+import { Caret, DrawMetaItems, Log, Md, RUNNING_STATUS, StepView, firstParagraph, label, type Detail } from "./Draws.tsx";
 
 /**
  * Develop a brief: the stages after a brief (docs/specs/2026-09-05-drafting-pipeline.md).
@@ -25,16 +25,22 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
   const [err, setErr] = useState("");
   const [settings, setSettings] = useState(false);
   const loadDraws = () => api.draws().then((all) => setDraws(all.filter((r) => r.stage === stage))).catch(() => {});
-  useEffect(() => { loadDraws(); const t = setInterval(loadDraws, 3000); return () => clearInterval(t); }, [stage]);
+  const busy = draws.some((r) => RUNNING_STATUS.has(r.status));
+  useEffect(() => { loadDraws(); const t = setInterval(loadDraws, busy ? 3000 : 15000); return () => clearInterval(t); }, [stage, busy]);
   const current = selected ?? (draws.find((r) => OPEN.has(r.status)) ?? draws.find((r) => !r.superseded_by))?.id;
   const loadDetail = (id: string) => api.draw(id).then(setD).catch((e) => setErr(e.message));
   useEffect(() => {
     if (!current) return;
     setD(null); setStepId(null); setErr(""); setSettings(false);
     loadDetail(current);
-    const t = setInterval(() => loadDetail(current), 2500);
-    return () => clearInterval(t);
+    return () => {};
   }, [current]);
+  const working = !!d && (RUNNING_STATUS.has(d.draw.status) || d.steps.some((s) => s.status === "running"));
+  useEffect(() => {
+    if (!current) return;
+    const t = setInterval(() => loadDetail(current), working ? 2500 : 20000);
+    return () => clearInterval(t);
+  }, [current, working]);
   const act = async (fn: () => Promise<any>, go?: (r: any) => string | undefined) => {
     setErr("");
     try { const r = await fn(); const to = go?.(r); if (to && to !== current) location.hash = `#${stage}/${to}`; else if (current) loadDetail(current); loadDraws(); } catch (e: any) { setErr(e.message); }
@@ -69,7 +75,7 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
               {d.draw.repaired_from && <span><i>repairs</i> <a href={`#${stage}/${d.draw.repaired_from}`} className="mono">{d.draw.repaired_from}</a></span>}
               {d.draw.superseded_by && <span><i>superseded by</i> <a href={`#${stage}/${d.draw.superseded_by}`} className="mono">{d.draw.superseded_by}</a></span>}</span></div>
           {err && <div className="err">{err}</div>}
-          {step ? <StepView step={step} artifacts={d.artifacts.filter((a) => a.step_id === step.id)} chosen={false} onBack={() => setStepId(null)} />
+          {step ? <StepView step={step} chosen={false} onBack={() => setStepId(null)} />
             : settings ? <DraftSettings d={d} onClose={() => setSettings(false)} onDraft={(b) => act(async () => { await api.draft(d.draw.id, b); location.hash = `#write/${d.draw.id}`; })} />
             : stage === "write" ? <StoryPane d={d} onAct={act} />
             : d.draw.status === "awaiting_check_gate" || d.draw.status === "repaired" ? <GateOne d={d} onAct={act} onDraft={() => setSettings(true)} />

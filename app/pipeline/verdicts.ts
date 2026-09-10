@@ -128,10 +128,10 @@ export const INELIGIBLE_SQL = `
     AND rowid = (SELECT rowid FROM verdicts w WHERE w.kind = v.kind AND w.target_id = v.target_id ORDER BY at DESC, rowid DESC LIMIT 1)
     AND (verdict = 'pass' OR artifact = 1)`;
 
+/** One query for the whole kind, not one per candidate: the pool asks this about four thousand passages. */
 export function eligibleIds(db: Db, kind: Kind, candidates: string[]): Set<string> {
-  const out = new Set<string>();
-  for (const id of candidates) if (isEligible(latest(db, kind, id))) out.add(id);
-  return out;
+  const ineligible = new Set((db.query(INELIGIBLE_SQL).all(kind) as { target_id: string }[]).map((r) => r.target_id));
+  return new Set(candidates.filter((id) => !ineligible.has(id)));
 }
 
 /** Ids of stories whose latest story verdict makes them ineligible. */

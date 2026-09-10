@@ -181,8 +181,19 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     try {
       const row = pipeline.draw(req.params.id);
       const draw = { ...row, stage: stageOf(db, row) };
-      return { draw, origin: originOf(pipeline, row.id), steps: pipeline.steps(draw.id), artifacts: pipeline.artifacts(draw.id), candidates: pipeline.candidates(draw.id), examples: drawExamples(db, draw.example_ids), forks: pipeline.forks(draw.id) };
+      // the pane polls this every few seconds; a step's prompt and response are read from /api/steps/:id when one is opened
+      const steps = pipeline.steps(draw.id).map(({ prompt, raw_response, parsed, ...s }) =>
+        ({ ...s, prompt_chars: prompt.length, raw_chars: raw_response?.length ?? 0, parsed_chars: parsed?.length ?? 0 }));
+      return { draw, origin: originOf(pipeline, row.id), steps, artifacts: pipeline.artifacts(draw.id), candidates: pipeline.candidates(draw.id), examples: drawExamples(db, draw.example_ids), forks: pipeline.forks(draw.id) };
     } catch (e: any) { return reply.code(404).send({ error: e.message }); }
+  });
+
+  /** One step in full, with its artifacts: the prompt, the raw response and the parsed value. */
+  app.get<{ Params: { id: string } }>("/api/steps/:id", async (req, reply) => {
+    const step = db.query("SELECT * FROM steps WHERE id = ?").get(req.params.id) as any;
+    if (!step) return reply.code(404).send({ error: `no step ${req.params.id}` });
+    const artifacts = db.query("SELECT id, step_id, kind, content, meta FROM artifacts WHERE step_id = ? ORDER BY rowid").all(req.params.id);
+    return { step, artifacts };
   });
 
   app.post<{ Params: { id: string }; Body: { action: string; step_id?: string; note?: string; findings?: string[]; finding?: string; beat?: number } }>("/api/draws/:id/gate", async (req, reply) => {

@@ -1,11 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { marked } from "marked";
-import { api, when, type Artifact, type Candidate, type Example, type Facets, type Draw, type Fork, type Origin, type Source, type Status, type Step } from "./api.ts";
+import { api, when, type Artifact, type Candidate, type Example, type Facets, type Draw, type Fork, type FullStep, type Origin, type Source, type Status, type Step } from "./api.ts";
 
 export type Detail = { draw: Draw; origin: Origin | null; steps: Step[]; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] };
 const STAGES = ["premises", "execute", "gate", "outline", "context", "ending", "brief"];
 export const LABEL: Record<string, string> = { awaiting_gate: "open", done: "brief", awaiting_check_gate: "gate 1", awaiting_draft_gate: "gate 2", checking: "checking", repairing: "repairing", drafting: "drafting", drafted: "drafted", passed: "passed", repaired: "repaired" };
 export const label = (status: string) => LABEL[status] ?? status;
+/** The statuses that mean a model call is in flight, so the views refresh while they hold. */
+export const RUNNING_STATUS = new Set(["running", "checking", "repairing", "drafting"]);
 export const secs = (a: string, b: string | null) => (b ? `${Math.round((Date.parse(b) - Date.parse(a)) / 1000)}s` : "running");
 const choose = (index: number) => `Continue with premise ${index}: outline, two context vignettes, the ending, then the brief.`;
 const SAMPLING_HELP: Record<string, string> = {
@@ -49,7 +51,8 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
   const [err, setErr] = useState("");
 
   const loadDraws = () => api.draws(true).then(setDraws).catch(() => {});
-  useEffect(() => { loadDraws(); const t = setInterval(loadDraws, 3000); return () => clearInterval(t); }, []);
+  const busy = draws.some((r) => r.status === "running" || RUNNING_STATUS.has(r.status));
+  useEffect(() => { loadDraws(); const t = setInterval(loadDraws, busy ? 3000 : 15000); return () => clearInterval(t); }, [busy]);
 
   // Archived draws stay out of the list until asked for, and the open one stays visible whatever its state.
   const archived = draws.filter((r) => r.archived_at).length;
@@ -64,11 +67,17 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
     setStepId(null); setErr("");
     setOpen((o) => new Set(o).add(current));
     loadDetail(current);
-    const t = setInterval(() => loadDetail(current), 2500);
-    return () => clearInterval(t);
+    return () => {};
   }, [current]);
   useEffect(() => { for (const id of open) if (!details[id]) loadDetail(id); }, [open]);
   const d = current && !isForm ? details[current] : undefined;
+  // the pane refreshes itself while the pipeline is working on this draw, and rarely once it stops
+  const working = !!d && (RUNNING_STATUS.has(d.draw.status) || d.steps.some((s) => s.status === "running"));
+  useEffect(() => {
+    if (!current || isForm) return;
+    const t = setInterval(() => loadDetail(current), working ? 2500 : 20000);
+    return () => clearInterval(t);
+  }, [current, working]);
 
   const select = (id: string) => {
     if (id !== current) { location.hash = `#draw/${id}`; return; }
@@ -119,7 +128,7 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
             {d.draw.status === "awaiting_gate" && !step
               ? <GateBar d={d} note={note} setNote={setNote} err={err} onGate={gate} onDelete={remove} />
               : !step && <div className="gatebar"><DrawTools d={d} onGate={gate} onDelete={remove} />{err && <div className="err" style={{ flexBasis: "100%" }}>{err}</div>}</div>}
-            {step ? <StepView step={step} artifacts={d.artifacts.filter((a) => a.step_id === step.id)} chosen={step.id === d.draw.chosen_step} onBack={() => setStepId(null)} /> : <DrawBody d={d} onChoose={(id) => gate("choose", id)} onFork={(id) => gate("fork", id)} onVerdict={verdict} />}
+            {step ? <StepView step={step} chosen={step.id === d.draw.chosen_step} onBack={() => setStepId(null)} /> : <DrawBody d={d} onChoose={(id) => gate("choose", id)} onFork={(id) => gate("fork", id)} onVerdict={verdict} />}
           </>}
         </div>
       )}
@@ -262,18 +271,25 @@ function DrawBody({ d, onChoose, onFork, onVerdict }: { d: Detail; onChoose: (st
   );
 }
 
-export function StepView({ step, artifacts, chosen, onBack }: { step: Step; artifacts: Artifact[]; chosen: boolean; onBack: () => void }) {
-  const raw = (() => { if (!step.raw_response) return null; try { return JSON.parse(step.raw_response).result ?? step.raw_response; } catch { return step.raw_response; } })();
+/** The step's own text is fetched here: a draw's steps arrive without it. */
+export function StepView({ step, chosen, onBack }: { step: Step; chosen: boolean; onBack: () => void }) {
+  const [full, setFull] = useState<{ step: FullStep; artifacts: Artifact[] } | null>(null);
+  useEffect(() => { setFull(null); api.step(step.id).then(setFull).catch(() => {}); }, [step.id]);
+  const raw = (() => {
+    const r = full?.step.raw_response;
+    if (!r) return null;
+    try { return JSON.parse(r).result ?? r; } catch { return r; }
+  })();
   return (
     <div className="stepview">
       <button className="back" onClick={onBack}>← back to the draw</button>
       <div className="kv"><b className="mono">{step.stage}</b><span className={step.status === "failed" ? "pass" : ""}>{step.status}{step.fail_reason ? ` (${step.fail_reason})` : ""}</span><span className="mono">{step.model}</span><span>{secs(step.started_at, step.ended_at)}</span>{step.attempt > 1 && <span>attempt {step.attempt}</span>}{chosen && <span className="keep">chosen</span>}</div>
       {step.error && <div className="err" style={{ marginBottom: "1rem" }}>{step.error}</div>}
       <h2 className="sec">system</h2><div className="mute" style={{ fontSize: 12.5 }}>{step.system_prompt}</div>
-      <h2 className="sec">prompt <span>· {step.prompt.length} chars</span></h2><pre>{step.prompt}</pre>
+      <h2 className="sec">prompt <span>· {step.prompt_chars} chars</span></h2><pre>{full ? full.step.prompt : "…"}</pre>
       {raw && <><h2 className="sec">raw response</h2><pre>{raw}</pre></>}
-      {step.parsed && <><h2 className="sec">parsed</h2><pre>{step.parsed}</pre></>}
-      {artifacts.map((a) => { const m = JSON.parse(a.meta); return <div key={a.id}><h2 className="sec">{a.kind} <span className="mono">{a.id}</span>{m.warnings?.length ? <span className="warn"> · {m.warnings.join(", ")}</span> : null}</h2><pre>{a.content}</pre></div>; })}
+      {full?.step.parsed && <><h2 className="sec">parsed</h2><pre>{full.step.parsed}</pre></>}
+      {(full?.artifacts ?? []).map((a) => { const m = JSON.parse(a.meta); return <div key={a.id}><h2 className="sec">{a.kind} <span className="mono">{a.id}</span>{m.warnings?.length ? <span className="warn"> · {m.warnings.join(", ")}</span> : null}</h2><pre>{a.content}</pre></div>; })}
     </div>
   );
 }

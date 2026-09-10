@@ -66,6 +66,7 @@ CREATE TABLE IF NOT EXISTS themes (
   duplicate_of TEXT REFERENCES themes(id)
 );
 
+
 CREATE TABLE IF NOT EXISTS theme_drafts (        -- one row per story drafted
   story_id   TEXT PRIMARY KEY,
   at         TEXT NOT NULL,

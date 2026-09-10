@@ -65,9 +65,16 @@ const toBlob = (v: number[]) => new Uint8Array(new Float32Array(v).buffer);
 const fromBlob = (b: Uint8Array) => Array.from(new Float32Array(b.buffer, b.byteOffset, b.byteLength / 4));
 const cosine = (a: number[], b: number[]) => a.reduce((s, x, i) => s + x * b[i], 0);   // both normalised
 
+/**
+ * Ties break on the row that was banked first, so the nearest is the same
+ * whichever plan SQLite picks for the scan. Two themes drafted in one second
+ * carry the same `drafted_at`, which is why the rowid decides.
+ */
 export function nearest(db: Db, vec: number[], n = NEAREST): (ThemeRow & { score: number })[] {
-  const rows = db.query("SELECT * FROM themes WHERE duplicate_of IS NULL AND embedding IS NOT NULL").all() as ThemeRow[];
-  return rows.map((r) => ({ ...r, score: cosine(vec, fromBlob(r.embedding!)) })).sort((a, b) => b.score - a.score).slice(0, n);
+  const rows = db.query("SELECT rowid AS seq, * FROM themes WHERE duplicate_of IS NULL AND embedding IS NOT NULL").all() as (ThemeRow & { seq: number })[];
+  return rows.map((r) => ({ ...r, score: cosine(vec, fromBlob(r.embedding!)) }))
+    .sort((a, b) => b.score - a.score || a.seq - b.seq)
+    .slice(0, n);
 }
 
 // --- the log ---------------------------------------------------------------

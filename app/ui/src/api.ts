@@ -11,7 +11,9 @@ export type Scene = { beat: number; text: string; artifact_id: string; step_id: 
 export type Slop = { words: number; pool_words: number; lexicon: { term: string; count: number }[]; not_but: { hits: number; per_10k: number; pool_per_10k: number; examples: string[] }; trigrams: { trigram: string; count: number }[]; paragraphs: { beat: number; words: number; paragraphs: number; mean_words: number; single_sentence_share: number }[] };
 export type Story = { schedule: { form: Record<string, string>; beats: Beat[]; raw: string } | null; scenes: Scene[]; profiles: (Profile & { beat: number; flags: string[]; answers: Record<string, { answer: string; quote: string }> })[]; screenFindings: Finding[]; slop: Slop | null; judge: string | null; text: string };
 export type DraftConfig = { length: { words: number; tolerance: number }; beats: { count: "auto" | number; min: number; max: number; words_min: number; words_max: number }; form: { tense: string; person: string; chronology: string; container: string; ending: string }; structure: { template: string }; scenes: { order: string }; checks: { enabled: string[]; samples: number; keep_if: number }; screens: { enabled: string[]; samples: number; keep_if: number }; repair: { rounds: number } };
-export type Step = { id: string; parent_id: string | null; stage: string; model: string; system_prompt: string; prompt: string; raw_response: string | null; parsed: string | null; status: string; fail_reason: string | null; attempt: number; started_at: string; ended_at: string | null; error: string | null };
+/** A draw's steps come without their text; `/api/steps/:id` carries it when a step is opened. */
+export type Step = { id: string; parent_id: string | null; stage: string; model: string; system_prompt: string; status: string; fail_reason: string | null; attempt: number; started_at: string; ended_at: string | null; error: string | null; prompt_chars: number; raw_chars: number };
+export type FullStep = Step & { prompt: string; raw_response: string | null; parsed: string | null };
 export type Artifact = { id: string; step_id: string; kind: string; content: string; meta: string };
 export type Candidate = { step_id: string; index: number; probability: number; premise: string; vignette: string; warnings: string[] };
 /** A draw forked off this one, and the candidate's execute step it develops. */
@@ -39,6 +41,7 @@ export const api = {
   gate: (id: string, b: { action: string; step_id?: string; note?: string; findings?: string[]; finding?: string; beat?: number }) => j<any>(`/api/draws/${id}/gate`, { method: "POST", body: JSON.stringify(b) }),
   check: (id: string) => j<{ id: string; status: string }>(`/api/draws/${id}/check`, { method: "POST", body: "{}" }),
   draft: (id: string, b: { auto?: boolean; profile?: string; overrides?: Record<string, string | number> }) => j<{ id: string; status: string }>(`/api/draws/${id}/draft`, { method: "POST", body: JSON.stringify(b) }),
+  step: (id: string) => j<{ step: FullStep; artifacts: Artifact[] }>(`/api/steps/${id}`),
   findings: (id: string) => j<Findings>(`/api/draws/${id}/findings`),
   story: (id: string) => j<Story>(`/api/draws/${id}/story`),
   draftConfig: () => j<{ defaults: DraftConfig; profiles: string[] }>("/api/draft-config"),
