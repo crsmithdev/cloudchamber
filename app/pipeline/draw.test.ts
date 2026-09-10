@@ -7,6 +7,8 @@ import { tmpdir } from "node:os";
 import { openDb, type Db } from "./store/db.ts";
 import { FakeModel } from "./model.ts";
 import { Pipeline, StepFailure } from "./draw.ts";
+import { originOf, stageOf } from "./stage.ts";
+import { record } from "./verdicts.ts";
 import { checkTemplate } from "./prompts.ts";
 import { loadStages } from "./config.ts";
 
@@ -349,6 +351,32 @@ describe("draw graph", () => {
     expect(c.name).toBe("covenant-buried-grant-3");
     expect(p.draw(a.id).name).toBe("covenant-buried-grant");
     expect(p.draw(b.id).name).toBe("covenant-buried-grant-2");
+  });
+
+  test("a draw's stage follows the work done to it, and its origin names the candidate", async () => {
+    const { db, dir } = fixture();
+    const twice = script({
+      outline: [outline(), outline()],
+      jobs: Array(2).fill("<job>Test the first thing: scene one.</job><job>Test a second thing: scene two.</job>"),
+      ending: Array(2).fill("<ending>The last beat.</ending>"),
+    });
+    const { p } = pipe(db, dir, twice);
+    const draw = await p.start({ mode: "manual", genre: "horror" });
+    expect(stageOf(db, draw)).toBe("ideate");
+    expect(originOf(p, draw.id)).toBeNull();                       // nothing chosen: it is only a batch
+    const cs = p.candidates(draw.id);
+    await p.choose(draw.id, cs[0].step_id);
+    expect(stageOf(db, p.draw(draw.id))).toBe("check");            // check from the choice, not from the brief
+    expect(originOf(p, draw.id)).toMatchObject({ id: draw.id, index: 1, probability: 0.03 });
+    // a fork reports the candidate it develops, and the draw it came from
+    const fork = await p.fork(draw.id, cs[1].step_id);
+    expect(stageOf(db, fork)).toBe("check");
+    expect(originOf(p, fork.id)).toMatchObject({ id: draw.id, name: draw.name, index: 2 });
+    // gate 1 and gate 2 both write `passed`; the verdict says which gate it was
+    db.query("UPDATE draws SET status = 'passed' WHERE id = ?").run(fork.id);
+    expect(stageOf(db, p.draw(fork.id))).toBe("check");
+    record(db, { kind: "draft", target_id: fork.id, verdict: "pass", method: "gate" });
+    expect(stageOf(db, p.draw(fork.id))).toBe("write");
   });
 
   test("archiving hides a draw from the list and changes nothing else about it", async () => {

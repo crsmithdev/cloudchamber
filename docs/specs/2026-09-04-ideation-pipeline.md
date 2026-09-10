@@ -58,6 +58,9 @@
 >   the whole list, which made it a function of every other draw; a name is now
 >   the draw's own, and nothing that happens to another can change it. Suffixes
 >   are never reused.
+> - **The tabs (REQ 34, REQ 35).** The UI has four: browse, ideate, check and
+>   write. Ideate shows no brief, and `develop` is check and write apart. The
+>   rules are in `2026-09-10-four-tabs.md`.
 > - **The skill (REQ 36).** The Voice Bridge also takes `--domains` and
 >   `--sampling`, and a `knobs` tool prints every tunable and its live values.
 >   `fogbelt help` prints the same on the CLI; `docs/knobs.md` is that output.

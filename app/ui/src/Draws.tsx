@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { marked } from "marked";
-import { api, when, type Artifact, type Candidate, type Example, type Facets, type Draw, type Fork, type Source, type Status, type Step } from "./api.ts";
+import { api, when, type Artifact, type Candidate, type Example, type Facets, type Draw, type Fork, type Origin, type Source, type Status, type Step } from "./api.ts";
 
-export type Detail = { draw: Draw; steps: Step[]; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] };
+export type Detail = { draw: Draw; origin: Origin | null; steps: Step[]; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] };
 const STAGES = ["premises", "execute", "gate", "outline", "context", "ending", "brief"];
 export const LABEL: Record<string, string> = { awaiting_gate: "open", done: "brief", awaiting_check_gate: "gate 1", awaiting_draft_gate: "gate 2", checking: "checking", repairing: "repairing", drafting: "drafting", drafted: "drafted", passed: "passed", repaired: "repaired" };
 export const label = (status: string) => LABEL[status] ?? status;
@@ -32,7 +32,6 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
   const [details, setDetails] = useState<Record<string, Detail>>({});
   const [open, setOpen] = useState<Set<string>>(new Set());
   const [stepId, setStepId] = useState<string | null>(null);
-  const [brief, setBrief] = useState<Record<string, string> | null>(null);
   const [note, setNote] = useState("");
   const [showArchived, setShowArchived] = useState(false);
   const [err, setErr] = useState("");
@@ -50,7 +49,7 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
   const loadDetail = (id: string) => api.draw(id).then((d) => setDetails((m) => ({ ...m, [id]: d }))).catch((e) => setErr(e.message));
   useEffect(() => {
     if (!current || isForm) return;
-    setStepId(null); setBrief(null); setErr("");
+    setStepId(null); setErr("");
     setOpen((o) => new Set(o).add(current));
     loadDetail(current);
     const t = setInterval(() => loadDetail(current), 2500);
@@ -58,7 +57,6 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
   }, [current]);
   useEffect(() => { for (const id of open) if (!details[id]) loadDetail(id); }, [open]);
   const d = current && !isForm ? details[current] : undefined;
-  useEffect(() => { if (d?.draw.status === "done" && !brief) api.brief(d.draw.id).then(setBrief).catch(() => {}); }, [d?.draw.status]);
 
   const select = (id: string) => {
     if (id !== current) { location.hash = `#draw/${id}`; return; }
@@ -113,7 +111,7 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
             {d.draw.status === "awaiting_gate" && !step
               ? <GateBar d={d} note={note} setNote={setNote} err={err} onGate={gate} onDelete={remove} />
               : !step && <div className="gatebar"><DrawTools d={d} onGate={gate} onDelete={remove} />{err && <div className="err" style={{ flexBasis: "100%" }}>{err}</div>}</div>}
-            {step ? <StepView step={step} artifacts={d.artifacts.filter((a) => a.step_id === step.id)} chosen={step.id === d.draw.chosen_step} onBack={() => setStepId(null)} /> : <DrawBody d={d} brief={brief} onChoose={(id) => gate("choose", id)} onFork={(id) => gate("fork", id)} onVerdict={verdict} />}
+            {step ? <StepView step={step} artifacts={d.artifacts.filter((a) => a.step_id === step.id)} chosen={step.id === d.draw.chosen_step} onBack={() => setStepId(null)} /> : <DrawBody d={d} onChoose={(id) => gate("choose", id)} onFork={(id) => gate("fork", id)} onVerdict={verdict} />}
           </>}
         </div>
       )}
@@ -192,15 +190,14 @@ export function Log({ d, stepId, onStep }: { d: Detail; stepId: string | null; o
       {inFlight && STAGES.filter((st) => !seen.has(st) && st !== "gate" && st !== "brief").map((st) => <div key={st} className="step todo"><span className="st todo" /><span className="n">{st}</span><span className="d">—</span></div>)}
       {inFlight && <div className="step todo"><span className="st todo" /><span className="n">brief</span><span className="d">—</span></div>}
       {(d.draw.status === "done" || developed) && <div className="step"><span className="st" /><span className="n">brief<small> · exported</small></span><span className="d">{d.draw.ended_at ? when(d.draw.ended_at).replace(" today", "") : ""}</span></div>}
-      {developed && <a className="step" href={`#develop/${d.draw.id}`} style={{ textDecoration: "none" }}><span className={"st " + (d.draw.status.startsWith("awaiting") ? "wait" : "")} /><span className="n">develop<small> · {label(d.draw.status)}</small></span><span className="d">→</span></a>}
+      {developed && <a className="step" href={`#${d.draw.stage}/${d.draw.id}`} style={{ textDecoration: "none" }}><span className={"st " + (d.draw.status.startsWith("awaiting") ? "wait" : "")} /><span className="n">{d.draw.stage}<small> · {label(d.draw.status)}</small></span><span className="d">→</span></a>}
     </div>
   );
 }
 
-const BRIEF_FILES = ["outline.md", "vignette.md", "context-1.md", "context-2.md", "ending.md"];
 export const firstParagraph = (s: string) => s.trim().split(/\n\s*\n/)[0].replace(/[*_#>`]/g, "");
 
-function DrawBody({ d, brief, onChoose, onFork, onVerdict }: { d: Detail; brief: Record<string, string> | null; onChoose: (stepId: string) => void; onFork: (stepId: string) => void; onVerdict: (e: Example, v: "keep" | "pass", artifact?: boolean, note?: string) => void }) {
+function DrawBody({ d, onChoose, onFork, onVerdict }: { d: Detail; onChoose: (stepId: string) => void; onFork: (stepId: string) => void; onVerdict: (e: Example, v: "keep" | "pass", artifact?: boolean, note?: string) => void }) {
   const [openVig, setOpenVig] = useState<string | null>(d.draw.chosen_step);
   const [openEx, setOpenEx] = useState<string | null>(null);
   const [exNote, setExNote] = useState<Record<string, string>>({});
@@ -209,7 +206,7 @@ function DrawBody({ d, brief, onChoose, onFork, onVerdict }: { d: Detail; brief:
   const gating = d.draw.status === "awaiting_gate";
   return (
     <>
-      <div className={"drawbody" + (brief ? " two" : "")}><div className="col">
+      <div className="drawbody"><div className="col">
       <div className="seed"><small>seed</small>{d.draw.seed_text}{d.draw.flag_note && <div className="warn" style={{ fontStyle: "normal", fontFamily: "Instrument Sans, system-ui, sans-serif", fontSize: 12.5, marginTop: ".5rem" }}>flagged: {d.draw.flag_note}</div>}</div>
       {cands.length > 0 && <>
         <h2 className="sec">distribution <span>· lowest to highest probability</span></h2>
@@ -221,7 +218,8 @@ function DrawBody({ d, brief, onChoose, onFork, onVerdict }: { d: Detail; brief:
             <div key={c.step_id} className={"cand" + (chosen ? " chosen" : "")}>
               <div className="pb"><b>{c.probability.toFixed(2)}<small>#{c.index}</small></b><div className="bar"><i style={{ width: `${(c.probability / maxP) * 100}%` }} /></div>{chosen && <span className="tag">chosen</span>}{c === cands[0] && !chosen && <span className="tag dim">lowest</span>}
                 {gating && <button className="btn sm" title={choose(c.index)} onClick={() => onChoose(c.step_id)}>choose</button>}
-                {fork && <a className="tag" href={`#draw/${fork.id}`}>developed →</a>}
+                {chosen && <a className="tag" href={`#check/${d.draw.id}`}>in check →</a>}
+                {fork && <a className="tag" href={`#check/${fork.id}`}>in check →</a>}
                 {!gating && !chosen && !fork && d.draw.chosen_step && <button className="btn sm" title={develop(c.index)} onClick={() => onFork(c.step_id)}>develop too</button>}</div>
               <div className="body">{c.premise}{c.warnings.length > 0 && <span className="warn"> {c.warnings.join(", ")}</span>}
                 <button className="vigtoggle" aria-expanded={isOpen} onClick={() => setOpenVig(isOpen ? null : c.step_id)}>
@@ -251,12 +249,6 @@ function DrawBody({ d, brief, onChoose, onFork, onVerdict }: { d: Detail; brief:
           </div>}
         </div>))}
       </div>
-      {brief && <div className="col">
-        <h2 className="sec">brief <span>· <a href={api.briefFile(d.draw.id, "trail.md")} target="_blank" rel="noopener" className="mono">briefs/{d.draw.id}/trail.md</a></span></h2>
-        <div className="brief">{BRIEF_FILES.filter((f) => brief[f]).map((f) => (
-          // Only the outline is open by default: the chosen vignette already sits in the distribution column.
-          <details className="file ctx" key={f} open={f === "outline.md"}><summary><Caret /><span className="fn">{f}</span><span className="dim"> · {firstParagraph(brief[f]).slice(0, 80)}…</span></summary><Md className="passage sm" text={brief[f]} /></details>))}</div>
-      </div>}
       </div>
     </>
   );

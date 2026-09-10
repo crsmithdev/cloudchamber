@@ -8,6 +8,7 @@ import type { Db } from "../pipeline/store/db.ts";
 import { Pipeline, type DrawOpts, type SeedChoice } from "../pipeline/draw.ts";
 import { KINDS, latest, passedStories, record, type Kind, type Method } from "../pipeline/verdicts.ts";
 import { status } from "../pipeline/status.ts";
+import { originOf, stageOf } from "../pipeline/stage.ts";
 import { BANDS, GENRES, SAMPLING } from "../pipeline/config.ts";
 import { exportBank, sourceLabel } from "../pipeline/bank.ts";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
@@ -132,7 +133,12 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     sampling: SAMPLING.map((mode) => ({ mode, ...BANDS[mode] })),
   }));
 
-  app.get<{ Querystring: { archived?: string } }>("/api/draws", async (req) => pipeline.draws(req.query.archived === "true"));
+  app.get<{ Querystring: { archived?: string } }>("/api/draws", async (req) =>
+    pipeline.draws(req.query.archived === "true").map((r) => {
+      const stage = stageOf(db, r);
+      // the candidate is what tells two briefs of one batch apart, so the list needs it too
+      return { ...r, stage, origin: stage === "ideate" ? null : originOf(pipeline, r.id) };
+    }));
 
   app.post<{ Body: { mode?: "auto" | "manual"; setting?: string; domains?: string; genre?: string; sampling?: string; source?: string; author?: string; seed?: string; seed_id?: string } }>("/api/draws", async (req, reply) => {
     const b = req.body ?? {};
@@ -173,8 +179,9 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
 
   app.get<{ Params: { id: string } }>("/api/draws/:id", async (req, reply) => {
     try {
-      const draw = pipeline.draw(req.params.id);
-      return { draw, steps: pipeline.steps(draw.id), artifacts: pipeline.artifacts(draw.id), candidates: pipeline.candidates(draw.id), examples: drawExamples(db, draw.example_ids), forks: pipeline.forks(draw.id) };
+      const row = pipeline.draw(req.params.id);
+      const draw = { ...row, stage: stageOf(db, row) };
+      return { draw, origin: originOf(pipeline, row.id), steps: pipeline.steps(draw.id), artifacts: pipeline.artifacts(draw.id), candidates: pipeline.candidates(draw.id), examples: drawExamples(db, draw.example_ids), forks: pipeline.forks(draw.id) };
     } catch (e: any) { return reply.code(404).send({ error: e.message }); }
   });
 

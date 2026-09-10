@@ -8,26 +8,25 @@ import { Caret, Log, Md, StepView, firstParagraph, label, type Detail } from "./
  * or passed; the reading pane is the findings at gate 1, the story with its
  * screens at gate 2, or the running log in between.
  */
-export const DEVELOP_OPEN = new Set(["awaiting_check_gate", "awaiting_draft_gate"]);
-const DEVELOP = new Set(["done", "checking", "awaiting_check_gate", "repairing", "repaired", "drafting", "awaiting_draft_gate", "drafted", "passed"]);
+const OPEN = new Set(["awaiting_check_gate", "awaiting_draft_gate"]);
 const RUNNING = new Set(["checking", "repairing", "drafting"]);
-const dot = (s: string) => "st " + (DEVELOP_OPEN.has(s) ? "wait" : s === "failed" ? "fail" : RUNNING.has(s) ? "running" : s === "repaired" ? "rep" : s === "done" ? "todo" : "");
-const badge = (s: string) => "badge " + (DEVELOP_OPEN.has(s) ? "awaiting_gate" : RUNNING.has(s) ? "running" : s === "drafted" ? "done" : s === "failed" ? "failed" : "");
+const dot = (s: string) => "st " + (OPEN.has(s) ? "wait" : s === "failed" ? "fail" : RUNNING.has(s) ? "running" : s === "repaired" ? "rep" : s === "done" ? "todo" : "");
+const badge = (s: string) => "badge " + (OPEN.has(s) ? "awaiting_gate" : RUNNING.has(s) ? "running" : s === "drafted" ? "done" : s === "failed" ? "failed" : "");
 const INVALIDATES = ["debt audit", "arithmetic", "custody"];
 /** A quoted span is shown between the row's own quotation marks; a span the model already quoted would show two. */
 const unquote = (s: string) => s.trim().replace(/^["“”'‘’]+|["“”'‘’]+$/g, "");
 /** Markdown from the outline stage opens paragraphs with a label and a colon; the label reads better set bold. */
 const boldLabels = (md: string) => md.replace(/^([A-Z][A-Za-z0-9 ,'’/&-]{0,40}):(?=\s)/gm, "**$1:**");
 
-export function Develop({ selected }: { selected: string | undefined }) {
+export function Develop({ stage, selected }: { stage: "check" | "write"; selected: string | undefined }) {
   const [draws, setDraws] = useState<Draw[]>([]);
   const [d, setD] = useState<Detail | null>(null);
   const [stepId, setStepId] = useState<string | null>(null);
   const [err, setErr] = useState("");
   const [settings, setSettings] = useState(false);
-  const loadDraws = () => api.draws().then((all) => setDraws(all.filter((r) => DEVELOP.has(r.status)))).catch(() => {});
-  useEffect(() => { loadDraws(); const t = setInterval(loadDraws, 3000); return () => clearInterval(t); }, []);
-  const current = selected ?? (draws.find((r) => DEVELOP_OPEN.has(r.status)) ?? draws.find((r) => !r.superseded_by))?.id;
+  const loadDraws = () => api.draws().then((all) => setDraws(all.filter((r) => r.stage === stage))).catch(() => {});
+  useEffect(() => { loadDraws(); const t = setInterval(loadDraws, 3000); return () => clearInterval(t); }, [stage]);
+  const current = selected ?? (draws.find((r) => OPEN.has(r.status)) ?? draws.find((r) => !r.superseded_by))?.id;
   const loadDetail = (id: string) => api.draw(id).then(setD).catch((e) => setErr(e.message));
   useEffect(() => {
     if (!current) return;
@@ -38,50 +37,44 @@ export function Develop({ selected }: { selected: string | undefined }) {
   }, [current]);
   const act = async (fn: () => Promise<any>, go?: (r: any) => string | undefined) => {
     setErr("");
-    try { const r = await fn(); const to = go?.(r); if (to && to !== current) location.hash = `#develop/${to}`; else if (current) loadDetail(current); loadDraws(); } catch (e: any) { setErr(e.message); }
+    try { const r = await fn(); const to = go?.(r); if (to && to !== current) location.hash = `#${stage}/${to}`; else if (current) loadDetail(current); loadDraws(); } catch (e: any) { setErr(e.message); }
   };
-  const ready = draws.filter((r) => r.status === "done" && !r.superseded_by);
   const step = d && stepId ? d.steps.find((s) => s.id === stepId) : undefined;
   return (
     <>
       <div className="pane list">
-        <div className="newdraw">
-          <CheckPicker ready={ready} onCheck={(id) => act(() => api.check(id), () => id)} />
-        </div>
-        {draws.length === 0 && <div className="empty">No briefs yet. Finish a draw under ideate, then check it here.</div>}
+        {draws.length === 0 && <div className="empty">{stage === "check" ? "No briefs yet. Choose a candidate at a gate under ideate." : "Nothing drafted yet. Send a checked brief here from check."}</div>}
         {draws.map((r) => (
-          <div key={r.id} className={"drawrow" + (r.id === current ? " on" : "") + (r.superseded_by ? " old" : "")} onClick={() => { location.hash = `#develop/${r.id}`; }}>
+          <div key={r.id} className={"drawrow" + (r.id === current ? " on" : "") + (r.superseded_by ? " old" : "")} onClick={() => { location.hash = `#${stage}/${r.id}`; }}>
             <div className="l1"><span className="nm">{r.name ?? r.id}</span><span className="when">{when(r.created_at)}</span></div>
-            <div className="l2"><span className={dot(r.status)} />{r.status === "done" ? "brief · not yet checked" : label(r.status)} · {r.setting ?? "unrestricted"} · {r.genre}{r.repaired_from ? <span className="dim"> · repaired</span> : null}{r.flagged ? <span className="art"> · flagged</span> : null}{r.superseded_by && <span className="dim"> · superseded</span>}</div>
+            <div className="l2"><span className={dot(r.status)} />{r.status === "done" ? "brief · not yet checked" : label(r.status)}{r.origin?.index ? <span className="cell"> · #{r.origin.index}{r.origin.probability != null ? ` · ${r.origin.probability.toFixed(2)}` : ""}</span> : null} · {r.setting ?? "unrestricted"} · {r.genre}{r.repaired_from ? <span className="dim"> · repaired</span> : null}{r.flagged ? <span className="art"> · flagged</span> : null}{r.superseded_by && <span className="dim"> · superseded</span>}</div>
             <div className="sd">{r.seed_text}</div>
             <div className="rid mono dim">{r.id}</div>
+            {stage === "check" && r.status === "done" && !r.superseded_by &&
+              <div className="rowacts" onClick={(e) => e.stopPropagation()}>
+                <button className="btn sm keep" onClick={() => act(() => api.check(r.id), () => r.id)}>check this brief</button>
+                <span className="dim">derivation, ledger, structure, resemblance</span>
+              </div>}
             {r.id === current && d && <Log d={d} stepId={stepId} onStep={setStepId} />}
           </div>))}
       </div>
       <div className="pane read span dev">
-        {!current ? <div className="empty">Nothing to develop yet.</div> : !d ? (err ? <div className="err">{err}</div> : <span className="dim">loading…</span>) : <>
+        {!current ? <div className="empty">{stage === "check" ? "Nothing to check yet." : "Nothing to write yet."}</div> : !d ? (err ? <div className="err">{err}</div> : <span className="dim">loading…</span>) : <>
           <div className="drawhd"><h1>{d.draw.name ?? d.draw.id}</h1><span className="rid mono dim">{d.draw.id}</span><span className={badge(d.draw.status)}>{d.draw.status === "done" ? "brief" : label(d.draw.status)}</span>
-            <span className="dim" style={{ fontSize: 12 }}>{d.draw.setting ?? "unrestricted"} · {d.draw.genre} · {d.draw.mode}{d.draw.repaired_from ? <> · repairs <a href={`#develop/${d.draw.repaired_from}`} className="mono">{d.draw.repaired_from}</a></> : null}{d.draw.superseded_by ? <> · superseded by <a href={`#develop/${d.draw.superseded_by}`} className="mono">{d.draw.superseded_by}</a></> : null}</span></div>
+            {d.origin && <span className="meta"><span><i>{d.origin.id === d.draw.id ? "candidate" : "from"}</i>{d.origin.id === d.draw.id
+              ? <a href={`#draw/${d.origin.id}`}>#{d.origin.index}{d.origin.probability != null ? ` · ${d.origin.probability.toFixed(2)}` : ""}</a>
+              : <a href={`#draw/${d.origin.id}`}>{d.origin.name ?? d.origin.id}{d.origin.index ? ` #${d.origin.index}` : ""}</a>}</span></span>}
+            <span className="dim" style={{ fontSize: 12 }}>{d.draw.setting ?? "unrestricted"} · {d.draw.genre} · {d.draw.mode}{d.draw.repaired_from ? <> · repairs <a href={`#${stage}/${d.draw.repaired_from}`} className="mono">{d.draw.repaired_from}</a></> : null}{d.draw.superseded_by ? <> · superseded by <a href={`#${stage}/${d.draw.superseded_by}`} className="mono">{d.draw.superseded_by}</a></> : null}</span></div>
           {err && <div className="err">{err}</div>}
           {step ? <StepView step={step} artifacts={d.artifacts.filter((a) => a.step_id === step.id)} chosen={false} onBack={() => setStepId(null)} />
-            : settings ? <DraftSettings d={d} onClose={() => setSettings(false)} onDraft={(b) => act(() => api.draft(d.draw.id, b), () => d.draw.id)} />
-            : d.draw.status === "done" ? <BriefReady d={d} onCheck={() => act(() => api.check(d.draw.id))} onDraft={() => setSettings(true)} onPass={(note) => act(() => api.gate(d.draw.id, { action: "pass", note }))} />
+            : settings ? <DraftSettings d={d} onClose={() => setSettings(false)} onDraft={(b) => act(async () => { await api.draft(d.draw.id, b); location.hash = `#write/${d.draw.id}`; })} />
+            : stage === "write" ? <StoryPane d={d} onAct={act} />
             : d.draw.status === "awaiting_check_gate" || d.draw.status === "repaired" ? <GateOne d={d} onAct={act} onDraft={() => setSettings(true)} />
-            : RUNNING.has(d.draw.status) ? <Running d={d} />
-            : <StoryPane d={d} onAct={act} />}
+            : d.draw.status === "done" || d.draw.status === "passed" ? <BriefReady d={d} onCheck={() => act(() => api.check(d.draw.id))} onDraft={() => setSettings(true)} onPass={(note) => act(() => api.gate(d.draw.id, { action: "pass", note }))} />
+            : <Building d={d} />}
         </>}
       </div>
     </>
-  );
-}
-
-function CheckPicker({ ready, onCheck }: { ready: Draw[]; onCheck: (id: string) => void }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div>
-      <button className="btn primary" style={{ width: "100%" }} disabled={!ready.length} onClick={() => setOpen((o) => !o)}>Check a brief{ready.length ? <span style={{ opacity: .7, fontWeight: 400 }}> · {ready.length} ready</span> : <span style={{ opacity: .7, fontWeight: 400 }}> · none ready</span>}</button>
-      {open && ready.length > 0 && <div className="picker">{ready.map((r) => <button key={r.id} className="opt" onClick={() => { setOpen(false); onCheck(r.id); }}><span className="serif">{r.name ?? r.id}</span><span className="dim mono">{r.id.slice(-4)}</span></button>)}</div>}
-    </div>
   );
 }
 
@@ -119,11 +112,38 @@ function BriefReady({ d, onCheck, onDraft, onPass }: { d: Detail; onCheck: () =>
   );
 }
 
-function Running({ d }: { d: Detail }) {
+const BUILD = ["outline", "jobs", "context", "ending"];
+
+/**
+ * A brief under construction. The premise and the vignette exist from the
+ * gate; the outline, the two context vignettes and the ending land one at a
+ * time. Each part is read from its artifact, because the files under briefs/
+ * are written last and all at once.
+ */
+function Building({ d }: { d: Detail }) {
+  const stageOfStep = new Map(d.steps.map((s) => [s.id, s.stage]));
   const running = d.steps.filter((s) => s.status === "running");
+  const done = new Set(d.steps.filter((s) => s.status === "done").map((s) => s.stage));
+  const chosen = d.artifacts.find((a) => a.kind === "vignette" && a.step_id === d.draw.chosen_step);
+  const outline = [...d.artifacts].reverse().find((a) => a.kind === "outline");
+  const contexts = d.artifacts.filter((a) => a.kind === "vignette" && stageOfStep.get(a.step_id) === "context");
+  const ending = [...d.artifacts].reverse().find((a) => a.kind === "ending");
+  const part = (name: string, body: string | undefined, open = false) => body
+    ? <details className="file ctx" key={name} open={open}><summary><Caret /><span className="fn">{name}</span><span className="dim"> · {firstParagraph(body).slice(0, 80)}…</span></summary><Md className="passage sm" text={boldLabels(body)} /></details>
+    : <div className="file ctx" key={name} style={{ padding: ".5rem .75rem", opacity: .5 }}><span className="fn">{name}</span><span className="dim"> · waiting</span></div>;
   return (
     <>
-      <div className="seed"><small>{label(d.draw.status)}</small>{running.length ? `${running.length} call${running.length > 1 ? "s" : ""} in flight: ${[...new Set(running.map((s) => s.stage))].join(", ")}` : "waiting for the next step"}<div className="dim" style={{ fontStyle: "normal", fontFamily: "Instrument Sans, system-ui, sans-serif", fontSize: 12.5, marginTop: ".5rem" }}>{d.steps.length} steps so far. The page refreshes itself.</div></div>
+      <div className="seed"><small>{label(d.draw.status)}</small>
+        {running.length ? `${running.length} call${running.length > 1 ? "s" : ""} in flight: ${[...new Set(running.map((s) => s.stage))].join(", ")}` : "waiting for the next step"}
+        <div className="dim" style={{ fontStyle: "normal", fontFamily: "Instrument Sans, system-ui, sans-serif", fontSize: 12.5, marginTop: ".5rem" }}>
+          {BUILD.map((s) => `${s}${done.has(s) ? " ✓" : ""}`).join(" · ")}. The page refreshes itself.</div></div>
+      <h2 className="sec">the brief, as it lands</h2>
+      <div className="brief" style={{ gridTemplateColumns: "minmax(0, 1fr)", maxWidth: "58rem" }}>
+        {part("premise and vignette", chosen?.content, true)}
+        {part("outline.md", outline?.content, true)}
+        {contexts.length ? contexts.map((a, i) => part(`context-${i + 1}.md`, a.content)) : part("context-1.md", undefined)}
+        {part("ending.md", ending?.content)}
+      </div>
     </>
   );
 }
@@ -156,7 +176,7 @@ function GateOne({ d, onAct, onDraft }: { d: Detail; onAct: (fn: () => Promise<a
         <span className="gatesep" />
         <button className="btn" onClick={onDraft} disabled={accepted.length > 0} title={accepted.length ? "Accepted findings are pending repair." : "Schedule and write the story from this brief as it stands."}>draft{d.draw.draft_config ? ` · ${JSON.parse(d.draw.draft_config).config.length.words} words` : ""} ▾</button>
       </div>}
-      {repaired && <div className="seed"><small>repaired</small>This brief was repaired into <a href={`#develop/${d.draw.superseded_by}`} className="mono">{d.draw.superseded_by}</a>; its findings and their decisions are kept here for the record.</div>}
+      {repaired && <div className="seed"><small>repaired</small>This brief was repaired into <a href={`#check/${d.draw.superseded_by}`} className="mono">{d.draw.superseded_by}</a>; its findings and their decisions are kept here for the record.</div>}
       <div className="drawbody two"><div className="col">
         <h2 className="sec">findings <span>· {f ? `${f.findings.length} reported` : "…"}{f?.pass ? ` · pass ${f.pass.slice(0, 16).replace("T", " ")}` : ""} · ordered by recurrence, then by what they invalidate · merged across checkers</span></h2>
         {f && f.findings.length === 0 && <div className="note" style={{ padding: ".75rem 1rem", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 6 }}>Nothing recurred in enough samples to report. What each checker examined is listed on the right.</div>}
@@ -344,7 +364,7 @@ function StoryPane({ d, onAct }: { d: Detail; onAct: (fn: () => Promise<any>, go
       </div><div className="col">
         <h2 className="sec">scenes <span>· {words.toLocaleString()} words · {s.screenFindings.length} ledger flags · {nStructure} structure flags</span></h2>
         <div className="tree">{s.scenes.map((sc) => { const fl = flagsFor(sc.beat), beat = s.schedule?.beats[sc.beat - 1]; const n = sc.text.split(/\s+/).filter(Boolean).length; return (
-          <a key={sc.beat} href={`#develop/${id}`} onClick={(e) => { e.preventDefault(); setView("story"); setK(sc.beat); document.getElementById(`beat-${sc.beat}`)?.scrollIntoView({ block: "start" }); }} className={"row" + (k === sc.beat ? " on" : "")}><span className="b mono">{sc.beat}</span><span className="j">{beat?.job ?? firstParagraph(sc.text)}</span><span className={"w mono" + (beat && n > beat.words * 1.1 ? " art" : "")}>{n}</span><span className="f">{fl.ledger.map((f) => <i key={f.id} className="l" />)}{fl.structure?.flags.map((q) => <i key={q} />)}</span></a>); })}</div>
+          <a key={sc.beat} href={`#write/${id}`} onClick={(e) => { e.preventDefault(); setView("story"); setK(sc.beat); document.getElementById(`beat-${sc.beat}`)?.scrollIntoView({ block: "start" }); }} className={"row" + (k === sc.beat ? " on" : "")}><span className="b mono">{sc.beat}</span><span className="j">{beat?.job ?? firstParagraph(sc.text)}</span><span className={"w mono" + (beat && n > beat.words * 1.1 ? " art" : "")}>{n}</span><span className="f">{fl.ledger.map((f) => <i key={f.id} className="l" />)}{fl.structure?.flags.map((q) => <i key={q} />)}</span></a>); })}</div>
         <div className="note" style={{ marginTop: 8 }}><i className="dotl" /> ledger flag <i className="dots2" /> structure flag</div>
         {s.profiles.length > 0 && <>
           <h2 className="sec">structure <span>· present across the draft · a tell, not a score</span></h2>
