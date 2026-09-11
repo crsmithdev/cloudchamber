@@ -21,7 +21,7 @@ export type Embedder = (texts: string[]) => Promise<number[][]>;
 
 export const pythonEmbedder: Embedder = async (texts) => {
   if (!texts.length) return [];
-  const p = Bun.spawn(["python3", "-m", "extract", "embed", "--stdin"], { cwd: ROOT, stdin: "pipe", stdout: "pipe", stderr: "pipe", env: { ...process.env, FOGBELT_DB: ":memory:" } });
+  const p = Bun.spawn(["python3", "-m", "extract", "embed", "--stdin"], { cwd: ROOT, stdin: "pipe", stdout: "pipe", stderr: "pipe", env: { ...process.env, CLOUDCHAMBER_DB: ":memory:" } });
   p.stdin.write(JSON.stringify(texts));
   p.stdin.end();
   const [out, err] = await Promise.all([new Response(p.stdout).text(), new Response(p.stderr).text()]);

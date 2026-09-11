@@ -9,7 +9,7 @@ import { draftAll, draftStory, failures, fewshotLines, replayThemes, validateThe
 import { record } from "./verdicts.ts";
 
 function fixture(): { db: Db; dir: string; log: string } {
-  const dir = mkdtempSync(join(tmpdir(), "fogbelt-themes-"));
+  const dir = mkdtempSync(join(tmpdir(), "cloudchamber-themes-"));
   const db = openDb(join(dir, "t.db"));
   db.exec(`INSERT INTO sources (id, path, reader, genre) VALUES ('scp', 'x', 'scp', 'horror')`);
   db.exec(`INSERT INTO stories (id, source_id, ord, title, author, genre, words, text) VALUES

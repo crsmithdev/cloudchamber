@@ -31,7 +31,7 @@ export class ClaudeCli implements ModelAdapter {
   constructor(private timeoutMs = 15 * 60 * 1000) {}
 
   async call(stage: string, system: string, prompt: string, model: string, tools = ""): Promise<ModelResult> {
-    const dir = mkdtempSync(join(tmpdir(), "fogbelt-call-"));
+    const dir = mkdtempSync(join(tmpdir(), "cloudchamber-call-"));
     const promptPath = join(dir, `${stage}.prompt`);
     writeFileSync(promptPath, prompt);
     const env = { ...process.env } as Record<string, string | undefined>;

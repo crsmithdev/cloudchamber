@@ -1,9 +1,9 @@
 {
-  "name": "fogbelt",
+  "name": "cloudchamber",
   "private": true,
   "type": "module",
   "scripts": {
-    "fogbelt": "bun app/cli/main.ts",
+    "cloudchamber": "bun app/cli/main.ts",
     "test": "bun test app",
     "typecheck": "bunx tsc --noEmit",
     "ui:dev": "vite --config app/ui/vite.config.ts",

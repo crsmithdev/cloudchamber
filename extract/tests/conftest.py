@@ -10,7 +10,7 @@ SOURCES = ROOT / "sources"
 
 
 def run(*args, db):
-    env = dict(os.environ, FOGBELT_DB=str(db))
+    env = dict(os.environ, CLOUDCHAMBER_DB=str(db))
     return subprocess.run([sys.executable, "-m", "extract", *args], cwd=ROOT, env=env,
                           capture_output=True, text=True, check=True)
 
@@ -21,7 +21,7 @@ def db(tmp_path_factory):
     corpus is not on disk (the PDFs are not redistributable)."""
     if not (SOURCES / "horror" / "Ellen Datlow - The Best Horror of the Year Volume 01.pdf").exists():
         pytest.skip("dev sources not present")
-    path = tmp_path_factory.mktemp("store") / "fogbelt.db"
+    path = tmp_path_factory.mktemp("store") / "cloudchamber.db"
     run("read", db=path)
     run("segment", db=path)
     run("facets", db=path)

@@ -9,7 +9,7 @@ import { eligiblePassages, exportBank } from "./bank.ts";
 import { readFileSync, writeFileSync } from "node:fs";
 
 function fixture(): { db: Db; log: string; dir: string } {
-  const dir = mkdtempSync(join(tmpdir(), "fogbelt-"));
+  const dir = mkdtempSync(join(tmpdir(), "cloudchamber-"));
   const db = openDb(join(dir, "t.db"));
   db.exec(`INSERT INTO sources (id, path, reader, genre) VALUES ('src', 'x.pdf', 'pdf', 'horror')`);
   db.exec(`INSERT INTO stories (id, source_id, ord, title, author, genre, words, text) VALUES ('src/a', 'src', 0, 'A', 'Ann', 'horror', 900, 'x'), ('src/b', 'src', 1, 'B', 'Bob', 'horror', 900, 'y')`);
@@ -94,7 +94,7 @@ describe("story verdicts", () => {
 
 describe("store migration", () => {
   test("a version-0 store gains the story kind, the draw method and the suspect column, and replays the log", () => {
-    const dir = mkdtempSync(join(tmpdir(), "fogbelt-mig-"));
+    const dir = mkdtempSync(join(tmpdir(), "cloudchamber-mig-"));
     const path = join(dir, "old.db"), log = join(dir, "verdicts.jsonl");
     const old = new Database(path);
     old.exec(`CREATE TABLE sources (id TEXT PRIMARY KEY, path TEXT NOT NULL, reader TEXT NOT NULL, genre TEXT NOT NULL, author TEXT NOT NULL DEFAULT '', license TEXT NOT NULL DEFAULT '', dev INTEGER NOT NULL DEFAULT 0, read_at TEXT);
@@ -119,7 +119,7 @@ describe("store migration", () => {
     expect(again.query("SELECT count(*) AS n FROM verdicts").get()).toEqual({ n: 2 });
   });
   test("a version-1 store renames runs to draws, run_id to draw_id, and packet kinds to brief", () => {
-    const dir = mkdtempSync(join(tmpdir(), "fogbelt-mig2-"));
+    const dir = mkdtempSync(join(tmpdir(), "cloudchamber-mig2-"));
     const path = join(dir, "v1.db"), log = join(dir, "verdicts.jsonl");
     writeFileSync(log, "");
     const old = new Database(path);

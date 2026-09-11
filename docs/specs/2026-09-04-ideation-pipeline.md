@@ -37,7 +37,7 @@
 >   the call looked wrong, with its note; *delete* removes a draw and its steps
 >   outright, and refuses on one that developed a candidate — that is what
 >   archive is for. On the CLI and the Voice Bridge, redraw is
->   `fogbelt draw --like <draw>`, whose other arguments override the copy.
+>   `cloudchamber draw --like <draw>`, whose other arguments override the copy.
 > - **The trail (REQ 27).** Also carries the sampling mode, and `## forked_from`
 >   on a fork.
 > - **The viewer (REQ 34).** The distribution header reads `lowest to highest
@@ -63,7 +63,7 @@
 >   rules are in `2026-09-10-four-tabs.md`.
 > - **The skill (REQ 36).** The Voice Bridge also takes `--domains` and
 >   `--sampling`, and a `knobs` tool prints every tunable and its live values.
->   `fogbelt help` prints the same on the CLI; `docs/knobs.md` is that output.
+>   `cloudchamber help` prints the same on the CLI; `docs/knobs.md` is that output.
 
 Spec derived from the grilling session of 2026-09-04 over `plan.md`. Every
 decision below was put to Chris and answered; the few that were not are under
@@ -452,7 +452,7 @@ mode carries no doctrine at all.
   `read` (which splits: a PDF is read into stories, not into a file),
   `segment`, `facets`, `embed`. It reads sources and writes
   rows into the SQLite store; it makes no model call and no network call.
-- `app/`: the bun workspace. `app/cli` (the `fogbelt` command), `app/pipeline`
+- `app/`: the bun workspace. `app/cli` (the `cloudchamber` command), `app/pipeline`
   (stages, model adapter, store), `app/server` (Fastify), `app/ui` (React,
   Vite). One process serves API and UI.
 - `bank/`: tracked. `examples/<source-slug>.md` exports, `themes.md` export,
@@ -463,7 +463,7 @@ mode carries no doctrine at all.
   directory is not in the manifest; settings are addressed by id.
 - `data/`: the SQLite database, gitignored. Rebuildable from sources plus the
   two tracked JSONL files.
-- `.claude/skills/fogbelt/SKILL.md`: the driving skill. `seed-premises` is
+- `.claude/skills/cloudchamber/SKILL.md`: the driving skill. `seed-premises` is
   deleted.
 - `docs/specs/`: this file and its successors.
 
@@ -534,7 +534,7 @@ keyed on `PRAGMA user_version`, owned by the TypeScript side: the verdicts
 table is dropped, recreated and replayed from the log, columns are added with
 `ALTER TABLE`. A fresh store is stamped with the current version. The Python
 side mirrors the version number and refuses a store that is behind, naming
-the `fogbelt` command that migrates it. Version 1 (2026-09-05): `story` kind,
+the `cloudchamber` command that migrates it. Version 1 (2026-09-05): `story` kind,
 `run` method, `passages.suspect`.
 
 ### Verdict log line
@@ -650,9 +650,9 @@ pipeline in-process; the CLI calls the same functions.
 
 ### Skill
 
-`fogbelt` skill wraps the CLI: `fogbelt extract`, `fogbelt facets`,
-`fogbelt themes`, `fogbelt export`, `fogbelt run`, `fogbelt status`,
-`fogbelt packet <id>`, `fogbelt serve`. The skill never generates in its own
+`cloudchamber` skill wraps the CLI: `cloudchamber extract`, `cloudchamber facets`,
+`cloudchamber themes`, `cloudchamber export`, `cloudchamber run`, `cloudchamber status`,
+`cloudchamber packet <id>`, `cloudchamber serve`. The skill never generates in its own
 context; it triggers steps and reads results.
 
 ### Rejected alternatives

@@ -180,7 +180,7 @@ export class Pipeline {
       const segs = setting.seedSegments;
       themes = themes.filter((t) => (JSON.parse(t.stories) as string[]).some((s) => segs.some((g) => s.startsWith(g + "/"))));
     }
-    if (!themes.length) throw new Error("seed: no eligible themes to draw from; run `fogbelt themes` or pass --seed");
+    if (!themes.length) throw new Error("seed: no eligible themes to draw from; run `cloudchamber themes` or pass --seed");
     const t = this.pick(themes);
     return { mode: "drawn", text: t.text, themeId: t.id };
   }

@@ -1,11 +1,11 @@
 ---
-name: fogbelt
-description: Drive the Fog Belt pipeline: extract passages and themes from the corpus, report status, start a generation draw under a setting or unrestricted, work the gate, read a brief, check a brief, work gate 1, draft a story and work gate 2. Use when asked to extract, draft themes, seed or generate premises, run the pipeline, check or repair a brief, draft or read a story, or read what a draw produced.
+name: cloudchamber
+description: Drive the Cloud Chamber pipeline: extract passages and themes from the corpus, report status, start a generation draw under a setting or unrestricted, work the gate, read a brief, check a brief, work gate 1, draft a story and work gate 2. Use when asked to extract, draft themes, seed or generate premises, run the pipeline, check or repair a brief, draft or read a story, or read what a draw produced.
 ---
 
-# fogbelt
+# cloudchamber
 
-Everything goes through the `fogbelt` command at the repo root. This session
+Everything goes through the `cloudchamber` command at the repo root. This session
 never generates in its own context: every model step is a headless subprocess
 the pipeline spawns, so that no candidate is read before the others exist. Run
 the command, read what it prints, report it.
@@ -18,25 +18,25 @@ may read directly is `bank/examples/*.md` (verbatim passages by source) and
 ## Commands
 
 ```
-./fogbelt extract [--only ID ...]     read -> segment -> facets, inherit verdicts, export bank/
-./fogbelt themes [--only SRC] [--limit N]   draft themes for stories not yet drafted
-./fogbelt status                      pool, bank, eligibility per source, draws by status
-./fogbelt draw [--setting ID [--domains a,b]] [--genre horror|scifi] [--auto] [--source SRC] [--author A] [--seed "text" | --seed-id ID]
-./fogbelt setting lint <id>            check a setting file; one finding per line, exit 1
-./fogbelt distill <id> [--domain SLUG] fill a setting's empty or redraft-marked sections from its reference/
-./fogbelt gate <draw> choose <execute-step> | redraw | keep-seed | flag [--note "..."]
-./fogbelt draws                        list draws
-./fogbelt draw-show <draw>              steps and artifacts
-./fogbelt brief <draw>                print the brief
-./fogbelt check <draw> [--checks a,b] [--samples N]   run the checkers over a brief; stops at gate 1
-./fogbelt findings <draw> [--examined] the latest check's findings, ordered by recurrence then by what they invalidate
-./fogbelt gate <draw> accept <finding>... | dismiss <finding> [--note "..."] | hold | pass | flag [--note "..."]
-./fogbelt draft <draw> [--auto] [--profile P] [--words N] [--beats N] [--tense T] [--person P] [--chronology C] [--container C] [--order sequential|parallel]
-./fogbelt story <draw>                the draft with its screen flags inline
-./fogbelt gate <draw> keep | rewrite <k> [--finding ID] | pass
-./fogbelt verdict <example|theme|brief|story> <id> <keep|pass> [--artifact] [--note "..."]
-                                      a passed story hides every passage of it
-./fogbelt serve [--port 3002]         the review UI, the draw viewer, and develop (gates 1 and 2)
+./cloudchamber extract [--only ID ...]     read -> segment -> facets, inherit verdicts, export bank/
+./cloudchamber themes [--only SRC] [--limit N]   draft themes for stories not yet drafted
+./cloudchamber status                      pool, bank, eligibility per source, draws by status
+./cloudchamber draw [--setting ID [--domains a,b]] [--genre horror|scifi] [--auto] [--source SRC] [--author A] [--seed "text" | --seed-id ID]
+./cloudchamber setting lint <id>            check a setting file; one finding per line, exit 1
+./cloudchamber distill <id> [--domain SLUG] fill a setting's empty or redraft-marked sections from its reference/
+./cloudchamber gate <draw> choose <execute-step> | redraw | keep-seed | flag [--note "..."]
+./cloudchamber draws                        list draws
+./cloudchamber draw-show <draw>              steps and artifacts
+./cloudchamber brief <draw>                print the brief
+./cloudchamber check <draw> [--checks a,b] [--samples N]   run the checkers over a brief; stops at gate 1
+./cloudchamber findings <draw> [--examined] the latest check's findings, ordered by recurrence then by what they invalidate
+./cloudchamber gate <draw> accept <finding>... | dismiss <finding> [--note "..."] | hold | pass | flag [--note "..."]
+./cloudchamber draft <draw> [--auto] [--profile P] [--words N] [--beats N] [--tense T] [--person P] [--chronology C] [--container C] [--order sequential|parallel]
+./cloudchamber story <draw>                the draft with its screen flags inline
+./cloudchamber gate <draw> keep | rewrite <k> [--finding ID] | pass
+./cloudchamber verdict <example|theme|brief|story> <id> <keep|pass> [--artifact] [--note "..."]
+                                           a passed story hides every passage of it
+./cloudchamber serve [--port 3002]         the review UI, the draw viewer, and develop (gates 1 and 2)
 ```
 
 Extraction with no `--only` reads the dev subset from `sources/manifest.toml`.
@@ -56,10 +56,10 @@ spec is `docs/specs/2026-09-05-typed-settings.md`.
 
 ## A draw
 
-1. `./fogbelt draw --genre horror` draws six examples and a seed and produces
+1. `./cloudchamber draw --genre horror` draws six examples and a seed and produces
    five premises, each executed as a 400-word vignette, then stops at the gate
    and prints the five candidates sorted by stated probability.
-2. Chris chooses at the gate, in the UI or with `fogbelt gate <draw> choose <step>`.
+2. Chris chooses at the gate, in the UI or with `cloudchamber gate <draw> choose <step>`.
    `--auto` skips the gate by taking the lowest stated probability. No model
    ever judges.
 3. The draw derives an outline, names two vignette jobs, writes two context
@@ -71,7 +71,7 @@ the pipeline already retried once on the fallback model.
 
 ## Checking and drafting
 
-1. `./fogbelt check <draw>` on a finished brief runs the checkers (derivation,
+1. `./cloudchamber check <draw>` on a finished brief runs the checkers (derivation,
    ledger, structure, resemblance; claims only when the setting's front matter
    declares `claims: world | reference`), each several times, and reports the
    findings that recur, merged across checkers, ordered by recurrence then by
@@ -79,11 +79,11 @@ the pipeline already retried once on the fallback model.
 2. Chris accepts or dismisses findings by id. `accept` repairs the brief into a
    new draw (`repaired_from`), re-checks it, and reports again. `dismiss` is
    remembered; a re-check does not raise the finding. `pass` passes the brief.
-3. `./fogbelt draft <draw>` derives the schedule under `app/pipeline/draft.toml`
+3. `./cloudchamber draft <draw>` derives the schedule under `app/pipeline/draft.toml`
    and the flags, writes one scene per beat, screens every scene, and waits at
    gate 2. `--auto` works gate 1 by the mechanical rule (accept what recurs in
    every sample with evidence, dismiss the rest) and stops at gate 2.
-4. `./fogbelt story <draw>` prints the draft with its flags. `gate keep`
+4. `./cloudchamber story <draw>` prints the draft with its flags. `gate keep`
    exports `drafts/<draw>/`; `gate rewrite <k>` regenerates one scene under the
    flag's replacement and re-screens it and the next.
 

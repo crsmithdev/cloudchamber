@@ -2,7 +2,7 @@
 
 Supersedes the *Settings* subsection of `2026-09-04-ideation-pipeline.md`.
 Decided 2026-09-05 after a grill over the design; the twelve decisions and the
-loading table are also drawn at the Fog Belt Settings artifact.
+loading table are also drawn at the Cloud Chamber Settings artifact.
 
 ## Problem Statement
 
@@ -81,7 +81,7 @@ from the lore already gathered.
     same seed differ by ground.
 12. As Chris, I want `draw: N` in front matter to set how many domains a draw
     picks, so that the count is a setting decision and not a code constant.
-13. As Chris, I want `fogbelt draw --domains a,b` to pin the domains, so that
+13. As Chris, I want `cloudchamber draw --domains a,b` to pin the domains, so that
     I can repeat a draw on the same ground or force a pairing.
 14. As Chris, I want the drawn domains stored on the draw row, returned by the
     draw API and printed in the brief's trail, so that a brief says what
@@ -119,11 +119,11 @@ from the lore already gathered.
 23. As Chris, I want to write a domain's heading, Frame and Sources by hand,
     so that naming the ground and assigning reference files to it stays my
     creative act.
-24. As Chris, I want `fogbelt distill <id>` to fill, for every domain, each
+24. As Chris, I want `cloudchamber distill <id>` to fill, for every domain, each
     section that is empty or marked `<!-- redraft -->`, from the reference
     files the domain's Sources names, so that a domain goes from a frame to a
     full block in one command.
-25. As Chris, I want `fogbelt distill <id> --domain <slug>` to work on one
+25. As Chris, I want `cloudchamber distill <id> --domain <slug>` to work on one
     domain, so that I can redraft one block without touching the others.
 26. As Chris, I want distill never to change a filled section, so that my
     edits survive every later run.
@@ -141,10 +141,10 @@ from the lore already gathered.
 
 ### Lint
 
-31. As Chris, I want `fogbelt setting lint <id>` to check a setting file and
+31. As Chris, I want `cloudchamber setting lint <id>` to check a setting file and
     print every finding as `domain › section: reason`, so that I fix a file
     from one listing.
-32. As Chris, I want `fogbelt draw --setting <id>` and `fogbelt distill <id>`
+32. As Chris, I want `cloudchamber draw --setting <id>` and `cloudchamber distill <id>`
     to run lint first and stop on findings, so that no draw runs on a broken
     file and no distill writes into one.
 33. As Chris, I want lint to check: the front matter keys; the five
@@ -178,7 +178,7 @@ from the lore already gathered.
 39. As Chris, I want the draw form's setting help text and the draw detail
     view to reflect slicing and show the drawn domains, so that the UI does
     not describe the old behaviour.
-40. As Chris, I want the `fogbelt` skill to know `distill`, `setting lint` and
+40. As Chris, I want the `cloudchamber` skill to know `distill`, `setting lint` and
     `--domains`, so that a session can drive them.
 41. As Chris, I want the ideation spec's Settings subsection to point here, so
     that the two documents do not disagree.
@@ -225,7 +225,7 @@ from the lore already gathered.
     `INDEX.md`, and `sources/settings/setting-b/reference/`, with 47
     topic files and `INDEX.md`, each file opening with front matter `topic`,
     `sources`, `fetched`.
-11. WHEN `fogbelt draw --setting <id>` runs without `--domains` THE system
+11. WHEN `cloudchamber draw --setting <id>` runs without `--domains` THE system
     SHALL choose `draw` distinct domains from the setting using the
     pipeline's rng, without regard to the seed; WHEN the rng is fixed in a
     test and two draws use different seeds THE chosen domains SHALL be the
@@ -285,7 +285,7 @@ from the lore already gathered.
     existing file under the setting's reference directory; IF a token
     resolves to no file THEN lint SHALL report `<domain> › Sources: no file
     <token>`.
-24. WHEN `fogbelt distill <id>` runs THE system SHALL lint first and, for each
+24. WHEN `cloudchamber distill <id>` runs THE system SHALL lint first and, for each
     domain, for each of Mechanisms, Roles, Institutions, Instruments, Clocks,
     Places and Vocabulary whose body is `none` or contains `<!-- redraft -->`,
     make one model call per domain carrying the Frame, the section names to
@@ -314,12 +314,12 @@ from the lore already gathered.
     `distill`, `draw_id` NULL, `story_id` equal to `setting/<id>/<slug>`, the
     prompt, the raw response, and status; WHEN the model refuses twice THE
     domain SHALL be reported as `<domain>: refusal` and left unchanged.
-31. WHEN `fogbelt setting lint <id>` finds nothing THE command SHALL print
+31. WHEN `cloudchamber setting lint <id>` finds nothing THE command SHALL print
     `<id>: <n> domains, clean` and exit 0; WHEN it finds anything THE command
     SHALL print one finding per line in the `<domain> › <section>: <reason>`
     form and exit 1.
-32. IF lint has findings THEN `fogbelt draw --setting <id>` SHALL print them
-    and exit 1 before inserting a draws row, and `fogbelt distill <id>` SHALL
+32. IF lint has findings THEN `cloudchamber draw --setting <id>` SHALL print them
+    and exit 1 before inserting a draws row, and `cloudchamber distill <id>` SHALL
     print them and exit 1 before any model call; the UI draw form SHALL show
     the same findings as the error when it posts a setting that fails lint.
 33. WHEN lint runs THE checks SHALL be exactly those in criteria 1, 2, 4, 5,
@@ -355,8 +355,8 @@ from the lore already gathered.
     draws two of its domains and slices its sections into each stage; hard
     rules go last.`; WHEN a draw detail renders under a setting THE view
     SHALL show the drawn domain headings.
-40. WHEN the fogbelt skill is read THE text SHALL name `fogbelt distill <id>
-    [--domain <slug>]`, `fogbelt setting lint <id>` and `fogbelt draw
+40. WHEN the cloudchamber skill is read THE text SHALL name `cloudchamber distill <id>
+    [--domain <slug>]`, `cloudchamber setting lint <id>` and `cloudchamber draw
     --domains a,b`.
 41. WHEN the ideation spec is read THE Settings subsection SHALL open with
     `Superseded by 2026-09-05-typed-settings.md.`
@@ -486,7 +486,7 @@ hand, and runs distill per domain on all three settings.
 ### Surfaces
 
 The draw form help text and the draw detail view change copy and show
-domains. The fogbelt skill gains the three command forms. The ideation spec's
+domains. The cloudchamber skill gains the three command forms. The ideation spec's
 Settings subsection gets a one-line supersession note.
 
 ## Testing Decisions

@@ -102,7 +102,7 @@ def cmd_embed(root: Path, con, args) -> None:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="extract", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--root", default=".", help="repo root")
-    ap.add_argument("--db", default=None, help="sqlite path (default data/fogbelt.db or $FOGBELT_DB)")
+    ap.add_argument("--db", default=None, help="sqlite path (default data/cloudchamber.db or $CLOUDCHAMBER_DB)")
     sub = ap.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("read"); r.add_argument("--only", nargs="*")
     s = sub.add_parser("segment"); s.add_argument("--only", nargs="*"); s.add_argument("--seed", type=int, default=0)

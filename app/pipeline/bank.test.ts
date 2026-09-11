@@ -41,7 +41,7 @@ describe("the example pool", () => {
 
 describe("the knobs", () => {
   test("every tunable is read from the files, not written down", () => {
-    const dir = mkdtempSync(join(tmpdir(), "fogbelt-knobs-"));
+    const dir = mkdtempSync(join(tmpdir(), "cloudchamber-knobs-"));
     const sections = knobs(fixture(), settingsFixture(dir));
     const by = (title: string) => sections.find((s) => s.title === title)!;
     expect(by("settings and their domains").rows).toEqual([["fog", "draw 2 · land-and-title, labour, death-and-its-administration"]]);

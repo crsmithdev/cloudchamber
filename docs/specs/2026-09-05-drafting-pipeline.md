@@ -89,7 +89,7 @@ stages are the next landing, not this one.
 20. As Chris, I want a kept story exported to a tracked directory with its schedule, findings, configuration and trail, so that the draft and how it was made travel together in git.
 21. As Chris, I want `--auto` to run gate 1 by a mechanical rule and stop at gate 2, so that a draft can be produced unattended without any model judging.
 22. As Chris, I want the models per stage, and the tools a stage may use, declared in the stages file, so that the claims checker alone reaches the web and every other stage stays sealed.
-23. As Chris, I want `fogbelt status` and `fogbelt draws` to show where every draw is in the new stages, so that I know what is waiting on me.
+23. As Chris, I want `cloudchamber status` and `cloudchamber draws` to show where every draw is in the new stages, so that I know what is waiting on me.
 24. As Chris, I want the slop lexicon and the overused-premise list to be files I edit, so that the screens follow my judgement without a code change.
 25. As Chris, I want every findings view to say the checkers ran on the same model family as the generator, so that I do not mistake same-family agreement for independent verification.
 26. As Chris, I want every stage to hold the prompt vocabulary rule and a stated output cap, so that Fable's refusal safeguard is not tripped and no call runs to 25,000 tokens.
@@ -97,37 +97,37 @@ stages are the next landing, not this one.
 
 ## Acceptance Criteria
 
-1. WHEN `fogbelt check <draw>` runs on a draw in status `done` THE system SHALL create, per enabled checker, `samples` step rows named `check-<checker>` under the draw, run them concurrently, and move the draw to `awaiting_check_gate`. IF the draw is not in `done` or `awaiting_check_gate` THEN THE system SHALL exit 1 naming the current status.
-2. WHEN a check pass completes THE system SHALL store one `finding` artifact per reported cluster carrying `checker`, `span`, `statement`, `result`, `evidence`, `invalidates`, `replacement`, the sample numbers it recurred in, and `n`; `fogbelt findings <draw>` SHALL print them ordered by `n` descending then by `invalidates` rank (debt audit, arithmetic, custody, setting jobs, none).
+1. WHEN `cloudchamber check <draw>` runs on a draw in status `done` THE system SHALL create, per enabled checker, `samples` step rows named `check-<checker>` under the draw, run them concurrently, and move the draw to `awaiting_check_gate`. IF the draw is not in `done` or `awaiting_check_gate` THEN THE system SHALL exit 1 naming the current status.
+2. WHEN a check pass completes THE system SHALL store one `finding` artifact per reported cluster carrying `checker`, `span`, `statement`, `result`, `evidence`, `invalidates`, `replacement`, the sample numbers it recurred in, and `n`; `cloudchamber findings <draw>` SHALL print them ordered by `n` descending then by `invalidates` rank (debt audit, arithmetic, custody, setting jobs, none).
 3. WHEN a checker's S samples produce findings THE system SHALL cluster them by the overlap rule (Implementation Decisions, Recurrence) and report a cluster only when it recurs in at least `keep_if` distinct samples; a finding seen in fewer samples SHALL be stored on the step's `parsed` and not as a `finding` artifact.
 4. WHEN two reported clusters from different checkers overlap by the same rule THE system SHALL store one `finding` artifact whose `checkers` field lists both and whose `n` is the greater.
-5. WHEN a checker step completes THE system SHALL store its `<examined>` content on the step's `parsed`, and `fogbelt findings <draw> --examined` SHALL print it per sample.
+5. WHEN a checker step completes THE system SHALL store its `<examined>` content on the step's `parsed`, and `cloudchamber findings <draw> --examined` SHALL print it per sample.
 6. WHEN the draw's setting declares `claims: world` THE system SHALL run `check-claims-extract` once, then one `check-claims-verify` step per extracted claim with `--tools "WebSearch,WebFetch" --allowedTools "WebSearch,WebFetch"`, and a `finding` artifact for each claim whose result is `contradicted`; WHEN the setting declares `claims: reference` THE system SHALL run the verify steps with `--tools ""` and the resolved reference files of the draw's pinned domains in the prompt. A `supported` or `unverifiable` claim SHALL be stored on the step's `parsed` and not as a `finding`.
-7. IF the draw is unrestricted or the setting has no `claims` key THEN THE system SHALL run no `check-claims-*` step and `fogbelt findings` SHALL print `claims: off (no authority declared)`.
-8. WHEN `fogbelt gate <draw> accept <finding-id>...` runs in `awaiting_check_gate` THE system SHALL append one verdict line per finding with kind `finding`, verdict `keep`, method `gate`, and start repair; WHEN `dismiss <finding-id> [--note]` runs THE system SHALL append kind `finding`, verdict `pass` with the note and start nothing; a re-check SHALL not store a `finding` artifact overlapping a dismissed one by the overlap rule.
+7. IF the draw is unrestricted or the setting has no `claims` key THEN THE system SHALL run no `check-claims-*` step and `cloudchamber findings` SHALL print `claims: off (no authority declared)`.
+8. WHEN `cloudchamber gate <draw> accept <finding-id>...` runs in `awaiting_check_gate` THE system SHALL append one verdict line per finding with kind `finding`, verdict `keep`, method `gate`, and start repair; WHEN `dismiss <finding-id> [--note]` runs THE system SHALL append kind `finding`, verdict `pass` with the note and start nothing; a re-check SHALL not store a `finding` artifact overlapping a dismissed one by the overlap rule.
 9. WHEN repair runs THE system SHALL create a new draw row with `repaired_from` set to the source draw, copying setting, genre, mode, segment, seed, examples and domains; set `superseded_by` on the source and its status to `repaired`; rewrite the chosen vignette from itself only if an accepted finding's span is inside it, else copy it; re-derive the outline with a `<constraints>` block; run jobs and two context vignettes; and rewrite the ending from itself only if an accepted finding's span is inside it or its `invalidates` is `arithmetic` or `custody`, else copy it. The new brief directory's trail SHALL carry `## repaired_from` with the source id and the constraint lines.
-10. WHEN repair completes THE system SHALL run the check stage on the new draw without a further command, up to `repair.rounds` automatic rounds, then leave it in `awaiting_check_gate`. A further round SHALL require `fogbelt gate <draw> accept`.
+10. WHEN repair completes THE system SHALL run the check stage on the new draw without a further command, up to `repair.rounds` automatic rounds, then leave it in `awaiting_check_gate`. A further round SHALL require `cloudchamber gate <draw> accept`.
 11. WHEN a repaired brief is written THE system SHALL include `ending.md` and, when the ending was rewritten, `ending.previous.md`.
-12. WHEN `fogbelt gate <draw> hold` runs THE system SHALL change nothing and exit 0; WHEN `pass` runs THE system SHALL append a `brief` verdict `pass` and set status `passed`; WHEN `flag [--note]` runs THE system SHALL set `flagged` and the note and start nothing.
-13. WHEN `fogbelt draft <draw> [overrides]` runs in `awaiting_check_gate` or `done` THE system SHALL resolve the configuration (defaults, then profile, then flags), store it on the draw as `draft_config` JSON, run `schedule`, then `scene` ×M, then screens, and move the draw to `awaiting_draft_gate`. IF a finding was accepted and repair has not run THEN THE system SHALL exit 1 with `accepted findings pending repair`.
+12. WHEN `cloudchamber gate <draw> hold` runs THE system SHALL change nothing and exit 0; WHEN `pass` runs THE system SHALL append a `brief` verdict `pass` and set status `passed`; WHEN `flag [--note]` runs THE system SHALL set `flagged` and the note and start nothing.
+13. WHEN `cloudchamber draft <draw> [overrides]` runs in `awaiting_check_gate` or `done` THE system SHALL resolve the configuration (defaults, then profile, then flags), store it on the draw as `draft_config` JSON, run `schedule`, then `scene` ×M, then screens, and move the draw to `awaiting_draft_gate`. IF a finding was accepted and repair has not run THEN THE system SHALL exit 1 with `accepted findings pending repair`.
 14. WHEN the schedule step completes THE system SHALL store a `schedule` artifact with `form` and one entry per beat (`n`, `words`, `job`, `known`, `withheld` as a list of `{item, until}`, `stakes`, `absorbs`); IF the beat count is outside `beats.min..beats.max`, or any cap is outside `words_min..words_max`, or the caps sum to more than `length.words × (1 + tolerance)` or less than `length.words × (1 − tolerance)`, or any of `chosen`, `context-1`, `context-2`, `ending` appears in more than one beat's `absorbs`, THEN THE system SHALL fail the step `shape` and retry once per the adapter's table.
 15. IF `beats.count` is an integer THEN THE schedule prompt SHALL ask for exactly that many beats and the shape check SHALL require it. IF a `[form]` key is not `auto` THEN THE schedule prompt SHALL state it as fixed and the parsed `form` SHALL match it.
-16. IF `structure.template` is anything other than `auto` THEN `fogbelt draft` SHALL exit 1 with `structure mode not built: <value>`.
+16. IF `structure.template` is anything other than `auto` THEN `cloudchamber draft` SHALL exit 1 with `structure mode not built: <value>`.
 17. WHEN scenes run under `scenes.order = "sequential"` THE system SHALL run them one at a time, each prompt carrying the six example passages, the outline, the ledger, the schedule, the scenes so far in order, this beat's material when `absorbs` names one, and this beat's entry; WHEN `parallel` THE system SHALL run all M concurrently with no scenes-so-far block. Each `scene` artifact SHALL carry `beat`, `words`, and `warnings` including `over_cap` when the word count exceeds the cap by more than 10%.
 18. WHEN all scenes exist THE system SHALL run `screen-ledger` `screens.samples` times per scene and `screen-structure` `screens.structure.samples` times per scene concurrently, apply the same recurrence rule with `screens.keep_if`, and store `finding` artifacts with `invalidates` set to the beat number; the structure screen's answers SHALL be stored as a `profile` artifact per scene.
 19. WHEN the structure screen runs on scene k THE prompt SHALL contain only the withheld items whose `until` is greater than k, and on scene M the fifth question SHALL be `resolves-everything` in place of `resolved`.
 20. WHEN screens run THE system SHALL run the slop screen once over the joined scenes with no model call and store a `slop` artifact with: hits of the slop lexicon (proper nouns excluded) with counts, the not-X-but-Y rate per 10,000 words against the pool's rate, trigrams occurring three or more times in the draft and zero times in the pool, and per-scene paragraph count, mean paragraph length and single-sentence-paragraph share.
-21. WHEN `fogbelt story <draw>` runs THE system SHALL print the scenes in beat order separated by `* * *`, each screen finding inline after its scene as `[screen-<name> beat k] span → replacement`, and a footer `checked on <model family>; judge and generator share a family`.
-22. WHEN `fogbelt gate <draw> rewrite <k> [--finding <id>]` runs in `awaiting_draft_gate` THE system SHALL run one `scene` step for beat k with the named finding's replacement (or all of beat k's reported replacements) in a `<constraints>` block and the kept scenes 1..k−1 as scenes so far, replace scene k, re-run the screens on k and k+1 only, and return to `awaiting_draft_gate`. IF k is the last beat THEN THE system SHALL re-screen k only.
-23. WHEN `fogbelt gate <draw> keep` runs in `awaiting_draft_gate` THE system SHALL append a `draft` verdict `keep`, write `drafts/<draw>/` with `story.md`, `schedule.md`, `findings.md`, `config.toml`, `trail.md`, and set status `drafted`; WHEN `pass` runs THE system SHALL append a `draft` verdict `pass` and set status `passed`.
+21. WHEN `cloudchamber story <draw>` runs THE system SHALL print the scenes in beat order separated by `* * *`, each screen finding inline after its scene as `[screen-<name> beat k] span → replacement`, and a footer `checked on <model family>; judge and generator share a family`.
+22. WHEN `cloudchamber gate <draw> rewrite <k> [--finding <id>]` runs in `awaiting_draft_gate` THE system SHALL run one `scene` step for beat k with the named finding's replacement (or all of beat k's reported replacements) in a `<constraints>` block and the kept scenes 1..k−1 as scenes so far, replace scene k, re-run the screens on k and k+1 only, and return to `awaiting_draft_gate`. IF k is the last beat THEN THE system SHALL re-screen k only.
+23. WHEN `cloudchamber gate <draw> keep` runs in `awaiting_draft_gate` THE system SHALL append a `draft` verdict `keep`, write `drafts/<draw>/` with `story.md`, `schedule.md`, `findings.md`, `config.toml`, `trail.md`, and set status `drafted`; WHEN `pass` runs THE system SHALL append a `draft` verdict `pass` and set status `passed`.
 24. WHEN `drafts/<draw>/findings.md` is written THE file SHALL contain the latest check pass's reported findings with each one's gate 1 decision (`accepted`, `dismissed: <note>`, or `open`), then the screen findings by beat.
-25. WHEN `fogbelt draft <draw> --auto` runs THE system SHALL run the check stage if none has run, accept every `finding` from derivation, ledger and claims whose `n` equals that checker's sample count and whose `evidence` is not `none`, dismiss the rest with note `auto`, run repair and re-check up to `repair.rounds` times, then schedule, scenes and screens, and stop in `awaiting_draft_gate`. Structure and resemblance findings SHALL never be accepted by the rule.
+25. WHEN `cloudchamber draft <draw> --auto` runs THE system SHALL run the check stage if none has run, accept every `finding` from derivation, ledger and claims whose `n` equals that checker's sample count and whose `evidence` is not `none`, dismiss the rest with note `auto`, run repair and re-check up to `repair.rounds` times, then schedule, scenes and screens, and stop in `awaiting_draft_gate`. Structure and resemblance findings SHALL never be accepted by the rule.
 26. WHEN a stage in `stages.toml` declares `tools` THE adapter SHALL pass `--tools <list> --allowedTools <list>`; otherwise `--tools ""`. The step row SHALL store the tool list in a `tools` column.
-27. WHEN `fogbelt status` runs THE output SHALL count draws in each of `awaiting_check_gate`, `repairing`, `drafting`, `awaiting_draft_gate`, `drafted`, `passed`, `repaired` alongside the existing statuses.
+27. WHEN `cloudchamber status` runs THE output SHALL count draws in each of `awaiting_check_gate`, `repairing`, `drafting`, `awaiting_draft_gate`, `drafted`, `passed`, `repaired` alongside the existing statuses.
 28. WHEN a store at schema version 3 is opened THE system SHALL migrate to version 4: `draws` gains `repaired_from` and `draft_config`, `steps` gains `tools`, and `verdicts.kind` admits `finding` and `draft` by drop, recreate and replay from the log. The Python side SHALL refuse a version-3 store naming the migrating command.
 29. WHEN any check, repair, schedule, scene or screen prompt template is scanned THE template SHALL contain none of *reason*, *reasoning*, *think*, *chain of thought*, and SHALL contain a stated word cap.
 30. WHEN `bun test` runs THE suite SHALL make no `claude` subprocess call and SHALL cover every criterion above that names an observable output, through the fake model and the CLI or HTTP API.
-31. WHEN `fogbelt findings`, `fogbelt story` or the draw JSON is rendered THE output SHALL carry the line `checked on <model family>; judge and generator share a family` whenever every check step's model is in the same family as the generation steps' model.
+31. WHEN `cloudchamber findings`, `cloudchamber story` or the draw JSON is rendered THE output SHALL carry the line `checked on <model family>; judge and generator share a family` whenever every check step's model is in the same family as the generation steps' model.
 
 ## Implementation Decisions
 
@@ -209,9 +209,9 @@ beats.min = 10
 beats.max = 18
 ```
 
-Command line: `fogbelt draft <draw> [--profile P] [--words N] [--beats N]
+Command line: `cloudchamber draft <draw> [--profile P] [--words N] [--beats N]
 [--tense T] [--person P] [--chronology C] [--container C] [--order O]
-[--auto]`; `fogbelt check <draw> [--checks a,b] [--samples N]`. The resolved
+[--auto]`; `cloudchamber check <draw> [--checks a,b] [--samples N]`. The resolved
 configuration is stored on the draw and written to `drafts/<draw>/config.toml`
 and to the trail under `## draft config`, with overridden keys marked.
 
@@ -325,7 +325,7 @@ Actions on a draw in `awaiting_check_gate`:
 | hold | nothing |
 | pass | verdict `brief` `pass`; status `passed` |
 | flag `[--note]` | `flagged`, note; nothing runs |
-| `fogbelt draft <draw>` | proceeds to schedule when no accepted finding is unrepaired |
+| `cloudchamber draft <draw>` | proceeds to schedule when no accepted finding is unrepaired |
 
 A finding verdict's `target_id` is the finding id; `method` is `gate`, or
 `draw` when written by the auto rule with note `auto`.
@@ -420,7 +420,7 @@ raised is left open at the end of the scene." The question list is fixed;
 no key configures it. Answers are stored as a `profile` artifact per scene;
 a `present` answer on `theme-stated`, `withheld-revealed`,
 `protagonist-never-wrong`, `resolved` or `resolves-everything`, or an
-`absent` on `bodily-emotion`, is also a screen flag shown by `fogbelt story`
+`absent` on `bodily-emotion`, is also a screen flag shown by `cloudchamber story`
 with its quote.
 
 **slop.** No model. Baseline: the eligible passage pool from the store. Four
@@ -442,7 +442,7 @@ the simulation tried is not built.
 
 ### Auto mode
 
-`--auto` on `fogbelt draft`: run check if the draw has no check pass; for
+`--auto` on `cloudchamber draft`: run check if the draw has no check pass; for
 each reported cluster from derivation, ledger and claims, accept when `n`
 equals that checker's configured samples and `evidence` is not `none`,
 otherwise dismiss with note `auto`; run repair and re-check `repair.rounds`
@@ -476,10 +476,10 @@ stage, scene word counts, screen flag counts, gate 2 actions). Written on
 
 ### CLI and skill
 
-`fogbelt check <draw>`, `fogbelt findings <draw> [--examined]`, `fogbelt gate
+`cloudchamber check <draw>`, `cloudchamber findings <draw> [--examined]`, `cloudchamber gate
 <draw> accept|dismiss|hold|pass|flag|keep|rewrite …` (dispatched on the
 draw's status; the existing `choose|redraw|keep-seed` remain for
-`awaiting_gate`), `fogbelt draft <draw> [overrides] [--auto]`, `fogbelt story
+`awaiting_gate`), `cloudchamber draft <draw> [overrides] [--auto]`, `cloudchamber story
 <draw>`. The HTTP API gains the same actions under the draw routes and a
 `GET /api/draws/:id/findings`. The skill file lists the commands and the
 sequence: check, read findings, gate, draft, read story, gate.
@@ -569,7 +569,7 @@ edit, from inside the worktree, and the turn reports what ran.
   up to about 2,700 words each fit a prompt; a setting with larger reference
   files or more pinned domains may not. No cap is set; the distill stage's
   60,000-word refusal is the precedent if one is needed.
-- **A draft without a check.** `fogbelt draft` on a draw in `done` has no
+- **A draft without a check.** `cloudchamber draft` on a draw in `done` has no
   ledger for the scene and screen prompts, so it runs one ledger extraction
   (a single `check-ledger` step storing only the ledger) before the schedule.
   Whether that should instead force a full check is open; the spec lets the

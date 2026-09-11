@@ -15,7 +15,7 @@ import { loadStages } from "./config.ts";
 const CELLS = ["informational", "mixed", "involved"].flatMap((v) => ["non-narrative", "mixed", "narrative"].map((m) => [v, m]));
 
 function fixture(): { db: Db; dir: string } {
-  const dir = mkdtempSync(join(tmpdir(), "fogbelt-draw-"));
+  const dir = mkdtempSync(join(tmpdir(), "cloudchamber-draw-"));
   const db = openDb(join(dir, "t.db"));
   db.exec(`INSERT INTO sources (id, path, reader, genre) VALUES ('scp', 'x', 'scp', 'horror'), ('sf', 'y', 'pdf', 'scifi')`);
   db.exec(`INSERT INTO stories (id, source_id, ord, title, author, genre, words, text) VALUES

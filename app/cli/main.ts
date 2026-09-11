@@ -1,34 +1,34 @@
 #!/usr/bin/env bun
-/** fogbelt — the one command the skill and the UI drive. `fogbelt help` prints DOC below, then every tunable value. */
+/** cloudchamber — the one command the skill and the UI drive. `cloudchamber help` prints DOC below, then every tunable value. */
 import { asMarkdown, asText, knobs } from "../pipeline/knobs.ts";
 
-const DOC = `fogbelt — the one command the skill and the UI drive.
+const DOC = `cloudchamber — the one command the skill and the UI drive.
 
-   fogbelt extract [--only ID ...]        read -> segment -> facets, then inherit verdicts
-   fogbelt status                         pool, bank, eligibility, draws
-   fogbelt export                         write bank/ from the store
-   fogbelt verdict <example|theme|brief|story> <id> <keep|pass> [--artifact] [--note "..."]
+   cloudchamber extract [--only ID ...]        read -> segment -> facets, then inherit verdicts
+   cloudchamber status                         pool, bank, eligibility, draws
+   cloudchamber export                         write bank/ from the store
+   cloudchamber verdict <example|theme|brief|story> <id> <keep|pass> [--artifact] [--note "..."]
                                           a passed story hides all its passages
-   fogbelt replay                         rebuild the verdicts table from bank/verdicts.jsonl
-   fogbelt draw [--setting ID [--domains a,b]] [--genre G] [--sampling M] [--auto] [--source S[,S]] [--author A]
+   cloudchamber replay                         rebuild the verdicts table from bank/verdicts.jsonl
+   cloudchamber draw [--setting ID [--domains a,b]] [--genre G] [--sampling M] [--auto] [--source S[,S]] [--author A]
                [--seed "text" | --seed-id ID] [--like DRAW]
                                           --like takes another draw's options; the rest override it
-   fogbelt setting lint <id>              check a setting file; exit 1 with one finding per line
-   fogbelt distill <id> [--domain SLUG]   fill a setting's empty or redraft-marked sections from its reference/
-   fogbelt gate <draw> choose <execute-step> | fork <execute-step> | flag | archive | unarchive  [--note "..."]
-   fogbelt delete <draw>                  remove a draw that never produced a brief
-   fogbelt themes [--only SRC ...] [--limit N]   draft themes for stories not yet drafted
-   fogbelt draws [--archived]              list draws, archived ones included with the flag
-   fogbelt draw-show <draw>                 steps and artifacts of one draw
-   fogbelt candidates <draw>              the five candidates in full, by stated probability
-   fogbelt brief <draw>                   print the brief
-   fogbelt check <draw> [--checks a,b] [--samples N]   run the checkers over a brief; stops at gate 1
-   fogbelt findings <draw> [--examined]   the reported findings of the latest check, ordered
-   fogbelt gate <draw> accept <finding>... | dismiss <finding> | hold | pass | keep | rewrite <k> [--finding ID]  [--note "..."]
-   fogbelt draft <draw> [--auto] [--profile P] [--words N] [--beats N] [--tense T] [--person P] [--chronology C] [--container C] [--order O]
-   fogbelt story <draw>                   the draft with its screen flags inline
-   fogbelt serve [--port N]               API and UI on 127.0.0.1 (default 3002)
-   fogbelt help [--md]                    this, then every tunable value, live\n`;
+   cloudchamber setting lint <id>              check a setting file; exit 1 with one finding per line
+   cloudchamber distill <id> [--domain SLUG]   fill a setting's empty or redraft-marked sections from its reference/
+   cloudchamber gate <draw> choose <execute-step> | fork <execute-step> | flag | archive | unarchive  [--note "..."]
+   cloudchamber delete <draw>                  remove a draw that never produced a brief
+   cloudchamber themes [--only SRC ...] [--limit N]   draft themes for stories not yet drafted
+   cloudchamber draws [--archived]              list draws, archived ones included with the flag
+   cloudchamber draw-show <draw>                 steps and artifacts of one draw
+   cloudchamber candidates <draw>              the five candidates in full, by stated probability
+   cloudchamber brief <draw>                   print the brief
+   cloudchamber check <draw> [--checks a,b] [--samples N]   run the checkers over a brief; stops at gate 1
+   cloudchamber findings <draw> [--examined]   the reported findings of the latest check, ordered
+   cloudchamber gate <draw> accept <finding>... | dismiss <finding> | hold | pass | keep | rewrite <k> [--finding ID]  [--note "..."]
+   cloudchamber draft <draw> [--auto] [--profile P] [--words N] [--beats N] [--tense T] [--person P] [--chronology C] [--container C] [--order O]
+   cloudchamber story <draw>                   the draft with its screen flags inline
+   cloudchamber serve [--port N]               API and UI on 127.0.0.1 (default 3002)
+   cloudchamber help [--md]                    this, then every tunable value, live\n`;
 
 import { parseArgs } from "node:util";
 import { openDb } from "../pipeline/store/db.ts";
@@ -51,8 +51,8 @@ import type { Overrides } from "../pipeline/draftconfig.ts";
 const [cmd, ...rest] = process.argv.slice(2);
 
 function usage(code = 1): never {
-  console.error("usage: fogbelt <extract|status|export|verdict|replay|draw|gate|draws|candidates|draw-show|brief|check|findings|draft|story|themes|setting|distill|serve|help>");
-  console.error("run `fogbelt help` for the full grammar and the tunable values");
+  console.error("usage: cloudchamber <extract|status|export|verdict|replay|draw|gate|draws|candidates|draw-show|brief|check|findings|draft|story|themes|setting|distill|serve|help>");
+  console.error("run `cloudchamber help` for the full grammar and the tunable values");
   process.exit(code);
 }
 
@@ -137,7 +137,7 @@ async function main() {
       if (draw.status === "awaiting_gate") {
         console.log("\ncandidates, by stated probability:");
         for (const c of pipeline().candidates(draw.id)) console.log(`  ${c.probability}  ${c.step_id}  ${c.premise.slice(0, 100)}…`);
-        console.log(`\nfogbelt gate ${draw.id} choose <step> | fork <step> | flag --note "..."`);
+        console.log(`\ncloudchamber gate ${draw.id} choose <step> | fork <step> | flag --note "..."`);
       }
       break;
     }
@@ -168,7 +168,7 @@ async function main() {
       if (!drawId) usage();
       const r = await drafting().check(drawId!, { checks: values.checks?.split(",").map((x) => x.trim()).filter(Boolean), samples: values.samples ? Number(values.samples) : undefined });
       printFindings(drawId!);
-      console.log(`\nfogbelt gate ${drawId} accept <finding>... | dismiss <finding> --note "..." | hold | pass | flag  ·  fogbelt draft ${drawId}  (${r.findings.length} reported)`);
+      console.log(`\ncloudchamber gate ${drawId} accept <finding>... | dismiss <finding> --note "..." | hold | pass | flag  ·  cloudchamber draft ${drawId}  (${r.findings.length} reported)`);
       break;
     }
     case "findings": {
@@ -189,7 +189,7 @@ async function main() {
       for (const [flag, key] of Object.entries(map)) if ((values as any)[flag] !== undefined) overrides[key] = (values as any)[flag];
       const draw = await drafting().draft(drawId!, { auto: values.auto, profile: values.profile, overrides: Object.keys(overrides).length ? overrides : undefined });
       console.log(JSON.stringify(draw, null, 2));
-      console.log(`\nfogbelt story ${draw.id}  ·  fogbelt gate ${draw.id} keep | rewrite <k> [--finding ID] | pass`);
+      console.log(`\ncloudchamber story ${draw.id}  ·  cloudchamber gate ${draw.id} keep | rewrite <k> [--finding ID] | pass`);
       break;
     }
     case "story": {
@@ -231,7 +231,7 @@ async function main() {
       const { values } = parseArgs({ args: rest, allowPositionals: true, options: { port: { type: "string", default: "3002" } } });
       const { serve } = await import("../server/index.ts");
       await serve(Number(values.port));
-      console.log(`fogbelt serving on http://127.0.0.1:${values.port}`);
+      console.log(`cloudchamber serving on http://127.0.0.1:${values.port}`);
       return;
     }
     case "delete": {
@@ -258,7 +258,7 @@ async function main() {
       const cs = p.candidates(drawId!);
       if (!cs.length) { console.log(`draw ${drawId} has no candidates (status ${p.draw(drawId!).status})`); break; }
       for (const c of cs) console.log(`\n\n# candidate ${c.index} · step ${c.step_id} · probability ${c.probability}${c.warnings.length ? ` · warnings: ${c.warnings.join("; ")}` : ""}\n\n## premise\n\n${c.premise}\n\n## vignette\n\n${c.vignette}`);
-      console.log(`\nfogbelt gate ${drawId} choose <step> | fork <step> | flag --note "..."`);
+      console.log(`\ncloudchamber gate ${drawId} choose <step> | fork <step> | flag --note "..."`);
       break;
     }
     case "brief": {

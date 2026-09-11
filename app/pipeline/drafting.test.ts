@@ -18,7 +18,7 @@ import { A, B, SPAN_A, SPAN_B, cleanSamples, derivationSamples, draftScript, led
 const CELLS = ["informational", "mixed", "involved"].flatMap((v) => ["non-narrative", "mixed", "narrative"].map((m) => [v, m]));
 
 function fixture() {
-  const dir = mkdtempSync(join(tmpdir(), "fogbelt-drafting-"));
+  const dir = mkdtempSync(join(tmpdir(), "cloudchamber-drafting-"));
   const db = openDb(join(dir, "t.db"));
   db.exec(`INSERT INTO sources (id, path, reader, genre) VALUES ('scp', 'x', 'scp', 'horror')`);
   db.exec(`INSERT INTO stories (id, source_id, ord, title, author, genre, words, text) VALUES ('scp/a', 'scp', 0, 'A', 'Ann', 'horror', 9000, 'x')`);
@@ -424,7 +424,7 @@ describe("templates and store", () => {
   });
 
   test("a version-3 store migrates to 8: finding and draft verdicts, repaired_from, draft_config, tools, forked_from, sampling, archived_at, name", () => {
-    const dir = mkdtempSync(join(tmpdir(), "fogbelt-mig4-"));
+    const dir = mkdtempSync(join(tmpdir(), "cloudchamber-mig4-"));
     const path = join(dir, "v3.db"), log = join(dir, "verdicts.jsonl");
     writeFileSync(log, "");
     const old = new Database(path);

@@ -1,4 +1,4 @@
-/** fogbelt serve: the API plus the built UI (app/ui/dist) from one bun process. */
+/** cloudchamber serve: the API plus the built UI (app/ui/dist) from one bun process. */
 import fastifyStatic from "@fastify/static";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -24,7 +24,7 @@ export async function serve(port: number, opts: { db?: string; uiDir?: string } 
       return reply.sendFile("index.html");
     });
   } else {
-    app.get("/", async () => ({ fogbelt: "api only; build the ui with `bun run ui:build`" }));
+    app.get("/", async () => ({ cloudchamber: "api only; build the ui with `bun run ui:build`" }));
   }
   await app.listen({ port, host: "127.0.0.1" });
   return app;

@@ -33,7 +33,7 @@ export function App() {
           <span className="icon" aria-hidden="true">{railHidden ? "chevron_right" : "chevron_left"}</span>
         </button>
         {!railHidden && <>
-          <div className="wordmark">Fog Belt<small>ideation pipeline</small></div>
+          <div className="wordmark">Cloud Chamber<small>ideation pipeline</small></div>
           <nav className="nav" aria-label="Sections">
             {tab("browse", "#browse", view === "browse")}
             {tab("ideate", "#draws", drawsView)}

@@ -115,9 +115,9 @@ Datlow story's shape can be the template for a draft without any of its text
 entering a prompt. Decided: the first cut ships `auto` only; the key is
 parsed and the other two modes are on the revisit list.
 
-Command line: `fogbelt draft <draw> [--profile P] [--words N] [--beats N]
+Command line: `cloudchamber draft <draw> [--profile P] [--words N] [--beats N]
 [--tense T] [--person P] [--container C] [--structure S] [--order O]`, and
-`fogbelt check <draw> [--checks a,b,c] [--samples N]`.
+`cloudchamber check <draw> [--checks a,b,c] [--samples N]`.
 
 ## Stage 1 — check
 
@@ -409,9 +409,9 @@ standing rule is that nothing in `stories/` is an input or a filter.
   the form and the withholding per beat; the story as a scene tree with
   screen flags inline; gate bars for both gates; the configuration used on
   the draw. The slate table is its own view.
-- Skill: `fogbelt check <draw>`, `fogbelt gate <draw> accept <finding>... |
-  dismiss <finding> | hold | pass`, `fogbelt draft <draw> [overrides]`,
-  `fogbelt story <id>`, `fogbelt slate`.
+- Skill: `cloudchamber check <draw>`, `cloudchamber gate <draw> accept <finding>... |
+  dismiss <finding> | hold | pass`, `cloudchamber draft <draw> [overrides]`,
+  `cloudchamber story <id>`, `cloudchamber slate`.
 
 ## Open Questions
 

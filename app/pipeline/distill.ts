@@ -1,5 +1,5 @@
 /**
- * `fogbelt distill <id> [--domain slug]`: for each domain, fill every section
+ * `cloudchamber distill <id> [--domain slug]`: for each domain, fill every section
  * that is `none` or carries the redraft marker from the reference files the
  * domain's Sources name. One model call per domain, through the Pipeline so
  * the step is recorded like any other. Filled sections are never touched;

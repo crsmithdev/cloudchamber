@@ -17,7 +17,7 @@ def now() -> str:
 
 
 def open_db(root: Path, path: str | None = None) -> sqlite3.Connection:
-    db = Path(path or os.environ.get("FOGBELT_DB") or root / "data" / "fogbelt.db")
+    db = Path(path or os.environ.get("CLOUDCHAMBER_DB") or root / "data" / "cloudchamber.db")
     db.parent.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(db)
     con.row_factory = sqlite3.Row
@@ -29,5 +29,5 @@ def open_db(root: Path, path: str | None = None) -> sqlite3.Connection:
         con.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
     version = con.execute("PRAGMA user_version").fetchone()[0]
     if version < SCHEMA_VERSION:
-        raise SystemExit(f"store {db} is at schema version {version}, need {SCHEMA_VERSION}: run any `fogbelt` command to migrate it")
+        raise SystemExit(f"store {db} is at schema version {version}, need {SCHEMA_VERSION}: run any `cloudchamber` command to migrate it")
     return con

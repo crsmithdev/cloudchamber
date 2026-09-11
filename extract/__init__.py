@@ -1,4 +1,4 @@
-"""Fog Belt extraction: sources -> stories -> passages -> facets.
+"""Cloud Chamber extraction: sources -> stories -> passages -> facets.
 
 Python owns text and features and nothing else. It reads the manifest,
 splits PDFs and SCP articles into stories, cuts verbatim passages, scores

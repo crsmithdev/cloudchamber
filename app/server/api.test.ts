@@ -13,7 +13,7 @@ const premises = `<premise><text>P1</text><probability>0.05</probability></premi
 const outline = `<section name="debt audit">a</section><section name="arithmetic">b</section><section name="custody">c</section>`;
 
 async function setup() {
-  const dir = mkdtempSync(join(tmpdir(), "fogbelt-api-"));
+  const dir = mkdtempSync(join(tmpdir(), "cloudchamber-api-"));
   const db = openDb(join(dir, "t.db"));
   db.exec(`INSERT INTO sources (id, path, reader, genre) VALUES ('scp', 'x', 'scp', 'horror'), ('d1', 'y', 'pdf', 'horror')`);
   db.exec(`INSERT INTO stories (id, source_id, ord, title, author, genre, words, text) VALUES ('scp/a', 'scp', 0, 'A', 'Ann', 'horror', 9000, 'x'), ('d1/b', 'd1', 0, 'B', 'Bob', 'horror', 9000, 'y')`);
@@ -208,7 +208,7 @@ describe("api", () => {
 describe("api: check, gate 1, draft, gate 2", () => {
   test("check → findings → dismiss → draft → story → keep, through the routes", async () => {
     const { draftScript } = await import("../pipeline/drafting.fixture.ts");
-    const dir = mkdtempSync(join(tmpdir(), "fogbelt-api-draft-"));
+    const dir = mkdtempSync(join(tmpdir(), "cloudchamber-api-draft-"));
     const db = openDb(join(dir, "t.db"));
     db.exec(`INSERT INTO sources (id, path, reader, genre) VALUES ('scp', 'x', 'scp', 'horror')`);
     db.exec(`INSERT INTO stories (id, source_id, ord, title, author, genre, words, text) VALUES ('scp/a', 'scp', 0, 'A', 'Ann', 'horror', 9000, 'x')`);

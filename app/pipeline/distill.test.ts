@@ -12,7 +12,7 @@ import { parseSetting, REDRAFT } from "./settings.ts";
 const sec = (name: string, lines: string[]) => `<section name="${name}">\n${lines.map((l) => `- ${l}`).join("\n")}\n</section>`;
 
 function setup(text = FIXTURE_SETTING) {
-  const dir = mkdtempSync(join(tmpdir(), "fogbelt-distill-"));
+  const dir = mkdtempSync(join(tmpdir(), "cloudchamber-distill-"));
   const db = openDb(join(dir, "t.db"));
   const sdir = settingsFixture(dir, text);
   const path = join(sdir, "fog.md");

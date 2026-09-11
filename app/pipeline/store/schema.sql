@@ -1,4 +1,4 @@
--- Fog Belt store. Read by both runtimes: Python (extract/) writes sources,
+-- Cloud Chamber store. Read by both runtimes: Python (extract/) writes sources,
 -- stories, passages and facet_fit; TypeScript (app/) owns the rest.
 -- SQLite is the working store and is rebuildable from sources/ plus
 -- bank/verdicts.jsonl and bank/themes.jsonl.

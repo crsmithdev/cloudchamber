@@ -63,7 +63,7 @@ describe("setting lint", () => {
   });
 
   test("loadSetting reads from a settings directory and lint resolves reference files against it", () => {
-    const dir = mkdtempSync(join(tmpdir(), "fogbelt-set-"));
+    const dir = mkdtempSync(join(tmpdir(), "cloudchamber-set-"));
     const sdir = settingsFixture(dir);
     const s = loadSetting("fog", sdir);
     expect(s.domains).toHaveLength(3);
