@@ -3,8 +3,8 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 export const FIXTURE_SETTING = `---
-id: fog
-name: The Fog
+id: basin
+name: The Basin
 draw: 2
 seed_segments: []
 names: true
@@ -187,8 +187,8 @@ fetched: 2026-09-05
 
 export function settingsFixture(dir: string, text: string = FIXTURE_SETTING): string {
   const sdir = join(dir, "settings");
-  mkdirSync(join(sdir, "fog", "reference"), { recursive: true });
-  writeFileSync(join(sdir, "fog.md"), text);
-  for (const [f, body] of Object.entries(FIXTURE_REFERENCE)) writeFileSync(join(sdir, "fog", "reference", f), body);
+  mkdirSync(join(sdir, "basin", "reference"), { recursive: true });
+  writeFileSync(join(sdir, "basin.md"), text);
+  for (const [f, body] of Object.entries(FIXTURE_REFERENCE)) writeFileSync(join(sdir, "basin", "reference", f), body);
   return sdir;
 }

@@ -229,7 +229,7 @@ describe("draw graph", () => {
     const { db, dir } = fixture();
     const sdir = settingsFixture(dir);
     const { p, model } = pipe(db, dir, script({ outline: [outline(["matrix"])] }), () => 0.001, sdir);
-    const draw = await p.start({ mode: "auto", genre: "horror", setting: "fog" });
+    const draw = await p.start({ mode: "auto", genre: "horror", setting: "basin" });
     expect(draw.status).toBe("done");
     expect(JSON.parse(draw.domains!)).toEqual(["land-and-title", "labour"]);     // rng 0.001 picks the first remaining twice
     const call = (stage: string) => model.calls.find((c) => c.stage === stage)!.prompt;
@@ -276,28 +276,28 @@ describe("draw graph", () => {
     const sdir = settingsFixture(dir);
     const twice = { premises: [premises(), premises()], outline: [outline(["matrix"]), outline(["matrix"])], jobs: [script().jobs[0], script().jobs[0]], ending: [script().ending[0], script().ending[0]] };
     const { p } = pipe(db, dir, script(twice), () => 0.001, sdir);
-    const a = await p.start({ mode: "auto", genre: "horror", setting: "fog", seed: { mode: "typed", text: "one seed" } });
-    const b = await p.start({ mode: "auto", genre: "horror", setting: "fog", seed: { mode: "typed", text: "another seed" } });
+    const a = await p.start({ mode: "auto", genre: "horror", setting: "basin", seed: { mode: "typed", text: "one seed" } });
+    const b = await p.start({ mode: "auto", genre: "horror", setting: "basin", seed: { mode: "typed", text: "another seed" } });
     expect(a.domains).toBe(b.domains);
     const { p: p2, model } = pipe(db, dir, script({ outline: [outline(["matrix"])] }), () => 0.001, sdir);
-    const c = await p2.start({ mode: "auto", genre: "horror", setting: "fog", domains: ["labour", "death-and-its-administration"] });
+    const c = await p2.start({ mode: "auto", genre: "horror", setting: "basin", domains: ["labour", "death-and-its-administration"] });
     expect(JSON.parse(c.domains!)).toEqual(["labour", "death-and-its-administration"]);
     const pr = model.calls.find((x) => x.stage === "premises")!.prompt;
     expect(pr.indexOf("### 6. Labour")).toBeLessThan(pr.indexOf("### 12. Death and its administration"));
     expect(pr).not.toContain("### 1. Land and title");
-    await expect(p2.start({ mode: "auto", genre: "horror", setting: "fog", domains: ["nope"] })).rejects.toThrow("setting fog: no domain nope");
+    await expect(p2.start({ mode: "auto", genre: "horror", setting: "basin", domains: ["nope"] })).rejects.toThrow("setting basin: no domain nope");
     await expect(p2.start({ mode: "auto", genre: "horror", domains: ["labour"] })).rejects.toThrow(/--domains needs --setting/);
-    writeFileSync(join(sdir, "fog.md"), readFileSync(join(sdir, "fog.md"), "utf8").replace("draw: 2", "draw: 4"));
-    await expect(p2.start({ mode: "auto", genre: "horror", setting: "fog" })).rejects.toThrow("setting fog: draw 4 exceeds 3 domains");
+    writeFileSync(join(sdir, "basin.md"), readFileSync(join(sdir, "basin.md"), "utf8").replace("draw: 2", "draw: 4"));
+    await expect(p2.start({ mode: "auto", genre: "horror", setting: "basin" })).rejects.toThrow("setting basin: draw 4 exceeds 3 domains");
     expect(p2.draws().filter((d) => d.status === "running")).toHaveLength(0);   // nothing inserted before the failure
   });
 
   test("a setting that fails lint is refused before any model call, naming the findings", async () => {
     const { db, dir } = fixture();
     const sdir = settingsFixture(dir);
-    writeFileSync(join(sdir, "fog.md"), readFileSync(join(sdir, "fog.md"), "utf8").replace("#### Clocks\n\nnone\n\n#### Places", "#### Places"));
+    writeFileSync(join(sdir, "basin.md"), readFileSync(join(sdir, "basin.md"), "utf8").replace("#### Clocks\n\nnone\n\n#### Places", "#### Places"));
     const { p, model } = pipe(db, dir, script(), () => 0.001, sdir);
-    await expect(p.start({ mode: "auto", genre: "horror", setting: "fog" })).rejects.toThrow(/land-and-title › Clocks: missing/);
+    await expect(p.start({ mode: "auto", genre: "horror", setting: "basin" })).rejects.toThrow(/land-and-title › Clocks: missing/);
     expect(model.calls).toHaveLength(0);
     expect(p.draws()).toHaveLength(0);
   });

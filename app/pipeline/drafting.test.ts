@@ -160,7 +160,7 @@ describe("claims", () => {
   test("claims: world runs extract then one search-enabled verify per claim on sonnet; contradicted becomes a finding", async () => {
     const { dir } = fixture();
     const sdir = settingsFixture(dir);
-    const { p, d, draw, model } = await drawn(draftScript({ outline: () => ["debt audit", "arithmetic", "custody", "matrix"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n") }), { id: "fog", dir: sdir, claims: "world" });
+    const { p, d, draw, model } = await drawn(draftScript({ outline: () => ["debt audit", "arithmetic", "custody", "matrix"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n") }), { id: "basin", dir: sdir, claims: "world" });
     const r = await d.check(draw.id);
     expect(r.claims).toBe("world");
     expect(stagesOf(model, /claims/)).toEqual(["check-claims-extract", "check-claims-verify", "check-claims-verify"]);
@@ -181,7 +181,7 @@ describe("claims", () => {
   test("claims: reference verifies against the pinned domains' reference files with no tools", async () => {
     const { dir } = fixture();
     const sdir = settingsFixture(dir);
-    const { p, d, draw, model } = await drawn(draftScript({ outline: () => ["debt audit", "arithmetic", "custody", "matrix"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n") }), { id: "fog", dir: sdir, claims: "reference" });
+    const { p, d, draw, model } = await drawn(draftScript({ outline: () => ["debt audit", "arithmetic", "custody", "matrix"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n") }), { id: "basin", dir: sdir, claims: "reference" });
     const r = await d.check(draw.id);
     expect(r.claims).toBe("reference");
     const verify = model.calls.filter((c) => c.stage === "check-claims-verify");
@@ -197,7 +197,7 @@ describe("claims", () => {
   test("no claims key: the checker does not run", async () => {
     const { dir } = fixture();
     const sdir = settingsFixture(dir);
-    const { d, draw, model } = await drawn(draftScript({ outline: () => ["debt audit", "arithmetic", "custody", "matrix"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n") }), { id: "fog", dir: sdir });
+    const { d, draw, model } = await drawn(draftScript({ outline: () => ["debt audit", "arithmetic", "custody", "matrix"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n") }), { id: "basin", dir: sdir });
     const r = await d.check(draw.id);
     expect(r.claims).toBe("off");
     expect(stagesOf(model, /claims/)).toEqual([]);
@@ -206,9 +206,9 @@ describe("claims", () => {
   test("a bad claims value fails lint", async () => {
     const { dir } = fixture();
     const sdir = settingsFixture(dir);
-    writeFileSync(join(sdir, "fog.md"), readFileSync(join(sdir, "fog.md"), "utf8").replace("names: true", "names: true\nclaims: everywhere"));
+    writeFileSync(join(sdir, "basin.md"), readFileSync(join(sdir, "basin.md"), "utf8").replace("names: true", "names: true\nclaims: everywhere"));
     const { lintFile } = await import("./settings.ts");
-    expect(lintFile("fog", sdir).map((f) => f.reason)).toContain("claims must be world | reference, got everywhere");
+    expect(lintFile("basin", sdir).map((f) => f.reason)).toContain("claims must be world | reference, got everywhere");
   });
 });
 

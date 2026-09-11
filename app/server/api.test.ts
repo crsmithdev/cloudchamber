@@ -180,16 +180,16 @@ describe("api", () => {
 
   test("a setting's domains are listed, pinned on a draw, and a bad pin is a 400", async () => {
     const { j } = await setup();
-    const s = await j("GET", "/api/settings/fog");
+    const s = await j("GET", "/api/settings/basin");
     expect(s.code).toBe(200);
     expect(s.body.draw).toBe(2);
     expect(s.body.domains.map((d: any) => d.slug)).toEqual(["land-and-title", "labour", "death-and-its-administration"]);
     expect((await j("GET", "/api/settings/nope")).code).toBe(404);
-    const bad = await j("POST", "/api/draws", { mode: "manual", genre: "horror", setting: "fog", domains: "labour,nope" });
+    const bad = await j("POST", "/api/draws", { mode: "manual", genre: "horror", setting: "basin", domains: "labour,nope" });
     expect(bad.code).toBe(400);
-    expect(bad.body.error).toBe("setting fog: no domain nope");
+    expect(bad.body.error).toBe("setting basin: no domain nope");
     expect((await j("POST", "/api/draws", { mode: "manual", genre: "horror", domains: "labour" })).body.error).toBe("domains need a setting");
-    const { body: { id } } = await j("POST", "/api/draws", { mode: "manual", genre: "horror", setting: "fog", domains: "labour,land-and-title" });
+    const { body: { id } } = await j("POST", "/api/draws", { mode: "manual", genre: "horror", setting: "basin", domains: "labour,land-and-title" });
     await new Promise((r) => setTimeout(r, 100));
     const d = await j("GET", `/api/draws/${id}`);
     expect(JSON.parse(d.body.draw.domains)).toEqual(["labour", "land-and-title"]);

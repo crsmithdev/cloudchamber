@@ -6,12 +6,12 @@ import { FIXTURE_SETTING, settingsFixture } from "./settings.fixture.ts";
 import { formatFinding, lintSetting, loadSetting, parseSetting, replaceSection, slug } from "./settings.ts";
 
 const exists = () => true;
-const lint = (text: string, fileExists: (rel: string) => boolean = exists) => lintSetting(text, "fog", fileExists).map(formatFinding);
+const lint = (text: string, fileExists: (rel: string) => boolean = exists) => lintSetting(text, "basin", fileExists).map(formatFinding);
 
 describe("setting lint", () => {
   test("the fixture is clean and parses into five sections, one job and three domains", () => {
     expect(lint(FIXTURE_SETTING)).toEqual([]);
-    const s = parseSetting(FIXTURE_SETTING, "fog");
+    const s = parseSetting(FIXTURE_SETTING, "basin");
     expect(s.draw).toBe(2);
     expect(s.names).toBe(true);
     expect(s.jobs).toEqual([{ name: "matrix", description: "Close the regional element. Name the instrument and show that removing it removes a mechanism." }]);
@@ -65,21 +65,21 @@ describe("setting lint", () => {
   test("loadSetting reads from a settings directory and lint resolves reference files against it", () => {
     const dir = mkdtempSync(join(tmpdir(), "cloudchamber-set-"));
     const sdir = settingsFixture(dir);
-    const s = loadSetting("fog", sdir);
+    const s = loadSetting("basin", sdir);
     expect(s.domains).toHaveLength(3);
-    const text = readFileSync(join(sdir, "fog.md"), "utf8");
-    expect(lintSetting(text, "fog", (rel) => existsSync(join(sdir, "fog", rel)))).toEqual([]);
-    writeFileSync(join(sdir, "fog.md"), text.replace("reference/death.md", "reference/gone.md"));
-    expect(lintSetting(readFileSync(join(sdir, "fog.md"), "utf8"), "fog", (rel) => existsSync(join(sdir, "fog", rel))).map(formatFinding)).toEqual(["death-and-its-administration › Sources: no file reference/gone.md"]);
+    const text = readFileSync(join(sdir, "basin.md"), "utf8");
+    expect(lintSetting(text, "basin", (rel) => existsSync(join(sdir, "basin", rel)))).toEqual([]);
+    writeFileSync(join(sdir, "basin.md"), text.replace("reference/death.md", "reference/gone.md"));
+    expect(lintSetting(readFileSync(join(sdir, "basin.md"), "utf8"), "basin", (rel) => existsSync(join(sdir, "basin", rel))).map(formatFinding)).toEqual(["death-and-its-administration › Sources: no file reference/gone.md"]);
   });
 
   test("replaceSection rewrites one body and leaves every other byte alone", () => {
-    const out = replaceSection(FIXTURE_SETTING, "fog", "land-and-title", "Clocks", "- a filing bar of two years");
+    const out = replaceSection(FIXTURE_SETTING, "basin", "land-and-title", "Clocks", "- a filing bar of two years");
     const before = FIXTURE_SETTING.slice(0, FIXTURE_SETTING.indexOf("#### Clocks") + "#### Clocks".length);
     const after = FIXTURE_SETTING.slice(FIXTURE_SETTING.indexOf("#### Places"));
     expect(out.startsWith(before)).toBe(true);
     expect(out.endsWith(after)).toBe(true);
-    expect(parseSetting(out, "fog").domains[0].sections.Clocks).toBe("- a filing bar of two years");
-    expect(() => replaceSection(FIXTURE_SETTING, "fog", "nope", "Clocks", "x")).toThrow("setting fog: no domain nope");
+    expect(parseSetting(out, "basin").domains[0].sections.Clocks).toBe("- a filing bar of two years");
+    expect(() => replaceSection(FIXTURE_SETTING, "basin", "nope", "Clocks", "x")).toThrow("setting basin: no domain nope");
   });
 });
