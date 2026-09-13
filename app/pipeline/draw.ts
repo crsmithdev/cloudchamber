@@ -30,7 +30,7 @@ export type DrawOpts = {
   seed?: SeedChoice;
   sampling?: Sampling;   // where in the stated distribution the premises are asked for
   seedRng?: () => number;
-  domains?: string[];    // pin the setting's domains by slug; drawn by rng when absent
+  domains?: string[];    // pin the setting's domains by slug, [] for none at all; drawn by rng when absent
 };
 
 export type DrawRow = {
@@ -69,7 +69,11 @@ export class Pipeline {
     return setting ? { slice: slice(setting, domains, stage), hardRules: hardRules(setting) } : undefined;
   }
 
-  /** The draw's setting and pinned domains, linted; unrestricted draws get no setting and no domains. */
+  /**
+   * The draw's setting and the domains the row recorded, linted. The row is
+   * the authority, so a re-run gets what the draw ran on: unrestricted draws
+   * get no setting, and a draw that recorded none stays on none.
+   */
   loadDrawSetting(draw: { setting: string | null; domains: string | null }): { setting?: Setting; domains: Domain[] } {
     if (!draw.setting) return { domains: [] };
     const setting = loadChecked(draw.setting, this.settingsDir);
@@ -206,7 +210,7 @@ export class Pipeline {
   // --- the draw ---------------------------------------------------------------
 
   async start(opts: DrawOpts): Promise<DrawRow> {
-    if (opts.domains?.length && !opts.setting) throw new Error("draw: --domains needs --setting");
+    if (opts.domains && !opts.setting) throw new Error("draw: --domains needs --setting");
     const sampling = opts.sampling ?? DEFAULT_SAMPLING;
     if (!isSampling(sampling)) throw new Error(`draw: sampling ${sampling} is not tail | off-centre | standard`);
     const setting = opts.setting ? loadChecked(opts.setting, this.settingsDir) : undefined;

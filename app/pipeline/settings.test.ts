@@ -3,7 +3,7 @@ import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { FIXTURE_SETTING, settingsFixture } from "./settings.fixture.ts";
-import { formatFinding, lintSetting, loadSetting, parseSetting, replaceSection, slug } from "./settings.ts";
+import { formatFinding, lintSetting, loadSetting, parseDomains, parseSetting, replaceSection, slug } from "./settings.ts";
 
 const exists = () => true;
 const lint = (text: string, fileExists: (rel: string) => boolean = exists) => lintSetting(text, "basin", fileExists).map(formatFinding);
@@ -23,7 +23,9 @@ describe("setting lint", () => {
 
   test("front matter: unknown keys and a bad draw", () => {
     expect(lint(FIXTURE_SETTING.replace("names: true", "names: true\nhard_rules: Hard rules"))).toEqual(["front matter › hard_rules: unknown key hard_rules"]);
-    expect(lint(FIXTURE_SETTING.replace("draw: 2", "draw: two"))).toEqual(["front matter › draw: draw must be a positive integer, got two"]);
+    expect(lint(FIXTURE_SETTING.replace("draw: 2", "draw: two"))).toEqual(["front matter › draw: draw must be a non-negative integer, got two"]);
+    expect(lint(FIXTURE_SETTING.replace("draw: 2", "draw: -1"))).toEqual(["front matter › draw: draw must be a non-negative integer, got -1"]);
+    expect(lint(FIXTURE_SETTING.replace("draw: 2", "draw: 0"))).toEqual([]);   // a setting that takes no domain unless one is pinned
   });
 
   test("setting-wide sections: missing and empty", () => {
@@ -31,6 +33,17 @@ describe("setting lint", () => {
     expect(lint(FIXTURE_SETTING.replace("- An interval getting shorter as the spine.\n", ""))).toEqual(["setting › Open ground: empty sections hold the line none"]);
     expect(lint(FIXTURE_SETTING.slice(0, FIXTURE_SETTING.indexOf("## Domains")))).toEqual(["setting › Domains: missing"]);
     expect(lint(FIXTURE_SETTING.slice(0, FIXTURE_SETTING.indexOf("### 1. Land")))).toEqual(["setting › Domains: at least one domain"]);
+    expect(lint(FIXTURE_SETTING.slice(0, FIXTURE_SETTING.indexOf("### 1. Land")).replace("draw: 2", "draw: 0"))).toEqual([]);   // draw 0 needs no domain to draw from
+  });
+
+  test("parseDomains: absent draws at random, `none` is a pin of nothing, slugs keep their order", () => {
+    expect(parseDomains(undefined)).toBeUndefined();
+    expect(parseDomains("")).toBeUndefined();
+    expect(parseDomains(" , ")).toBeUndefined();
+    expect(parseDomains("none")).toEqual([]);
+    expect(parseDomains(" none ")).toEqual([]);
+    expect(parseDomains("labour,land-and-title")).toEqual(["labour", "land-and-title"]);
+    expect(parseDomains("none,labour")).toEqual(["none", "labour"]);   // only `none` alone is the sentinel; this fails on the slug
   });
 
   test("domain sections: missing, out of order, empty, frame lines", () => {

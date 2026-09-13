@@ -14,7 +14,7 @@ import { exportBank, sourceLabel } from "../pipeline/bank.ts";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { BRIEFS } from "../pipeline/paths.ts";
-import { loadSetting } from "../pipeline/settings.ts";
+import { loadSetting, parseDomains } from "../pipeline/settings.ts";
 import { Drafting } from "../pipeline/drafting.ts";
 import { loadDraftConfig, profileNames, type Overrides } from "../pipeline/draftconfig.ts";
 
@@ -143,8 +143,8 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
   app.post<{ Body: { mode?: "auto" | "manual"; setting?: string; domains?: string; genre?: string; sampling?: string; source?: string; author?: string; seed?: string; seed_id?: string } }>("/api/draws", async (req, reply) => {
     const b = req.body ?? {};
     const seed: SeedChoice = b.seed ? { mode: "typed", text: b.seed } : b.seed_id ? { mode: "picked", themeId: b.seed_id } : { mode: "drawn" };
-    const domains = b.domains ? b.domains.split(",").map((d) => d.trim()).filter(Boolean) : undefined;
-    if (domains?.length && !b.setting) return reply.code(400).send({ error: "domains need a setting" });
+    const domains = parseDomains(b.domains);
+    if (domains && !b.setting) return reply.code(400).send({ error: "domains need a setting" });
     const sources = b.source ? b.source.split(",").map((s) => s.trim()).filter(Boolean) : [];
     const opts: DrawOpts = { mode: b.mode ?? "manual", setting: b.setting || undefined, domains, genre: b.genre || undefined,
       sampling: (b.sampling || undefined) as DrawOpts["sampling"], seed,

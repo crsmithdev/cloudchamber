@@ -287,9 +287,34 @@ describe("draw graph", () => {
     expect(pr).not.toContain("### 1. Land and title");
     await expect(p2.start({ mode: "auto", genre: "horror", setting: "basin", domains: ["nope"] })).rejects.toThrow("setting basin: no domain nope");
     await expect(p2.start({ mode: "auto", genre: "horror", domains: ["labour"] })).rejects.toThrow(/--domains needs --setting/);
+    await expect(p2.start({ mode: "auto", genre: "horror", domains: [] })).rejects.toThrow(/--domains needs --setting/);
     writeFileSync(join(sdir, "basin.md"), readFileSync(join(sdir, "basin.md"), "utf8").replace("draw: 2", "draw: 4"));
     await expect(p2.start({ mode: "auto", genre: "horror", setting: "basin" })).rejects.toThrow("setting basin: draw 4 exceeds 3 domains");
     expect(p2.draws().filter((d) => d.status === "running")).toHaveLength(0);   // nothing inserted before the failure
+  });
+
+  test("a setting runs with no domain: an empty pin, or draw 0 in the front matter", async () => {
+    const { db, dir } = fixture();
+    const sdir = settingsFixture(dir);
+    const each = <T,>(x: T) => [x, x, x];
+    const thrice = { premises: each(premises()), outline: each(outline(["matrix"])), jobs: each(script().jobs[0]), ending: each(script().ending[0]) };
+    const { p, model } = pipe(db, dir, script(thrice), () => 0.001, sdir);
+    const draw = await p.start({ mode: "auto", genre: "horror", setting: "basin", domains: [] });
+    expect(draw.status).toBe("done");
+    expect(JSON.parse(draw.domains!)).toEqual([]);
+    // the setting-wide sections and the hard rules still reach the ask; no domain does
+    const pr = model.calls.find((x) => x.stage === "premises")!.prompt;
+    for (const x of ["## Matrix", "## Do not build", "## Open ground"]) expect(pr).toContain(x);
+    for (const x of ["### 1. Land and title", "### 6. Labour", "#### Frame", "#### Mechanisms"]) expect(pr).not.toContain(x);
+    expect(pr.slice(pr.indexOf("## Hard rules"))).toContain("Nothing resolves");
+    expect(p.loadDrawSetting(p.draw(draw.id)).domains).toEqual([]);   // the row is the authority: a re-run takes none too
+    expect(readFileSync(join(dir, "briefs", draw.id, "trail.md"), "utf8")).toContain("## domains\n\n- none\n");
+    // draw: 0 makes that the setting's default
+    writeFileSync(join(sdir, "basin.md"), readFileSync(join(sdir, "basin.md"), "utf8").replace("draw: 2", "draw: 0"));
+    const zero = await p.start({ mode: "auto", genre: "horror", setting: "basin" });
+    expect(JSON.parse(zero.domains!)).toEqual([]);
+    const pinned = await p.start({ mode: "auto", genre: "horror", setting: "basin", domains: ["labour"] });   // still pinnable
+    expect(JSON.parse(pinned.domains!)).toEqual(["labour"]);
   });
 
   test("a setting that fails lint is refused before any model call, naming the findings", async () => {

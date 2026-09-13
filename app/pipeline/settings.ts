@@ -25,7 +25,8 @@
  *   #### Instruments … #### Clocks … #### Places … #### Vocabulary … #### Sources
  *
  * An empty section is the single line `none`. Unrestricted mode is the absence
- * of a setting.
+ * of a setting; a setting that draws no domains runs on its setting-wide
+ * sections alone.
  */
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -209,9 +210,13 @@ export function hardRules(setting: Setting): string {
   return isEmpty(setting.sections["Hard rules"]) ? "" : `## Hard rules\n\n${setting.sections["Hard rules"]}`;
 }
 
-/** `draw` distinct domains by the pipeline's rng, or the named slugs in the order given. */
+/**
+ * `draw` distinct domains by the pipeline's rng, or the named slugs in the
+ * order given. An empty list is a pin too: the setting runs with no domains,
+ * on its setting-wide sections alone. `draw: 0` makes that the default.
+ */
 export function pickDomains(setting: Setting, rng: () => number, slugs?: string[]): Domain[] {
-  if (slugs?.length) {
+  if (slugs) {
     return slugs.map((s) => {
       const d = setting.domains.find((x) => x.slug === s);
       if (!d) throw new Error(`setting ${setting.id}: no domain ${s}`);
@@ -225,6 +230,16 @@ export function pickDomains(setting: Setting, rng: () => number, slugs?: string[
   return out;
 }
 
+/** The reserved `--domains` value: run the setting with no domains at all. */
+export const NO_DOMAINS = "none";
+
+/** A `--domains` string as the pipeline takes it: undefined to draw at random, [] for `none`, else the slugs in order. */
+export function parseDomains(value?: string): string[] | undefined {
+  const slugs = (value ?? "").split(",").map((d) => d.trim()).filter(Boolean);
+  if (!slugs.length) return undefined;
+  return slugs.length === 1 && slugs[0] === NO_DOMAINS ? [] : slugs;
+}
+
 // --- lint ------------------------------------------------------------------
 
 export type Finding = { domain: string; section: string; reason: string };
@@ -234,13 +249,13 @@ export function lintSetting(text: string, id: string, fileExists: (rel: string) 
   const out: Finding[] = [];
   const s = parseSetting(text, id);
   for (const k of Object.keys(s.meta)) if (!FRONT_MATTER_KEYS.includes(k)) out.push({ domain: "front matter", section: k, reason: `unknown key ${k}` });
-  if (s.meta.draw && !(Number.isInteger(s.draw) && s.draw > 0)) out.push({ domain: "front matter", section: "draw", reason: `draw must be a positive integer, got ${s.meta.draw}` });
+  if (s.meta.draw && !(Number.isInteger(s.draw) && s.draw >= 0)) out.push({ domain: "front matter", section: "draw", reason: `draw must be a non-negative integer, got ${s.meta.draw}` });
   if (s.meta.claims !== undefined && !(CLAIMS_VALUES as readonly string[]).includes(s.meta.claims)) out.push({ domain: "front matter", section: "claims", reason: `claims must be ${CLAIMS_VALUES.join(" | ")}, got ${s.meta.claims}` });
   const { bodyStart } = parseFrontMatter(text);
   const top = new Set(headings(text, bodyStart).filter((h) => h.level === 2).map((h) => h.title));
   for (const name of [...SETTING_SECTIONS, "Domains"]) if (!top.has(name)) out.push({ domain: "setting", section: name, reason: "missing" });
   for (const name of SETTING_SECTIONS) if (top.has(name) && s.sections[name].trim() === "") out.push({ domain: "setting", section: name, reason: "empty sections hold the line none" });
-  if (top.has("Domains") && !s.domains.length) out.push({ domain: "setting", section: "Domains", reason: "at least one domain" });
+  if (top.has("Domains") && !s.domains.length && s.draw > 0) out.push({ domain: "setting", section: "Domains", reason: "at least one domain" });
   for (const d of s.domains) {
     const present = DOMAIN_SECTIONS.filter((n) => d.spans[n].start >= 0);
     for (const name of DOMAIN_SECTIONS) if (d.spans[name].start < 0) out.push({ domain: d.slug, section: name, reason: "missing" });

@@ -57,10 +57,11 @@ export function writeBrief(db: Db, drawId: string, stages: Record<StageName, Sta
   return dir;
 }
 
-/** One line per drawn domain, by heading; slugs when the setting file cannot be read. Null when unrestricted. */
+/** One line per drawn domain, by heading; slugs when the setting file cannot be read. One `none` line when the draw took no domain, null when unrestricted. */
 function domainLines(setting: string | null, domains: string | null, settingsDir: string): string[] | null {
   if (!setting || !domains) return null;
   const slugs = JSON.parse(domains) as string[];
+  if (!slugs.length) return ["- none"];
   try {
     const s = loadSetting(setting, settingsDir);
     return slugs.map((x) => `- ${s.domains.find((d) => d.slug === x)?.heading ?? x}`);

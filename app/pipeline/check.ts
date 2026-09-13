@@ -75,9 +75,12 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
   let claims: CheckResult["claims"] = "off";
   const { setting, domains } = p.loadDrawSetting(parts.draw);
   if (enabled.includes("claims") && setting?.claims) {
-    claims = setting.claims;
-    const reference = claims === "reference" ? referenceText(setting, domains) : "";
-    runs.push(runClaims(p, drawId, parts, brief, claims, reference, pass).then((r) => { perChecker.push(r); }));
+    // The domains carry the reference files, so a draw that took none has nothing to verify against: the checker stays off.
+    const reference = setting.claims === "reference" ? referenceText(setting, domains) : "";
+    if (setting.claims === "world" || reference) {
+      claims = setting.claims;
+      runs.push(runClaims(p, drawId, parts, brief, claims, reference, pass).then((r) => { perChecker.push(r); }));
+    }
   }
   await Promise.all(runs);
 

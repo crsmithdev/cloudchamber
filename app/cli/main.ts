@@ -10,7 +10,7 @@ const DOC = `cloudchamber — the one command the skill and the UI drive.
    cloudchamber verdict <example|theme|brief|story> <id> <keep|pass> [--artifact] [--note "..."]
                                           a passed story hides all its passages
    cloudchamber replay                         rebuild the verdicts table from bank/verdicts.jsonl
-   cloudchamber draw [--setting ID [--domains a,b]] [--genre G] [--sampling M] [--auto] [--source S[,S]] [--author A]
+   cloudchamber draw [--setting ID [--domains a,b|none]] [--genre G] [--sampling M] [--auto] [--source S[,S]] [--author A]
                [--seed "text" | --seed-id ID] [--like DRAW]
                                           --like takes another draw's options; the rest override it
    cloudchamber setting lint <id>              check a setting file; exit 1 with one finding per line
@@ -43,7 +43,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { BRIEFS, now } from "../pipeline/paths.ts";
 import { draftAll, failures, histogram, replayThemes } from "../pipeline/themes.ts";
-import { formatFinding, lintFile, loadSetting } from "../pipeline/settings.ts";
+import { formatFinding, lintFile, loadSetting, parseDomains } from "../pipeline/settings.ts";
 import { distill } from "../pipeline/distill.ts";
 import { Drafting } from "../pipeline/drafting.ts";
 import type { Overrides } from "../pipeline/draftconfig.ts";
@@ -121,7 +121,7 @@ async function main() {
       const seed: SeedChoice = values.seed ? { mode: "typed", text: values.seed } : values["seed-id"] ? { mode: "picked", themeId: values["seed-id"] } : { mode: "drawn" };
       const sources = values.source ? values.source.split(",").map((s) => s.trim()).filter(Boolean) : [];
       const segment = sources.length || values.author ? { source: sources.length ? sources : undefined, author: values.author } : undefined;
-      const domains = values.domains ? values.domains.split(",").map((d) => d.trim()).filter(Boolean) : undefined;
+      const domains = parseDomains(values.domains);
       const base = values.like ? pipeline().like(values.like) : {};
       const draw = await pipeline().start({
         ...base,
