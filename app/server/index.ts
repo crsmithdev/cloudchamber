@@ -8,7 +8,7 @@ import { ClaudeCli } from "../pipeline/model.ts";
 import { ROOT } from "../pipeline/paths.ts";
 import { buildApi } from "./api.ts";
 
-export async function serve(port: number, opts: { db?: string; uiDir?: string } = {}) {
+export async function serve(port: number, opts: { db?: string; uiDir?: string; host?: string } = {}) {
   const db = openDb(opts.db);
   const pipeline = new Pipeline(db, new ClaudeCli());
   const app = buildApi(db, pipeline, { logger: false });
@@ -26,6 +26,6 @@ export async function serve(port: number, opts: { db?: string; uiDir?: string } 
   } else {
     app.get("/", async () => ({ cloudchamber: "api only; build the ui with `bun run ui:build`" }));
   }
-  await app.listen({ port, host: "127.0.0.1" });
+  await app.listen({ port, host: opts.host ?? "127.0.0.1" });
   return app;
 }

@@ -27,7 +27,7 @@ const DOC = `cloudchamber — the one command the skill and the UI drive.
    cloudchamber gate <draw> accept <finding>... | dismiss <finding> | hold | pass | keep | rewrite <k> [--finding ID]  [--note "..."]
    cloudchamber draft <draw> [--auto] [--profile P] [--words N] [--beats N] [--tense T] [--person P] [--chronology C] [--container C] [--order O]
    cloudchamber story <draw>                   the draft with its screen flags inline
-   cloudchamber serve [--port N]               API and UI on 127.0.0.1 (default 3002)
+   cloudchamber serve [--port N] [--host H]    API and UI (default 127.0.0.1:3002)
    cloudchamber help [--md]                    this, then every tunable value, live\n`;
 
 import { parseArgs } from "node:util";
@@ -228,10 +228,10 @@ async function main() {
       break;
     }
     case "serve": {
-      const { values } = parseArgs({ args: rest, allowPositionals: true, options: { port: { type: "string", default: "3002" } } });
+      const { values } = parseArgs({ args: rest, allowPositionals: true, options: { port: { type: "string", default: "3002" }, host: { type: "string", default: "127.0.0.1" } } });
       const { serve } = await import("../server/index.ts");
-      await serve(Number(values.port));
-      console.log(`cloudchamber serving on http://127.0.0.1:${values.port}`);
+      await serve(Number(values.port), { host: values.host });
+      console.log(`cloudchamber serving on http://${values.host}:${values.port}`);
       return;
     }
     case "delete": {
