@@ -42,8 +42,8 @@ export const FILLABLE: DomainSection[] = ["Mechanisms", "Roles", "Institutions",
 /** Sections a proper noun may appear in when the setting is masked. */
 export const NAMED: DomainSection[] = ["Institutions", "Sources"];
 export const FRONT_MATTER_KEYS = ["id", "name", "draw", "seed_segments", "names", "claims"];
-/** Where the claims checker verifies: the web, or the pinned domains' reference files. Absent: the checker does not run. */
-export const CLAIMS_VALUES = ["world", "reference"] as const;
+/** Where the claims checker verifies: the web, the pinned domains' reference files, or the setting's own distillate. Absent: the checker does not run. */
+export const CLAIMS_VALUES = ["world", "reference", "setting"] as const;
 export type ClaimsAuthority = (typeof CLAIMS_VALUES)[number];
 export const DEFAULT_DRAW = 2;
 export const REDRAFT = "<!-- redraft -->";
@@ -208,6 +208,23 @@ export function slice(setting: Setting, domains: Domain[], stage: GenStage): str
 
 export function hardRules(setting: Setting): string {
   return isEmpty(setting.sections["Hard rules"]) ? "" : `## Hard rules\n\n${setting.sections["Hard rules"]}`;
+}
+
+/**
+ * The setting as it was written down: every setting-wide section, then every
+ * domain with all its typed sections but Sources. The whole file, not the
+ * draw's slice, so `claims: setting` verifies against the canon rather than
+ * against the two domains the draw happened to take. Only the claims verifier
+ * reads this; no generation stage does.
+ */
+export function distillate(setting: Setting): string {
+  const parts: string[] = [];
+  for (const name of SETTING_SECTIONS) if (!isEmpty(setting.sections[name])) parts.push(`## ${name}\n\n${setting.sections[name]}`);
+  for (const d of setting.domains) {
+    const secs = DOMAIN_SECTIONS.filter((s) => s !== "Sources" && !isEmpty(d.sections[s])).map((s) => `#### ${s}\n\n${d.sections[s]}`);
+    parts.push([`### ${d.heading}`, ...secs].join("\n\n"));
+  }
+  return parts.join("\n\n");
 }
 
 /**

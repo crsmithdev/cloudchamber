@@ -24,7 +24,7 @@ The slug of a domain is its heading, lowercased and hyphenated. `draw` is how ma
 | | |
 |---|---|
 | `setting-a` | draw 2 · land-and-title, the-first-peoples, water-fire-ground, the-technology-industry, capital-and-its-instruments, labour, housing-and-displacement, queer-san-francisco, medicine-and-public-health, belief, civic-government-and-the-public-sector, death-and-its-administration, transport-and-infrastructure, education-research-and-the-university, food-land-and-the-working-landscape |
-| `setting-b` | draw 2 · the-synod, the-denial-of-remains, the-economics-of-grace, the-pilgrim-intake, the-contract-in-the-body, the-heretic-admission, the-wall-and-the-house-of-wisdom, the-chronology |
+| `setting-b` | draw 0 · the-synod, the-denial-of-remains, the-economics-of-grace, the-pilgrim-intake, the-contract-in-the-body, the-heretic-admission, the-wall-and-the-house-of-wisdom, the-chronology |
 | `setting-c` | draw 2 · the-administratum, the-psychic-tithe, the-mechanicus, the-warp-as-shipping-lane, the-ecclesiarchy, the-inquisition, the-militarum, the-made-body |
 
 ## genre shortcuts

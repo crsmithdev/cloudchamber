@@ -194,6 +194,23 @@ describe("claims", () => {
     expect(p.steps(draw.id).filter((s) => s.stage === "check-claims-verify").every((s) => s.tools === "")).toBe(true);
   });
 
+  test("claims: setting verifies against the whole distillate, not the drawn domains, and asks for claims about the setting", async () => {
+    const { dir } = fixture();
+    const sdir = settingsFixture(dir);
+    const { p, d, draw, model } = await drawn(draftScript({ outline: () => ["debt audit", "arithmetic", "custody", "matrix"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n") }), { id: "basin", dir: sdir, claims: "setting" });
+    const r = await d.check(draw.id);
+    expect(r.claims).toBe("setting");
+    expect(model.calls.find((c) => c.stage === "check-claims-extract")!.prompt).toContain("claims about the setting the story is set in");
+    const verify = model.calls.filter((c) => c.stage === "check-claims-verify");
+    expect(verify).toHaveLength(2);
+    expect(verify.every((c) => c.tools === "")).toBe(true);
+    // the draw took land-and-title and labour; the third domain is in the prompt anyway
+    for (const x of ["<setting>", "## Matrix", "## Hard rules", "### 1. Land and title", "### 6. Labour", "### 12. Death and its administration", "Find the line in the setting above"]) expect(verify[0].prompt).toContain(x);
+    expect(verify[0].prompt).not.toContain("#### Sources");
+    expect(verify[0].prompt).not.toContain("reference/labour.md");
+    expect(p.steps(draw.id).filter((s) => s.stage === "check-claims-verify").every((s) => s.tools === "")).toBe(true);
+  });
+
   test("no claims key: the checker does not run", async () => {
     const { dir } = fixture();
     const sdir = settingsFixture(dir);
@@ -208,7 +225,7 @@ describe("claims", () => {
     const sdir = settingsFixture(dir);
     writeFileSync(join(sdir, "basin.md"), readFileSync(join(sdir, "basin.md"), "utf8").replace("names: true", "names: true\nclaims: everywhere"));
     const { lintFile } = await import("./settings.ts");
-    expect(lintFile("basin", sdir).map((f) => f.reason)).toContain("claims must be world | reference, got everywhere");
+    expect(lintFile("basin", sdir).map((f) => f.reason)).toContain("claims must be world | reference | setting, got everywhere");
   });
 });
 

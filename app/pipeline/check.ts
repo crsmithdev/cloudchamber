@@ -8,9 +8,9 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { Pipeline, StepRow } from "./draw.ts";
-import { fill } from "./prompts.ts";
+import { fill, type TemplateName } from "./prompts.ts";
 import { tag, tags } from "./model.ts";
-import { referenceText } from "./settings.ts";
+import { distillate, referenceText, type ClaimsAuthority } from "./settings.ts";
 import { samplesFor, type DraftConfig } from "./draftconfig.ts";
 import { cluster, excludeDismissed, findingId, merge, parseFindings, type Cluster, type Finding } from "./recur.ts";
 import { briefBlock, briefParts, dismissedFindings, passId, type BriefParts } from "./briefparts.ts";
@@ -21,7 +21,14 @@ export const CHECKERS = ["derivation", "ledger", "structure", "resemblance", "cl
 export type Checker = (typeof CHECKERS)[number];
 export const STRUCTURE_QUESTIONS = ["threat", "category-violation", "agency", "obscurity", "thickening", "spectacle", "consequence"];
 
-export type CheckResult = { pass: string; findings: Cluster[]; claims: "off" | "world" | "reference" };
+export type CheckResult = { pass: string; findings: Cluster[]; claims: "off" | ClaimsAuthority };
+
+/** The prompt pair each authority runs: the web asks for real-world claims, the distillate asks for claims about the setting. */
+const CLAIMS_PROMPTS: Record<ClaimsAuthority, { extract: TemplateName; verify: TemplateName }> = {
+  world: { extract: "claimsExtract", verify: "claimsVerifyWorld" },
+  reference: { extract: "claimsExtract", verify: "claimsVerifyReference" },
+  setting: { extract: "claimsExtractSetting", verify: "claimsVerifySetting" },
+};
 export type Answer = { answer: "present" | "absent"; quote: string };
 
 export function parseQuestions(text: string, names: string[]): Record<string, Answer> {
@@ -75,8 +82,9 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
   let claims: CheckResult["claims"] = "off";
   const { setting, domains } = p.loadDrawSetting(parts.draw);
   if (enabled.includes("claims") && setting?.claims) {
-    // The domains carry the reference files, so a draw that took none has nothing to verify against: the checker stays off.
-    const reference = setting.claims === "reference" ? referenceText(setting, domains) : "";
+    // The domains carry the reference files, so a `reference` draw that took none has nothing to verify against: the checker stays off.
+    const reference = setting.claims === "reference" ? referenceText(setting, domains)
+      : setting.claims === "setting" ? distillate(setting) : "";
     if (setting.claims === "world" || reference) {
       claims = setting.claims;
       runs.push(runClaims(p, drawId, parts, brief, claims, reference, pass).then((r) => { perChecker.push(r); }));
@@ -109,11 +117,12 @@ async function sampled(p: Pipeline, drawId: string, parts: BriefParts, stage: an
 
 const RESULTS = new Set(["supported", "contradicted", "unverifiable"]);
 
-async function runClaims(p: Pipeline, drawId: string, parts: BriefParts, brief: string, authority: "world" | "reference", reference: string, pass: string) {
-  const { step, value: claims } = await p.invoke(drawId, parts.outlineStepId, "check-claims-extract", fill("claimsExtract", { brief }), (t) =>
+async function runClaims(p: Pipeline, drawId: string, parts: BriefParts, brief: string, authority: ClaimsAuthority, reference: string, pass: string) {
+  const tpl = CLAIMS_PROMPTS[authority];
+  const { step, value: claims } = await p.invoke(drawId, parts.outlineStepId, "check-claims-extract", fill(tpl.extract, { brief }), (t) =>
     tags(t, "claim").map((c) => ({ span: tag(c, "span") ?? "", statement: tag(c, "statement") ?? "" })).filter((c) => c.span && c.statement));
   const verified = await Promise.all(claims.map((c) => {
-    const prompt = authority === "world" ? fill("claimsVerifyWorld", { span: c.span, statement: c.statement }) : fill("claimsVerifyReference", { reference, span: c.span, statement: c.statement });
+    const prompt = fill(tpl.verify, { reference, span: c.span, statement: c.statement });
     return p.invoke(drawId, step.id, "check-claims-verify", prompt, (t) => {
       const f = parseFindings(t, "claims", 1)[0];
       if (!f) throw new Error("no <finding> tag");

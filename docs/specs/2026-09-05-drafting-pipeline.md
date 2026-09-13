@@ -102,7 +102,7 @@ stages are the next landing, not this one.
 3. WHEN a checker's S samples produce findings THE system SHALL cluster them by the overlap rule (Implementation Decisions, Recurrence) and report a cluster only when it recurs in at least `keep_if` distinct samples; a finding seen in fewer samples SHALL be stored on the step's `parsed` and not as a `finding` artifact.
 4. WHEN two reported clusters from different checkers overlap by the same rule THE system SHALL store one `finding` artifact whose `checkers` field lists both and whose `n` is the greater.
 5. WHEN a checker step completes THE system SHALL store its `<examined>` content on the step's `parsed`, and `cloudchamber findings <draw> --examined` SHALL print it per sample.
-6. WHEN the draw's setting declares `claims: world` THE system SHALL run `check-claims-extract` once, then one `check-claims-verify` step per extracted claim with `--tools "WebSearch,WebFetch" --allowedTools "WebSearch,WebFetch"`, and a `finding` artifact for each claim whose result is `contradicted`; WHEN the setting declares `claims: reference` THE system SHALL run the verify steps with `--tools ""` and the resolved reference files of the draw's pinned domains in the prompt. A `supported` or `unverifiable` claim SHALL be stored on the step's `parsed` and not as a `finding`.
+6. WHEN the draw's setting declares `claims: world` THE system SHALL run `check-claims-extract` once, then one `check-claims-verify` step per extracted claim with `--tools "WebSearch,WebFetch" --allowedTools "WebSearch,WebFetch"`, and a `finding` artifact for each claim whose result is `contradicted`; WHEN the setting declares `claims: reference` THE system SHALL run the verify steps with `--tools ""` and the resolved reference files of the draw's pinned domains in the prompt; WHEN the setting declares `claims: setting` THE system SHALL extract claims about the setting rather than about the actual world, and run the verify steps with `--tools ""` and the setting's whole distillate in the prompt, independent of the domains the draw took. A `supported` or `unverifiable` claim SHALL be stored on the step's `parsed` and not as a `finding`.
 7. IF the draw is unrestricted or the setting has no `claims` key THEN THE system SHALL run no `check-claims-*` step and `cloudchamber findings` SHALL print `claims: off (no authority declared)`.
 8. WHEN `cloudchamber gate <draw> accept <finding-id>...` runs in `awaiting_check_gate` THE system SHALL append one verdict line per finding with kind `finding`, verdict `keep`, method `gate`, and start repair; WHEN `dismiss <finding-id> [--note]` runs THE system SHALL append kind `finding`, verdict `pass` with the note and start nothing; a re-check SHALL not store a `finding` artifact overlapping a dismissed one by the overlap rule.
 9. WHEN repair runs THE system SHALL create a new draw row with `repaired_from` set to the source draw, copying setting, genre, mode, segment, seed, examples and domains; set `superseded_by` on the source and its status to `repaired`; rewrite the chosen vignette from itself only if an accepted finding's span is inside it, else copy it; re-derive the outline with a `<constraints>` block; run jobs and two context vignettes; and rewrite the ending from itself only if an accepted finding's span is inside it or its `invalidates` is `arithmetic` or `custody`, else copy it. The new brief directory's trail SHALL carry `## repaired_from` with the source id and the constraint lines.
@@ -220,13 +220,18 @@ verify steps run once per claim.
 
 ### Settings
 
-`claims` joins the front-matter keys: `world | reference`, absent means off.
-`setting-a` declares `world`. The check stage family gets a loading row whose
-domain sections are `["Sources"]` and whose setting sections are none; under
-`reference` the claims-verify prompt carries the resolved reference files of
-the draw's pinned domains, each in a `<reference name="...">` tag. No other
-checker or screen loads any setting section; they check the brief against
-itself. A domain's Sources lines resolve through the existing
+`claims` joins the front-matter keys: `world | reference | setting`, absent
+means off. The check stage family gets a loading row whose domain sections
+are `["Sources"]` and whose setting sections are none; under `reference` the
+claims-verify prompt carries the resolved reference files of the draw's
+pinned domains, each in a `<reference name="...">` tag. Under `setting` it
+carries `distillate()` instead: every setting-wide section and every domain
+with all its typed sections but Sources, in one `<setting>` tag, whatever
+domains the draw took. The raw reference tree is too large to send whole
+(setting-b 119k words, setting-a 276k, setting-c 259k), so the
+distillate is the only setting-wide authority that fits a per-claim call. No
+other checker or screen loads any setting section; they check the brief
+against itself. A domain's Sources lines resolve through the existing
 `referenceFiles` helper.
 
 ### Stages

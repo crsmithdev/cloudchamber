@@ -212,6 +212,12 @@ Match the brief against the list. For each list entry the brief matches, output 
 
 Extract only claims about the actual world that carry a quantity or a rule a published source could confirm or deny: a price, a rate, a count, a date, a duration, a distance, a procedure, a statute, a relation between two named places. That a place, institution, product or person exists is not a claim. Skip everything the story invents. Each claim goes in a <claim> tag containing <span> (verbatim quote, under ${RUN.spanWords} words) and <statement> (the claim as one checkable sentence). At most 12 claims. Under 500 words.`,
 
+  claimsExtractSetting: `Below is a story brief: a seed, a premise, an outline in three sections, three vignettes and an ending.
+
+{brief}
+
+Extract only claims about the setting the story is set in, that carry a quantity or a rule the setting itself settles: a price, a rate, a count, a date, a duration, a term of service, an office, a rite, an instrument, or a relation between two bodies. That a place, institution or person exists is not a claim. Skip what the story invents for itself alone, and skip anything that would hold in any world. Each claim goes in a <claim> tag containing <span> (verbatim quote, under ${RUN.spanWords} words) and <statement> (the claim as one checkable sentence). At most 12 claims. Under 500 words.`,
+
   claimsVerifyWorld: `Claim from a story, quoted: "{span}"
 As a checkable sentence: {statement}
 
@@ -223,6 +229,15 @@ Claim from a story, quoted: "{span}"
 As a checkable sentence: {statement}
 
 Find the line in the reference material above that confirms or denies it. Output a <finding> tag containing <span> (the quote above, verbatim), <statement> (the sentence above), <result> (supported | contradicted | unverifiable), <evidence> (the file name and one quoted line from it, or none), <invalidates> (none), <replacement> (if contradicted, one positive sentence that would hold; otherwise none). Under 120 words.`,
+
+  claimsVerifySetting: `<setting>
+{reference}
+</setting>
+
+Claim from a story, quoted: "{span}"
+As a checkable sentence: {statement}
+
+Find the line in the setting above that confirms or denies it. The setting is the whole authority: a claim it does not settle is unverifiable, not wrong. Output a <finding> tag containing <span> (the quote above, verbatim), <statement> (the sentence above), <result> (supported | contradicted | unverifiable), <evidence> (the heading it sits under and one quoted line from it, or none), <invalidates> (none), <replacement> (if contradicted, one positive sentence that would hold; otherwise none). Under 120 words.`,
 
   constraints: `<constraints>
 {constraints}
@@ -321,7 +336,7 @@ for (const [k, v] of Object.entries(T)) {
   else for (const [k2, v2] of Object.entries(v)) checkTemplate(`${k}.${k2}`, v2);
 }
 
-type TemplateName = { [K in keyof typeof T]: (typeof T)[K] extends string ? K : never }[keyof typeof T];
+export type TemplateName = { [K in keyof typeof T]: (typeof T)[K] extends string ? K : never }[keyof typeof T];
 
 export function fill(name: TemplateName, vars: Record<string, string>): string {
   return (T[name] as string).replace(/\{(\w+)\}/g, (_, k) => {
