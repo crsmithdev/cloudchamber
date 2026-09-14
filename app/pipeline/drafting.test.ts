@@ -8,6 +8,7 @@ import { FakeModel } from "./model.ts";
 import { Pipeline } from "./draw.ts";
 import { Drafting } from "./drafting.ts";
 import { settingsFixture } from "./settings.fixture.ts";
+import { LISTS, loadSetting } from "./settings.ts";
 import { latest, readLog, record } from "./verdicts.ts";
 import { status } from "./status.ts";
 import { TEMPLATES } from "./prompts.ts";
@@ -32,7 +33,11 @@ async function drawn(script = draftScript(), setting?: { id: string; dir: string
   const { db, dir } = fixture();
   const model = new FakeModel(script);
   const p = new Pipeline(db, model, { rng: () => 0.001, briefsDir: join(dir, "briefs"), settingsDir: setting?.dir });
-  if (setting?.claims) writeFileSync(join(setting.dir, `${setting.id}.md`), readFileSync(join(setting.dir, `${setting.id}.md`), "utf8").replace("names: true", `names: true\nclaims: ${setting.claims}`));
+  if (setting) {
+    const path = join(setting.dir, `${setting.id}.md`);
+    const text = readFileSync(path, "utf8");
+    writeFileSync(path, setting.claims ? text.replace("claims: setting", `claims: ${setting.claims}`) : text.replace("claims: setting\n", ""));
+  }
   const draw = await p.start({ mode: "auto", genre: "horror", setting: setting?.id, seed: { mode: "typed", text: "a typed seed" } });
   const d = new Drafting(p, { draftsDir: join(dir, "drafts") });
   return { db, dir, model, p, d, draw };
@@ -178,23 +183,7 @@ describe("claims", () => {
     expect(f.judge).toBeNull();     // sonnet verified; not every judge shares the generator's family
   });
 
-  test("claims: reference verifies against the pinned domains' reference files with no tools", async () => {
-    const { dir } = fixture();
-    const sdir = settingsFixture(dir);
-    const { p, d, draw, model } = await drawn(draftScript({ outline: () => ["debt audit", "arithmetic", "custody", "matrix"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n") }), { id: "basin", dir: sdir, claims: "reference" });
-    const r = await d.check(draw.id);
-    expect(r.claims).toBe("reference");
-    const verify = model.calls.filter((c) => c.stage === "check-claims-verify");
-    expect(verify).toHaveLength(2);
-    expect(verify.every((c) => c.tools === "")).toBe(true);
-    expect(verify[0].prompt).toContain('<reference name="reference/land-and-title.md">');
-    expect(verify[0].prompt).toContain('<reference name="reference/labour.md">');
-    expect(verify[0].prompt).not.toContain("reference/death.md");
-    expect(verify[0].prompt).toContain("Find the line in the reference material above");
-    expect(p.steps(draw.id).filter((s) => s.stage === "check-claims-verify").every((s) => s.tools === "")).toBe(true);
-  });
-
-  test("claims: setting verifies against the whole distillate, not the drawn domains, and asks for claims about the setting", async () => {
+  test("claims: setting verifies against the whole distillate, every list, and asks for claims about the setting", async () => {
     const { dir } = fixture();
     const sdir = settingsFixture(dir);
     const { p, d, draw, model } = await drawn(draftScript({ outline: () => ["debt audit", "arithmetic", "custody", "matrix"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n") }), { id: "basin", dir: sdir, claims: "setting" });
@@ -204,10 +193,10 @@ describe("claims", () => {
     const verify = model.calls.filter((c) => c.stage === "check-claims-verify");
     expect(verify).toHaveLength(2);
     expect(verify.every((c) => c.tools === "")).toBe(true);
-    // the draw took land-and-title and labour; the third domain is in the prompt anyway
-    for (const x of ["<setting>", "## Matrix", "## Hard rules", "### 1. Land and title", "### 6. Labour", "### 12. Death and its administration", "Find the line in the setting above"]) expect(verify[0].prompt).toContain(x);
-    expect(verify[0].prompt).not.toContain("#### Sources");
-    expect(verify[0].prompt).not.toContain("reference/labour.md");
+    const s = loadSetting("basin", sdir);
+    for (const name of LISTS) for (const e of s.lists[name]) expect(verify[0].prompt).toContain(e);
+    expect(verify[0].prompt).toContain("<setting>");
+    expect(verify[0].prompt).toContain("Find the line in the setting above");
     expect(p.steps(draw.id).filter((s) => s.stage === "check-claims-verify").every((s) => s.tools === "")).toBe(true);
   });
 
@@ -223,9 +212,9 @@ describe("claims", () => {
   test("a bad claims value fails lint", async () => {
     const { dir } = fixture();
     const sdir = settingsFixture(dir);
-    writeFileSync(join(sdir, "basin.md"), readFileSync(join(sdir, "basin.md"), "utf8").replace("names: true", "names: true\nclaims: everywhere"));
+    writeFileSync(join(sdir, "basin.md"), readFileSync(join(sdir, "basin.md"), "utf8").replace("claims: setting", "claims: everywhere"));
     const { lintFile } = await import("./settings.ts");
-    expect(lintFile("basin", sdir).map((f) => f.reason)).toContain("claims must be world | reference | setting, got everywhere");
+    expect(lintFile("basin", sdir).map((f) => f.reason)).toContain("claims must be world | setting, got everywhere");
   });
 });
 
@@ -440,7 +429,7 @@ describe("templates and store", () => {
     }
   });
 
-  test("a version-3 store migrates to 8: finding and draft verdicts, repaired_from, draft_config, tools, forked_from, sampling, archived_at, name", () => {
+  test("a version-3 store migrates to 9: the new columns arrive, the domains column goes, and the row survives", () => {
     const dir = mkdtempSync(join(tmpdir(), "cloudchamber-mig4-"));
     const path = join(dir, "v3.db"), log = join(dir, "verdicts.jsonl");
     writeFileSync(log, "");
@@ -455,10 +444,11 @@ describe("templates and store", () => {
     old.close();
     const db: Db = openDb(path, log);
     expect((db.query("PRAGMA user_version").get() as any).user_version).toBe(SCHEMA_VERSION);
-    expect(SCHEMA_VERSION).toBe(8);
+    expect(SCHEMA_VERSION).toBe(9);
     expect(db.query("SELECT repaired_from, draft_config, forked_from, sampling, archived_at, name FROM draws WHERE id = 'r1'").get())
       .toEqual({ repaired_from: null, draft_config: null, forked_from: null, sampling: "tail", archived_at: null, name: "seed" });
     expect(db.query("SELECT tools FROM steps WHERE id = 's1'").get()).toEqual({ tools: "" });
+    expect((db.query("PRAGMA table_info(draws)").all() as { name: string }[]).map((c) => c.name)).not.toContain("domains");
     expect(() => record(db, { kind: "finding", target_id: "f-abc", verdict: "pass", method: "gate", note: "x" }, log)).not.toThrow();
     expect(() => record(db, { kind: "draft", target_id: "r1", verdict: "keep", method: "gate" }, log)).not.toThrow();
     const again = openDb(path, log);

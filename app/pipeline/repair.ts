@@ -41,9 +41,9 @@ export async function repair(p: Pipeline, drawId: string, accepted: Accepted[]):
   const src = parts.draw;
   const newId = `${now().replace(/[-:TZ]/g, "").slice(0, 15)}-${randomBytes(2).toString("hex")}`;
   const name = nextName((p.db.query("SELECT name FROM draws WHERE name IS NOT NULL").all() as { name: string }[]).map((r) => r.name), src.seed_text);
-  p.db.query(`INSERT INTO draws (id, name, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, domains, sampling, status, gate_method, repaired_from, created_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?, ?, ?)`)
-    .run(newId, name, src.setting, src.genre, src.mode, src.segment, src.seed_mode, src.seed_text, src.seed_theme_id, src.example_ids, src.domains, src.sampling, src.gate_method, drawId, now());
+  p.db.query(`INSERT INTO draws (id, name, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, sampling, status, gate_method, repaired_from, created_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?, ?, ?)`)
+    .run(newId, name, src.setting, src.genre, src.mode, src.segment, src.seed_mode, src.seed_text, src.seed_theme_id, src.example_ids, src.sampling, src.gate_method, drawId, now());
   p.db.query("UPDATE draws SET status = 'repairing' WHERE id = ?").run(drawId);
   try {
     await develop(p, newId, parts, accepted);
@@ -60,14 +60,14 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
   const plan = repairPlan(accepted, parts.vignette, parts.ending);
   const constraints = constraintsBlock(accepted);
   const head = parts.examples.join("\n\n");
-  const { setting, domains } = p.loadDrawSetting(parts.draw);
+  const { setting } = p.loadDrawSetting(parts.draw);
   const chosenMeta = JSON.parse(p.artifacts(parts.draw.id).find((a) => a.step_id === parts.chosenStepId && a.kind === "vignette")!.meta);
 
   // the chosen vignette: rewritten from itself, or carried over
   let vignette = parts.vignette;
   let vStep;
   if (plan.vignette) {
-    const r = await p.invoke(newId, null, "repair-vignette", compose(head, fill("repairVignette", { vignette: parts.vignette, constraints }), p.settingFor("execute", setting, domains)), (t) => {
+    const r = await p.invoke(newId, null, "repair-vignette", compose(head, fill("repairVignette", { vignette: parts.vignette, constraints }), p.settingFor("execute", setting)), (t) => {
       const v = tag(t, "vignette"); if (!v) throw new Error("no <vignette> tag"); return v;
     });
     vignette = r.value; vStep = r.step;
@@ -82,7 +82,7 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
   const settingJobs = (setting?.jobs ?? []).map((j) => fill("settingJob", { name: j.name, description: j.description })).join("");
   const jobNames = [...RUN.coreJobs, ...(setting?.jobs ?? []).map((j) => j.name.toLowerCase())];
   const outlineHead = fill("repairOutlineHead", { seed: parts.seed, premise: parts.premise, vignette, constraints });
-  const { step: outlineStep, value: outline } = await p.invoke(newId, vStep.id, "repair-outline", compose(outlineHead, fill("outlineAsk", { settingJobs }), p.settingFor("outline", setting, domains)), (text) => {
+  const { step: outlineStep, value: outline } = await p.invoke(newId, vStep.id, "repair-outline", compose(outlineHead, fill("outlineAsk", { settingJobs }), p.settingFor("outline", setting)), (text) => {
     const secs = sections(text);
     for (const j of jobNames) if (!secs[j]) throw new Error(`missing <section name="${j}">`);
     return secs;
@@ -92,7 +92,7 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
 
   // jobs and the two context vignettes, as the draw does
   const briefHead = fill("head", { outline: outlineText, vignette });
-  const after = (stage: "jobs" | "context" | "ending", ask: string) => compose(briefHead, ask, p.settingFor(stage, setting, domains), "");
+  const after = (stage: "jobs" | "context" | "ending", ask: string) => compose(briefHead, ask, p.settingFor(stage, setting), "");
   const { step: jobsStep, value: jobs } = await p.invoke(newId, outlineStep.id, "jobs", after("jobs", fill("jobs", {})), (text) => {
     const js = tags(text, "job");
     if (js.length !== RUN.contextVignettes) throw new Error(`expected ${RUN.contextVignettes} jobs, got ${js.length}`);
@@ -106,7 +106,7 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
 
   // the ending: rewritten from itself under the constraints, or carried over
   const endingRun = plan.ending
-    ? p.invoke(newId, outlineStep.id, "repair-ending", compose(head, fill("repairEnding", { outline: outlineText, ending: parts.ending, constraints }), p.settingFor("ending", setting, domains)), (t) => {
+    ? p.invoke(newId, outlineStep.id, "repair-ending", compose(head, fill("repairEnding", { outline: outlineText, ending: parts.ending, constraints }), p.settingFor("ending", setting)), (t) => {
         const e = tag(t, "ending"); if (!e) throw new Error("no <ending> tag"); return e;
       }).then((r) => p.artifact(r.step, "ending", r.value, { previous: parts.ending, warnings: words(r.value) > 650 ? ["length"] : [] }))
     : Promise.resolve(p.artifact(p.recordStep(newId, outlineStep.id, "repair-ending", "copied"), "ending", parts.ending, { copied: true }));

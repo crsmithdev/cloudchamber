@@ -1,98 +1,126 @@
 import { describe, expect, test } from "bun:test";
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { FIXTURE_SETTING, settingsFixture } from "./settings.fixture.ts";
-import { formatFinding, lintSetting, loadSetting, parseDomains, parseSetting, replaceSection, slug } from "./settings.ts";
+import { LISTS, distillate, entryName, formatFinding, hardRules, lintSetting, loadSetting, mentioned, mentions, parseSetting, replaceList, slice } from "./settings.ts";
 
-const exists = () => true;
-const lint = (text: string, fileExists: (rel: string) => boolean = exists) => lintSetting(text, "basin", fileExists).map(formatFinding);
+const lint = (text: string) => lintSetting(text, "basin").map(formatFinding);
 
 describe("setting lint", () => {
-  test("the fixture is clean and parses into five sections, one job and three domains", () => {
+  test("the fixture is clean and parses into four sections, one job and four lists", () => {
     expect(lint(FIXTURE_SETTING)).toEqual([]);
     const s = parseSetting(FIXTURE_SETTING, "basin");
-    expect(s.draw).toBe(2);
-    expect(s.names).toBe(true);
-    expect(s.jobs).toEqual([{ name: "matrix", description: "Close the regional element. Name the instrument and show that removing it removes a mechanism." }]);
-    expect(s.domains.map((d) => d.slug)).toEqual(["land-and-title", "labour", "death-and-its-administration"]);
-    expect(s.domains[0].sections.Clocks).toBe("none");
+    expect(s.claims).toBe("setting");
+    expect(s.jobs).toEqual([{ name: "matrix", description: "Close the regional element. Name the body, instrument or place the story is built out of, and show that removing it removes a mechanism." }]);
+    expect(LISTS.map((n) => s.lists[n].length)).toEqual([3, 3, 3, 3]);
+    expect(s.lists.Terms[1]).toBe("Ellis — to withdraw every unit on a parcel from rent; used as a verb");
     expect(s.sections.Matrix).toBe("Take the regional element out and a mechanism goes with it.");
-    expect(slug("### 12. Death and its administration".replace(/^### /, ""))).toBe("death-and-its-administration");
   });
 
-  test("front matter: unknown keys and a bad draw", () => {
-    expect(lint(FIXTURE_SETTING.replace("names: true", "names: true\nhard_rules: Hard rules"))).toEqual(["front matter › hard_rules: unknown key hard_rules"]);
-    expect(lint(FIXTURE_SETTING.replace("draw: 2", "draw: two"))).toEqual(["front matter › draw: draw must be a non-negative integer, got two"]);
-    expect(lint(FIXTURE_SETTING.replace("draw: 2", "draw: -1"))).toEqual(["front matter › draw: draw must be a non-negative integer, got -1"]);
-    expect(lint(FIXTURE_SETTING.replace("draw: 2", "draw: 0"))).toEqual([]);   // a setting that takes no domain unless one is pinned
+  test("front matter: unknown keys and a bad claims value", () => {
+    expect(lint(FIXTURE_SETTING.replace("claims: setting", "claims: setting\nhard_rules: Hard rules"))).toEqual(["front matter › hard_rules: unknown key hard_rules"]);
+    expect(lint(FIXTURE_SETTING.replace("claims: setting", "claims: everywhere"))).toEqual(["front matter › claims: claims must be world | setting, got everywhere"]);
+    expect(lint(FIXTURE_SETTING.replace("claims: setting\n", ""))).toEqual([]);   // absent is off, not a finding
   });
 
-  test("setting-wide sections: missing and empty", () => {
-    expect(lint(FIXTURE_SETTING.replace("## Open ground\n\n- An interval getting shorter as the spine.\n\n", ""))).toEqual(["setting › Open ground: missing"]);
-    expect(lint(FIXTURE_SETTING.replace("- An interval getting shorter as the spine.\n", ""))).toEqual(["setting › Open ground: empty sections hold the line none"]);
-    expect(lint(FIXTURE_SETTING.slice(0, FIXTURE_SETTING.indexOf("## Domains")))).toEqual(["setting › Domains: missing"]);
-    expect(lint(FIXTURE_SETTING.slice(0, FIXTURE_SETTING.indexOf("### 1. Land")))).toEqual(["setting › Domains: at least one domain"]);
-    expect(lint(FIXTURE_SETTING.slice(0, FIXTURE_SETTING.indexOf("### 1. Land")).replace("draw: 2", "draw: 0"))).toEqual([]);   // draw 0 needs no domain to draw from
+  test("setting-wide sections and lists: missing and empty", () => {
+    expect(lint(FIXTURE_SETTING.slice(0, FIXTURE_SETTING.indexOf("## Places")))).toEqual(["setting › Places: missing", "setting › Terms: missing"]);
+    expect(lint(FIXTURE_SETTING.replace("Take the regional element out and a mechanism goes with it.\n", ""))).toEqual(["setting › Matrix: empty sections hold the line none"]);
+    const empty = FIXTURE_SETTING.replace(/## Terms\n\n[\s\S]*$/, "## Terms\n\nnone\n");
+    expect(lint(empty)).toEqual([]);                                    // a list may legitimately hold none
+    expect(parseSetting(empty, "basin").lists.Terms).toEqual([]);
   });
 
-  test("parseDomains: absent draws at random, `none` is a pin of nothing, slugs keep their order", () => {
-    expect(parseDomains(undefined)).toBeUndefined();
-    expect(parseDomains("")).toBeUndefined();
-    expect(parseDomains(" , ")).toBeUndefined();
-    expect(parseDomains("none")).toEqual([]);
-    expect(parseDomains(" none ")).toEqual([]);
-    expect(parseDomains("labour,land-and-title")).toEqual(["labour", "land-and-title"]);
-    expect(parseDomains("none,labour")).toEqual(["none", "labour"]);   // only `none` alone is the sentinel; this fails on the slug
+  test("the retired nine-section shape is a finding, and no heading may sit below ##", () => {
+    const old = FIXTURE_SETTING.replace("## Bodies", "## Domains\n\n### 1. Land and title\n\n#### Frame\n\nA line.\n\n## Bodies");
+    expect(lint(old)).toEqual([
+      "setting › Domains: retired by the four-list shape",
+      "setting › 1. Land and title: no heading below ## ; a list is flat",
+      "setting › Frame: no heading below ## ; a list is flat",
+    ]);
   });
 
-  test("domain sections: missing, out of order, empty, frame lines", () => {
-    expect(lint(FIXTURE_SETTING.replace("#### Clocks\n\nnone\n\n", ""))).toEqual(["land-and-title › Clocks: missing"]);
-    const swapped = FIXTURE_SETTING.replace("#### Clocks\n\nnone\n\n#### Places\n\n- the recorder's counter, where the book is amended by appending\n\n",
-      "#### Places\n\n- the recorder's counter, where the book is amended by appending\n\n#### Clocks\n\nnone\n\n");
-    expect(lint(swapped)).toEqual(["land-and-title › Places: out of order"]);   // the first section that precedes its predecessor
-    expect(lint(FIXTURE_SETTING.replace("#### Clocks\n\nnone", "#### Clocks\n"))).toEqual(["land-and-title › Clocks: empty sections hold the line none"]);
-    expect(lint(FIXTURE_SETTING.replace("A queue that is the income, and an employer nobody can name.", "A queue.\nTwo lines."))).toEqual(["labour › Frame: one line"]);
+  test("an entry must carry the separator and the word cap", () => {
+    expect(lint(FIXTURE_SETTING.replace("- Ellis — to withdraw", "- Ellis: to withdraw"))).toEqual(
+      ["Terms › Ellis: to withdraw every unit on a parce…: an entry is `name — what it does; what follows`"]);
+    expect(lint(FIXTURE_SETTING.replace("- Ellis — to", "-  — to"))).toEqual(["Terms › — to withdraw every unit on a parcel fro…: an entry is `name — what it does; what follows`"]);
+    const long = FIXTURE_SETTING.replace("- Ellis — to withdraw every unit on a parcel from rent; used as a verb",
+      `- Ellis — ${Array.from({ length: 50 }, (_, i) => `word${i}`).join(" ")}`);
+    expect(lint(long)).toEqual(["Terms › Ellis — word0 word1 word2 word3 word4 wo…: over 45 words"]);
+    // whether an entry names anything this setting names is the reduce pass's judgement and Chris's, not lint's
   });
 
-  test("mechanisms go through the theme validator", () => {
-    const f = lint(FIXTURE_SETTING.replace("- Work is a queue position drawn by lottery, with a rate posted where nobody may enforce it, and a week that closes at a negative number.", "- This is short."));
-    expect(f).toHaveLength(1);
-    expect(f[0]).toMatch(/^labour › Mechanisms: This is short\.… 3 words, deictic opener$/);
+  test("a list over the cap is a finding", () => {
+    const rows = Array.from({ length: 41 }, (_, i) => `- Term ${i} — a gloss naming Basin thing ${i}`).join("\n");
+    const over = FIXTURE_SETTING.replace(/## Terms\n\n[\s\S]*$/, `## Terms\n\n${rows}\n`);
+    expect(lint(over)).toEqual(["Terms › 41 entries: over the cap of 40"]);
+  });
+});
+
+describe("slicing", () => {
+  const s = parseSetting(FIXTURE_SETTING, "basin");
+
+  test("each stage loads whole lists, never a subset, and hard rules stay out of the slice", () => {
+    const premises = slice(s, "premises");
+    expect(premises).toContain("## Bodies — the setting records these");
+    for (const e of s.lists.Bodies) expect(premises).toContain(e);          // whole, not sampled
+    for (const x of ["## Instruments", "## Places", "## Terms", "## Hard rules", "## Jobs"]) expect(premises).not.toContain(x);
+    const execute = slice(s, "execute");
+    for (const x of ["## Instruments", "## Places", "## Terms"]) expect(execute).toContain(x);
+    expect(execute).not.toContain("## Bodies");
+    expect(slice(s, "outline")).toContain("## Bodies");
+    expect(slice(s, "outline")).not.toContain("## Places");
+    expect(slice(s, "ending")).toContain("## Terms");
+    expect(hardRules(s)).toBe("## Hard rules\n\n- One impossibility, bought openly.\n- Nothing resolves.");
+    expect(premises).not.toMatch(/^### /m);
   });
 
-  test("the mask: proper nouns outside Institutions and Sources only when names is not true", () => {
-    const masked = FIXTURE_SETTING.replace("names: true\n", "");
-    expect(lint(masked)).toEqual([]);                                   // the fixture's only proper nouns sit in Institutions
-    const named = masked.replace("- the annual reading of names", "- the annual reading of names at Cypress Lawn in Colma");
-    expect(lint(named)).toEqual(["death-and-its-administration › Places: proper noun Cypress", "death-and-its-administration › Places: proper noun Lawn", "death-and-its-administration › Places: proper noun Colma"]);
-    expect(lint(named.replace("draw: 2", "draw: 2\nnames: true"))).toEqual([]);   // names: true switches it off
-    expect(lint(masked.replace("The county recorder, which", "The Alameda County recorder, which"))).toEqual([]);   // Institutions may carry names
+  test("distillate is every section and every list, whatever a stage would have loaded", () => {
+    const d = distillate(s);
+    for (const name of LISTS) for (const e of s.lists[name]) expect(d).toContain(e);
+    expect(d).toContain("## Matrix");
+    expect(d).toContain("## Hard rules");
+  });
+});
+
+describe("writing back", () => {
+  test("replaceList rewrites one list and leaves every other byte alone", () => {
+    const out = replaceList(FIXTURE_SETTING, "basin", "Places", ["The Recorder's counter — the one window that appends"]);
+    expect(out.slice(0, out.indexOf("## Places"))).toBe(FIXTURE_SETTING.slice(0, FIXTURE_SETTING.indexOf("## Places")));
+    expect(out.slice(out.indexOf("## Terms"))).toBe(FIXTURE_SETTING.slice(FIXTURE_SETTING.indexOf("## Terms")));
+    expect(parseSetting(out, "basin").lists.Places).toEqual(["The Recorder's counter — the one window that appends"]);
+    expect(parseSetting(replaceList(FIXTURE_SETTING, "basin", "Places", []), "basin").lists.Places).toEqual([]);
   });
 
-  test("sources: required, and every reference token must exist", () => {
-    expect(lint(FIXTURE_SETTING.replace("- reference/labour.md", "none"))).toEqual(["labour › Sources: at least one reference/<file>.md line"]);
-    expect(lint(FIXTURE_SETTING, (rel) => rel !== "reference/death.md")).toEqual(["death-and-its-administration › Sources: no file reference/death.md"]);
-  });
-
-  test("loadSetting reads from a settings directory and lint resolves reference files against it", () => {
+  test("loadSetting reads from a settings directory", () => {
     const dir = mkdtempSync(join(tmpdir(), "cloudchamber-set-"));
     const sdir = settingsFixture(dir);
-    const s = loadSetting("basin", sdir);
-    expect(s.domains).toHaveLength(3);
-    const text = readFileSync(join(sdir, "basin.md"), "utf8");
-    expect(lintSetting(text, "basin", (rel) => existsSync(join(sdir, "basin", rel)))).toEqual([]);
-    writeFileSync(join(sdir, "basin.md"), text.replace("reference/death.md", "reference/gone.md"));
-    expect(lintSetting(readFileSync(join(sdir, "basin.md"), "utf8"), "basin", (rel) => existsSync(join(sdir, "basin", rel))).map(formatFinding)).toEqual(["death-and-its-administration › Sources: no file reference/gone.md"]);
+    expect(loadSetting("basin", sdir).lists.Bodies).toHaveLength(3);
+    writeFileSync(join(sdir, "basin.md"), readFileSync(join(sdir, "basin.md"), "utf8").replace("## Terms", "## Sources"));
+    expect(lintSetting(readFileSync(join(sdir, "basin.md"), "utf8"), "basin").map(formatFinding))
+      .toEqual(["setting › Terms: missing", "setting › Sources: retired by the four-list shape"]);
+  });
+});
+
+describe("reading a draw back against the setting", () => {
+  const s = parseSetting(FIXTURE_SETTING, "basin");
+
+  test("mentions matches the whole name, or its capitalised run inside a sentence", () => {
+    const body = s.lists.Bodies[1];                                   // The Office of the Public Administrator — ...
+    expect(mentions("the Office of the Public Administrator wrote", body)).toBe(true);
+    expect(mentions("the public administrator took the rooms", body)).toBe(true);   // the run, lowercased
+    expect(mentions("A deputy arrived with a clipboard.", body)).toBe(false);
+    expect(mentions("she filed the Notice of Withdrawal on Tuesday", s.lists.Instruments[1])).toBe(true);
+    expect(mentions("the recorder's counter", s.lists.Places[0])).toBe(true);
+    expect(mentions("he ellised the building", s.lists.Terms[1])).toBe(true);
   });
 
-  test("replaceSection rewrites one body and leaves every other byte alone", () => {
-    const out = replaceSection(FIXTURE_SETTING, "basin", "land-and-title", "Clocks", "- a filing bar of two years");
-    const before = FIXTURE_SETTING.slice(0, FIXTURE_SETTING.indexOf("#### Clocks") + "#### Clocks".length);
-    const after = FIXTURE_SETTING.slice(FIXTURE_SETTING.indexOf("#### Places"));
-    expect(out.startsWith(before)).toBe(true);
-    expect(out.endsWith(after)).toBe(true);
-    expect(parseSetting(out, "basin").domains[0].sections.Clocks).toBe("- a filing bar of two years");
-    expect(() => replaceSection(FIXTURE_SETTING, "basin", "nope", "Clocks", "x")).toThrow("setting basin: no domain nope");
+  test("mentioned reports which entries a passage reaches for, and finds none in prose that names nothing", () => {
+    const text = "At the Recorder's counter she filed the Notice of Withdrawal; the Hiring Hall had already dispatched.";
+    expect(mentioned(text, s.lists.Bodies).map(entryName)).toEqual(["Hiring Hall"]);
+    expect(mentioned(text, s.lists.Instruments).map(entryName)).toEqual(["Notice of Withdrawal"]);
+    expect(mentioned(text, s.lists.Places).map(entryName)).toEqual(["Recorder's counter"]);
+    expect(mentioned("A man walked into a room and sat down for a long time.", [...s.lists.Bodies, ...s.lists.Terms])).toEqual([]);
   });
 });

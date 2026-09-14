@@ -135,7 +135,7 @@ describe("store migration", () => {
     old.close();
     const db = openDb(path, log);
     expect((db.query("PRAGMA user_version").get() as any).user_version).toBe(SCHEMA_VERSION);
-    expect(db.query("SELECT seed_text, domains FROM draws WHERE id = 'r1'").get()).toEqual({ seed_text: "A seed.", domains: null });   // 2 -> 3 adds domains
+    expect(db.query("SELECT seed_text FROM draws WHERE id = 'r1'").get()).toEqual({ seed_text: "A seed." });   // 2 -> 3 added domains, 8 -> 9 took it away again
     expect(db.query("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'runs'").get()).toBeNull();
     expect(db.query("SELECT draw_id FROM steps WHERE id = 's1'").get()).toEqual({ draw_id: "r1" });
     expect(db.query("SELECT kind FROM artifacts WHERE id = 'a1'").get()).toEqual({ kind: "brief" });

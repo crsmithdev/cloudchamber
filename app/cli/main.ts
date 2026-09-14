@@ -10,11 +10,11 @@ const DOC = `cloudchamber — the one command the skill and the UI drive.
    cloudchamber verdict <example|theme|brief|story> <id> <keep|pass> [--artifact] [--note "..."]
                                           a passed story hides all its passages
    cloudchamber replay                         rebuild the verdicts table from bank/verdicts.jsonl
-   cloudchamber draw [--setting ID [--domains a,b|none]] [--genre G] [--sampling M] [--auto] [--source S[,S]] [--author A]
+   cloudchamber draw [--setting ID] [--genre G] [--sampling M] [--auto] [--source S[,S]] [--author A]
                [--seed "text" | --seed-id ID] [--like DRAW]
                                           --like takes another draw's options; the rest override it
    cloudchamber setting lint <id>              check a setting file; exit 1 with one finding per line
-   cloudchamber distill <id> [--domain SLUG]   fill a setting's empty or redraft-marked sections from its reference/
+   cloudchamber distill <id> [--map|--reduce]  build a setting's four lists from its reference/, in two passes
    cloudchamber gate <draw> choose <execute-step> | fork <execute-step> | flag | archive | unarchive  [--note "..."]
    cloudchamber delete <draw>                  remove a draw that never produced a brief
    cloudchamber themes [--only SRC ...] [--limit N]   draft themes for stories not yet drafted
@@ -43,7 +43,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { BRIEFS, now } from "../pipeline/paths.ts";
 import { draftAll, failures, histogram, replayThemes } from "../pipeline/themes.ts";
-import { formatFinding, lintFile, loadSetting, parseDomains } from "../pipeline/settings.ts";
+import { formatFinding, lintFile, loadSetting, LISTS } from "../pipeline/settings.ts";
 import { distill } from "../pipeline/distill.ts";
 import { Drafting } from "../pipeline/drafting.ts";
 import type { Overrides } from "../pipeline/draftconfig.ts";
@@ -114,20 +114,17 @@ async function main() {
     case "draw": {
       const { values } = parseArgs({
         args: rest, allowPositionals: true,
-        options: { setting: { type: "string" }, domains: { type: "string" }, genre: { type: "string" }, sampling: { type: "string" }, like: { type: "string" }, auto: { type: "boolean", default: false },
+        options: { setting: { type: "string" }, genre: { type: "string" }, sampling: { type: "string" }, like: { type: "string" }, auto: { type: "boolean", default: false },
           source: { type: "string" }, author: { type: "string" }, seed: { type: "string" }, "seed-id": { type: "string" } },
       });
-      if (values.domains && !values.setting) usage();
       const seed: SeedChoice = values.seed ? { mode: "typed", text: values.seed } : values["seed-id"] ? { mode: "picked", themeId: values["seed-id"] } : { mode: "drawn" };
       const sources = values.source ? values.source.split(",").map((s) => s.trim()).filter(Boolean) : [];
       const segment = sources.length || values.author ? { source: sources.length ? sources : undefined, author: values.author } : undefined;
-      const domains = parseDomains(values.domains);
       const base = values.like ? pipeline().like(values.like) : {};
       const draw = await pipeline().start({
         ...base,
         mode: values.auto ? "auto" : values.like ? (base as DrawOpts).mode : "manual",
         ...(values.setting ? { setting: values.setting } : {}),
-        ...(domains ? { domains } : {}),
         ...(values.genre ? { genre: values.genre } : {}),
         ...(values.sampling ? { sampling: values.sampling as Sampling } : {}),
         ...(segment ? { segment } : {}),
@@ -217,14 +214,14 @@ async function main() {
       if (action !== "lint" || !sid) usage();
       const findings = lintFile(sid!);
       if (findings.length) { for (const f of findings) console.log(formatFinding(f)); process.exit(1); }
-      console.log(`${sid}: ${loadSetting(sid!).domains.length} domains, clean`);
+      console.log(`${sid}: ${LISTS.map((n) => `${loadSetting(sid!).lists[n].length} ${n.toLowerCase()}`).join(", ")}, clean`);
       break;
     }
     case "distill": {
-      const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, options: { domain: { type: "string" } } });
+      const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, options: { map: { type: "boolean" }, reduce: { type: "boolean" } } });
       const [sid] = positionals;
       if (!sid) usage();
-      for (const line of await distill(pipeline(), sid!, { domain: values.domain })) console.log(line);
+      for (const line of await distill(pipeline(), sid!, { map: values.map, reduce: values.reduce })) console.log(line);
       break;
     }
     case "serve": {

@@ -8,7 +8,7 @@ import { drawNames } from "../names.ts";
 export type Db = Database;
 
 /** Bump with every change to an existing table, and mirror it in extract/store.py. */
-export const SCHEMA_VERSION = 8;
+export const SCHEMA_VERSION = 9;
 
 /** `log` is the verdict log a migration replays from; only tests pass it. */
 export function openDb(path: string = DEFAULT_DB, log?: string): Db {
@@ -83,6 +83,8 @@ function renameBeforeSchema(db: Db) {
  *   6 -> 7  draws gains archived_at: hidden from the lists, otherwise untouched.
  *   7 -> 8  draws gains name, backfilled with the names the UI was deriving,
  *           so no draw is renamed by the change.
+ *   8 -> 9  draws loses domains: a setting loads whole lists, so a draw
+ *           selects nothing before the premise exists (four lists).
  */
 function migrate(db: Db, schema: string, log?: string) {
   if (userVersion(db) < 1) {
@@ -130,6 +132,10 @@ function migrate(db: Db, schema: string, log?: string) {
     const upd = db.query("UPDATE draws SET name = ? WHERE id = ?");
     for (const [id, name] of drawNames(rows)) upd.run(name, id);
     db.exec("PRAGMA user_version = 8");
+  }
+  if (userVersion(db) < 9) {
+    if (columns(db, "draws").includes("domains")) db.exec("ALTER TABLE draws DROP COLUMN domains");
+    db.exec("PRAGMA user_version = 9");
   }
 }
 

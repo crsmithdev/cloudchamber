@@ -7,7 +7,7 @@
  */
 import { readdirSync } from "node:fs";
 import { BANDS, GENRES, RUN, SAMPLING, loadStages } from "./config.ts";
-import { loadSetting } from "./settings.ts";
+import { LISTS, loadSetting } from "./settings.ts";
 import { profileNames } from "./draftconfig.ts";
 import { sourceLabel } from "./bank.ts";
 import { SETTINGS } from "./paths.ts";
@@ -34,7 +34,6 @@ export function knobs(db: Db, settingsDir: string = SETTINGS): Section[] {
       rows: [
         ["--auto", "skip the gate by taking the lowest stated probability; otherwise the draw waits for you"],
         ["--setting", `one of ${settings.join(", ")}, or omitted for an unrestricted draw`],
-        ["--domains", "comma-separated slugs of that setting, pinned in the order given; `none` runs the setting with no domain at all; drawn at random when omitted"],
         ["--genre", "free text, dropped into one line of the premises ask; omitted, it follows the examples drawn"],
         ["--sampling", `${SAMPLING.join(" | ")}; where in the stated distribution the five premises are asked for`],
         ["--source", "one or more source ids, comma-separated, to draw the six examples from"],
@@ -43,11 +42,11 @@ export function knobs(db: Db, settingsDir: string = SETTINGS): Section[] {
       ],
     },
     {
-      title: "settings and their domains",
-      note: "The slug of a domain is its heading, lowercased and hyphenated. `draw` is how many are taken when none are pinned; `draw 0` takes none.",
+      title: "settings",
+      note: `Every draw under a setting carries its lists whole. Caps: ${RUN.listCaps.entries} entries a list, ${RUN.listCaps.words} words an entry.`,
       rows: settings.map((id) => {
         const s = loadSetting(id, settingsDir);
-        return [id, `draw ${s.draw} · ${s.domains.map((x) => x.slug).join(", ")}`] as [string, string];
+        return [id, LISTS.map((n) => `${s.lists[n].length} ${n.toLowerCase()}`).join(" · ")] as [string, string];
       }),
     },
     {

@@ -10,7 +10,7 @@ import { resolve } from "node:path";
 import type { Pipeline, StepRow } from "./draw.ts";
 import { fill, type TemplateName } from "./prompts.ts";
 import { tag, tags } from "./model.ts";
-import { distillate, referenceText, type ClaimsAuthority } from "./settings.ts";
+import { distillate, type ClaimsAuthority } from "./settings.ts";
 import { samplesFor, type DraftConfig } from "./draftconfig.ts";
 import { cluster, excludeDismissed, findingId, merge, parseFindings, type Cluster, type Finding } from "./recur.ts";
 import { briefBlock, briefParts, dismissedFindings, passId, type BriefParts } from "./briefparts.ts";
@@ -26,7 +26,6 @@ export type CheckResult = { pass: string; findings: Cluster[]; claims: "off" | C
 /** The prompt pair each authority runs: the web asks for real-world claims, the distillate asks for claims about the setting. */
 const CLAIMS_PROMPTS: Record<ClaimsAuthority, { extract: TemplateName; verify: TemplateName }> = {
   world: { extract: "claimsExtract", verify: "claimsVerifyWorld" },
-  reference: { extract: "claimsExtract", verify: "claimsVerifyReference" },
   setting: { extract: "claimsExtractSetting", verify: "claimsVerifySetting" },
 };
 export type Answer = { answer: "present" | "absent"; quote: string };
@@ -80,15 +79,11 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
   }, (step, value, sample) => p.artifact(step, "profile", JSON.stringify(value), { pass, sample, source: "check", checker: "resemblance", ...value })));
 
   let claims: CheckResult["claims"] = "off";
-  const { setting, domains } = p.loadDrawSetting(parts.draw);
+  const { setting } = p.loadDrawSetting(parts.draw);
   if (enabled.includes("claims") && setting?.claims) {
-    // The domains carry the reference files, so a `reference` draw that took none has nothing to verify against: the checker stays off.
-    const reference = setting.claims === "reference" ? referenceText(setting, domains)
-      : setting.claims === "setting" ? distillate(setting) : "";
-    if (setting.claims === "world" || reference) {
-      claims = setting.claims;
-      runs.push(runClaims(p, drawId, parts, brief, claims, reference, pass).then((r) => { perChecker.push(r); }));
-    }
+    claims = setting.claims;
+    const reference = claims === "setting" ? distillate(setting) : "";
+    runs.push(runClaims(p, drawId, parts, brief, claims, reference, pass).then((r) => { perChecker.push(r); }));
   }
   await Promise.all(runs);
 

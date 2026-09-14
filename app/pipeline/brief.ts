@@ -33,7 +33,6 @@ export function writeBrief(db: Db, drawId: string, stages: Record<StageName, Sta
   const modelByStage = new Map<string, string>();
   for (const s of steps) if (s.status === "done") modelByStage.set(s.stage, s.model);
   const refusals = steps.filter((s) => s.fail_reason === "refusal").map((s) => `${s.stage} on ${s.model}`);
-  const domains = domainLines(draw.setting, draw.domains, settingsDir);
   const forked: string[] = draw.forked_from ? ["## forked_from", "", `${draw.forked_from}, its candidate ${JSON.parse(chosen?.meta ?? "{}").index ?? "?"}`, ""] : [];
   const repaired: string[] = draw.repaired_from
     ? ["## repaired_from", "", draw.repaired_from, "", ...((JSON.parse(outline?.meta ?? "{}").constraints as string[] | undefined) ?? []).map((c) => `- ${c}`), ""]
@@ -43,7 +42,6 @@ export function writeBrief(db: Db, drawId: string, stages: Record<StageName, Sta
     ...repaired, ...forked,
     `setting: ${draw.setting ?? "none (unrestricted)"} · genre: ${draw.genre} · sampling: ${draw.sampling} · mode: ${draw.mode} · segment: ${draw.segment ?? "all"}`, "",
     `## seed (${draw.seed_mode}${draw.seed_theme_id ? `, theme ${draw.seed_theme_id}` : ""})`, "", draw.seed_text, "",
-    ...(domains ? ["## domains", "", ...domains, ""] : []),
     "## examples", "", ...examples, "",
     "## premises, by stated probability", "",
     ...cands.map(({ a, m }) => `- **${m.probability}** [${m.index}]${a.step_id === draw.chosen_step ? " ← chosen" : ""} vignette ${a.id}${m.warnings?.length ? ` (${m.warnings.join(", ")})` : ""}: ${m.premise}`), "",
@@ -57,15 +55,3 @@ export function writeBrief(db: Db, drawId: string, stages: Record<StageName, Sta
   return dir;
 }
 
-/** One line per drawn domain, by heading; slugs when the setting file cannot be read. One `none` line when the draw took no domain, null when unrestricted. */
-function domainLines(setting: string | null, domains: string | null, settingsDir: string): string[] | null {
-  if (!setting || !domains) return null;
-  const slugs = JSON.parse(domains) as string[];
-  if (!slugs.length) return ["- none"];
-  try {
-    const s = loadSetting(setting, settingsDir);
-    return slugs.map((x) => `- ${s.domains.find((d) => d.slug === x)?.heading ?? x}`);
-  } catch {
-    return slugs.map((x) => `- ${x}`);
-  }
-}

@@ -43,8 +43,8 @@ export const RUN = {
   outlineSectionWords: 400,
   endingWords: 600,
   coreJobs: ["debt audit", "arithmetic", "custody"] as const,
-  distillWords: 60000,  // a domain whose reference files exceed this is refused, not chunked
-  distillCaps: { Mechanisms: 8, Roles: 8, Institutions: 8, Instruments: 8, Clocks: 8, Places: 8, Vocabulary: 12 } as Record<string, number>,
+  listCaps: { entries: 40, words: 45 },   // per setting list; the reduce pass cuts to this and lint holds it
+  mapCandidates: 8,     // candidate entries a map call may return per list, per reference file
   sceneCapSlack: 0.10,  // a scene over its cap by more than this carries the over_cap warning
   spanWords: 30,        // a finding's quoted span is under this
 };

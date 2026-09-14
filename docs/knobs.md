@@ -10,22 +10,21 @@ cloudchamber draw, POST /api/draws, and the Voice Bridge draw tool take the same
 |---|---|
 | `--auto` | skip the gate by taking the lowest stated probability; otherwise the draw waits for you |
 | `--setting` | one of setting-a, setting-b, setting-c, or omitted for an unrestricted draw |
-| `--domains` | comma-separated slugs of that setting, pinned in the order given; `none` runs the setting with no domain at all; drawn at random when omitted |
 | `--genre` | free text, dropped into one line of the premises ask; omitted, it follows the examples drawn |
 | `--sampling` | tail \| off-centre \| standard; where in the stated distribution the five premises are asked for |
 | `--source` | one or more source ids, comma-separated, to draw the six examples from |
 | `--author` | restrict the examples to one author |
 | `--seed / --seed-id` | a typed seed, or a theme id from the bank; omitted, one is drawn |
 
-## settings and their domains
+## settings
 
-The slug of a domain is its heading, lowercased and hyphenated. `draw` is how many are taken when none are pinned; `draw 0` takes none.
+Every draw under a setting carries its lists whole. Caps: 40 entries a list, 45 words an entry.
 
 | | |
 |---|---|
-| `setting-a` | draw 2 · land-and-title, the-first-peoples, water-fire-ground, the-technology-industry, capital-and-its-instruments, labour, housing-and-displacement, queer-san-francisco, medicine-and-public-health, belief, civic-government-and-the-public-sector, death-and-its-administration, transport-and-infrastructure, education-research-and-the-university, food-land-and-the-working-landscape |
-| `setting-b` | draw 0 · the-synod, the-denial-of-remains, the-economics-of-grace, the-pilgrim-intake, the-contract-in-the-body, the-heretic-admission, the-wall-and-the-house-of-wisdom, the-chronology |
-| `setting-c` | draw 2 · the-administratum, the-psychic-tithe, the-mechanicus, the-warp-as-shipping-lane, the-ecclesiarchy, the-inquisition, the-militarum, the-made-body |
+| `setting-a` | 40 bodies · 40 instruments · 40 places · 40 terms |
+| `setting-b` | 0 bodies · 0 instruments · 0 places · 0 terms |
+| `setting-c` | 0 bodies · 0 instruments · 0 places · 0 terms |
 
 ## genre shortcuts
 

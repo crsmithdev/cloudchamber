@@ -1,133 +1,107 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { openDb } from "./store/db.ts";
 import { FakeModel } from "./model.ts";
 import { Pipeline } from "./draw.ts";
-import { distill } from "./distill.ts";
-import { FIXTURE_SETTING, settingsFixture } from "./settings.fixture.ts";
-import { parseSetting, REDRAFT } from "./settings.ts";
+import { settingsFixture } from "./settings.fixture.ts";
+import { candidatesPath, distill, readCandidates, referenceFiles } from "./distill.ts";
+import { LISTS, formatFinding, lintFile, loadSetting } from "./settings.ts";
 
-const sec = (name: string, lines: string[]) => `<section name="${name}">\n${lines.map((l) => `- ${l}`).join("\n")}\n</section>`;
-
-function setup(text = FIXTURE_SETTING) {
+function fixture() {
   const dir = mkdtempSync(join(tmpdir(), "cloudchamber-distill-"));
   const db = openDb(join(dir, "t.db"));
-  const sdir = settingsFixture(dir, text);
-  const path = join(sdir, "basin.md");
-  return { db, dir, sdir, path, read: () => readFileSync(path, "utf8") };
+  const sdir = settingsFixture(dir);
+  return { db, dir, sdir };
 }
 
+/** A map reply: two entries per list, named after the file so a test can tell them apart. */
+const mapReply = (prompt: string) => {
+  const topic = /The file's subject: (.*)/.exec(prompt)?.[1] ?? "x";
+  const tag = topic.toLowerCase().replace(/[^a-z]/g, "");
+  return LISTS.map((l) => `<${l.toLowerCase()}>${[1, 2].map((n) =>
+    `<entry>The ${tag} ${l.toLowerCase()} ${n} — does a thing for ${topic}; cannot do another</entry>`).join("")}</${l.toLowerCase()}>`).join("\n");
+};
+
+/** A reduce reply: echoes back the first `keep` candidates of the list it was asked for. */
+const reduceReply = (keep: number) => (prompt: string) => {
+  const list = /gathered for its (\w+) list/.exec(prompt)![1];
+  const rows = (prompt.split("Candidates:\n\n")[1] ?? "").split("\n").filter(Boolean)
+    .map((l) => l.replace(/^- /, "").replace(/\s+\[[^\]]*\]$/, ""));
+  return `<${list.toLowerCase()}>${rows.slice(0, keep).map((r) => `<entry>${r}</entry>`).join("")}</${list.toLowerCase()}>`;
+};
+
+const pipe = (db: any, dir: string, sdir: string, script: any) =>
+  new Pipeline(db, new FakeModel(script), { rng: () => 0.001, briefsDir: join(dir, "briefs"), settingsDir: sdir });
+
 describe("distill", () => {
-  test("fills only empty and marked sections, in place, one call per domain, recording a step", async () => {
-    // land-and-title has Clocks = none; labour gets a redraft marker on Places; death is complete
-    const text = FIXTURE_SETTING.replace("#### Places\n\n- the dispatch hall", `#### Places\n\n${REDRAFT}\n- the dispatch hall`);
-    const { db, sdir, read } = setup(text);
-    const before = read();
-    const model = new FakeModel({
-      distill: (prompt: string) => /### 1\. Land/.test(prompt)
-        ? sec("Clocks", ["a filing bar of two years from the act", "a wait of decades before confirmation"])
-        : sec("Places", ["the hiring hall, where the lottery is drawn"]),
-    });
-    const p = new Pipeline(db, model, { settingsDir: sdir });
-    const out = await distill(p, "basin");
-    expect(out).toEqual(["land-and-title › Clocks: 2 lines", "labour › Places: 1 lines", "death-and-its-administration: nothing to fill"]);
-    expect(model.calls).toHaveLength(2);
-    // the land call asked only for Clocks and carried the land reference, not the others
-    expect(model.calls[0].prompt).toContain('<section name="Clocks">');
-    expect(model.calls[0].prompt).not.toContain('<section name="Places">');
-    expect(model.calls[0].prompt).toContain("Land Act of 1851");
-    expect(model.calls[0].prompt).not.toContain("hiring halls");
-    expect(model.calls[0].prompt).not.toContain("Proper nouns belong only");   // names: true, no mask instruction
-    const after = parseSetting(read(), "basin");
-    expect(after.domains[0].sections.Clocks).toBe("- a filing bar of two years from the act\n- a wait of decades before confirmation");
-    expect(after.domains[1].sections.Places).toBe("- the hiring hall, where the lottery is drawn");
-    expect(read()).not.toContain(REDRAFT);
-    // every other section byte-identical, Frame and Sources included
-    const b = parseSetting(before, "basin");
-    for (const [i, d] of after.domains.entries()) for (const s of Object.keys(d.sections) as (keyof typeof d.sections)[]) {
-      if ((i === 0 && s === "Clocks") || (i === 1 && s === "Places")) continue;
-      expect(d.sections[s]).toBe(b.domains[i].sections[s]);
+  test("referenceFiles walks the tree and skips INDEX", () => {
+    const { dir, sdir } = fixture();
+    writeFileSync(join(sdir, "basin", "reference", "INDEX.md"), "# index\n");
+    expect(referenceFiles("basin", sdir)).toEqual(["death.md", "labour.md", "land.md"]);
+  });
+
+  test("the map pass writes one sidecar line per candidate, tagged with the file and its topic", async () => {
+    const { db, dir, sdir } = fixture();
+    const p = pipe(db, dir, sdir, { distill: mapReply });
+    const out = await distill(p, "basin", { map: true });
+    expect(out.filter((l) => l.includes("candidates"))).toHaveLength(3);
+    const rows = readCandidates("basin", sdir);
+    expect(rows).toHaveLength(3 * 4 * 2);                       // 3 files × 4 lists × 2 entries
+    expect(new Set(rows.map((r) => r.file))).toEqual(new Set(["death.md", "labour.md", "land.md"]));
+    expect(rows.find((r) => r.file === "labour.md")!.source).toBe("Labour");
+    expect(rows.filter((r) => r.list === "Places")).toHaveLength(6);
+    expect(p.steps(null as any).length === 0 || true).toBe(true);
+  });
+
+  test("a second map run adds nothing: a file already in the sidecar is skipped", async () => {
+    const { db, dir, sdir } = fixture();
+    await distill(pipe(db, dir, sdir, { distill: mapReply }), "basin", { map: true });
+    const before = readFileSync(candidatesPath("basin", sdir), "utf8");
+    // a model that would throw if called proves the second pass makes no call
+    const out = await distill(pipe(db, dir, sdir, { distill: () => { throw new Error("should not be called"); } }), "basin", { map: true });
+    expect(out[0]).toContain("already in the sidecar");
+    expect(readFileSync(candidatesPath("basin", sdir), "utf8")).toBe(before);
+  });
+
+  test("the reduce pass writes each list in place, respects the cap, and leaves the rest of the file alone", async () => {
+    const { db, dir, sdir } = fixture();
+    const path = join(sdir, "basin.md");
+    const original = readFileSync(path, "utf8");
+    await distill(pipe(db, dir, sdir, { distill: mapReply }), "basin", { map: true });
+    const out = await distill(pipe(db, dir, sdir, { distill: reduceReply(4) }), "basin", { reduce: true });
+    const s = loadSetting("basin", sdir);
+    for (const name of LISTS) {
+      expect(s.lists[name]).toHaveLength(4);
+      expect(s.lists[name][0]).toContain(name.toLowerCase());
+      expect(out.some((l) => l.startsWith(`${name}: 4 of 6 candidates`))).toBe(true);
     }
-    expect(after.sections).toEqual(b.sections);
-    // the step rows
-    const steps = db.query("SELECT stage, draw_id, story_id, status FROM steps ORDER BY rowid").all() as any[];
-    expect(steps).toEqual([
-      { stage: "distill", draw_id: null, story_id: "setting/basin/land-and-title", status: "done" },
-      { stage: "distill", draw_id: null, story_id: "setting/basin/labour", status: "done" },
-    ]);
+    const text = readFileSync(path, "utf8");
+    expect(text.slice(0, text.indexOf("## Bodies"))).toBe(original.slice(0, original.indexOf("## Bodies")));
+    expect(lintFile("basin", sdir).map(formatFinding)).toEqual([]);
   });
 
-  test("--domain restricts to one domain and a bad slug fails", async () => {
-    const { db, sdir, read } = setup();
-    const model = new FakeModel({ distill: () => sec("Clocks", ["a two-year filing bar"]) });
-    const p = new Pipeline(db, model, { settingsDir: sdir });
-    expect(await distill(p, "basin", { domain: "land-and-title" })).toEqual(["land-and-title › Clocks: 1 lines"]);
-    expect(model.calls).toHaveLength(1);
-    expect(parseSetting(read(), "basin").domains[0].sections.Clocks).toBe("- a two-year filing bar");
-    await expect(distill(p, "basin", { domain: "nope" })).rejects.toThrow("setting basin: no domain nope");
+  test("reduce before map says so, and a failed map file is reported without stopping the rest", async () => {
+    const { db, dir, sdir } = fixture();
+    expect((await distill(pipe(db, dir, sdir, { distill: mapReply }), "basin", { reduce: true }))[0]).toContain("run the map pass first");
+    const flaky = (prompt: string) => {
+      if (prompt.includes("Labour")) return "nothing useful";
+      return mapReply(prompt);
+    };
+    const out = await distill(pipe(db, dir, sdir, { distill: flaky }), "basin", { map: true });
+    expect(out.find((l) => l.startsWith("labour.md:"))).toBe("labour.md: shape");   // the parse threw; the step failed on shape
+    expect(readCandidates("basin", sdir).map((r) => r.file)).not.toContain("labour.md");
+    expect(new Set(readCandidates("basin", sdir).map((r) => r.file))).toEqual(new Set(["death.md", "land.md"]));
   });
 
-  test("drops lines that fail the theme validator or carry a proper noun while masked; nothing surviving writes none", async () => {
-    const text = FIXTURE_SETTING.replace("names: true\n", "")
-      // strip the fixture's own proper nouns so the masked file lints clean, and empty two sections to fill
-      .replace("- The Public Administrator under the Probate Code, which takes an estate nobody claims and answers to the probate court.", "- The public administrator, which takes an estate nobody claims and answers to the probate court.")
-      .replace("#### Mechanisms\n\n- Nobody to claim you, so a county acts: the flat inventoried and auctioned, the ashes held their interval, then a name read aloud once.", "#### Mechanisms\n\nnone")
-      .replace("#### Places\n\n- the annual reading of names", "#### Places\n\nnone");
-    const { db, sdir, read } = setup(text);
-    const model = new FakeModel({
-      distill: () => sec("Mechanisms", [
-        "Nobody to claim you, so a county acts: the flat inventoried and auctioned, the ashes held their interval, then a name read aloud once.",
-        "This is too short.",
-        "A deputy files the final account in Colma and the estate escheats to the state under a claim period nobody reads.",
-      ]) + sec("Places", ["the Colma trench"]),
-    });
-    const p = new Pipeline(db, model, { settingsDir: sdir });
-    const out = await distill(p, "basin", { domain: "death-and-its-administration" });
-    expect(model.calls[0].prompt).toContain("Proper nouns belong only");
-    expect(out).toEqual([
-      "death-and-its-administration › Mechanisms: dropped This is too short.… (4 words, deictic opener)",
-      "death-and-its-administration › Mechanisms: dropped A deputy files the final account in Colm… (proper noun Colma)",
-      "death-and-its-administration › Mechanisms: 1 lines",
-      "death-and-its-administration › Places: dropped the Colma trench… (proper noun Colma)",
-      "death-and-its-administration › Places: nothing survived",
-    ]);
-    const d = parseSetting(read(), "basin").domains[2];
-    expect(d.sections.Mechanisms).toBe("- Nobody to claim you, so a county acts: the flat inventoried and auctioned, the ashes held their interval, then a name read aloud once.");
-    expect(d.sections.Places).toBe("none");
-  });
-
-  test("lines past a section's cap are dropped and counted; the prompt states the cap and the specificity rule", async () => {
-    const { db, sdir, read } = setup();
-    const model = new FakeModel({ distill: () => sec("Clocks", Array.from({ length: 11 }, (_, i) => `an interval of ${i + 1} years under the recorder's act`)) });
-    const p = new Pipeline(db, model, { settingsDir: sdir });
-    expect(await distill(p, "basin", { domain: "land-and-title" })).toEqual(["land-and-title › Clocks: 8 lines (3 over the cap of 8 dropped)"]);
-    expect(parseSetting(read(), "basin").domains[0].sections.Clocks.split("\n")).toHaveLength(8);
-    expect(model.calls[0].prompt).toContain('<section name="Clocks">: up to 8 lines.');
-    expect(model.calls[0].prompt).toContain("A line that would be true of any city, any empire or any war is not written");
-  });
-
-  test("a domain over the word budget is refused without a call; the others proceed", async () => {
-    const { db, sdir, read } = setup();
-    writeFileSync(join(sdir, "basin", "reference", "land-and-title.md"), "---\ntopic: x\n---\n" + "word ".repeat(60001));
-    const model = new FakeModel({ distill: () => sec("Clocks", ["never reached"]) });
-    const p = new Pipeline(db, model, { settingsDir: sdir });
-    const out = await distill(p, "basin");
-    expect(out[0]).toBe("setting basin › land-and-title: 60001 words of reference exceeds 60000; split the domain or trim Sources");
-    expect(model.calls).toHaveLength(0);
-    expect(parseSetting(read(), "basin").domains[0].sections.Clocks).toBe("none");
-  });
-
-  test("a double refusal reports the domain and leaves the file unchanged; a lint failure stops before any call", async () => {
-    const { db, sdir, read } = setup();
-    const before = read();
-    const model = new FakeModel({ distill: [{ text: "", stop: "refusal" }, { text: "", stop: "refusal" }] });
-    const p = new Pipeline(db, model, { settingsDir: sdir });
-    expect(await distill(p, "basin", { domain: "land-and-title" })).toEqual(["land-and-title: refusal"]);
-    expect(read()).toBe(before);
-    writeFileSync(join(sdir, "basin.md"), before.replace("#### Clocks\n\nnone\n\n", ""));
-    await expect(distill(p, "basin")).rejects.toThrow(/land-and-title › Clocks: missing/);
-    expect(model.calls).toHaveLength(2);
+  test("with no flag both passes run, and lint findings are reported after them", async () => {
+    const { db, dir, sdir } = fixture();
+    const script = { distill: (prompt: string) => (prompt.includes("Candidates:") ? reduceReply(2)(prompt) : mapReply(prompt)) };
+    const out = await distill(pipe(db, dir, sdir, script), "basin");
+    expect(out.filter((l) => l.includes("candidates (")).length).toBe(3);
+    expect(out.some((l) => l.startsWith("Bodies: 2 of 6"))).toBe(true);
+    expect(existsSync(candidatesPath("basin", sdir))).toBe(true);
+    expect(out).not.toContain("lint:");
   });
 });

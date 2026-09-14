@@ -117,7 +117,6 @@ CREATE TABLE IF NOT EXISTS draws (
   seed_text     TEXT NOT NULL,
   seed_theme_id TEXT,
   example_ids   TEXT NOT NULL,         -- JSON array
-  domains       TEXT,                  -- JSON array of the setting's drawn domain slugs; NULL when unrestricted
   sampling      TEXT NOT NULL DEFAULT 'tail',   -- where in the stated distribution the premises were asked for
   status        TEXT NOT NULL,         -- running | awaiting_gate | done | failed | rejected
                                        -- | awaiting_check_gate | repairing | repaired | drafting | awaiting_draft_gate | drafted | passed

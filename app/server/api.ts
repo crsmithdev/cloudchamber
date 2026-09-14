@@ -14,7 +14,7 @@ import { exportBank, sourceLabel } from "../pipeline/bank.ts";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { BRIEFS } from "../pipeline/paths.ts";
-import { loadSetting, parseDomains } from "../pipeline/settings.ts";
+import { LISTS, loadSetting } from "../pipeline/settings.ts";
 import { Drafting } from "../pipeline/drafting.ts";
 import { loadDraftConfig, profileNames, type Overrides } from "../pipeline/draftconfig.ts";
 
@@ -143,10 +143,9 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
   app.post<{ Body: { mode?: "auto" | "manual"; setting?: string; domains?: string; genre?: string; sampling?: string; source?: string; author?: string; seed?: string; seed_id?: string } }>("/api/draws", async (req, reply) => {
     const b = req.body ?? {};
     const seed: SeedChoice = b.seed ? { mode: "typed", text: b.seed } : b.seed_id ? { mode: "picked", themeId: b.seed_id } : { mode: "drawn" };
-    const domains = parseDomains(b.domains);
-    if (domains && !b.setting) return reply.code(400).send({ error: "domains need a setting" });
+    if (b.domains !== undefined) return reply.code(400).send({ error: "domains are gone; a setting loads whole lists" });
     const sources = b.source ? b.source.split(",").map((s) => s.trim()).filter(Boolean) : [];
-    const opts: DrawOpts = { mode: b.mode ?? "manual", setting: b.setting || undefined, domains, genre: b.genre || undefined,
+    const opts: DrawOpts = { mode: b.mode ?? "manual", setting: b.setting || undefined, genre: b.genre || undefined,
       sampling: (b.sampling || undefined) as DrawOpts["sampling"], seed,
       segment: sources.length || b.author ? { source: sources.length ? sources : undefined, author: b.author || undefined } : undefined };
     try {
@@ -169,11 +168,11 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     try { pipeline.delete(req.params.id); return { deleted: req.params.id }; } catch (e: any) { return reply.code(400).send({ error: e.message }); }
   });
 
-  /** A setting's domains for the start form's pin field; the setting is read from the pipeline's settings directory. */
+  /** A setting's identity and list sizes, for the start form. */
   app.get<{ Params: { id: string } }>("/api/settings/:id", async (req, reply) => {
     try {
       const s = loadSetting(req.params.id, pipeline.settingsDir);
-      return { id: s.id, name: s.name, draw: s.draw, domains: s.domains.map((d) => ({ slug: d.slug, heading: d.heading })) };
+      return { id: s.id, name: s.name, lists: LISTS.map((n) => ({ name: n, entries: s.lists[n].length })) };
     } catch (e: any) { return reply.code(404).send({ error: e.message }); }
   });
 

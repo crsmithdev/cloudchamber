@@ -1,7 +1,7 @@
 export type Latest = { verdict: "keep" | "pass"; artifact: boolean; note: string; at: string; inherited_from: string | null } | null;
 export type Item = { id: string; text: string; words?: number; cell?: string; suspect?: string[]; title?: string; author?: string; genre?: string; source?: string; passages?: number; attestation?: number; stories?: string; latest: Latest; setting?: string; status?: string };
 export type Example = { id: string; text: string | null; words?: number; cell?: string; title?: string; author?: string; source?: string; story_id?: string; latest: Latest };
-export type Draw = { id: string; name: string | null; stage: "ideate" | "check" | "write"; origin?: Origin | null; archived_at: string | null; setting: string | null; genre: string; sampling: string; mode: string; segment: string | null; seed_mode: string; seed_text: string; example_ids: string; domains: string | null; status: string; gate_method: string | null; chosen_step: string | null; flagged: number; flag_note: string; superseded_by: string | null; repaired_from: string | null; forked_from: string | null; draft_config: string | null; created_at: string; ended_at: string | null };
+export type Draw = { id: string; name: string | null; stage: "ideate" | "check" | "write"; origin?: Origin | null; archived_at: string | null; setting: string | null; genre: string; sampling: string; mode: string; segment: string | null; seed_mode: string; seed_text: string; example_ids: string; status: string; gate_method: string | null; chosen_step: string | null; flagged: number; flag_note: string; superseded_by: string | null; repaired_from: string | null; forked_from: string | null; draft_config: string | null; created_at: string; ended_at: string | null };
 export type Finding = { id: string; artifact_id: string; checkers: string[]; samples: number[]; n: number; span: string; statement: string; result: string; evidence: string; invalidates: string; replacement: string; pass: string; source: "check" | "screen"; screen?: string; beat?: number; decision: "accepted" | "dismissed" | "open"; note: string };
 export type Claim = { statement: string; span: string; result: string; evidence: string; authority: string };
 export type Profile = { checker?: string; answers?: Record<string, { answer: string; quote: string }>; matches?: { entry: string; span: string }[]; nearest?: { title: string; author: string; shared: string }; beat?: number; flags?: string[] };
@@ -33,7 +33,7 @@ export const api = {
   verdict: (b: { kind: string; target_id: string; verdict: "keep" | "pass"; artifact: boolean; note: string; method: string }) => j("/api/verdicts", { method: "POST", body: JSON.stringify(b) }),
   items: (q: Record<string, string>) => j<{ total: number; items: Item[] }>(`/api/items?${new URLSearchParams(q)}`),
   draws: (archived = false) => j<Draw[]>(`/api/draws${archived ? "?archived=true" : ""}`),
-  setting: (id: string) => j<{ id: string; name: string; draw: number; domains: { slug: string; heading: string }[] }>(`/api/settings/${id}`),
+  setting: (id: string) => j<{ id: string; name: string; lists: { name: string; entries: number }[] }>(`/api/settings/${id}`),
   draw: (id: string) => j<{ draw: Draw; origin: Origin | null; steps: Step[]; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] }>(`/api/draws/${id}`),
   like: (id: string) => j<Like>(`/api/draws/${id}/like`),
   deleteDraw: (id: string) => j<{ deleted: string }>(`/api/draws/${id}`, { method: "DELETE" }),
@@ -53,7 +53,7 @@ export type Status = { passages: number; passages_eligible: number; passages_sus
 export type Source = { id: string; genre: string; group: string; title: string };
 /** The options one draw was made with, for a form that starts another like it. */
 export type Like = {
-  mode: string; setting?: string; genre?: string; sampling?: string; domains?: string[];
+  mode: string; setting?: string; genre?: string; sampling?: string;
   segment?: { source?: string | string[]; author?: string };
   seed?: { mode: "picked"; themeId: string } | { mode: "typed"; text: string };
   seed_text: string;

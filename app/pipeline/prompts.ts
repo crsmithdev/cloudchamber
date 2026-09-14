@@ -97,39 +97,49 @@ It is an execution, not discovery: the structure above has already settled the s
   ending: `
 Write the ending, in an <ending> tag: the last beat, derived from the arithmetic and custody sections above. Under ${RUN.endingWords} words. Prose or document form as the structure implies. Output only the tag.`,
 
-  distill: `A setting file for a story pipeline holds, per domain, typed sections that a generation stage loads by name. Below is the setting's matrix, one domain's heading and frame, the sections to fill, and the reference material the domain is built from. Fill each named section from the reference material only.
+  /** The four lists, defined once and shared by both distill passes and by nothing else. */
+  listDefinitions: `<bodies>: organisations, offices, orders, departments and courts. What it issues or decides, whom it answers to, and what it cannot do.
+<instruments>: documents, devices, drugs, weapons and rites. What it does, who holds it, and what follows from having it, losing it or undergoing it.
+<places>: named places. What the place does, and what it costs to be there. Never what it looks like.
+<terms>: the setting's own word for a thing, then the separator, then a gloss under twelve words.`,
+
+  entryShape: `Every entry is one line in one shape: the name, then a space, an em dash and a space, then what it does; then what it cannot do, or what follows from it. Under {words} words. Any interval, price, count or deadline belongs in that second clause, on the thing that keeps it.
+
+Every entry names something this setting names: a body, an instrument, a place, a rite, a term, a date or a figure that appears in the material below. An entry that would be true of any city, any empire or any war is not written, and fewer entries is the right answer when the material runs out. No citations, no URLs, no bracketed marks.`,
+
+  distillMap: `A setting file for a story pipeline holds four lists of named things. Below is the setting's matrix and one reference file. Take from the file every entry it can support, and nothing it cannot.
 
 ## Matrix
 
 {matrix}
 
-### {heading}
+The file's subject: {topic}
 
-Frame: {frame}
+Output one tag per list, each holding <entry> tags, at most {n} entries per list. A list the file says nothing about gets an empty tag.
 
-Sections to fill, one <section name="..."> tag each, holding a markdown list of lines:
+{listDefinitions}
 
-{definitions}
-{mask}
-Every line is specific to this setting: it names or rests on a body, instrument, statute, place, date or figure in the reference below, and it belongs to this domain's frame, not a neighbouring one. A line that would be true of any city, any empire or any war is not written; fewer lines is the right answer when the reference runs out. Every line would survive the reference being removed: no citations, no URLs, no bracketed marks. Output only the tags.
+{entryShape}
 
 <reference>
 {reference}
 </reference>`,
 
-  distillDefinitions: {
-    Mechanisms: `<section name="Mechanisms">: up to ${RUN.distillCaps.Mechanisms} lines. Each is one sentence, nine to forty words, carrying a mechanism and a turn: state the process, name who it is done to, and imply what it costs or why there is no exit. No names, no designations. Do not open on this, that, it or here.`,
-    Roles: `<section name="Roles">: up to ${RUN.distillCaps.Roles} lines. Positions a mechanism happens to, never identities: the deputy, the driver, the heir. One line per role, a noun phrase, with the office or instrument that defines the position.`,
-    Institutions: `<section name="Institutions">: up to ${RUN.distillCaps.Institutions} lines. Bodies. One line per body: what it issues, whom it answers to, what it cannot do.`,
-    Instruments: `<section name="Instruments">: up to ${RUN.distillCaps.Instruments} lines. Documents and forms. One line per instrument: its name, who issues it, who reads it, and the consequence of filing it late or wrong.`,
-    Clocks: `<section name="Clocks">: up to ${RUN.distillCaps.Clocks} lines. Intervals, deadlines, sunsets, handovers and rotations. One line per clock: the interval and what it governs.`,
-    Places: `<section name="Places">: up to ${RUN.distillCaps.Places} lines. Specific places. One line per place: what it does, never what it looks like.`,
-    Vocabulary: `<section name="Vocabulary">: up to ${RUN.distillCaps.Vocabulary} lines. The setting's own words for things. One line per term: the term, a colon, and a gloss under twelve words.`,
-  } as Record<string, string>,
+  distillReduce: `A setting file for a story pipeline holds four lists of named things. Below is the setting's matrix and every candidate entry gathered for its {list} list, each with the reference file it came from in brackets. Choose the ones that stay.
 
-  distillMask: `
-Proper nouns belong only in the setting's Institutions and Sources sections. In every section you write here, name things by office, instrument or position: the ship, the intake, the levy, the registry.
-`,
+## Matrix
+
+{matrix}
+
+Keep at most {cap}. Drop a candidate that repeats another's thing, and where two cover the same ground keep the one that is more specific about what it does or what follows from it. Prefer entries that carry a number, a name or a consequence. Spread the keep across subjects rather than taking every entry from one file. Rewrite an entry only to fix its shape or to cut it under {words} words; do not invent, merge facts from two candidates, or add anything the candidates do not say.
+
+Output one <{listl}> tag holding the kept <entry> tags, in the order you would have someone read them. Drop the bracketed source from every entry you keep.
+
+{entryShape}
+
+Candidates:
+
+{candidates}`,
 
   // --- checking and drafting (docs/specs/2026-09-05-drafting-pipeline.md) ----
 

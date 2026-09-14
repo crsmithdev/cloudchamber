@@ -4,8 +4,6 @@ import { api, when, type Artifact, type Candidate, type Example, type Facets, ty
 
 export type Detail = { draw: Draw; origin: Origin | null; steps: Step[]; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] };
 const STAGES = ["premises", "execute", "gate", "outline", "context", "ending", "brief"];
-/** The reserved domain pin: run the setting with no domain (NO_DOMAINS in app/pipeline/settings.ts). */
-const NO_DOMAINS = "none";
 export const LABEL: Record<string, string> = { awaiting_gate: "open", done: "brief", awaiting_check_gate: "gate 1", awaiting_draft_gate: "gate 2", checking: "checking", repairing: "repairing", drafting: "drafting", drafted: "drafted", passed: "passed", repaired: "repaired" };
 export const label = (status: string) => LABEL[status] ?? status;
 /** The statuses that mean a model call is in flight, so the views refresh while they hold. */
@@ -24,7 +22,6 @@ export function DrawMetaItems({ d }: { d: Detail }) {
   return (
     <>
       <span><i>setting</i> {d.draw.setting ?? "unrestricted"}</span>
-      {d.draw.domains && <span><i>domains</i> {(JSON.parse(d.draw.domains) as string[]).join(" + ") || "none"}</span>}
       <span><i>genre</i> {d.draw.genre}</span>
       <span><i>sampling</i> {d.draw.sampling}</span>
     </>
@@ -304,18 +301,11 @@ function StartForm({ status, like }: { status: Status | null; like?: string }) {
   const [err, setErr] = useState("");
   useEffect(() => { api.facets().then(setFacets); }, []);
   const [sources, setSources] = useState<string[]>([]);
-  const [domains, setDomains] = useState<{ draw: number; list: { slug: string; heading: string }[] } | null>(null);
-  const [pinned, setPinned] = useState<string[]>([]);
-  // pins to apply once the setting's domains arrive; a ref, so the fetch below cannot race the state that fills it
-  const wantPinned = useRef<string[]>([]);
+  const [lists, setLists] = useState<{ name: string; entries: number }[] | null>(null);
   useEffect(() => {
-    setPinned([]); setDomains(null);
+    setLists(null);
     if (!form.setting) return;
-    api.setting(form.setting).then((s) => {
-      setDomains({ draw: s.draw, list: s.domains });
-      setPinned(wantPinned.current.filter((slug) => slug === NO_DOMAINS || s.domains.some((d) => d.slug === slug)));
-      wantPinned.current = [];
-    }).catch(() => setDomains(null));
+    api.setting(form.setting).then((s) => setLists(s.lists)).catch(() => setLists(null));
   }, [form.setting]);
   // "redraw": every option of the draw this one is being started from
   const [seedTouched, setSeedTouched] = useState(false);
@@ -324,7 +314,6 @@ function StartForm({ status, like }: { status: Status | null; like?: string }) {
     if (!like) return;
     api.like(like).then((o) => {
       setForm({ mode: o.mode, sampling: o.sampling ?? "tail", setting: o.setting ?? "", genre: o.genre ?? "", seed: o.seed_text });
-      wantPinned.current = o.domains?.length === 0 ? [NO_DOMAINS] : o.domains ?? [];
       setGenreParts([]);
       setSeedTouched(false);
       setThemeId(o.seed?.mode === "picked" ? o.seed.themeId : "");
@@ -332,10 +321,6 @@ function StartForm({ status, like }: { status: Status | null; like?: string }) {
       setSources(Array.isArray(s) ? s : s ? [s] : []);
     }).catch((e) => setErr(e.message));
   }, [like]);
-  // "No domains" is a pin of its own and excludes the rest (NO_DOMAINS in app/pipeline/settings.ts)
-  const togglePin = (slug: string) => setPinned((p) => slug === NO_DOMAINS
-    ? (p.includes(NO_DOMAINS) ? [] : [NO_DOMAINS])
-    : p.includes(slug) ? p.filter((x) => x !== slug) : [...p.filter((x) => x !== NO_DOMAINS), slug]);
   // the chips are shortcuts into one free-text field: picking several joins them, typing clears them
   const toggleGenre = (v: string) => {
     const next = genreParts.includes(v) ? genreParts.filter((x) => x !== v) : [...genreParts, v];
@@ -360,7 +345,7 @@ function StartForm({ status, like }: { status: Status | null; like?: string }) {
     try {
       const { id } = await api.startDraw({
         ...form, seed: keepsTheme ? undefined : form.seed, seed_id: keepsTheme ? themeId : undefined,
-        source: sources.join(",") || undefined, domains: pinned.length ? pinned.join(",") : undefined,
+        source: sources.join(",") || undefined,
       });
       location.hash = `#draw/${id}`;
     } catch (e: any) { setErr(e.message); } finally { setBusy(false); }
@@ -373,8 +358,8 @@ function StartForm({ status, like }: { status: Status | null; like?: string }) {
         {like && <p className="lede" style={{ marginBottom: ".75rem" }}>Every option below comes from <a href={`#draw/${like}`} className="mono">{like}</a>, which stays open. Change what you want and start.</p>}
         <p className="lede">Pulls six eligible passages and a seed, asks for five premises off the centre of the distribution, writes each as a 400-word vignette, then stops at the gate for you. After the gate: a reverse outline, two context vignettes, the ending, and a brief in <span className="mono">briefs/</span>.</p>
         <div className="field"><span className="lbl">Gate</span><div className="seg" role="group" aria-label="Gate"><button type="button" aria-pressed={form.mode === "manual"} onClick={() => setForm({ ...form, mode: "manual" })}>Manual</button><button type="button" aria-pressed={form.mode === "auto"} onClick={() => setForm({ ...form, mode: "auto" })}>Auto</button></div><span className="help">Manual waits for you after the vignettes. Auto takes the lowest-probability premise and keeps going.</span></div>
-        <div className="field"><label htmlFor="setting">Setting</label><select id="setting" className="sel" value={form.setting ?? ""} onChange={set("setting")}><option value="">Unrestricted</option>{facets?.settings.map((s) => <option key={s}>{s}</option>)}</select><span className="help">A setting slices its sections into each stage, with the hard rules last. Its domains are optional: pin them, take the draw, or take none.</span></div>
-        {form.setting && domains && <div className="field"><span className="lbl">Domains</span><div className="chips" role="group" aria-label="Domains">{domains.list.map((d) => <button key={d.slug} type="button" className="chip" aria-pressed={pinned.includes(d.slug)} onClick={() => togglePin(d.slug)}>{d.heading}</button>)}<button type="button" className="chip" aria-pressed={pinned.includes(NO_DOMAINS)} onClick={() => togglePin(NO_DOMAINS)}>No domain</button></div><span className="help">{pinned.includes(NO_DOMAINS) ? "No domain: the setting's own sections only." : pinned.length ? `Pinned: ${pinned.join(", ")}, in this order.` : domains.draw ? `None pinned: ${domains.draw} drawn at random.` : "This setting takes no domain unless you pin one."}</span></div>}
+        <div className="field"><label htmlFor="setting">Setting</label><select id="setting" className="sel" value={form.setting ?? ""} onChange={set("setting")}><option value="">Unrestricted</option>{facets?.settings.map((s) => <option key={s}>{s}</option>)}</select><span className="help">A setting slices its four lists into each stage, with the hard rules last.</span></div>
+        {form.setting && lists && <div className="field"><span className="lbl">Lists</span><div className="chips" role="group" aria-label="Lists">{lists.map((l) => <span key={l.name} className="chip" aria-disabled="true">{l.name} · {l.entries}</span>)}</div><span className="help">Every list reaches the stages that load it, whole. Nothing is selected before the premise exists.</span></div>}
         <div className="field"><span className="lbl">Sampling</span><div className="seg" role="group" aria-label="Sampling">{(facets?.sampling ?? []).map((s) => (
           <button key={s.mode} type="button" aria-pressed={form.sampling === s.mode} onClick={() => setForm({ ...form, sampling: s.mode })}>{s.mode}</button>))}
           </div><span className="help">{SAMPLING_HELP[form.sampling] ?? ""} Stated probability {form.sampling === "standard" ? "over 0.35" : form.sampling === "off-centre" ? "0.10 to 0.35" : "under 0.10"}.</span></div>

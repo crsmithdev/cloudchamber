@@ -13,7 +13,7 @@ import { BANDS, DEFAULT_SAMPLING, RUN, isSampling, loadStages, type Sampling, ty
 import { TEMPLATES, compose, fill } from "./prompts.ts";
 import { sections, tag, tags, words, type ModelAdapter } from "./model.ts";
 import { eligiblePassages, eligibleThemes, type Segment } from "./bank.ts";
-import { hardRules, loadChecked, pickDomains, slice, type Domain, type GenStage, type Setting } from "./settings.ts";
+import { hardRules, loadChecked, slice, type GenStage, type Setting } from "./settings.ts";
 import { SETTINGS } from "./paths.ts";
 import { now } from "./paths.ts";
 import { pipelineVersion } from "./version.ts";
@@ -30,12 +30,11 @@ export type DrawOpts = {
   seed?: SeedChoice;
   sampling?: Sampling;   // where in the stated distribution the premises are asked for
   seedRng?: () => number;
-  domains?: string[];    // pin the setting's domains by slug, [] for none at all; drawn by rng when absent
 };
 
 export type DrawRow = {
   id: string; name: string; setting: string | null; genre: string; mode: "auto" | "manual"; segment: string | null;
-  seed_mode: string; seed_text: string; seed_theme_id: string | null; example_ids: string; domains: string | null; sampling: string; status: string;
+  seed_mode: string; seed_text: string; seed_theme_id: string | null; example_ids: string; sampling: string; status: string;
   gate_method: string | null; chosen_step: string | null; flagged: number; flag_note: string;
   superseded_by: string | null; repaired_from: string | null; forked_from: string | null; draft_config: string | null; archived_at: string | null; created_at: string; ended_at: string | null;
 };
@@ -65,19 +64,13 @@ export class Pipeline {
   }
 
   /** The setting's text for one stage, or undefined when unrestricted. */
-  settingFor(stage: GenStage, setting?: Setting, domains: Domain[] = []): { slice: string; hardRules: string } | undefined {
-    return setting ? { slice: slice(setting, domains, stage), hardRules: hardRules(setting) } : undefined;
+  settingFor(stage: GenStage, setting?: Setting): { slice: string; hardRules: string } | undefined {
+    return setting ? { slice: slice(setting, stage), hardRules: hardRules(setting) } : undefined;
   }
 
-  /**
-   * The draw's setting and the domains the row recorded, linted. The row is
-   * the authority, so a re-run gets what the draw ran on: unrestricted draws
-   * get no setting, and a draw that recorded none stays on none.
-   */
-  loadDrawSetting(draw: { setting: string | null; domains: string | null }): { setting?: Setting; domains: Domain[] } {
-    if (!draw.setting) return { domains: [] };
-    const setting = loadChecked(draw.setting, this.settingsDir);
-    return { setting, domains: pickDomains(setting, this.rng, JSON.parse(draw.domains ?? "[]")) };
+  /** The draw's setting, linted; an unrestricted draw has none. */
+  loadDrawSetting(draw: { setting: string | null }): { setting?: Setting } {
+    return draw.setting ? { setting: loadChecked(draw.setting, this.settingsDir) } : {};
   }
   rng: () => number;
 
@@ -210,21 +203,19 @@ export class Pipeline {
   // --- the draw ---------------------------------------------------------------
 
   async start(opts: DrawOpts): Promise<DrawRow> {
-    if (opts.domains && !opts.setting) throw new Error("draw: --domains needs --setting");
     const sampling = opts.sampling ?? DEFAULT_SAMPLING;
     if (!isSampling(sampling)) throw new Error(`draw: sampling ${sampling} is not tail | off-centre | standard`);
     const setting = opts.setting ? loadChecked(opts.setting, this.settingsDir) : undefined;
-    const domains = setting ? pickDomains(setting, this.rng, opts.domains) : [];
     const examples = this.drawExamples(opts.segment);
     const seed = this.drawSeed(opts.seed, setting);
     const genre = this.inferGenre(opts, examples);
     const drawId = `${now().replace(/[-:TZ]/g, "").slice(0, 15)}-${id(2)}`;
-    this.db.query(`INSERT INTO draws (id, name, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, domains, sampling, status, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?)`)
+    this.db.query(`INSERT INTO draws (id, name, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, sampling, status, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?)`)
       .run(drawId, this.nameFor(seed.text), setting?.id ?? null, genre, opts.mode, opts.segment ? JSON.stringify(opts.segment) : null,
-        seed.mode, seed.text, seed.themeId, JSON.stringify(examples.map((e) => e.id)), setting ? JSON.stringify(domains.map((d) => d.slug)) : null, sampling, now());
+        seed.mode, seed.text, seed.themeId, JSON.stringify(examples.map((e) => e.id)), sampling, now());
     try {
-      await this.premisesAndExecute(drawId, examples.map((e) => e.text), seed.text, genre, sampling, setting, domains);
+      await this.premisesAndExecute(drawId, examples.map((e) => e.text), seed.text, genre, sampling, setting);
     } catch (e) {
       this.fail(drawId, e);
       throw e;
@@ -234,11 +225,11 @@ export class Pipeline {
     return draw;
   }
 
-  private async premisesAndExecute(drawId: string, examples: string[], seed: string, genre: string, sampling: Sampling, setting?: Setting, domains: Domain[] = []) {
+  private async premisesAndExecute(drawId: string, examples: string[], seed: string, genre: string, sampling: Sampling, setting?: Setting) {
     const band = BANDS[sampling];
     const ask = fill("premisesAsk", { genre, seed, sampling: TEMPLATES.samplingAsk[sampling] });
     const head = examples.join("\n\n");
-    const prompt = compose(head, ask, this.settingFor("premises", setting, domains));
+    const prompt = compose(head, ask, this.settingFor("premises", setting));
     const { step, value: premises } = await this.invoke(drawId, null, "premises", prompt, (text) => {
       const ps = tags(text, "premise").map((p) => ({ text: tag(p, "text"), probability: Number(tag(p, "probability")) }));
       if (ps.length !== RUN.k) throw new Error(`expected ${RUN.k} premises, got ${ps.length}`);
@@ -257,7 +248,7 @@ export class Pipeline {
     premises.forEach((p, i) => this.artifact(step, "premise", p.text, { index: i + 1, probability: p.probability, warnings: words(p.text) > 120 ? ["length"] : [] }));
     await Promise.all(premises.map((p, i) => {
       const ask = fill("executeAsk", { seed, premise: p.text });
-      return this.invoke(drawId, step.id, "execute", compose(head, ask, this.settingFor("execute", setting, domains)), (text) => {
+      return this.invoke(drawId, step.id, "execute", compose(head, ask, this.settingFor("execute", setting)), (text) => {
         const v = tag(text, "vignette");
         if (!v) throw new Error("no <vignette> tag");
         return v;
@@ -314,7 +305,6 @@ export class Pipeline {
     const draw = this.draw(drawId);
     return {
       mode: draw.mode, setting: draw.setting ?? undefined, genre: draw.genre, sampling: draw.sampling as Sampling,
-      domains: draw.domains ? (JSON.parse(draw.domains) as string[]) : undefined,
       segment: draw.segment ? JSON.parse(draw.segment) : undefined,
       seed: draw.seed_theme_id ? { mode: "picked", themeId: draw.seed_theme_id } : { mode: "typed", text: draw.seed_text },
     };
@@ -337,7 +327,7 @@ export class Pipeline {
 
   /**
    * Develop a second candidate of a draw that already chose one. The fork is a
-   * draw of its own — the same seed, examples, setting and domains — carrying
+   * draw of its own — the same seed, examples and setting — carrying
    * the candidate's premise and vignette across as a copied step, so every
    * later stage reads it the way it reads any other draw.
    */
@@ -351,9 +341,9 @@ export class Pipeline {
     const already = this.forks(drawId).find((f) => f.step_id === executeStepId);
     if (already) throw new Error(`draw ${drawId}: candidate #${c.index} is already developed as ${already.id}`);
     const newId = `${now().replace(/[-:TZ]/g, "").slice(0, 15)}-${id(2)}`;
-    this.db.query(`INSERT INTO draws (id, name, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, domains, sampling, status, gate_method, forked_from, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', 'manual', ?, ?)`)
-      .run(newId, this.nameFor(src.seed_text), src.setting, src.genre, src.mode, src.segment, src.seed_mode, src.seed_text, src.seed_theme_id, src.example_ids, src.domains, src.sampling, drawId, now());
+    this.db.query(`INSERT INTO draws (id, name, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, sampling, status, gate_method, forked_from, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', 'manual', ?, ?)`)
+      .run(newId, this.nameFor(src.seed_text), src.setting, src.genre, src.mode, src.segment, src.seed_mode, src.seed_text, src.seed_theme_id, src.example_ids, src.sampling, drawId, now());
     const step = this.recordStep(newId, null, "execute", "copied", c.premise);
     this.artifact(step, "vignette", c.vignette, { index: c.index, probability: c.probability, premise: c.premise, warnings: c.warnings, forked_from: executeStepId });
     this.db.query("UPDATE draws SET chosen_step = ? WHERE id = ?").run(step.id, newId);
@@ -391,11 +381,11 @@ export class Pipeline {
 
   private async develop(drawId: string, c: { step_id: string; premise: string; vignette: string }) {
     const draw = this.draw(drawId);
-    const { setting, domains } = this.loadDrawSetting(draw);
+    const { setting } = this.loadDrawSetting(draw);
     const settingJobs = (setting?.jobs ?? []).map((j) => fill("settingJob", { name: j.name, description: j.description })).join("");
     const jobNames = [...RUN.coreJobs, ...(setting?.jobs ?? []).map((j) => j.name.toLowerCase())];
     const outlineHead = fill("outlineHead", { seed: draw.seed_text, premise: c.premise, vignette: c.vignette });
-    const outlineSetting = this.settingFor("outline", setting, domains);   // the Jobs section reaches the outline as its <section> asks
+    const outlineSetting = this.settingFor("outline", setting);   // the Jobs section reaches the outline as its <section> asks
     const { step: outlineStep, value: outline } = await this.invoke(drawId, c.step_id, "outline",
       compose(outlineHead, fill("outlineAsk", { settingJobs }), outlineSetting), (text) => {
         const secs = sections(text);
@@ -405,7 +395,7 @@ export class Pipeline {
     const outlineText = Object.entries(outline).map(([n, body]) => `## ${n}\n\n${body}`).join("\n\n");
     this.artifact(outlineStep, "outline", outlineText, { jobs: jobNames, words: Object.fromEntries(Object.entries(outline).map(([n, b]) => [n, words(b)])) });
     const head = fill("head", { outline: outlineText, vignette: c.vignette });
-    const after = (stage: GenStage, ask: string) => compose(head, ask, this.settingFor(stage, setting, domains), "");
+    const after = (stage: GenStage, ask: string) => compose(head, ask, this.settingFor(stage, setting), "");
     const { step: jobsStep, value: jobs } = await this.invoke(drawId, outlineStep.id, "jobs", after("jobs", fill("jobs", {})), (text) => {
       const js = tags(text, "job");
       if (js.length !== RUN.contextVignettes) throw new Error(`expected ${RUN.contextVignettes} jobs, got ${js.length}`);

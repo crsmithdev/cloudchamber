@@ -44,7 +44,9 @@ describe("the knobs", () => {
     const dir = mkdtempSync(join(tmpdir(), "cloudchamber-knobs-"));
     const sections = knobs(fixture(), settingsFixture(dir));
     const by = (title: string) => sections.find((s) => s.title === title)!;
-    expect(by("settings and their domains").rows).toEqual([["basin", "draw 2 · land-and-title, labour, death-and-its-administration"]]);
+    expect(by("settings").rows).toEqual([["basin", "3 bodies · 3 instruments · 3 places · 3 terms"]]);
+    expect(by("settings").note).toContain("40 entries a list, 45 words an entry");
+    expect(by("draw").rows.map((r) => r[0])).not.toContain("--domains");
     expect(by("sampling").rows.map((r) => r[0])).toEqual(["tail", "off-centre", "standard"]);
     expect(by("genre shortcuts").rows.map((r) => r[0])).toContain("basics");
     expect(by("example sources").rows.map((r) => r[0])).toEqual(["datlow-01", "scp", "watts-blindsight"]);
