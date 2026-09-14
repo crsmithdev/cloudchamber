@@ -226,8 +226,8 @@ found they all descend from the retired `playbook.md`: setting-a's Matrix is
 domain Frame are restatements of `WHAT A WRITER CAN STEAL` from an annex essay
 that had been carried into its reference tree. Both annexes — 22,264 words,
 `Evidence for playbook.md`, outside the provenance their own INDEX files
-document — were deleted with them. setting-a now carries no prose at all: front
-matter and four lists.
+document — were deleted with them. All three settings now carry no prose at all: front
+matter and five lists, identical in shape.
 
 ### Intent per list
 
