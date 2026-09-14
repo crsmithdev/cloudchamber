@@ -160,6 +160,14 @@ and re-cut without reading the corpus again.
    Each call after the first SHALL carry the entry names the earlier lists
    kept, with the instruction to drop a candidate that is one of them, so the
    setting names each thing once.
+13. WHEN a reduce call returns an entry THE system SHALL require its `[source]`
+   bracket, strip it before writing the setting file, and record
+   `{list, entry, file}` in `sources/settings/<id>/kept.jsonl`, rewriting that
+   file on every reduce. `cloudchamber setting sources <id>` SHALL print each
+   entry beside the reference file it came from. A setting file cannot carry
+   its own provenance without becoming a prompt of citations, and a distillate
+   whose trail is lost cannot be audited — which is how 22,264 words of craft
+   essay lived in two reference trees for nine days.
 9. WHEN `distill` runs with neither flag THE system SHALL run the map pass
    for any file not in the sidecar, then the reduce pass for all four lists.
 10. WHEN a draw is started THE system SHALL accept no `--domains` option, and

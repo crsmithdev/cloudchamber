@@ -6,7 +6,7 @@ import { openDb } from "./store/db.ts";
 import { FakeModel } from "./model.ts";
 import { Pipeline } from "./draw.ts";
 import { settingsFixture } from "./settings.fixture.ts";
-import { candidatesPath, distill, readCandidates, referenceFiles } from "./distill.ts";
+import { candidatesPath, distill, readCandidates, readKept, referenceFiles, splitSource } from "./distill.ts";
 import { LISTS, entryName, formatFinding, lintFile, loadSetting } from "./settings.ts";
 
 function fixture() {
@@ -24,11 +24,11 @@ const mapReply = (prompt: string) => {
     `<entry>The ${tag} ${l.toLowerCase()} ${n} — does a thing for ${topic}; cannot do another</entry>`).join("")}</${l.toLowerCase()}>`).join("\n");
 };
 
-/** A reduce reply: echoes back the first `keep` candidates of the list it was asked for. */
+/** A reduce reply: echoes back the first `keep` candidates of the list it was asked for, bracket and all. */
 const reduceReply = (keep: number) => (prompt: string) => {
   const list = /gathered for its (\w+) list/.exec(prompt)![1];
   const rows = (prompt.split("Candidates:\n\n")[1] ?? "").split("\n").filter(Boolean)
-    .map((l) => l.replace(/^- /, "").replace(/\s+\[[^\]]*\]$/, ""));
+    .map((l) => l.replace(/^- /, "").replace(/\s{2,}\[/, " ["));
   return `<${list.toLowerCase()}>${rows.slice(0, keep).map((r) => `<entry>${r}</entry>`).join("")}</${list.toLowerCase()}>`;
 };
 
@@ -75,11 +75,20 @@ describe("distill", () => {
     for (const name of LISTS) {
       expect(s.lists[name]).toHaveLength(4);
       expect(s.lists[name][0]).toContain(name.toLowerCase());
-      expect(out.some((l) => l.startsWith(`${name}: 4 of 8 candidates`))).toBe(true);
     }
     const text = readFileSync(path, "utf8");
     expect(text.slice(0, text.indexOf("## Bodies"))).toBe(original.slice(0, original.indexOf("## Bodies")));
+    for (const name of LISTS) for (const e of s.lists[name]) expect(e).not.toContain("[");   // the bracket survives the call, not the file
     expect(lintFile("basin", sdir).map(formatFinding)).toEqual([]);
+    // the trail the setting file cannot carry
+    const kept = readKept("basin", sdir);
+    expect(kept).toHaveLength(5 * 4);
+    for (const name of LISTS) {
+      const mine = kept.filter((k) => k.list === name);
+      expect(mine.map((k) => k.entry)).toEqual(s.lists[name]);
+      for (const k of mine) expect(["death.md", "events.md", "labour.md", "land.md"]).toContain(k.file);
+    }
+    for (const name of LISTS) expect(out.some((l) => l.startsWith(`${name}: 4 of 8 candidates, 4 traced`))).toBe(true);
   });
 
   test("reduce before map says so, and a failed map file is reported without stopping the rest", async () => {
@@ -118,5 +127,24 @@ describe("distill", () => {
     expect(out.some((l) => l.startsWith("Bodies: 2 of 8"))).toBe(true);
     expect(existsSync(candidatesPath("basin", sdir))).toBe(true);
     expect(out).not.toContain("lint:");
+  });
+});
+
+describe("the trail", () => {
+  test("splitSource takes the bracket off an entry and hands back what it named", () => {
+    expect(splitSource("Ellis — to withdraw a parcel   [Housing]")).toEqual({ entry: "Ellis — to withdraw a parcel", source: "Housing" });
+    expect(splitSource("Ellis — to withdraw a parcel [Housing and displacement]").source).toBe("Housing and displacement");
+    expect(splitSource("Ellis — to withdraw a parcel")).toEqual({ entry: "Ellis — to withdraw a parcel", source: "" });
+    expect(splitSource("Section 8A.103 — a milestone [x]").entry).toBe("Section 8A.103 — a milestone");
+  });
+
+  test("a second reduce rewrites the trail rather than appending to it", async () => {
+    const { db, dir, sdir } = fixture();
+    await distill(pipe(db, dir, sdir, { distill: mapReply }), "basin", { map: true });
+    await distill(pipe(db, dir, sdir, { distill: reduceReply(4) }), "basin", { reduce: true });
+    await distill(pipe(db, dir, sdir, { distill: reduceReply(2) }), "basin", { reduce: true });
+    const kept = readKept("basin", sdir);
+    expect(kept).toHaveLength(5 * 2);
+    expect(kept.map((k) => k.entry)).toEqual(LISTS.flatMap((n) => loadSetting("basin", sdir).lists[n]));
   });
 });

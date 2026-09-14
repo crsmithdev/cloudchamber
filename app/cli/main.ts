@@ -14,7 +14,8 @@ const DOC = `cloudchamber — the one command the skill and the UI drive.
                [--seed "text" | --seed-id ID] [--like DRAW]
                                           --like takes another draw's options; the rest override it
    cloudchamber setting lint <id>              check a setting file; exit 1 with one finding per line
-   cloudchamber distill <id> [--map|--reduce]  build a setting's four lists from its reference/, in two passes
+   cloudchamber setting sources <id>           every kept entry beside the reference file it came from
+   cloudchamber distill <id> [--map|--reduce]  build a setting's five lists from its reference/, in two passes
    cloudchamber gate <draw> choose <execute-step> | fork <execute-step> | flag | archive | unarchive  [--note "..."]
    cloudchamber delete <draw>                  remove a draw that never produced a brief
    cloudchamber themes [--only SRC ...] [--limit N]   draft themes for stories not yet drafted
@@ -41,10 +42,10 @@ import type { Sampling } from "../pipeline/config.ts";
 import { ClaudeCli } from "../pipeline/model.ts";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { BRIEFS, now } from "../pipeline/paths.ts";
+import { BRIEFS, SETTINGS, now } from "../pipeline/paths.ts";
 import { draftAll, failures, histogram, replayThemes } from "../pipeline/themes.ts";
 import { formatFinding, lintFile, loadSetting, LISTS } from "../pipeline/settings.ts";
-import { distill } from "../pipeline/distill.ts";
+import { distill, readKept } from "../pipeline/distill.ts";
 import { Drafting } from "../pipeline/drafting.ts";
 import type { Overrides } from "../pipeline/draftconfig.ts";
 
@@ -211,7 +212,21 @@ async function main() {
       break;
     case "setting": {
       const [action, sid] = rest;
-      if (action !== "lint" || !sid) usage();
+      if (!sid || (action !== "lint" && action !== "sources")) usage();
+      if (action === "sources") {
+        // the setting file cannot carry the trail, so distill writes it beside the candidates
+        const kept = readKept(sid!, SETTINGS);
+        if (!kept.length) { console.log(`${sid}: no kept.jsonl; run distill --reduce`); break; }
+        const s = loadSetting(sid!);
+        for (const name of LISTS) {
+          console.log(`\n## ${name}`);
+          for (const e of s.lists[name]) {
+            const row = kept.find((k) => k.list === name && k.entry === e);
+            console.log(`${(row?.file || "— untraced —").padEnd(52)}  ${e.split(" — ")[0]}`);
+          }
+        }
+        break;
+      }
       const findings = lintFile(sid!);
       if (findings.length) { for (const f of findings) console.log(formatFinding(f)); process.exit(1); }
       console.log(`${sid}: ${LISTS.map((n) => `${loadSetting(sid!).lists[n].length} ${n.toLowerCase()}`).join(", ")}, clean`);

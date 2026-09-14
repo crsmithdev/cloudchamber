@@ -1,5 +1,5 @@
 /**
- * `cloudchamber distill <id> [--map|--reduce]`: build a setting's four lists
+ * `cloudchamber distill <id> [--map|--reduce]`: build a setting's five lists
  * from its reference tree, in two passes, because no corpus here fits one
  * call.
  *
@@ -28,8 +28,28 @@ import {
 
 export type DistillOpts = { map?: boolean; reduce?: boolean };
 export type Candidate = { list: ListName; entry: string; source: string; file: string };
+/** A kept entry and the reference file it came from: the trail the setting file itself cannot carry. */
+export type Kept = { list: ListName; entry: string; file: string };
 
 export const candidatesPath = (id: string, dir: string) => join(dir, id, "candidates.jsonl");
+export const keptPath = (id: string, dir: string) => join(dir, id, "kept.jsonl");
+
+export function readKept(id: string, dir: string): Kept[] {
+  const path = keptPath(id, dir);
+  if (!existsSync(path)) return [];
+  return readFileSync(path, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l) as Kept);
+}
+
+/**
+ * The reduce keeps each entry's `[source]` bracket so the trail survives the
+ * call; this takes it off for the setting file and hands back the source it
+ * named. An entry that lost its bracket keeps an empty source rather than
+ * failing: the entry is the product, the trail is the record of it.
+ */
+export function splitSource(entry: string): { entry: string; source: string } {
+  const m = /^(.*?)\s*\[([^\]]*)\]\s*$/.exec(entry);
+  return m ? { entry: m[1].trim(), source: m[2].trim() } : { entry: entry.trim(), source: "" };
+}
 
 /** Every .md under the setting's reference/, recursively, as paths relative to reference/. */
 export function referenceFiles(id: string, dir: string): string[] {
@@ -114,6 +134,7 @@ export async function distillReduce(p: Pipeline, id: string, setting: Setting): 
   const path = settingPath(id, dir);
   const all = readCandidates(id, dir);
   if (!all.length) return [`reduce: no candidates; run the map pass first`];
+  writeFileSync(keptPath(id, dir), "");   // a reduce rewrites every list, so it rewrites the trail
   const out: string[] = [];
   const taken: string[] = [];   // names the lists reduced before this one kept; the setting names each thing once
   for (const list of LISTS) {
@@ -137,10 +158,14 @@ export async function distillReduce(p: Pipeline, id: string, setting: Setting): 
       out.push(`${list}: ${e instanceof StepFailure ? e.reason : String((e as any)?.message ?? e)}`);
       continue;
     }
-    const capped = kept.slice(0, RUN.listCaps.entries);
-    taken.push(...capped.map(entryName));
-    writeFileSync(path, replaceList(readFileSync(path, "utf8"), id, list, capped));
-    out.push(`${list}: ${capped.length} of ${mine.length} candidates${kept.length > capped.length ? ` (${kept.length - capped.length} over the cap dropped)` : ""}`);
+    const capped = kept.slice(0, RUN.listCaps.entries).map(splitSource);
+    const bySource = new Map(mine.map((c) => [c.source, c.file]));
+    taken.push(...capped.map((c) => entryName(c.entry)));
+    writeFileSync(path, replaceList(readFileSync(path, "utf8"), id, list, capped.map((c) => c.entry)));
+    appendFileSync(keptPath(id, dir), capped.map((c) =>
+      `${JSON.stringify({ list, entry: c.entry, file: bySource.get(c.source) ?? "" } satisfies Kept)}\n`).join(""));
+    const traced = capped.filter((c) => bySource.has(c.source)).length;
+    out.push(`${list}: ${capped.length} of ${mine.length} candidates, ${traced} traced to a source file${kept.length > capped.length ? ` (${kept.length - capped.length} over the cap dropped)` : ""}`);
   }
   return out;
 }

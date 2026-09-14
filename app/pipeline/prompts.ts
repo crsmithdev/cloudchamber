@@ -99,12 +99,14 @@ Write the ending, in an <ending> tag: the last beat, derived from the arithmetic
 
   /** The four lists, defined once and shared by both distill passes and by nothing else. */
   listDefinitions: `<bodies>: organisations, offices, orders, departments and courts. What it issues or decides, whom it answers to, and what it cannot do.
-<events>: dated events. What happened and when, then what it changed; an event whose consequence the setting still carries.
+<events>: something that happened, on a date — a disaster, a closure, a founding, a strike, a judgment, a removal, an exodus. What happened and when, then what it changed. An event has actors and a before and after. The date a rule took effect is not an event: a commencement belongs on the instrument it commences.
 <instruments>: documents, devices, drugs, weapons and rites. What it does, who holds it, and what follows from having it, losing it or undergoing it.
 <places>: named places. What the place does, and what it costs to be there. Never what it looks like.
 <terms>: the setting's own word for a thing, then the separator, then a gloss under twelve words.`,
 
   entryShape: `Every entry is one line in one shape: the name, then a space, an em dash and a space, then what it does; then what it cannot do, or what follows from it. Under {words} words. Any interval, price, count or deadline belongs in that second clause, on the thing that keeps it.
+
+Where the thing reaches somebody, the second clause says who, and what they lose or cannot do; where it reaches nobody, it says what cannot happen without it.
 
 Every entry names something this setting names: a body, an instrument, a place, a rite, a term, a date or a figure that appears in the material below. An entry that would be true of any city, any empire or any war is not written, and fewer entries is the right answer when the material runs out. No citations, no URLs, no bracketed marks.`,
 
@@ -132,7 +134,7 @@ Another list of this setting has already taken the things below. Drop a candidat
 {matrix}
 Keep at most {cap}. Drop a candidate that repeats another's thing, and where two cover the same ground keep the one that is more specific about what it does or what follows from it. Prefer entries that carry a number, a name or a consequence. Spread the keep across subjects rather than taking every entry from one file. Rewrite an entry only to fix its shape or to cut it under {words} words; do not invent, merge facts from two candidates, or add anything the candidates do not say.
 
-Output one <{listl}> tag holding the kept <entry> tags, in the order you would have someone read them. Drop the bracketed source from every entry you keep.
+Output one <{listl}> tag holding the kept <entry> tags, in the order you would have someone read them. Keep the bracketed source on the end of every entry, exactly as it appears above, so the entry can be traced back to the file it came from.
 {kept}
 
 {entryShape}
