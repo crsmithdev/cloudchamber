@@ -112,12 +112,14 @@ and re-cut without reading the corpus again.
 
 ## Acceptance Criteria
 
-1. WHEN a setting file is parsed THE system SHALL return the four
-   setting-wide bodies (Matrix, Hard rules, Do not build, Jobs), the jobs as
-   name and description pairs, and four ordered lists of entries.
+1. WHEN a setting file is parsed THE system SHALL return the Matrix, the Jobs
+   as name and description pairs, and four ordered lists of entries. Matrix and
+   Jobs are optional; a setting may be its four lists alone.
 2. IF a setting file carries a `## Domains` heading, a `### ` heading, or any
-   of Frame, Mechanisms, Roles, Clocks, Sensation or Sources THEN lint SHALL
-   report it as a finding naming the heading.
+   of Hard rules, Do not build, Open ground, Frame, Mechanisms, Roles, Clocks,
+   Sensation or Sources THEN lint SHALL report it as a finding naming the
+   heading. A setting is reference: it states what is in the world and never
+   how to write it.
 3. WHEN lint runs on an entry THE system SHALL report a finding when the
    entry has no ` — ` separator, when the name is empty, when the entry
    exceeds 40 words, or when a list exceeds 40 entries.
@@ -130,7 +132,7 @@ and re-cut without reading the corpus again.
 6. WHEN a draw runs under a setting THE system SHALL load: Bodies at
    premises; Instruments, Places and Terms at execute and context; Bodies and
    Instruments at outline and jobs; Bodies, Instruments and Terms at ending.
-   Hard rules SHALL be last in every prompt.
+   The ask SHALL be last in every prompt.
 7. WHEN `cloudchamber distill <id> --map` runs THE system SHALL create one
    `distill-map` step per reference file and append its candidate entries to
    `sources/settings/<id>/candidates.jsonl` with the file's topic as the
@@ -159,12 +161,6 @@ name: The setting-a
 claims: setting
 seed_segments: []
 ---
-## Matrix
-## Hard rules
-## Do not build
-## Jobs
-- matrix: Close the regional element. Name the body, instrument or place the
-  story is built out of, and show that removing it removes a mechanism.
 ## Bodies
 - Office of the Public Administrator — issues Authority for Summary
   Administration under $50,000; must petition for letters above $150,000;
@@ -182,13 +178,21 @@ seed_segments: []
 
 `draw` and `names` leave the front matter. `draw` had no meaning once domains
 went. `names` masked proper nouns everywhere but Institutions and Sources,
-which is in direct opposition to criterion 4 — the mask destroys the property
-that makes an entry identifiable — so the mask goes and every list may name
-anything.
+which destroys the property that makes an entry identifiable, so the mask goes
+and every list may name anything.
 
-Open ground leaves the file. It was a writer's to-do list of story shapes not
-yet used, not material about the world, and a list of absences cannot satisfy
-criterion 4. It moves to `research/`.
+Open ground leaves the file: a writer's to-do list of story shapes not yet
+used, not material about the world. It moves to `research/`.
+
+**Hard rules and Do not build leave too, and Matrix and Jobs become optional.**
+A setting is reference; rules are suspect in it. Tracing them on 2026-09-14
+found they all descend from the retired `playbook.md`: setting-a's Matrix is
+§5's preamble verbatim, and setting-b's Matrix, Hard rules and every
+domain Frame are restatements of `WHAT A WRITER CAN STEAL` from an annex essay
+that had been carried into its reference tree. Both annexes — 22,264 words,
+`Evidence for playbook.md`, outside the provenance their own INDEX files
+document — were deleted with them. setting-a now carries no prose at all: front
+matter and four lists.
 
 ### Intent per list
 

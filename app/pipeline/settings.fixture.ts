@@ -13,15 +13,6 @@ seed_segments: []
 
 Take the regional element out and a mechanism goes with it.
 
-## Hard rules
-
-- One impossibility, bought openly.
-- Nothing resolves.
-
-## Do not build
-
-- A second impossibility.
-
 ## Jobs
 
 - matrix: Close the regional element. Name the body, instrument or place the story is built out of, and show that removing it removes a mechanism.

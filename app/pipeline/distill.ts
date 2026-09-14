@@ -22,7 +22,7 @@ import { StepFailure } from "./draw.ts";
 import { tags, tag, words } from "./model.ts";
 import { fill, TEMPLATES } from "./prompts.ts";
 import {
-  LISTS, lintSetting, formatFinding, parseSetting, replaceList, settingPath, referenceDir,
+  LISTS, isEmpty, lintSetting, formatFinding, parseSetting, replaceList, settingPath, referenceDir,
   type ListName, type Setting,
 } from "./settings.ts";
 
@@ -63,6 +63,9 @@ export function readCandidates(id: string, dir: string): Candidate[] {
 
 const shape = () => fill("entryShape", { words: String(RUN.listCaps.words) });
 
+/** The setting's matrix as a prompt block, or nothing: a setting need not have one. */
+const matrixBlock = (s: Setting) => (isEmpty(s.sections.Matrix) ? "" : `\n## Matrix\n\n${s.sections.Matrix}\n`);
+
 const parseEntries = (raw: string, list: ListName): string[] =>
   tags(tag(raw, list.toLowerCase()) ?? "", "entry").map((e) => e.trim()).filter(Boolean);
 
@@ -80,7 +83,7 @@ export async function distillMap(p: Pipeline, id: string, setting: Setting): Pro
   for (const f of files) {
     const { topic, text } = readReference(join(referenceDir(id, dir), f));
     const prompt = fill("distillMap", {
-      matrix: setting.sections.Matrix, topic: topic || f, n: String(RUN.mapCandidates),
+      matrix: matrixBlock(setting), topic: topic || f, n: String(RUN.mapCandidates),
       listDefinitions: TEMPLATES.listDefinitions, entryShape: shape(), reference: text,
     });
     let rows: Candidate[];
@@ -116,7 +119,7 @@ export async function distillReduce(p: Pipeline, id: string, setting: Setting): 
     const mine = all.filter((c) => c.list === list);
     if (!mine.length) { out.push(`${list}: no candidates`); continue; }
     const prompt = fill("distillReduce", {
-      matrix: setting.sections.Matrix, list, listl: list.toLowerCase(),
+      matrix: matrixBlock(setting), list, listl: list.toLowerCase(),
       cap: String(RUN.listCaps.entries), words: String(RUN.listCaps.words), entryShape: shape(),
       candidates: mine.map((c) => `- ${c.entry}   [${c.source}]`).join("\n"),
     });

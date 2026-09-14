@@ -13,7 +13,7 @@ import { BANDS, DEFAULT_SAMPLING, RUN, isSampling, loadStages, type Sampling, ty
 import { TEMPLATES, compose, fill } from "./prompts.ts";
 import { sections, tag, tags, words, type ModelAdapter } from "./model.ts";
 import { eligiblePassages, eligibleThemes, type Segment } from "./bank.ts";
-import { hardRules, loadChecked, slice, type GenStage, type Setting } from "./settings.ts";
+import { loadChecked, slice, type GenStage, type Setting } from "./settings.ts";
 import { SETTINGS } from "./paths.ts";
 import { now } from "./paths.ts";
 import { pipelineVersion } from "./version.ts";
@@ -64,8 +64,8 @@ export class Pipeline {
   }
 
   /** The setting's text for one stage, or undefined when unrestricted. */
-  settingFor(stage: GenStage, setting?: Setting): { slice: string; hardRules: string } | undefined {
-    return setting ? { slice: slice(setting, stage), hardRules: hardRules(setting) } : undefined;
+  settingFor(stage: GenStage, setting?: Setting): { slice: string } | undefined {
+    return setting ? { slice: slice(setting, stage) } : undefined;
   }
 
   /** The draw's setting, linted; an unrestricted draw has none. */

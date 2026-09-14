@@ -3,12 +3,12 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { FIXTURE_SETTING, settingsFixture } from "./settings.fixture.ts";
-import { LISTS, distillate, entryName, formatFinding, hardRules, lintSetting, loadSetting, mentioned, mentions, parseSetting, replaceList, slice } from "./settings.ts";
+import { LISTS, distillate, entryName, formatFinding, lintSetting, loadSetting, mentioned, mentions, parseSetting, replaceList, slice } from "./settings.ts";
 
 const lint = (text: string) => lintSetting(text, "basin").map(formatFinding);
 
 describe("setting lint", () => {
-  test("the fixture is clean and parses into four sections, one job and four lists", () => {
+  test("the fixture is clean and parses into the matrix, one job and four lists", () => {
     expect(lint(FIXTURE_SETTING)).toEqual([]);
     const s = parseSetting(FIXTURE_SETTING, "basin");
     expect(s.claims).toBe("setting");
@@ -26,7 +26,16 @@ describe("setting lint", () => {
 
   test("setting-wide sections and lists: missing and empty", () => {
     expect(lint(FIXTURE_SETTING.slice(0, FIXTURE_SETTING.indexOf("## Places")))).toEqual(["setting › Places: missing", "setting › Terms: missing"]);
-    expect(lint(FIXTURE_SETTING.replace("Take the regional element out and a mechanism goes with it.\n", ""))).toEqual(["setting › Matrix: empty sections hold the line none"]);
+    expect(lint(FIXTURE_SETTING.replace("## Jobs", "## Hard rules\n\n- One impossibility.\n\n## Jobs")))
+      .toEqual(["setting › Hard rules: retired by the four-list shape"]);   // a setting is reference, not a rulebook
+    expect(lint(FIXTURE_SETTING.replace("Take the regional element out and a mechanism goes with it.\n", ""))).toEqual(["setting › Matrix: a section that is present holds something"]);
+    // Matrix and Jobs are prose a person wrote, so a setting may carry neither: setting-a is its four lists alone
+    const bare = FIXTURE_SETTING.replace(/## Matrix\n\n[\s\S]*?(?=## Bodies)/, "");
+    expect(lint(bare)).toEqual([]);
+    const s = parseSetting(bare, "basin");
+    expect(s.sections.Matrix).toBe("");
+    expect(s.jobs).toEqual([]);
+    expect(slice(s, "premises")).toStartWith("## Bodies");
     const empty = FIXTURE_SETTING.replace(/## Terms\n\n[\s\S]*$/, "## Terms\n\nnone\n");
     expect(lint(empty)).toEqual([]);                                    // a list may legitimately hold none
     expect(parseSetting(empty, "basin").lists.Terms).toEqual([]);
@@ -61,18 +70,17 @@ describe("setting lint", () => {
 describe("slicing", () => {
   const s = parseSetting(FIXTURE_SETTING, "basin");
 
-  test("each stage loads whole lists, never a subset, and hard rules stay out of the slice", () => {
+  test("each stage loads whole lists, never a subset, and no stage carries a rule", () => {
     const premises = slice(s, "premises");
     expect(premises).toContain("## Bodies — the setting records these");
     for (const e of s.lists.Bodies) expect(premises).toContain(e);          // whole, not sampled
-    for (const x of ["## Instruments", "## Places", "## Terms", "## Hard rules", "## Jobs"]) expect(premises).not.toContain(x);
+    for (const x of ["## Instruments", "## Places", "## Terms", "## Hard rules", "## Do not build", "## Jobs"]) expect(premises).not.toContain(x);
     const execute = slice(s, "execute");
     for (const x of ["## Instruments", "## Places", "## Terms"]) expect(execute).toContain(x);
     expect(execute).not.toContain("## Bodies");
     expect(slice(s, "outline")).toContain("## Bodies");
     expect(slice(s, "outline")).not.toContain("## Places");
     expect(slice(s, "ending")).toContain("## Terms");
-    expect(hardRules(s)).toBe("## Hard rules\n\n- One impossibility, bought openly.\n- Nothing resolves.");
     expect(premises).not.toMatch(/^### /m);
   });
 
@@ -80,7 +88,7 @@ describe("slicing", () => {
     const d = distillate(s);
     for (const name of LISTS) for (const e of s.lists[name]) expect(d).toContain(e);
     expect(d).toContain("## Matrix");
-    expect(d).toContain("## Hard rules");
+    expect(d).not.toContain("## Hard rules");
   });
 });
 

@@ -107,12 +107,8 @@ Write the ending, in an <ending> tag: the last beat, derived from the arithmetic
 
 Every entry names something this setting names: a body, an instrument, a place, a rite, a term, a date or a figure that appears in the material below. An entry that would be true of any city, any empire or any war is not written, and fewer entries is the right answer when the material runs out. No citations, no URLs, no bracketed marks.`,
 
-  distillMap: `A setting file for a story pipeline holds four lists of named things. Below is the setting's matrix and one reference file. Take from the file every entry it can support, and nothing it cannot.
-
-## Matrix
-
+  distillMap: `A setting file for a story pipeline holds four lists of named things. Below is one of its reference files. Take from the file every entry it can support, and nothing it cannot.
 {matrix}
-
 The file's subject: {topic}
 
 Output one tag per list, each holding <entry> tags, at most {n} entries per list. A list the file says nothing about gets an empty tag.
@@ -125,12 +121,8 @@ Output one tag per list, each holding <entry> tags, at most {n} entries per list
 {reference}
 </reference>`,
 
-  distillReduce: `A setting file for a story pipeline holds four lists of named things. Below is the setting's matrix and every candidate entry gathered for its {list} list, each with the reference file it came from in brackets. Choose the ones that stay.
-
-## Matrix
-
+  distillReduce: `A setting file for a story pipeline holds four lists of named things. Below is every candidate entry gathered for its {list} list, each with the reference file it came from in brackets. Choose the ones that stay.
 {matrix}
-
 Keep at most {cap}. Drop a candidate that repeats another's thing, and where two cover the same ground keep the one that is more specific about what it does or what follows from it. Prefer entries that carry a number, a name or a consequence. Spread the keep across subjects rather than taking every entry from one file. Rewrite an entry only to fix its shape or to cut it under {words} words; do not invent, merge facts from two candidates, or add anything the candidates do not say.
 
 Output one <{listl}> tag holding the kept <entry> tags, in the order you would have someone read them. Drop the bracketed source from every entry you keep.
@@ -357,17 +349,13 @@ export function fill(name: TemplateName, vars: Record<string, string>): string {
 
 /**
  * Head (examples, or the outline and vignette), then the setting's slice for
- * the stage, then the ask, then the hard rules last. Without a setting the
+ * the stage, then the ask. Without a setting the
  * head and ask are joined exactly as before, so unrestricted prompts do not
  * change shape.
  */
-export function compose(head: string, ask: string, setting?: { slice: string; hardRules: string }, sep = "\n\n"): string {
+export function compose(head: string, ask: string, setting?: { slice: string }, sep = "\n\n"): string {
   if (!setting) return head + sep + ask;
-  const parts = [head];
-  if (setting.slice) parts.push(setting.slice);
-  parts.push(ask);
-  if (setting.hardRules) parts.push(setting.hardRules);
-  return parts.join("\n\n");
+  return (setting.slice ? [head, setting.slice, ask] : [head, ask]).join("\n\n");
 }
 
 export const TEMPLATES = T;

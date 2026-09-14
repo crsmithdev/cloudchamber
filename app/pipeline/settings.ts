@@ -1,9 +1,14 @@
 /**
  * A setting is one file under sources/settings/<id>.md: metadata-only front
- * matter, four setting-wide sections, and four flat lists of named things.
- * Every stage of a draw loads whole lists, never a subset, with the Hard
- * rules last. The setting's reference/ directory never enters a prompt; it is
- * what `distill` reads.
+ * matter, the Matrix, the outline Jobs, and four flat lists of named things.
+ * Every stage of a draw loads whole lists, never a subset. The setting's
+ * reference/ directory never enters a prompt; it is what `distill` reads.
+ *
+ * A setting is reference, not a rulebook. It states what is in the world and
+ * never how to write it: the craft rules it used to carry came down from the
+ * retired playbook and left on 2026-09-14. Matrix and Jobs are what remains of
+ * that voice and are optional for the same reason — setting-a carries neither,
+ * and a setting that carries one owns every word of it.
  *
  *   ---
  *   id: setting-a
@@ -12,8 +17,6 @@
  *   seed_segments: []
  *   ---
  *   ## Matrix
- *   ## Hard rules
- *   ## Do not build
  *   ## Jobs
  *   - matrix: <description>
  *   ## Bodies      ## Instruments      ## Places      ## Terms
@@ -29,7 +32,8 @@ import { join } from "node:path";
 import { SETTINGS } from "./paths.ts";
 import { RUN } from "./config.ts";
 
-export const SETTING_SECTIONS = ["Matrix", "Hard rules", "Do not build", "Jobs"] as const;
+/** Optional, and both are prose a person wrote: a setting may be its four lists alone. */
+export const SETTING_SECTIONS = ["Matrix", "Jobs"] as const;
 export const LISTS = ["Bodies", "Instruments", "Places", "Terms"] as const;
 export type SettingSection = (typeof SETTING_SECTIONS)[number];
 export type ListName = (typeof LISTS)[number];
@@ -57,17 +61,16 @@ export type Setting = {
 
 export type GenStage = "premises" | "execute" | "outline" | "jobs" | "context" | "ending";
 /**
- * Which sections and lists each stage loads. Hard rules are appended last to
- * every stage and are not listed. A loaded list is loaded whole: premises
- * chooses the story's subject and so reads every Body there is.
+ * Which sections and lists each stage loads. A loaded list is loaded whole:
+ * premises chooses the story's subject and so reads every Body there is.
  */
 export const LOADING: Record<GenStage, { setting: SettingSection[]; lists: ListName[] }> = {
-  premises: { setting: ["Matrix", "Do not build"], lists: ["Bodies"] },
-  execute: { setting: ["Matrix", "Do not build"], lists: ["Instruments", "Places", "Terms"] },
-  outline: { setting: ["Matrix", "Do not build"], lists: ["Bodies", "Instruments"] },
-  jobs: { setting: ["Matrix", "Do not build"], lists: ["Bodies", "Instruments"] },
-  context: { setting: ["Matrix", "Do not build"], lists: ["Instruments", "Places", "Terms"] },
-  ending: { setting: ["Matrix", "Do not build"], lists: ["Bodies", "Instruments", "Terms"] },
+  premises: { setting: ["Matrix"], lists: ["Bodies"] },
+  execute: { setting: ["Matrix"], lists: ["Instruments", "Places", "Terms"] },
+  outline: { setting: ["Matrix"], lists: ["Bodies", "Instruments"] },
+  jobs: { setting: ["Matrix"], lists: ["Bodies", "Instruments"] },
+  context: { setting: ["Matrix"], lists: ["Instruments", "Places", "Terms"] },
+  ending: { setting: ["Matrix"], lists: ["Bodies", "Instruments", "Terms"] },
 };
 
 // --- parsing ---------------------------------------------------------------
@@ -159,17 +162,13 @@ export const isEmpty = (bodyText: string) => bodyText.trim() === "none" || bodyT
 
 const listBlock = (name: ListName, rows: string[]) => `## ${name} — ${INTENT}\n\n${rows.map((e) => `- ${e}`).join("\n")}`;
 
-/** The setting text for one stage: the setting-wide sections it loads, then each loaded list whole. Hard rules are not included. */
+/** The setting text for one stage: the setting-wide sections it loads, then each loaded list whole. */
 export function slice(setting: Setting, stage: GenStage): string {
   const load = LOADING[stage];
   const parts: string[] = [];
   for (const name of load.setting) if (!isEmpty(setting.sections[name])) parts.push(`## ${name}\n\n${setting.sections[name]}`);
   for (const name of load.lists) if (setting.lists[name].length) parts.push(listBlock(name, setting.lists[name]));
   return parts.join("\n\n");
-}
-
-export function hardRules(setting: Setting): string {
-  return isEmpty(setting.sections["Hard rules"]) ? "" : `## Hard rules\n\n${setting.sections["Hard rules"]}`;
 }
 
 /**
@@ -226,8 +225,8 @@ export const mentioned = (text: string, rows: string[]) => rows.filter((e) => me
 export type Finding = { list: string; entry: string; reason: string };
 export const formatFinding = (f: Finding) => `${f.list} › ${f.entry}: ${f.reason}`;
 
-/** Headings the old nine-section, per-domain shape used; a file still carrying one has not been migrated. */
-const RETIRED = ["Domains", "Open ground", "Frame", "Mechanisms", "Roles", "Institutions", "Clocks", "Vocabulary", "Sensation", "Sources"];
+/** Headings a setting no longer carries: the per-domain shape, and the craft rules that came down from the playbook. */
+const RETIRED = ["Domains", "Open ground", "Hard rules", "Do not build", "Frame", "Mechanisms", "Roles", "Institutions", "Clocks", "Vocabulary", "Sensation", "Sources"];
 
 export function lintSetting(text: string, id: string): Finding[] {
   const caps = RUN.listCaps;
@@ -240,8 +239,8 @@ export function lintSetting(text: string, id: string): Finding[] {
   const { bodyStart } = parseFrontMatter(text);
   const hs = headings(text, bodyStart);
   const top = new Set(hs.filter((h) => h.level === 2).map((h) => h.title));
-  for (const name of [...SETTING_SECTIONS, ...LISTS]) if (!top.has(name)) out.push({ list: "setting", entry: name, reason: "missing" });
-  for (const name of SETTING_SECTIONS) if (top.has(name) && s.sections[name].trim() === "") out.push({ list: "setting", entry: name, reason: "empty sections hold the line none" });
+  for (const name of LISTS) if (!top.has(name)) out.push({ list: "setting", entry: name, reason: "missing" });
+  for (const name of SETTING_SECTIONS) if (top.has(name) && s.sections[name].trim() === "") out.push({ list: "setting", entry: name, reason: "a section that is present holds something" });
   for (const h of hs) {
     if (h.level > 2) out.push({ list: "setting", entry: h.title, reason: `no heading below ## ; a list is flat` });
     else if (RETIRED.includes(h.title)) out.push({ list: "setting", entry: h.title, reason: "retired by the four-list shape" });

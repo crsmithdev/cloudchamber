@@ -226,7 +226,7 @@ describe("draw graph", () => {
     expect(p.draws()[0].status).toBe("failed");
   });
 
-  test("a setting is sliced by stage: whole lists, the loaded ones only, hard rules last, jobs on the outline", async () => {
+  test("a setting is sliced by stage: whole lists, the loaded ones only, no rules, jobs on the outline", async () => {
     const { db, dir } = fixture();
     const sdir = settingsFixture(dir);
     const { p, model } = pipe(db, dir, script({ outline: [outline(["matrix"])] }), () => 0.001, sdir);
@@ -234,7 +234,6 @@ describe("draw graph", () => {
     expect(draw.status).toBe("done");
     const s = loadSetting("basin", sdir);
     const call = (stage: string) => model.calls.find((c) => c.stage === stage)!.prompt;
-    const lastHeading = (pr: string) => [...pr.matchAll(/^#{2,4} .+$/gm)].pop()![0];
     const has = (pr: string, xs: string[]) => { for (const x of xs) expect(pr).toContain(x); };
     const hasNot = (pr: string, xs: string[]) => { for (const x of xs) expect(pr).not.toContain(x); };
     const whole = (pr: string, name: "Bodies" | "Instruments" | "Places" | "Terms") => {
@@ -246,14 +245,12 @@ describe("draw graph", () => {
     expect(pr.indexOf("horror passage")).toBeLessThan(pr.indexOf("## Matrix"));
     expect(pr.indexOf("## Matrix")).toBeLessThan(pr.indexOf("Generate five premises"));
     whole(pr, "Bodies");
-    hasNot(pr, ["## Instruments", "## Places", "## Terms", "## Jobs"]);
-    expect(lastHeading(pr)).toBe("## Hard rules");
-    expect(pr.slice(pr.indexOf("## Hard rules"))).toContain("Nothing resolves");
+    hasNot(pr, ["## Instruments", "## Places", "## Terms", "## Jobs", "## Hard rules", "## Do not build"]);
+    expect(pr.indexOf("## Bodies")).toBeLessThan(pr.indexOf("Generate five premises"));   // the ask is last; nothing follows it
     // execute: the nouns a page is made of, and no bodies
     const ex = call("execute");
     for (const n of ["Instruments", "Places", "Terms"] as const) whole(ex, n);
-    hasNot(ex, ["## Bodies", "## Jobs"]);
-    expect(lastHeading(ex)).toBe("## Hard rules");
+    hasNot(ex, ["## Bodies", "## Jobs", "## Hard rules"]);
     // outline: bodies and instruments, the setting job as a section ask, head first
     const ol = call("outline");
     expect(ol.indexOf("Seed:")).toBeLessThan(ol.indexOf("## Matrix"));
@@ -270,8 +267,7 @@ describe("draw graph", () => {
       const c = call(stage);
       expect(c.indexOf("Section debt audit body.")).toBeLessThan(c.indexOf("## Matrix"));
       for (const n of want) whole(c, n);
-      hasNot(c, [...gone]);
-      expect(lastHeading(c)).toBe("## Hard rules");
+      hasNot(c, [...gone, "## Hard rules"]);
     }
     // no heading below ##: nothing in a prompt a draw could have selected on
     for (const stage of ["premises", "execute", "outline", "jobs", "context", "ending"]) expect(call(stage)).not.toMatch(/^### /m);
