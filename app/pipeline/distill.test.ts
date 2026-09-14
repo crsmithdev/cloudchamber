@@ -7,7 +7,7 @@ import { FakeModel } from "./model.ts";
 import { Pipeline } from "./draw.ts";
 import { settingsFixture } from "./settings.fixture.ts";
 import { candidatesPath, distill, readCandidates, referenceFiles } from "./distill.ts";
-import { LISTS, formatFinding, lintFile, loadSetting } from "./settings.ts";
+import { LISTS, entryName, formatFinding, lintFile, loadSetting } from "./settings.ts";
 
 function fixture() {
   const dir = mkdtempSync(join(tmpdir(), "cloudchamber-distill-"));
@@ -39,19 +39,19 @@ describe("distill", () => {
   test("referenceFiles walks the tree and skips INDEX", () => {
     const { dir, sdir } = fixture();
     writeFileSync(join(sdir, "basin", "reference", "INDEX.md"), "# index\n");
-    expect(referenceFiles("basin", sdir)).toEqual(["death.md", "labour.md", "land.md"]);
+    expect(referenceFiles("basin", sdir)).toEqual(["death.md", "events.md", "labour.md", "land.md"]);
   });
 
   test("the map pass writes one sidecar line per candidate, tagged with the file and its topic", async () => {
     const { db, dir, sdir } = fixture();
     const p = pipe(db, dir, sdir, { distill: mapReply });
     const out = await distill(p, "basin", { map: true });
-    expect(out.filter((l) => l.includes("candidates"))).toHaveLength(3);
+    expect(out.filter((l) => l.includes("candidates"))).toHaveLength(4);
     const rows = readCandidates("basin", sdir);
-    expect(rows).toHaveLength(3 * 4 * 2);                       // 3 files × 4 lists × 2 entries
-    expect(new Set(rows.map((r) => r.file))).toEqual(new Set(["death.md", "labour.md", "land.md"]));
+    expect(rows).toHaveLength(4 * 5 * 2);                       // 4 files × 5 lists × 2 entries
+    expect(new Set(rows.map((r) => r.file))).toEqual(new Set(["death.md", "events.md", "labour.md", "land.md"]));
     expect(rows.find((r) => r.file === "labour.md")!.source).toBe("Labour");
-    expect(rows.filter((r) => r.list === "Places")).toHaveLength(6);
+    expect(rows.filter((r) => r.list === "Places")).toHaveLength(8);
     expect(p.steps(null as any).length === 0 || true).toBe(true);
   });
 
@@ -75,7 +75,7 @@ describe("distill", () => {
     for (const name of LISTS) {
       expect(s.lists[name]).toHaveLength(4);
       expect(s.lists[name][0]).toContain(name.toLowerCase());
-      expect(out.some((l) => l.startsWith(`${name}: 4 of 6 candidates`))).toBe(true);
+      expect(out.some((l) => l.startsWith(`${name}: 4 of 8 candidates`))).toBe(true);
     }
     const text = readFileSync(path, "utf8");
     expect(text.slice(0, text.indexOf("## Bodies"))).toBe(original.slice(0, original.indexOf("## Bodies")));
@@ -92,15 +92,30 @@ describe("distill", () => {
     const out = await distill(pipe(db, dir, sdir, { distill: flaky }), "basin", { map: true });
     expect(out.find((l) => l.startsWith("labour.md:"))).toBe("labour.md: shape");   // the parse threw; the step failed on shape
     expect(readCandidates("basin", sdir).map((r) => r.file)).not.toContain("labour.md");
-    expect(new Set(readCandidates("basin", sdir).map((r) => r.file))).toEqual(new Set(["death.md", "land.md"]));
+    expect(new Set(readCandidates("basin", sdir).map((r) => r.file))).toEqual(new Set(["death.md", "events.md", "land.md"]));
+  });
+
+  test("a later list is told what the earlier ones kept, so the setting names each thing once", async () => {
+    const { db, dir, sdir } = fixture();
+    await distill(pipe(db, dir, sdir, { distill: mapReply }), "basin", { map: true });
+    const p = pipe(db, dir, sdir, { distill: reduceReply(2) });
+    const model = (p as any).model as FakeModel;
+    await distill(p, "basin", { reduce: true });
+    const prompts = model.calls.filter((c) => c.stage === "distill").map((c) => c.prompt);
+    expect(prompts[0]).not.toContain("has already taken the things below");   // Bodies is reduced first
+    const kept = loadSetting("basin", sdir).lists.Bodies;
+    for (const later of prompts.slice(1)) {
+      expect(later).toContain("has already taken the things below");
+      for (const e of kept) expect(later).toContain(`- ${entryName(e)}`);
+    }
   });
 
   test("with no flag both passes run, and lint findings are reported after them", async () => {
     const { db, dir, sdir } = fixture();
     const script = { distill: (prompt: string) => (prompt.includes("Candidates:") ? reduceReply(2)(prompt) : mapReply(prompt)) };
     const out = await distill(pipe(db, dir, sdir, script), "basin");
-    expect(out.filter((l) => l.includes("candidates (")).length).toBe(3);
-    expect(out.some((l) => l.startsWith("Bodies: 2 of 6"))).toBe(true);
+    expect(out.filter((l) => l.includes("candidates (")).length).toBe(4);
+    expect(out.some((l) => l.startsWith("Bodies: 2 of 8"))).toBe(true);
     expect(existsSync(candidatesPath("basin", sdir))).toBe(true);
     expect(out).not.toContain("lint:");
   });

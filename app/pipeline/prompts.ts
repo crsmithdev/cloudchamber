@@ -99,6 +99,7 @@ Write the ending, in an <ending> tag: the last beat, derived from the arithmetic
 
   /** The four lists, defined once and shared by both distill passes and by nothing else. */
   listDefinitions: `<bodies>: organisations, offices, orders, departments and courts. What it issues or decides, whom it answers to, and what it cannot do.
+<events>: dated events. What happened and when, then what it changed; an event whose consequence the setting still carries.
 <instruments>: documents, devices, drugs, weapons and rites. What it does, who holds it, and what follows from having it, losing it or undergoing it.
 <places>: named places. What the place does, and what it costs to be there. Never what it looks like.
 <terms>: the setting's own word for a thing, then the separator, then a gloss under twelve words.`,
@@ -107,7 +108,7 @@ Write the ending, in an <ending> tag: the last beat, derived from the arithmetic
 
 Every entry names something this setting names: a body, an instrument, a place, a rite, a term, a date or a figure that appears in the material below. An entry that would be true of any city, any empire or any war is not written, and fewer entries is the right answer when the material runs out. No citations, no URLs, no bracketed marks.`,
 
-  distillMap: `A setting file for a story pipeline holds four lists of named things. Below is one of its reference files. Take from the file every entry it can support, and nothing it cannot.
+  distillMap: `A setting file for a story pipeline holds five lists of named things. Below is one of its reference files. Take from the file every entry it can support, and nothing it cannot.
 {matrix}
 The file's subject: {topic}
 
@@ -121,11 +122,18 @@ Output one tag per list, each holding <entry> tags, at most {n} entries per list
 {reference}
 </reference>`,
 
-  distillReduce: `A setting file for a story pipeline holds four lists of named things. Below is every candidate entry gathered for its {list} list, each with the reference file it came from in brackets. Choose the ones that stay.
+  keptElsewhere: `
+Another list of this setting has already taken the things below. Drop a candidate that is one of them; the setting names each thing once.
+
+{names}
+`,
+
+  distillReduce: `A setting file for a story pipeline holds five lists of named things. Below is every candidate entry gathered for its {list} list, each with the reference file it came from in brackets. Choose the ones that stay.
 {matrix}
 Keep at most {cap}. Drop a candidate that repeats another's thing, and where two cover the same ground keep the one that is more specific about what it does or what follows from it. Prefer entries that carry a number, a name or a consequence. Spread the keep across subjects rather than taking every entry from one file. Rewrite an entry only to fix its shape or to cut it under {words} words; do not invent, merge facts from two candidates, or add anything the candidates do not say.
 
 Output one <{listl}> tag holding the kept <entry> tags, in the order you would have someone read them. Drop the bracketed source from every entry you keep.
+{kept}
 
 {entryShape}
 

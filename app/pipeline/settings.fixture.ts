@@ -23,6 +23,12 @@ Take the regional element out and a mechanism goes with it.
 - The Office of the Public Administrator — takes possession of an estate nobody claims; sells at auction; cannot distribute before 4 months have run
 - The Hiring Hall — dispatches in order of registration under the 1934 award; stops all work on 5 July; cannot dispatch a worker who missed the morning call
 
+## Events
+
+- The 1934 award — settled the waterfront strike and established jointly operated hiring halls; the contract still stops all work on 5 July
+- The Basin burial ban of 1900 — closed the city to new interment; the removals ran to 1941 and the dead went to Colma
+- Destroyed Land Records Relief Law, 1906 — let a court re-establish a burned title against all the world; the Recorder's book has appended ever since
+
 ## Instruments
 
 - The diseño — a hand-drawn boundary sketch a court will still accept as title, called to a willow that no longer stands
@@ -53,6 +59,16 @@ fetched: 2026-09-05
 
 - A diseño is a hand-drawn boundary sketch that a court will still accept as title; one calls its line to a willow that no longer stands.
 - The Basin Recorder indexes a deed by grantor and grantee within 5 days and amends the book only by appending.
+`,
+  "events.md": `---
+topic: Events
+sources:
+  - fixture
+fetched: 2026-09-05
+---
+# Events
+
+- The 1900 burial ban closed the city to new interment; removals ran to 1941 and the dead went to Colma.
 `,
   "labour.md": `---
 topic: Labour

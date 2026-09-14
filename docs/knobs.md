@@ -22,9 +22,9 @@ Every draw under a setting carries its lists whole. Caps: 40 entries a list, 45 
 
 | | |
 |---|---|
-| `setting-a` | 40 bodies · 40 instruments · 40 places · 40 terms |
-| `setting-b` | 0 bodies · 0 instruments · 0 places · 0 terms |
-| `setting-c` | 0 bodies · 0 instruments · 0 places · 0 terms |
+| `setting-a` | 40 bodies · 0 events · 40 instruments · 40 places · 40 terms |
+| `setting-b` | 0 bodies · 0 events · 0 instruments · 0 places · 0 terms |
+| `setting-c` | 0 bodies · 0 events · 0 instruments · 0 places · 0 terms |
 
 ## genre shortcuts
 
@@ -116,7 +116,7 @@ stages.toml: the model each stage calls, and the one it falls back to on a refus
 |---|---|
 | `themes` | claude-opus-5 → claude-fable-5-1 |
 | `redundancy` | claude-opus-5 → claude-sonnet-5 |
-| `distill` | claude-fable-5-1 → claude-opus-5 |
+| `distill` | claude-opus-5 → claude-sonnet-5 |
 | `premises` | claude-fable-5-1 → claude-opus-5 |
 | `execute` | claude-fable-5-1 → claude-opus-5 |
 | `outline` | claude-fable-5-1 → claude-opus-5 |

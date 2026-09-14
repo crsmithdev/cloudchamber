@@ -1,4 +1,4 @@
-# Four lists
+# Five lists
 
 Supersedes `2026-09-05-typed-settings.md` in full, and the *Settings*
 subsection of `2026-09-05-drafting-pipeline.md`. Decided 2026-09-13 over a
@@ -33,10 +33,26 @@ section structurally unable to be specific to its setting.
 
 ## Solution
 
-Four lists, uniform across every setting: **Bodies**, **Instruments**,
-**Places**, **Terms**. A section earns its place only if it can be sanely
-enumerated and if inventing an entry would be a canon violation. These four
-pass; the other five do not.
+Five lists, uniform across every setting: **Bodies**, **Events**,
+**Instruments**, **Places**, **Terms**. A section earns its place only if it
+can be sanely enumerated, if inventing an entry would be a canon violation, and
+if some stage loads it that another does not. These five pass; the others do
+not.
+
+**Events** was added on 2026-09-14. The other four are synchronic — they say
+what is in the world, never what happened to it — and `outline` is the stage
+asked to settle every date and every sum. 42 of setting-a's 160 entries carried
+a year, but always as a property of a thing, never as an event.
+
+**People** was considered and rejected. A body has a charter and the list of
+them ends; a person just appears, and a corpus names hundreds incidentally. No
+stage loads it that does not already load Bodies or the texture lists. The
+person a story is about is unnamed — the tenant, the deputy, the brother — and
+enumerating them would constrain the one thing that has to be free. The exposed
+party belongs in a Bodies entry's second clause, where the strongest entries
+already put them: *for petitioner #111 could count nothing that happened before
+1927*. A Bodies entry whose second clause names no one it happens to is a weak
+entry, and that is a thing to look for at review.
 
 Every entry is one line in one shape:
 
@@ -113,8 +129,8 @@ and re-cut without reading the corpus again.
 ## Acceptance Criteria
 
 1. WHEN a setting file is parsed THE system SHALL return the Matrix, the Jobs
-   as name and description pairs, and four ordered lists of entries. Matrix and
-   Jobs are optional; a setting may be its four lists alone.
+   as name and description pairs, and five ordered lists of entries. Matrix and
+   Jobs are optional; a setting may be its five lists alone.
 2. IF a setting file carries a `## Domains` heading, a `### ` heading, or any
    of Hard rules, Do not build, Open ground, Frame, Mechanisms, Roles, Clocks,
    Sensation or Sources THEN lint SHALL report it as a finding naming the
@@ -129,10 +145,11 @@ and re-cut without reading the corpus again.
 5. WHEN `slice(setting, stage)` runs THE system SHALL return the setting-wide
    sections for that stage, then each loaded list in full under its own `##`
    heading and intent line, and SHALL never return a subset of a list.
-6. WHEN a draw runs under a setting THE system SHALL load: Bodies at
-   premises; Instruments, Places and Terms at execute and context; Bodies and
-   Instruments at outline and jobs; Bodies, Instruments and Terms at ending.
-   The ask SHALL be last in every prompt.
+6. WHEN a draw runs under a setting THE system SHALL load: Bodies and Events
+   at premises; Instruments, Places and Terms at execute and context; Bodies,
+   Events and Instruments at outline; Bodies and Instruments at jobs; Bodies,
+   Events, Instruments and Terms at ending. The ask SHALL be last in every
+   prompt.
 7. WHEN `cloudchamber distill <id> --map` runs THE system SHALL create one
    `distill-map` step per reference file and append its candidate entries to
    `sources/settings/<id>/candidates.jsonl` with the file's topic as the
@@ -140,6 +157,9 @@ and re-cut without reading the corpus again.
 8. WHEN `cloudchamber distill <id> --reduce` runs THE system SHALL create one
    `distill-reduce` step per list over that list's candidates, and write the
    returned entries into the setting file in place, touching no other byte.
+   Each call after the first SHALL carry the entry names the earlier lists
+   kept, with the instruction to drop a candidate that is one of them, so the
+   setting names each thing once.
 9. WHEN `distill` runs with neither flag THE system SHALL run the map pass
    for any file not in the sidecar, then the reduce pass for all four lists.
 10. WHEN a draw is started THE system SHALL accept no `--domains` option, and
@@ -162,6 +182,7 @@ claims: setting
 seed_segments: []
 ---
 ## Bodies
+## Events
 - Office of the Public Administrator — issues Authority for Summary
   Administration under $50,000; must petition for letters above $150,000;
   cannot distribute to beneficiaries before four months have run

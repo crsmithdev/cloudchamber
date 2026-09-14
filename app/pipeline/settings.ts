@@ -19,7 +19,7 @@
  *   ## Matrix
  *   ## Jobs
  *   - matrix: <description>
- *   ## Bodies      ## Instruments      ## Places      ## Terms
+ *   ## Bodies   ## Events   ## Instruments   ## Places   ## Terms
  *   - name — what it does; what it cannot do, or what follows from it
  *
  * A list earns its place by being enumerable and by an invented entry being a
@@ -34,7 +34,7 @@ import { RUN } from "./config.ts";
 
 /** Optional, and both are prose a person wrote: a setting may be its four lists alone. */
 export const SETTING_SECTIONS = ["Matrix", "Jobs"] as const;
-export const LISTS = ["Bodies", "Instruments", "Places", "Terms"] as const;
+export const LISTS = ["Bodies", "Events", "Instruments", "Places", "Terms"] as const;
 export type SettingSection = (typeof SETTING_SECTIONS)[number];
 export type ListName = (typeof LISTS)[number];
 export const FRONT_MATTER_KEYS = ["id", "name", "seed_segments", "claims"];
@@ -62,15 +62,17 @@ export type Setting = {
 export type GenStage = "premises" | "execute" | "outline" | "jobs" | "context" | "ending";
 /**
  * Which sections and lists each stage loads. A loaded list is loaded whole:
- * premises chooses the story's subject and so reads every Body there is.
+ * premises chooses the story's subject and so reads every Body and every Event
+ * there is. The other four lists are synchronic — they say what is in the
+ * world — so Events is what the stages that settle dates settle them against.
  */
 export const LOADING: Record<GenStage, { setting: SettingSection[]; lists: ListName[] }> = {
-  premises: { setting: ["Matrix"], lists: ["Bodies"] },
+  premises: { setting: ["Matrix"], lists: ["Bodies", "Events"] },
   execute: { setting: ["Matrix"], lists: ["Instruments", "Places", "Terms"] },
-  outline: { setting: ["Matrix"], lists: ["Bodies", "Instruments"] },
+  outline: { setting: ["Matrix"], lists: ["Bodies", "Events", "Instruments"] },
   jobs: { setting: ["Matrix"], lists: ["Bodies", "Instruments"] },
   context: { setting: ["Matrix"], lists: ["Instruments", "Places", "Terms"] },
-  ending: { setting: ["Matrix"], lists: ["Bodies", "Instruments", "Terms"] },
+  ending: { setting: ["Matrix"], lists: ["Bodies", "Events", "Instruments", "Terms"] },
 };
 
 // --- parsing ---------------------------------------------------------------

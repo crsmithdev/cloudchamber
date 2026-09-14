@@ -8,12 +8,12 @@ import { LISTS, distillate, entryName, formatFinding, lintSetting, loadSetting, 
 const lint = (text: string) => lintSetting(text, "basin").map(formatFinding);
 
 describe("setting lint", () => {
-  test("the fixture is clean and parses into the matrix, one job and four lists", () => {
+  test("the fixture is clean and parses into the matrix, one job and five lists", () => {
     expect(lint(FIXTURE_SETTING)).toEqual([]);
     const s = parseSetting(FIXTURE_SETTING, "basin");
     expect(s.claims).toBe("setting");
     expect(s.jobs).toEqual([{ name: "matrix", description: "Close the regional element. Name the body, instrument or place the story is built out of, and show that removing it removes a mechanism." }]);
-    expect(LISTS.map((n) => s.lists[n].length)).toEqual([3, 3, 3, 3]);
+    expect(LISTS.map((n) => s.lists[n].length)).toEqual([3, 3, 3, 3, 3]);
     expect(s.lists.Terms[1]).toBe("Ellis — to withdraw every unit on a parcel from rent; used as a verb");
     expect(s.sections.Matrix).toBe("Take the regional element out and a mechanism goes with it.");
   });
@@ -74,12 +74,16 @@ describe("slicing", () => {
     const premises = slice(s, "premises");
     expect(premises).toContain("## Bodies — the setting records these");
     for (const e of s.lists.Bodies) expect(premises).toContain(e);          // whole, not sampled
+    for (const e of s.lists.Events) expect(premises).toContain(e);        // premises settles the subject, so it reads the chronology too
     for (const x of ["## Instruments", "## Places", "## Terms", "## Hard rules", "## Do not build", "## Jobs"]) expect(premises).not.toContain(x);
     const execute = slice(s, "execute");
     for (const x of ["## Instruments", "## Places", "## Terms"]) expect(execute).toContain(x);
     expect(execute).not.toContain("## Bodies");
+    expect(execute).not.toContain("## Events");                           // the premise has already settled when this is
     expect(slice(s, "outline")).toContain("## Bodies");
+    expect(slice(s, "outline")).toContain("## Events");                   // arithmetic is settled against real dates
     expect(slice(s, "outline")).not.toContain("## Places");
+    expect(slice(s, "jobs")).not.toContain("## Events");
     expect(slice(s, "ending")).toContain("## Terms");
     expect(premises).not.toMatch(/^### /m);
   });

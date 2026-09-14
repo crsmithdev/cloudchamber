@@ -22,7 +22,7 @@ import { StepFailure } from "./draw.ts";
 import { tags, tag, words } from "./model.ts";
 import { fill, TEMPLATES } from "./prompts.ts";
 import {
-  LISTS, isEmpty, lintSetting, formatFinding, parseSetting, replaceList, settingPath, referenceDir,
+  LISTS, entryName, isEmpty, lintSetting, formatFinding, parseSetting, replaceList, settingPath, referenceDir,
   type ListName, type Setting,
 } from "./settings.ts";
 
@@ -115,6 +115,7 @@ export async function distillReduce(p: Pipeline, id: string, setting: Setting): 
   const all = readCandidates(id, dir);
   if (!all.length) return [`reduce: no candidates; run the map pass first`];
   const out: string[] = [];
+  const taken: string[] = [];   // names the lists reduced before this one kept; the setting names each thing once
   for (const list of LISTS) {
     const mine = all.filter((c) => c.list === list);
     if (!mine.length) { out.push(`${list}: no candidates`); continue; }
@@ -122,6 +123,7 @@ export async function distillReduce(p: Pipeline, id: string, setting: Setting): 
       matrix: matrixBlock(setting), list, listl: list.toLowerCase(),
       cap: String(RUN.listCaps.entries), words: String(RUN.listCaps.words), entryShape: shape(),
       candidates: mine.map((c) => `- ${c.entry}   [${c.source}]`).join("\n"),
+      kept: taken.length ? fill("keptElsewhere", { names: taken.map((n) => `- ${n}`).join("\n") }) : "",
     });
     let kept: string[];
     try {
@@ -136,6 +138,7 @@ export async function distillReduce(p: Pipeline, id: string, setting: Setting): 
       continue;
     }
     const capped = kept.slice(0, RUN.listCaps.entries);
+    taken.push(...capped.map(entryName));
     writeFileSync(path, replaceList(readFileSync(path, "utf8"), id, list, capped));
     out.push(`${list}: ${capped.length} of ${mine.length} candidates${kept.length > capped.length ? ` (${kept.length - capped.length} over the cap dropped)` : ""}`);
   }
