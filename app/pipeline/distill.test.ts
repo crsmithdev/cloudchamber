@@ -148,3 +148,49 @@ describe("the trail", () => {
     expect(kept.map((k) => k.entry)).toEqual(LISTS.flatMap((n) => loadSetting("basin", sdir).lists[n]));
   });
 });
+
+describe("the word cap is enforced in code", () => {
+  const long = (n: number, tag = "x") => `The ${tag} body — ${Array.from({ length: n }, (_, i) => `w${i}`).join(" ")}   [Death]`;
+
+  /** A reduce that returns one over-long entry, then a trim call that cuts it. */
+  const script = (trimTo: number) => ({
+    distill: (prompt: string) => {
+      if (prompt.startsWith("Each entry below is over")) {
+        const n = (prompt.match(/^- /gm) ?? []).length;
+        const list = /<(\w+)> tag holding one/.exec(prompt)![1];
+        return `<${list}>${Array.from({ length: n }, (_, i) => `<entry>${long(trimTo, `cut${i}`)}</entry>`).join("")}</${list}>`;
+      }
+      if (prompt.includes("Candidates:")) {
+        const list = /gathered for its (\w+) list/.exec(prompt)![1].toLowerCase();
+        return `<${list}><entry>${long(60)}</entry><entry>The short ${list} — a thing; and what follows   [Death]</entry></${list}>`;
+      }
+      return mapReply(prompt);
+    },
+  });
+
+  test("an over-long entry gets one trim call, and the cut version is what lands", async () => {
+    const { db, dir, sdir } = fixture();
+    await distill(pipe(db, dir, sdir, { distill: mapReply }), "basin", { map: true });
+    const out = await distill(pipe(db, dir, sdir, script(10)), "basin", { reduce: true });
+    const s = loadSetting("basin", sdir);
+    for (const name of LISTS) {
+      expect(s.lists[name]).toHaveLength(2);
+      for (const e of s.lists[name]) expect(e.split(/\s+/).length).toBeLessThanOrEqual(45);
+      expect(out.some((l) => l.startsWith(`${name}: 1 entry over 45 words, 1 cut, 0 dropped`))).toBe(true);
+    }
+    expect(lintFile("basin", sdir).map(formatFinding)).toEqual([]);
+  });
+
+  test("an entry still over the cap after the trim is dropped, not written", async () => {
+    const { db, dir, sdir } = fixture();
+    await distill(pipe(db, dir, sdir, { distill: mapReply }), "basin", { map: true });
+    const out = await distill(pipe(db, dir, sdir, script(60)), "basin", { reduce: true });
+    const s = loadSetting("basin", sdir);
+    for (const name of LISTS) {
+      expect(s.lists[name]).toHaveLength(1);                       // the long one is gone, the short one stays
+      expect(out.some((l) => l.startsWith(`${name}: 1 entry over 45 words, 0 cut, 1 dropped`))).toBe(true);
+    }
+    expect(lintFile("basin", sdir).map(formatFinding)).toEqual([]);   // a setting can never land unloadable
+    expect(readKept("basin", sdir)).toHaveLength(5);
+  });
+});

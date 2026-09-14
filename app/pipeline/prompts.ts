@@ -130,11 +130,19 @@ Another list of this setting has already taken the things below. Drop a candidat
 {names}
 `,
 
+  distillTrim: `Each entry below is over the length a setting file allows. Cut each one under {words} words, the bracketed source aside.
+
+Keep the name before the dash exactly as it is, and keep the bracketed source exactly as it is. Cut words, not facts: drop a qualifier, a date already implied, a second example, a clause that repeats the name. Do not add anything, and do not merge two entries.
+
+Output one <{listl}> tag holding one <entry> tag per entry below, in the same order.
+
+{entries}`,
+
   distillReduce: `A setting file for a story pipeline holds five lists of named things. Below is every candidate entry gathered for its {list} list, each with the reference file it came from in brackets. Choose the ones that stay.
 {matrix}
 Keep at most {cap}. Drop a candidate that repeats another's thing, and where two cover the same ground keep the one that is more specific about what it does or what follows from it. Prefer entries that carry a number, a name or a consequence. Spread the keep across subjects rather than taking every entry from one file. Rewrite an entry only to fix its shape or to cut it under {words} words; do not invent, merge facts from two candidates, or add anything the candidates do not say.
 
-Output one <{listl}> tag holding the kept <entry> tags, in the order you would have someone read them. Keep the bracketed source on the end of every entry, exactly as it appears above, so the entry can be traced back to the file it came from.
+Output one <{listl}> tag holding the kept <entry> tags, in the order you would have someone read them. Keep the bracketed source on the end of every entry, exactly as it appears above, so the entry can be traced back to the file it came from. Count the words of every entry before you output it: each is under {words} words, the bracket aside.
 {kept}
 
 {entryShape}

@@ -125,6 +125,42 @@ export async function distillMap(p: Pipeline, id: string, setting: Setting): Pro
   return out;
 }
 
+const tooLong = (entry: string) => splitSource(entry).entry.split(/\s+/).length > RUN.listCaps.words;
+
+/**
+ * An entry the reduce returned over the word cap gets one follow-up call to
+ * cut it; anything still over after that is dropped. The count cap is enforced
+ * in code and the word cap was not, which is how four entries landed a setting
+ * in a state lint would not load.
+ */
+async function trimLong(p: Pipeline, id: string, list: ListName, kept: string[], out: string[]): Promise<string[]> {
+  const long = kept.filter(tooLong);
+  if (!long.length) return kept;
+  let fixed: string[] = [];
+  try {
+    const { value } = await p.invoke(null, null, "distill", fill("distillTrim", {
+      words: String(RUN.listCaps.words), listl: list.toLowerCase(), entries: long.map((e) => `- ${e}`).join("\n"),
+    }), (raw) => {
+      const got = parseEntries(raw, list);
+      if (got.length !== long.length) throw new Error(`asked to cut ${long.length} entries, got ${got.length}`);
+      return got;
+    }, `setting/${id}/trim/${list}`);
+    fixed = value;
+  } catch (e) {
+    out.push(`${list}: the trim call failed (${e instanceof StepFailure ? e.reason : String((e as any)?.message ?? e)})`);
+  }
+  const byOriginal = new Map(long.map((e, i) => [e, fixed[i]]));
+  const result: string[] = [];
+  let dropped = 0;
+  for (const e of kept) {
+    const candidate = byOriginal.get(e) ?? e;
+    if (tooLong(candidate)) { dropped++; continue; }
+    result.push(candidate);
+  }
+  out.push(`${list}: ${long.length} entr${long.length === 1 ? "y" : "ies"} over ${RUN.listCaps.words} words, ${long.length - dropped} cut, ${dropped} dropped`);
+  return result;
+}
+
 /**
  * Reduce: one call per list over its candidates, written into the setting
  * file in place. Returns a report line per list.
@@ -158,7 +194,8 @@ export async function distillReduce(p: Pipeline, id: string, setting: Setting): 
       out.push(`${list}: ${e instanceof StepFailure ? e.reason : String((e as any)?.message ?? e)}`);
       continue;
     }
-    const capped = kept.slice(0, RUN.listCaps.entries).map(splitSource);
+    const trimmed = await trimLong(p, id, list, kept.slice(0, RUN.listCaps.entries), out);
+    const capped = trimmed.map(splitSource);
     const bySource = new Map(mine.map((c) => [c.source, c.file]));
     taken.push(...capped.map((c) => entryName(c.entry)));
     writeFileSync(path, replaceList(readFileSync(path, "utf8"), id, list, capped.map((c) => c.entry)));

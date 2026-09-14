@@ -138,7 +138,13 @@ and re-cut without reading the corpus again.
    how to write it.
 3. WHEN lint runs on an entry THE system SHALL report a finding when the
    entry has no ` — ` separator, when the name is empty, when the entry
-   exceeds 40 words, or when a list exceeds 40 entries.
+   exceeds the word cap, or when a list exceeds the entry cap.
+14. WHEN a reduce call returns an entry over the word cap THE system SHALL make
+   one `distill-trim` call asking for those entries cut, and SHALL drop any
+   entry still over the cap rather than write it. Both caps are then enforced
+   in code, so no distill can leave a setting in a state lint will not load —
+   the count cap was enforced and the word cap was not, and four entries at 48
+   to 51 words made setting-a unloadable on its first five-list cut.
 4. WHEN lint runs on an entry THE system SHALL report a finding when the
    entry carries no proper noun, no numeral and no quoted term, since such an
    entry names nothing this setting names.
