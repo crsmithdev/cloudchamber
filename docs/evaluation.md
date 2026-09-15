@@ -15,13 +15,31 @@ own lists, which is a second variable; evaluate the setting separately.
 | 1 | `cloudchamber draw --seed "<one sentence>"` | gate manual, unrestricted, sampling tail, genre from the examples |
 | 2 | read the five premises, choose one | the choice is yours and it is recorded |
 | 3 | `cloudchamber gate <draw> auto` | the defaults in `draft.toml` `[repair]` |
-| 4 | read the round table the loop writes | pick the round it names as lowest, not the last |
-| 5 | `cloudchamber draft <best-round>` | `screens.samples = 1`, otherwise the defaults |
+| 4 | read the round table the loop writes | note the round it names as lowest, and read that brief |
+| 5 | `cloudchamber draft <chain tip>` | `screens.samples = 1`, otherwise the defaults |
 | 6 | `cloudchamber story <draw>` and read it | |
 | 7 | write the report below | |
 
 Nothing in steps 3 to 5 is hand-steered. If you accept or dismiss a finding by
 hand, the run is not an evaluation run any more — say so in the report.
+
+## Which round to draft
+
+Draft the **chain tip**, not the round with the lowest total.
+
+A superseded round cannot be drafted: `Drafting.draft` takes only a draw at
+`done` or `awaiting_check_gate`, and it refuses any draw holding accepted
+findings. Both guards are right. A round scores lowest partly **because** its
+accepted findings are still open — the score counts them, and the repair that
+answers them makes the next draw. So the lowest total measures a brief whose
+fixes have not landed, and only the tip has every repair applied.
+
+Read the lowest round anyway. Where it reads better than the tip, that gap is
+churn, and it belongs in the report.
+
+If the tip carries findings at or above the floor — `auto` prints how many, and
+stops before repairing them on any stop but `floor` — record that count. Do not
+accept them by hand; that ends the evaluation run.
 
 ## The stop conditions
 
@@ -48,6 +66,7 @@ premise chosen (index, stated probability)
 stopped on            floor | patience | cap
 rounds
 best round            id, and whether it was the last
+drafted round         id — the tip, unless the tip is also the best
 total open score      per round, as a series
 serious findings      score >= 7, per round
 re-opened             findings matching a fix accepted earlier, per round

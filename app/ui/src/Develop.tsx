@@ -212,6 +212,7 @@ function GateOne({ d, onAct, onDraft }: { d: Detail; onAct: (fn: () => Promise<a
           </tr>)}
         </tbody></table>
         {auto.best.id !== auto.id && <div className="note dim">Round {auto.best.round} scored lowest. It is superseded, so auto left it where it is — read it if this round reads worse.</div>}
+        {!!auto.left_open && <div className="note">{auto.left_open} finding{auto.left_open > 1 ? "s" : ""} at or above the floor {auto.left_open > 1 ? "are" : "is"} still open here: auto stopped before repairing {auto.left_open > 1 ? "them" : "it"}.</div>}
       </div>}
       <div className="drawbody two"><div className="col">
         <h2 className="sec">findings <span>· {f ? `${f.findings.filter((x) => x.reported).length} reported${f.findings.some((x) => !x.reported) ? ` · ${f.findings.filter((x) => !x.reported).length} below the bar` : ""}` : "…"}{f?.pass ? ` · pass ${f.pass.slice(0, 16).replace("T", " ")}` : ""} · ordered by score · merged across checkers</span>

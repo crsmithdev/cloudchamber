@@ -16,6 +16,7 @@ import { loadStages } from "./config.ts";
 import { loadDraftConfig } from "./draftconfig.ts";
 import { VERDICT_LOG } from "./paths.ts";
 import { A, B, LEDGER, SPAN_A, SPAN_B, SPAN_C, cleanSamples, derivationSamples, draftScript, finding, ledgerSamples, schedule, vignette } from "./drafting.fixture.ts";
+import { gateFindings } from "./briefparts.ts";
 
 const CELLS = ["informational", "mixed", "involved"].flatMap((v) => ["non-narrative", "mixed", "narrative"].map((m) => [v, m]));
 
@@ -168,7 +169,7 @@ describe("check and gate 1", () => {
     // C recurred in one sample of three: below the bar, still a reading
     const sub = all.filter((x) => !x.reported);
     expect(sub.map((x) => [x.span, x.n, x.samples_run, x.invalidates])).toEqual([[SPAN_C, 1, 3, "custody"]]);
-    expect(all.map((x) => x.score)).toEqual([10, 5, 5]);                        // sorted; arithmetic is a detail, so B drops to 5
+    expect(all.map((x) => x.score)).toEqual([10, 6, 5]);                        // sorted; B is arithmetic at 2 of 3, so it is under the floor
     expect(sub[0].artifact_id).toBe("");                                        // no artifact until it is decided on
     expect(p.artifacts(draw.id).filter((a) => a.kind === "finding")).toHaveLength(2);
     // dismissing one promotes it to an artifact, so a re-check does not raise it again
@@ -647,7 +648,8 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(p.draw(draw.id).status).toBe("repaired");
     // only A reaches the floor: B is arithmetic at 2 of 3 and C recurred once, so both are dismissed with their number
     const first = d.findings(draw.id, { all: true }).findings;
-    expect(first.map((f) => [f.score, f.decision])).toEqual([[10, "accepted"], [5, "dismissed"], [5, "dismissed"]]);
+    expect(first.map((f) => [f.score, f.decision])).toEqual([[10, "accepted"], [6, "dismissed"], [5, "dismissed"]]);
+    expect(first[1].note).toBe("auto: scored 6, under 7");
     expect(first[2].note).toBe("auto: scored 5, under 7");
     expect((p.db.query("SELECT DISTINCT method FROM verdicts WHERE kind = 'finding'").all() as any[]).map((v) => v.method)).toEqual(["draw"]);
     expect(stagesOf(model, /^check-ledger$/)).toHaveLength(6);                // one round of repair, then a clean re-check ends it
@@ -663,7 +665,8 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     const r = await d.autoRounds(draw.id);
     expect(r.stopped).toBe("floor");
     expect(r.floor).toBe(7);
-    expect(r.rounds.map((x) => [x.round, x.open, x.total, x.accepted])).toEqual([[1, 3, 20, 1], [2, 0, 0, 0]]);
+    expect(r.rounds.map((x) => [x.round, x.open, x.total, x.accepted])).toEqual([[1, 3, 21, 1], [2, 0, 0, 0]]);
+    expect(r.left_open).toBe(0);                                               // a floor stop leaves nothing to rule on
     expect(r.best.round).toBe(2);
     expect(r.id).toBe(r.rounds[1].id);
     expect(r.id).not.toBe(draw.id);
@@ -690,6 +693,11 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(Math.min(...totals)).toBe(r.best.total);
     expect(totals.slice(-2)).toEqual([r.best.total, r.best.total]);            // two rounds at the floor with no fall ends it
     expect(r.rounds.length).toBeLessThan(9);                                   // patience, not the cap
+    // patience breaks after the last round chose what to accept and before it was applied
+    expect(r.rounds.at(-1)!.accepted).toBe(0);                                 // so the row claims no repair
+    expect(r.left_open).toBeGreaterThan(0);                                    // and says what the gate still has to rule on
+    expect(gateFindings((d as any).p, r.id, true).filter((f) => f.decision === "open" && f.score >= 7))
+      .toHaveLength(r.left_open);
   });
 
   test("drafting a repaired draw uses the chain's pinned ledger, not its own", async () => {
@@ -751,7 +759,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(out.id).toBe(draw.id);                                             // nothing accepted, no repair
     const fs = d.findings(draw.id).findings;
     expect(fs.map((f) => f.decision)).toEqual(["dismissed", "dismissed", "dismissed"]);
-    expect(fs.map((f) => f.score)).toEqual([8, 5, 3]);
+    expect(fs.map((f) => f.score)).toEqual([8, 5, 4]);
     expect(fs[0].note).toBe("auto: no evidence to read it against");          // 8 is over the floor; a person still has to read it
     expect(p.steps(draw.id).filter((s) => /^repair/.test(s.stage))).toHaveLength(0);
   });

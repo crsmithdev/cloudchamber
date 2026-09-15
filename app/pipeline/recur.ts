@@ -96,10 +96,16 @@ export function invalidatesRank(inv: string, settingJobs: string[] = []): number
  */
 /**
  * The debt audit is the story's own mechanism, so a contradiction there is
- * what a reader notices. Arithmetic is counting: usually a detail, and worth
- * one, not three. The target is major inconsistency, not correctness.
+ * what a reader notices. The target is major inconsistency, not correctness.
+ *
+ * Arithmetic sat at 1 for one run and that over-corrected. On a brief whose
+ * plot is the money, three contradicted arithmetic findings scored 6, fell
+ * under the floor of 7, and their defects reached the drafted story. The
+ * pedantry those findings were demoted for is already handled by HEDGED
+ * below, which zeroes severity on an estimate, so the weight can carry the
+ * real ones. Measured on chain 20260915204445-b776.
  */
-export const INVALIDATES_WEIGHT: Record<string, number> = { "debt audit": 3, custody: 2, arithmetic: 1 };
+export const INVALIDATES_WEIGHT: Record<string, number> = { "debt audit": 3, custody: 2, arithmetic: 2 };
 export const SCORE_MAX = 10;
 
 /**

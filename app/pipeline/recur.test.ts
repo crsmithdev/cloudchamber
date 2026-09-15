@@ -68,9 +68,9 @@ describe("recurrence", () => {
     const s = (over: Partial<Parameters<typeof score>[0]>, samples = 3, jobs: string[] = []) =>
       score({ n: 3, checkers: ["ledger"], invalidates: "none", result: "contradicted", evidence: "a quote", ...over }, samples, jobs);
     expect(s({ invalidates: "debt audit", checkers: ["ledger", "derivation"] })).toBe(10);   // 3 + 2 + 3 + 2
-    expect(s({ invalidates: "arithmetic" })).toBe(6);                                       // 3 + 0 + 1 + 2: counting is a detail
-    expect(s({ invalidates: "arithmetic", n: 2 })).toBe(5);                                 // one sample short
-    expect(s({ invalidates: "arithmetic", n: 1 })).toBe(4);
+    expect(s({ invalidates: "arithmetic" })).toBe(7);                                       // 3 + 0 + 2 + 2: a stated sum reaches the floor
+    expect(s({ invalidates: "arithmetic", n: 2 })).toBe(6);                                 // one sample short, so under the floor
+    expect(s({ invalidates: "arithmetic", n: 1 })).toBe(5);
     expect(s({ invalidates: "custody", result: "underived" })).toBe(6);                     // 3 + 0 + 2 + 1
     expect(s({ result: "supported" })).toBe(3);                                             // recurrence alone
     expect(s({ result: "unverifiable", evidence: "none" })).toBe(1);                        // and no evidence costs 2
@@ -87,8 +87,8 @@ describe("recurrence", () => {
     expect(s("and back by 64: roughly 1,200 steps a day")).toBe(5);        // the narrator is estimating
     expect(s("about 40 kilos of ordnance")).toBe(5);
     expect(s("a thousand guavas or so")).toBe(5);
-    expect(s("four hundred sixty-two kilos, 1,075 bomblets")).toBe(6);     // a stated figure keeps its severity
-    expect(s("a story about the archive")).toBe(6);                        // "about" alone is not a hedge
+    expect(s("four hundred sixty-two kilos, 1,075 bomblets")).toBe(7);     // a stated figure keeps its severity
+    expect(s("a story about the archive")).toBe(7);                        // "about" alone is not a hedge
     expect(s("roughly 1,200 steps a day", "debt audit")).toBe(8);          // the guard is arithmetic only
   });
 

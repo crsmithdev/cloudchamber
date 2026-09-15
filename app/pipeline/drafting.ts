@@ -25,7 +25,7 @@ import { fill } from "./prompts.ts";
 
 export const CHECKABLE = new Set(["done", "awaiting_check_gate"]);
 export type AutoRound = { round: number; id: string; open: number; total: number; accepted: number; calls: number };
-export type AutoResult = { id: string; rounds: AutoRound[]; best: AutoRound; stopped: "floor" | "cap" | "patience" | "budget"; floor: number; calls: number };
+export type AutoResult = { id: string; rounds: AutoRound[]; best: AutoRound; stopped: "floor" | "cap" | "patience" | "budget"; floor: number; calls: number; left_open: number };
 export type DraftOpts = { profile?: string; overrides?: Overrides; auto?: boolean; lexiconPath?: string; premisesPath?: string };
 
 /**
@@ -190,6 +190,11 @@ export class Drafting {
    * The round with the lowest total score is reported but not restored: an
    * earlier round is superseded, and reviving it would leave the chain in two
    * places at once. When `best` is not `last`, read the brief it names.
+   *
+   * Only a `floor` stop leaves nothing to do. Every other stop breaks after
+   * the last round has chosen what to accept and before it is applied, so
+   * `left_open` counts findings at or above the floor that a person still has
+   * to rule on at the gate.
    */
   async autoRounds(drawId: string, opts: { cfg?: DraftConfig; note?: string } = {}): Promise<AutoResult> {
     const draw = this.must(drawId, ...CHECKABLE);
@@ -203,7 +208,8 @@ export class Drafting {
       const accept = open.filter((f) => f.score >= cfg.repair.stop_score && autoEligible(f));
       const total = open.reduce((a, f) => a + f.score, 0);
       const calls = this.chainCalls(id);
-      rounds.push({ round, id, open: open.length, total, accepted: accept.length, calls });
+      const row: AutoRound = { round, id, open: open.length, total, accepted: accept.length, calls };
+      rounds.push(row);
       // a finding auto will never act on is dismissed with the reason, whatever ends the loop
       for (const f of open.filter((f) => !accept.includes(f))) {
         const why = f.relitigates ? `auto: re-opens the fix accepted in round ${f.relitigates.round}`
@@ -214,14 +220,18 @@ export class Drafting {
       if (!accept.length) { stopped = "floor"; break; }
       const best = Math.min(...rounds.map((r) => r.total));
       const since = rounds.length - 1 - rounds.findIndex((r) => r.total === best);
-      if (since >= cfg.repair.patience) { stopped = "patience"; break; }
-      if (round > cfg.repair.rounds) { stopped = "cap"; break; }
-      if (calls >= cfg.repair.max_calls) { stopped = "budget"; break; }
+      // patience, the cap and the budget all stop before this round's accepted set is applied.
+      // The row must not claim a repair that never ran: these findings stay open for the gate.
+      if (since >= cfg.repair.patience) { row.accepted = 0; stopped = "patience"; break; }
+      if (round > cfg.repair.rounds) { row.accepted = 0; stopped = "cap"; break; }
+      if (calls >= cfg.repair.max_calls) { row.accepted = 0; stopped = "budget"; break; }
       id = (await this.accept(id, accept.map((f) => f.id), { method: "draw", note: opts.note ?? "auto" })).id;
     }
     const best = rounds.reduce((a, r) => (r.total < a.total ? r : a), rounds[0]);
     this.p.db.query("UPDATE draws SET draft_config = (SELECT draft_config FROM draws WHERE id = ?) WHERE id = ?").run(drawId, id);
-    const result: AutoResult = { id, rounds, best, stopped, floor: cfg.repair.stop_score, calls: this.chainCalls(id) };
+    // what the last round would have repaired had the loop gone on: the gate's work, not auto's
+    const left = gateFindings(this.p, id, true).filter((f) => f.decision === "open" && f.score >= cfg.repair.stop_score && autoEligible(f));
+    const result: AutoResult = { id, rounds, best, stopped, floor: cfg.repair.stop_score, calls: this.chainCalls(id), left_open: left.length };
     // the round table belongs to the brief auto stopped on, so the gate can show how it got there
     const last = this.p.steps(id).filter((s) => s.status === "done").at(-1);
     if (last) this.p.artifact(last, "auto", JSON.stringify(result), { rounds: rounds.length, stopped, best: best.id });
