@@ -301,12 +301,6 @@ function StartForm({ status, like }: { status: Status | null; like?: string }) {
   const [err, setErr] = useState("");
   useEffect(() => { api.facets().then(setFacets); }, []);
   const [sources, setSources] = useState<string[]>([]);
-  const [lists, setLists] = useState<{ name: string; entries: number }[] | null>(null);
-  useEffect(() => {
-    setLists(null);
-    if (!form.setting) return;
-    api.setting(form.setting).then((s) => setLists(s.lists)).catch(() => setLists(null));
-  }, [form.setting]);
   // "redraw": every option of the draw this one is being started from
   const [seedTouched, setSeedTouched] = useState(false);
   const [themeId, setThemeId] = useState("");
@@ -358,8 +352,7 @@ function StartForm({ status, like }: { status: Status | null; like?: string }) {
         {like && <p className="lede" style={{ marginBottom: ".75rem" }}>Every option below comes from <a href={`#draw/${like}`} className="mono">{like}</a>, which stays open. Change what you want and start.</p>}
         <p className="lede">Pulls six eligible passages and a seed, asks for five premises off the centre of the distribution, writes each as a 400-word vignette, then stops at the gate for you. After the gate: a reverse outline, two context vignettes, the ending, and a brief in <span className="mono">briefs/</span>.</p>
         <div className="field"><span className="lbl">Gate</span><div className="seg" role="group" aria-label="Gate"><button type="button" aria-pressed={form.mode === "manual"} onClick={() => setForm({ ...form, mode: "manual" })}>Manual</button><button type="button" aria-pressed={form.mode === "auto"} onClick={() => setForm({ ...form, mode: "auto" })}>Auto</button></div><span className="help">Manual waits for you after the vignettes. Auto takes the lowest-probability premise and keeps going.</span></div>
-        <div className="field"><label htmlFor="setting">Setting</label><select id="setting" className="sel" value={form.setting ?? ""} onChange={set("setting")}><option value="">Unrestricted</option>{facets?.settings.map((s) => <option key={s}>{s}</option>)}</select><span className="help">A setting slices its four lists into each stage, with the hard rules last.</span></div>
-        {form.setting && lists && <div className="field"><span className="lbl">Lists</span><div className="chips" role="group" aria-label="Lists">{lists.map((l) => <span key={l.name} className="chip" aria-disabled="true">{l.name} · {l.entries}</span>)}</div><span className="help">Every list reaches the stages that load it, whole. Nothing is selected before the premise exists.</span></div>}
+        <div className="field"><label htmlFor="setting">Setting</label><select id="setting" className="sel" value={form.setting ?? ""} onChange={set("setting")}><option value="">Unrestricted</option>{facets?.settings.map((s) => <option key={s}>{s}</option>)}</select><span className="help">A setting gives each stage the world to write in. Unrestricted gives none.</span></div>
         <div className="field"><span className="lbl">Sampling</span><div className="seg" role="group" aria-label="Sampling">{(facets?.sampling ?? []).map((s) => (
           <button key={s.mode} type="button" aria-pressed={form.sampling === s.mode} onClick={() => setForm({ ...form, sampling: s.mode })}>{s.mode}</button>))}
           </div><span className="help">{SAMPLING_HELP[form.sampling] ?? ""} Stated probability {form.sampling === "standard" ? "over 0.35" : form.sampling === "off-centre" ? "0.10 to 0.35" : "under 0.10"}.</span></div>

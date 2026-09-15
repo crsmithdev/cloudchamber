@@ -33,7 +33,6 @@ export const api = {
   verdict: (b: { kind: string; target_id: string; verdict: "keep" | "pass"; artifact: boolean; note: string; method: string }) => j("/api/verdicts", { method: "POST", body: JSON.stringify(b) }),
   items: (q: Record<string, string>) => j<{ total: number; items: Item[] }>(`/api/items?${new URLSearchParams(q)}`),
   draws: (archived = false) => j<Draw[]>(`/api/draws${archived ? "?archived=true" : ""}`),
-  setting: (id: string) => j<{ id: string; name: string; lists: { name: string; entries: number }[] }>(`/api/settings/${id}`),
   draw: (id: string) => j<{ draw: Draw; origin: Origin | null; steps: Step[]; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] }>(`/api/draws/${id}`),
   like: (id: string) => j<Like>(`/api/draws/${id}/like`),
   deleteDraw: (id: string) => j<{ deleted: string }>(`/api/draws/${id}`, { method: "DELETE" }),

@@ -178,15 +178,8 @@ describe("api", () => {
     expect((await j("GET", "/api/draws")).body).toHaveLength(2);
   });
 
-  test("a setting lists its five lists by size, and a draw that sends domains is a 400", async () => {
+  test("a draw that sends domains is a 400", async () => {
     const { j } = await setup();
-    const s = await j("GET", "/api/settings/basin");
-    expect(s.code).toBe(200);
-    expect(s.body.lists).toEqual([
-      { name: "Bodies", entries: 3 }, { name: "Events", entries: 3 }, { name: "Instruments", entries: 3 },
-      { name: "Places", entries: 3 }, { name: "Terms", entries: 3 },
-    ]);
-    expect((await j("GET", "/api/settings/nope")).code).toBe(404);
     const bad = await j("POST", "/api/draws", { mode: "manual", genre: "horror", setting: "basin", domains: "labour" });
     expect(bad.code).toBe(400);
     expect(bad.body.error).toBe("domains are gone; a setting loads whole lists");
