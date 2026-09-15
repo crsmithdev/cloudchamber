@@ -653,6 +653,28 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(r.rounds.length).toBeLessThan(9);                                   // patience, not the cap
   });
 
+  test("drafting a repaired draw uses the chain's pinned ledger, not its own", async () => {
+    // the ledger lives on the chain root; a repaired draw has none of its own
+    const script = draftScript({
+      "check-ledger": [...ledgerSamples(), ...cleanSamples()],
+      "check-derivation": [...derivationSamples(), ...cleanSamples()],
+    });
+    const { p, d, draw, model } = await drawn(script);
+    await d.check(draw.id);
+    const [a] = d.findings(draw.id).findings;
+    const next = await d.accept(draw.id, [a.id]);
+    expect(p.artifacts(next.id).filter((x) => x.kind === "ledger")).toHaveLength(0);
+
+    await d.draft(next.id);
+    const scenes = model.calls.filter((c) => c.stage === "scene");
+    expect(scenes.length).toBeGreaterThan(0);
+    for (const c of scenes) expect(c.prompt).toContain("time: the fire was on the 3rd");
+    const screens = model.calls.filter((c) => c.stage === "screen-ledger");
+    for (const c of screens) expect(c.prompt).toContain("time: the fire was on the 3rd");
+    // the amendment travels with it
+    expect(scenes[0].prompt).toContain("Only the assembler can fire the reliquary.");
+  });
+
   test("auto stops on the call budget", async () => {
     const WORDS = ["reliquary silk director", "clavicle Verona relic", "assembler forge tally", "director ledger hour", "silk tears cut", "relic bones sold"];
     let k = 0;

@@ -17,7 +17,7 @@ import { now } from "./paths.ts";
 import { loadDraftConfig, type DraftConfig, type Overrides, type Resolved } from "./draftconfig.ts";
 import { runCheck, type CheckResult } from "./check.ts";
 import { constraintsBlock, repair, type Accepted } from "./repair.ts";
-import { briefBlock, briefParts, checkFindings, gateFindings, judgeNote, latestCheckPass, latestLedger, passId, pinnedLedger, type FindingView } from "./briefparts.ts";
+import { briefBlock, briefParts, checkFindings, gateFindings, judgeNote, latestCheckPass, passId, pinnedLedger, type FindingView } from "./briefparts.ts";
 import { currentScenes, runScenes, runSchedule, runScreens, writeScene, type Schedule } from "./write.ts";
 import { draftView, exportDraft, renderStory, type DraftView } from "./drafts.ts";
 import { tag } from "./model.ts";
@@ -258,7 +258,8 @@ export class Drafting {
     this.status(drawId, "drafting");
     try {
       const parts = briefParts(this.p, drawId);
-      const ledger = latestLedger(this.p, drawId) ?? "";
+      // the pinned one: a repaired draw carries no ledger of its own, the chain root holds it
+      const ledger = pinnedLedger(this.p, drawId) ?? "";
       const schedule: Schedule = { form: v.schedule.form as Schedule["form"], formLines: [], beats: v.schedule.beats, raw: v.schedule.raw };
       const scheduleStep = this.p.steps(drawId).find((s) => s.stage === "schedule" && s.status === "done")!;
       const before = v.scenes.filter((s) => s.beat < k).map((s) => s.text);
