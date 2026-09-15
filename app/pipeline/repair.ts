@@ -15,7 +15,7 @@ import { compose, fill } from "./prompts.ts";
 import { sections, tag, tags, words } from "./model.ts";
 import { now } from "./paths.ts";
 import { writeBrief } from "./brief.ts";
-import { briefParts } from "./briefparts.ts";
+import { briefParts, settledConstraints, type Settled } from "./briefparts.ts";
 import { normalise } from "./recur.ts";
 import { nextName } from "./names.ts";
 import type { FindingView } from "./briefparts.ts";
@@ -35,6 +35,10 @@ export function repairPlan(accepted: Accepted[], vignette: string, ending: strin
 }
 
 export const constraintsBlock = (accepted: Accepted[]) => fill("constraints", { constraints: accepted.map((f) => `- ${f.replacement}`).join("\n") });
+
+/** The fixes accepted in earlier rounds, which the repair must keep true rather than trade away. */
+export const settledBlock = (settled: Settled[]) =>
+  settled.length ? fill("settled", { settled: settled.map((sc) => `- ${sc.replacement}`).join("\n") }) : "";
 
 /**
  * Create the repaired draw and write its brief. Returns the new draw. The
@@ -71,6 +75,9 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
   const plan = repairPlan(accepted, parts.vignette, parts.ending, carryable ? srcContexts.map((c) => c.content) : []);
   if (!carryable) plan.context = Array.from({ length: RUN.contextVignettes }, () => true);
   const constraints = constraintsBlock(accepted);
+  // the accepted set of this round is not the whole record: every earlier round's fix still holds
+  const settledLines = settledConstraints(p, parts.draw.id).filter((sc) => !accepted.some((a) => a.id === sc.finding));
+  const settled = settledBlock(settledLines);
   const head = parts.examples.join("\n\n");
   const { setting } = p.loadDrawSetting(parts.draw);
   const chosenMeta = JSON.parse(srcArts.find((a) => a.step_id === parts.chosenStepId && a.kind === "vignette")!.meta);
@@ -79,7 +86,7 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
   let vignette = parts.vignette;
   let vStep;
   if (plan.vignette) {
-    const r = await p.invoke(newId, null, "repair-vignette", compose(head, fill("repairVignette", { vignette: parts.vignette, constraints }), p.settingFor("execute", setting)), (t) => {
+    const r = await p.invoke(newId, null, "repair-vignette", compose(head, fill("repairVignette", { settled, vignette: parts.vignette, constraints }), p.settingFor("execute", setting)), (t) => {
       const v = tag(t, "vignette"); if (!v) throw new Error("no <vignette> tag"); return v;
     });
     vignette = r.value; vStep = r.step;
@@ -93,7 +100,7 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
   // the outline, re-derived under the constraints
   const settingJobs = (setting?.jobs ?? []).map((j) => fill("settingJob", { name: j.name, description: j.description })).join("");
   const jobNames = [...RUN.coreJobs, ...(setting?.jobs ?? []).map((j) => j.name.toLowerCase())];
-  const outlineHead = fill("repairOutlineHead", { seed: parts.seed, premise: parts.premise, vignette, constraints });
+  const outlineHead = fill("repairOutlineHead", { settled, seed: parts.seed, premise: parts.premise, vignette, constraints });
   const { step: outlineStep, value: outline } = await p.invoke(newId, vStep.id, "repair-outline", compose(outlineHead, fill("outlineAsk", { settingJobs }), p.settingFor("outline", setting)), (text) => {
     const secs = sections(text);
     for (const j of jobNames) if (!secs[j]) throw new Error(`missing <section name="${j}">`);
@@ -128,12 +135,13 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
 
   // the ending: rewritten from itself under the constraints, or carried over
   const endingRun = plan.ending
-    ? p.invoke(newId, outlineStep.id, "repair-ending", compose(head, fill("repairEnding", { outline: outlineText, ending: parts.ending, constraints }), p.settingFor("ending", setting)), (t) => {
+    ? p.invoke(newId, outlineStep.id, "repair-ending", compose(head, fill("repairEnding", { settled, outline: outlineText, ending: parts.ending, constraints }), p.settingFor("ending", setting)), (t) => {
         const e = tag(t, "ending"); if (!e) throw new Error("no <ending> tag"); return e;
       }).then((r) => p.artifact(r.step, "ending", r.value, { previous: parts.ending, warnings: words(r.value) > 650 ? ["length"] : [] }))
     : Promise.resolve(p.artifact(p.recordStep(newId, outlineStep.id, "repair-ending", "copied"), "ending", parts.ending, { copied: true }));
   await Promise.all([...contextRuns, endingRun]);
 
-  const dir = writeBrief(p.db, newId, p.stages, p.briefsDir, p.settingsDir);
+  // this round's accepted findings are already listed under ## repaired_from
+  const dir = writeBrief(p.db, newId, p.stages, p.briefsDir, p.settingsDir, settledLines);
   p.artifact(outlineStep, "brief", dir, { repaired_from: parts.draw.id });
 }

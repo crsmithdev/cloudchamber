@@ -164,7 +164,7 @@ describe("check and gate 1", () => {
     // C recurred in one sample of three: below the bar, still a reading
     const sub = all.filter((x) => !x.reported);
     expect(sub.map((x) => [x.span, x.n, x.samples_run, x.invalidates])).toEqual([[SPAN_C, 1, 3, "custody"]]);
-    expect(all.map((x) => x.score)).toEqual([10, 7, 5]);                        // sorted, the sub-threshold one last
+    expect(all.map((x) => x.score)).toEqual([10, 5, 5]);                        // sorted; arithmetic is a detail, so B drops to 5
     expect(sub[0].artifact_id).toBe("");                                        // no artifact until it is decided on
     expect(p.artifacts(draw.id).filter((a) => a.kind === "finding")).toHaveLength(2);
     // dismissing one promotes it to an artifact, so a re-check does not raise it again
@@ -236,6 +236,38 @@ describe("check and gate 1", () => {
       .sort((a, b) => JSON.parse(a.meta).index - JSON.parse(b.meta).index);
     expect(ctx[1].content).toBe("context for Test a second thing: scene two.");
     expect(model.calls.filter((c) => c.stage === "context")).toHaveLength(3);    // two on the draw, one on the repair
+  });
+
+  test("a fix accepted in an earlier round is carried into every later repair and is not re-argued", async () => {
+    // A is accepted in round 1 and reported again by the re-check
+    const script = draftScript({
+      "check-ledger": [...ledgerSamples(), ...ledgerSamples(), ...ledgerSamples()],
+      "check-derivation": [...derivationSamples(), ...derivationSamples(), ...derivationSamples()],
+    });
+    const { p, d, draw, model, dir } = await drawn(script);
+    await d.check(draw.id);
+    const [a] = d.findings(draw.id).findings;
+    const next = await d.accept(draw.id, [a.id]);
+
+    // the settled block reaches the next repair's prompts, and the trail records it
+    const again = d.findings(next.id, { all: true }).findings;
+    const same = again.find((f) => f.span === SPAN_A)!;
+    expect(same.relitigates).toMatchObject({ round: 1, draw: draw.id });
+    expect(same.relitigates!.replacement).toBe("Only the assembler can fire the reliquary.");
+
+    // auto will not act on it, and says why
+    const r = await d.autoRounds(next.id);
+    expect(r.rounds[0].accepted).toBe(0);
+    expect(r.stopped).toBe("floor");
+    expect(d.findings(next.id, { all: true }).findings.find((f) => f.span === SPAN_A)!.note).toBe("auto: re-opens the fix accepted in round 1");
+
+    // a third repair, driven by hand, carries the round-1 fix as settled rather than as a constraint
+    const third = await d.accept(next.id, [again.find((f) => f.span === SPAN_B)!.id]);
+    const prompt = p.steps(third.id).find((s) => s.stage === "repair-outline")!.prompt;
+    expect(prompt).toContain("<settled>\n- Only the assembler can fire the reliquary.\n</settled>");
+    expect(prompt).toContain("The twelfth relic is the Verona clavicle in every account.");   // this round's constraint
+    expect(readFileSync(join(dir, "briefs", third.id, "trail.md"), "utf8")).toContain("## settled in earlier rounds\n\n- round 1: Only the assembler can fire the reliquary.");
+    void model;
   });
 
   test("pass at gate 1 records a brief verdict and ends the draw; flag starts nothing", async () => {
@@ -488,9 +520,9 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(out.repaired_from).toBe(draw.id);
     expect(out.status).toBe("awaiting_draft_gate");
     expect(p.draw(draw.id).status).toBe("repaired");
-    // A scores 10 and B 7, both at or above the floor; C recurred once, scores 5, and is dismissed with its number
+    // only A reaches the floor: B is arithmetic at 2 of 3 and C recurred once, so both are dismissed with their number
     const first = d.findings(draw.id, { all: true }).findings;
-    expect(first.map((f) => [f.score, f.decision])).toEqual([[10, "accepted"], [7, "accepted"], [5, "dismissed"]]);
+    expect(first.map((f) => [f.score, f.decision])).toEqual([[10, "accepted"], [5, "dismissed"], [5, "dismissed"]]);
     expect(first[2].note).toBe("auto: scored 5, under 7");
     expect((p.db.query("SELECT DISTINCT method FROM verdicts WHERE kind = 'finding'").all() as any[]).map((v) => v.method)).toEqual(["draw"]);
     expect(stagesOf(model, /^check-ledger$/)).toHaveLength(6);                // one round of repair, then a clean re-check ends it
@@ -506,7 +538,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     const r = await d.autoRounds(draw.id);
     expect(r.stopped).toBe("floor");
     expect(r.floor).toBe(7);
-    expect(r.rounds.map((x) => [x.round, x.open, x.total, x.accepted])).toEqual([[1, 3, 22, 2], [2, 0, 0, 0]]);
+    expect(r.rounds.map((x) => [x.round, x.open, x.total, x.accepted])).toEqual([[1, 3, 20, 1], [2, 0, 0, 0]]);
     expect(r.best.round).toBe(2);
     expect(r.id).toBe(r.rounds[1].id);
     expect(r.id).not.toBe(draw.id);
@@ -517,9 +549,14 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
   });
 
   test("auto stops on patience when the total score stops falling, and names the best round", async () => {
-    // every pass reports the same findings, so after the first round no round improves
-    const passes = Array.from({ length: 12 }, () => ledgerSamples()).flat();
-    const derivations = Array.from({ length: 12 }, () => derivationSamples()).flat();
+    // each pass reports a different defect of the same weight, so no round improves and none is a re-litigation
+    // deliberately unrelated wording each round: a shared phrasing would cluster as one defect
+    const WORDS = ["reliquary silk director", "clavicle Verona relic", "assembler forge tally", "director ledger hour", "silk tears cut",
+      "relic bones sold", "forge iron count", "hour glass turned", "tally marks burned", "bones washed clean", "iron gate sealed", "glass eye watched"];
+    let k = 0;
+    const fresh = () => { const w = WORDS[k++ % WORDS.length]; return finding(w, `the ${w} does not hold`, "debt audit", `The ${w} holds.`); };
+    const passes = Array.from({ length: 12 }, () => { const a = fresh(); return [`<ledger>${LEDGER}</ledger>${a}<examined>x</examined>`, `<ledger>${LEDGER}</ledger>${a}<examined>x</examined>`, `<ledger>${LEDGER}</ledger>${a}<examined>x</examined>`]; }).flat();
+    const derivations = Array.from({ length: 12 }, () => Array.from({ length: 3 }, () => `<impossibility>One.</impossibility><examined>x</examined>`)).flat();
     const { d, draw } = await drawn(draftScript({ "check-ledger": passes, "check-derivation": derivations }));
     await d.check(draw.id);
     const r = await d.autoRounds(draw.id, { cfg: { ...loadDraftConfig().config, repair: { rounds: 9, stop_score: 7, patience: 2 } } });
@@ -531,8 +568,11 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
   });
 
   test("auto stops on the round cap", async () => {
-    const passes = Array.from({ length: 8 }, (_, i) => ledgerSamples(A(), B(`span number ${i} of the outline text here`))).flat();
-    const derivations = Array.from({ length: 8 }, () => derivationSamples()).flat();
+    const WORDS = ["reliquary silk director", "clavicle Verona relic", "assembler forge tally", "director ledger hour", "silk tears cut", "relic bones sold", "forge iron count", "hour glass turned"];
+    let k = 0;
+    const fresh = () => { const w = WORDS[k++ % WORDS.length]; return finding(w, `the ${w} does not hold`, "debt audit", `The ${w} holds.`); };
+    const passes = Array.from({ length: 8 }, () => { const a = fresh(); return [1, 2, 3].map(() => `<ledger>${LEDGER}</ledger>${a}<examined>x</examined>`); }).flat();
+    const derivations = Array.from({ length: 8 }, () => [1, 2, 3].map(() => `<impossibility>One.</impossibility><examined>x</examined>`)).flat();
     const { d, draw } = await drawn(draftScript({ "check-ledger": passes, "check-derivation": derivations }));
     await d.check(draw.id);
     const r = await d.autoRounds(draw.id, { cfg: { ...loadDraftConfig().config, repair: { rounds: 2, stop_score: 7, patience: 9 } } });
@@ -549,7 +589,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(out.id).toBe(draw.id);                                             // nothing accepted, no repair
     const fs = d.findings(draw.id).findings;
     expect(fs.map((f) => f.decision)).toEqual(["dismissed", "dismissed", "dismissed"]);
-    expect(fs.map((f) => f.score)).toEqual([8, 5, 5]);
+    expect(fs.map((f) => f.score)).toEqual([8, 5, 3]);
     expect(fs[0].note).toBe("auto: no evidence to read it against");          // 8 is over the floor; a person still has to read it
     expect(p.steps(draw.id).filter((s) => /^repair/.test(s.stage))).toHaveLength(0);
   });

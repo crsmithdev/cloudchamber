@@ -56,7 +56,9 @@ export function briefBlock(b: BriefParts): string {
 // --- findings as artifacts -----------------------------------------------------
 
 export type FindingMeta = Omit<Cluster, "reported"> & { pass: string; source: "check" | "screen"; screen?: string; beat?: number };
-export type FindingView = FindingMeta & { artifact_id: string; decision: "accepted" | "dismissed" | "open"; note: string; score: number; samples_run: number; reported: boolean };
+export type FindingView = FindingMeta & { artifact_id: string; decision: "accepted" | "dismissed" | "open"; note: string; score: number; samples_run: number; reported: boolean; relitigates?: Settled };
+/** A finding accepted somewhere in this repair chain, and where. */
+export type Settled = { finding: string; draw: string; round: number; replacement: string; span: string; statement: string };
 
 export function findingArtifacts(p: Pipeline, drawId: string): (FindingMeta & { artifact_id: string })[] {
   return p.artifacts(drawId).filter((a) => a.kind === "finding").map((a) => ({ ...(JSON.parse(a.meta) as FindingMeta), artifact_id: a.id }));
@@ -111,8 +113,9 @@ export function checkFindings(p: Pipeline, drawId: string): FindingView[] {
   if (!pass) return [];
   const per = samplesPerChecker(p, drawId);
   const jobs = briefSettingJobs(p, drawId);
+  const settled = settledConstraints(p, drawId);
   return findingArtifacts(p, drawId).filter((f) => f.source === "check" && f.pass === pass)
-    .map((f) => withScore(p, f, per, jobs, !(f as { sub_threshold?: boolean }).sub_threshold))
+    .map((f) => withScore(p, f, per, jobs, !(f as { sub_threshold?: boolean }).sub_threshold, settled))
     .sort((a, b) => b.score - a.score);
 }
 
@@ -123,9 +126,10 @@ function briefSettingJobs(p: Pipeline, drawId: string): string[] {
   return jobs.filter((j) => !(RUN.coreJobs as readonly string[]).includes(j));
 }
 
-export function withScore(p: Pipeline, f: FindingMeta & { artifact_id: string }, per: Record<string, number>, settingJobs: string[], reported: boolean): FindingView {
+export function withScore(p: Pipeline, f: FindingMeta & { artifact_id: string }, per: Record<string, number>, settingJobs: string[], reported: boolean, settled: Settled[] = []): FindingView {
   const samples_run = samplesAgainst(f, per);
-  return { ...f, ...decision(p, f.id), score: score(f, samples_run, settingJobs), samples_run, reported };
+  const re = relitigated(f, settled);
+  return { ...f, ...decision(p, f.id), score: score(f, samples_run, settingJobs), samples_run, reported, ...(re ? { relitigates: re } : {}) };
 }
 
 /**
@@ -157,9 +161,10 @@ export function subThresholdFindings(p: Pipeline, drawId: string): FindingView[]
   }
   // the same span from two checkers is one finding, as it is above the bar
   const hidden = excludeDismissed(merge(perChecker, jobs).filter((c) => !reported.some((r) => same(r, c))), dismissed);
+  const settled = settledConstraints(p, drawId);
   return hidden.map((c) => {
     const { reported: _r, ...meta } = c;
-    return withScore(p, { ...meta, pass, source: "check", artifact_id: "" }, per, jobs, false);
+    return withScore(p, { ...meta, pass, source: "check", artifact_id: "" }, per, jobs, false, settled);
   }).sort((a, b) => b.score - a.score);
 }
 
@@ -167,6 +172,42 @@ export function subThresholdFindings(p: Pipeline, drawId: string): FindingView[]
 export function gateFindings(p: Pipeline, drawId: string, all = false): FindingView[] {
   const reported = checkFindings(p, drawId);
   return all ? [...reported, ...subThresholdFindings(p, drawId)].sort((a, b) => b.score - a.score) : reported;
+}
+
+/**
+ * Every replacement accepted anywhere in this repair chain, oldest round
+ * first. A dismissal was already remembered for ever; an accepted fix was
+ * remembered for one round, so a later round was free to contradict it and the
+ * checker was free to flag the fix as the defect. Measured at 35% of findings
+ * over an eight-round chain.
+ */
+export function settledConstraints(p: Pipeline, drawId: string): Settled[] {
+  const chain: string[] = [];
+  const seen = new Set<string>();
+  let id: string | null = drawId;
+  while (id && !seen.has(id)) { seen.add(id); chain.push(id); id = p.draw(id).repaired_from; }
+  chain.reverse();
+  const out: Settled[] = [];
+  chain.forEach((draw, i) => {
+    for (const f of findingArtifacts(p, draw)) {
+      if (f.source !== "check" || decision(p, f.id).decision !== "accepted") continue;
+      if (!f.replacement.trim() || f.replacement.trim().toLowerCase() === "none") continue;
+      if (out.some((o) => same(o, f))) continue;
+      out.push({ finding: f.id, draw, round: i + 1, replacement: f.replacement, span: f.span, statement: f.statement });
+    }
+  });
+  return out;
+}
+
+/**
+ * The settled fix a finding re-opens, or undefined. The test is whether this
+ * is the same defect as one already accepted — the existing cluster rule, on
+ * span and statement — not whether it quotes the replacement text. The repair
+ * paraphrases its constraints, so matching against the replacement decays from
+ * 31% of findings at 0.5 overlap to 9% at 0.7 and answers nothing.
+ */
+export function relitigated(f: { span: string; statement: string }, settled: Settled[]): Settled | undefined {
+  return settled.find((sc) => same(f, sc));
 }
 
 /** Findings dismissed on this draw or any brief it repairs; a re-check does not raise them again. */

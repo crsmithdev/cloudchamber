@@ -288,6 +288,8 @@ pre { white-space: pre-wrap; background: var(--surface); border: 1px solid var(-
 .finding .score.slo { color: var(--dim); }
 .finding.sub { border-left: 2px solid var(--line); padding-left: .6rem; }
 .finding.sub .span { color: var(--mute); }
+.finding .reopens { font-size: 10.5px; color: var(--pass); border: 1px solid var(--pass); border-radius: 3px; padding: 0 5px; text-decoration: none; align-self: start; }
+.note.reopen { padding: .6rem .8rem; margin: .5rem 0 .75rem; background: var(--surface); border: 1px solid var(--line); border-left: 2px solid var(--pass); border-radius: 4px; font-size: 12.5px; max-width: 46rem; }
 .rounds { margin: .9rem 0; padding: .7rem .8rem; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; max-width: 46rem; }
 .rounds .hd { display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap; margin-bottom: .5rem; font-size: 12.5px; }
 .rounds table { width: 100%; border-collapse: collapse; font-size: 12.5px; }

@@ -178,7 +178,8 @@ function GateOne({ d, onAct, onDraft }: { d: Detail; onAct: (fn: () => Promise<a
   const constraints: string[] = outline ? JSON.parse(outline.meta).constraints ?? [] : [];
   const settingJobs: string[] = outline ? (JSON.parse(outline.meta).jobs ?? []).filter((j: string) => !INVALIDATES.includes(j)) : [];
   const toggle = (fid: string) => setSel((s) => { const n = new Set(s); n.has(fid) ? n.delete(fid) : n.add(fid); return n; });
-  const atFloor = open.filter((x) => x.score >= floor);
+  const atFloor = open.filter((x) => x.score >= floor && !x.relitigates);
+  const reopened = f?.findings.filter((x) => x.relitigates) ?? [];
   const autoCfg = (d.draw.draft_config ? JSON.parse(d.draw.draft_config).config.repair : null) ?? { rounds: 4, stop_score: 7, patience: 2 };
   const autoArt = [...d.artifacts].reverse().find((a) => a.kind === "auto");
   const auto: AutoResult | null = autoArt ? JSON.parse(autoArt.content) : null;
@@ -187,7 +188,7 @@ function GateOne({ d, onAct, onDraft }: { d: Detail; onAct: (fn: () => Promise<a
       {!repaired && <div className="gatebar" role="group" aria-label="Gate 1">
         <button className="btn primary" disabled={!sel.size && !accepted.length} onClick={() => gate("accept", { findings: [...sel] })} title="Accept the selected findings. The brief is repaired into a new draw under their replacements and re-checked.">accept {sel.size || accepted.length} · repair and re-check</button>
         <span className="pick">
-          <button className="btn keep" disabled={!open.length} onClick={() => setSel(new Set(open.map((x) => x.id)))} title="Select every open finding.">all {open.length}</button>
+          <button className="btn keep" disabled={!open.some((x) => !x.relitigates)} onClick={() => setSel(new Set(open.filter((x) => !x.relitigates).map((x) => x.id)))} title="Select every open finding that does not re-open a settled fix.">all {open.filter((x) => !x.relitigates).length}</button>
           <button className="btn keep" disabled={!atFloor.length} onClick={() => setSel(new Set(atFloor.map((x) => x.id)))} title={`Select every open finding scoring ${floor} or more.`}>≥ {floor} · {atFloor.length}</button>
           <input type="range" min={1} max={SCORE_MAX} step={1} value={floor} aria-label="Score floor" onChange={(e) => setFloor(Number(e.target.value))} />
           <button className="btn quiet" disabled={!sel.size} onClick={() => setSel(new Set())} title="Clear the selection.">none</button>
@@ -217,7 +218,12 @@ function GateOne({ d, onAct, onDraft }: { d: Detail; onAct: (fn: () => Promise<a
           <button className="btn sm quiet" aria-pressed={showAll} onClick={() => setShowAll((v) => !v)} title="A cluster one sample found is not reported, but it is still a reading. Nothing is re-run to show these.">{showAll ? "hide" : "show"} one-sample findings</button>
         </h2>
         {f && f.findings.length === 0 && <div className="note" style={{ padding: ".75rem 1rem", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 6 }}>Nothing recurred in enough samples to report. What each checker examined is listed on the right.</div>}
-        {f?.findings.map((x) => <FindingRow key={x.id} f={x} S={x.samples_run} selected={sel.has(x.id)} onToggle={() => toggle(x.id)} onDismiss={() => gate("dismiss", { finding: x.id })} readOnly={repaired} />)}
+        {f?.findings.filter((x) => !x.relitigates).map((x) => <FindingRow key={x.id} f={x} S={x.samples_run} selected={sel.has(x.id)} onToggle={() => toggle(x.id)} onDismiss={() => gate("dismiss", { finding: x.id })} readOnly={repaired} />)}
+        {reopened.length > 0 && <>
+          <h2 className="sec">re-opened <span>· {reopened.length} finding{reopened.length > 1 ? "s" : ""} against a fix you already accepted · auto will not act on {reopened.length > 1 ? "these" : "this"}</span></h2>
+          <div className="note reopen">A repair round is free to trade one fix for another, and the checkers then report the fix as the defect. Either the earlier decision was wrong, in which case accept this and say so in the note, or this is the loop arguing with itself, in which case dismiss it.</div>
+          {reopened.map((x) => <FindingRow key={x.id} f={x} S={x.samples_run} selected={sel.has(x.id)} onToggle={() => toggle(x.id)} onDismiss={() => gate("dismiss", { finding: x.id })} readOnly={repaired} />)}
+        </>}
         {f && <>
           <h2 className="sec">claims <span>· {f.claims.length ? `${f.claims.length} verified · ${f.claims.filter((c) => c.result === "supported").length} supported · ${f.claims.filter((c) => c.result === "contradicted").length} contradicted · ${f.claims[0].authority === "world" ? "the web, on sonnet" : f.claims[0].authority === "setting" ? "the setting file" : "the setting's reference files"}` : "off · no claims authority declared on the setting"}</span></h2>
           {f.claims.map((c, i) => <div key={i} className="claim"><span className={"r mono " + (c.result === "supported" ? "keep" : c.result === "contradicted" ? "pass" : "dim")}>{c.result}</span><div>{c.statement}<div className="ev">{c.evidence}</div></div></div>)}
@@ -250,6 +256,7 @@ function FindingRow({ f, S, selected, onToggle, onDismiss, readOnly }: { f: Find
         <div className="dots">{Array.from({ length: S }, (_, i) => <i key={i} className={i < f.n ? "on" : ""} />)}<b className="tnum">{f.n}/{S}</b></div>
         <div className={"ptr" + (f.invalidates === "none" ? " none" : "")}>→ {f.invalidates}</div>
         <div className="ck">{f.checkers.map((c) => <span key={c}>{c}</span>)}</div>
+        {f.relitigates && <a className="reopens" href={`#check/${f.relitigates.draw}`} title={`Accepted in round ${f.relitigates.round}: ${f.relitigates.replacement}`}>re-opens round {f.relitigates.round}</a>}
       </div>
       <div className="body">
         <div className="span">{unquote(f.span)}</div>

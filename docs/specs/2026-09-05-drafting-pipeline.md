@@ -33,6 +33,16 @@ differ, this file wins.
 >   request rather than discarded.
 > - **AC 8, Gate 1.** Accepting takes a set, so the gate can accept every open
 >   finding or every finding at or above a score.
+> - **AC 8, Gate 1.** A finding matching a finding already accepted anywhere in
+>   the chain, by the cluster rule, is marked as re-opening it: shown in its own
+>   section, never accepted by auto, and dismissed with the round it re-opens.
+>   Every accepted replacement in the chain reaches every later repair prompt in
+>   a `<settled>` block and the trail's `## settled in earlier rounds`. Measured:
+>   18 of 62 reported findings over an eight-round chain were defects already
+>   accepted, 10 of them scoring 7 or more.
+> - **AC 2, Score.** `arithmetic` weighs 1, not 3: the debt audit is the story's
+>   mechanism and arithmetic is a detail. An arithmetic finding quoting a hedged
+>   number ("roughly 1,200 steps") scores no severity at all.
 > - **AC 10, Repair rounds.** `repair.rounds` defaults to 4. `cloudchamber gate
 >   <draw> auto` and `draft --auto` accept every open finding scoring
 >   `repair.stop_score` or more that quotes evidence, dismiss the rest with the

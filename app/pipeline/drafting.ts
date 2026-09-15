@@ -36,7 +36,8 @@ export type DraftOpts = { profile?: string; overrides?: Overrides; auto?: boolea
  */
 const AUTO_CHECKERS = ["derivation", "ledger", "claims"];
 const autoEligible = (f: FindingView) =>
-  f.checkers.some((c) => AUTO_CHECKERS.includes(c)) && !!f.evidence.trim() && f.evidence.trim().toLowerCase() !== "none";
+  f.checkers.some((c) => AUTO_CHECKERS.includes(c)) && !!f.evidence.trim() && f.evidence.trim().toLowerCase() !== "none"
+  && !f.relitigates;
 
 export class Drafting {
   constructor(public p: Pipeline, public opts: { draftsDir?: string; lexiconPath?: string; premisesPath?: string } = {}) {}
@@ -199,7 +200,10 @@ export class Drafting {
       rounds.push({ round, id, open: open.length, total, accepted: accept.length });
       // a finding auto will never act on is dismissed with the reason, whatever ends the loop
       for (const f of open.filter((f) => !accept.includes(f))) {
-        this.dismiss(id, f.id, autoEligible(f) ? `auto: scored ${f.score}, under ${cfg.repair.stop_score}` : "auto: no evidence to read it against", "draw");
+        const why = f.relitigates ? `auto: re-opens the fix accepted in round ${f.relitigates.round}`
+          : autoEligible(f) ? `auto: scored ${f.score}, under ${cfg.repair.stop_score}`
+          : "auto: no evidence to read it against";
+        this.dismiss(id, f.id, why, "draw");
       }
       if (!accept.length) { stopped = "floor"; break; }
       const best = Math.min(...rounds.map((r) => r.total));

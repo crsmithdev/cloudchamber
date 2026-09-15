@@ -90,16 +90,30 @@ export function invalidatesRank(inv: string, settingJobs: string[] = []): number
  * the debt audit seen twice of three is worth reading, and a full-recurrence
  * finding with no evidence behind it is not.
  */
-export const INVALIDATES_WEIGHT: Record<string, number> = { "debt audit": 3, arithmetic: 3, custody: 2 };
+/**
+ * The debt audit is the story's own mechanism, so a contradiction there is
+ * what a reader notices. Arithmetic is counting: usually a detail, and worth
+ * one, not three. The target is major inconsistency, not correctness.
+ */
+export const INVALIDATES_WEIGHT: Record<string, number> = { "debt audit": 3, custody: 2, arithmetic: 1 };
 export const SCORE_MAX = 10;
 
-export type Scorable = { n: number; checkers: string[]; invalidates: string; result: string; evidence: string };
+/**
+ * A hedge immediately before a number, or a trailing "or so", marks a
+ * character's estimate rather than a claim. Doing long division on "roughly
+ * 1,200 steps a day" is pedantry, so an arithmetic finding quoting one scores
+ * no severity at all.
+ */
+export const HEDGED = /\b(roughly|approximately|about|around|nearly|almost|some|upwards of|maybe)\s+[\d,.]+|\bor so\b|\bgive or take\b/i;
+
+export type Scorable = { n: number; checkers: string[]; invalidates: string; result: string; evidence: string; span?: string };
 
 export function score(f: Scorable, samples: number, settingJobs: string[] = []): number {
   const recurrence = f.n >= samples ? 3 : f.n === samples - 1 ? 2 : 1;
   const crossChecker = f.checkers.length > 1 ? 2 : 0;
   const inv = f.invalidates.toLowerCase();
-  const severity = INVALIDATES_WEIGHT[inv] ?? (settingJobs.some((j) => j.toLowerCase() === inv) ? 2 : 0);
+  const weight = INVALIDATES_WEIGHT[inv] ?? (settingJobs.some((j) => j.toLowerCase() === inv) ? 2 : 0);
+  const severity = inv === "arithmetic" && HEDGED.test(f.span ?? "") ? 0 : weight;
   const r = f.result.toLowerCase().trim();
   const kind = r.startsWith("contradict") ? 2 : r.includes("underived") ? 1 : 0;
   const unevidenced = !f.evidence.trim() || f.evidence.trim().toLowerCase() === "none" ? -2 : 0;

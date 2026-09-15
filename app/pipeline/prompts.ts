@@ -263,6 +263,14 @@ Find the line in the setting above that confirms or denies it. The setting is th
 {constraints}
 </constraints>`,
 
+  settled: `<settled>
+{settled}
+</settled>
+
+The settled lines were accepted in earlier rounds of this brief and still
+hold. Keep every one of them true. Do not restate them and do not undo them to
+satisfy a constraint above.`,
+
   repairVignette: `Below is a ${RUN.vignetteWords}-word execution of a story and a set of constraints that hold.
 
 <vignette>
@@ -270,6 +278,8 @@ Find the line in the setting above that confirms or denies it. The setting is th
 </vignette>
 
 {constraints}
+
+{settled}
 
 Rewrite it in a <vignette> tag so that every line of the constraints holds, keeping its people, place, form and length. Under ${RUN.vignetteWords + 50} words. Output only the tag.`,
 
@@ -283,7 +293,9 @@ Premise: {premise}
 {vignette}
 </vignette>
 
-{constraints}`,
+{constraints}
+
+{settled}`,
 
   repairEnding: `Below is a story's derived structure, the ending written from it, and a set of constraints that hold.
 
@@ -294,6 +306,8 @@ Premise: {premise}
 </ending>
 
 {constraints}
+
+{settled}
 
 Rewrite the ending in an <ending> tag so that every line of the constraints holds, keeping its people, place, form and length. Under ${RUN.endingWords} words. Output only the tag.`,
 
