@@ -15,22 +15,59 @@ import { compose, fill } from "./prompts.ts";
 import { sections, tag, tags, words } from "./model.ts";
 import { now } from "./paths.ts";
 import { writeBrief } from "./brief.ts";
-import { briefParts, settledConstraints, type Settled } from "./briefparts.ts";
+import { briefParts, pinnedLedger, settledConstraints, type Settled } from "./briefparts.ts";
 import { normalise } from "./recur.ts";
 import { nextName } from "./names.ts";
 import type { FindingView } from "./briefparts.ts";
 
-export type Accepted = Pick<FindingView, "id" | "span" | "invalidates" | "replacement">;
+export type Accepted = Pick<FindingView, "id" | "span" | "invalidates" | "replacement"> & { patch?: string };
 
 const inside = (span: string, text: string) => normalise(text).includes(normalise(span));
 const ENDING_SECTIONS = new Set(["arithmetic", "custody"]);
 
-/** Which pieces the accepted findings touch. `context` carries one flag per context vignette, in index order. */
+/**
+ * Apply the findings that carry a patch straight to the text, and report which
+ * ones landed. A patch is the span rewritten to stand in its place, so this is
+ * a substitution and costs no model call. Every word a repair regenerates is a
+ * new surface for the next check to find a contradiction in, and a whole-brief
+ * rewrite to fix a date is what kept a chain at 7 to 10 findings for eleven
+ * rounds.
+ *
+ * The match is on the raw text first, then on a whitespace-normalised form, so
+ * a span quoted across a line break still lands.
+ */
+export function applyPatches(text: string, accepted: Accepted[]): { text: string; applied: Accepted[] } {
+  let out = text;
+  const applied: Accepted[] = [];
+  for (const f of accepted) {
+    if (!f.patch?.trim() || !f.span.trim()) continue;
+    if (out.includes(f.span)) { out = out.replace(f.span, f.patch); applied.push(f); continue; }
+    const loose = looseIndex(out, f.span);
+    if (loose) { out = out.slice(0, loose.from) + f.patch + out.slice(loose.to); applied.push(f); }
+  }
+  return { text: out, applied };
+}
+
+/** Where a span sits in a text, ignoring how its whitespace was broken, or null. */
+function looseIndex(text: string, span: string): { from: number; to: number } | null {
+  const words = span.trim().split(/\s+/).map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  if (!words.length) return null;
+  const m = new RegExp(words.join("\\s+"), "i").exec(text);
+  return m ? { from: m.index, to: m.index + m[0].length } : null;
+}
+
+/**
+ * Which pieces still need a model to rewrite them. A finding carrying a patch
+ * is applied in place first, so a part is only regenerated when a finding
+ * lands in it that a substitution cannot express.
+ */
 export function repairPlan(accepted: Accepted[], vignette: string, ending: string, contexts: string[] = []): { vignette: boolean; ending: boolean; context: boolean[] } {
+  const unpatchable = accepted.filter((f) => !f.patch?.trim());
   return {
-    vignette: accepted.some((f) => inside(f.span, vignette)),
-    ending: accepted.some((f) => inside(f.span, ending) || ENDING_SECTIONS.has(f.invalidates.toLowerCase())),
-    context: contexts.map((c) => accepted.some((f) => inside(f.span, c))),
+    vignette: unpatchable.some((f) => inside(f.span, vignette)),
+    // an arithmetic or custody finding moves the mechanism, so the ending is re-derived even when patched elsewhere
+    ending: unpatchable.some((f) => inside(f.span, ending)) || accepted.some((f) => ENDING_SECTIONS.has(f.invalidates.toLowerCase()) && !f.patch?.trim()),
+    context: contexts.map((c) => unpatchable.some((f) => inside(f.span, c))),
   };
 }
 
@@ -72,35 +109,45 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
     .sort((a, b) => (a.meta.index ?? 0) - (b.meta.index ?? 0));
   // a context vignette can only be carried over when its job line came with it
   const carryable = srcContexts.length === RUN.contextVignettes && srcContexts.every((c) => c.meta.job);
+
+  // the patched findings land first, in place, with no model call; the plan then covers what is left
+  const patchedVignette = applyPatches(parts.vignette, accepted);
+  const patchedEnding = applyPatches(parts.ending, accepted);
+  const patchedContexts = srcContexts.map((c) => applyPatches(c.content, accepted));
+  const landed = [patchedVignette, patchedEnding, ...patchedContexts].flatMap((x) => x.applied.map((f) => f.id));
+
   const plan = repairPlan(accepted, parts.vignette, parts.ending, carryable ? srcContexts.map((c) => c.content) : []);
   if (!carryable) plan.context = Array.from({ length: RUN.contextVignettes }, () => true);
   const constraints = constraintsBlock(accepted);
   // the accepted set of this round is not the whole record: every earlier round's fix still holds
   const settledLines = settledConstraints(p, parts.draw.id).filter((sc) => !accepted.some((a) => a.id === sc.finding));
   const settled = settledBlock(settledLines);
+  // the repair writes against the same pinned contract the check will hold it to
+  const pinned = pinnedLedger(p, parts.draw.id);
+  const ledger = pinned ? fill("pinnedLedger", { ledger: pinned }) : "";
   const head = parts.examples.join("\n\n");
   const { setting } = p.loadDrawSetting(parts.draw);
   const chosenMeta = JSON.parse(srcArts.find((a) => a.step_id === parts.chosenStepId && a.kind === "vignette")!.meta);
 
   // the chosen vignette: rewritten from itself, or carried over
-  let vignette = parts.vignette;
+  let vignette = patchedVignette.text;
   let vStep;
   if (plan.vignette) {
-    const r = await p.invoke(newId, null, "repair-vignette", compose(head, fill("repairVignette", { settled, vignette: parts.vignette, constraints }), p.settingFor("execute", setting)), (t) => {
+    const r = await p.invoke(newId, null, "repair-vignette", compose(head, fill("repairVignette", { ledger, settled, vignette: patchedVignette.text, constraints }), p.settingFor("execute", setting)), (t) => {
       const v = tag(t, "vignette"); if (!v) throw new Error("no <vignette> tag"); return v;
     });
     vignette = r.value; vStep = r.step;
     p.artifact(vStep, "vignette", vignette, { ...chosenMeta, rewritten_from: parts.chosenStepId, warnings: words(vignette) < 300 || words(vignette) > 500 ? ["length"] : [] });
   } else {
-    vStep = p.recordStep(newId, null, "repair-vignette", "copied");
-    p.artifact(vStep, "vignette", vignette, { ...chosenMeta, copied_from: parts.chosenStepId });
+    vStep = p.recordStep(newId, null, "repair-vignette", patchedVignette.applied.length ? "patched" : "copied");
+    p.artifact(vStep, "vignette", vignette, { ...chosenMeta, copied_from: parts.chosenStepId, ...(patchedVignette.applied.length ? { patched: patchedVignette.applied.map((f) => f.id) } : {}) });
   }
   p.db.query("UPDATE draws SET chosen_step = ? WHERE id = ?").run(vStep.id, newId);
 
   // the outline, re-derived under the constraints
   const settingJobs = (setting?.jobs ?? []).map((j) => fill("settingJob", { name: j.name, description: j.description })).join("");
   const jobNames = [...RUN.coreJobs, ...(setting?.jobs ?? []).map((j) => j.name.toLowerCase())];
-  const outlineHead = fill("repairOutlineHead", { settled, seed: parts.seed, premise: parts.premise, vignette, constraints });
+  const outlineHead = fill("repairOutlineHead", { ledger, settled, seed: parts.seed, premise: parts.premise, vignette, constraints });
   const { step: outlineStep, value: outline } = await p.invoke(newId, vStep.id, "repair-outline", compose(outlineHead, fill("outlineAsk", { settingJobs }), p.settingFor("outline", setting)), (text) => {
     const secs = sections(text);
     for (const j of jobNames) if (!secs[j]) throw new Error(`missing <section name="${j}">`);
@@ -131,14 +178,15 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
     ? p.invoke(newId, outlineStep.id, "context", after("context", fill("context", { job })), (text) => {
         const v = tag(text, "vignette"); if (!v) throw new Error("no <vignette> tag"); return v;
       }).then((r) => p.artifact(r.step, "vignette", r.value, { index: i + 1, job, warnings: words(r.value) > 500 ? ["length"] : [] }))
-    : Promise.resolve(p.artifact(p.recordStep(newId, outlineStep.id, "context", "copied"), "vignette", srcContexts[i].content, { index: i + 1, job, copied_from: parts.draw.id })));
+    : Promise.resolve(p.artifact(p.recordStep(newId, outlineStep.id, "context", patchedContexts[i].applied.length ? "patched" : "copied"), "vignette", patchedContexts[i].text, { index: i + 1, job, copied_from: parts.draw.id, ...(patchedContexts[i].applied.length ? { patched: patchedContexts[i].applied.map((f) => f.id) } : {}) })));
 
   // the ending: rewritten from itself under the constraints, or carried over
   const endingRun = plan.ending
-    ? p.invoke(newId, outlineStep.id, "repair-ending", compose(head, fill("repairEnding", { settled, outline: outlineText, ending: parts.ending, constraints }), p.settingFor("ending", setting)), (t) => {
+    ? p.invoke(newId, outlineStep.id, "repair-ending", compose(head, fill("repairEnding", { ledger, settled, outline: outlineText, ending: patchedEnding.text, constraints }), p.settingFor("ending", setting)), (t) => {
         const e = tag(t, "ending"); if (!e) throw new Error("no <ending> tag"); return e;
       }).then((r) => p.artifact(r.step, "ending", r.value, { previous: parts.ending, warnings: words(r.value) > 650 ? ["length"] : [] }))
-    : Promise.resolve(p.artifact(p.recordStep(newId, outlineStep.id, "repair-ending", "copied"), "ending", parts.ending, { copied: true }));
+    : Promise.resolve(p.artifact(p.recordStep(newId, outlineStep.id, "repair-ending", patchedEnding.applied.length ? "patched" : "copied"), "ending", patchedEnding.text,
+        patchedEnding.applied.length ? { previous: parts.ending, patched: patchedEnding.applied.map((f) => f.id) } : { copied: true }));
   await Promise.all([...contextRuns, endingRun]);
 
   // this round's accepted findings are already listed under ## repaired_from

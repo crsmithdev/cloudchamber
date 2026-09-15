@@ -164,8 +164,8 @@ async function main() {
       if (action === "accept") { console.log(`\nrepaired brief ${(out as any).id}; re-check findings:`); printFindings((out as any).id); }
       if (action === "auto") {
         const r = out as any;
-        console.log(`\nstopped on ${r.stopped} · floor ${r.floor} · ${r.rounds.length} round${r.rounds.length > 1 ? "s" : ""}`);
-        for (const x of r.rounds) console.log(`  round ${x.round}  ${x.id}  ${x.open} open · total ${x.total} · accepted ${x.accepted}${x.round === r.best.round ? "   ← lowest total" : ""}`);
+        console.log(`\nstopped on ${r.stopped} · floor ${r.floor} · ${r.rounds.length} round${r.rounds.length > 1 ? "s" : ""} · ${r.calls} calls`);
+        for (const x of r.rounds) console.log(`  round ${x.round}  ${x.id}  ${x.open} open · total ${x.total} · accepted ${x.accepted} · ${x.calls} calls${x.round === r.best.round ? "   ← lowest total" : ""}`);
         if (r.best.id !== r.id) console.log(`\nthe lowest-scoring round is not the last: read ${r.best.id}. It is superseded, so auto left it alone.`);
         printFindings(r.id);
       }

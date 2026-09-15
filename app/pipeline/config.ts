@@ -2,7 +2,7 @@ import stagesToml from "./stages.toml";
 import genresToml from "./genres.toml";
 
 export type GenStageName = "themes" | "redundancy" | "distill" | "premises" | "execute" | "outline" | "jobs" | "context" | "ending";
-export type CheckStageName = "check-derivation" | "check-ledger" | "check-structure" | "check-resemblance" | "check-claims-extract" | "check-claims-verify";
+export type CheckStageName = "ledger-extract" | "check-derivation" | "check-ledger" | "check-structure" | "check-resemblance" | "check-claims-extract" | "check-claims-verify";
 export type DraftStageName = "repair-vignette" | "repair-outline" | "repair-ending" | "schedule" | "scene" | "screen-ledger" | "screen-structure";
 export type StageName = GenStageName | CheckStageName | DraftStageName;
 /** `tools` is the comma-separated list a call may use; absent or empty means `--tools ""`. */
@@ -10,7 +10,7 @@ export type StageConfig = { model: string; fallback: string; system: string; too
 
 export const STAGES: StageName[] = [
   "themes", "redundancy", "distill", "premises", "execute", "outline", "jobs", "context", "ending",
-  "check-derivation", "check-ledger", "check-structure", "check-resemblance", "check-claims-extract", "check-claims-verify",
+  "ledger-extract", "check-derivation", "check-ledger", "check-structure", "check-resemblance", "check-claims-extract", "check-claims-verify",
   "repair-vignette", "repair-outline", "repair-ending", "schedule", "scene", "screen-ledger", "screen-structure",
 ];
 

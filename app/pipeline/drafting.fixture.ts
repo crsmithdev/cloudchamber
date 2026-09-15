@@ -87,6 +87,7 @@ export function draftScript(over: Record<string, any> = {}) {
     jobs: () => "<job>Test the first thing: scene one.</job><job>Test a second thing: scene two.</job>",
     context: (p: string) => `<vignette>context for ${/Its job: (.*)/.exec(p)?.[1]}</vignette>`,
     ending: () => ending(),
+    "ledger-extract": () => `<ledger>${LEDGER}</ledger>`,
     "check-ledger": ledgerSamples(),
     "check-derivation": derivationSamples(),
     "check-structure": () => structure(),

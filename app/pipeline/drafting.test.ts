@@ -41,6 +41,10 @@ async function drawn(script = draftScript(), setting?: { id: string; dir: string
   }
   const draw = await p.start({ mode: "auto", genre: "horror", setting: setting?.id, seed: { mode: "typed", text: "a typed seed" } });
   const d = new Drafting(p, { draftsDir: join(dir, "drafts") });
+  // the fixtures script three samples per checker and three per screen; pin that here so a
+  // change to the defaults in draft.toml does not rewrite every assertion in this file
+  const cfg = loadDraftConfig(undefined, { "checks.samples": 3, "screens.samples": 3, "screens.keep_if": 2 });
+  db.query("UPDATE draws SET draft_config = ? WHERE id = ?").run(JSON.stringify(cfg), draw.id);
   return { db, dir, model, p, d, draw };
 }
 
@@ -208,6 +212,35 @@ describe("check and gate 1", () => {
     expect(JSON.parse(p.artifacts(draw.id).find((a) => a.kind === "finding" && a.content.includes("tears"))!.meta).sub_threshold).toBe(true);
   });
 
+  test("a finding carrying a patch is applied in place and regenerates nothing", async () => {
+    const span = "the twelfth relic, the Verona clavicle";
+    const patched = "the twelfth relic, the Bruges clavicle";
+    const withPatch = `<finding><span>${span}</span><statement>the relic is named twice</statement><result>contradicted</result><evidence>a second quote from the outline</evidence><invalidates>none</invalidates><replacement>The twelfth relic is named once.</replacement><patch>${patched}</patch></finding>`;
+    const script = draftScript({
+      execute: (pr: string) => vignette(Number(/Premise (\d)/.exec(pr)?.[1] ?? 0), `Here lies ${span} on the silk.`),
+      "check-ledger": [`<ledger>${LEDGER}</ledger>${withPatch}<examined>x</examined>`, `<ledger>${LEDGER}</ledger>${withPatch}<examined>x</examined>`, `<ledger>${LEDGER}</ledger>${withPatch}<examined>x</examined>`, ...cleanSamples()],
+      "check-derivation": [...cleanSamples(), ...cleanSamples()],
+    });
+    const { p, d, draw, model, dir } = await drawn(script);
+    await d.check(draw.id);
+    const [f] = d.findings(draw.id).findings;
+    expect(f.patch).toBe(patched);
+    const before = model.calls.length;
+    const next = await d.accept(draw.id, [f.id]);
+
+    // the vignette holding the span is patched, not rewritten; only the outline is re-derived
+    const by = (stage: string) => p.steps(next.id).filter((s) => s.stage === stage);
+    expect(by("repair-vignette").map((s) => s.model)).toEqual(["patched"]);
+    expect(by("repair-ending").map((s) => s.model)).toEqual(["copied"]);
+    expect(by("context").map((s) => s.model)).toEqual(["copied", "copied"]);
+    expect(model.calls.slice(before).map((c) => c.stage).filter((x) => /^repair|^context$|^jobs$/.test(x))).toEqual(["repair-outline"]);
+
+    const out = readFileSync(join(dir, "briefs", next.id, "vignette.md"), "utf8");
+    expect(out).toContain(patched);
+    expect(out).not.toContain(span);
+    expect(JSON.parse(p.artifacts(next.id).find((a) => a.kind === "vignette" && a.step_id === next.chosen_step)!.meta).patched).toEqual([f.id]);
+  });
+
   test("a finding inside one context vignette rewrites that one and carries the other over with its job", async () => {
     const span = "context for Test the first thing: scene one.";
     const inContext = () => finding(span, "context-1 contradicts the ledger", "custody", "The first context holds.", "a second quote from the outline");
@@ -268,6 +301,32 @@ describe("check and gate 1", () => {
     expect(prompt).toContain("The twelfth relic is the Verona clavicle in every account.");   // this round's constraint
     expect(readFileSync(join(dir, "briefs", third.id, "trail.md"), "utf8")).toContain("## settled in earlier rounds\n\n- round 1: Only the assembler can fire the reliquary.");
     void model;
+  });
+
+  test("the ledger is extracted once for the chain and every later round is checked against it", async () => {
+    // a second extraction would return a different ledger; the pinned one must win
+    let extracts = 0;
+    const script = draftScript({
+      "ledger-extract": () => { extracts++; return `<ledger>${extracts === 1 ? LEDGER : "time: a different ledger entirely"}</ledger>`; },
+      "check-ledger": [...ledgerSamples(), ...ledgerSamples()],
+      "check-derivation": [...derivationSamples(), ...cleanSamples()],
+    });
+    const { p, d, draw, model } = await drawn(script);
+    await d.check(draw.id);
+    expect(extracts).toBe(1);
+    expect(model.calls.filter((c) => c.stage === "check-ledger")[0].prompt).toContain(LEDGER);
+
+    const [a] = d.findings(draw.id).findings;
+    const next = await d.accept(draw.id, [a.id]);
+    expect(extracts).toBe(1);                                                  // the repair's re-check reuses the pin
+    const later = model.calls.filter((c) => c.stage === "check-ledger").at(-1)!.prompt;
+    expect(later).toContain(LEDGER);
+    expect(later).not.toContain("a different ledger entirely");
+    expect(later).toContain("amended by the findings accepted since:");        // the accepted fix amends it
+    expect(later).toContain("Only the assembler can fire the reliquary.");
+    // and the repair itself writes against the same contract
+    expect(p.steps(next.id).find((s) => s.stage === "repair-outline")!.prompt).toContain(LEDGER);
+    expect(p.artifacts(next.id).filter((x) => x.kind === "ledger")).toHaveLength(0);   // one ledger, on the root
   });
 
   test("pass at gate 1 records a brief verdict and ends the draw; flag starts nothing", async () => {
@@ -339,14 +398,41 @@ describe("claims", () => {
   });
 });
 
+  test("a claim verified once is not verified again anywhere in the chain", async () => {
+    const { dir } = fixture();
+    const sdir = settingsFixture(dir);
+    const script = draftScript({
+      outline: () => ["debt audit", "arithmetic", "custody", "matrix"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n"),
+      "repair-outline": () => ["debt audit", "arithmetic", "custody", "matrix"].map((n) => `<section name="${n}">Repaired ${n} body.</section>`).join("\n"),
+      "check-ledger": [...ledgerSamples(), ...cleanSamples()],
+      "check-derivation": [...derivationSamples(), ...cleanSamples()],
+    });
+    const { p, d, draw, model } = await drawn(script, { id: "basin", dir: sdir, claims: "world" });
+    await d.check(draw.id);
+    const first = model.calls.filter((c) => c.stage === "check-claims-verify").length;
+    expect(first).toBe(2);
+
+    const [a] = d.findings(draw.id).findings;
+    const next = await d.accept(draw.id, [a.id]);
+    // the repair's re-check extracts the same two claims and verifies neither again
+    expect(model.calls.filter((c) => c.stage === "check-claims-extract")).toHaveLength(2);
+    expect(model.calls.filter((c) => c.stage === "check-claims-verify")).toHaveLength(first);
+    // the pane and the export still see the whole set, marked with where each verdict came from
+    const claims = p.artifacts(next.id).filter((x) => x.kind === "claim");
+    expect(claims).toHaveLength(2);
+    expect(claims.map((x) => JSON.parse(x.meta).cached_from)).toEqual([draw.id, draw.id]);
+    expect(d.findings(next.id).claims).toHaveLength(2);
+  });
+
 describe("draft: schedule, scenes, screens, gate 2", () => {
   test("sequential draft: schedule shape, scenes carry the text so far, screens per scene, slop, flags, status", async () => {
     const { p, d, draw, model, dir } = await drawn();
     await d.check(draw.id);
-    const out = await d.draft(draw.id, { overrides: { "form.tense": "past" } });
+    // overrides re-resolve from the defaults, so the fixture's three screen samples are restated here
+    const out = await d.draft(draw.id, { overrides: { "form.tense": "past", "screens.samples": 3, "screens.keep_if": 2 } });
     expect(out.status).toBe("awaiting_draft_gate");
     expect(JSON.parse(out.draft_config!).config.form.tense).toBe("past");
-    expect(JSON.parse(out.draft_config!).overridden).toEqual(["form.tense"]);
+    expect(JSON.parse(out.draft_config!).overridden).toEqual(["form.tense", "screens.samples", "screens.keep_if"]);
     // schedule
     const sched = model.calls.find((c) => c.stage === "schedule")!;
     expect(sched.prompt).toContain("beats: between 5 and 10, each between 400 and 800 words, caps summing to about 5000");
@@ -441,7 +527,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     const { p, d, draw, model } = await drawn();
     const out = await d.draft(draw.id);
     expect(out.status).toBe("awaiting_draft_gate");
-    expect(stagesOf(model, /^check-/)).toEqual(["check-ledger"]);
+    expect(stagesOf(model, /^check-|^ledger-/)).toEqual(["ledger-extract"]);   // the extract alone, no checking
     expect(p.artifacts(draw.id).filter((a) => a.kind === "ledger")).toHaveLength(1);
     expect(p.artifacts(draw.id).filter((a) => a.kind === "finding" && JSON.parse(a.meta).source === "check")).toHaveLength(0);
   });
@@ -559,12 +645,27 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     const derivations = Array.from({ length: 12 }, () => Array.from({ length: 3 }, () => `<impossibility>One.</impossibility><examined>x</examined>`)).flat();
     const { d, draw } = await drawn(draftScript({ "check-ledger": passes, "check-derivation": derivations }));
     await d.check(draw.id);
-    const r = await d.autoRounds(draw.id, { cfg: { ...loadDraftConfig().config, repair: { rounds: 9, stop_score: 7, patience: 2 } } });
+    const r = await d.autoRounds(draw.id, { cfg: { ...loadDraftConfig().config, repair: { rounds: 9, stop_score: 7, patience: 2, max_calls: 9999 } } });
     expect(r.stopped).toBe("patience");
     const totals = r.rounds.map((x) => x.total);
     expect(Math.min(...totals)).toBe(r.best.total);
     expect(totals.slice(-2)).toEqual([r.best.total, r.best.total]);            // two rounds at the floor with no fall ends it
     expect(r.rounds.length).toBeLessThan(9);                                   // patience, not the cap
+  });
+
+  test("auto stops on the call budget", async () => {
+    const WORDS = ["reliquary silk director", "clavicle Verona relic", "assembler forge tally", "director ledger hour", "silk tears cut", "relic bones sold"];
+    let k = 0;
+    const fresh = () => { const w = WORDS[k++ % WORDS.length]; return finding(w, `the ${w} does not hold`, "debt audit", `The ${w} holds.`); };
+    const passes = Array.from({ length: 6 }, () => { const a = fresh(); return [1, 2, 3].map(() => `<ledger>${LEDGER}</ledger>${a}<examined>x</examined>`); }).flat();
+    const derivations = Array.from({ length: 6 }, () => [1, 2, 3].map(() => `<impossibility>One.</impossibility><examined>x</examined>`)).flat();
+    const { d, draw } = await drawn(draftScript({ "check-ledger": passes, "check-derivation": derivations }));
+    await d.check(draw.id);
+    const r = await d.autoRounds(draw.id, { cfg: { ...loadDraftConfig().config, repair: { rounds: 9, stop_score: 7, patience: 9, max_calls: 20 } } });
+    expect(r.stopped).toBe("budget");
+    expect(r.calls).toBeGreaterThanOrEqual(20);
+    expect(r.rounds.at(-1)!.calls).toBeGreaterThanOrEqual(20);
+    expect(r.rounds.length).toBeLessThan(9);                                   // the budget, not the cap
   });
 
   test("auto stops on the round cap", async () => {
@@ -575,7 +676,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     const derivations = Array.from({ length: 8 }, () => [1, 2, 3].map(() => `<impossibility>One.</impossibility><examined>x</examined>`)).flat();
     const { d, draw } = await drawn(draftScript({ "check-ledger": passes, "check-derivation": derivations }));
     await d.check(draw.id);
-    const r = await d.autoRounds(draw.id, { cfg: { ...loadDraftConfig().config, repair: { rounds: 2, stop_score: 7, patience: 9 } } });
+    const r = await d.autoRounds(draw.id, { cfg: { ...loadDraftConfig().config, repair: { rounds: 2, stop_score: 7, patience: 9, max_calls: 9999 } } });
     expect(r.stopped).toBe("cap");
     expect(r.rounds).toHaveLength(3);                                          // rounds 1 and 2 repair, the third is where it stops
   });

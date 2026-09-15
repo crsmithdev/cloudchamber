@@ -178,7 +178,7 @@ Candidates:
 {ending}
 </ending>`,
 
-  findingShape: `Each finding goes in a <finding> tag containing: <span> (a verbatim quote from the brief, under ${RUN.spanWords} words), <statement> (what the span asserts, one sentence), <result> (one of: supported | contradicted | unverifiable | contradicts:<a second verbatim quote> | underived), <evidence> (the second quote, the sum written out, a URL and quoted line, or none), <invalidates> (which outline section would have to change if the finding stands: {sections} | none), <replacement> (one factual sentence in the outline's register that would hold in its place; not dialogue, not a scene).`,
+  findingShape: `Each finding goes in a <finding> tag containing: <span> (a verbatim quote from the brief, under ${RUN.spanWords} words), <statement> (what the span asserts, one sentence), <result> (one of: supported | contradicted | unverifiable | contradicts:<a second verbatim quote> | underived), <evidence> (the second quote, the sum written out, a URL and quoted line, or none), <invalidates> (which outline section would have to change if the finding stands: {sections} | none), <replacement> (one factual sentence in the outline's register that would hold in its place; not dialogue, not a scene), <patch> (the span rewritten so the finding no longer holds, in the voice and register of the text it came from and no longer than the span, ready to stand in its place word for word; or none when the fix needs more than that span).`,
 
   checkDerivation: `Below is a story brief: a seed, a premise, an outline in three sections, three vignettes and an ending. The debt audit section claims to derive everything from one impossibility.
 
@@ -190,15 +190,27 @@ State the single impossibility the debt audit buys, in an <impossibility> tag, o
 
 After the findings, an <examined> tag listing each assertion and each sum checked, one per line, whether or not it produced a finding. At most 8 findings. Under 1000 words in total.`,
 
-  checkLedger: `Below is a story brief: a seed, a premise, an outline in three sections, three vignettes and an ending.
+  ledgerExtract: `Below is a story brief: a seed, a premise, an outline in three sections, three vignettes and an ending.
 
 {brief}
 
-First, extract from the outline every settled fact into a <ledger> tag, one per line, each line opening with its category: time (dates, durations, order), detail (names, quantities, appearance), knowledge (who knows what), custody (who holds which document or object), world (rules), perspective. Then check each vignette and the ending against the ledger, and against each other, pairwise. Report each contradiction.
+Extract from the outline every settled fact into a <ledger> tag, one per line, each line opening with its category: time (dates, durations, order), detail (names, quantities, appearance), knowledge (who knows what), custody (who holds which document or object), world (rules), perspective. These lines are the contract the brief is held to for the rest of its life, so state each one so it can be read against prose by someone who has not seen this outline. Under 600 words. Output only the tag.`,
+
+  checkLedger: `Below is a ledger of a story's settled facts, then the brief itself: a seed, a premise, an outline in three sections, three vignettes and an ending.
+
+{ledger}
+
+{brief}
+
+The ledger is fixed. It was settled for this brief and every repair of it, and where the prose and the ledger disagree it is the prose that is wrong. Check each vignette and the ending against the ledger, and against each other, pairwise. Report each contradiction.
 
 {findingShape}
 
 After the findings, an <examined> tag naming each pair compared (ledger×chosen, ledger×context-1, chosen×ending, and so on). At most 8 findings. Under 1100 words in total.`,
+
+  pinnedLedger: `<ledger>
+{ledger}
+</ledger>`,
 
   checkStructure: `Below is a story brief: a seed, a premise, an outline in three sections, three vignettes and an ending.
 
@@ -279,6 +291,8 @@ satisfy a constraint above.`,
 
 {constraints}
 
+{ledger}
+
 {settled}
 
 Rewrite it in a <vignette> tag so that every line of the constraints holds, keeping its people, place, form and length. Under ${RUN.vignetteWords + 50} words. Output only the tag.`,
@@ -295,6 +309,8 @@ Premise: {premise}
 
 {constraints}
 
+{ledger}
+
 {settled}`,
 
   repairEnding: `Below is a story's derived structure, the ending written from it, and a set of constraints that hold.
@@ -306,6 +322,8 @@ Premise: {premise}
 </ending>
 
 {constraints}
+
+{ledger}
 
 {settled}
 

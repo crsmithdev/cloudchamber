@@ -25,6 +25,8 @@ export type Finding = {
   evidence: string;
   invalidates: string;
   replacement: string;
+  /** The span rewritten to stand in its place verbatim, or "" when the fix needs more than the span. */
+  patch: string;
 };
 
 export type Cluster = {
@@ -38,6 +40,7 @@ export type Cluster = {
   evidence: string;
   invalidates: string;
   replacement: string;
+  patch: string;
   reported: boolean;
 };
 
@@ -71,6 +74,7 @@ export function parseFindings(text: string, checker: string, sample: number): Fi
     checker, sample,
     span: tag(f, "span") ?? "", statement: tag(f, "statement") ?? "", result: tag(f, "result") ?? "",
     evidence: tag(f, "evidence") ?? "none", invalidates: (tag(f, "invalidates") ?? "none").toLowerCase(), replacement: tag(f, "replacement") ?? "",
+    patch: (() => { const x = (tag(f, "patch") ?? "").trim(); return x.toLowerCase() === "none" ? "" : x; })(),
   })).filter((f) => f.span);
 }
 
@@ -133,6 +137,8 @@ export function cluster(findings: Finding[], keepIf: number, settingJobs: string
     return {
       id: findingId(first.checker, first.span, scope), checkers: [first.checker], samples, n: samples.length,
       span: first.span, statement: first.statement, result: first.result, evidence: first.evidence, invalidates: first.invalidates, replacement: first.replacement,
+      // a patch only counts when every sample that saw this cluster offered the same one
+      patch: g.every((x) => x.patch && normalise(x.patch) === normalise(first.patch)) ? first.patch : "",
       reported: samples.length >= keepIf,
     };
   });

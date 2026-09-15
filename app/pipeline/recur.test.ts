@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { cluster, excludeDismissed, findingId, merge, overlap, parseFindings, score, type Finding } from "./recur.ts";
 
 const f = (checker: string, sample: number, span: string, statement: string, over: Partial<Finding> = {}): Finding =>
-  ({ checker, sample, span, statement, result: "contradicts:x", evidence: "a second quote", invalidates: "none", replacement: "It holds.", ...over });
+  ({ checker, sample, span, statement, result: "contradicts:x", evidence: "a second quote", invalidates: "none", replacement: "It holds.", patch: "", ...over });
 
 describe("recurrence", () => {
   test("overlap is shared tokens over the smaller set", () => {
@@ -47,6 +47,21 @@ describe("recurrence", () => {
   test("dismissed findings are excluded by the same rule", () => {
     const cs = cluster([f("ledger", 1, "the director fires the reliquary", "x"), f("ledger", 1, "tears on the silk", "y")], 1);
     expect(excludeDismissed(cs, [{ span: "director fires the reliquary", statement: "" }]).map((c) => c.span)).toEqual(["tears on the silk"]);
+  });
+
+  test("a patch counts only when every sample of the cluster offered the same one", () => {
+    const withPatch = (sample: number, patch: string) => f("ledger", sample, "the twelfth relic", "named twice", { patch });
+    expect(cluster([withPatch(1, "the Bruges clavicle"), withPatch(2, "the Bruges clavicle")], 2)[0].patch).toBe("the Bruges clavicle");
+    expect(cluster([withPatch(1, "the Bruges clavicle"), withPatch(2, "the Ghent clavicle")], 2)[0].patch).toBe("");
+    expect(cluster([withPatch(1, "the Bruges clavicle"), withPatch(2, "")], 2)[0].patch).toBe("");
+    expect(cluster([withPatch(1, "The   Bruges clavicle"), withPatch(2, "the bruges clavicle")], 2)[0].patch).toBe("The   Bruges clavicle");
+  });
+
+  test("parseFindings reads a patch and treats none as absent", () => {
+    const t = `<finding><span>a quote</span><statement>s</statement><result>contradicted</result><evidence>e</evidence><invalidates>none</invalidates><replacement>r</replacement><patch>a better quote</patch></finding>`
+      + `<finding><span>b quote</span><statement>s</statement><result>contradicted</result><evidence>e</evidence><invalidates>none</invalidates><replacement>r</replacement><patch>none</patch></finding>`
+      + `<finding><span>c quote</span><statement>s</statement><result>contradicted</result><evidence>e</evidence><invalidates>none</invalidates><replacement>r</replacement></finding>`;
+    expect(parseFindings(t, "ledger", 1).map((x) => x.patch)).toEqual(["a better quote", "", ""]);
   });
 
   test("score weighs recurrence, cross-checker agreement, severity, result kind and evidence", () => {

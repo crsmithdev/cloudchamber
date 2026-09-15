@@ -7,7 +7,7 @@ import { RUN } from "./config.ts";
 import type { DrawRow, Pipeline } from "./draw.ts";
 import { fill } from "./prompts.ts";
 import { latest } from "./verdicts.ts";
-import { cluster, excludeDismissed, merge, same, score, type Cluster, type Finding } from "./recur.ts";
+import { cluster, excludeDismissed, merge, normalise, same, score, type Cluster, type Finding } from "./recur.ts";
 
 export type Artifact = { id: string; step_id: string; kind: string; content: string; meta: string };
 
@@ -223,6 +223,59 @@ export function dismissedFindings(p: Pipeline, drawId: string): { span: string; 
   return out;
 }
 
+/**
+ * The ledger this brief is held to: the one extracted at the root of the
+ * repair chain, plus the replacements accepted since, in order.
+ *
+ * Re-extracting it every round was the reason a chain never converged. Over an
+ * eight-round chain not one ledger line survived from one round to the next,
+ * and the categories changed wholesale, so each round measured the brief
+ * against a standard it had just invented. Pinned, the standard moves only
+ * when Chris accepts a finding, and the amendment says so.
+ */
+export function pinnedLedger(p: Pipeline, drawId: string): string | null {
+  let root = drawId;
+  const seen = new Set<string>();
+  while (!seen.has(root)) { seen.add(root); const up: string | null = p.draw(root).repaired_from; if (!up) break; root = up; }
+  const base = firstLedger(p, root) ?? latestLedger(p, drawId);
+  if (!base) return null;
+  const amendments = settledConstraints(p, drawId);
+  if (!amendments.length) return base;
+  return [base, "", "amended by the findings accepted since:", ...amendments.map((a) => `- ${a.replacement}`)].join("\n");
+}
+
+/** The first ledger extracted on a draw: the contract, before any amendment. */
+export function firstLedger(p: Pipeline, drawId: string): string | null {
+  const ls = p.artifacts(drawId).filter((a) => a.kind === "ledger");
+  if (!ls.length) return null;
+  return ls.sort((a, b) => (JSON.parse(a.meta).pass as string).localeCompare(JSON.parse(b.meta).pass))[0].content;
+}
+
+/**
+ * Every claim verified anywhere in this repair chain under the same authority.
+ * A lore setting's distillate does not change between rounds, so a claim's
+ * verdict cannot either, and re-verifying it is the largest single slice of a
+ * round's cost: one call per extracted claim, twelve on a typical brief.
+ */
+export function claimVerdicts(p: Pipeline, drawId: string, authority: string): CachedClaim[] {
+  const out: CachedClaim[] = [];
+  const seen = new Set<string>();
+  let id: string | null = drawId;
+  while (id && !seen.has(id)) {
+    seen.add(id);
+    for (const a of p.artifacts(id).filter((x) => x.kind === "claim")) {
+      const m = JSON.parse(a.meta) as { span?: string; result?: string; evidence?: string; authority?: string; invalidates?: string; replacement?: string; patch?: string };
+      if (m.authority !== authority || !m.result) continue;
+      if (out.some((o) => normalise(o.statement) === normalise(a.content))) continue;
+      out.push({ statement: a.content, span: m.span ?? "", result: m.result, evidence: m.evidence ?? "none", invalidates: m.invalidates ?? "none", replacement: m.replacement ?? "", patch: m.patch ?? "", draw: id });
+    }
+    id = p.draw(id).repaired_from;
+  }
+  return out;
+}
+
+export type CachedClaim = { statement: string; span: string; result: string; evidence: string; invalidates: string; replacement: string; patch: string; draw: string };
+
 /** The ledger the latest check extracted, or null. */
 export function latestLedger(p: Pipeline, drawId: string): string | null {
   const ls = p.artifacts(drawId).filter((a) => a.kind === "ledger");
@@ -238,7 +291,7 @@ export const family = (model: string) => model.split("-")[1] ?? model;
  * family, or null when at least one check ran on another family.
  */
 export function judgeNote(p: Pipeline, drawId: string): string | null {
-  const steps = p.steps(drawId).filter((s) => s.status === "done" && s.model !== "copied" && s.model !== "deterministic");
+  const steps = p.steps(drawId).filter((s) => s.status === "done" && !["copied", "deterministic", "patched"].includes(s.model));
   const gen = new Set(steps.filter((s) => !/^(check|screen)-/.test(s.stage)).map((s) => family(s.model)));
   const judges = steps.filter((s) => /^(check|screen)-/.test(s.stage)).map((s) => family(s.model));
   if (!judges.length) return null;

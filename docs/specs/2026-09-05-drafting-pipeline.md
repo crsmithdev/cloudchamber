@@ -40,14 +40,36 @@ differ, this file wins.
 >   a `<settled>` block and the trail's `## settled in earlier rounds`. Measured:
 >   18 of 62 reported findings over an eight-round chain were defects already
 >   accepted, 10 of them scoring 7 or more.
+> - **AC 1 and AC 2, The ledger.** The ledger is extracted once per repair
+>   chain by a `ledger-extract` stage and pinned: every later round's
+>   `check-ledger` is given it and reports findings only, and the repair writes
+>   against it too. Accepted replacements amend it in order. It was re-extracted
+>   every round, and over an eight-round chain not one line survived from one
+>   round to the next and the categories changed wholesale, so each round
+>   measured the brief against a standard it had just invented.
 > - **AC 2, Score.** `arithmetic` weighs 1, not 3: the debt audit is the story's
 >   mechanism and arithmetic is a detail. An arithmetic finding quoting a hedged
 >   number ("roughly 1,200 steps") scores no severity at all.
+> - **REQ 9 and AC 9, Repair as a patch.** Every finding carries a `<patch>`:
+>   the span rewritten to stand in its place word for word, or none when the fix
+>   needs more than that span. A repair applies the patches first, as a
+>   substitution with no model call, and regenerates a part only when a finding
+>   lands in it that has no patch. A patch counts only when every sample of the
+>   cluster offered the same one. The step for a patched part records its model
+>   as `patched`.
+> - **AC 6, Claims.** A claim already verified anywhere in the chain under the
+>   same authority is not verified again; the cached verdict is stored against
+>   the new pass with `cached_from`. A lore setting's distillate does not change
+>   between rounds, and this was one call per extracted claim per round.
+> - **AC 1, Samples.** `checks.samples` is 2 and `screens.samples` is 1. The
+>   score's recurrence term already separates 2 of 2 from 1 of 2, and four
+>   calls a scene was most of gate 2.
 > - **AC 10, Repair rounds.** `repair.rounds` defaults to 4. `cloudchamber gate
 >   <draw> auto` and `draft --auto` accept every open finding scoring
 >   `repair.stop_score` or more that quotes evidence, dismiss the rest with the
 >   reason, repair and re-check, and stop on the floor, the round cap, or
->   `repair.patience` rounds without the total open score falling. The round
+>   `repair.patience` rounds without the total open score falling, or
+>   `repair.max_calls` model calls spent on the chain. The round
 >   with the lowest total is named in an `auto` artifact on the brief the loop
 >   stopped on, and is not restored: an earlier round is superseded, and
 >   reviving it would put the chain in two places at once.

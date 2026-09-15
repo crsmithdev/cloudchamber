@@ -17,15 +17,15 @@ import { now } from "./paths.ts";
 import { loadDraftConfig, type DraftConfig, type Overrides, type Resolved } from "./draftconfig.ts";
 import { runCheck, type CheckResult } from "./check.ts";
 import { constraintsBlock, repair, type Accepted } from "./repair.ts";
-import { briefBlock, briefParts, checkFindings, gateFindings, judgeNote, latestCheckPass, latestLedger, passId, type FindingView } from "./briefparts.ts";
+import { briefBlock, briefParts, checkFindings, gateFindings, judgeNote, latestCheckPass, latestLedger, passId, pinnedLedger, type FindingView } from "./briefparts.ts";
 import { currentScenes, runScenes, runSchedule, runScreens, writeScene, type Schedule } from "./write.ts";
 import { draftView, exportDraft, renderStory, type DraftView } from "./drafts.ts";
 import { tag } from "./model.ts";
 import { fill } from "./prompts.ts";
 
 export const CHECKABLE = new Set(["done", "awaiting_check_gate"]);
-export type AutoRound = { round: number; id: string; open: number; total: number; accepted: number };
-export type AutoResult = { id: string; rounds: AutoRound[]; best: AutoRound; stopped: "floor" | "cap" | "patience"; floor: number };
+export type AutoRound = { round: number; id: string; open: number; total: number; accepted: number; calls: number };
+export type AutoResult = { id: string; rounds: AutoRound[]; best: AutoRound; stopped: "floor" | "cap" | "patience" | "budget"; floor: number; calls: number };
 export type DraftOpts = { profile?: string; overrides?: Overrides; auto?: boolean; lexiconPath?: string; premisesPath?: string };
 
 /**
@@ -160,18 +160,17 @@ export class Drafting {
     return this.p.draw(drawId);
   }
 
-  /** A draft started without a check has no ledger; one ledger extraction supplies it. */
+  /** A draft started without a check has no ledger; one extraction supplies it. */
   private async ensureLedger(drawId: string, cfg: DraftConfig): Promise<string> {
-    const have = latestLedger(this.p, drawId);
+    const have = pinnedLedger(this.p, drawId);
     if (have) return have;
     const parts = briefParts(this.p, drawId);
-    const pass = passId();
-    const { step, value } = await this.p.invoke(drawId, parts.outlineStepId, "check-ledger", fill("checkLedger", { brief: briefBlock(parts), findingShape: fill("findingShape", { sections: "debt audit | arithmetic | custody" }) }), (t) => {
-      const l = tag(t, "ledger"); if (!l) throw new Error("no <ledger> tag"); return { ledger: l, examined: tag(t, "examined") ?? "" };
+    const { step, value } = await this.p.invoke(drawId, parts.outlineStepId, "ledger-extract", fill("ledgerExtract", { brief: briefBlock(parts) }), (t) => {
+      const l = tag(t, "ledger"); if (!l) throw new Error("no <ledger> tag"); return l;
     });
-    this.p.artifact(step, "ledger", value.ledger, { pass, sample: 1, ledger_only: true });
+    this.p.artifact(step, "ledger", String(value), { pass: passId(), sample: 1, ledger_only: true });
     void cfg;
-    return value.ledger;
+    return String(value);
   }
 
   /**
@@ -197,7 +196,8 @@ export class Drafting {
       const open = gateFindings(this.p, id, true).filter((f) => f.decision === "open");
       const accept = open.filter((f) => f.score >= cfg.repair.stop_score && autoEligible(f));
       const total = open.reduce((a, f) => a + f.score, 0);
-      rounds.push({ round, id, open: open.length, total, accepted: accept.length });
+      const calls = this.chainCalls(id);
+      rounds.push({ round, id, open: open.length, total, accepted: accept.length, calls });
       // a finding auto will never act on is dismissed with the reason, whatever ends the loop
       for (const f of open.filter((f) => !accept.includes(f))) {
         const why = f.relitigates ? `auto: re-opens the fix accepted in round ${f.relitigates.round}`
@@ -210,15 +210,28 @@ export class Drafting {
       const since = rounds.length - 1 - rounds.findIndex((r) => r.total === best);
       if (since >= cfg.repair.patience) { stopped = "patience"; break; }
       if (round > cfg.repair.rounds) { stopped = "cap"; break; }
+      if (calls >= cfg.repair.max_calls) { stopped = "budget"; break; }
       id = (await this.accept(id, accept.map((f) => f.id), { method: "draw", note: opts.note ?? "auto" })).id;
     }
     const best = rounds.reduce((a, r) => (r.total < a.total ? r : a), rounds[0]);
     this.p.db.query("UPDATE draws SET draft_config = (SELECT draft_config FROM draws WHERE id = ?) WHERE id = ?").run(drawId, id);
-    const result: AutoResult = { id, rounds, best, stopped, floor: cfg.repair.stop_score };
+    const result: AutoResult = { id, rounds, best, stopped, floor: cfg.repair.stop_score, calls: this.chainCalls(id) };
     // the round table belongs to the brief auto stopped on, so the gate can show how it got there
     const last = this.p.steps(id).filter((s) => s.status === "done").at(-1);
     if (last) this.p.artifact(last, "auto", JSON.stringify(result), { rounds: rounds.length, stopped, best: best.id });
     return result;
+  }
+
+  /** Model calls spent on this repair chain, so a run cannot cost more than it is worth. */
+  private chainCalls(drawId: string): number {
+    let n = 0, id: string | null = drawId;
+    const seen = new Set<string>();
+    while (id && !seen.has(id)) {
+      seen.add(id);
+      n += this.p.steps(id).filter((s) => !["copied", "deterministic", "patched"].includes(s.model)).length;
+      id = this.p.draw(id).repaired_from;
+    }
+    return n;
   }
 
   /** `draft --auto` works gate 1 by the same rule and drafts from where it stops. */

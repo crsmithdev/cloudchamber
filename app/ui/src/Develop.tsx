@@ -203,12 +203,12 @@ function GateOne({ d, onAct, onDraft }: { d: Detail; onAct: (fn: () => Promise<a
       </div>}
       {repaired && <div className="seed"><small>repaired</small>This brief was repaired into <a href={`#check/${d.draw.superseded_by}`} className="mono">{d.draw.superseded_by}</a>; its findings and their decisions are kept here for the record.</div>}
       {auto && <div className="rounds">
-        <div className="hd"><b>auto · {auto.rounds.length} round{auto.rounds.length > 1 ? "s" : ""}</b><span className="dim">stopped on {auto.stopped === "floor" ? `the floor: nothing scored ${auto.floor} or more` : auto.stopped === "patience" ? "patience: the total score stopped falling" : "the round cap"}</span></div>
-        <table><thead><tr><th>round</th><th>brief</th><th>open</th><th>total score</th><th>accepted</th></tr></thead><tbody>
+        <div className="hd"><b>auto · {auto.rounds.length} round{auto.rounds.length > 1 ? "s" : ""}</b><span className="dim">stopped on {auto.stopped === "floor" ? `the floor: nothing scored ${auto.floor} or more` : auto.stopped === "patience" ? "patience: the total score stopped falling" : auto.stopped === "budget" ? `the call budget, at ${auto.calls} calls` : "the round cap"}</span></div>
+        <table><thead><tr><th>round</th><th>brief</th><th>open</th><th>total score</th><th>accepted</th><th>calls</th></tr></thead><tbody>
           {auto.rounds.map((r) => <tr key={r.id} className={r.round === auto.best.round ? "best" : ""}>
             <td>{r.round}</td>
             <td>{r.id === id ? <span className="mono dim">{r.id}</span> : <a className="mono" href={`#check/${r.id}`}>{r.id}</a>}</td>
-            <td className="tnum">{r.open}</td><td className="tnum">{r.total}</td><td className="tnum">{r.accepted}</td>
+            <td className="tnum">{r.open}</td><td className="tnum">{r.total}</td><td className="tnum">{r.accepted}</td><td className="tnum dim">{r.calls}</td>
           </tr>)}
         </tbody></table>
         {auto.best.id !== auto.id && <div className="note dim">Round {auto.best.round} scored lowest. It is superseded, so auto left it where it is — read it if this round reads worse.</div>}
@@ -261,7 +261,7 @@ function FindingRow({ f, S, selected, onToggle, onDismiss, readOnly }: { f: Find
       <div className="body">
         <div className="span">{unquote(f.span)}</div>
         <div>{f.statement}</div>
-        <div className="kv"><b>result</b><span className="mono" style={{ fontSize: 11.5 }}>{f.result}</span><b>evidence</b><span>{f.evidence}</span><b>replacement</b><span className="rep">{f.replacement}</span></div>
+        <div className="kv"><b>result</b><span className="mono" style={{ fontSize: 11.5 }}>{f.result}</span><b>evidence</b><span>{f.evidence}</span><b>replacement</b><span className="rep">{f.replacement}</span>{f.patch ? <><b>patch</b><span className="rep patch" title="Accepting this substitutes the span for these words. Nothing is regenerated.">{f.patch}</span></> : null}</div>
       </div>
       <div className="acts">
         {f.decision === "accepted" ? <span className="state keep">accepted{f.note ? ` · ${f.note}` : ""}</span>

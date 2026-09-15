@@ -12,8 +12,8 @@ import { fill, type TemplateName } from "./prompts.ts";
 import { tag, tags } from "./model.ts";
 import { distillate, type ClaimsAuthority } from "./settings.ts";
 import { samplesFor, type DraftConfig } from "./draftconfig.ts";
-import { cluster, excludeDismissed, findingId, merge, parseFindings, type Cluster, type Finding } from "./recur.ts";
-import { briefBlock, briefParts, dismissedFindings, passId, type BriefParts } from "./briefparts.ts";
+import { cluster, excludeDismissed, findingId, merge, normalise, parseFindings, type Cluster, type Finding } from "./recur.ts";
+import { briefBlock, briefParts, claimVerdicts, dismissedFindings, passId, pinnedLedger, type BriefParts } from "./briefparts.ts";
 import { RUN } from "./config.ts";
 
 export const PREMISES_PATH = resolve(import.meta.dir, "premises.md");
@@ -64,11 +64,22 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
     if (!tag(t, "examined")) throw new Error("no <examined> tag");
     return { impossibility: tag(t, "impossibility"), findings: parseFindings(t, "derivation", 0), examined: tag(t, "examined") };
   }).then((r) => { perChecker.push(r); }));
-  if (enabled.includes("ledger")) runs.push(sampled(p, drawId, parts, "check-ledger", fill("checkLedger", { brief, findingShape: shape }), S("ledger"), "ledger", (t) => {
-    if (!tag(t, "ledger")) throw new Error("no <ledger> tag");
-    if (!tag(t, "examined")) throw new Error("no <examined> tag");
-    return { ledger: tag(t, "ledger"), findings: parseFindings(t, "ledger", 0), examined: tag(t, "examined") };
-  }, (step, value, sample) => { if (sample === 1) p.artifact(step, "ledger", String(value.ledger), { pass, sample }); }).then((r) => { perChecker.push(r); }));
+  if (enabled.includes("ledger")) {
+    // the ledger is extracted once for the chain and pinned; every round is checked against it
+    let ledger = pinnedLedger(p, drawId);
+    if (!ledger) {
+      const r = await p.invoke(drawId, parts.outlineStepId, "ledger-extract", fill("ledgerExtract", { brief }), (t) => {
+        const l = tag(t, "ledger"); if (!l) throw new Error("no <ledger> tag"); return l;
+      });
+      p.artifact(r.step, "ledger", String(r.value), { pass, sample: 1, pinned: true });
+      ledger = String(r.value);
+    }
+    const block = fill("pinnedLedger", { ledger: ledger! });
+    runs.push(sampled(p, drawId, parts, "check-ledger", fill("checkLedger", { brief, ledger: block, findingShape: shape }), S("ledger"), "ledger", (t) => {
+      if (!tag(t, "examined")) throw new Error("no <examined> tag");
+      return { findings: parseFindings(t, "ledger", 0), examined: tag(t, "examined") };
+    }).then((r) => { perChecker.push(r); }));
+  }
   if (enabled.includes("structure")) runs.push(sampled(p, drawId, parts, "check-structure", fill("checkStructure", { brief }), S("structure"), "structure", (t) => ({ answers: parseQuestions(t, STRUCTURE_QUESTIONS) }),
     (step, value, sample) => p.artifact(step, "profile", JSON.stringify(value.answers), { pass, sample, source: "check", checker: "structure", answers: value.answers })));
   if (enabled.includes("resemblance")) runs.push(sampled(p, drawId, parts, "check-resemblance", fill("checkResemblance", { brief, list: loadPremiseList(opts.premisesPath) }), S("resemblance"), "resemblance", (t) => {
@@ -116,7 +127,12 @@ async function runClaims(p: Pipeline, drawId: string, parts: BriefParts, brief: 
   const tpl = CLAIMS_PROMPTS[authority];
   const { step, value: claims } = await p.invoke(drawId, parts.outlineStepId, "check-claims-extract", fill(tpl.extract, { brief }), (t) =>
     tags(t, "claim").map((c) => ({ span: tag(c, "span") ?? "", statement: tag(c, "statement") ?? "" })).filter((c) => c.span && c.statement));
+  // a claim already verified anywhere in this chain against the same authority is not re-verified:
+  // the distillate does not change, so the verdict cannot. This was 12 calls a round, every round.
+  const priorClaims = claimVerdicts(p, drawId, authority);
   const verified = await Promise.all(claims.map((c) => {
+    const known = priorClaims.find((v) => normalise(v.statement) === normalise(c.statement));
+    if (known) return Promise.resolve({ ...known, cached: true });
     const prompt = fill(tpl.verify, { reference, span: c.span, statement: c.statement });
     return p.invoke(drawId, step.id, "check-claims-verify", prompt, (t) => {
       const f = parseFindings(t, "claims", 1)[0];
@@ -125,14 +141,16 @@ async function runClaims(p: Pipeline, drawId: string, parts: BriefParts, brief: 
       if (!RESULTS.has(result)) throw new Error(`result must be supported | contradicted | unverifiable, got ${f.result}`);
       return { ...f, result, span: f.span || c.span, statement: f.statement || c.statement };
     }, null, authority === "world" ? undefined : "").then((r) => {
-      p.artifact(r.step, "claim", r.value.statement, { pass, span: r.value.span, result: r.value.result, evidence: r.value.evidence, authority });
+      p.artifact(r.step, "claim", r.value.statement, { pass, span: r.value.span, result: r.value.result, evidence: r.value.evidence, invalidates: r.value.invalidates, replacement: r.value.replacement, patch: r.value.patch, authority });
       return r.value;
     });
   }));
+  // the cached ones still belong to this pass, so the pane and the export show the whole set
+  for (const v of verified as any[]) if (v.cached) p.artifact(step, "claim", v.statement, { pass, span: v.span, result: v.result, evidence: v.evidence, invalidates: v.invalidates, replacement: v.replacement, patch: v.patch, authority, cached_from: v.draw });
   const contradicted = verified.filter((f) => f.result === "contradicted");
   const clusters: Cluster[] = contradicted.map((f) => ({
     id: findingId("claims", f.span, drawId), checkers: ["claims"], samples: [1], n: 1, span: f.span, statement: f.statement, result: f.result,
-    evidence: f.evidence, invalidates: f.invalidates || "none", replacement: f.replacement, reported: true,
+    evidence: f.evidence, invalidates: f.invalidates || "none", replacement: f.replacement, patch: f.patch ?? "", reported: true,
   }));
   return { checker: "claims", clusters, firstStep: step };
 }

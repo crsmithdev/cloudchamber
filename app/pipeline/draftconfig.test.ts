@@ -22,10 +22,14 @@ describe("draft config", () => {
 
   test("per-checker samples override the group and keep_if never exceeds samples", () => {
     const c = loadDraftConfig().config;
-    expect(samplesFor(c.checks, "ledger")).toEqual({ samples: 3, keep_if: 2 });
+    expect(samplesFor(c.checks, "ledger")).toEqual({ samples: 2, keep_if: 2 });
     expect(samplesFor(c.checks, "structure")).toEqual({ samples: 1, keep_if: 1 });
     expect(samplesFor(c.screens, "structure")).toEqual({ samples: 1, keep_if: 1 });
-    expect(samplesFor(c.screens, "ledger")).toEqual({ samples: 3, keep_if: 2 });
+    expect(samplesFor(c.screens, "ledger")).toEqual({ samples: 1, keep_if: 1 });
+    // a per-name table still wins over the group
+    const over = loadDraftConfig(undefined, { "checks.samples": 5, "checks.ledger.samples": 2 }).config;
+    expect(samplesFor(over.checks, "ledger")).toEqual({ samples: 2, keep_if: 2 });
+    expect(samplesFor(over.checks, "derivation")).toEqual({ samples: 5, keep_if: 2 });
   });
 
   test("bad values are refused naming the key", () => {

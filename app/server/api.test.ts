@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { openDb } from "../pipeline/store/db.ts";
 import { FakeModel } from "../pipeline/model.ts";
 import { Pipeline } from "../pipeline/draw.ts";
+import { loadDraftConfig } from "../pipeline/draftconfig.ts";
 import { buildApi } from "./api.ts";
 import { settingsFixture } from "../pipeline/settings.fixture.ts";
 
@@ -219,6 +220,8 @@ describe("api: check, gate 1, draft, gate 2", () => {
     const app2 = buildApi(db, p2, { drafting: new Drafting(p2, { draftsDir: join(dir, "drafts") }) });
     const j2 = async (method: "GET" | "POST", url: string, body?: unknown) => { const r = await app2.inject({ method, url, payload: body as any }); return { code: r.statusCode, body: r.json() }; };
     const d2 = await p2.start({ mode: "auto", genre: "horror", seed: { mode: "typed", text: "seed two" } });
+    // the fixture scripts three samples per checker; pin that rather than track draft.toml
+    p2.db.query("UPDATE draws SET draft_config = ? WHERE id = ?").run(JSON.stringify(loadDraftConfig(undefined, { "checks.samples": 3, "screens.samples": 3, "screens.keep_if": 2 })), d2.id);
     const c = await j2("POST", `/api/draws/${d2.id}/check`, {});
     expect(c.code).toBe(202);
     for (let i = 0; i < 200 && p2.draw(d2.id).status !== "awaiting_check_gate"; i++) await Bun.sleep(10);
