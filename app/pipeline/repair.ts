@@ -125,15 +125,20 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
   // the repair writes against the same pinned contract the check will hold it to
   const pinned = pinnedLedger(p, parts.draw.id);
   const ledger = pinned ? fill("pinnedLedger", { ledger: pinned }) : "";
-  const head = parts.examples.join("\n\n");
   const { setting } = p.loadDrawSetting(parts.draw);
+  // a repair rewrites one passage against constraints it is given; the six example passages set
+  // voice for a first draft and buy nothing here. repair-ending was the pipeline's largest prompt.
+  const rewriteAsk = (stage: "execute" | "ending", ask: string) => {
+    const slice = p.settingFor(stage, setting)?.slice;
+    return slice ? `${slice}\n\n${ask}` : ask;
+  };
   const chosenMeta = JSON.parse(srcArts.find((a) => a.step_id === parts.chosenStepId && a.kind === "vignette")!.meta);
 
   // the chosen vignette: rewritten from itself, or carried over
   let vignette = patchedVignette.text;
   let vStep;
   if (plan.vignette) {
-    const r = await p.invoke(newId, null, "repair-vignette", compose(head, fill("repairVignette", { ledger, settled, vignette: patchedVignette.text, constraints }), p.settingFor("execute", setting)), (t) => {
+    const r = await p.invoke(newId, null, "repair-vignette", rewriteAsk("execute", fill("repairVignette", { ledger, settled, vignette: patchedVignette.text, constraints })), (t) => {
       const v = tag(t, "vignette"); if (!v) throw new Error("no <vignette> tag"); return v;
     });
     vignette = r.value; vStep = r.step;
@@ -182,7 +187,7 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
 
   // the ending: rewritten from itself under the constraints, or carried over
   const endingRun = plan.ending
-    ? p.invoke(newId, outlineStep.id, "repair-ending", compose(head, fill("repairEnding", { ledger, settled, outline: outlineText, ending: patchedEnding.text, constraints }), p.settingFor("ending", setting)), (t) => {
+    ? p.invoke(newId, outlineStep.id, "repair-ending", rewriteAsk("ending", fill("repairEnding", { ledger, settled, outline: outlineText, ending: patchedEnding.text, constraints })), (t) => {
         const e = tag(t, "ending"); if (!e) throw new Error("no <ending> tag"); return e;
       }).then((r) => p.artifact(r.step, "ending", r.value, { previous: parts.ending, warnings: words(r.value) > 650 ? ["length"] : [] }))
     : Promise.resolve(p.artifact(p.recordStep(newId, outlineStep.id, "repair-ending", patchedEnding.applied.length ? "patched" : "copied"), "ending", patchedEnding.text,

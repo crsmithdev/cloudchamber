@@ -244,6 +244,27 @@ export function pinnedLedger(p: Pipeline, drawId: string): string | null {
   return [base, "", "amended by the findings accepted since:", ...amendments.map((a) => `- ${a.replacement}`)].join("\n");
 }
 
+/**
+ * The profile each profile-only checker produced anywhere in this repair chain,
+ * newest first. Structure and resemblance describe the premise, not the text a
+ * repair rewrites, so their answers do not move between rounds. Running them
+ * every round was about 5% of a chain's input tokens for an unchanging answer.
+ */
+export function chainProfile(p: Pipeline, drawId: string, checker: string): { pass: string; draw: string; meta: any } | null {
+  const seen = new Set<string>();
+  let id: string | null = drawId;
+  while (id && !seen.has(id)) {
+    seen.add(id);
+    const hit = p.artifacts(id).filter((a) => a.kind === "profile")
+      .map((a) => ({ draw: id!, meta: JSON.parse(a.meta) as any }))
+      .filter((x) => x.meta.source === "check" && x.meta.checker === checker)
+      .sort((a, b) => String(a.meta.pass).localeCompare(String(b.meta.pass)));
+    if (hit.length) { const last = hit.at(-1)!; return { pass: String(last.meta.pass), draw: last.draw, meta: last.meta }; }
+    id = p.draw(id).repaired_from;
+  }
+  return null;
+}
+
 /** The first ledger extracted on a draw: the contract, before any amendment. */
 export function firstLedger(p: Pipeline, drawId: string): string | null {
   const ls = p.artifacts(drawId).filter((a) => a.kind === "ledger");

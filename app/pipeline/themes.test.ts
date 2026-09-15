@@ -96,7 +96,7 @@ describe("theme drafting", () => {
     const reports = await draftAll(p, {}, fakeEmbed, log);
     expect(reports.map((r) => r.story)).toEqual(["scp/b"]);                    // the batch went on
     expect(model.calls.filter((c) => c.stage === "themes").map((c) => c.model))
-      .toEqual(["claude-opus-5", "claude-fable-5-1", "claude-opus-5"]);        // refused, fell back, refused, then story B
+      .toEqual(["claude-opus-5", "claude-sonnet-5", "claude-opus-5"]);        // refused, fell back, refused, then story B
     expect(db.query("SELECT story_id, stage, reason FROM theme_failures").all())
       .toEqual([{ story_id: "scp/a", stage: "themes", reason: "refusal" }]);
     expect(failures(db, "")).toHaveLength(1);

@@ -17,7 +17,7 @@ import { now } from "./paths.ts";
 import { loadDraftConfig, type DraftConfig, type Overrides, type Resolved } from "./draftconfig.ts";
 import { runCheck, type CheckResult } from "./check.ts";
 import { constraintsBlock, repair, type Accepted } from "./repair.ts";
-import { briefBlock, briefParts, checkFindings, gateFindings, judgeNote, latestCheckPass, passId, pinnedLedger, type FindingView } from "./briefparts.ts";
+import { briefBlock, briefParts, chainProfile, checkFindings, gateFindings, judgeNote, latestCheckPass, passId, pinnedLedger, type FindingView } from "./briefparts.ts";
 import { currentScenes, runScenes, runSchedule, runScreens, writeScene, type Schedule } from "./write.ts";
 import { draftView, exportDraft, renderStory, type DraftView } from "./drafts.ts";
 import { tag } from "./model.ts";
@@ -79,7 +79,13 @@ export class Drafting {
     return {
       pass, findings: gateFindings(this.p, drawId, opts.all),
       claims: arts.filter((a) => a.kind === "claim" && meta(a).pass === pass).map((a) => ({ statement: a.content, ...meta(a) })),
-      profiles: arts.filter((a) => a.kind === "profile" && meta(a).source === "check" && meta(a).pass === pass).map((a) => meta(a)),
+      // a repair round runs neither profile checker, so the chain's own profile stands in
+      profiles: ["structure", "resemblance"].flatMap((c) => {
+        const here = arts.filter((a) => a.kind === "profile" && meta(a).source === "check" && meta(a).checker === c && meta(a).pass === pass).map((a) => meta(a));
+        if (here.length) return here;
+        const up = chainProfile(this.p, drawId, c);
+        return up ? [{ ...up.meta, from_draw: up.draw }] : [];
+      }),
       examined, judge: judgeNote(this.p, drawId),
     };
   }

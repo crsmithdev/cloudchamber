@@ -329,6 +329,45 @@ describe("check and gate 1", () => {
     expect(p.artifacts(next.id).filter((x) => x.kind === "ledger")).toHaveLength(0);   // one ledger, on the root
   });
 
+  test("structure and resemblance profile the premise once for the chain; a repair round runs neither", async () => {
+    const script = draftScript({
+      "check-ledger": [...ledgerSamples(), ...ledgerSamples()],
+      "check-derivation": [...derivationSamples(), ...cleanSamples()],
+    });
+    const { p, d, draw, model } = await drawn(script);
+    await d.check(draw.id);
+    const profiled = () => stagesOf(model, /^check-(structure|resemblance)$/).sort();
+    expect(profiled()).toEqual(["check-resemblance", "check-structure"]);
+
+    const [a] = d.findings(draw.id).findings;
+    const next = await d.accept(draw.id, [a.id]);
+    expect(profiled()).toEqual(["check-resemblance", "check-structure"]);      // the re-check runs neither again
+    expect(p.artifacts(next.id).filter((x) => x.kind === "profile")).toHaveLength(0);
+
+    const profiles = d.findings(next.id).profiles as any[];                    // the gate still shows both
+    expect(profiles.map((x) => x.checker).sort()).toEqual(["resemblance", "structure"]);
+    expect(profiles.every((x) => x.from_draw === draw.id)).toBe(true);
+  });
+
+  test("a repair rewrites without the six example passages; a first draft keeps them", async () => {
+    const script = draftScript({
+      "check-ledger": [...ledgerSamples(), ...ledgerSamples()],
+      "check-derivation": [...derivationSamples(), ...cleanSamples()],
+    });
+    const { d, draw, model } = await drawn(script);
+    expect(model.calls.find((c) => c.stage === "execute")!.prompt).toContain("horror passage");
+
+    await d.check(draw.id);
+    const [a] = d.findings(draw.id).findings;
+    await d.accept(draw.id, [a.id]);
+    const rewrites = model.calls.filter((c) => c.stage === "repair-vignette" || c.stage === "repair-ending");
+    expect(rewrites.length).toBeGreaterThan(0);                                // one passage is rewritten, the other copied
+    for (const c of rewrites) {
+      expect(c.prompt).not.toContain("horror passage");
+      expect(c.prompt).toContain("Only the assembler can fire the reliquary.");
+    }
+  });
+
   test("pass at gate 1 records a brief verdict and ends the draw; flag starts nothing", async () => {
     const { p, d, draw } = await drawn();
     await d.check(draw.id);

@@ -2,8 +2,8 @@
  * Stage 1: the checkers. K checkers, each its own headless call, none seeing
  * another's output, each run S times; findings clustered by recurrence and
  * merged across checkers; dismissed findings excluded. Structure and
- * resemblance produce profiles, never findings. Claims run only when the
- * setting declares an authority.
+ * resemblance produce profiles, never findings, and run once for the whole
+ * repair chain. Claims run only when the setting declares an authority.
  */
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -13,7 +13,7 @@ import { tag, tags } from "./model.ts";
 import { distillate, type ClaimsAuthority } from "./settings.ts";
 import { samplesFor, type DraftConfig } from "./draftconfig.ts";
 import { cluster, excludeDismissed, findingId, merge, normalise, parseFindings, type Cluster, type Finding } from "./recur.ts";
-import { briefBlock, briefParts, claimVerdicts, dismissedFindings, passId, pinnedLedger, type BriefParts } from "./briefparts.ts";
+import { briefBlock, briefParts, chainProfile, claimVerdicts, dismissedFindings, passId, pinnedLedger, type BriefParts } from "./briefparts.ts";
 import { RUN } from "./config.ts";
 
 export const PREMISES_PATH = resolve(import.meta.dir, "premises.md");
@@ -80,9 +80,10 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
       return { findings: parseFindings(t, "ledger", 0), examined: tag(t, "examined") };
     }).then((r) => { perChecker.push(r); }));
   }
-  if (enabled.includes("structure")) runs.push(sampled(p, drawId, parts, "check-structure", fill("checkStructure", { brief }), S("structure"), "structure", (t) => ({ answers: parseQuestions(t, STRUCTURE_QUESTIONS) }),
+  // structure and resemblance profile the premise, which a repair never changes: once per chain
+  if (enabled.includes("structure") && !chainProfile(p, drawId, "structure")) runs.push(sampled(p, drawId, parts, "check-structure", fill("checkStructure", { brief }), S("structure"), "structure", (t) => ({ answers: parseQuestions(t, STRUCTURE_QUESTIONS) }),
     (step, value, sample) => p.artifact(step, "profile", JSON.stringify(value.answers), { pass, sample, source: "check", checker: "structure", answers: value.answers })));
-  if (enabled.includes("resemblance")) runs.push(sampled(p, drawId, parts, "check-resemblance", fill("checkResemblance", { brief, list: loadPremiseList(opts.premisesPath) }), S("resemblance"), "resemblance", (t) => {
+  if (enabled.includes("resemblance") && !chainProfile(p, drawId, "resemblance")) runs.push(sampled(p, drawId, parts, "check-resemblance", fill("checkResemblance", { brief, list: loadPremiseList(opts.premisesPath) }), S("resemblance"), "resemblance", (t) => {
     const nearest = tag(t, "nearest");
     if (!nearest) throw new Error("no <nearest> tag");
     const matches = tags(t, "match").map((m) => ({ entry: tag(m, "entry") ?? "", span: tag(m, "span") ?? "" }));

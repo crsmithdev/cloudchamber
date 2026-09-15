@@ -115,7 +115,7 @@ stages.toml: the model each stage calls, and the one it falls back to on a refus
 
 | | |
 |---|---|
-| `themes` | claude-opus-5 → claude-fable-5-1 |
+| `themes` | claude-opus-5 → claude-sonnet-5 |
 | `redundancy` | claude-opus-5 → claude-sonnet-5 |
 | `distill` | claude-opus-5 → claude-sonnet-5 |
 | `premises` | claude-opus-5 → claude-sonnet-5 |
