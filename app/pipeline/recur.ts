@@ -80,6 +80,32 @@ export function invalidatesRank(inv: string, settingJobs: string[] = []): number
   return i >= 0 ? i : inv === "none" || !inv ? order.length + 1 : order.length;
 }
 
+/**
+ * A finding's score, 0 to 10, from what is already stored: how often it
+ * recurred, whether a second checker found it, what it invalidates, what kind
+ * of result it is, and whether it quotes evidence. The gate sorts by this and
+ * can accept above a floor; the auto rounds stop on one.
+ *
+ * Recurrence and severity are deliberately worth the same: a contradiction in
+ * the debt audit seen twice of three is worth reading, and a full-recurrence
+ * finding with no evidence behind it is not.
+ */
+export const INVALIDATES_WEIGHT: Record<string, number> = { "debt audit": 3, arithmetic: 3, custody: 2 };
+export const SCORE_MAX = 10;
+
+export type Scorable = { n: number; checkers: string[]; invalidates: string; result: string; evidence: string };
+
+export function score(f: Scorable, samples: number, settingJobs: string[] = []): number {
+  const recurrence = f.n >= samples ? 3 : f.n === samples - 1 ? 2 : 1;
+  const crossChecker = f.checkers.length > 1 ? 2 : 0;
+  const inv = f.invalidates.toLowerCase();
+  const severity = INVALIDATES_WEIGHT[inv] ?? (settingJobs.some((j) => j.toLowerCase() === inv) ? 2 : 0);
+  const r = f.result.toLowerCase().trim();
+  const kind = r.startsWith("contradict") ? 2 : r.includes("underived") ? 1 : 0;
+  const unevidenced = !f.evidence.trim() || f.evidence.trim().toLowerCase() === "none" ? -2 : 0;
+  return Math.max(0, Math.min(SCORE_MAX, recurrence + crossChecker + severity + kind + unevidenced));
+}
+
 /** Cluster one checker's findings across its samples. Sorted by n descending, then by what the finding invalidates. */
 export function cluster(findings: Finding[], keepIf: number, settingJobs: string[] = [], scope = ""): Cluster[] {
   const groups: Finding[][] = [];

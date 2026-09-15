@@ -31,3 +31,4 @@ data/
 
 node_modules/
 app/ui/dist/
+.playwright-cli/

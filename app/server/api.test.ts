@@ -225,7 +225,7 @@ describe("api: check, gate 1, draft, gate 2", () => {
     const f = await j2("GET", `/api/draws/${d2.id}/findings`);
     expect(f.code).toBe(200);
     expect(f.body.findings).toHaveLength(2);
-    expect(f.body.judge).toBe("checked on fable; judge and generator share a family");
+    expect(f.body.judge).toBe("checked on opus; judge and generator share a family");
     const dis = await j2("POST", `/api/draws/${d2.id}/gate`, { action: "dismiss", finding: f.body.findings[1].id, note: "fine" });
     expect(dis.code).toBe(200);
     expect(dis.body.decision).toBe("dismissed");

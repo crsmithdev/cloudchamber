@@ -1,9 +1,12 @@
 /**
  * Stage 2: repair. A repair is a new draw linked to the one it repairs. The
- * chosen vignette and the ending survive as material and are rewritten from
- * themselves only when an accepted finding lands in them; the outline is
- * re-derived under the accepted replacements; the context vignettes are
- * regenerated. Nothing is regenerated from the premise.
+ * chosen vignette, the ending and each context vignette survive as material
+ * and are rewritten from themselves only when an accepted finding lands in
+ * them; the outline is re-derived under the accepted replacements. Nothing is
+ * regenerated from the premise.
+ *
+ * Every regenerated word is a new surface for the next check to find a
+ * contradiction in, so a repair rewrites as little as the findings allow.
  */
 import { randomBytes } from "node:crypto";
 import { RUN } from "./config.ts";
@@ -22,11 +25,12 @@ export type Accepted = Pick<FindingView, "id" | "span" | "invalidates" | "replac
 const inside = (span: string, text: string) => normalise(text).includes(normalise(span));
 const ENDING_SECTIONS = new Set(["arithmetic", "custody"]);
 
-/** Which pieces the accepted findings touch. */
-export function repairPlan(accepted: Accepted[], vignette: string, ending: string): { vignette: boolean; ending: boolean } {
+/** Which pieces the accepted findings touch. `context` carries one flag per context vignette, in index order. */
+export function repairPlan(accepted: Accepted[], vignette: string, ending: string, contexts: string[] = []): { vignette: boolean; ending: boolean; context: boolean[] } {
   return {
     vignette: accepted.some((f) => inside(f.span, vignette)),
     ending: accepted.some((f) => inside(f.span, ending) || ENDING_SECTIONS.has(f.invalidates.toLowerCase())),
+    context: contexts.map((c) => accepted.some((f) => inside(f.span, c))),
   };
 }
 
@@ -57,11 +61,19 @@ export async function repair(p: Pipeline, drawId: string, accepted: Accepted[]):
 }
 
 async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof briefParts>, accepted: Accepted[]) {
-  const plan = repairPlan(accepted, parts.vignette, parts.ending);
+  const srcArts = p.artifacts(parts.draw.id);
+  const srcStages = new Map(p.steps(parts.draw.id).map((s) => [s.id, s.stage]));
+  const srcContexts = srcArts.filter((a) => a.kind === "vignette" && srcStages.get(a.step_id) === "context")
+    .map((a) => ({ content: a.content, meta: JSON.parse(a.meta) as { index?: number; job?: string } }))
+    .sort((a, b) => (a.meta.index ?? 0) - (b.meta.index ?? 0));
+  // a context vignette can only be carried over when its job line came with it
+  const carryable = srcContexts.length === RUN.contextVignettes && srcContexts.every((c) => c.meta.job);
+  const plan = repairPlan(accepted, parts.vignette, parts.ending, carryable ? srcContexts.map((c) => c.content) : []);
+  if (!carryable) plan.context = Array.from({ length: RUN.contextVignettes }, () => true);
   const constraints = constraintsBlock(accepted);
   const head = parts.examples.join("\n\n");
   const { setting } = p.loadDrawSetting(parts.draw);
-  const chosenMeta = JSON.parse(p.artifacts(parts.draw.id).find((a) => a.step_id === parts.chosenStepId && a.kind === "vignette")!.meta);
+  const chosenMeta = JSON.parse(srcArts.find((a) => a.step_id === parts.chosenStepId && a.kind === "vignette")!.meta);
 
   // the chosen vignette: rewritten from itself, or carried over
   let vignette = parts.vignette;
@@ -90,19 +102,29 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
   const outlineText = Object.entries(outline).map(([n, body]) => `## ${n}\n\n${body}`).join("\n\n");
   p.artifact(outlineStep, "outline", outlineText, { jobs: jobNames, constraints: accepted.map((f) => f.replacement), accepted: accepted.map((f) => f.id), words: Object.fromEntries(Object.entries(outline).map(([n, b]) => [n, words(b)])) });
 
-  // jobs and the two context vignettes, as the draw does
+  // the context vignettes: each rewritten under a fresh job, or carried over with its own
   const briefHead = fill("head", { outline: outlineText, vignette });
   const after = (stage: "jobs" | "context" | "ending", ask: string) => compose(briefHead, ask, p.settingFor(stage, setting), "");
-  const { step: jobsStep, value: jobs } = await p.invoke(newId, outlineStep.id, "jobs", after("jobs", fill("jobs", {})), (text) => {
-    const js = tags(text, "job");
-    if (js.length !== RUN.contextVignettes) throw new Error(`expected ${RUN.contextVignettes} jobs, got ${js.length}`);
-    if (new Set(js.map((j) => j.toLowerCase())).size !== js.length) throw new Error("identical jobs");
-    return js;
-  });
-  jobs.forEach((j, i) => p.artifact(jobsStep, "job", j, { index: i + 1 }));
-  const contextRuns = jobs.map((job, i) => p.invoke(newId, outlineStep.id, "context", after("context", fill("context", { job })), (text) => {
-    const v = tag(text, "vignette"); if (!v) throw new Error("no <vignette> tag"); return v;
-  }).then((r) => p.artifact(r.step, "vignette", r.value, { index: i + 1, job, warnings: words(r.value) > 500 ? ["length"] : [] })));
+  let fresh: string[] = [];
+  let jobsStep;
+  if (plan.context.some(Boolean)) {
+    const r = await p.invoke(newId, outlineStep.id, "jobs", after("jobs", fill("jobs", {})), (text) => {
+      const js = tags(text, "job");
+      if (js.length !== RUN.contextVignettes) throw new Error(`expected ${RUN.contextVignettes} jobs, got ${js.length}`);
+      if (new Set(js.map((j) => j.toLowerCase())).size !== js.length) throw new Error("identical jobs");
+      return js;
+    });
+    fresh = r.value; jobsStep = r.step;
+  } else {
+    jobsStep = p.recordStep(newId, outlineStep.id, "jobs", "copied");
+  }
+  const jobs = plan.context.map((rewrite, i) => (rewrite ? fresh[i] : srcContexts[i].meta.job!));
+  jobs.forEach((j, i) => p.artifact(jobsStep, "job", j, { index: i + 1, copied: !plan.context[i] }));
+  const contextRuns = jobs.map((job, i) => plan.context[i]
+    ? p.invoke(newId, outlineStep.id, "context", after("context", fill("context", { job })), (text) => {
+        const v = tag(text, "vignette"); if (!v) throw new Error("no <vignette> tag"); return v;
+      }).then((r) => p.artifact(r.step, "vignette", r.value, { index: i + 1, job, warnings: words(r.value) > 500 ? ["length"] : [] }))
+    : Promise.resolve(p.artifact(p.recordStep(newId, outlineStep.id, "context", "copied"), "vignette", srcContexts[i].content, { index: i + 1, job, copied_from: parts.draw.id })));
 
   // the ending: rewritten from itself under the constraints, or carried over
   const endingRun = plan.ending

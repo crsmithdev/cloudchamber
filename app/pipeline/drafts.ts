@@ -7,6 +7,7 @@ import { join } from "node:path";
 import type { Pipeline } from "./draw.ts";
 import { BRIEFS, DRAFTS } from "./paths.ts";
 import { checkFindings, findingArtifacts, judgeNote, type FindingView } from "./briefparts.ts";
+import { score } from "./recur.ts";
 import { toToml, type Resolved } from "./draftconfig.ts";
 import { currentScenes, type Beat, type Profile, type Scene } from "./write.ts";
 import type { Answer } from "./check.ts";
@@ -31,7 +32,10 @@ export function draftView(p: Pipeline, drawId: string): DraftView {
   const latestPass = new Map<number, string>();
   for (const pr of profileArts) if (!latestPass.has(pr.beat) || latestPass.get(pr.beat)! < pr.pass) latestPass.set(pr.beat, pr.pass);
   const profiles = profileArts.filter((pr) => latestPass.get(pr.beat) === pr.pass).sort((a, b) => a.beat - b.beat);
-  const screenFindings = findingArtifacts(p, drawId).filter((f) => f.source === "screen" && (latestPass.get(f.beat!) ?? f.pass) === f.pass).map((f) => ({ ...f, decision: "open" as const, note: "" }));
+  // a screen's denominator is the highest sample number it recurred in, the same figure the panes print
+  const screenFindings = findingArtifacts(p, drawId).filter((f) => f.source === "screen" && (latestPass.get(f.beat!) ?? f.pass) === f.pass)
+    .map((f) => { const samples_run = Math.max(f.n, ...f.samples); return { ...f, decision: "open" as const, note: "", samples_run, score: score(f, samples_run), reported: true }; })
+    .sort((a, b) => a.beat! - b.beat! || b.score - a.score);
   const slopArt = [...arts].reverse().find((a) => a.kind === "slop");
   return {
     schedule: sched ? { ...(JSON.parse(sched.meta) as { form: Record<string, string>; beats: Beat[] }), raw: sched.content } : null,

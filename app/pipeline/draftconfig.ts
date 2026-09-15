@@ -4,6 +4,7 @@
  * to the export, with the keys that were overridden marked.
  */
 import draftToml from "./draft.toml";
+import { SCORE_MAX } from "./recur.ts";
 
 export type FormAxis = "tense" | "person" | "chronology" | "container";
 export type DraftConfig = {
@@ -14,7 +15,7 @@ export type DraftConfig = {
   scenes: { order: "sequential" | "parallel" };
   checks: { enabled: string[]; samples: number; keep_if: number } & Record<string, unknown>;
   screens: { enabled: string[]; samples: number; keep_if: number; slop_baseline: string } & Record<string, unknown>;
-  repair: { rounds: number };
+  repair: { rounds: number; stop_score: number; patience: number };
 };
 export type Resolved = { config: DraftConfig; overridden: string[]; profile: string | null };
 
@@ -47,7 +48,7 @@ function flatten(obj: any, prefix = ""): [string, unknown][] {
 function coerce(path: string, v: string | number): unknown {
   if (typeof v === "number") return v;
   if (path === "beats.count" && v === "auto") return "auto";
-  if (/^(length\.(words|tolerance)|beats\.(count|min|max|words_min|words_max)|checks\..*samples|checks\..*keep_if|screens\..*samples|screens\..*keep_if|repair\.rounds)$/.test(path)) {
+  if (/^(length\.(words|tolerance)|beats\.(count|min|max|words_min|words_max)|checks\..*samples|checks\..*keep_if|screens\..*samples|screens\..*keep_if|repair\.(rounds|stop_score|patience))$/.test(path)) {
     const n = Number(v);
     if (!Number.isFinite(n)) throw new Error(`draft config: ${path} must be a number, got ${v}`);
     return n;
@@ -89,6 +90,8 @@ export function validate(c: DraftConfig): void {
   if (!(c.checks.samples >= 1 && c.checks.keep_if >= 1)) bad("checks.samples and checks.keep_if must be at least 1");
   if (!(c.screens.samples >= 1 && c.screens.keep_if >= 1)) bad("screens.samples and screens.keep_if must be at least 1");
   if (!(Number.isInteger(c.repair.rounds) && c.repair.rounds >= 0)) bad("repair.rounds must be a non-negative integer");
+  if (!(c.repair.stop_score >= 0 && c.repair.stop_score <= SCORE_MAX)) bad(`repair.stop_score must be in 0..${SCORE_MAX}`);
+  if (!(Number.isInteger(c.repair.patience) && c.repair.patience >= 1)) bad("repair.patience must be a positive integer");
 }
 
 export function profileNames(defaults: any = draftToml): string[] { return Object.keys(defaults.profiles ?? {}); }

@@ -281,6 +281,25 @@ pre { white-space: pre-wrap; background: var(--surface); border: 1px solid var(-
 .finding.acc { background: linear-gradient(90deg, color-mix(in srgb, var(--keep) 10%, transparent), transparent 70%); margin: 0 -1rem; padding-left: 1rem; padding-right: 1rem; }
 .finding.dis > * { opacity: .55; }
 .finding .rec { display: flex; flex-direction: column; gap: .35rem; }
+.finding .score { align-self: start; display: grid; place-items: center; width: 1.9rem; height: 1.9rem; border-radius: 5px; border: 1px solid var(--line); background: var(--raised); }
+.finding .score b { font-size: 13.5px; font-weight: 600; margin: 0; }
+.finding .score.shi { border-color: var(--pass); color: var(--pass); }
+.finding .score.smid { border-color: var(--art); color: var(--art); }
+.finding .score.slo { color: var(--dim); }
+.finding.sub { border-left: 2px solid var(--line); padding-left: .6rem; }
+.finding.sub .span { color: var(--mute); }
+.rounds { margin: .9rem 0; padding: .7rem .8rem; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; max-width: 46rem; }
+.rounds .hd { display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap; margin-bottom: .5rem; font-size: 12.5px; }
+.rounds table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.rounds th { text-align: left; font-weight: 500; color: var(--mute); font-size: 11px; text-transform: lowercase; padding: .15rem .5rem .3rem 0; border-bottom: 1px solid var(--line); }
+.rounds td { padding: .25rem .5rem .25rem 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 50%, transparent); }
+.rounds tr.best td { color: var(--keep); }
+.rounds tr.best td:first-child::after { content: " ← lowest"; color: var(--dim); font-size: 10.5px; }
+.rounds .note { margin-top: .45rem; font-size: 12px; }
+.gatebar .pick { display: inline-flex; align-items: center; gap: .35rem; padding: 0 .35rem; border-left: 1px solid var(--line); }
+.gatebar .pick .btn { padding: .3rem .5rem; font-size: 12px; }
+.gatebar .pick input[type="range"] { width: 5.5rem; accent-color: var(--accent); }
+.sec .btn.sm { margin-left: .5rem; }
 .finding .dots { display: flex; gap: 4px; align-items: center; }
 .finding .dots i { width: 9px; height: 9px; border-radius: 50%; border: 1px solid var(--dim); display: inline-block; }
 .finding .dots i.on { background: var(--accent); border-color: var(--accent); }

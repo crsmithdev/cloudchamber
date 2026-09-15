@@ -8,6 +8,9 @@ import { pipelineVersion } from "./version.ts";
 import { loadSetting } from "./settings.ts";
 import { SETTINGS } from "./paths.ts";
 
+/** Artifacts in the order their stage produced them, which their meta records and their row order does not. */
+const byIndex = <T extends { meta: string }>(as: T[]): T[] => [...as].sort((x, y) => (JSON.parse(x.meta).index ?? 0) - (JSON.parse(y.meta).index ?? 0));
+
 export function writeBrief(db: Db, drawId: string, stages: Record<StageName, StageConfig>, base: string = BRIEFS, settingsDir: string = SETTINGS): string {
   const draw = db.query("SELECT * FROM draws WHERE id = ?").get(drawId) as any;
   const steps = db.query("SELECT * FROM steps WHERE draw_id = ? ORDER BY started_at, rowid").all(drawId) as any[];
@@ -20,7 +23,8 @@ export function writeBrief(db: Db, drawId: string, stages: Record<StageName, Sta
   w("vignette.md", chosen?.content ?? "");
   const outline = byKind("outline").at(-1);
   w("outline.md", outline?.content ?? "");
-  byKind("vignette", "context").forEach((a, i) => w(`context-${i + 1}.md`, `*Job: ${JSON.parse(a.meta).job}*\n\n${a.content}`));
+  // by the job's index, not by which call finished first, so context-1.md is the same job in every round
+  byIndex(byKind("vignette", "context")).forEach((a, i) => w(`context-${i + 1}.md`, `*Job: ${JSON.parse(a.meta).job}*\n\n${a.content}`));
   const ending = byKind("ending").at(-1);
   w("ending.md", ending?.content ?? "");
   if (ending && JSON.parse(ending.meta).previous) w("ending.previous.md", JSON.parse(ending.meta).previous);
@@ -46,7 +50,7 @@ export function writeBrief(db: Db, drawId: string, stages: Record<StageName, Sta
     "## premises, by stated probability", "",
     ...cands.map(({ a, m }) => `- **${m.probability}** [${m.index}]${a.step_id === draw.chosen_step ? " ← chosen" : ""} vignette ${a.id}${m.warnings?.length ? ` (${m.warnings.join(", ")})` : ""}: ${m.premise}`), "",
     `gate: ${draw.gate_method}, chose vignette from step ${draw.chosen_step}`, "",
-    "## jobs", "", ...byKind("job").map((j, i) => `${i + 1}. ${j.content}`), "",
+    "## jobs", "", ...byIndex(byKind("job")).map((j, i) => `${i + 1}. ${j.content}`), "",
     "## models", "", ...[...modelByStage].map(([s, m]) => `- ${s}: ${m}`),
     ...(refusals.length ? ["", `refusals: ${refusals.join("; ")}`] : []), "",
     `steps: ${steps.length} · pipeline ${pipelineVersion()}`,

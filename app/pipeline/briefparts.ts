@@ -7,7 +7,7 @@ import { RUN } from "./config.ts";
 import type { DrawRow, Pipeline } from "./draw.ts";
 import { fill } from "./prompts.ts";
 import { latest } from "./verdicts.ts";
-import type { Cluster } from "./recur.ts";
+import { cluster, excludeDismissed, merge, same, score, type Cluster, type Finding } from "./recur.ts";
 
 export type Artifact = { id: string; step_id: string; kind: string; content: string; meta: string };
 
@@ -56,7 +56,7 @@ export function briefBlock(b: BriefParts): string {
 // --- findings as artifacts -----------------------------------------------------
 
 export type FindingMeta = Omit<Cluster, "reported"> & { pass: string; source: "check" | "screen"; screen?: string; beat?: number };
-export type FindingView = FindingMeta & { artifact_id: string; decision: "accepted" | "dismissed" | "open"; note: string };
+export type FindingView = FindingMeta & { artifact_id: string; decision: "accepted" | "dismissed" | "open"; note: string; score: number; samples_run: number; reported: boolean };
 
 export function findingArtifacts(p: Pipeline, drawId: string): (FindingMeta & { artifact_id: string })[] {
   return p.artifacts(drawId).filter((a) => a.kind === "finding").map((a) => ({ ...(JSON.parse(a.meta) as FindingMeta), artifact_id: a.id }));
@@ -69,16 +69,104 @@ export function latestCheckPass(p: Pipeline, drawId: string): string | null {
   return passes.length ? passes.sort().at(-1)! : null;
 }
 
+/** The distinct check pass ids on a draw, oldest first. */
+export function checkPasses(p: Pipeline, drawId: string): string[] {
+  const passes = p.artifacts(drawId)
+    .filter((a) => a.kind === "ledger" || ((a.kind === "finding" || a.kind === "profile") && JSON.parse(a.meta).source === "check"))
+    .map((a) => JSON.parse(a.meta).pass as string).filter(Boolean);
+  return [...new Set(passes)].sort();
+}
+
+/**
+ * How many samples each checker ran in one pass, read off the steps rather
+ * than the configuration, so the score reflects what actually happened even
+ * when draft.toml has changed since. Claims run once per claim, not S times.
+ */
+export function samplesPerChecker(p: Pipeline, drawId: string): Record<string, number> {
+  const passes = Math.max(1, checkPasses(p, drawId).length);
+  const out: Record<string, number> = { claims: 1 };
+  const done = p.steps(drawId).filter((s) => s.status === "done" && /^check-/.test(s.stage));
+  for (const s of done) {
+    const checker = s.stage.replace(/^check-/, "");
+    if (checker.startsWith("claims")) continue;
+    out[checker] = (out[checker] ?? 0) + 1;
+  }
+  for (const k of Object.keys(out)) if (k !== "claims") out[k] = Math.max(1, Math.round(out[k] / passes));
+  return out;
+}
+
+/** The sample count a merged cluster is scored against: the largest of its checkers'. */
+export function samplesAgainst(f: { checkers: string[] }, per: Record<string, number>): number {
+  return Math.max(1, ...f.checkers.map((c) => per[c] ?? 1));
+}
+
 export function decision(p: Pipeline, findingId: string): { decision: "accepted" | "dismissed" | "open"; note: string } {
   const l = latest(p.db, "finding", findingId);
   return l ? { decision: l.verdict === "keep" ? "accepted" : "dismissed", note: l.note } : { decision: "open", note: "" };
 }
 
-/** The reported check findings of the latest pass, with their gate decisions, in stored order. */
+/** The reported check findings of the latest pass, with their gate decisions and scores, highest score first. */
 export function checkFindings(p: Pipeline, drawId: string): FindingView[] {
   const pass = latestCheckPass(p, drawId);
   if (!pass) return [];
-  return findingArtifacts(p, drawId).filter((f) => f.source === "check" && f.pass === pass).map((f) => ({ ...f, ...decision(p, f.id) }));
+  const per = samplesPerChecker(p, drawId);
+  const jobs = briefSettingJobs(p, drawId);
+  return findingArtifacts(p, drawId).filter((f) => f.source === "check" && f.pass === pass)
+    .map((f) => withScore(p, f, per, jobs, !(f as { sub_threshold?: boolean }).sub_threshold))
+    .sort((a, b) => b.score - a.score);
+}
+
+/** The setting jobs of a draw's outline, for the score's severity term. Empty when the draw has no brief yet. */
+function briefSettingJobs(p: Pipeline, drawId: string): string[] {
+  const outline = [...p.artifacts(drawId)].reverse().find((a) => a.kind === "outline");
+  const jobs = (outline ? (JSON.parse(outline.meta).jobs as string[] | undefined) : undefined) ?? [];
+  return jobs.filter((j) => !(RUN.coreJobs as readonly string[]).includes(j));
+}
+
+export function withScore(p: Pipeline, f: FindingMeta & { artifact_id: string }, per: Record<string, number>, settingJobs: string[], reported: boolean): FindingView {
+  const samples_run = samplesAgainst(f, per);
+  return { ...f, ...decision(p, f.id), score: score(f, samples_run, settingJobs), samples_run, reported };
+}
+
+/**
+ * The clusters the latest pass found but did not report, because they recurred
+ * in fewer than keep_if samples. They are reconstructed from each checker
+ * step's parsed findings, so no call is made and every past pass can be read
+ * this way. A cluster overlapping a reported or dismissed finding is dropped.
+ */
+export function subThresholdFindings(p: Pipeline, drawId: string): FindingView[] {
+  const pass = latestCheckPass(p, drawId);
+  if (!pass) return [];
+  const per = samplesPerChecker(p, drawId);
+  const jobs = briefSettingJobs(p, drawId);
+  const reported = checkFindings(p, drawId);
+  const dismissed = dismissedFindings(p, drawId);
+  const perChecker: Cluster[] = [];
+  const stages = [...new Set(p.steps(drawId).filter((s) => /^check-/.test(s.stage)).map((s) => s.stage))];
+  for (const stage of stages) {
+    const checker = stage.replace(/^check-/, "");
+    if (checker.startsWith("claims") || !per[checker]) continue;
+    // the latest pass ran the last `samples` steps of this stage
+    const steps = p.steps(drawId).filter((s) => s.stage === stage && s.status === "done" && s.parsed).slice(-per[checker]);
+    const findings: Finding[] = [];
+    steps.forEach((step, i) => {
+      const parsed = JSON.parse(step.parsed!) as { findings?: Finding[] };
+      for (const f of parsed.findings ?? []) if (f?.span) findings.push({ ...f, checker, sample: i + 1 });
+    });
+    if (findings.length) perChecker.push(...cluster(findings, 1, jobs, drawId));
+  }
+  // the same span from two checkers is one finding, as it is above the bar
+  const hidden = excludeDismissed(merge(perChecker, jobs).filter((c) => !reported.some((r) => same(r, c))), dismissed);
+  return hidden.map((c) => {
+    const { reported: _r, ...meta } = c;
+    return withScore(p, { ...meta, pass, source: "check", artifact_id: "" }, per, jobs, false);
+  }).sort((a, b) => b.score - a.score);
+}
+
+/** Every finding the gate can act on: the reported ones, and the sub-threshold ones when asked for. */
+export function gateFindings(p: Pipeline, drawId: string, all = false): FindingView[] {
+  const reported = checkFindings(p, drawId);
+  return all ? [...reported, ...subThresholdFindings(p, drawId)].sort((a, b) => b.score - a.score) : reported;
 }
 
 /** Findings dismissed on this draw or any brief it repairs; a re-check does not raise them again. */

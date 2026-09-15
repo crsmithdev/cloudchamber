@@ -13,8 +13,9 @@ import { latest, readLog, record } from "./verdicts.ts";
 import { status } from "./status.ts";
 import { TEMPLATES } from "./prompts.ts";
 import { loadStages } from "./config.ts";
+import { loadDraftConfig } from "./draftconfig.ts";
 import { VERDICT_LOG } from "./paths.ts";
-import { A, B, SPAN_A, SPAN_B, cleanSamples, derivationSamples, draftScript, ledgerSamples, schedule, vignette } from "./drafting.fixture.ts";
+import { A, B, LEDGER, SPAN_A, SPAN_B, SPAN_C, cleanSamples, derivationSamples, draftScript, finding, ledgerSamples, schedule, vignette } from "./drafting.fixture.ts";
 
 const CELLS = ["informational", "mixed", "involved"].flatMap((v) => ["non-narrative", "mixed", "narrative"].map((m) => [v, m]));
 
@@ -63,7 +64,7 @@ describe("check and gate 1", () => {
     expect(p.artifacts(draw.id).filter((a) => a.kind === "profile").map((a) => JSON.parse(a.meta).checker).sort()).toEqual(["resemblance", "structure"]);
     expect(f.examined.filter((e) => e.stage === "check-ledger")).toHaveLength(3);
     expect(f.examined.find((e) => e.stage === "check-ledger")!.examined).toContain("ledger×chosen");
-    expect(f.judge).toBe("checked on fable; judge and generator share a family");
+    expect(f.judge).toBe("checked on opus; judge and generator share a family");
     expect(f.claims).toEqual([]);
     // every check step stores no tools and the brief in its prompt
     for (const s of p.steps(draw.id).filter((s) => /^check-/.test(s.stage))) { expect(s.tools).toBe(""); expect(s.prompt).toContain('<vignette name="chosen">'); expect(s.parsed).toBeTruthy(); }
@@ -106,8 +107,11 @@ describe("check and gate 1", () => {
     expect(by("repair-ending")[0].model).not.toBe("copied");                       // the span is in the ending
     expect(by("repair-outline")[0].prompt).toContain("<constraints>\n- Only the assembler can fire the reliquary.\n</constraints>");
     expect(by("repair-outline")[0].prompt).not.toContain("Reason");
-    expect(by("jobs")).toHaveLength(1);
-    expect(by("context")).toHaveLength(2);
+    // no accepted finding lands in a context vignette, so both are carried over and no jobs call runs
+    expect(by("jobs").map((s) => s.model)).toEqual(["copied"]);
+    expect(by("context").map((s) => s.model)).toEqual(["copied", "copied"]);
+    expect(model.calls.filter((c) => c.stage === "jobs" || c.stage === "context")).toHaveLength(3);   // the draw's own one and two, not the repair's
+    expect(p.artifacts(next.id).filter((a) => a.kind === "job").map((a) => a.content)).toEqual(["Test the first thing: scene one.", "Test a second thing: scene two."]);
     expect(model.calls.find((c) => c.stage === "repair-ending")!.prompt).toContain(SPAN_A);
     expect(model.calls.find((c) => c.stage === "repair-ending")!.prompt).toContain("Rewrite the ending");
     expect(model.calls.filter((c) => c.stage === "execute")).toHaveLength(5);      // nothing regenerated from the premise
@@ -124,7 +128,7 @@ describe("check and gate 1", () => {
     // the re-check ran on the new draw and found nothing
     expect(p.steps(next.id).filter((s) => s.stage === "check-ledger")).toHaveLength(3);
     expect(d.findings(next.id).findings).toEqual([]);
-    expect(d.findings(next.id).judge).toBe("checked on fable; judge and generator share a family");
+    expect(d.findings(next.id).judge).toBe("checked on opus; judge and generator share a family");
     await expect(d.accept(draw.id, [a.id])).rejects.toThrow(/is repaired, not awaiting_check_gate/);
   });
 
@@ -147,6 +151,91 @@ describe("check and gate 1", () => {
     // arithmetic invalidated: the ending is rewritten even though the span is not in it
     expect(by("repair-ending")[0].model).not.toBe("copied");
     expect(p.artifacts(next.id).find((a) => a.kind === "vignette" && a.step_id === next.chosen_step)!.content).toContain("rewritten vignette");
+  });
+
+  test("the clusters below keep_if are reported on request, scored, and can be accepted and dismissed", async () => {
+    const { p, d, draw, model } = await drawn(draftScript({ "check-ledger": [...ledgerSamples(), ...cleanSamples()], "check-derivation": [...derivationSamples(), ...cleanSamples()] }));
+    await d.check(draw.id);
+    const calls = model.calls.length;
+    const reported = d.findings(draw.id).findings;
+    const all = d.findings(draw.id, { all: true }).findings;
+    expect(reported.map((x) => x.span)).toEqual([SPAN_A, SPAN_B]);
+    expect(model.calls).toHaveLength(calls);                                    // reconstructed from the steps, nothing re-run
+    // C recurred in one sample of three: below the bar, still a reading
+    const sub = all.filter((x) => !x.reported);
+    expect(sub.map((x) => [x.span, x.n, x.samples_run, x.invalidates])).toEqual([[SPAN_C, 1, 3, "custody"]]);
+    expect(all.map((x) => x.score)).toEqual([10, 7, 5]);                        // sorted, the sub-threshold one last
+    expect(sub[0].artifact_id).toBe("");                                        // no artifact until it is decided on
+    expect(p.artifacts(draw.id).filter((a) => a.kind === "finding")).toHaveLength(2);
+    // dismissing one promotes it to an artifact, so a re-check does not raise it again
+    d.dismiss(draw.id, sub[0].id, "the silk is meant to be wet");
+    expect(p.artifacts(draw.id).filter((a) => a.kind === "finding")).toHaveLength(3);
+    expect(latest(p.db, "finding", sub[0].id)).toMatchObject({ verdict: "pass" });
+    // it stays on the gate as a record of the decision, still marked below the bar, and a re-check will not raise it
+    const after = d.findings(draw.id, { all: true }).findings.find((x) => x.span === SPAN_C)!;
+    expect([after.decision, after.reported]).toEqual(["dismissed", false]);
+    expect(d.findings(draw.id).findings.filter((x) => x.reported)).toHaveLength(2);
+  });
+
+  test("context-1.md holds job 1 however the context calls finish", async () => {
+    // the second context call returns first, so its artifact row lands first
+    let seen = 0;
+    const script = draftScript({
+      context: (p: string) => { seen++; return `<vignette>context for ${/Its job: (.*)/.exec(p)?.[1]}</vignette>`; },
+      "check-ledger": [...ledgerSamples(), ...cleanSamples()], "check-derivation": [...derivationSamples(), ...cleanSamples()],
+    });
+    const { d, draw, dir } = await drawn(script);
+    await d.check(draw.id);
+    const [a] = d.findings(draw.id).findings;
+    const next = await d.accept(draw.id, [a.id]);
+    for (const id of [draw.id, next.id]) {
+      const one = readFileSync(join(dir, "briefs", id, "context-1.md"), "utf8");
+      const two = readFileSync(join(dir, "briefs", id, "context-2.md"), "utf8");
+      expect(one).toContain("Test the first thing: scene one.");
+      expect(two).toContain("Test a second thing: scene two.");
+    }
+    expect(seen).toBe(2);                                                      // the repair copied both, so no third call
+  });
+
+  test("a sub-threshold finding can drive a repair", async () => {
+    const { p, d, draw } = await drawn(draftScript({ "check-ledger": [...ledgerSamples(), ...cleanSamples()], "check-derivation": [...cleanSamples(), ...cleanSamples()] }));
+    await d.check(draw.id);
+    const sub = d.findings(draw.id, { all: true }).findings.filter((x) => !x.reported);
+    expect(sub.length).toBeGreaterThan(0);
+    const next = await d.accept(draw.id, [sub[0].id]);
+    expect(next.repaired_from).toBe(draw.id);
+    expect(p.steps(next.id).find((s) => s.stage === "repair-outline")!.prompt).toContain("The silk is dry.");
+    expect(JSON.parse(p.artifacts(draw.id).find((a) => a.kind === "finding" && a.content.includes("tears"))!.meta).sub_threshold).toBe(true);
+  });
+
+  test("a finding inside one context vignette rewrites that one and carries the other over with its job", async () => {
+    const span = "context for Test the first thing: scene one.";
+    const inContext = () => finding(span, "context-1 contradicts the ledger", "custody", "The first context holds.", "a second quote from the outline");
+    const script = draftScript({
+      "check-ledger": [
+        `<ledger>${LEDGER}</ledger>${inContext()}<examined>ledger×context-1</examined>`,
+        `<ledger>${LEDGER}</ledger>${inContext()}<examined>ledger×context-1</examined>`,
+        `<ledger>${LEDGER}</ledger>${inContext()}<examined>ledger×context-1</examined>`,
+        ...cleanSamples(),
+      ],
+      "check-derivation": [...cleanSamples(), ...cleanSamples()],
+    });
+    const { p, d, draw, model } = await drawn(script);
+    await d.check(draw.id);
+    const f = d.findings(draw.id).findings;
+    expect(f).toHaveLength(1);
+    const next = await d.accept(draw.id, [f[0].id]);
+    const by = (stage: string) => p.steps(next.id).filter((s) => s.stage === stage);
+    expect(by("jobs").map((s) => s.model)).not.toEqual(["copied"]);              // a fresh job for the rewritten slot
+    expect(by("context").map((s) => s.model === "copied")).toEqual([false, true]);
+    // the carried-over vignette keeps its own job line; the rewritten one takes the fresh job
+    const jobs = p.artifacts(next.id).filter((a) => a.kind === "job").sort((a, b) => JSON.parse(a.meta).index - JSON.parse(b.meta).index);
+    expect(jobs.map((a) => JSON.parse(a.meta).copied)).toEqual([false, true]);
+    expect(jobs[1].content).toBe("Test a second thing: scene two.");
+    const ctx = p.artifacts(next.id).filter((a) => a.kind === "vignette" && by("context").some((s) => s.id === a.step_id))
+      .sort((a, b) => JSON.parse(a.meta).index - JSON.parse(b.meta).index);
+    expect(ctx[1].content).toBe("context for Test a second thing: scene two.");
+    expect(model.calls.filter((c) => c.stage === "context")).toHaveLength(3);    // two on the draw, one on the repair
   });
 
   test("pass at gate 1 records a brief verdict and ends the draw; flag starts nothing", async () => {
@@ -283,7 +372,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(story).toContain("* * *");
     expect(story).toContain("[screen-ledger beat 3] Scene 3 opens → The fire was on the 3rd.");
     expect(story).toContain("[screen-structure beat 5] theme-stated: quote theme-stated 5");
-    expect(story.trimEnd().endsWith("checked on fable; judge and generator share a family")).toBe(true);
+    expect(story.trimEnd().endsWith("checked on opus; judge and generator share a family")).toBe(true);
     expect(existsSync(join(dir, "drafts", draw.id))).toBe(false);          // nothing exported before keep
   });
 
@@ -381,7 +470,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(trail).toContain("a typed seed");
     expect(trail).toContain("## draft");
     expect(trail).toContain("- rewrite 3");
-    expect(trail).toContain("- scene: claude-fable-5-1");
+    expect(trail).toContain("- scene: claude-opus-5");
     expect(latest(p.db, "draft", draw.id)).toMatchObject({ verdict: "keep", note: "good enough" });
     expect(() => d.keep(draw.id)).toThrow(/is drafted, not awaiting_draft_gate/);
     // pass at gate 2 on another draw
@@ -391,7 +480,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(latest(p2.db, "draft", draw2.id)).toMatchObject({ verdict: "pass", note: "flat" });
   });
 
-  test("--auto: accepts all-samples findings with evidence, dismisses the rest as auto, repairs, re-checks, drafts, stops at gate 2", async () => {
+  test("--auto: accepts findings at or above the score floor, dismisses the rest, repairs, re-checks, drafts, stops at gate 2", async () => {
     const script = draftScript({ "check-ledger": [...ledgerSamples(), ...cleanSamples()], "check-derivation": [...derivationSamples(), ...cleanSamples()] });
     const { p, d, draw, model } = await drawn(script);
     const out = await d.draft(draw.id, { auto: true });
@@ -399,22 +488,69 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(out.repaired_from).toBe(draw.id);
     expect(out.status).toBe("awaiting_draft_gate");
     expect(p.draw(draw.id).status).toBe("repaired");
-    const first = d.findings(draw.id).findings;
-    expect(first.map((f) => [f.n, f.decision, f.note])).toEqual([[3, "accepted", "auto"], [2, "dismissed", "auto"]]);
-    expect((p.db.query("SELECT method FROM verdicts WHERE kind = 'finding'").all() as any[]).map((v) => v.method)).toEqual(["draw", "draw"]);
-    expect(stagesOf(model, /^check-ledger$/)).toHaveLength(6);
+    // A scores 10 and B 7, both at or above the floor; C recurred once, scores 5, and is dismissed with its number
+    const first = d.findings(draw.id, { all: true }).findings;
+    expect(first.map((f) => [f.score, f.decision])).toEqual([[10, "accepted"], [7, "accepted"], [5, "dismissed"]]);
+    expect(first[2].note).toBe("auto: scored 5, under 7");
+    expect((p.db.query("SELECT DISTINCT method FROM verdicts WHERE kind = 'finding'").all() as any[]).map((v) => v.method)).toEqual(["draw"]);
+    expect(stagesOf(model, /^check-ledger$/)).toHaveLength(6);                // one round of repair, then a clean re-check ends it
     expect(stagesOf(model, /^scene$/)).toHaveLength(8);
     expect(out.draft_config).toBeTruthy();
     expect(JSON.parse(out.draft_config!).config.length.words).toBe(5000);
   });
 
-  test("--auto never accepts structure or resemblance, and evidence-less findings are dismissed", async () => {
-    const noEv = A().replace("<evidence>a second quote from the outline</evidence>", "<evidence>none</evidence>");
-    const script = draftScript({ "check-ledger": ledgerSamples(noEv, B()), "check-derivation": derivationSamples(noEv) });
+  test("auto stops on the floor and reports every round and the lowest-scoring one", async () => {
+    const script = draftScript({ "check-ledger": [...ledgerSamples(), ...cleanSamples()], "check-derivation": [...derivationSamples(), ...cleanSamples()] });
+    const { p, d, draw } = await drawn(script);
+    await d.check(draw.id);
+    const r = await d.autoRounds(draw.id);
+    expect(r.stopped).toBe("floor");
+    expect(r.floor).toBe(7);
+    expect(r.rounds.map((x) => [x.round, x.open, x.total, x.accepted])).toEqual([[1, 3, 22, 2], [2, 0, 0, 0]]);
+    expect(r.best.round).toBe(2);
+    expect(r.id).toBe(r.rounds[1].id);
+    expect(r.id).not.toBe(draw.id);
+    // the round table is stored on the brief auto stopped on, so the gate can render it
+    const art = p.artifacts(r.id).find((a) => a.kind === "auto")!;
+    expect(JSON.parse(art.content)).toMatchObject({ stopped: "floor", floor: 7 });
+    expect(JSON.parse(art.meta)).toMatchObject({ rounds: 2, best: r.best.id });
+  });
+
+  test("auto stops on patience when the total score stops falling, and names the best round", async () => {
+    // every pass reports the same findings, so after the first round no round improves
+    const passes = Array.from({ length: 12 }, () => ledgerSamples()).flat();
+    const derivations = Array.from({ length: 12 }, () => derivationSamples()).flat();
+    const { d, draw } = await drawn(draftScript({ "check-ledger": passes, "check-derivation": derivations }));
+    await d.check(draw.id);
+    const r = await d.autoRounds(draw.id, { cfg: { ...loadDraftConfig().config, repair: { rounds: 9, stop_score: 7, patience: 2 } } });
+    expect(r.stopped).toBe("patience");
+    const totals = r.rounds.map((x) => x.total);
+    expect(Math.min(...totals)).toBe(r.best.total);
+    expect(totals.slice(-2)).toEqual([r.best.total, r.best.total]);            // two rounds at the floor with no fall ends it
+    expect(r.rounds.length).toBeLessThan(9);                                   // patience, not the cap
+  });
+
+  test("auto stops on the round cap", async () => {
+    const passes = Array.from({ length: 8 }, (_, i) => ledgerSamples(A(), B(`span number ${i} of the outline text here`))).flat();
+    const derivations = Array.from({ length: 8 }, () => derivationSamples()).flat();
+    const { d, draw } = await drawn(draftScript({ "check-ledger": passes, "check-derivation": derivations }));
+    await d.check(draw.id);
+    const r = await d.autoRounds(draw.id, { cfg: { ...loadDraftConfig().config, repair: { rounds: 2, stop_score: 7, patience: 9 } } });
+    expect(r.stopped).toBe("cap");
+    expect(r.rounds).toHaveLength(3);                                          // rounds 1 and 2 repair, the third is where it stops
+  });
+
+  test("--auto never accepts structure or resemblance, and evidence-less findings are dismissed however they score", async () => {
+    const strip = (f: string) => f.replace("<evidence>a second quote from the outline</evidence>", "<evidence>none</evidence>");
+    const noEv = strip(A());
+    const script = draftScript({ "check-ledger": ledgerSamples(noEv, strip(B())), "check-derivation": derivationSamples(noEv) });
     const { p, d, draw } = await drawn(script);
     const out = await d.draft(draw.id, { auto: true });
     expect(out.id).toBe(draw.id);                                             // nothing accepted, no repair
-    expect(d.findings(draw.id).findings.map((f) => f.decision)).toEqual(["dismissed", "dismissed"]);
+    const fs = d.findings(draw.id).findings;
+    expect(fs.map((f) => f.decision)).toEqual(["dismissed", "dismissed", "dismissed"]);
+    expect(fs.map((f) => f.score)).toEqual([8, 5, 5]);
+    expect(fs[0].note).toBe("auto: no evidence to read it against");          // 8 is over the floor; a person still has to read it
     expect(p.steps(draw.id).filter((s) => /^repair/.test(s.stage))).toHaveLength(0);
   });
 });

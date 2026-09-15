@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { cluster, excludeDismissed, findingId, merge, overlap, parseFindings, type Finding } from "./recur.ts";
+import { cluster, excludeDismissed, findingId, merge, overlap, parseFindings, score, type Finding } from "./recur.ts";
 
 const f = (checker: string, sample: number, span: string, statement: string, over: Partial<Finding> = {}): Finding =>
   ({ checker, sample, span, statement, result: "contradicts:x", evidence: "a second quote", invalidates: "none", replacement: "It holds.", ...over });
@@ -47,6 +47,23 @@ describe("recurrence", () => {
   test("dismissed findings are excluded by the same rule", () => {
     const cs = cluster([f("ledger", 1, "the director fires the reliquary", "x"), f("ledger", 1, "tears on the silk", "y")], 1);
     expect(excludeDismissed(cs, [{ span: "director fires the reliquary", statement: "" }]).map((c) => c.span)).toEqual(["tears on the silk"]);
+  });
+
+  test("score weighs recurrence, cross-checker agreement, severity, result kind and evidence", () => {
+    const s = (over: Partial<Parameters<typeof score>[0]>, samples = 3, jobs: string[] = []) =>
+      score({ n: 3, checkers: ["ledger"], invalidates: "none", result: "contradicted", evidence: "a quote", ...over }, samples, jobs);
+    expect(s({ invalidates: "debt audit", checkers: ["ledger", "derivation"] })).toBe(10);   // 3 + 2 + 3 + 2
+    expect(s({ invalidates: "arithmetic" })).toBe(8);                                       // 3 + 0 + 3 + 2
+    expect(s({ invalidates: "arithmetic", n: 2 })).toBe(7);                                 // one sample short
+    expect(s({ invalidates: "arithmetic", n: 1 })).toBe(6);
+    expect(s({ invalidates: "custody", result: "underived" })).toBe(6);                     // 3 + 0 + 2 + 1
+    expect(s({ result: "supported" })).toBe(3);                                             // recurrence alone
+    expect(s({ result: "unverifiable", evidence: "none" })).toBe(1);                        // and no evidence costs 2
+    expect(s({ invalidates: "matrix" })).toBe(5);                                           // an unknown job is worth nothing
+    expect(s({ invalidates: "matrix" }, 3, ["matrix"])).toBe(7);                            // a declared setting job is worth 2
+    expect(s({ invalidates: "debt audit", checkers: ["ledger", "derivation"], result: "contradicts:the ledger says otherwise" })).toBe(10);
+    expect(s({ n: 1 }, 1)).toBe(5);                                                          // one sample is full recurrence
+    expect(s({ result: "supported", evidence: "none", n: 1 })).toBe(0);                      // never below zero
   });
 
   test("parseFindings reads the tag shape and drops findings without a span", () => {

@@ -22,8 +22,8 @@ Every draw under a setting carries its lists whole. Caps: 40 entries a list, 45 
 
 | | |
 |---|---|
-| `setting-a` | 40 bodies · 0 events · 40 instruments · 40 places · 40 terms |
-| `setting-b` | 0 bodies · 0 events · 0 instruments · 0 places · 0 terms |
+| `setting-a` | 40 bodies · 40 events · 40 instruments · 40 places · 40 terms |
+| `setting-b` | 40 bodies · 40 events · 40 instruments · 40 places · 40 terms |
 | `setting-c` | 0 bodies · 0 events · 0 instruments · 0 places · 0 terms |
 
 ## genre shortcuts
@@ -95,6 +95,7 @@ cloudchamber draft; every key of draft.toml is overridable per draw, and a profi
 | `--order` | sequential |
 | `checks` | claims, derivation, ledger, structure, resemblance · 3 samples, kept at 2 |
 | `screens` | ledger, structure, slop · 3 samples, kept at 2 |
+| `repair` | auto: up to 4 rounds, accepting findings scoring 7+, patience 2 |
 
 ## fixed in code
 
@@ -117,23 +118,23 @@ stages.toml: the model each stage calls, and the one it falls back to on a refus
 | `themes` | claude-opus-5 → claude-fable-5-1 |
 | `redundancy` | claude-opus-5 → claude-sonnet-5 |
 | `distill` | claude-opus-5 → claude-sonnet-5 |
-| `premises` | claude-fable-5-1 → claude-opus-5 |
-| `execute` | claude-fable-5-1 → claude-opus-5 |
-| `outline` | claude-fable-5-1 → claude-opus-5 |
-| `jobs` | claude-fable-5-1 → claude-opus-5 |
-| `context` | claude-fable-5-1 → claude-opus-5 |
-| `ending` | claude-fable-5-1 → claude-opus-5 |
-| `check-derivation` | claude-fable-5-1 → claude-opus-5 |
-| `check-ledger` | claude-fable-5-1 → claude-opus-5 |
-| `check-structure` | claude-fable-5-1 → claude-opus-5 |
-| `check-resemblance` | claude-fable-5-1 → claude-opus-5 |
-| `check-claims-extract` | claude-fable-5-1 → claude-opus-5 |
+| `premises` | claude-opus-5 → claude-sonnet-5 |
+| `execute` | claude-opus-5 → claude-sonnet-5 |
+| `outline` | claude-opus-5 → claude-sonnet-5 |
+| `jobs` | claude-opus-5 → claude-sonnet-5 |
+| `context` | claude-opus-5 → claude-sonnet-5 |
+| `ending` | claude-opus-5 → claude-sonnet-5 |
+| `check-derivation` | claude-opus-5 → claude-sonnet-5 |
+| `check-ledger` | claude-opus-5 → claude-sonnet-5 |
+| `check-structure` | claude-opus-5 → claude-sonnet-5 |
+| `check-resemblance` | claude-opus-5 → claude-sonnet-5 |
+| `check-claims-extract` | claude-opus-5 → claude-sonnet-5 |
 | `check-claims-verify` | claude-sonnet-5 → claude-opus-5 · tools WebSearch,WebFetch |
-| `repair-vignette` | claude-fable-5-1 → claude-opus-5 |
-| `repair-outline` | claude-fable-5-1 → claude-opus-5 |
-| `repair-ending` | claude-fable-5-1 → claude-opus-5 |
-| `schedule` | claude-fable-5-1 → claude-opus-5 |
-| `scene` | claude-fable-5-1 → claude-opus-5 |
-| `screen-ledger` | claude-fable-5-1 → claude-opus-5 |
-| `screen-structure` | claude-fable-5-1 → claude-opus-5 |
+| `repair-vignette` | claude-opus-5 → claude-sonnet-5 |
+| `repair-outline` | claude-opus-5 → claude-sonnet-5 |
+| `repair-ending` | claude-opus-5 → claude-sonnet-5 |
+| `schedule` | claude-opus-5 → claude-sonnet-5 |
+| `scene` | claude-opus-5 → claude-sonnet-5 |
+| `screen-ledger` | claude-opus-5 → claude-sonnet-5 |
+| `screen-structure` | claude-opus-5 → claude-sonnet-5 |
 

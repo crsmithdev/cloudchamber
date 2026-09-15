@@ -44,7 +44,9 @@ slop_baseline = "pool"
 samples = 1
 
 [repair]
-rounds = 1
+rounds = 4              # auto repair rounds at most
+stop_score = 7          # auto accepts findings scoring this or more, and stops when none do
+patience = 2            # stop when the total open score has not fallen for this many rounds
 
 [profiles.flash]
 length.words = 1500

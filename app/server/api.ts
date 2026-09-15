@@ -199,6 +199,11 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
         running.set(id, p.catch(() => undefined));
         return reply.code(202).send({ id, status: "repairing" });
       }
+      if (action === "auto") {
+        const p2 = drafting.autoRounds(id, { note: note || undefined });
+        running.set(id, p2.then(() => undefined).catch(() => undefined));
+        return reply.code(202).send({ id, status: "repairing" });
+      }
       if (action === "dismiss") { if (!finding) return reply.code(400).send({ error: "finding required" }); return drafting.dismiss(id, finding, note); }
       if (action === "hold") return drafting.hold(id);
       if (action === "pass") return pipeline.draw(id).status === "awaiting_draft_gate" ? drafting.passDraft(id, note) : drafting.passBrief(id, note);
@@ -226,7 +231,7 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
         running.set(forkId, started.catch(() => undefined));
         return reply.code(202).send({ id: forkId, forked_from: id });
       }
-      return reply.code(400).send({ error: "action must be choose | fork | flag | archive | unarchive | accept | dismiss | hold | pass | keep | rewrite" });
+      return reply.code(400).send({ error: "action must be choose | fork | flag | archive | unarchive | accept | auto | dismiss | hold | pass | keep | rewrite" });
     } catch (e: any) { return reply.code(400).send({ error: e.message }); }
   });
 
@@ -254,8 +259,9 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
   /** The drafting defaults and profile names, for the draft settings form. */
   app.get("/api/draft-config", async () => ({ defaults: loadDraftConfig().config, profiles: profileNames() }));
 
-  app.get<{ Params: { id: string } }>("/api/draws/:id/findings", async (req, reply) => {
-    try { return drafting.findings(req.params.id); } catch (e: any) { return reply.code(404).send({ error: e.message }); }
+  app.get<{ Params: { id: string }; Querystring: { all?: string } }>("/api/draws/:id/findings", async (req, reply) => {
+    const all = req.query.all === "true" || req.query.all === "1";
+    try { return drafting.findings(req.params.id, { all }); } catch (e: any) { return reply.code(404).send({ error: e.message }); }
   });
 
   app.get<{ Params: { id: string } }>("/api/draws/:id/story", async (req, reply) => {

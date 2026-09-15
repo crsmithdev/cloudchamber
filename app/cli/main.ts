@@ -24,8 +24,10 @@ const DOC = `cloudchamber — the one command the skill and the UI drive.
    cloudchamber candidates <draw>              the five candidates in full, by stated probability
    cloudchamber brief <draw>                   print the brief
    cloudchamber check <draw> [--checks a,b] [--samples N]   run the checkers over a brief; stops at gate 1
-   cloudchamber findings <draw> [--examined]   the reported findings of the latest check, ordered
-   cloudchamber gate <draw> accept <finding>... | dismiss <finding> | hold | pass | keep | rewrite <k> [--finding ID]  [--note "..."]
+   cloudchamber findings <draw> [--examined] [--all]   the findings of the latest check, by score
+   cloudchamber gate <draw> accept <finding>... | auto | dismiss <finding> | hold | pass | keep | rewrite <k> [--finding ID]  [--note "..."]
+       auto repairs round after round, accepting what scores repair.stop_score or more,
+       until nothing reaches the floor, the rounds run out, or the total stops falling
    cloudchamber draft <draw> [--auto] [--profile P] [--words N] [--beats N] [--tense T] [--person P] [--chronology C] [--container C] [--order O]
    cloudchamber story <draw>                   the draft with its screen flags inline
    cloudchamber serve [--port N] [--host H]    API and UI (default 127.0.0.1:3002)
@@ -61,12 +63,13 @@ async function main() {
   const db = openDb();
   const pipeline = () => new Pipeline(db, new ClaudeCli());
   const drafting = () => new Drafting(pipeline());
-  const printFindings = (drawId: string, examined = false) => {
-    const f = drafting().findings(drawId);
+  const printFindings = (drawId: string, examined = false, all = false) => {
+    const f = drafting().findings(drawId, { all });
     if (!f.pass) { console.log("no check has run"); return; }
-    console.log(`check pass ${f.pass} · ${f.findings.length} reported`);
+    const sub = f.findings.filter((x) => !x.reported).length;
+    console.log(`check pass ${f.pass} · ${f.findings.length - sub} reported${sub ? ` · ${sub} below the bar` : ""} · by score`);
     for (const x of f.findings) {
-      console.log(`\n${x.id}  ${x.checkers.join("+")} ×${x.n}  [${x.invalidates}]  ${x.decision}${x.note ? `: ${x.note}` : ""}`);
+      console.log(`\n${x.id}  score ${x.score}/10  ${x.checkers.join("+")} ×${x.n}/${x.samples_run}  [${x.invalidates}]  ${x.decision}${x.reported ? "" : " · below the bar"}${x.note ? `: ${x.note}` : ""}`);
       console.log(`  span: ${x.span}`); console.log(`  ${x.statement}`); console.log(`  result: ${x.result} · evidence: ${x.evidence}`); console.log(`  replacement: ${x.replacement}`);
     }
     const claims = f.claims as any[];
@@ -150,6 +153,7 @@ async function main() {
         : action === "archive" ? p.archive(drawId!)
         : action === "unarchive" ? p.archive(drawId!, false)
         : action === "accept" ? (args.length ? await d.accept(drawId!, args, { note: values.note }) : usage())
+        : action === "auto" ? await d.autoRounds(drawId!, { note: values.note || undefined })
         : action === "dismiss" ? (args[0] ? d.dismiss(drawId!, args[0], values.note) : usage())
         : action === "hold" ? d.hold(drawId!)
         : action === "pass" ? (p.draw(drawId!).status === "awaiting_draft_gate" ? d.passDraft(drawId!, values.note) : d.passBrief(drawId!, values.note))
@@ -158,6 +162,13 @@ async function main() {
         : usage();
       console.log(JSON.stringify(out, null, 2));
       if (action === "accept") { console.log(`\nrepaired brief ${(out as any).id}; re-check findings:`); printFindings((out as any).id); }
+      if (action === "auto") {
+        const r = out as any;
+        console.log(`\nstopped on ${r.stopped} · floor ${r.floor} · ${r.rounds.length} round${r.rounds.length > 1 ? "s" : ""}`);
+        for (const x of r.rounds) console.log(`  round ${x.round}  ${x.id}  ${x.open} open · total ${x.total} · accepted ${x.accepted}${x.round === r.best.round ? "   ← lowest total" : ""}`);
+        if (r.best.id !== r.id) console.log(`\nthe lowest-scoring round is not the last: read ${r.best.id}. It is superseded, so auto left it alone.`);
+        printFindings(r.id);
+      }
       break;
     }
     case "check": {
@@ -166,13 +177,13 @@ async function main() {
       if (!drawId) usage();
       const r = await drafting().check(drawId!, { checks: values.checks?.split(",").map((x) => x.trim()).filter(Boolean), samples: values.samples ? Number(values.samples) : undefined });
       printFindings(drawId!);
-      console.log(`\ncloudchamber gate ${drawId} accept <finding>... | dismiss <finding> --note "..." | hold | pass | flag  ·  cloudchamber draft ${drawId}  (${r.findings.length} reported)`);
+      console.log(`\ncloudchamber gate ${drawId} accept <finding>... | auto | dismiss <finding> --note "..." | hold | pass | flag  ·  cloudchamber draft ${drawId}  (${r.findings.length} reported)`);
       break;
     }
     case "findings": {
-      const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, options: { examined: { type: "boolean", default: false } } });
+      const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, options: { examined: { type: "boolean", default: false }, all: { type: "boolean", default: false } } });
       if (!positionals[0]) usage();
-      printFindings(positionals[0], values.examined);
+      printFindings(positionals[0], values.examined, values.all);
       break;
     }
     case "draft": {

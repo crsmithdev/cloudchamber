@@ -16,6 +16,32 @@ differ, this file wins.
 >   renamed. All four are plain `ALTER TABLE`s; none touches the verdict
 >   replay.
 
+> Amendments, 2026-09-15. Measured over an eight-round repair chain: the
+> reported finding count did not fall (10, 8, 9, 10, 10, 9), 80 to 90 per cent
+> of each round's findings were spans the previous round had rewritten, and 31
+> per cent of all findings sat in the context vignettes, which a repair
+> regenerated whether or not a finding touched them.
+>
+> - **REQ 9 and AC 9, Repair.** A repair now carries over each context vignette
+>   and its job line unless an accepted finding's span is inside that vignette,
+>   the rule the chosen vignette and the ending already followed. The `jobs`
+>   call runs only when at least one context vignette needs rewriting, and a
+>   carried-over vignette keeps its original job. A brief whose context
+>   artifacts carry no job line regenerates both, as before.
+> - **AC 2 and AC 3, Findings.** Every finding carries a `score` from 0 to 10,
+>   and findings are ordered by it. Clusters below `keep_if` are reported on
+>   request rather than discarded.
+> - **AC 8, Gate 1.** Accepting takes a set, so the gate can accept every open
+>   finding or every finding at or above a score.
+> - **AC 10, Repair rounds.** `repair.rounds` defaults to 4. `cloudchamber gate
+>   <draw> auto` and `draft --auto` accept every open finding scoring
+>   `repair.stop_score` or more that quotes evidence, dismiss the rest with the
+>   reason, repair and re-check, and stop on the floor, the round cap, or
+>   `repair.patience` rounds without the total open score falling. The round
+>   with the lowest total is named in an `auto` artifact on the brief the loop
+>   stopped on, and is not restored: an earlier round is superseded, and
+>   reviving it would put the chain in two places at once.
+
 ## Problem Statement
 
 A draw ends in a brief: a chosen vignette, an outline in three sections plus
