@@ -119,11 +119,12 @@ export function App() {
         <button
           className="railfold"
           aria-pressed={folded ? "true" : "false"}
-          aria-label={folded ? "Show the sidebar" : "Hide the sidebar"}
-          title={folded ? "Show the sidebar" : "Hide the sidebar"}
+          aria-label={folded ? "Expand the sidebar" : "Collapse the sidebar"}
+          title={folded ? "Expand the sidebar" : "Collapse the sidebar"}
           onClick={() => setFolded((v) => !v)}
         >
           <Icon name={folded ? "keyboard_double_arrow_right" : "keyboard_double_arrow_left"} />
+          {!folded && <span>collapse</span>}
         </button>
       </aside>
       {sourcesView && <Browser status={status} onVerdict={refresh} />}

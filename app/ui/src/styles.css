@@ -23,19 +23,17 @@
   --font-serif: "Newsreader", Georgia, serif;
   --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
 
-  /* seven steps: one chrome size, and rank by weight, case, fill and rule; nothing on the site is set under 12.5px */
+  /* five sizes: one chrome size, one size for generated prose closed or open, the name, the mark; rank by weight, case, fill and rule; nothing is set under 12.5px */
   --text-head: 12.5px;
   --text-head--line-height: 1.4;
   --text-chrome: 12.5px;
   --text-chrome--line-height: 1.45;
-  --text-cell: 14px;
+  --text-cell: 14.5px;
   --text-cell--line-height: 1.45;
   --text-name: 15px;
   --text-name--line-height: 1.3;
-  --text-prose: 16px;
+  --text-prose: 14.5px;
   --text-prose--line-height: 1.55;
-  --text-passage: 17.5px;
-  --text-passage--line-height: 1.6;
   --text-mark: 18px;
   --text-mark--line-height: 1.1;
 
@@ -180,16 +178,17 @@
     margin-top: auto;
     align-self: flex-start;
     margin-left: 0.2rem;
-    display: grid;
-    place-items: center;
-    width: 1.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
     height: 1.75rem;
     color: var(--color-dim);
-    font-size: var(--text-mark);
     cursor: pointer;
   }
   .railfold .icon {
-    font-size: 1em;
+    font-size: var(--text-mark);
+    width: 1.75rem;
+    text-align: center;
   }
   .railfold:hover {
     color: var(--color-ink);
@@ -197,6 +196,11 @@
   .rail.folded .railfold {
     align-self: center;
     margin-left: 0;
+  }
+  .rail:not(.folded) .railfold {
+    align-self: stretch;
+    margin-left: 0;
+    padding-right: 0.5rem;
   }
   .navlink.mini {
     justify-content: center;
@@ -757,7 +761,7 @@
     }
   }
 
-  /* generated prose: the serif, at cell size in a row and at reading size when open */
+  /* generated prose: the serif, at one size in a row and in the opened row under it */
   .serif-cell {
     font-family: var(--font-serif);
     font-size: var(--text-cell);
@@ -774,8 +778,6 @@
     text-wrap: pretty;
   }
   .prose.passage {
-    font-size: var(--text-passage);
-    line-height: var(--text-passage--line-height);
     white-space: pre-wrap;
     max-width: 38rem;
   }
@@ -1013,26 +1015,29 @@
     margin-top: 0.25rem;
   }
 
-  /* the step log as a time table: stage, started, seconds; the running row sweeps */
+  /* the step log as a time table: step, started, seconds; the step's name, and under it which one of a set it is */
   .log {
     margin-top: 0.5rem;
   }
   .log table {
     width: 100%;
     border-collapse: collapse;
-    font-family: var(--font-mono);
   }
   .log td {
-    padding: 0.2rem 0.4rem;
+    padding: 0.35rem 0.4rem;
     border-bottom: 1px solid var(--color-hair);
-    vertical-align: middle;
+    vertical-align: top;
     white-space: nowrap;
+  }
+  .log td:first-child {
+    padding-top: 0.5rem;
   }
   .log td.n {
     white-space: normal;
-    overflow-wrap: anywhere;
+    width: 100%;
   }
   .log td.n small {
+    display: block;
     color: var(--color-dim);
   }
   .log tr.pick {
@@ -1237,12 +1242,11 @@
     width: 44%;
     min-width: 16rem;
   }
-  /* an opened passage reads at the passage role and measure, as it does on the draw page */
+  /* an opened passage keeps the passage measure, at the one prose size */
   .tt td.text.open {
     white-space: pre-wrap;
     max-width: 38rem;
-    font-size: var(--text-passage);
-    line-height: var(--text-passage--line-height);
+    line-height: var(--text-prose--line-height);
   }
   .rowtools {
     display: flex;

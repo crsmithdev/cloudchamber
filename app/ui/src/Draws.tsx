@@ -37,8 +37,6 @@ const DARKNESS_HELP: Record<string, string> = {
   black: "The worst outcome the premise supports, reaching past the protagonist.",
 };
 const develop = (index: number) => `Develop premise ${index} as a draw of its own: the same seed and examples, its own outline, context vignettes, ending and brief.`;
-/** The band a stated probability falls in, as the sampling modes name them. */
-export const band = (p: number) => (p < 0.1 ? "tail" : p < 0.35 ? "off-centre" : "standard");
 export const firstParagraph = (s: string) =>
   s
     .trim()
@@ -448,119 +446,168 @@ function drawSummary(d: Detail) {
   return label(d.draw.status);
 }
 
-/** The step log as a time table: stage, started, seconds. A running row sweeps; the gate waits; what is still to come is faint. */
-export function Log({ d, stepId, onStep, wide, ideation }: { d: Detail; stepId: string | null; onStep: (id: string) => void; wide?: boolean; ideation?: boolean }) {
+/** What the step log calls each stage, and what the stage does: the row's tooltip. */
+const STAGE: Record<string, { name: string; does: string }> = {
+  premises: { name: "premises", does: "One model call proposes five premises from the seed and the six examples, each with its stated probability." },
+  execute: { name: "vignette", does: "Writes one premise as a vignette. The five calls run side by side, one for each premise." },
+  gate: { name: "gate", does: "The draw stops here until one premise is chosen to develop." },
+  outline: { name: "outline", does: "Derives the chosen vignette's structure: the one impossibility it buys, its settled numbers and dates, and who holds which evidence." },
+  jobs: { name: "context plan", does: "Names the job of each of the two context vignettes: the one thing about the outline each vignette tests." },
+  context: { name: "context vignette", does: "Writes one context vignette to its job from the plan. There are two." },
+  ending: { name: "ending", does: "Writes the last beat from the outline's numbers and its custody of the evidence." },
+  brief: { name: "brief", does: "The premise, the outline, the three vignettes and the ending, written to files under briefs/." },
+  "repair-vignette": { name: "vignette, kept", does: "A repair round starts from the chosen vignette, copied unchanged. No model call." },
+  "repair-outline": { name: "outline, repaired", does: "Rewrites the outline under the replacements of the findings accepted at gate 1." },
+  "repair-ending": { name: "ending, repaired", does: "Writes the ending again from the repaired outline." },
+  "ledger-extract": { name: "ledger", does: "Lists every settled fact in the outline: times, details, who knows what, who holds what, the world's rules." },
+  "check-derivation": { name: "check derivation", does: "Checks that every assertion in the vignettes and the ending follows from the outline's one impossibility, and does every sum." },
+  "check-ledger": { name: "check ledger", does: "Checks the vignettes and the ending against the ledger of settled facts, and against each other." },
+  "check-structure": { name: "check structure", does: "Seven present-or-absent questions about the brief, each answered with a quote." },
+  "check-resemblance": { name: "check resemblance", does: "Matches the brief against the list of overused premises and names the nearest published work." },
+  "check-claims-extract": { name: "find claims", does: "Lists the brief's factual claims that the setting's authority can confirm or deny." },
+  "check-claims-verify": { name: "verify claim", does: "Checks one claim against the setting's authority: the setting file, its reference files or the web." },
+  schedule: { name: "schedule", does: "Plans the story as beats: each beat's job, its word cap, what the reader knows by its end and what stays withheld." },
+  scene: { name: "scene", does: "Writes one beat of the schedule as a scene. A rewrite of a scene adds one more run." },
+  "screen-ledger": { name: "screen ledger", does: "Checks one scene against the ledger of settled facts and flags each contradiction with a replacement." },
+  "screen-structure": { name: "screen structure", does: "Asks one scene the present-or-absent questions that mark a weak draft, each answered with a quote." },
+  "screen-slop": { name: "screen slop", does: "Counts overused words, not-X-but-Y turns, repeated trigrams and paragraph shape against the passage pool. No model call." },
+};
+const stageName = (stage: string) => STAGE[stage]?.name ?? stage;
+
+/**
+ * The step log as a time table: step, started, seconds. Each row names its step in words, says which one of a
+ * set it is under the name, and explains the step on hover. A running row sweeps; the gate waits; what is still
+ * to come is faint.
+ */
+export function Log({ d, stepId, onStep, ideation }: { d: Detail; stepId: string | null; onStep: (id: string) => void; ideation?: boolean }) {
   const byParent = new Map<string | null, Step[]>();
   for (const s of d.steps) {
     const k = s.parent_id;
     if (!byParent.has(k)) byParent.set(k, []);
     byParent.get(k)!.push(s);
   }
-  const flat: { s: Step; depth: number }[] = [];
-  const walk = (parent: string | null, depth: number) => {
+  const flat: Step[] = [];
+  const walk = (parent: string | null) => {
     for (const s of byParent.get(parent) ?? []) {
-      flat.push({ s, depth });
-      walk(s.id, depth + 1);
+      flat.push(s);
+      walk(s.id);
     }
   };
-  walk(null, 0);
-  if (ideation) flat.splice(0, flat.length, ...flat.filter((x) => IDEATION.has(x.s.stage)));
+  walk(null);
+  if (ideation) flat.splice(0, flat.length, ...flat.filter((s) => IDEATION.has(s.stage)));
   useTick(d.steps.some((s) => s.status === "running" && Date.now() - Date.parse(s.started_at) < 30 * 60 * 1000));
   const cand = new Map(d.candidates.map((c) => [c.step_id, c]));
+  // a stage that runs more than once (samples, claims, the two context vignettes) numbers each run
+  const ofStage = new Map<string, Step[]>();
+  for (const s of flat) ofStage.set(s.stage, [...(ofStage.get(s.stage) ?? []), s]);
   const seen = new Set(d.steps.map((s) => s.stage));
   const inFlight = d.draw.status === "awaiting_gate" || d.draw.status === "running";
   const developed = !["awaiting_gate", "running", "done", "failed", "rejected"].includes(d.draw.status);
+  const noteFor = (s: Step) => {
+    const c = cand.get(s.id);
+    const runs = ofStage.get(s.stage) ?? [];
+    const parts = [
+      c ? `premise #${c.index}` : runs.length > 1 ? `${runs.indexOf(s) + 1} of ${runs.length}` : "",
+      s.id === d.draw.chosen_step ? "chosen" : "",
+      s.attempt > 1 ? `attempt ${s.attempt}` : "",
+      s.fail_reason ?? "",
+    ];
+    return parts.filter(Boolean).join(" · ");
+  };
   const todo = (stage: string) => (
-    <tr key={stage} className="todo">
+    <tr key={stage} className="todo" title={STAGE[stage]?.does}>
       <td>
         <Mark state="todo" />
       </td>
-      <td className="n text-dim">{stage}</td>
-      {wide && <td className="text-dim">—</td>}
-      <td className="text-right text-dim">—</td>
+      <td className="n text-dim">
+        {stageName(stage)}
+        <small>to come</small>
+      </td>
+      <td className="num text-dim">—</td>
+      <td className="num text-right text-dim">—</td>
     </tr>
   );
   return (
     <div className="log" onClick={(e) => e.stopPropagation()}>
       <table>
-        {wide && (
-          <thead>
-            <tr>
-              <th className="head w-4"></th>
-              <th className="head">stage</th>
-              <th className="head">started</th>
-              <th className="head text-right">s</th>
-            </tr>
-          </thead>
-        )}
+        <thead>
+          <tr>
+            <th className="head w-4"></th>
+            <th className="head">step</th>
+            <th className="head" title="When the step started, as hours and minutes.">
+              started
+            </th>
+            <th className="head text-right" title="How long the step took, in seconds.">
+              secs
+            </th>
+          </tr>
+        </thead>
         <tbody>
-          {flat.map(({ s, depth }) => {
-            const c = cand.get(s.id);
+          {flat.map((s) => {
             // a step still marked running after half an hour is stale, not in flight: no sweep, no tick, the count in mute
             const stale = s.status === "running" && Date.now() - Date.parse(s.started_at) > 30 * 60 * 1000;
             const running = s.status === "running" && !stale;
+            const note = noteFor(s);
             return (
-              <tr key={s.id} className={"pick" + (s.id === stepId ? " on" : "") + (running ? " sweep" : "")} onClick={() => onStep(s.id)}>
+              <tr
+                key={s.id}
+                className={"pick" + (s.id === stepId ? " on" : "") + (running ? " sweep" : "")}
+                onClick={() => onStep(s.id)}
+                title={`${STAGE[s.stage]?.does ?? s.stage} Open the step to read its prompt and response.`}
+              >
                 <td>
                   <Mark state={s.status === "failed" ? "fail" : running ? "run" : stale ? "todo" : "held"} />
                 </td>
-                <td className={"n" + (running ? " text-running" : "")} style={{ paddingLeft: `${0.4 + depth * 0.8}rem` }}>
-                  {s.stage}
-                  <small>
-                    {c ? ` #${c.index}` : ""}
-                    {s.attempt > 1 ? ` · attempt ${s.attempt}` : ""}
-                    {s.fail_reason ? ` · ${s.fail_reason}` : ""}
-                    {s.id === d.draw.chosen_step ? " · chosen" : ""}
-                  </small>
+                <td className={"n" + (running ? " text-running" : "")}>
+                  {stageName(s.stage)}
+                  {note && <small>{note}</small>}
                 </td>
-                {wide && <td className="text-dim">{hhmm(s.started_at)}</td>}
-                <td className={"text-right" + (running ? " text-running" : stale ? " text-dim" : "")} title={stale ? "still marked running after half an hour" : undefined}>
+                <td className="num text-dim">{hhmm(s.started_at)}</td>
+                <td className={"num text-right" + (running ? " text-running" : stale ? " text-dim" : "")} title={stale ? "still marked running after half an hour" : undefined}>
                   {secs(s.started_at, s.ended_at)}
                 </td>
               </tr>
             );
           })}
           {d.draw.status === "awaiting_gate" && (
-            <tr>
+            <tr title={STAGE.gate.does}>
               <td>
                 <Mark state="wait" />
               </td>
               <td className="n text-art">
-                gate<small> · {d.draw.mode}</small>
+                gate<small>{d.draw.mode === "auto" ? "chosen automatically" : "waiting for you to choose a premise"}</small>
               </td>
-              {wide && <td className="text-dim">{flat.length ? hhmm(flat[flat.length - 1].s.ended_at ?? flat[flat.length - 1].s.started_at) : "—"}</td>}
-              <td className="text-right text-art">waiting</td>
+              <td className="num text-dim">{flat.length ? hhmm(flat[flat.length - 1].ended_at ?? flat[flat.length - 1].started_at) : "—"}</td>
+              <td className="num text-right text-art">—</td>
             </tr>
           )}
           {inFlight && STAGES.filter((st) => !seen.has(st) && st !== "gate" && st !== "brief").map(todo)}
           {inFlight && todo("brief")}
           {(d.draw.status === "done" || developed) && (
-            <tr>
+            <tr title={STAGE.brief.does}>
               <td>
                 <Mark state="held" />
               </td>
               <td className="n">
-                brief<small> · exported</small>
+                brief<small>written to briefs/</small>
               </td>
-              {wide && <td className="text-dim">{d.draw.ended_at ? hhmm(d.draw.ended_at) : ""}</td>}
-              <td className="text-right text-dim">{d.draw.ended_at ? when(d.draw.ended_at).replace(" today", "") : ""}</td>
+              <td className="num text-dim">{d.draw.ended_at ? hhmm(d.draw.ended_at) : ""}</td>
+              <td className="num text-right text-dim">—</td>
             </tr>
           )}
           {developed && (
-            <tr className="pick">
+            <tr className="pick" title={`The brief is in the ${d.draw.stage} tab now. Open it there.`} onClick={() => (location.hash = `#${d.draw.stage}/${d.draw.id}`)}>
               <td>
                 <Mark state={d.draw.status.startsWith("awaiting") ? "wait" : markFor(d.draw.status)} />
               </td>
               <td className="n">
-                <a href={`#${d.draw.stage}/${d.draw.id}`}>
-                  {d.draw.stage}
-                  <small> · {label(d.draw.status)}</small>
-                </a>
+                in {d.draw.stage}
+                <small>{label(d.draw.status)}</small>
               </td>
-              {wide && <td></td>}
+              <td></td>
               <td className="text-right">
                 <a href={`#${d.draw.stage}/${d.draw.id}`} className="link">
-                  open
+                  open <Icon name="arrow_forward" />
                 </a>
               </td>
             </tr>
@@ -593,7 +640,6 @@ function DrawBody({
   const gating = d.draw.status === "awaiting_gate";
   const running = d.steps.filter((s) => s.status === "running");
   const runningExec = new Set(running.filter((s) => s.stage === "execute").map((s) => s.id));
-  const landed = cands.filter((c) => !runningExec.has(c.step_id)).length;
   return (
     <div className="drawbody">
       <div className="min-w-0">
@@ -602,7 +648,7 @@ function DrawBody({
         {d.draw.flag_note && <div className="warn mt-2">flagged: {d.draw.flag_note}</div>}
         {cands.length > 0 && (
           <>
-            <Head className="mt-5" note={<>lowest probability first · {runningExec.size ? `${landed} of ${cands.length} vignettes landed` : `${cands.length} vignettes`}</>}>
+            <Head className="mt-5" note="lowest probability first">
               premises
             </Head>
             <table className="mt-1">
@@ -628,7 +674,6 @@ function DrawBody({
                         <td className="num">{c.index}</td>
                         <td className="num">
                           <b className="font-semibold">{c.probability.toFixed(2)}</b>
-                          <div className="text-dim">{band(c.probability)}</div>
                         </td>
                         <td className="pt-4">
                           <Bar pct={(c.probability / maxP) * 100} gold={chosen} />
@@ -659,7 +704,7 @@ function DrawBody({
                           )}
                           {!gating && !chosen && !fork && d.draw.chosen_step && (
                             <Btn title={develop(c.index)} onClick={() => onFork(c.step_id)}>
-                              develop too
+                              choose
                             </Btn>
                           )}
                           {!writing && (
@@ -776,8 +821,8 @@ function DrawBody({
 }
 
 /**
- * The reading pane's right column in every tab: the step log, then what the
- * draw was drawn under and what it has cost. Ideate counts its own stages only.
+ * The reading pane's right column in every tab: what the draw was drawn under and what it has cost, then the
+ * rounds of a repair chain, then the step log. Ideate counts its own stages only.
  */
 type Row = [React.ReactNode, React.ReactNode];
 export function DrawAside({ d, ideation, onStep, top, rows = [] }: { d: Detail; ideation?: boolean; onStep: (id: string) => void; top?: React.ReactNode; rows?: Row[] }) {
@@ -788,87 +833,73 @@ export function DrawAside({ d, ideation, onStep, top, rows = [] }: { d: Detail; 
   const callSecs = steps.reduce((n, s) => n + Number(secs(s.started_at, s.ended_at)), 0);
   // a repair round copies the chosen vignette: that step names no model
   const models = [...new Set(mine.map((s) => s.model).filter((m) => m && m !== "copied"))];
+  const fact = (key: string, tip: string, value: React.ReactNode, cls = "") => (
+    <tr key={key} title={tip}>
+      <td className="w-24 whitespace-nowrap text-dim">{key}</td>
+      <td className={"[overflow-wrap:anywhere] " + cls}>{value}</td>
+    </tr>
+  );
   return (
     <>
-      {top}
-      <div>
-        <Head as="div" note={`${steps.length} of ${total}`}>
-          steps
-        </Head>
-        <Log d={d} stepId={null} onStep={onStep} wide ideation={ideation} />
-      </div>
-      <div className="facts-block mt-6">
+      <div className="facts-block mb-6">
         <Head as="div">draw</Head>
         <table className="mt-1">
           <tbody>
-            <tr>
-              <td className="w-24 text-dim">id</td>
-              <td className="num">{d.draw.id}</td>
-            </tr>
-            {d.origin && (
-              <tr>
-                <td className="text-dim">{d.origin.id === d.draw.id ? "candidate" : "from"}</td>
-                <td className="num">
+            {fact("id", "The draw's id: its folder under briefs/ and drafts/ has this name.", d.draw.id, "font-mono")}
+            {d.origin &&
+              fact(
+                d.origin.id === d.draw.id ? "premise" : "from",
+                d.origin.id === d.draw.id ? "The premise this draw developed, with its stated probability." : "The draw and premise this one was developed from, with the premise's stated probability.",
+                <>
                   <a href={`#draw/${d.origin.id}`}>{d.origin.id === d.draw.id ? `#${d.origin.index}` : `${d.origin.name ?? d.origin.id}${d.origin.index ? ` #${d.origin.index}` : ""}`}</a>
                   {d.origin.probability != null && <span className="text-dim"> · {d.origin.probability.toFixed(2)}</span>}
-                </td>
-              </tr>
-            )}
+                </>,
+                "font-mono",
+              )}
             {rows.map(([k, v], i) => (
               <tr key={i}>
                 <td className="text-dim">{k}</td>
                 <td>{v}</td>
               </tr>
             ))}
-            <tr>
-              <td className="text-dim">setting</td>
-              <td>{d.draw.setting ?? "unrestricted"}</td>
-            </tr>
-            <tr>
-              <td className="text-dim">genre</td>
-              <td>{d.draw.genre}</td>
-            </tr>
-            <tr>
-              <td className="text-dim">sampling</td>
-              <td>
-                {d.draw.sampling} <span className="text-dim">· {d.draw.sampling === "tail" ? "0 to 0.1" : d.draw.sampling === "off-centre" ? "0.1 to 0.35" : "0.35 to 1"}</span>
-              </td>
-            </tr>
-            <tr>
-              <td className="text-dim">darkness</td>
-              <td>{d.draw.darkness ?? "none"}</td>
-            </tr>
-            <tr>
-              <td className="text-dim">gate</td>
-              <td>
+            {fact("setting", "The world each stage writes in. Unrestricted: no setting file.", d.draw.setting ?? "unrestricted")}
+            {fact("genre", "The genre named in every prompt.", d.draw.genre)}
+            {fact(
+              "sampling",
+              "The band of stated probability the premises were asked to fall in.",
+              <>
+                {d.draw.sampling} <span className="num text-dim">· {d.draw.sampling === "tail" ? "0 to 0.1" : d.draw.sampling === "off-centre" ? "0.1 to 0.35" : "0.35 to 1"}</span>
+              </>,
+            )}
+            {fact("darkness", "How dark the ending was asked to be. None: the seed and the examples decide.", d.draw.darkness ?? "none")}
+            {fact(
+              "gate",
+              "Manual: the draw stops for you to choose a premise. Auto: a model chooses.",
+              <>
                 {d.draw.mode}
-                {d.draw.gate_method ? ` · ${d.draw.gate_method}` : ""}
-              </td>
-            </tr>
-            {models.length > 0 && (
-              <tr>
-                <td className="text-dim">model</td>
-                <td className="num">{models.join(" · ")}</td>
-              </tr>
+                {d.draw.gate_method && d.draw.gate_method !== d.draw.mode ? <span className="text-dim"> · chosen {d.draw.gate_method}</span> : ""}
+              </>,
             )}
-            <tr>
-              <td className="text-dim">calls</td>
-              <td>
+            {models.length > 0 && fact("model", "The models the steps ran on.", models.join(" · "), "font-mono")}
+            {fact(
+              "model calls",
+              "The model calls that finished, and their seconds added together.",
+              <>
                 {steps.length} <span className="text-dim">· {callSecs} s</span>
-              </td>
-            </tr>
-            <tr>
-              <td className="text-dim">started</td>
-              <td className="num">{when(d.draw.created_at)}</td>
-            </tr>
-            {d.draw.ended_at && (
-              <tr>
-                <td className="text-dim">ended</td>
-                <td className="num">{when(d.draw.ended_at)}</td>
-              </tr>
+              </>,
+              "font-mono",
             )}
+            {fact("started", "When the draw started.", when(d.draw.created_at), "font-mono")}
+            {d.draw.ended_at && fact("ended", "When the draw last stopped: at its gate or at its brief.", when(d.draw.ended_at), "font-mono")}
           </tbody>
         </table>
+      </div>
+      {top}
+      <div>
+        <Head as="div" note={`${steps.length} of ${total} done · hover a step for what it does`}>
+          steps
+        </Head>
+        <Log d={d} stepId={null} onStep={onStep} ideation={ideation} />
       </div>
     </>
   );
@@ -1200,7 +1231,7 @@ export function BriefFiles({ id, open = "outline.md" }: { id: string; open?: str
             {openFile === f && (
               <tr className="spans">
                 <td colSpan={3} style={{ paddingLeft: "1.75rem" }}>
-                  <Md className="text-[14.5px]" text={boldLabels(brief[f])} />
+                  <Md text={boldLabels(brief[f])} />
                 </td>
               </tr>
             )}

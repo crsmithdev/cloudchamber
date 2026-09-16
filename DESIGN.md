@@ -31,7 +31,7 @@ typography:
     fontFeature: "tabular-nums"
   cell:
     fontFamily: "Newsreader, Georgia, serif"
-    fontSize: "14px"
+    fontSize: "14.5px"
     fontWeight: 400
     lineHeight: 1.45
   name:
@@ -41,14 +41,9 @@ typography:
     lineHeight: 1.3
   prose:
     fontFamily: "Newsreader, Georgia, serif"
-    fontSize: "16px"
+    fontSize: "14.5px"
     fontWeight: 400
     lineHeight: 1.55
-  passage:
-    fontFamily: "Newsreader, Georgia, serif"
-    fontSize: "17.5px"
-    fontWeight: 400
-    lineHeight: 1.6
   mark:
     fontFamily: "Newsreader, Georgia, serif"
     fontSize: "18px"
@@ -265,14 +260,14 @@ chart. Small caps with 0.08em tracking are the almanac's column heads.
   name is chrome at 600.
 - **Mark** (500, 18px, 1.1): the wordmark in the rail (serif) and the start
   form's title (sans, 600).
-- **Cell** (400, 14px, 1.45, serif): generated prose inside a table row: a
+- **Cell** (400, 14.5px, 1.45, serif): generated prose inside a table row: a
   premise, a passage, a finding's quote (italic, dim quote marks).
-- **Prose** (400, 16px, 1.55, serif, 66ch): an opened row's vignette, a brief,
-  a rendered markdown body.
-- **Passage** (400, 17.5px, 1.6, serif, 38rem, pre-wrap): an opened passage
-  or scene at reading width.
-- **Mono** (400 to 600, inherits size): the step log, probabilities, word
-  counts, ids, times, cell slugs, mini nav letters, `kbd`.
+- **Prose** (400, 14.5px, 1.55, serif, 66ch): an opened row's vignette, a
+  brief, a scene, a rendered markdown body. An opened passage keeps this size
+  at a 38rem measure, pre-wrap.
+- **Mono** (400 to 600, inherits size): probabilities, word counts, ids,
+  times and seconds in the step log, cell slugs, mini nav letters, `kbd`. The
+  step log names its steps in the sans.
 
 ### Named Rules
 **The One Chrome Size Rule.** Interface text is 12.5px. Rank inside the chrome
@@ -283,9 +278,9 @@ it. Never add a second chrome size.
 pipeline wrote, mono for every number and identifier. A number in the sans is
 a defect; a label in the serif is a defect.
 
-**The Reading-Size Rule.** The serif sits at cell size (14px) while a row is
-closed and reaches reading size (16px, 17.5px for a passage) only in the
-opened row's span. Nothing else grows when opened.
+**The One Prose Size Rule.** Generated prose is 14.5px, in a closed row and
+in the opened row's span alike. Opening a row changes the leading and the
+measure, not the size.
 
 ## Layout
 
@@ -297,7 +292,7 @@ becomes a wrapped row with a hairline under it, the list pane stacks above the
 reading pane, and the reading pane's side padding drops from 2.5rem to 1rem.
 
 The reading pane pads 1.5rem 2.5rem 4rem and is an inline-size container. A
-draw's body is a fluid table beside a 19rem aside (step log, facts), gapped
+draw's body is a fluid table beside a 19rem aside (the draw's facts, the repair rounds, the step log), gapped
 2.5rem; the wide variant splits 3fr/2fr. When the pane is under 1150px the
 body collapses to one column and the aside moves under the table.
 
@@ -489,7 +484,7 @@ dot.
   gold outline.
 - **Do** show a running step as the sweep under it and a ticking seconds cell.
 - **Do** open generated prose in a span row under its table row, in the
-  serif at 16px and 66ch; a passage at 17.5px and 38rem.
+  serif at 14.5px and 66ch; a passage at 14.5px and 38rem.
 - **Do** keep every corner square except the round mark.
 
 ### Don't:

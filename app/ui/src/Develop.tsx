@@ -207,6 +207,7 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
                   {stage === "check" && r.status === "done" && (
                     <div className="acts" onClick={(e) => e.stopPropagation()}>
                       <Btn
+                        title={`Run the checkers once (derivation, ledger, structure, resemblance${r.setting ? ", claims" : ""}) and stop at gate 1 with the findings.`}
                         onClick={() =>
                           act(
                             () => api.check(r.id),
@@ -214,9 +215,8 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
                           )
                         }
                       >
-                        check this brief
+                        check
                       </Btn>
-                      <span className="text-dim">derivation, ledger, structure, resemblance</span>
                     </div>
                   )}
                 </>
@@ -265,14 +265,7 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
             ) : d.draw.status === "awaiting_check_gate" || d.draw.status === "repaired" ? (
               <GateOne d={d} onAct={act} onDraft={() => setSettings(true)} aside={aside} />
             ) : d.draw.status === "done" || d.draw.status === "passed" ? (
-              <BriefReady
-                d={d}
-                onCheck={() => act(() => api.check(d.draw.id))}
-                onAuto={() => act(() => api.gate(d.draw.id, { action: "auto" }))}
-                onDraft={() => setSettings(true)}
-                onPass={(note) => act(() => api.gate(d.draw.id, { action: "pass", note }))}
-                aside={aside}
-              />
+              <BriefReady d={d} onCheck={() => act(() => api.check(d.draw.id))} onAuto={() => act(() => api.gate(d.draw.id, { action: "auto" }))} onDraft={() => setSettings(true)} aside={aside} />
             ) : (
               <Building d={d} aside={aside} />
             )}
@@ -318,25 +311,86 @@ function Rounds({ chain, current, statusLine }: { chain: Chain; current: string;
   );
 }
 
-function BriefReady({ d, onCheck, onAuto, onDraft, onPass, aside }: { d: Detail; onCheck: () => void; onAuto: () => void; onDraft: () => void; onPass: (note: string) => void; aside: React.ReactNode }) {
+/**
+ * The check tab's controls, in the same places for every state of a brief: the actions on the left, the note and
+ * the gate calls on the right. A control that does not apply to the state stays in its place, disabled, and its
+ * tooltip says why.
+ */
+function CheckControls({
+  d,
+  note,
+  onNote,
+  onAuto,
+  onCheck,
+  onDraft,
+  onFlag,
+  onHold,
+  openFindings = 0,
+  pendingRepair = 0,
+}: {
+  d: Detail;
+  note: string;
+  onNote: (v: string) => void;
+  onAuto: () => void;
+  onCheck: () => void;
+  onDraft: () => void;
+  onFlag: () => void;
+  onHold: () => void;
+  openFindings?: number;
+  pendingRepair?: number;
+}) {
+  const unchecked = d.draw.status === "done";
+  const atGate = d.draw.status === "awaiting_check_gate";
+  const passed = "This brief was passed over. Nothing more runs on it.";
+  const cfg = d.draw.draft_config ? JSON.parse(d.draw.draft_config).config : null;
+  const repair = cfg?.repair ?? { rounds: 4, stop_score: 7, patience: 2 };
+  const checks = `derivation, ledger, structure, resemblance${d.draw.setting ? ", claims" : ""}`;
+  return (
+    <div className="controls" role="group" aria-label="Brief">
+      <Btn
+        variant="primary"
+        disabled={!(unchecked || (atGate && openFindings > 0))}
+        onClick={onAuto}
+        title={
+          unchecked || atGate
+            ? `${unchecked ? `Check the brief (${checks}), then repair` : "Repair"} round after round without asking: accept every finding scoring ${repair.stop_score} or more, dismiss the rest, re-check, repeat. It stops when nothing reaches ${repair.stop_score}, after ${repair.rounds} rounds, or when the total score has not fallen for ${repair.patience} rounds.${atGate && !openFindings ? " No finding is open." : ""}`
+            : passed
+        }
+      >
+        check – auto repair
+      </Btn>
+      <Btn
+        disabled={!unchecked}
+        onClick={onCheck}
+        title={unchecked ? `Run the checkers once (${checks}) and stop at gate 1 with the findings.` : atGate ? "Checked already: rule on the findings below, or auto repair them." : passed}
+      >
+        check
+      </Btn>
+      <Btn
+        disabled={!(unchecked || atGate) || pendingRepair > 0}
+        onClick={onDraft}
+        title={!(unchecked || atGate) ? passed : pendingRepair ? "Accepted findings are waiting for their repair." : `Set up the draft and write the story from this brief as it stands${unchecked ? ", unchecked" : ""}.`}
+      >
+        draft{cfg ? ` · ${cfg.length.words} words` : ""} <Chevron open />
+      </Btn>
+      <span className="end">
+        <input type="text" placeholder="note for the log" aria-label="Note for the log" value={note} onChange={(e) => onNote(e.target.value)} />
+        <Btn variant="art" disabled={!atGate} onClick={onFlag} title={atGate ? "Mark a check call as looking wrong, with the note. Nothing runs." : unchecked ? "Nothing is checked yet." : passed}>
+          flag
+        </Btn>
+        <Btn variant="quiet" disabled={!atGate} onClick={onHold} title={atGate ? "Leave the brief at gate 1. Nothing runs." : unchecked ? "Nothing is checked yet." : passed}>
+          hold
+        </Btn>
+      </span>
+    </div>
+  );
+}
+
+function BriefReady({ d, onCheck, onAuto, onDraft, aside }: { d: Detail; onCheck: () => void; onAuto: () => void; onDraft: () => void; aside: React.ReactNode }) {
   const [note, setNote] = useState("");
   return (
     <>
-      <div className="controls" role="group" aria-label="Brief">
-        <Btn variant="primary" onClick={onCheck}>
-          check · derivation, ledger, structure, resemblance{d.draw.setting ? ", claims" : ""}
-        </Btn>
-        <Btn variant="art" onClick={onAuto} title="Check, then repair round after round without asking, until nothing scores over the floor or the rounds run out.">
-          check and auto-repair
-        </Btn>
-        <Btn onClick={onDraft}>
-          draft without checking <Chevron open />
-        </Btn>
-        <Btn variant="pass" onClick={() => onPass(note)}>
-          pass brief
-        </Btn>
-        <input type="text" placeholder="note for the log" aria-label="Note" value={note} onChange={(e) => setNote(e.target.value)} />
-      </div>
+      <CheckControls d={d} note={note} onNote={setNote} onAuto={onAuto} onCheck={onCheck} onDraft={onDraft} onFlag={() => {}} onHold={() => {}} />
       <div className="drawbody">
         <div className="max-w-[66rem]">
           <Head>seed</Head>
@@ -386,7 +440,7 @@ function Building({ d, aside }: { d: Detail; aside: React.ReactNode }) {
       {body && openPart === name && (
         <tr className="spans">
           <td colSpan={3} style={{ paddingLeft: "1.75rem" }}>
-            <Md className="text-[14.5px]" text={boldLabels(body)} />
+            <Md text={boldLabels(body)} />
           </td>
         </tr>
       )}
@@ -463,7 +517,6 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
     });
   const atFloor = open.filter((x) => x.score >= floor && !x.relitigates);
   const reopened = f?.findings.filter((x) => x.relitigates) ?? [];
-  const autoCfg = (d.draw.draft_config ? JSON.parse(d.draw.draft_config).config.repair : null) ?? { rounds: 4, stop_score: 7, patience: 2 };
   const autoArt = [...d.artifacts].reverse().find((a) => a.kind === "auto");
   const auto: AutoResult | null = autoArt ? JSON.parse(autoArt.content) : null;
   const checkSteps = d.steps.filter((s) => s.stage.startsWith("check-") && s.status === "done");
@@ -473,25 +526,23 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
   return (
     <>
       {!repaired && (
-        <div className="controls" role="group" aria-label="Gate 1 judgement">
-          <span className="end">
-            <input type="text" placeholder="note for the log" aria-label="Gate note" value={note} onChange={(e) => setNote(e.target.value)} />
-            <Btn variant="art" onClick={() => gate("flag")} title="Mark a check call as looking wrong. Nothing runs.">
-              flag · a check looks wrong
-            </Btn>
-            <Btn variant="quiet" onClick={() => gate("hold")} title="Leave the brief here. Nothing runs.">
-              hold
-            </Btn>
-            <Btn variant="pass" onClick={() => gate("pass")} title="Pass over this brief. Its verdict goes to the log.">
-              pass brief
-            </Btn>
-          </span>
-        </div>
+        <CheckControls
+          d={d}
+          note={note}
+          onNote={setNote}
+          onAuto={() => gate("auto")}
+          onCheck={() => {}}
+          onDraft={onDraft}
+          onFlag={() => gate("flag")}
+          onHold={() => gate("hold")}
+          openFindings={open.length}
+          pendingRepair={accepted.length}
+        />
       )}
       {!repaired && (
         <div className="controls" role="group" aria-label="Gate 1 repair">
           <Btn
-            variant="primary"
+            variant="keep"
             disabled={!sel.size && !accepted.length}
             onClick={() => gate("accept", { findings: [...sel] })}
             title="Accept the selected findings. The brief is repaired into a new draw under their replacements and re-checked."
@@ -513,19 +564,6 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
             <input type="range" min={1} max={SCORE_MAX} step={1} value={floor} aria-label="Score floor" onChange={(e) => setFloor(Number(e.target.value))} />
             <Btn variant="quiet" disabled={!sel.size} onClick={() => setSel(new Set())} title="Clear the selection.">
               none
-            </Btn>
-          </span>
-          <Btn
-            variant="art"
-            disabled={!open.length}
-            onClick={() => gate("auto")}
-            title={`Repair round after round without asking: accept everything scoring ${autoCfg.stop_score} or more, dismiss the rest, re-check, repeat. It stops when nothing reaches the floor, after ${autoCfg.rounds} rounds, or when the total score has not fallen for ${autoCfg.patience} rounds.`}
-          >
-            auto · ≥ {autoCfg.stop_score}, to {autoCfg.rounds} rounds
-          </Btn>
-          <span className="end">
-            <Btn onClick={onDraft} disabled={accepted.length > 0} title={accepted.length ? "Accepted findings are pending repair." : "Schedule and write the story from this brief as it stands."}>
-              draft{d.draw.draft_config ? ` · ${JSON.parse(d.draw.draft_config).config.length.words} words` : ""} <Chevron open />
             </Btn>
           </span>
         </div>
