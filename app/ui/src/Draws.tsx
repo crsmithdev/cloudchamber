@@ -63,7 +63,8 @@ export function DrawMeta({ d, children }: { d: Detail; children?: React.ReactNod
   return (
     <span className="text-mute">
       {children}
-      {d.draw.setting ?? "unrestricted"} · {d.draw.genre} · {d.draw.sampling}
+      <span className="text-dim">setting</span> {d.draw.setting ?? "unrestricted"} · <span className="text-dim">genre</span> {d.draw.genre || "none"} ·{" "}
+      <span className="text-dim">sampling</span> {d.draw.sampling}
     </span>
   );
 }
@@ -633,10 +634,8 @@ function DrawBody({
                       <td className="text-mute">{e.author || "unknown"}</td>
                       <td className="num text-dim">{e.cell}</td>
                       <td className="text-center">
-                        <Mark
-                          state={e.latest?.artifact ? "art" : e.latest?.verdict === "pass" ? "fail" : "held"}
-                          title={e.latest?.artifact ? "flagged as an artifact" : e.latest?.verdict === "pass" ? "excluded from the pool" : "in the pool"}
-                        />
+                        {/* a passage in the pool is the default and carries no mark */}
+                        {e.latest?.artifact ? <Mark state="art" title="flagged as an artifact" /> : e.latest?.verdict === "pass" ? <Mark state="fail" title="excluded from the pool" /> : null}
                       </td>
                       <td className="text-right">
                         <button className="link" aria-expanded={isOpen} onClick={() => setOpenEx(isOpen ? null : e.id)}>
