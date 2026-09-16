@@ -103,13 +103,13 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
   const archiveChain = (c: Chain) => act(() => Promise.all(c.rounds.map((x) => api.gate(x.id, { action: c.head.archived_at ? "unarchive" : "archive" }))));
   const shown = all.filter((c) => showArchived || !c.head.archived_at || c.rounds.some((x) => x.id === current));
   const step = d && stepId ? d.steps.find((s) => s.id === stepId) : undefined;
-  const statusLine = (r: Draw) => (r.status === "done" ? "brief · not yet checked" : label(r.status));
+  const statusLine = (r: Draw) => (r.status === "done" ? "unchecked" : label(r.status));
   // the open row's one summary line; the step log is in the reading pane
   const summary = (r: Draw, detail: Detail | null) => {
     const running = detail?.steps.filter((s) => s.status === "running") ?? [];
     if (running.length) return `${label(r.status)} · ${running.length} call${running.length > 1 ? "s" : ""} in flight`;
     const round = chainOf(r.id)!.rounds.length > 1 ? ` · round ${chainOf(r.id)!.rounds.length}` : "";
-    if (r.check && OPEN.has(r.status)) return `${statusLine(r)}${round} · ${r.check.reported} findings · score ${r.check.total}`;
+    if (r.check && OPEN.has(r.status)) return `${statusLine(r)}${round} · ${r.check.reported} findings · total score ${r.check.total}`;
     return `${statusLine(r)}${round}`;
   };
   const atGate = draws.filter((r) => OPEN.has(r.status)).length;
@@ -163,7 +163,7 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
             )}
           </span>
         </div>
-        {chains.length === 0 && <div className="empty">{stage === "check" ? "No briefs yet. Choose a candidate at a gate under ideate." : "Nothing drafted yet. Send a checked brief here from check."}</div>}
+        {chains.length === 0 && <div className="empty">{stage === "check" ? "No briefs yet. Choose a premise in ideate to make one." : "Nothing drafted yet. Draft a brief from check."}</div>}
         {shown.map((c) => {
           const r = c.head;
           const on = c.rounds.some((x) => x.id === current);
@@ -185,7 +185,7 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
                 rounds={c.rounds.length}
                 at={r.created_at}
                 archived={!!r.archived_at}
-                blocked="it developed a candidate; archive it instead"
+                blocked="a premise was chosen from it; archive it instead"
                 onArchive={() => archiveChain(c)}
                 onDelete={() => {}}
               />
@@ -244,7 +244,7 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
               <span className={"state " + (working ? "text-running" : OPEN.has(d.draw.status) ? "text-art" : d.draw.status === "failed" ? "text-pass" : "text-mute")}>
                 <Mark state={markFor(d.draw.status)} />
                 <span className={working ? "sweep" : ""}>
-                  {d.draw.status === "done" ? "brief · not yet checked" : label(d.draw.status)}
+                  {d.draw.status === "done" ? "unchecked" : label(d.draw.status)}
                   {working && d.steps.some((s) => s.status === "running") ? ` · ${[...new Set(d.steps.filter((s) => s.status === "running").map((s) => stageName(s.stage)))].join(", ")}` : ""}
                 </span>
               </span>
@@ -286,10 +286,22 @@ function Rounds({ chain, current, statusLine }: { chain: Chain; current: string;
   const at = chain.rounds.findIndex((x) => x.id === current) + 1;
   return (
     <div className="mb-6">
-      <Head as="div" note={`round ${at} of ${chain.rounds.length}${lowest ? ` · lowest ${chain.rounds.indexOf(lowest) + 1}` : ""}`}>
+      <Head as="div" note={`round ${at} of ${chain.rounds.length}${lowest ? ` · lowest score in round ${chain.rounds.indexOf(lowest) + 1}` : ""}`}>
         rounds
       </Head>
       <table className="ledger">
+        <thead>
+          <tr>
+            <th className="head">round</th>
+            <th className="head"></th>
+            <th className="head text-right" title="The findings' scores added up. Lower is better.">
+              score
+            </th>
+            <th className="head text-right" title="Findings accepted for repair, of those reported.">
+              accepted
+            </th>
+          </tr>
+        </thead>
         <tbody>
           {chain.rounds.map((x, i) => (
             <tr
@@ -585,15 +597,15 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
           <Head
             note={
               auto.stopped === "floor"
-                ? `stopped on the floor: nothing scored ${auto.floor} or more`
+                ? `stopped: nothing scored ${auto.floor} or more`
                 : auto.stopped === "patience"
-                  ? "stopped on patience: the total score stopped falling"
+                  ? "stopped: the total score stopped falling"
                   : auto.stopped === "budget"
-                    ? `stopped on the call budget, at ${auto.calls} calls`
-                    : "stopped on the round cap"
+                    ? `stopped: reached the call budget at ${auto.calls} calls`
+                    : "stopped: reached the round limit"
             }
           >
-            auto · {auto.rounds.length} round{auto.rounds.length > 1 ? "s" : ""}
+            auto repair · {auto.rounds.length} round{auto.rounds.length > 1 ? "s" : ""}
           </Head>
           <table className="mt-1">
             <thead>
@@ -630,7 +642,7 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
               ))}
             </tbody>
           </table>
-          {auto.best.id !== auto.id && <div className="mt-2 text-dim">Round {auto.best.round} scored lowest. It is superseded, so auto left it where it is: read it if this round reads worse.</div>}
+          {auto.best.id !== auto.id && <div className="mt-2 text-dim">Round {auto.best.round} scored lowest, but a later round replaced it. Open it if this round reads worse.</div>}
           {!!auto.left_open && (
             <div className="mt-2 text-mute">
               {auto.left_open} finding{auto.left_open > 1 ? "s" : ""} at or above the floor {auto.left_open > 1 ? "are" : "is"} still open here: auto stopped before repairing {auto.left_open > 1 ? "them" : "it"}.
@@ -643,11 +655,16 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
           <Head
             note={
               <>
-                {f ? `${reported.length} reported${f.findings.some((x) => !x.reported) ? ` · ${f.findings.filter((x) => !x.reported).length} below the bar` : ""}` : "…"}
-                {f?.pass ? ` · pass ${f.pass.slice(0, 16).replace("T", " ")}` : ""}
-                {checkSteps.length ? ` · ${checkSteps.length} checker calls · ${checkSecs} s` : ""} · by score · merged across checkers ·{" "}
-                <button className="link" aria-pressed={showAll} onClick={() => setShowAll((v) => !v)} title="A cluster one sample found is not reported, but it is still a reading. Nothing is re-run to show these.">
-                  {showAll ? "hide" : "show"} one-sample findings
+                {f ? `${reported.length} reported${f.findings.some((x) => !x.reported) ? ` · ${f.findings.filter((x) => !x.reported).length} too rare to report` : ""}` : "…"}
+                {f?.pass ? ` · checked ${f.pass.slice(0, 16).replace("T", " ")}` : ""}
+                {checkSteps.length ? ` · ${checkSteps.length} checker calls · ${checkSecs} s` : ""} · highest score first · duplicates merged across checkers ·{" "}
+                <button
+                  className="link"
+                  aria-pressed={showAll}
+                  onClick={() => setShowAll((v) => !v)}
+                  title="A finding seen in too few samples is not reported, but it is still a reading. Nothing runs again to show these."
+                >
+                  {showAll ? "hide" : "show"} rare findings
                 </button>
               </>
             }
@@ -685,7 +702,7 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
                 note={
                   f.claims.length
                     ? `${f.claims.length} verified · ${f.claims.filter((c) => c.result === "supported").length} supported · ${f.claims.filter((c) => c.result === "contradicted").length} contradicted · ${f.claims[0].authority === "world" ? "the web, on sonnet" : f.claims[0].authority === "setting" ? "the setting file" : "the setting's reference files"}`
-                    : "off · no claims authority declared on the setting"
+                    : "not run: the setting names no source to check claims against"
                 }
               >
                 claims
@@ -712,21 +729,21 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
           )}
           {jobs.length > 0 && meta.words && (
             <>
-              <Head className="mt-6" note="from the outline · the words each carries">
-                jobs
+              <Head className="mt-6" note="the words each section carries, and the findings that break it">
+                outline sections
               </Head>
               <table className="mt-1">
                 <thead>
                   <tr>
-                    <th className="head">job</th>
+                    <th className="head">section</th>
                     <th className="head text-right">words</th>
-                    <th className="head text-right">findings against it</th>
+                    <th className="head text-right">findings</th>
                   </tr>
                 </thead>
                 <tbody>
                   {jobs.map((j) => (
                     <tr key={j}>
-                      <td className="num">{j}</td>
+                      <td>{j}</td>
                       <td className="num text-right">{meta.words[j]}</td>
                       <td className="num text-right">{f?.findings.filter((x) => x.invalidates === j).length ?? 0}</td>
                     </tr>
@@ -737,8 +754,8 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
           )}
           {constraints.length > 0 && (
             <>
-              <Head className="mt-6" note="the accepted replacements, verbatim, in the repair prompts">
-                constraints
+              <Head className="mt-6" note="the replacements you accepted, given word for word to every later repair">
+                accepted fixes
               </Head>
               <table className="mt-1">
                 <tbody>
@@ -758,7 +775,7 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
           {f && <Profiles f={f} />}
           {f && f.examined.length > 0 && (
             <>
-              <Head className="mt-6" note="what an empty result would have looked at">
+              <Head className="mt-6" note="what each checker call looked at, so an empty result can be read">
                 examined
               </Head>
               <table className="mt-1">
@@ -826,10 +843,10 @@ function FindingRow({ f, S, selected, onToggle, onDismiss, readOnly }: { f: Find
             {f.n}/{S}
           </span>
         </span>
-        <span className="num text-dim">
-          breaks <b className={"font-normal " + (f.invalidates === "none" ? "" : "text-ink")}>{f.invalidates}</b>
+        <span className="text-dim">
+          breaks <b className={"font-normal " + (f.invalidates === "none" ? "" : "text-ink")}>{f.invalidates === "none" ? "no section" : f.invalidates}</b>
         </span>
-        <span className="num text-dim">{f.checkers.join(" · ")}</span>
+        <span className="text-dim">{f.checkers.join(" · ")}</span>
         {f.relitigates && (
           <a className="link text-pass" href={`#check/${f.relitigates.draw}`} title={`This finding would undo the fix you accepted in round ${f.relitigates.round}: ${f.relitigates.replacement}`}>
             undoes round {f.relitigates.round} fix
@@ -838,11 +855,11 @@ function FindingRow({ f, S, selected, onToggle, onDismiss, readOnly }: { f: Find
         <Mark state={acc ? "held" : f.decision === "dismissed" ? "fail" : ""} title={f.decision} />
         <span className="acts">
           {f.decision === "accepted" ? (
-            <span className="num text-keep">accepted{f.note ? ` · ${f.note}` : ""}</span>
+            <span className="text-keep">accepted{f.note ? ` · ${f.note}` : ""}</span>
           ) : f.decision === "dismissed" ? (
-            <span className="num text-dim">dismissed{f.note ? ` · ${f.note}` : ""}</span>
+            <span className="text-dim">dismissed{f.note ? ` · ${f.note}` : ""}</span>
           ) : readOnly ? (
-            <span className="num text-dim">open</span>
+            <span className="text-dim">open</span>
           ) : (
             <>
               <Btn variant={selected ? "keep" : undefined} pressed={selected} onClick={onToggle}>
@@ -917,7 +934,7 @@ function Profiles({ f }: { f: Findings }) {
                     <td className="w-4">
                       <Mark state={present ? "held" : ""} />
                     </td>
-                    <td className={"num whitespace-nowrap " + (present ? "" : "text-dim")}>{q.replace("category-violation", "category")}</td>
+                    <td className={"whitespace-nowrap " + (present ? "" : "text-dim")}>{q.replace("category-violation", "category")}</td>
                     <td className="text-mute">
                       <div className="line-clamp-1">
                         <span className="quote">{a?.quote}</span>
@@ -951,7 +968,7 @@ function Profiles({ f }: { f: Findings }) {
               )}
               {(resemblance.matches ?? []).map((m, i) => (
                 <tr key={i}>
-                  <td className="num w-16 whitespace-nowrap text-dim">matches</td>
+                  <td className="w-16 whitespace-nowrap text-dim">matches</td>
                   <td title={`Entry ${/^\d+/.exec(m.entry)?.[0] ?? "?"} of ${PREMISES_FILE}, quoted by the checker verbatim; the span is where the brief matches it.`}>
                     <div>{m.entry}</div>
                     <div className="quote mt-1 text-mute">{unquote(m.span)}</div>
@@ -960,7 +977,7 @@ function Profiles({ f }: { f: Findings }) {
               ))}
               {resemblance.nearest && (
                 <tr>
-                  <td className="num whitespace-nowrap text-dim">nearest</td>
+                  <td className="whitespace-nowrap text-dim">nearest</td>
                   <td>
                     <span className="serif-cell">{resemblance.nearest.title}</span>, {resemblance.nearest.author}
                     <div className="mt-1 text-mute">{resemblance.nearest.shared}</div>
@@ -1054,13 +1071,13 @@ function DraftSettings({ d, onClose, onDraft }: { d: Detail; onClose: () => void
         <div className="grid gap-2">
           {Object.entries(AXES).map(([axis, opts]) => (
             <div key={axis} className="inline">
-              <span className="num w-24 text-dim">{axis}</span>
+              <span className="w-24 text-dim">{axis}</span>
               <Seg label={axis} value={val(`form.${axis}`)} options={["auto", ...opts]} onChange={set(`form.${axis}`)} />
               {overrides[`form.${axis}`] !== undefined && <span className="text-art">overridden</span>}
             </div>
           ))}
           <div className="inline">
-            <span className="num w-24 text-dim">ending</span>
+            <span className="w-24 text-dim">ending</span>
             <Seg label="ending" value={val("form.ending")} options={["brief", "open"]} onChange={set("form.ending")} />
           </div>
         </div>
@@ -1114,7 +1131,7 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
       {gating && (
         <div className="controls" role="group" aria-label="Draft review">
           <Btn variant="primary" onClick={() => gate("keep")} title={`Keep the story. It is exported to drafts/${id}/ with its schedule, findings, configuration and trail.`}>
-            keep · export drafts/{id}/
+            keep and export
           </Btn>
           <span className="group">
             <Btn variant="art" onClick={() => gate("rewrite", { beat: k })} title="Regenerate one scene from its beat under its flags' replacements, then screen it and the next scene again.">
@@ -1128,8 +1145,8 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
               ))}
             </select>
             <span className="text-dim">
-              screens {k}
-              {k < M ? ` and ${k + 1}` : ""} run again
+              then screens scene {k}
+              {k < M ? ` and ${k + 1}` : ""} again
             </span>
           </span>
           <Btn variant="pass" onClick={() => gate("pass")} title="Pass over this draft. Its verdict goes to the log.">
@@ -1198,7 +1215,7 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
                         <span>
                           {n}
                           {beat ? ` / ${beat.words}` : ""}
-                          {over ? " · over cap" : ""}
+                          {over ? " · over the word cap" : ""}
                         </span>
                         {beat && beat.absorbs !== "none" && <> · absorbs {beat.absorbs}</>} · <span className="text-mute">{nf ? `${nf} flag${nf > 1 ? "s" : ""}` : "no flags"}</span>
                       </>
@@ -1212,11 +1229,13 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
                       <tbody>
                         {fl.ledger.map((f) => (
                           <tr key={f.id} className={f.decision === "accepted" ? "old" : ""}>
-                            <td className="num w-28 text-art">
+                            <td className="w-28 text-art">
                               ledger
-                              <div className="text-dim">
-                                ×{f.n} of {Math.max(...f.samples, f.n)}
-                              </div>
+                              {Math.max(...f.samples, f.n) > 1 && (
+                                <div className="text-dim">
+                                  {f.n} of {Math.max(...f.samples, f.n)} samples
+                                </div>
+                              )}
                             </td>
                             <td>
                               <div className="quote">{f.span}</div>
@@ -1252,7 +1271,7 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
                         ))}
                         {fl.structure?.flags.map((q) => (
                           <tr key={q}>
-                            <td className="num w-28 text-art">
+                            <td className="w-28 text-art">
                               structure
                               <div className="text-dim">
                                 {q} · {fl.structure!.answers[q].answer}
@@ -1360,7 +1379,7 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
                       <span className="chips">
                         {s.slop.lexicon.slice(0, 12).map((l) => (
                           <span key={l.term} className="chip num">
-                            {l.term} <b className="text-ink">{l.count}</b>
+                            {l.term} <b className="font-semibold text-ink">{l.count}</b>
                           </span>
                         ))}
                       </span>
@@ -1375,12 +1394,12 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
                     </span>,
                   ],
                   [
-                    "trigrams ×3+",
+                    "phrases repeated 3+",
                     s.slop.trigrams.length ? (
                       <span className="chips">
                         {s.slop.trigrams.slice(0, 10).map((t) => (
                           <span key={t.trigram} className="chip num">
-                            {t.trigram} <b className="text-ink">{t.count}</b>
+                            {t.trigram} <b className="font-semibold text-ink">{t.count}</b>
                           </span>
                         ))}
                       </span>
@@ -1486,7 +1505,7 @@ function ScheduleView({ s }: { s: Story }) {
                 <td className="num font-semibold">{b.n}</td>
                 <td className="num">
                   {n} <span className="text-dim">/ {b.words}</span>
-                  {n > b.words * 1.1 ? <div className="text-art">over cap</div> : null}
+                  {n > b.words * 1.1 ? <div className="text-art">over the word cap</div> : null}
                   {b.absorbs !== "none" && <div className="text-mute">absorbs {b.absorbs}</div>}
                 </td>
                 <td className="pt-4">

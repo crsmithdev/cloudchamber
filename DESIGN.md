@@ -18,7 +18,7 @@ colors:
 typography:
   head:
     fontFamily: "Instrument Sans, system-ui, sans-serif"
-    fontSize: "11px"
+    fontSize: "12.5px"
     fontWeight: 500
     lineHeight: 1.4
     letterSpacing: "0.08em"
@@ -251,7 +251,7 @@ text-face serif; the mono makes every number and identifier a fact on the
 chart. Small caps with 0.08em tracking are the almanac's column heads.
 
 ### Hierarchy
-- **Head** (500, 11px, 1.4, all-small-caps, 0.08em, mute): column heads,
+- **Head** (500, 12.5px, 1.4, all-small-caps, 0.08em, mute): column heads,
   section heads, field labels, headings inside rendered prose. A note after a
   head drops the small caps and goes dim.
 - **Chrome** (400, 12.5px, 1.45, tabular figures): every interface string,
@@ -266,7 +266,9 @@ chart. Small caps with 0.08em tracking are the almanac's column heads.
   brief, a scene, a rendered markdown body. An opened passage keeps this size
   at a 38rem measure, pre-wrap.
 - **Mono** (400 to 600, inherits size): probabilities, word counts, ids,
-  times and seconds in the step log, cell slugs, mini nav letters, `kbd`. The
+  times and seconds in the step log, cell slugs, file names, mini nav letters,
+  `kbd` (never small caps). Words are the sans even when they name a checker,
+  a section or a flag kind: the mono is not a costume for "technical". The
   step log names its steps in the sans.
 
 ### Named Rules
@@ -387,7 +389,7 @@ mark; selection is a fill and a bar.
   fills gold for the chosen candidate; the width is the value
 
 ### Section and Column Heads
-- **Style:** head step (11px small caps, 500, 0.08em, mute); a note after
+- **Style:** head step (12.5px small caps, 500, 0.08em, mute); a note after
   the head is dim, normal case, joined by a middle dot
 - **Table head:** the same, above a 2px rule; sticky heads take the desk fill
 - **Section head:** 1.5rem above, 0.25rem below, baseline-aligned with its
@@ -411,7 +413,7 @@ mark; selection is a fill and a bar.
 ### List Row
 - **Style:** a grid of lines padded 0.6rem 0.75rem with a hairline under:
   name (600 ink) and time (mono dim); a mark and a status line in mute; a
-  two-line clamped italic serif seed at 13.5px; the id in mono at head size
+  two-line clamped italic serif seed at cell size (14.5px); the id in mono at head size
 - **State:** hover is the raised fill at 60%; `on` is the raised fill and the
   gold inset bar; a running row's bar is running blue; `old` rows fade to
   0.55
@@ -435,7 +437,7 @@ mark; selection is a fill and a bar.
   an inline chevron in mute and 12rem minimum
 - **Hover / Focus:** the border goes rule; focus is the gold outline
 - **Textarea:** full width, 4.5rem minimum, vertical resize; in a field the
-  seed textarea is the serif at 15px
+  seed textarea is the serif at prose size (14.5px)
 - **Field:** 8rem small-caps label column at mute, the control, help under
   the control in dim; rows open with a hairline, 0.8rem of padding each side
 - **Error / Warning:** text in pass or art; no coloured border or fill
@@ -457,7 +459,7 @@ mark; selection is a fill and a bar.
 ### Prose
 - **Style:** the serif at prose size, 66ch; headings inside it drop to the
   head step (small caps, mute); blockquotes take a 1px rule on the left and
-  mute text; code is the mono at 0.85em; a seed is the serif italic at 15px;
+  mute text; code is the mono at 0.85em; a seed is the serif italic at prose size;
   a quote is the serif italic at cell size with dim quote marks
 
 ### The Sweep
@@ -472,7 +474,7 @@ dot.
 - **Do** set every number and identifier in IBM Plex Mono with tabular
   figures; a probability, a word count, a time, an id, a slug.
 - **Do** rank chrome by weight, small caps and the ink/mute/dim step at one
-  size (12.5px); a column head is 11px small caps at 500.
+  size (12.5px); a column head is the same size in small caps at 500.
 - **Do** divide with the two rule weights only: a 1px hairline between rows,
   a 2px rule under a head, a strip and an action row.
 - **Do** mark the selected or opened row with the raised fill and the 2px

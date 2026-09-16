@@ -8,8 +8,11 @@ web
 
 ## Users
 
-One operator: the author of the pipeline. He knows every term and every stage,
-so the UI does not explain the pipeline to him.
+One operator: the author of the pipeline. He knows every stage, but he reads
+the UI after long detached runs, and on 2026-09-16 he marked many of its terms
+as confusing. Labels therefore use plain words: a step is a verb and a noun, a
+state says what he does next ("review findings"), and a tooltip says what a
+control or a step does. Internal names such as gate 1 stay in the code.
 
 Other writers may get access later. This is not confirmed and no second user
 has ever run the tool. Future work keeps labels and empty states honest enough

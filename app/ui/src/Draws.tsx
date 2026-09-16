@@ -239,7 +239,7 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
   const redrawn = (r: Draw) => !!r.superseded_by && !draws.some((x) => x.id === r.superseded_by && x.repaired_from === r.id);
   // the server refuses these two; the row says why rather than letting the click fail
   const deleteBlock = (r: Draw) => {
-    if (r.chosen_step) return "it developed a candidate; archive it instead";
+    if (r.chosen_step) return "a premise was chosen from it; archive it instead";
     const by = draws.find((x) => x.superseded_by === r.id || x.repaired_from === r.id || x.forked_from === r.id);
     return by ? `${by.name ?? by.id} refers to it` : "";
   };
@@ -281,7 +281,7 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
             draw
           </LinkBtn>
           <span className="head">
-            {openCount} open
+            {openCount} to choose
             {archived > 0 && (
               <>
                 {" "}
@@ -362,7 +362,7 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
                     <input type="text" name="gate-note" placeholder="note for the log" aria-label="Gate note" value={note} onChange={(e) => setNote(e.target.value)} />
                     {d.draw.status === "awaiting_gate" && (
                       <>
-                        <Btn variant="art" title="Mark this draw as a wrong call for later review. It stays open and nothing else changes." onClick={() => gate("flag")}>
+                        <Btn variant="art" title="Mark this draw as a wrong call to look at later, with the note. It stays open and nothing else changes." onClick={() => gate("flag")}>
                           flag
                         </Btn>
                         <LinkBtn variant="quiet" href={`#draws/new/${d.draw.id}`} title="Open the draw form with this draw's options, to start another like it. This one stays open.">
@@ -442,7 +442,7 @@ function drawSummary(d: Detail) {
   const chosen = d.candidates.find((c) => c.step_id === d.draw.chosen_step);
   const failed = d.steps.filter((s) => s.status === "failed" && IDEATION.has(s.stage)).length;
   if (running.length) return `running · ${[...new Set(running.map((s) => stageName(s.stage)))].join(", ")}`;
-  if (d.draw.status === "awaiting_gate") return `choose a premise · ${d.candidates.length} premises`;
+  if (d.draw.status === "awaiting_gate") return `choose a premise · ${d.candidates.length} written`;
   if (d.draw.status === "failed") return `failed · ${failed} step${failed === 1 ? "" : "s"}`;
   if (chosen) return `brief · #${chosen.index} chosen · in ${d.draw.stage}`;
   return label(d.draw.status);
@@ -657,7 +657,9 @@ function DrawBody({
               <thead>
                 <tr>
                   <th className="head w-7">#</th>
-                  <th className="head w-20">p</th>
+                  <th className="head w-20" title="The probability the model stated for this premise.">
+                    p
+                  </th>
                   <th className="head w-20"></th>
                   <th className="head premise">premise</th>
                   <th className="head w-12 text-center">state</th>
@@ -749,7 +751,7 @@ function DrawBody({
             <tr>
               <th className="head">passage</th>
               <th className="head">author</th>
-              <th className="head">cell</th>
+              <th className="head">voice / mode</th>
               <th className="head w-12 text-center">state</th>
               <th className="head w-20"></th>
             </tr>
@@ -772,7 +774,7 @@ function DrawBody({
                       <td className="num text-dim">{e.cell}</td>
                       <td className="text-center">
                         {/* a passage in the pool is the default and carries no mark */}
-                        {e.latest?.artifact ? <Mark state="art" title="flagged as an artifact" /> : e.latest?.verdict === "pass" ? <Mark state="fail" title="excluded from the pool" /> : null}
+                        {e.latest?.artifact ? <Mark state="art" title="marked as an artifact" /> : e.latest?.verdict === "pass" ? <Mark state="fail" title="passed: out of the pool" /> : null}
                       </td>
                       <td className="text-right">
                         <button className="link" aria-expanded={isOpen} onClick={() => setOpenEx(isOpen ? null : e.id)}>
@@ -787,24 +789,24 @@ function DrawBody({
                         <p className="prose passage m-0">{e.text}</p>
                         <div className="mt-3 flex flex-wrap items-center gap-2">
                           {e.latest?.verdict === "pass" ? (
-                            <Btn variant="keep" title="Put this passage back in the pool for future draws." onClick={() => onVerdict(e, "keep", e.latest?.artifact ?? false, exNote[e.id] ?? "")}>
-                              include
+                            <Btn variant="keep" title="Keep this passage: it goes back in the pool for future draws." onClick={() => onVerdict(e, "keep", e.latest?.artifact ?? false, exNote[e.id] ?? "")}>
+                              keep
                             </Btn>
                           ) : (
                             <Btn
                               variant="pass"
-                              title="Drop this passage from the pool for every future draw. This draw is unaffected."
+                              title="Pass on this passage: it leaves the pool for every future draw. This draw is unaffected."
                               onClick={() => onVerdict(e, "pass", e.latest?.artifact ?? false, exNote[e.id] ?? "")}
                             >
-                              exclude
+                              pass
                             </Btn>
                           )}
                           <Btn
                             variant="art"
-                            title="Mark this passage as an extraction artifact: it leaves the pool and the note says what the reader got wrong."
+                            title="Mark this passage as an extraction artifact, a passage the reader cut badly: it leaves the pool, and the note says what went wrong."
                             onClick={() => onVerdict(e, e.latest?.verdict ?? "keep", !e.latest?.artifact, exNote[e.id] ?? "")}
                           >
-                            {e.latest?.artifact ? "unflag" : "flag"}
+                            {e.latest?.artifact ? "unmark artifact" : "mark artifact"}
                           </Btn>
                           <input type="text" placeholder="note for the log" aria-label="Example note" value={exNote[e.id] ?? ""} onChange={(ev) => setExNote((m) => ({ ...m, [e.id]: ev.target.value }))} />
                         </div>
@@ -875,7 +877,7 @@ export function DrawAside({ d, ideation, onStep, top, rows = [] }: { d: Detail; 
             )}
             {fact("darkness", "How dark the ending was asked to be. None: the seed and the examples decide.", d.draw.darkness ?? "none")}
             {fact(
-              "gate",
+              "choice",
               "Manual: the draw stops for you to choose a premise. Auto: a model chooses.",
               <>
                 {d.draw.mode}
@@ -892,7 +894,7 @@ export function DrawAside({ d, ideation, onStep, top, rows = [] }: { d: Detail; 
               "font-mono",
             )}
             {fact("started", "When the draw started.", when(d.draw.created_at), "font-mono")}
-            {d.draw.ended_at && fact("ended", "When the draw last stopped: at its gate or at its brief.", when(d.draw.ended_at), "font-mono")}
+            {d.draw.ended_at && fact("ended", "When the draw last stopped: to wait for a choice, or with its brief written.", when(d.draw.ended_at), "font-mono")}
           </tbody>
         </table>
       </div>
@@ -1084,9 +1086,9 @@ function StartForm({ status, like }: { status: Status | null; like?: string }) {
             , which stays open. Change what you want and start.
           </p>
         )}
-        <p className="lede">Pulls six eligible passages and a seed, asks for five premises off the centre of the distribution, writes each as a 400-word vignette, then stops at the gate for you.</p>
-        <Field label="Gate">
-          <Seg label="Gate" value={form.mode} options={["manual", "auto"]} onChange={(v) => setForm({ ...form, mode: v })} />
+        <p className="lede">Pulls six eligible passages and a seed, asks for five premises in the sampling band you pick, writes each as a 400-word vignette, then stops for a premise to be chosen.</p>
+        <Field label="Choice" help={form.mode === "auto" ? "A model chooses the premise and the draw runs on to its brief." : "The draw stops for you to choose a premise."}>
+          <Seg label="Choice" value={form.mode} options={["manual", "auto"]} onChange={(v) => setForm({ ...form, mode: v })} />
         </Field>
         <Field label="Setting" htmlFor="setting" help="A setting gives each stage the world to write in.">
           <select id="setting" className="sel" value={form.setting ?? ""} onChange={set("setting")}>

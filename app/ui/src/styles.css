@@ -91,6 +91,9 @@
   kbd {
     font-family: var(--font-mono);
     font-size: var(--text-head);
+    font-variant-caps: normal;
+    letter-spacing: 0;
+    font-weight: 400;
     color: var(--color-dim);
     border: 1px solid var(--color-hair);
     padding: 0 0.35rem;
@@ -356,7 +359,8 @@
   .finding.old > * {
     opacity: 0.55;
   }
-  .tt .num {
+  /* every number and identifier is the mono, in any pane */
+  .num {
     font-family: var(--font-mono);
     white-space: nowrap;
   }
@@ -787,6 +791,11 @@
   .prose p:last-child {
     margin-bottom: 0;
   }
+  /* Newsreader ships 400 to 600: a bold past 600 is faked */
+  .prose strong,
+  .prose b {
+    font-weight: 600;
+  }
   .prose h1,
   .prose h2,
   .prose h3 {
@@ -830,8 +839,8 @@
   .seed {
     font-family: var(--font-serif);
     font-style: italic;
-    font-size: var(--text-name);
-    line-height: 1.5;
+    font-size: var(--text-prose);
+    line-height: var(--text-prose--line-height);
     font-optical-sizing: auto;
     max-width: 66ch;
     white-space: pre-wrap;
@@ -969,7 +978,7 @@
     font-family: var(--font-serif);
     font-style: italic;
     font-size: var(--text-cell);
-    line-height: 1.4;
+    line-height: var(--text-cell--line-height);
     color: var(--color-mute);
     overflow: hidden;
     display: -webkit-box;
@@ -1147,8 +1156,8 @@
   }
   .field textarea {
     font-family: var(--font-serif);
-    font-size: var(--text-name);
-    line-height: 1.5;
+    font-size: var(--text-prose);
+    line-height: var(--text-prose--line-height);
     min-height: 5.5rem;
   }
   .field .inline {
@@ -1178,8 +1187,11 @@
     text-align: left;
     padding: 0.2rem 0 0;
     cursor: pointer;
-    font-family: var(--font-mono);
+    font-family: var(--font-sans);
     font-size: var(--text-head);
+    font-variant-caps: all-small-caps;
+    letter-spacing: 0.08em;
+    font-weight: 500;
   }
   .grouphd[aria-pressed="true"] {
     color: var(--color-ink);

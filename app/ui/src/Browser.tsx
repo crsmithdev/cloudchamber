@@ -242,8 +242,8 @@ export function Browser({ status, onVerdict }: { status: Status | null; onVerdic
               <Head as="div" className="mb-1">
                 artifact
               </Head>
-              <Opt k="artifact" v="true" label="flagged" />
-              <Opt k="artifact" v="false" label="not flagged" />
+              <Opt k="artifact" v="true" label="marked" />
+              <Opt k="artifact" v="false" label="not marked" />
             </div>
           )}
           {kind === "example" && facets && (
@@ -298,7 +298,7 @@ export function Browser({ status, onVerdict }: { status: Status | null; onVerdic
             </span>
             {kind !== "story" && (
               <span>
-                <kbd>a</kbd> artifact
+                <kbd>a</kbd> mark artifact
               </span>
             )}
             <span>
@@ -335,8 +335,8 @@ export function Browser({ status, onVerdict }: { status: Status | null; onVerdic
             <thead>
               <tr>
                 <th className="head sticky">{kind === "story" ? "story" : "text"}</th>
-                <th className="head sticky">where</th>
-                <th className="head sticky">cell</th>
+                <th className="head sticky">from</th>
+                <th className="head sticky">voice / mode</th>
                 <th className="head sticky w-12 text-center">state</th>
                 <th className="head sticky">verdict</th>
                 <th className="head sticky"></th>
@@ -360,16 +360,16 @@ export function Browser({ status, onVerdict }: { status: Status | null; onVerdic
                           {kind !== "story" &&
                             (it.latest ? (
                               <Btn variant="art" onClick={() => decide(it, it.latest!.verdict, !it.latest!.artifact)}>
-                                {it.latest.artifact ? "unflag artifact" : "artifact"} <kbd>a</kbd>
+                                {it.latest.artifact ? "unmark artifact" : "mark artifact"} <kbd>a</kbd>
                               </Btn>
                             ) : (
                               <Btn variant="art" pressed={pendingArt} onClick={() => setPendingArt((v) => !v)}>
                                 {pendingArt ? (
                                   <>
-                                    artifact <Icon name="check" />
+                                    mark artifact <Icon name="check" />
                                   </>
                                 ) : (
-                                  "artifact"
+                                  "mark artifact"
                                 )}{" "}
                                 <kbd>a</kbd>
                               </Btn>
@@ -434,7 +434,12 @@ export function Browser({ status, onVerdict }: { status: Status | null; onVerdic
                         <>
                           <span className={it.latest.verdict === "keep" ? "text-keep" : "text-pass"}>{it.latest.verdict}</span>
                           {it.latest.artifact && <span className="text-art"> · artifact</span>}
-                          {it.latest.inherited_from && <span className="text-dim"> · inherited</span>}
+                          {it.latest.inherited_from && (
+                            <span className="text-dim" title="Carried over from the same passage in an earlier extraction.">
+                              {" "}
+                              · inherited
+                            </span>
+                          )}
                           {it.latest.note && <div className="text-dim">{it.latest.note}</div>}
                         </>
                       ) : (
@@ -444,14 +449,14 @@ export function Browser({ status, onVerdict }: { status: Status | null; onVerdic
                     <td className="text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       {!on && (
                         <span className="inline-flex gap-1">
-                          <Btn variant="quiet" aria-label="Keep" onClick={() => decide(it, "keep")}>
+                          <Btn variant="quiet" aria-label="Keep" title="Keep (k)" onClick={() => decide(it, "keep")}>
                             k
                           </Btn>
-                          <Btn variant="quiet" aria-label="Pass" onClick={() => decide(it, "pass")}>
+                          <Btn variant="quiet" aria-label="Pass" title="Pass (p)" onClick={() => decide(it, "pass")}>
                             p
                           </Btn>
                           {kind !== "story" && (
-                            <Btn variant="quiet" aria-label="Toggle artifact" onClick={() => decide(it, it.latest?.verdict ?? "keep", !it.latest?.artifact)}>
+                            <Btn variant="quiet" aria-label="Mark or unmark artifact" title="Mark or unmark artifact (a)" onClick={() => decide(it, it.latest?.verdict ?? "keep", !it.latest?.artifact)}>
                               a
                             </Btn>
                           )}
