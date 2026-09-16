@@ -184,7 +184,7 @@ export type Like = {
   seed_text: string;
 };
 export type SamplingMode = { mode: string; floor: number; ceiling: number };
-export type Facets = { sources: Source[]; authors: string[]; cells: { cell: string; n: number }[]; settings: string[]; genres: Record<string, string[]>; sampling: SamplingMode[] };
+export type Facets = { sources: Source[]; authors: string[]; cells: { cell: string; n: number }[]; settings: { id: string; name: string }[]; genres: Record<string, string[]>; sampling: SamplingMode[] };
 
 /** "14:54 today" for today's timestamps, otherwise "Sep 4, 03:00". */
 export function when(iso: string): string {

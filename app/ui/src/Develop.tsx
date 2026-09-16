@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api, when, type AutoResult, type Draw, type DraftConfig, type Finding, type Findings, type Story, type Step } from "./api.ts";
-import { DrawMeta, Log, Md, RUNNING_STATUS, RowHead, SeedNote, StepView, firstParagraph, label, type Detail } from "./Draws.tsx";
+import { BriefFiles, DrawMeta, Log, Md, RUNNING_STATUS, RowHead, SeedNote, StepView, boldLabels, firstParagraph, label, useBrief, type Detail } from "./Draws.tsx";
 import { Bar, Btn, Caret as Chevron, Facts, Field, Head, Icon, Mark, Seg, markFor, secs, usePoll } from "./ui.tsx";
 
 /**
@@ -38,8 +38,6 @@ function chainsOf(draws: Draw[]): Chain[] {
 const INVALIDATES = ["debt audit", "arithmetic", "custody"];
 /** A quoted span is shown between the row's own quotation marks; a span the model already quoted would show two. */
 const unquote = (s: string) => s.trim().replace(/^["“”'‘’]+|["“”'‘’]+$/g, "");
-/** Markdown from the outline stage opens paragraphs with a label and a colon; the label reads better set bold. */
-const boldLabels = (md: string) => md.replace(/^([A-Z][A-Za-z0-9 ,'’/&-]{0,40}):(?=\s)/gm, "**$1:**");
 
 export function Develop({ stage, selected }: { stage: "check" | "write"; selected: string | undefined }) {
   const [draws, setDraws] = useState<Draw[]>([]);
@@ -306,54 +304,6 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
         )}
       </div>
     </>
-  );
-}
-
-function useBrief(id: string) {
-  const [brief, setBrief] = useState<Record<string, string> | null>(null);
-  useEffect(() => {
-    setBrief(null);
-    api
-      .brief(id)
-      .then(setBrief)
-      .catch(() => setBrief({}));
-  }, [id]);
-  return brief;
-}
-
-const BRIEF_FILES = ["outline.md", "vignette.md", "context-1.md", "context-2.md", "ending.md", "ending.previous.md"];
-
-/** The brief's files as a table: one row per file, the open one's text under it. */
-function BriefFiles({ id, open = "outline.md" }: { id: string; open?: string }) {
-  const brief = useBrief(id);
-  const [openFile, setOpenFile] = useState<string | null>(open);
-  useEffect(() => setOpenFile(open), [open, id]);
-  if (!brief) return <span className="text-dim">loading the brief…</span>;
-  return (
-    <table className="mt-1">
-      <tbody>
-        {BRIEF_FILES.filter((f) => brief[f]).map((f) => (
-          <React.Fragment key={f}>
-            <tr className="pick" onClick={() => setOpenFile(openFile === f ? null : f)}>
-              <td className="w-4">
-                <Chevron open={openFile === f} />
-              </td>
-              <td className="num whitespace-nowrap text-dim">{f}</td>
-              <td className="text-mute">
-                <span className="line-clamp-1">{firstParagraph(brief[f]).slice(0, 90)}</span>
-              </td>
-            </tr>
-            {openFile === f && (
-              <tr className="spans">
-                <td colSpan={3} style={{ paddingLeft: "1.75rem" }}>
-                  <Md className="text-[14.5px]" text={boldLabels(brief[f])} />
-                </td>
-              </tr>
-            )}
-          </React.Fragment>
-        ))}
-      </tbody>
-    </table>
   );
 }
 

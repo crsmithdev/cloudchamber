@@ -127,7 +127,12 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
       .map((s) => ({ id: s.id, genre: s.genre, ...sourceLabel(s.id, s.path) })),
     authors: db.query("SELECT DISTINCT author FROM stories WHERE author <> '' ORDER BY author").all().map((r: any) => r.author),
     cells: db.query("SELECT voice || '/' || mode AS cell, count(*) AS n FROM passages GROUP BY cell").all(),
-    settings: readdirSync(join(BRIEFS, "..", "sources", "settings")).filter((f) => f.endsWith(".md")).map((f) => f.replace(/\.md$/, "")),
+    // each setting by its front matter name: "setting-b", not setting-b
+    settings: readdirSync(join(BRIEFS, "..", "sources", "settings")).filter((f) => f.endsWith(".md")).map((f) => {
+      const id = f.replace(/\.md$/, "");
+      const name = /^name:\s*(.+)$/m.exec(readFileSync(join(BRIEFS, "..", "sources", "settings", f), "utf8"))?.[1]?.trim();
+      return { id, name: name ?? id };
+    }),
     genres: GENRES,
     sampling: SAMPLING.map((mode) => ({ mode, ...BANDS[mode] })),
   }));

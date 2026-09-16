@@ -79,19 +79,12 @@ export function App() {
   return (
     <div className={"shell" + (folded ? " folded" : "")}>
       <aside className={"rail" + (folded ? " folded" : "")}>
-        <button
-          className="link absolute top-2 right-1.5 grid h-8 w-8 place-items-center"
-          aria-pressed={folded ? "true" : "false"}
-          aria-label={folded ? "Show the sidebar" : "Hide the sidebar"}
-          title={folded ? "Show the sidebar" : "Hide the sidebar"}
-          onClick={() => setFolded((v) => !v)}
-        >
-          <Icon name={folded ? "chevron_right" : "chevron_left"} className="text-mark" />
-        </button>
         {!folded && (
           <>
             <div className="px-2 font-serif text-mark font-medium">
-              Cloud Chamber<small className="mt-0.5 block font-sans text-head text-dim">ideation pipeline</small>
+              Cloud
+              <br />
+              Chamber
             </div>
             <nav className="flex flex-col" aria-label="Sections">
               {TABS.map(([name, href]) => (
@@ -101,13 +94,6 @@ export function App() {
                 </a>
               ))}
             </nav>
-            {status && (
-              <div className="pool mt-auto px-2 leading-relaxed text-dim">
-                <b className="font-medium text-mute">{status.passages_eligible}</b>/{status.passages} passages
-                <br />
-                <b className="font-medium text-mute">{status.themes_eligible}</b>/{status.themes} themes
-              </div>
-            )}
           </>
         )}
         {folded && (
@@ -119,6 +105,15 @@ export function App() {
             ))}
           </nav>
         )}
+        <button
+          className="link mt-auto grid h-8 w-8 place-items-center self-start"
+          aria-pressed={folded ? "true" : "false"}
+          aria-label={folded ? "Show the sidebar" : "Hide the sidebar"}
+          title={folded ? "Show the sidebar" : "Hide the sidebar"}
+          onClick={() => setFolded((v) => !v)}
+        >
+          <Icon name={folded ? "keyboard_double_arrow_right" : "keyboard_double_arrow_left"} className="text-dim" />
+        </button>
       </aside>
       {view === "browse" && <Browser status={status} onVerdict={refresh} />}
       {drawsView && <Draws status={status} selected={view === "draw" ? arg : arg === "new" ? "new" : undefined} like={arg === "new" ? arg2 : undefined} />}

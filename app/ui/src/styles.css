@@ -23,8 +23,8 @@
   --font-serif: "Newsreader", Georgia, serif;
   --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
 
-  /* seven steps: one chrome size, and rank by weight, case, fill and rule */
-  --text-head: 11px;
+  /* seven steps: one chrome size, and rank by weight, case, fill and rule; nothing on the site is set under 12.5px */
+  --text-head: 12.5px;
   --text-head--line-height: 1.4;
   --text-chrome: 12.5px;
   --text-chrome--line-height: 1.45;
@@ -71,6 +71,10 @@
   textarea {
     font: inherit;
     color: inherit;
+  }
+  /* preflight sets small at 80%, under the 12.5px floor */
+  small {
+    font-size: inherit;
   }
   ::selection {
     background: color-mix(in srgb, var(--color-gold) 30%, transparent);
@@ -133,7 +137,7 @@
     gap: 1.25rem;
   }
   .rail.folded {
-    padding: 2.5rem 0.25rem 1rem;
+    padding: 1rem 0.25rem;
     gap: 0.5rem;
     align-items: center;
   }
@@ -548,6 +552,56 @@
     min-height: 4.5rem;
     resize: vertical;
   }
+  /* the genre field: picked genres as fixed tokens, then free text */
+  .tokens {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    background: var(--color-desk);
+    border: 1px solid var(--color-hair);
+    padding: 0.25rem 0.5rem;
+    cursor: text;
+  }
+  .tokens:hover {
+    border-color: var(--color-rule);
+  }
+  .tokens:focus-within {
+    outline: 2px solid var(--color-gold);
+    outline-offset: 1px;
+  }
+  .tokens .token {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    background: var(--color-raised);
+    border: 1px solid var(--color-rule);
+    color: var(--color-ink);
+    padding: 0 0.15rem 0 0.45rem;
+    white-space: nowrap;
+    cursor: default;
+  }
+  .tokens .token button {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    color: var(--color-dim);
+    cursor: pointer;
+    display: inline-grid;
+    place-items: center;
+  }
+  .tokens .token button:hover {
+    color: var(--color-ink);
+  }
+  .tokens input[type="text"] {
+    flex: 1;
+    min-width: 8rem;
+    border: 0;
+    background: transparent;
+    padding: 0.05rem 0;
+    outline: none;
+  }
   select.sel {
     appearance: none;
     padding-right: 1.8rem;
@@ -730,7 +784,7 @@
   }
   .prose code {
     font-family: var(--font-mono);
-    font-size: 0.85em;
+    font-size: max(0.85em, 12.5px);
   }
   .seed {
     font-family: var(--font-serif);
@@ -1073,7 +1127,7 @@
     border: 0;
     background: transparent;
     color: var(--color-dim);
-    text-align: right;
+    text-align: left;
     padding: 0.2rem 0 0;
     cursor: pointer;
     font-family: var(--font-mono);

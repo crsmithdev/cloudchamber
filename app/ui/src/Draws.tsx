@@ -5,6 +5,8 @@ import { Bar, Btn, Caret, Chip, Facts, Field, Head, Icon, LinkBtn, Mark, Seg, hh
 
 export type Detail = { draw: Draw; origin: Origin | null; steps: Step[]; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] };
 const STAGES = ["premises", "execute", "gate", "outline", "context", "ending", "brief"];
+/** The stages a draw runs before its brief; checks, repairs and drafting belong to the check and write tabs. */
+export const IDEATION = new Set(["premises", "execute", "outline", "jobs", "context", "ending"]);
 export const LABEL: Record<string, string> = {
   awaiting_gate: "awaiting the gate",
   done: "brief",
@@ -173,12 +175,14 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
   usePoll(loadDraws, busy, [], 3000, 15000);
 
   // Archived draws stay out of the list until asked for, and the open one stays visible whatever its state.
-  const archived = draws.filter((r) => r.archived_at).length;
+  // a repair round ran no premises: it belongs to check alone
+  const ideate = draws.filter((r) => !r.repaired_from);
+  const archived = ideate.filter((r) => r.archived_at).length;
   // With nothing chosen, land on the draw that needs attention, else the newest; with no draws, the form.
-  const live = draws.filter((r) => !r.archived_at);
+  const live = ideate.filter((r) => !r.archived_at);
   // the form only once the list has loaded and is empty; before that the pane waits
   const current = selected ?? (live.find((r) => r.status === "awaiting_gate") ?? live[0])?.id ?? (loaded && !live.length ? "new" : undefined);
-  const shown = draws.filter((r) => showArchived || !r.archived_at || r.id === current);
+  const shown = ideate.filter((r) => showArchived || !r.archived_at || r.id === current);
   const isForm = current === "new";
   const loadDetail = (id: string) =>
     api
@@ -234,6 +238,8 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
       setErr(e.message);
     }
   };
+  // superseded by a redraw is old; superseded by its own repair is a draw that went on to check
+  const redrawn = (r: Draw) => !!r.superseded_by && !draws.some((x) => x.id === r.superseded_by && x.repaired_from === r.id);
   // the server refuses these two; the row says why rather than letting the click fail
   const deleteBlock = (r: Draw) => {
     if (r.chosen_step) return "it developed a candidate; archive it instead";
@@ -296,7 +302,7 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
           return (
             <div
               key={r.id}
-              className={"row" + (r.id === current ? " on" : "") + (isOpen ? " open" : "") + (RUNNING_STATUS.has(r.status) ? " running" : "") + (r.superseded_by || r.archived_at ? " old" : "")}
+              className={"row" + (r.id === current ? " on" : "") + (isOpen ? " open" : "") + (RUNNING_STATUS.has(r.status) ? " running" : "") + (redrawn(r) || r.archived_at ? " old" : "")}
               onClick={() => select(r.id)}
             >
               <RowHead
@@ -317,7 +323,7 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
                       · {r.setting ?? "unrestricted"} · {r.genre} · {r.sampling}
                       {r.flagged ? <span className="text-art"> · flagged</span> : null}
                       {r.forked_from && " · fork"}
-                      {r.superseded_by && " · superseded"}
+                      {redrawn(r) && " · superseded"}
                       {r.archived_at && " · archived"}
                     </span>
                   </div>
@@ -326,7 +332,7 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
                   {details[r.id] && (
                     <>
                       <RowFacts d={details[r.id]} />
-                      <Log d={details[r.id]} stepId={stepId} onStep={setStepId} />
+                      <Log d={details[r.id]} stepId={stepId} onStep={setStepId} ideation />
                     </>
                   )}
                 </>
@@ -373,8 +379,8 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
                 )}
                 {d.draw.superseded_by && (
                   <span className="text-dim">
-                    superseded by{" "}
-                    <a href={`#draw/${d.draw.superseded_by}`} className="num">
+                    {redrawn(d.draw) ? "superseded by" : "repaired in"}{" "}
+                    <a href={redrawn(d.draw) ? `#draw/${d.draw.superseded_by}` : `#check/${d.draw.superseded_by}`} className="num">
                       {d.draw.superseded_by}
                     </a>
                   </span>
@@ -428,7 +434,7 @@ function RowFacts({ d }: { d: Detail }) {
   const chosen = d.candidates.find((c) => c.step_id === d.draw.chosen_step);
   const lowest = d.candidates[0];
   const since = d.steps.reduce((m, s) => (s.ended_at && s.ended_at > m ? s.ended_at : m), "");
-  const failed = d.steps.filter((s) => s.status === "failed").length;
+  const failed = d.steps.filter((s) => s.status === "failed" && IDEATION.has(s.stage)).length;
   const rows: [React.ReactNode, React.ReactNode][] =
     d.draw.status === "awaiting_gate"
       ? [
@@ -462,7 +468,7 @@ function RowFacts({ d }: { d: Detail }) {
           [
             "steps",
             <>
-              {d.steps.length}
+              {d.steps.filter((s) => IDEATION.has(s.stage)).length}
               {failed ? <span className="text-pass"> · {failed} failed</span> : null}
             </>,
           ],
@@ -476,7 +482,7 @@ function RowFacts({ d }: { d: Detail }) {
 }
 
 /** The step log as a time table: stage, started, seconds. A running row sweeps; the gate waits; what is still to come is faint. */
-export function Log({ d, stepId, onStep, wide }: { d: Detail; stepId: string | null; onStep: (id: string) => void; wide?: boolean }) {
+export function Log({ d, stepId, onStep, wide, ideation }: { d: Detail; stepId: string | null; onStep: (id: string) => void; wide?: boolean; ideation?: boolean }) {
   const byParent = new Map<string | null, Step[]>();
   for (const s of d.steps) {
     const k = s.parent_id;
@@ -491,6 +497,7 @@ export function Log({ d, stepId, onStep, wide }: { d: Detail; stepId: string | n
     }
   };
   walk(null, 0);
+  if (ideation) flat.splice(0, flat.length, ...flat.filter((x) => IDEATION.has(x.s.stage)));
   useTick(d.steps.some((s) => s.status === "running" && Date.now() - Date.parse(s.started_at) < 30 * 60 * 1000));
   const cand = new Map(d.candidates.map((c) => [c.step_id, c]));
   const seen = new Set(d.steps.map((s) => s.stage));
@@ -618,7 +625,8 @@ function DrawBody({
   const running = d.steps.filter((s) => s.status === "running");
   const runningExec = new Set(running.filter((s) => s.stage === "execute").map((s) => s.id));
   const landed = cands.filter((c) => !runningExec.has(c.step_id)).length;
-  const steps = d.steps.filter((s) => s.status === "done");
+  const steps = d.steps.filter((s) => s.status === "done" && IDEATION.has(s.stage));
+  const ideationSteps = d.steps.filter((s) => IDEATION.has(s.stage)).length;
   const callSecs = steps.reduce((n, s) => n + Number(secs(s.started_at, s.ended_at)), 0);
   return (
     <div className="drawbody">
@@ -712,6 +720,14 @@ function DrawBody({
             </table>
           </>
         )}
+        {d.steps.some((s) => s.stage === "ending" && s.status === "done") && (
+          <>
+            <Head className="mt-6" note="what the chosen premise became: the outline, its vignette, two context vignettes and the ending">
+              brief
+            </Head>
+            <BriefFiles id={d.draw.id} />
+          </>
+        )}
         <Head className="mt-6" note={`${d.examples.length} passages the premises were drawn against`}>
           examples
         </Head>
@@ -790,10 +806,10 @@ function DrawBody({
       </div>
       <div className="aside min-w-0">
         <div>
-          <Head as="div" note={`${steps.length} of ${d.steps.length + (gating || d.draw.status === "running" ? STAGES.length - d.steps.length : 0)}`}>
+          <Head as="div" note={`${steps.length} of ${ideationSteps + (gating || d.draw.status === "running" ? STAGES.length - ideationSteps : 0)}`}>
             steps
           </Head>
-          <Log d={d} stepId={null} onStep={() => {}} wide />
+          <Log d={d} stepId={null} onStep={() => {}} wide ideation />
         </div>
         <div className="facts-block mt-6">
           <Head as="div">draw</Head>
@@ -927,10 +943,17 @@ export function StepView({ step, chosen, onBack }: { step: Step; chosen: boolean
   );
 }
 
+/** How a genre group reads on the form; the group keys in genres.toml stay lowercase. */
+const GENRE_GROUP: Record<string, string> = { scifi: "Sci-fi" };
+
 function StartForm({ status, like }: { status: Status | null; like?: string }) {
   const [facets, setFacets] = useState<Facets | null>(null);
   const [form, setForm] = useState<Record<string, string>>({ mode: "manual", sampling: "tail" });
+  // genre is the picked tokens, then any free text after them
   const [genreParts, setGenreParts] = useState<string[]>([]);
+  const [genreText, setGenreText] = useState("");
+  const genreInput = React.useRef<HTMLInputElement>(null);
+  const [likedGenre, setLikedGenre] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   useEffect(() => {
@@ -945,8 +968,8 @@ function StartForm({ status, like }: { status: Status | null; like?: string }) {
     api
       .like(like)
       .then((o) => {
-        setForm({ mode: o.mode, sampling: o.sampling ?? "tail", setting: o.setting ?? "", genre: o.genre ?? "", seed: o.seed_text });
-        setGenreParts([]);
+        setForm({ mode: o.mode, sampling: o.sampling ?? "tail", setting: o.setting ?? "", seed: o.seed_text });
+        setLikedGenre(o.genre ?? "");
         setSeedTouched(false);
         setThemeId(o.seed?.mode === "picked" ? o.seed.themeId : "");
         const s = o.segment?.source;
@@ -954,16 +977,24 @@ function StartForm({ status, like }: { status: Status | null; like?: string }) {
       })
       .catch((e) => setErr(e.message));
   }, [like]);
-  // the chips are shortcuts into one free-text field: picking several joins them, typing clears them
-  const toggleGenre = (v: string) => {
-    const next = genreParts.includes(v) ? genreParts.filter((x) => x !== v) : [...genreParts, v];
-    setGenreParts(next);
-    setForm({ ...form, genre: next.join(" and ") });
+  const known = useMemo(() => new Set(Object.values(facets?.genres ?? {}).flat()), [facets]);
+  // a redrawn genre becomes tokens where every part is a known genre, and free text otherwise
+  const setGenre = (g: string) => {
+    const parts = g
+      .split(" and ")
+      .map((p) => p.trim())
+      .filter(Boolean);
+    const all = parts.length > 0 && parts.every((p) => known.has(p));
+    setGenreParts(all ? parts : []);
+    setGenreText(all ? "" : g);
   };
-  const typeGenre = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setGenreParts([]);
-    setForm({ ...form, genre: e.target.value });
-  };
+  // the redrawn genre waits for the genre list, which says which parts are tokens
+  useEffect(() => {
+    if (likedGenre !== null && facets) setGenre(likedGenre);
+  }, [likedGenre, facets]);
+  const toggleGenre = (v: string) => setGenreParts((ps) => (ps.includes(v) ? ps.filter((x) => x !== v) : [...ps, v]));
+  // the prompt reads one line: the tokens joined with "and", the free text after them
+  const genre = [genreParts.join(" and "), genreText.trim()].filter(Boolean).join(" ");
   // sources grouped by the author or editor on the file, so a whole shelf goes in or out at once
   const groups = useMemo(() => {
     const m = new Map<string, Source[]>();
@@ -984,6 +1015,7 @@ function StartForm({ status, like }: { status: Status | null; like?: string }) {
     try {
       const { id } = await api.startDraw({
         ...form,
+        genre,
         seed: keepsTheme ? undefined : form.seed,
         seed_id: keepsTheme ? themeId : undefined,
         source: sources.join(",") || undefined,
@@ -1009,18 +1041,17 @@ function StartForm({ status, like }: { status: Status | null; like?: string }) {
             , which stays open. Change what you want and start.
           </p>
         )}
-        <p className="lede">
-          Pulls six eligible passages and a seed, asks for five premises off the centre of the distribution, writes each as a 400-word vignette, then stops at the gate for you. After the gate: a reverse outline, two
-          context vignettes, the ending, and a brief in <span className="num">briefs/</span>.
-        </p>
-        <Field label="Gate" help="Manual waits for you after the vignettes. Auto takes the lowest-probability premise and keeps going.">
+        <p className="lede">Pulls six eligible passages and a seed, asks for five premises off the centre of the distribution, writes each as a 400-word vignette, then stops at the gate for you.</p>
+        <Field label="Gate">
           <Seg label="Gate" value={form.mode} options={["manual", "auto"]} onChange={(v) => setForm({ ...form, mode: v })} />
         </Field>
-        <Field label="Setting" htmlFor="setting" help="A setting gives each stage the world to write in. Unrestricted gives none.">
+        <Field label="Setting" htmlFor="setting" help="A setting gives each stage the world to write in.">
           <select id="setting" className="sel" value={form.setting ?? ""} onChange={set("setting")}>
             <option value="">Unrestricted</option>
             {facets?.settings.map((s) => (
-              <option key={s}>{s}</option>
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
             ))}
           </select>
         </Field>
@@ -1034,13 +1065,13 @@ function StartForm({ status, like }: { status: Status | null; like?: string }) {
         >
           <Seg label="Sampling" value={form.sampling} options={(facets?.sampling ?? []).map((s) => s.mode)} onChange={(v) => setForm({ ...form, sampling: v })} />
         </Field>
-        <Field label="Genre" htmlFor="genre" help="Chips fill the field, joined with “and”; type over it for anything else. It reaches one line of the premises ask.">
+        <Field label="Genre" htmlFor="genre">
           <div className="flex flex-col gap-2">
             <div className="srcs" role="group" aria-label="Genre">
               {Object.entries(facets?.genres ?? {}).map(([g, vs]) => (
                 <div key={g} className="srcgroup">
                   <span className="grouphd" aria-hidden="true">
-                    {g}
+                    {GENRE_GROUP[g] ?? g.charAt(0).toUpperCase() + g.slice(1)}
                   </span>
                   <div className="chips">
                     {vs.map((v) => (
@@ -1052,17 +1083,31 @@ function StartForm({ status, like }: { status: Status | null; like?: string }) {
                 </div>
               ))}
             </div>
-            <input id="genre" name="genre" type="text" value={form.genre ?? ""} placeholder="Empty: taken from the examples drawn" onChange={typeGenre} />
+            <div className="tokens" onClick={() => genreInput.current?.focus()}>
+              {genreParts.map((p) => (
+                <span key={p} className="token">
+                  {p}
+                  <button type="button" aria-label={`Remove ${p}`} title={`Remove ${p}`} onClick={() => toggleGenre(p)}>
+                    <Icon name="close" />
+                  </button>
+                </span>
+              ))}
+              <input
+                ref={genreInput}
+                id="genre"
+                name="genre"
+                type="text"
+                value={genreText}
+                placeholder={genreParts.length ? "" : "Empty: taken from the examples drawn"}
+                onChange={(e) => setGenreText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Backspace" && !genreText && genreParts.length) setGenreParts(genreParts.slice(0, -1));
+                }}
+              />
+            </div>
           </div>
         </Field>
-        <Field
-          label="Examples from"
-          help={
-            sources.length
-              ? `${sources.reduce((n, id) => n + (eligible.get(id) ?? 0), 0)} eligible passages across ${sources.length} source${sources.length > 1 ? "s" : ""}.`
-              : `None selected: all ${status?.passages_eligible ?? ""} eligible passages.`
-          }
-        >
+        <Field label="Examples from" help={sources.length ? `${sources.reduce((n, id) => n + (eligible.get(id) ?? 0), 0)} eligible passages across ${sources.length} source${sources.length > 1 ? "s" : ""}.` : undefined}>
           <div className="srcs" role="group" aria-label="Sources">
             {groups.map(([g, rows]) => (
               <div key={g} className="srcgroup">
@@ -1081,7 +1126,7 @@ function StartForm({ status, like }: { status: Status | null; like?: string }) {
             ))}
           </div>
         </Field>
-        <Field label="Seed" htmlFor="seed" help={<>{status ? `${status.themes_eligible} eligible themes in the bank. ` : ""}A typed seed is logged as “typed”, a drawn one as “drawn”.</>}>
+        <Field label="Seed" htmlFor="seed">
           <textarea
             id="seed"
             name="seed"
@@ -1097,10 +1142,60 @@ function StartForm({ status, like }: { status: Status | null; like?: string }) {
           <Btn type="submit" variant="primary" pad disabled={busy}>
             {busy ? "starting…" : "start"}
           </Btn>
-          <span className="text-dim">About a minute to the gate, a few more to a brief.</span>
           {err && <div className="err basis-full">{err}</div>}
         </div>
       </form>
     </div>
+  );
+}
+
+/** Markdown from the outline stage opens paragraphs with a label and a colon; the label reads better set bold. */
+export const boldLabels = (md: string) => md.replace(/^([A-Z][A-Za-z0-9 ,'’/&-]{0,40}):(?=\s)/gm, "**$1:**");
+
+export function useBrief(id: string) {
+  const [brief, setBrief] = useState<Record<string, string> | null>(null);
+  useEffect(() => {
+    setBrief(null);
+    api
+      .brief(id)
+      .then(setBrief)
+      .catch(() => setBrief({}));
+  }, [id]);
+  return brief;
+}
+
+export const BRIEF_FILES = ["outline.md", "vignette.md", "context-1.md", "context-2.md", "ending.md", "ending.previous.md"];
+
+/** The brief's files as a table: one row per file, the open one's text under it. */
+export function BriefFiles({ id, open = "outline.md" }: { id: string; open?: string }) {
+  const brief = useBrief(id);
+  const [openFile, setOpenFile] = useState<string | null>(open);
+  useEffect(() => setOpenFile(open), [open, id]);
+  if (!brief) return <span className="text-dim">loading the brief…</span>;
+  return (
+    <table className="mt-1">
+      <tbody>
+        {BRIEF_FILES.filter((f) => brief[f]).map((f) => (
+          <React.Fragment key={f}>
+            <tr className="pick" onClick={() => setOpenFile(openFile === f ? null : f)}>
+              <td className="w-4">
+                <Caret open={openFile === f} />
+              </td>
+              <td className="num whitespace-nowrap text-dim">{f}</td>
+              <td className="text-mute">
+                <span className="line-clamp-1">{firstParagraph(brief[f]).slice(0, 90)}</span>
+              </td>
+            </tr>
+            {openFile === f && (
+              <tr className="spans">
+                <td colSpan={3} style={{ paddingLeft: "1.75rem" }}>
+                  <Md className="text-[14.5px]" text={boldLabels(brief[f])} />
+                </td>
+              </tr>
+            )}
+          </React.Fragment>
+        ))}
+      </tbody>
+    </table>
   );
 }
