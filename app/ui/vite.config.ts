@@ -7,5 +7,5 @@ export default defineConfig({
   root: resolve(import.meta.dirname),
   plugins: [react(), tailwindcss()],
   build: { outDir: resolve(import.meta.dirname, "dist"), emptyOutDir: true },
-  server: { port: 3003, proxy: { "/api": "http://127.0.0.1:3002" } },
+  server: { port: 3003, proxy: { "/api": "http://127.0.0.1:80" } },
 });
