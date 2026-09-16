@@ -789,7 +789,7 @@
   .row .sd {
     font-family: var(--font-serif);
     font-style: italic;
-    font-size: 13.5px;
+    font-size: var(--text-cell);
     line-height: 1.4;
     color: var(--color-mute);
     overflow: hidden;
@@ -874,6 +874,13 @@
     .tt th.premise,
     .tt td.premise {
       min-width: 0;
+    }
+    .tt .kv {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0 0.75rem;
+    }
+    .tt .kv b {
+      margin-top: 0.35rem;
     }
   }
   .facts {
@@ -1026,9 +1033,12 @@
     width: 44%;
     min-width: 16rem;
   }
+  /* an opened passage reads at the passage role and measure, as it does on the draw page */
   .tt td.text.open {
     white-space: pre-wrap;
-    max-width: 44rem;
+    max-width: 38rem;
+    font-size: var(--text-passage);
+    line-height: var(--text-passage--line-height);
   }
   .rowtools {
     display: flex;

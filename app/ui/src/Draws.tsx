@@ -231,7 +231,7 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
         <StartForm status={status} like={like} />
       ) : !current ? (
         <div className="pane read">
-          <span className="text-dim">loading…</span>
+          <span className="text-dim">loading the draw…</span>
         </div>
       ) : (
         <div className="pane read tt">
@@ -239,7 +239,7 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
             err ? (
               <div className="err">{err}</div>
             ) : (
-              <span className="text-dim">loading…</span>
+              <span className="text-dim">loading the draw…</span>
             )
           ) : (
             <>
@@ -272,7 +272,7 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
                 )}
                 {!step && (
                   <span className="tools" role="group" aria-label="Draw">
-                    <input type="text" name="gate-note" placeholder="note" aria-label="Gate note" value={note} onChange={(e) => setNote(e.target.value)} />
+                    <input type="text" name="gate-note" placeholder="note for the log" aria-label="Gate note" value={note} onChange={(e) => setNote(e.target.value)} />
                     {d.draw.status === "awaiting_gate" && (
                       <>
                         <Btn variant="art" title="Mark this draw as a wrong call for later review. It stays open and nothing else changes." onClick={() => gate("flag")}>
@@ -670,7 +670,7 @@ function DrawBody({
                           >
                             {e.latest?.artifact ? "unflag" : "flag"}
                           </Btn>
-                          <input type="text" placeholder="note" aria-label="Example note" value={exNote[e.id] ?? ""} onChange={(ev) => setExNote((m) => ({ ...m, [e.id]: ev.target.value }))} />
+                          <input type="text" placeholder="note for the log" aria-label="Example note" value={exNote[e.id] ?? ""} onChange={(ev) => setExNote((m) => ({ ...m, [e.id]: ev.target.value }))} />
                         </div>
                       </td>
                     </tr>

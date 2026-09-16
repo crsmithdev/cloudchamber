@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { api, type Status } from "./api.ts";
 import { Browser } from "./Browser.tsx";
 import { Draws } from "./Draws.tsx";
@@ -86,7 +86,7 @@ export function App() {
           title={folded ? "Show the sidebar" : "Hide the sidebar"}
           onClick={() => setFolded((v) => !v)}
         >
-          <Icon name={folded ? "chevron_right" : "chevron_left"} className="text-[20px]" />
+          <Icon name={folded ? "chevron_right" : "chevron_left"} className="text-mark" />
         </button>
         {!folded && (
           <>

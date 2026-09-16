@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type Facets, type Item, type Status } from "./api.ts";
 import { Btn, Chip, Head, Icon, Mark } from "./ui.tsx";
 
@@ -379,7 +379,7 @@ export function Browser({ status, onVerdict }: { status: Status | null; onVerdic
                             type="text"
                             name="note"
                             autoComplete="off"
-                            placeholder="note… (n)"
+                            placeholder="note for the log (n)"
                             aria-label="Note"
                             value={note}
                             onChange={(e) => setNote(e.target.value)}

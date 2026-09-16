@@ -132,7 +132,7 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
           err ? (
             <div className="err">{err}</div>
           ) : (
-            <span className="text-dim">loading…</span>
+            <span className="text-dim">loading the draw…</span>
           )
         ) : (
           <>
@@ -231,7 +231,7 @@ function BriefFiles({ id, open = "outline.md" }: { id: string; open?: string }) 
   const brief = useBrief(id);
   const [openFile, setOpenFile] = useState<string | null>(open);
   useEffect(() => setOpenFile(open), [open, id]);
-  if (!brief) return <span className="text-dim">loading…</span>;
+  if (!brief) return <span className="text-dim">loading the brief…</span>;
   return (
     <table className="mt-1">
       <tbody>
@@ -559,9 +559,9 @@ function GateOne({ d, onAct, onDraft }: { d: Detail; onAct: (fn: () => Promise<a
               <thead>
                 <tr>
                   <th className="head w-10">score</th>
-                  <th className="head w-24">recurred</th>
-                  <th className="head w-24">breaks</th>
-                  <th className="head w-24">checkers</th>
+                  <th className="head w-20">recurred</th>
+                  <th className="head w-20">breaks</th>
+                  <th className="head w-20">checkers</th>
                   <th className="head premise">finding</th>
                   <th className="head w-10 text-center">state</th>
                   <th className="head w-24"></th>
@@ -911,7 +911,7 @@ function DraftSettings({ d, onClose, onDraft }: { d: Detail; onClose: () => void
   useEffect(() => {
     api.draftConfig().then(setCfg);
   }, []);
-  if (!cfg) return <span className="text-dim">loading…</span>;
+  if (!cfg) return <span className="text-dim">loading the draft defaults…</span>;
   const def = cfg.defaults;
   const base: Record<string, string> = {
     "length.words": String(def.length.words),
@@ -1024,7 +1024,7 @@ function StoryPane({ d, onAct }: { d: Detail; onAct: (fn: () => Promise<any>, go
       .then(setS)
       .catch(() => {});
   }, [id, d.steps.length]);
-  if (!s) return <span className="text-dim">loading…</span>;
+  if (!s) return <span className="text-dim">loading the story…</span>;
   const gating = d.draw.status === "awaiting_draft_gate";
   const gate = (action: string, extra: Record<string, unknown> = {}) => onAct(() => api.gate(id, { action, note, ...extra }));
   const M = s.scenes.length;
