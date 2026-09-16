@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api, when, type AutoResult, type Draw, type DraftConfig, type Finding, type Findings, type Story, type Step } from "./api.ts";
-import { DrawMeta, Log, Md, RUNNING_STATUS, SeedNote, StepView, firstParagraph, label, type Detail } from "./Draws.tsx";
+import { DrawMeta, Log, Md, RUNNING_STATUS, RowHead, SeedNote, StepView, firstParagraph, label, type Detail } from "./Draws.tsx";
 import { Bar, Btn, Caret as Chevron, Facts, Field, Head, Icon, Mark, Seg, markFor, secs, usePoll } from "./ui.tsx";
 
 /**
@@ -47,13 +47,18 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
   const [stepId, setStepId] = useState<string | null>(null);
   const [err, setErr] = useState("");
   const [settings, setSettings] = useState(false);
+  const [folded, setFolded] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const loadDraws = () =>
     api
-      .draws()
+      .draws(true)
       .then(setDraws)
       .catch(() => {});
   // one entry per repair chain, named for its root, shown where its head is; the rounds in order
-  const chains = useMemo(() => chainsOf(draws).filter((c) => c.head.stage === stage), [draws, stage]);
+  // a chain is archived when its head is: archive acts on every round, so the list never shows part of one
+  const all = useMemo(() => chainsOf(draws).filter((c) => c.head.stage === stage), [draws, stage]);
+  const chains = all.filter((c) => !c.head.archived_at);
+  const archived = all.length - chains.length;
   const heads = chains.map((c) => c.head);
   const busy = heads.some((r) => RUNNING_STATUS.has(r.status));
   const summarising = chains.some((c) => c.rounds.some((r) => r.check === null && r.status !== "done"));
@@ -71,6 +76,7 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
     setStepId(null);
     setErr("");
     setSettings(false);
+    setFolded(false);
     return () => {};
   }, [current]);
   const working = !!d && (RUNNING_STATUS.has(d.draw.status) || d.steps.some((s) => s.status === "running"));
@@ -93,6 +99,8 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
       setErr(e.message);
     }
   };
+  const archiveChain = (c: Chain) => act(() => Promise.all(c.rounds.map((x) => api.gate(x.id, { action: c.head.archived_at ? "unarchive" : "archive" }))));
+  const shown = all.filter((c) => showArchived || !c.head.archived_at || c.rounds.some((x) => x.id === current));
   const step = d && stepId ? d.steps.find((s) => s.id === stepId) : undefined;
   const statusLine = (r: Draw) => (r.status === "done" ? "brief · not yet checked" : label(r.status));
   const atGate = draws.filter((r) => OPEN.has(r.status)).length;
@@ -105,83 +113,105 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
               ? `${heads.filter((r) => OPEN.has(r.status)).length} at gate 1 · ${heads.filter((r) => r.status === "done").length} unchecked`
               : `${heads.filter((r) => OPEN.has(r.status)).length} at gate 2 · ${heads.filter((r) => r.status === "drafted").length} kept`}
             {chains.some((c) => c.rounds.length > 1) && <span className="note"> · {chains.filter((c) => c.rounds.length > 1).length} repair chains</span>}
+            {archived > 0 && (
+              <>
+                {" "}
+                ·{" "}
+                <button className="link" onClick={() => setShowArchived((v) => !v)}>
+                  {showArchived ? "hide" : "show"} {archived} archived
+                </button>
+              </>
+            )}
           </span>
         </div>
         {chains.length === 0 && <div className="empty">{stage === "check" ? "No briefs yet. Choose a candidate at a gate under ideate." : "Nothing drafted yet. Send a checked brief here from check."}</div>}
-        {chains.map((c) => {
+        {shown.map((c) => {
           const r = c.head;
           const on = c.rounds.some((x) => x.id === current);
+          const isOpen = on && !folded;
           const max = Math.max(...c.rounds.map((x) => x.check?.total ?? 0), 1);
           const lowest = c.rounds.reduce((m, x) => (x.check && (!m || x.check.total < m.check!.total) ? x : m), null as Draw | null);
           return (
             <div
               key={c.root.id}
-              className={"row" + (on ? " on" : "") + (RUNNING_STATUS.has(r.status) ? " running" : "")}
+              className={"row" + (on ? " on" : "") + (isOpen ? " open" : "") + (RUNNING_STATUS.has(r.status) ? " running" : "") + (r.archived_at ? " old" : "")}
               onClick={() => {
-                location.hash = `#${stage}/${r.id}`;
+                if (!on) location.hash = `#${stage}/${r.id}`;
+                else if (stepId) setStepId(null);
+                else setFolded((f) => !f);
               }}
             >
-              <div className="l1">
-                <b>{c.root.name ?? c.root.id}</b>
-                <span className="when">{when(r.created_at)}</span>
-              </div>
-              <div className="l2">
-                <Mark state={markFor(r.status)} />
-                <span className={RUNNING_STATUS.has(r.status) ? "sweep text-running" : ""}>{statusLine(r)}</span>
-                <span className="text-dim">
-                  {c.rounds.length > 1 && ` · round ${c.rounds.length} of ${c.rounds.length}`}
-                  {r.origin?.index ? (
-                    <span className="num text-mute">
-                      {" "}
-                      · #{r.origin.index}
-                      {r.origin.probability != null ? ` · ${r.origin.probability.toFixed(2)}` : ""}
+              <RowHead
+                name={c.root.name ?? c.root.id}
+                status={statusLine(r)}
+                mark={markFor(r.status)}
+                rounds={c.rounds.length}
+                at={r.created_at}
+                archived={!!r.archived_at}
+                blocked="it developed a candidate; archive it instead"
+                onArchive={() => archiveChain(c)}
+                onDelete={() => {}}
+              />
+              {isOpen && (
+                <>
+                  <div className="l2">
+                    <span className={RUNNING_STATUS.has(r.status) ? "sweep text-running" : ""}>{statusLine(r)}</span>
+                    <span className="text-dim">
+                      {c.rounds.length > 1 && ` · round ${c.rounds.length} of ${c.rounds.length}`}
+                      {r.origin?.index ? (
+                        <span className="num text-mute">
+                          {" "}
+                          · #{r.origin.index}
+                          {r.origin.probability != null ? ` · ${r.origin.probability.toFixed(2)}` : ""}
+                        </span>
+                      ) : null}{" "}
+                      · {r.setting ?? "unrestricted"} · {r.genre}
+                      {r.flagged ? <span className="text-art"> · flagged</span> : null}
                     </span>
-                  ) : null}{" "}
-                  · {r.setting ?? "unrestricted"} · {r.genre}
-                  {r.flagged ? <span className="text-art"> · flagged</span> : null}
-                </span>
-              </div>
-              <div className="sd">{r.seed_text}</div>
-              {c.rounds.length > 1 && (
-                <table className="ledger" onClick={(e) => e.stopPropagation()}>
-                  <tbody>
-                    {c.rounds.map((x, i) => (
-                      <tr
-                        key={x.id}
-                        className={x.id === current ? "sel" : ""}
-                        onClick={() => {
-                          location.hash = `#${x.stage}/${x.id}`;
-                        }}
-                        title={x.check ? `round ${i + 1} · ${x.check.reported} reported · ${x.check.accepted} accepted · score ${x.check.total}` : `round ${i + 1} · ${statusLine(x)}`}
+                  </div>
+                  <div className="sd">{r.seed_text}</div>
+                  {c.rounds.length > 1 && (
+                    <table className="ledger" onClick={(e) => e.stopPropagation()}>
+                      <tbody>
+                        {c.rounds.map((x, i) => (
+                          <tr
+                            key={x.id}
+                            className={x.id === current ? "sel" : ""}
+                            onClick={() => {
+                              location.hash = `#${x.stage}/${x.id}`;
+                            }}
+                            title={x.check ? `round ${i + 1} · ${x.check.reported} reported · ${x.check.accepted} accepted · score ${x.check.total}` : `round ${i + 1} · ${statusLine(x)}`}
+                          >
+                            <td className="num w-4">{i + 1}</td>
+                            <td>
+                              <Bar pct={x.check ? (x.check.total / max) * 100 : 0} gold={x === lowest} />
+                            </td>
+                            <td className={"num text-right" + (x === lowest ? " text-keep" : "")}>{x.check ? x.check.total : x.status === "done" ? "—" : "…"}</td>
+                            <td className="num text-right text-dim">{x.check ? `${x.check.accepted}/${x.check.reported}` : ""}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                  <div className="rid">{r.id}</div>
+                  {stage === "check" && r.status === "done" && (
+                    <div className="acts" onClick={(e) => e.stopPropagation()}>
+                      <Btn
+                        onClick={() =>
+                          act(
+                            () => api.check(r.id),
+                            () => r.id,
+                          )
+                        }
                       >
-                        <td className="num w-4">{i + 1}</td>
-                        <td>
-                          <Bar pct={x.check ? (x.check.total / max) * 100 : 0} gold={x === lowest} />
-                        </td>
-                        <td className={"num text-right" + (x === lowest ? " text-keep" : "")}>{x.check ? x.check.total : x.status === "done" ? "—" : "…"}</td>
-                        <td className="num text-right text-dim">{x.check ? `${x.check.accepted}/${x.check.reported}` : ""}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        check this brief
+                      </Btn>
+                      <span className="text-dim">derivation, ledger, structure, resemblance</span>
+                    </div>
+                  )}
+                  {d && <Log d={d} stepId={stepId} onStep={setStepId} />}
+                </>
               )}
-              <div className="rid">{r.id}</div>
-              {stage === "check" && r.status === "done" && (
-                <div className="acts" onClick={(e) => e.stopPropagation()}>
-                  <Btn
-                    onClick={() =>
-                      act(
-                        () => api.check(r.id),
-                        () => r.id,
-                      )
-                    }
-                  >
-                    check this brief
-                  </Btn>
-                  <span className="text-dim">derivation, ledger, structure, resemblance</span>
-                </div>
-              )}
-              {on && d && <Log d={d} stepId={stepId} onStep={setStepId} />}
             </div>
           );
         })}

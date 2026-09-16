@@ -768,13 +768,21 @@
     margin: 0.25rem 0 1rem;
   }
 
-  /* the list pane's rows: name and time, a mark and a status line, a two-line seed, the id */
+  /* the list pane's rows: one line folded (mark, name, rounds, date, controls); open, the status line, a two-line seed, the id and the log */
   .row {
     display: grid;
+    /* a minmax track, or the unwrapped name sizes the column past the pane */
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.15rem;
-    padding: 0.6rem 0.75rem;
+    padding: 0.25rem 0.375rem 0.25rem 0.75rem;
     border-bottom: 1px solid var(--color-hair);
     cursor: pointer;
+  }
+  .row.open {
+    padding-bottom: 0.6rem;
+  }
+  .row.open > :not(.l1) {
+    margin-right: 0.375rem;
   }
   .row:hover {
     background: color-mix(in srgb, var(--color-raised) 60%, transparent);
@@ -791,12 +799,64 @@
   }
   .row .l1 {
     display: flex;
-    justify-content: space-between;
+    align-items: center;
     gap: 0.5rem;
+    min-height: 1.5rem;
   }
   .row .l1 b {
     color: var(--color-ink);
     font-weight: 600;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .row .l1 .rounds {
+    font-family: var(--font-mono);
+    font-size: var(--text-head);
+    color: var(--color-dim);
+  }
+  .row .tools {
+    display: inline-flex;
+  }
+  /* the controls stay in place on every row, quiet until the row is hovered, focused or current */
+  .row .ico {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+    display: inline-grid;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    color: color-mix(in srgb, var(--color-dim) 55%, transparent);
+  }
+  .row:is(:hover, :focus-within, .on) .ico {
+    color: var(--color-dim);
+  }
+  .row .ico:hover {
+    color: var(--color-ink);
+    background: var(--color-hair);
+  }
+  .row .ico.del:hover {
+    color: var(--color-pass);
+  }
+  .row .ico:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    background: none;
+    color: var(--color-dim);
+  }
+  .row .confirm {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.375rem 0.25rem 0;
+    color: var(--color-pass);
+    cursor: default;
   }
   .row .l1 .when {
     color: var(--color-dim);

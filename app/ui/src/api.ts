@@ -149,7 +149,7 @@ export const api = {
   draws: (archived = false) => j<Draw[]>(`/api/draws${archived ? "?archived=true" : ""}`),
   draw: (id: string) => j<{ draw: Draw; origin: Origin | null; steps: Step[]; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] }>(`/api/draws/${id}`),
   like: (id: string) => j<Like>(`/api/draws/${id}/like`),
-  deleteDraw: (id: string) => j<{ deleted: string }>(`/api/draws/${id}`, { method: "DELETE" }),
+  deleteDraw: (id: string) => j<{ deleted: string }>(`/api/draws/${id}`, { method: "DELETE", body: "{}" }),
   startDraw: (b: Record<string, string | undefined>) => j<{ id: string }>("/api/draws", { method: "POST", body: JSON.stringify(b) }),
   gate: (id: string, b: { action: string; step_id?: string; note?: string; findings?: string[]; finding?: string; beat?: number }) => j<any>(`/api/draws/${id}/gate`, { method: "POST", body: JSON.stringify(b) }),
   check: (id: string) => j<{ id: string; status: string }>(`/api/draws/${id}/check`, { method: "POST", body: "{}" }),

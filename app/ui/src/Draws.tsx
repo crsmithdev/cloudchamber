@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { marked } from "marked";
 import { api, when, type Artifact, type Candidate, type Example, type Facets, type Draw, type Fork, type FullStep, type Origin, type Source, type Status, type Step } from "./api.ts";
-import { Bar, Btn, Caret, Chip, Facts, Field, Head, Icon, LinkBtn, Mark, Seg, hhmm, markFor, secs, usePoll, useTick } from "./ui.tsx";
+import { Bar, Btn, Caret, Chip, Facts, Field, Head, Icon, LinkBtn, Mark, Seg, hhmm, markFor, secs, usePoll, useTick, type MarkState } from "./ui.tsx";
 
 export type Detail = { draw: Draw; origin: Origin | null; steps: Step[]; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] };
 const STAGES = ["premises", "execute", "gate", "outline", "context", "ending", "brief"];
@@ -58,13 +58,93 @@ export function SeedNote({ text }: { text: string }) {
   );
 }
 
+/**
+ * A list row's top line, the whole row when it is folded: the status mark, the
+ * name, the round count, the date and the archive and delete controls. Delete
+ * asks in the row before it acts.
+ */
+export function RowHead({
+  name,
+  status,
+  mark,
+  rounds = 1,
+  at,
+  archived,
+  blocked,
+  onArchive,
+  onDelete,
+}: {
+  name: string;
+  status: string;
+  mark: MarkState;
+  rounds?: number;
+  at: string;
+  archived: boolean;
+  /** why this row cannot be deleted, or empty when it can */
+  blocked: string;
+  onArchive: () => void;
+  onDelete: () => void;
+}) {
+  const [asking, setAsking] = useState(false);
+  const stop = (e: React.MouseEvent) => e.stopPropagation();
+  return (
+    <>
+      <div className="l1">
+        <Mark state={mark} title={status} />
+        <b>{name}</b>
+        {rounds > 1 && (
+          <span className="rounds" title={`${rounds} rounds`}>
+            {rounds}r
+          </span>
+        )}
+        <span className="when">{when(at).split(",")[0]}</span>
+        <span className="tools" onClick={stop}>
+          <button
+            className="ico"
+            title={archived ? "Put this back in the list." : "Hide this from the list. Nothing else about it changes."}
+            aria-label={`${archived ? "Unarchive" : "Archive"} ${name}`}
+            onClick={onArchive}
+          >
+            <Icon name={archived ? "unarchive" : "archive"} />
+          </button>
+          <button
+            className="ico del"
+            disabled={!!blocked}
+            title={blocked ? `Cannot delete: ${blocked}.` : "Delete this and every step under it. There is no undo."}
+            aria-label={`Delete ${name}`}
+            onClick={() => setAsking(true)}
+          >
+            <Icon name="delete" />
+          </button>
+        </span>
+      </div>
+      {asking && (
+        <div className="confirm" onClick={stop}>
+          <span>Delete {name} and every step under it? There is no undo.</span>
+          <Btn
+            variant="pass"
+            onClick={() => {
+              setAsking(false);
+              onDelete();
+            }}
+          >
+            delete
+          </Btn>
+          <Btn variant="quiet" onClick={() => setAsking(false)}>
+            keep
+          </Btn>
+        </div>
+      )}
+    </>
+  );
+}
+
 /** The keys every stage prints about a draw: what it was drawn under. */
 export function DrawMeta({ d, children }: { d: Detail; children?: React.ReactNode }) {
   return (
     <span className="text-mute">
       {children}
-      <span className="text-dim">setting</span> {d.draw.setting ?? "unrestricted"} · <span className="text-dim">genre</span> {d.draw.genre || "none"} ·{" "}
-      <span className="text-dim">sampling</span> {d.draw.sampling}
+      <span className="text-dim">setting</span> {d.draw.setting ?? "unrestricted"} · <span className="text-dim">genre</span> {d.draw.genre || "none"} · <span className="text-dim">sampling</span> {d.draw.sampling}
     </span>
   );
 }
@@ -73,7 +153,8 @@ export function DrawMeta({ d, children }: { d: Detail; children?: React.ReactNod
 export function Draws({ status, selected, like }: { status: Status | null; selected: string | undefined; like?: string }) {
   const [draws, setDraws] = useState<Draw[]>([]);
   const [details, setDetails] = useState<Record<string, Detail>>({});
-  const [open, setOpen] = useState<Set<string>>(new Set());
+  // the current draw is the only row that can be open; this folds it
+  const [folded, setFolded] = useState(false);
   const [stepId, setStepId] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [showArchived, setShowArchived] = useState(false);
@@ -108,13 +189,9 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
     if (!current || isForm) return;
     setStepId(null);
     setErr("");
-    setOpen((o) => new Set(o).add(current));
+    setFolded(false);
     return () => {};
   }, [current]);
-  useEffect(() => {
-    // the current draw is loaded by the poll; this fetches the other rows the operator opened
-    for (const id of open) if (id !== current && !details[id]) loadDetail(id);
-  }, [open]);
   const d = current && !isForm ? details[current] : undefined;
   // the pane refreshes itself while the pipeline is working on this draw, and rarely once it stops
   const working = !!d && (RUNNING_STATUS.has(d.draw.status) || d.steps.some((s) => s.status === "running"));
@@ -135,11 +212,33 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
       setStepId(null);
       return;
     } // a step log is open: back to the draw before folding the row
-    setOpen((o) => {
-      const n = new Set(o);
-      n.has(id) ? n.delete(id) : n.add(id);
-      return n;
-    });
+    setFolded((f) => !f);
+  };
+  const archiveRow = async (r: Draw) => {
+    setErr("");
+    try {
+      await api.gate(r.id, { action: r.archived_at ? "unarchive" : "archive" });
+      loadDraws();
+      if (r.id === current) loadDetail(r.id);
+    } catch (e: any) {
+      setErr(e.message);
+    }
+  };
+  const deleteRow = async (r: Draw) => {
+    setErr("");
+    try {
+      await api.deleteDraw(r.id);
+      if (r.id === current) location.hash = "#draws";
+      loadDraws();
+    } catch (e: any) {
+      setErr(e.message);
+    }
+  };
+  // the server refuses these two; the row says why rather than letting the click fail
+  const deleteBlock = (r: Draw) => {
+    if (r.chosen_step) return "it developed a candidate; archive it instead";
+    const by = draws.find((x) => x.superseded_by === r.id || x.repaired_from === r.id || x.forked_from === r.id);
+    return by ? `${by.name ?? by.id} refers to it` : "";
   };
   const gate = async (action: string, step_id?: string) => {
     if (!d) return;
@@ -192,40 +291,49 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
           </span>
         </div>
         {shown.length === 0 && <div className="empty">No draws yet.</div>}
-        {shown.map((r) => (
-          <div key={r.id} className={"row" + (r.id === current ? " on" : "") + (RUNNING_STATUS.has(r.status) ? " running" : "") + (r.superseded_by || r.archived_at ? " old" : "")} onClick={() => select(r.id)}>
-            <div className="l1">
-              <b>{r.name ?? r.id}</b>
-              <span className="when">{when(r.created_at)}</span>
+        {shown.map((r) => {
+          const isOpen = r.id === current && !folded;
+          return (
+            <div
+              key={r.id}
+              className={"row" + (r.id === current ? " on" : "") + (isOpen ? " open" : "") + (RUNNING_STATUS.has(r.status) ? " running" : "") + (r.superseded_by || r.archived_at ? " old" : "")}
+              onClick={() => select(r.id)}
+            >
+              <RowHead
+                name={r.name ?? r.id}
+                status={label(r.status)}
+                mark={markFor(r.status)}
+                at={r.created_at}
+                archived={!!r.archived_at}
+                blocked={deleteBlock(r)}
+                onArchive={() => archiveRow(r)}
+                onDelete={() => deleteRow(r)}
+              />
+              {isOpen && (
+                <>
+                  <div className="l2">
+                    <span className={RUNNING_STATUS.has(r.status) ? "sweep text-running" : ""}>{label(r.status)}</span>
+                    <span className="text-dim">
+                      · {r.setting ?? "unrestricted"} · {r.genre} · {r.sampling}
+                      {r.flagged ? <span className="text-art"> · flagged</span> : null}
+                      {r.forked_from && " · fork"}
+                      {r.superseded_by && " · superseded"}
+                      {r.archived_at && " · archived"}
+                    </span>
+                  </div>
+                  <div className="sd">{r.seed_text}</div>
+                  <div className="rid">{r.id}</div>
+                  {details[r.id] && (
+                    <>
+                      <RowFacts d={details[r.id]} />
+                      <Log d={details[r.id]} stepId={stepId} onStep={setStepId} />
+                    </>
+                  )}
+                </>
+              )}
             </div>
-            <div className="l2">
-              <Mark state={markFor(r.status)} />
-              <span className={RUNNING_STATUS.has(r.status) ? "sweep text-running" : ""}>{label(r.status)}</span>
-              <span className="text-dim">
-                · {r.setting ?? "unrestricted"} · {r.genre} · {r.sampling}
-                {r.flagged ? <span className="text-art"> · flagged</span> : null}
-                {r.forked_from && " · fork"}
-                {r.superseded_by && " · superseded"}
-                {r.archived_at && " · archived"}
-              </span>
-            </div>
-            <div className="sd">{r.seed_text}</div>
-            <div className="rid">{r.id}</div>
-            {open.has(r.id) && details[r.id] && (
-              <>
-                <RowFacts d={details[r.id]} />
-                <Log
-                  d={details[r.id]}
-                  stepId={r.id === current ? stepId : null}
-                  onStep={(id) => {
-                    if (r.id !== current) location.hash = `#draw/${r.id}`;
-                    setStepId(id);
-                  }}
-                />
-              </>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {isForm ? (
