@@ -148,17 +148,6 @@ export function RowHead({
   );
 }
 
-/** The keys every stage prints about a draw: what it was drawn under. */
-export function DrawMeta({ d, children }: { d: Detail; children?: React.ReactNode }) {
-  return (
-    <span className="text-mute">
-      {children}
-      <span className="text-dim">setting</span> {d.draw.setting ?? "unrestricted"} · <span className="text-dim">genre</span> {d.draw.genre || "none"} · <span className="text-dim">sampling</span> {d.draw.sampling} ·{" "}
-      <span className="text-dim">darkness</span> {d.draw.darkness ?? "none"}
-    </span>
-  );
-}
-
 /** Draws in the list pane, each opening into its facts and step log; the selected draw, a step, or the start form fills the rest. */
 export function Draws({ status, selected, like }: { status: Status | null; selected: string | undefined; like?: string }) {
   const [draws, setDraws] = useState<Draw[]>([]);
@@ -361,7 +350,6 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
             <>
               <div className={"strip" + (working ? " running" : "")}>
                 <h1>{d.draw.name ?? d.draw.id}</h1>
-                <span className="num text-dim">{d.draw.id}</span>
                 <span className={"state " + (working ? "text-running" : d.draw.status === "awaiting_gate" ? "text-art" : d.draw.status === "failed" ? "text-pass" : "text-mute")}>
                   <Mark state={markFor(d.draw.status)} />
                   <span className={working ? "sweep" : ""}>
@@ -369,23 +357,6 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
                     {working && d.steps.some((s) => s.status === "running") ? ` · ${[...new Set(d.steps.filter((s) => s.status === "running").map((s) => s.stage))].join(", ")}` : ""}
                   </span>
                 </span>
-                <DrawMeta d={d} />
-                {d.draw.forked_from && (
-                  <span className="text-dim">
-                    forked from{" "}
-                    <a href={`#draw/${d.draw.forked_from}`} className="num">
-                      {d.draw.forked_from}
-                    </a>
-                  </span>
-                )}
-                {d.draw.superseded_by && (
-                  <span className="text-dim">
-                    {redrawn(d.draw) ? "superseded by" : "repaired in"}{" "}
-                    <a href={redrawn(d.draw) ? `#draw/${d.draw.superseded_by}` : `#check/${d.draw.superseded_by}`} className="num">
-                      {d.draw.superseded_by}
-                    </a>
-                  </span>
-                )}
                 {!step && (
                   <span className="tools" role="group" aria-label="Draw">
                     <input type="text" name="gate-note" placeholder="note for the log" aria-label="Gate note" value={note} onChange={(e) => setNote(e.target.value)} />
@@ -421,7 +392,41 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
               {step ? (
                 <StepView step={step} chosen={step.id === d.draw.chosen_step} onBack={() => setStepId(null)} />
               ) : (
-                <DrawBody d={d} onChoose={(id) => gate("choose", id)} onFork={(id) => gate("fork", id)} onVerdict={verdict} onStep={setStepId} />
+                <DrawBody
+                  d={d}
+                  onChoose={(id) => gate("choose", id)}
+                  onFork={(id) => gate("fork", id)}
+                  onVerdict={verdict}
+                  aside={
+                    <DrawAside
+                      d={d}
+                      ideation
+                      onStep={setStepId}
+                      rows={[
+                        ...(d.draw.forked_from
+                          ? [
+                              [
+                                "forked from",
+                                <a href={`#draw/${d.draw.forked_from}`} className="num">
+                                  {d.draw.forked_from}
+                                </a>,
+                              ] as Row,
+                            ]
+                          : []),
+                        ...(d.draw.superseded_by
+                          ? [
+                              [
+                                redrawn(d.draw) ? "superseded by" : "repaired in",
+                                <a href={redrawn(d.draw) ? `#draw/${d.draw.superseded_by}` : `#check/${d.draw.superseded_by}`} className="num">
+                                  {d.draw.superseded_by}
+                                </a>,
+                              ] as Row,
+                            ]
+                          : []),
+                      ]}
+                    />
+                  }
+                />
               )}
             </>
           )}
@@ -572,13 +577,13 @@ function DrawBody({
   onChoose,
   onFork,
   onVerdict,
-  onStep,
+  aside,
 }: {
   d: Detail;
   onChoose: (stepId: string) => void;
   onFork: (stepId: string) => void;
   onVerdict: (e: Example, v: "keep" | "pass", artifact?: boolean, note?: string) => void;
-  onStep: (id: string) => void;
+  aside: React.ReactNode;
 }) {
   const [openVig, setOpenVig] = useState<string | null>(d.draw.chosen_step);
   const [openEx, setOpenEx] = useState<string | null>(null);
@@ -765,9 +770,7 @@ function DrawBody({
           </tbody>
         </table>
       </div>
-      <div className="aside min-w-0">
-        <DrawAside d={d} ideation onStep={onStep} />
-      </div>
+      <div className="aside min-w-0">{aside}</div>
     </div>
   );
 }
@@ -776,7 +779,8 @@ function DrawBody({
  * The reading pane's right column in every tab: the step log, then what the
  * draw was drawn under and what it has cost. Ideate counts its own stages only.
  */
-export function DrawAside({ d, ideation, onStep = () => {} }: { d: Detail; ideation?: boolean; onStep?: (id: string) => void }) {
+type Row = [React.ReactNode, React.ReactNode];
+export function DrawAside({ d, ideation, onStep, top, rows = [] }: { d: Detail; ideation?: boolean; onStep: (id: string) => void; top?: React.ReactNode; rows?: Row[] }) {
   const mine = d.steps.filter((s) => !ideation || IDEATION.has(s.stage));
   const steps = mine.filter((s) => s.status === "done");
   const gating = d.draw.status === "awaiting_gate" || d.draw.status === "running";
@@ -786,6 +790,7 @@ export function DrawAside({ d, ideation, onStep = () => {} }: { d: Detail; ideat
   const models = [...new Set(mine.map((s) => s.model).filter((m) => m && m !== "copied"))];
   return (
     <>
+      {top}
       <div>
         <Head as="div" note={`${steps.length} of ${total}`}>
           steps
@@ -797,7 +802,26 @@ export function DrawAside({ d, ideation, onStep = () => {} }: { d: Detail; ideat
         <table className="mt-1">
           <tbody>
             <tr>
-              <td className="w-24 text-dim">setting</td>
+              <td className="w-24 text-dim">id</td>
+              <td className="num">{d.draw.id}</td>
+            </tr>
+            {d.origin && (
+              <tr>
+                <td className="text-dim">{d.origin.id === d.draw.id ? "candidate" : "from"}</td>
+                <td className="num">
+                  <a href={`#draw/${d.origin.id}`}>{d.origin.id === d.draw.id ? `#${d.origin.index}` : `${d.origin.name ?? d.origin.id}${d.origin.index ? ` #${d.origin.index}` : ""}`}</a>
+                  {d.origin.probability != null && <span className="text-dim"> · {d.origin.probability.toFixed(2)}</span>}
+                </td>
+              </tr>
+            )}
+            {rows.map(([k, v], i) => (
+              <tr key={i}>
+                <td className="text-dim">{k}</td>
+                <td>{v}</td>
+              </tr>
+            ))}
+            <tr>
+              <td className="text-dim">setting</td>
               <td>{d.draw.setting ?? "unrestricted"}</td>
             </tr>
             <tr>

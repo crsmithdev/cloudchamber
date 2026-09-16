@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api, when, type AutoResult, type Draw, type DraftConfig, type Finding, type Findings, type Story, type Step } from "./api.ts";
-import { BriefFiles, DrawAside, DrawMeta, Md, RUNNING_STATUS, RowHead, SeedNote, StepView, boldLabels, firstParagraph, label, useBrief, type Detail } from "./Draws.tsx";
+import { BriefFiles, DrawAside, Md, RUNNING_STATUS, RowHead, SeedNote, StepView, boldLabels, firstParagraph, label, useBrief, type Detail } from "./Draws.tsx";
 import { Bar, Btn, Caret as Chevron, Facts, Field, Head, Icon, Mark, Seg, markFor, secs, usePoll } from "./ui.tsx";
 
 /**
@@ -110,6 +110,36 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
     return `${statusLine(r)}${round}`;
   };
   const atGate = draws.filter((r) => OPEN.has(r.status)).length;
+  const chain = chainOf(current);
+  const aside = d && (
+    <DrawAside
+      d={d}
+      onStep={setStepId}
+      top={chain && chain.rounds.length > 1 && <Rounds chain={chain} current={d.draw.id} statusLine={statusLine} />}
+      rows={[
+        ...(d.draw.repaired_from
+          ? [
+              [
+                "repairs",
+                <a href={`#${stage}/${d.draw.repaired_from}`} className="num">
+                  {d.draw.repaired_from}
+                </a>,
+              ] as [React.ReactNode, React.ReactNode],
+            ]
+          : []),
+        ...(d.draw.superseded_by
+          ? [
+              [
+                "superseded by",
+                <a href={`#${stage}/${d.draw.superseded_by}`} className="num">
+                  {d.draw.superseded_by}
+                </a>,
+              ] as [React.ReactNode, React.ReactNode],
+            ]
+          : []),
+      ]}
+    />
+  );
   return (
     <>
       <div className="pane list">
@@ -135,8 +165,6 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
           const r = c.head;
           const on = c.rounds.some((x) => x.id === current);
           const isOpen = on && !folded;
-          const max = Math.max(...c.rounds.map((x) => x.check?.total ?? 0), 1);
-          const lowest = c.rounds.reduce((m, x) => (x.check && (!m || x.check.total < m.check!.total) ? x : m), null as Draw | null);
           return (
             <div
               key={c.root.id}
@@ -176,29 +204,6 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
                     </span>
                   </div>
                   <div className="sd">{r.seed_text}</div>
-                  {c.rounds.length > 1 && (
-                    <table className="ledger" onClick={(e) => e.stopPropagation()}>
-                      <tbody>
-                        {c.rounds.map((x, i) => (
-                          <tr
-                            key={x.id}
-                            className={x.id === current ? "sel" : ""}
-                            onClick={() => {
-                              location.hash = `#${x.stage}/${x.id}`;
-                            }}
-                            title={x.check ? `round ${i + 1} · ${x.check.reported} reported · ${x.check.accepted} accepted · score ${x.check.total}` : `round ${i + 1} · ${statusLine(x)}`}
-                          >
-                            <td className="num w-4">{i + 1}</td>
-                            <td>
-                              <Bar pct={x.check ? (x.check.total / max) * 100 : 0} gold={x === lowest} />
-                            </td>
-                            <td className={"num text-right" + (x === lowest ? " text-keep" : "")}>{x.check ? x.check.total : x.status === "done" ? "—" : "…"}</td>
-                            <td className="num text-right text-dim">{x.check ? `${x.check.accepted}/${x.check.reported}` : ""}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
                   {stage === "check" && r.status === "done" && (
                     <div className="acts" onClick={(e) => e.stopPropagation()}>
                       <Btn
@@ -233,7 +238,6 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
           <>
             <div className={"strip" + (working ? " running" : "")}>
               <h1>{d.draw.name ?? d.draw.id}</h1>
-              <span className="num text-dim">{d.draw.id}</span>
               <span className={"state " + (working ? "text-running" : OPEN.has(d.draw.status) ? "text-art" : d.draw.status === "failed" ? "text-pass" : "text-mute")}>
                 <Mark state={markFor(d.draw.status)} />
                 <span className={working ? "sweep" : ""}>
@@ -241,41 +245,6 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
                   {working && d.steps.some((s) => s.status === "running") ? ` · ${[...new Set(d.steps.filter((s) => s.status === "running").map((s) => s.stage))].join(", ")}` : ""}
                 </span>
               </span>
-              <DrawMeta d={d}>
-                {d.origin && (
-                  <>
-                    {d.origin.id === d.draw.id ? "candidate" : "from"}{" "}
-                    <a href={`#draw/${d.origin.id}`} className="num">
-                      {d.origin.id === d.draw.id
-                        ? `#${d.origin.index}${d.origin.probability != null ? ` · ${d.origin.probability.toFixed(2)}` : ""}`
-                        : `${d.origin.name ?? d.origin.id}${d.origin.index ? ` #${d.origin.index}` : ""}`}
-                    </a>{" "}
-                    ·{" "}
-                  </>
-                )}
-              </DrawMeta>
-              {chainOf(d.draw.id) && chainOf(d.draw.id)!.rounds.length > 1 && (
-                <span className="text-dim">
-                  round <b className="num text-ink">{chainOf(d.draw.id)!.rounds.findIndex((x) => x.id === d.draw.id) + 1}</b> of {chainOf(d.draw.id)!.rounds.length}
-                  {d.draw.repaired_from && (
-                    <>
-                      {" "}
-                      · repairs{" "}
-                      <a href={`#${stage}/${d.draw.repaired_from}`} className="num">
-                        {d.draw.repaired_from}
-                      </a>
-                    </>
-                  )}
-                </span>
-              )}
-              {d.draw.superseded_by && (
-                <span className="text-dim">
-                  superseded by{" "}
-                  <a href={`#${stage}/${d.draw.superseded_by}`} className="num">
-                    {d.draw.superseded_by}
-                  </a>
-                </span>
-              )}
             </div>
             {err && <div className="err mt-2">{err}</div>}
             {step ? (
@@ -292,9 +261,9 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
                 }
               />
             ) : stage === "write" ? (
-              <StoryPane d={d} onAct={act} onStep={setStepId} />
+              <StoryPane d={d} onAct={act} aside={aside} />
             ) : d.draw.status === "awaiting_check_gate" || d.draw.status === "repaired" ? (
-              <GateOne d={d} onAct={act} onDraft={() => setSettings(true)} onStep={setStepId} />
+              <GateOne d={d} onAct={act} onDraft={() => setSettings(true)} aside={aside} />
             ) : d.draw.status === "done" || d.draw.status === "passed" ? (
               <BriefReady
                 d={d}
@@ -302,10 +271,10 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
                 onAuto={() => act(() => api.gate(d.draw.id, { action: "auto" }))}
                 onDraft={() => setSettings(true)}
                 onPass={(note) => act(() => api.gate(d.draw.id, { action: "pass", note }))}
-                onStep={setStepId}
+                aside={aside}
               />
             ) : (
-              <Building d={d} onStep={setStepId} />
+              <Building d={d} aside={aside} />
             )}
           </>
         )}
@@ -314,7 +283,42 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
   );
 }
 
-function BriefReady({ d, onCheck, onAuto, onDraft, onPass, onStep }: { d: Detail; onCheck: () => void; onAuto: () => void; onDraft: () => void; onPass: (note: string) => void; onStep: (id: string) => void }) {
+/** A repair chain's rounds, oldest first: score bar, score, accepted over reported. A row opens its round; the lowest score is gold. */
+function Rounds({ chain, current, statusLine }: { chain: Chain; current: string; statusLine: (r: Draw) => string }) {
+  const max = Math.max(...chain.rounds.map((x) => x.check?.total ?? 0), 1);
+  const lowest = chain.rounds.reduce((m, x) => (x.check && (!m || x.check.total < m.check!.total) ? x : m), null as Draw | null);
+  const at = chain.rounds.findIndex((x) => x.id === current) + 1;
+  return (
+    <div className="mb-6">
+      <Head as="div" note={`round ${at} of ${chain.rounds.length}${lowest ? ` · lowest ${chain.rounds.indexOf(lowest) + 1}` : ""}`}>
+        rounds
+      </Head>
+      <table className="ledger">
+        <tbody>
+          {chain.rounds.map((x, i) => (
+            <tr
+              key={x.id}
+              className={x.id === current ? "sel" : ""}
+              onClick={() => {
+                location.hash = `#${x.stage}/${x.id}`;
+              }}
+              title={x.check ? `round ${i + 1} · ${x.check.reported} reported · ${x.check.accepted} accepted · score ${x.check.total}` : `round ${i + 1} · ${statusLine(x)}`}
+            >
+              <td className="num w-4">{i + 1}</td>
+              <td>
+                <Bar pct={x.check ? (x.check.total / max) * 100 : 0} gold={x === lowest} />
+              </td>
+              <td className={"num text-right" + (x === lowest ? " text-keep" : "")}>{x.check ? x.check.total : x.status === "done" ? "—" : "…"}</td>
+              <td className="num text-right text-dim">{x.check ? `${x.check.accepted}/${x.check.reported}` : ""}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function BriefReady({ d, onCheck, onAuto, onDraft, onPass, aside }: { d: Detail; onCheck: () => void; onAuto: () => void; onDraft: () => void; onPass: (note: string) => void; aside: React.ReactNode }) {
   const [note, setNote] = useState("");
   return (
     <>
@@ -349,9 +353,7 @@ function BriefReady({ d, onCheck, onAuto, onDraft, onPass, onStep }: { d: Detail
           </Head>
           <BriefFiles id={d.draw.id} />
         </div>
-        <div className="aside min-w-0">
-          <DrawAside d={d} onStep={onStep} />
-        </div>
+        <div className="aside min-w-0">{aside}</div>
       </div>
     </>
   );
@@ -365,7 +367,7 @@ const BUILD = ["outline", "jobs", "context", "ending"];
  * time. Each part is read from its artifact, because the files under briefs/
  * are written last and all at once.
  */
-function Building({ d, onStep }: { d: Detail; onStep: (id: string) => void }) {
+function Building({ d, aside }: { d: Detail; aside: React.ReactNode }) {
   const stageOfStep = new Map(d.steps.map((s) => [s.id, s.stage]));
   const running = d.steps.filter((s) => s.status === "running");
   const done = new Set(d.steps.filter((s) => s.status === "done").map((s) => s.stage));
@@ -419,16 +421,14 @@ function Building({ d, onStep }: { d: Detail; onStep: (id: string) => void }) {
           </tbody>
         </table>
       </div>
-      <div className="aside min-w-0">
-        <DrawAside d={d} onStep={onStep} />
-      </div>
+      <div className="aside min-w-0">{aside}</div>
     </div>
   );
 }
 
 // --- gate 1 ------------------------------------------------------------------
 
-function GateOne({ d, onAct, onDraft, onStep }: { d: Detail; onAct: (fn: () => Promise<any>, go?: (r: any) => string | undefined) => void; onDraft: () => void; onStep: (id: string) => void }) {
+function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Promise<any>, go?: (r: any) => string | undefined) => void; onDraft: () => void; aside: React.ReactNode }) {
   const [f, setF] = useState<Findings | null>(null);
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [note, setNote] = useState("");
@@ -713,9 +713,7 @@ function GateOne({ d, onAct, onDraft, onStep }: { d: Detail; onAct: (fn: () => P
           )}
         </div>
         <div className="aside min-w-0">
-          <div className="mb-6">
-            <DrawAside d={d} onStep={onStep} />
-          </div>
+          <div className="mb-6">{aside}</div>
           {f && <Profiles f={f} />}
           {f && f.examined.length > 0 && (
             <>
@@ -1049,7 +1047,7 @@ function DraftSettings({ d, onClose, onDraft }: { d: Detail; onClose: () => void
 
 // --- gate 2 ------------------------------------------------------------------
 
-function StoryPane({ d, onAct, onStep }: { d: Detail; onAct: (fn: () => Promise<any>, go?: (r: any) => string | undefined) => void; onStep: (id: string) => void }) {
+function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<any>, go?: (r: any) => string | undefined) => void; aside: React.ReactNode }) {
   const [s, setS] = useState<Story | null>(null);
   const [note, setNote] = useState("");
   const [k, setK] = useState(1);
@@ -1234,9 +1232,7 @@ function StoryPane({ d, onAct, onStep }: { d: Detail; onAct: (fn: () => Promise<
           )}
         </div>
         <div className="aside min-w-0">
-          <div className="mb-6">
-            <DrawAside d={d} onStep={onStep} />
-          </div>
+          <div className="mb-6">{aside}</div>
           <Head note={`${words.toLocaleString()} words · ${s.screenFindings.length} ledger flags · ${nStructure} structure flags`}>scenes</Head>
           <table className="mt-1">
             <thead>

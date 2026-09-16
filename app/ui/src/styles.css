@@ -979,28 +979,32 @@
     font-size: var(--text-head);
     color: var(--color-dim);
   }
-  /* a repair chain's ledger inside its list row: round, score bar, score, accepted over reported */
-  .row table.ledger {
+  /* a repair chain's rounds in the aside: round, score bar, score, accepted over reported */
+  table.ledger {
     width: 100%;
     border-collapse: collapse;
     margin-top: 0.4rem;
   }
-  .row table.ledger td {
+  table.ledger td {
     padding: 0.2rem 0.4rem 0.2rem 0;
     border-bottom: 1px solid var(--color-hair);
     vertical-align: middle;
   }
-  .row table.ledger tr {
+  table.ledger tr {
     cursor: pointer;
   }
-  .row table.ledger tr:hover td {
+  table.ledger tr:hover td {
     color: var(--color-ink);
   }
-  .row table.ledger tr.sel td {
+  table.ledger tr.sel td {
     background: color-mix(in srgb, var(--color-gold) 10%, transparent);
   }
-  .row table.ledger .bar {
+  table.ledger .bar {
     min-width: 4rem;
+  }
+  /* the open round is marked by its row; gold on a bar means the lowest score */
+  .tt table.ledger tr.sel .bar i:not(.gold) {
+    background: var(--color-mute);
   }
   .row .acts {
     display: flex;
