@@ -159,7 +159,10 @@ and re-cut without reading the corpus again.
 7. WHEN `cloudchamber distill <id> --map` runs THE system SHALL create one
    `distill-map` step per reference file and append its candidate entries to
    `sources/settings/<id>/candidates.jsonl` with the file's topic as the
-   entry's source, skipping files already present in the sidecar.
+   entry's source and a hash of the file, skipping files already present in
+   the sidecar at their current hash. Rows for a changed or removed file
+   SHALL be dropped before the map, and files SHALL map
+   `RUN.mapConcurrency` at a time.
 8. WHEN `cloudchamber distill <id> --reduce` runs THE system SHALL create one
    `distill-reduce` step per list over that list's candidates, and write the
    returned entries into the setting file in place, touching no other byte.
@@ -175,7 +178,8 @@ and re-cut without reading the corpus again.
    whose trail is lost cannot be audited — which is how 22,264 words of craft
    essay lived in two reference trees for nine days.
 9. WHEN `distill` runs with neither flag THE system SHALL run the map pass
-   for any file not in the sidecar, then the reduce pass for all four lists.
+   for any file not in the sidecar at its current hash, then the reduce pass
+   for all four lists.
 10. WHEN a draw is started THE system SHALL accept no `--domains` option, and
     POST /api/draws SHALL reject a `domains` key with 400.
 11. WHEN the store is migrated THE system SHALL drop the `draws.domains`
@@ -262,8 +266,10 @@ Two passes, because 276,000 words will not fit one call.
 *Map.* One call per reference file, cheap model, prompt carrying the Matrix,
 the four list definitions and the file. Output is candidate entries tagged
 with the file's `topic:`. Appended to `sources/settings/<id>/candidates.jsonl`
-as `{list, entry, source, file}`. A file already in the sidecar is skipped, so
-the pass is resumable by re-running it.
+as `{list, entry, source, file, hash}`. A file already in the sidecar at its
+current hash is skipped, so the pass is resumable by re-running it; a changed
+or removed file loses its rows, so a re-fetched tree is picked up by re-running
+it too. A row without a hash predates hashing and counts as stale.
 
 *Reduce.* One call per list over that list's candidates, carrying the Matrix
 and the cap. Output is the final entries, deduped, the specific preferred

@@ -1,7 +1,7 @@
 import stagesToml from "./stages.toml";
 import genresToml from "./genres.toml";
 
-export type GenStageName = "themes" | "redundancy" | "distill" | "premises" | "execute" | "outline" | "jobs" | "context" | "ending";
+export type GenStageName = "themes" | "redundancy" | "distill-map" | "distill" | "premises" | "execute" | "outline" | "jobs" | "context" | "ending";
 export type CheckStageName = "ledger-extract" | "check-derivation" | "check-ledger" | "check-structure" | "check-resemblance" | "check-claims-extract" | "check-claims-verify";
 export type DraftStageName = "repair-vignette" | "repair-outline" | "repair-ending" | "schedule" | "scene" | "screen-ledger" | "screen-structure";
 export type StageName = GenStageName | CheckStageName | DraftStageName;
@@ -9,7 +9,7 @@ export type StageName = GenStageName | CheckStageName | DraftStageName;
 export type StageConfig = { model: string; fallback: string; system: string; tools?: string };
 
 export const STAGES: StageName[] = [
-  "themes", "redundancy", "distill", "premises", "execute", "outline", "jobs", "context", "ending",
+  "themes", "redundancy", "distill-map", "distill", "premises", "execute", "outline", "jobs", "context", "ending",
   "ledger-extract", "check-derivation", "check-ledger", "check-structure", "check-resemblance", "check-claims-extract", "check-claims-verify",
   "repair-vignette", "repair-outline", "repair-ending", "schedule", "scene", "screen-ledger", "screen-structure",
 ];
@@ -44,7 +44,8 @@ export const RUN = {
   endingWords: 600,
   coreJobs: ["debt audit", "arithmetic", "custody"] as const,
   listCaps: { entries: 40, words: 45 },   // per setting list; the reduce pass cuts to this and lint holds it
-  mapCandidates: 8,     // candidate entries a map call may return per list, per reference file
+  mapCandidates: 5,     // candidate entries a map call may return per list, per reference file
+  mapConcurrency: 8,    // reference files the map pass sends at once
   sceneCapSlack: 0.10,  // a scene over its cap by more than this carries the over_cap warning
   spanWords: 30,        // a finding's quoted span is under this
 };

@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { openDb } from "./store/db.ts";
-import { FakeModel } from "./model.ts";
+import { FakeModel, type ModelAdapter } from "./model.ts";
 import { Pipeline } from "./draw.ts";
 import { settingsFixture } from "./settings.fixture.ts";
 import { candidatesPath, distill, readCandidates, readKept, referenceFiles, splitSource } from "./distill.ts";
@@ -44,7 +44,7 @@ describe("distill", () => {
 
   test("the map pass writes one sidecar line per candidate, tagged with the file and its topic", async () => {
     const { db, dir, sdir } = fixture();
-    const p = pipe(db, dir, sdir, { distill: mapReply });
+    const p = pipe(db, dir, sdir, { "distill-map": mapReply });
     const out = await distill(p, "basin", { map: true });
     expect(out.filter((l) => l.includes("candidates"))).toHaveLength(4);
     const rows = readCandidates("basin", sdir);
@@ -57,19 +57,75 @@ describe("distill", () => {
 
   test("a second map run adds nothing: a file already in the sidecar is skipped", async () => {
     const { db, dir, sdir } = fixture();
-    await distill(pipe(db, dir, sdir, { distill: mapReply }), "basin", { map: true });
+    await distill(pipe(db, dir, sdir, { "distill-map": mapReply }), "basin", { map: true });
     const before = readFileSync(candidatesPath("basin", sdir), "utf8");
     // a model that would throw if called proves the second pass makes no call
-    const out = await distill(pipe(db, dir, sdir, { distill: () => { throw new Error("should not be called"); } }), "basin", { map: true });
+    const out = await distill(pipe(db, dir, sdir, { "distill-map": () => { throw new Error("should not be called"); } }), "basin", { map: true });
     expect(out[0]).toContain("already in the sidecar");
     expect(readFileSync(candidatesPath("basin", sdir), "utf8")).toBe(before);
+  });
+
+  test("a changed file loses its rows and is mapped again; the others make no call", async () => {
+    const { db, dir, sdir } = fixture();
+    await distill(pipe(db, dir, sdir, { "distill-map": mapReply }), "basin", { map: true });
+    const labour = join(sdir, "basin", "reference", "labour.md");
+    writeFileSync(labour, `${readFileSync(labour, "utf8")}\nA paragraph the re-fetch added.\n`);
+    const p = pipe(db, dir, sdir, { "distill-map": mapReply });
+    const out = await distill(p, "basin", { map: true });
+    expect(((p as any).model as FakeModel).calls.map((c) => c.prompt.includes("Labour"))).toEqual([true]);
+    expect(out).toContain("labour.md: 10 candidates dropped (changed)");
+    const rows = readCandidates("basin", sdir);
+    expect(rows).toHaveLength(4 * 5 * 2);
+    expect(new Set(rows.filter((r) => r.file === "labour.md").map((r) => r.hash)).size).toBe(1);
+  });
+
+  test("a removed file loses its rows without a call", async () => {
+    const { db, dir, sdir } = fixture();
+    await distill(pipe(db, dir, sdir, { "distill-map": mapReply }), "basin", { map: true });
+    rmSync(join(sdir, "basin", "reference", "land.md"));
+    const out = await distill(pipe(db, dir, sdir, { "distill-map": () => { throw new Error("should not be called"); } }), "basin", { map: true });
+    expect(out).toEqual(["land.md: 10 candidates dropped (removed)", "map: every reference file is already in the sidecar"]);
+    expect(readCandidates("basin", sdir).map((r) => r.file)).not.toContain("land.md");
+  });
+
+  test("rows written before hashing count as stale, so every file is mapped again", async () => {
+    const { db, dir, sdir } = fixture();
+    await distill(pipe(db, dir, sdir, { "distill-map": mapReply }), "basin", { map: true });
+    const path = candidatesPath("basin", sdir);
+    writeFileSync(path, readCandidates("basin", sdir).map(({ hash, ...r }) => `${JSON.stringify(r)}\n`).join(""));
+    const p = pipe(db, dir, sdir, { "distill-map": mapReply });
+    await distill(p, "basin", { map: true });
+    expect(((p as any).model as FakeModel).calls).toHaveLength(4);
+    const rows = readCandidates("basin", sdir);
+    expect(rows).toHaveLength(4 * 5 * 2);
+    expect(rows.every((r) => r.hash)).toBe(true);
+  });
+
+  test("the map sends files at once, on its own stage, and keeps the report in file order", async () => {
+    const { db, dir, sdir } = fixture();
+    const fake = new FakeModel({ "distill-map": mapReply });
+    let inFlight = 0, most = 0;
+    const slow: ModelAdapter = {
+      call: async (...args) => {
+        most = Math.max(most, ++inFlight);
+        await new Promise((r) => setTimeout(r, 20));
+        inFlight--;
+        return fake.call(...args);
+      },
+    };
+    const p = new Pipeline(db, slow, { rng: () => 0.001, briefsDir: join(dir, "briefs"), settingsDir: sdir });
+    const out = await distill(p, "basin", { map: true });
+    expect(most).toBe(4);
+    expect(fake.calls.map((c) => c.stage)).toEqual(["distill-map", "distill-map", "distill-map", "distill-map"]);
+    expect(out.slice(0, 4).map((l) => l.split(":")[0])).toEqual(["death.md", "events.md", "labour.md", "land.md"]);
+    expect(readCandidates("basin", sdir)).toHaveLength(4 * 5 * 2);
   });
 
   test("the reduce pass writes each list in place, respects the cap, and leaves the rest of the file alone", async () => {
     const { db, dir, sdir } = fixture();
     const path = join(sdir, "basin.md");
     const original = readFileSync(path, "utf8");
-    await distill(pipe(db, dir, sdir, { distill: mapReply }), "basin", { map: true });
+    await distill(pipe(db, dir, sdir, { "distill-map": mapReply }), "basin", { map: true });
     const out = await distill(pipe(db, dir, sdir, { distill: reduceReply(4) }), "basin", { reduce: true });
     const s = loadSetting("basin", sdir);
     for (const name of LISTS) {
@@ -93,12 +149,12 @@ describe("distill", () => {
 
   test("reduce before map says so, and a failed map file is reported without stopping the rest", async () => {
     const { db, dir, sdir } = fixture();
-    expect((await distill(pipe(db, dir, sdir, { distill: mapReply }), "basin", { reduce: true }))[0]).toContain("run the map pass first");
+    expect((await distill(pipe(db, dir, sdir, { "distill-map": mapReply }), "basin", { reduce: true }))[0]).toContain("run the map pass first");
     const flaky = (prompt: string) => {
       if (prompt.includes("Labour")) return "nothing useful";
       return mapReply(prompt);
     };
-    const out = await distill(pipe(db, dir, sdir, { distill: flaky }), "basin", { map: true });
+    const out = await distill(pipe(db, dir, sdir, { "distill-map": flaky }), "basin", { map: true });
     expect(out.find((l) => l.startsWith("labour.md:"))).toBe("labour.md: shape");   // the parse threw; the step failed on shape
     expect(readCandidates("basin", sdir).map((r) => r.file)).not.toContain("labour.md");
     expect(new Set(readCandidates("basin", sdir).map((r) => r.file))).toEqual(new Set(["death.md", "events.md", "land.md"]));
@@ -106,7 +162,7 @@ describe("distill", () => {
 
   test("a later list is told what the earlier ones kept, so the setting names each thing once", async () => {
     const { db, dir, sdir } = fixture();
-    await distill(pipe(db, dir, sdir, { distill: mapReply }), "basin", { map: true });
+    await distill(pipe(db, dir, sdir, { "distill-map": mapReply }), "basin", { map: true });
     const p = pipe(db, dir, sdir, { distill: reduceReply(2) });
     const model = (p as any).model as FakeModel;
     await distill(p, "basin", { reduce: true });
@@ -121,7 +177,7 @@ describe("distill", () => {
 
   test("with no flag both passes run, and lint findings are reported after them", async () => {
     const { db, dir, sdir } = fixture();
-    const script = { distill: (prompt: string) => (prompt.includes("Candidates:") ? reduceReply(2)(prompt) : mapReply(prompt)) };
+    const script = { "distill-map": mapReply, distill: reduceReply(2) };
     const out = await distill(pipe(db, dir, sdir, script), "basin");
     expect(out.filter((l) => l.includes("candidates (")).length).toBe(4);
     expect(out.some((l) => l.startsWith("Bodies: 2 of 8"))).toBe(true);
@@ -140,7 +196,7 @@ describe("the trail", () => {
 
   test("a second reduce rewrites the trail rather than appending to it", async () => {
     const { db, dir, sdir } = fixture();
-    await distill(pipe(db, dir, sdir, { distill: mapReply }), "basin", { map: true });
+    await distill(pipe(db, dir, sdir, { "distill-map": mapReply }), "basin", { map: true });
     await distill(pipe(db, dir, sdir, { distill: reduceReply(4) }), "basin", { reduce: true });
     await distill(pipe(db, dir, sdir, { distill: reduceReply(2) }), "basin", { reduce: true });
     const kept = readKept("basin", sdir);
@@ -170,7 +226,7 @@ describe("the word cap is enforced in code", () => {
 
   test("an over-long entry gets one trim call, and the cut version is what lands", async () => {
     const { db, dir, sdir } = fixture();
-    await distill(pipe(db, dir, sdir, { distill: mapReply }), "basin", { map: true });
+    await distill(pipe(db, dir, sdir, { "distill-map": mapReply }), "basin", { map: true });
     const out = await distill(pipe(db, dir, sdir, script(10)), "basin", { reduce: true });
     const s = loadSetting("basin", sdir);
     for (const name of LISTS) {
@@ -183,7 +239,7 @@ describe("the word cap is enforced in code", () => {
 
   test("an entry still over the cap after the trim is dropped, not written", async () => {
     const { db, dir, sdir } = fixture();
-    await distill(pipe(db, dir, sdir, { distill: mapReply }), "basin", { map: true });
+    await distill(pipe(db, dir, sdir, { "distill-map": mapReply }), "basin", { map: true });
     const out = await distill(pipe(db, dir, sdir, script(60)), "basin", { reduce: true });
     const s = loadSetting("basin", sdir);
     for (const name of LISTS) {
