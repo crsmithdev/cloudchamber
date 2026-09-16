@@ -3,7 +3,7 @@
  *
  *   brief → check → GATE 1 (accept | dismiss | hold | pass | flag | draft)
  *         → repair → check again → GATE 1
- *         → schedule → scene ×M → screen ×M → GATE 2 (keep | rewrite k | pass)
+ *         → schedule → scene ×M → screen ×M → GATE 2 (keep | patch | rewrite k | pass)
  *         → drafts/<draw>/
  *
  * Statuses on the draw: done → awaiting_check_gate → repairing | drafting →
@@ -16,7 +16,7 @@ import { record } from "./verdicts.ts";
 import { now } from "./paths.ts";
 import { loadDraftConfig, type DraftConfig, type Overrides, type Resolved } from "./draftconfig.ts";
 import { runCheck, type CheckResult } from "./check.ts";
-import { constraintsBlock, repair, type Accepted } from "./repair.ts";
+import { applyPatches, constraintsBlock, repair, type Accepted } from "./repair.ts";
 import { briefBlock, briefParts, chainProfile, checkFindings, gateFindings, judgeNote, latestCheckPass, passId, pinnedLedger, type FindingView } from "./briefparts.ts";
 import { currentScenes, runScenes, runSchedule, runScreens, writeScene, type Schedule } from "./write.ts";
 import { draftView, exportDraft, renderStory, type DraftView } from "./drafts.ts";
@@ -259,6 +259,51 @@ export class Drafting {
   }
 
   // --- gate 2 ----------------------------------------------------------------
+
+  /**
+   * Apply screen flags to the scenes they sit in, word for word, with no model
+   * call. A ledger screen emits a `<patch>`: the span rewritten so the
+   * contradiction is gone. Before this, the only way to act on a flag was
+   * `rewrite k`, which regenerates a whole scene and re-screens two — so a
+   * one-number correction cost more than it was worth and nobody paid it.
+   *
+   * A flag whose patch is empty, or whose span has moved, is reported back
+   * untouched: those are what `rewrite k` is still for.
+   */
+  patch(drawId: string, ids?: string[], note = ""): { applied: FindingView[]; skipped: { finding: FindingView; why: string }[] } {
+    this.must(drawId, "awaiting_draft_gate");
+    const flags = draftView(this.p, drawId).screenFindings.filter((f) => f.decision === "open");
+    const wanted = ids?.length ? ids.map((id) => {
+      const f = flags.find((x) => x.id === id);
+      if (!f) throw new Error(`no open screen finding ${id} on ${drawId}`);
+      return f;
+    }) : flags;
+
+    const applied: FindingView[] = [];
+    const skipped: { finding: FindingView; why: string }[] = [];
+    const scenes = new Map(currentScenes(this.p, drawId).map((s) => [s.beat, s]));
+    const byBeat = new Map<number, FindingView[]>();
+    for (const f of wanted) {
+      const scene = scenes.get(f.beat!);
+      if (!f.patch?.trim()) { skipped.push({ finding: f, why: "no patch: the fix needs more than the span" }); continue; }
+      if (!scene) { skipped.push({ finding: f, why: `no scene for beat ${f.beat}` }); continue; }
+      byBeat.set(f.beat!, [...(byBeat.get(f.beat!) ?? []), f]);
+    }
+
+    for (const [beat, fs] of [...byBeat].sort((a, b) => a[0] - b[0])) {
+      const scene = scenes.get(beat)!;
+      const out = applyPatches(scene.text, fs as unknown as Accepted[]);
+      for (const f of fs) if (!out.applied.some((a) => a.id === f.id)) skipped.push({ finding: f, why: "the span is no longer in the scene" });
+      if (!out.applied.length) continue;
+      const meta = JSON.parse(this.p.artifacts(drawId).find((a) => a.id === scene.artifact_id)!.meta);
+      const step = this.p.recordStep(drawId, scene.step_id, "scene", "patched");
+      this.p.artifact(step, "scene", out.text, { ...meta, words: out.text.split(/\s+/).filter(Boolean).length, patched: out.applied.map((f) => f.id) });
+      for (const f of out.applied) applied.push(f as unknown as FindingView);
+    }
+
+    for (const f of applied) record(this.p.db, { kind: "finding", target_id: f.id, verdict: "keep", method: "gate", note: note || "patched in place" });
+    return { applied, skipped };
+  }
 
   async rewrite(drawId: string, k: number, findingId?: string): Promise<DrawRow> {
     const draw = this.must(drawId, "awaiting_draft_gate");

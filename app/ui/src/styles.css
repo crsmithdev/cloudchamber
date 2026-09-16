@@ -363,6 +363,8 @@ button.fold .caret.open { transform: rotate(90deg); }
 .flag .q { font: italic 13.5px/1.5 "Newsreader", Georgia, serif; color: var(--ink); }
 .flag .rep { color: var(--mute); margin-top: 2px; }
 .flag .rep b { color: var(--dim); font-weight: 500; }
+.flagacts { display: flex; flex-direction: column; gap: .3rem; align-items: stretch; }
+.flag.done { opacity: .6; }
 .tree { display: grid; gap: 2px; }
 .tree .row { display: grid; grid-template-columns: 1.4rem minmax(0, 1fr) 3rem 4rem; gap: .5rem; padding: .35rem .5rem; border-radius: 4px; font-size: 12px; align-items: center; color: var(--mute); text-decoration: none; border: 0; cursor: pointer; }
 .tree .row:hover { background: var(--raised); }

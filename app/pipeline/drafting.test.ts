@@ -15,7 +15,7 @@ import { TEMPLATES } from "./prompts.ts";
 import { loadStages } from "./config.ts";
 import { loadDraftConfig } from "./draftconfig.ts";
 import { VERDICT_LOG } from "./paths.ts";
-import { A, B, LEDGER, SPAN_A, SPAN_B, SPAN_C, cleanSamples, derivationSamples, draftScript, finding, ledgerSamples, schedule, vignette } from "./drafting.fixture.ts";
+import { A, B, LEDGER, SCENE_3_PATCH, SPAN_A, SPAN_B, SPAN_C, cleanSamples, derivationSamples, draftScript, finding, ledgerSamples, schedule, vignette } from "./drafting.fixture.ts";
 import { gateFindings } from "./briefparts.ts";
 
 const CELLS = ["informational", "mixed", "involved"].flatMap((v) => ["non-narrative", "mixed", "narrative"].map((m) => [v, m]));
@@ -520,7 +520,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(sl2.prompt).toContain("<previous-scene>\nScene 1 opens.");
     expect(p.steps(draw.id).filter((s) => s.stage === "screen-slop").map((s) => s.model)).toEqual(["deterministic"]);
     const v = d.view(draw.id);
-    expect(v.screenFindings.map((f) => [f.beat, f.screen, f.n])).toEqual([[3, "ledger", 3]]);
+    expect(v.screenFindings.map((f) => [f.beat, f.screen, f.n, !!f.patch])).toEqual([[3, "ledger", 3, true], [4, "ledger", 3, false]]);
     expect(v.profiles.find((x) => x.beat === 5)!.flags).toEqual(["theme-stated"]);
     expect(v.profiles.find((x) => x.beat === 4)!.flags).toEqual([]);
     expect(v.slop!.words).toBeGreaterThan(2000);
@@ -601,6 +601,40 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     const b2 = model.calls.length;
     await d.rewrite(draw.id, 8);
     expect(model.calls.slice(b2).map((c) => c.stage).sort()).toEqual(["scene", "screen-ledger", "screen-ledger", "screen-ledger", "screen-structure"]);
+  });
+
+  test("patch applies a flag's own rewrite in place, costs no model call, and skips what it cannot reach", async () => {
+    const { p, d, draw, model } = await drawn();
+    await d.draft(draw.id);
+    const before = model.calls.length;
+    const flags = d.view(draw.id).screenFindings;
+    expect(flags.map((f) => f.beat)).toEqual([3, 4]);
+    expect(d.story(draw.id)).toContain("Scene 3 opens.");
+
+    const r = d.patch(draw.id);
+    expect(model.calls).toHaveLength(before);                                  // no model call at all
+    expect(r.applied.map((f) => f.beat)).toEqual([3]);
+    expect(r.skipped.map((x) => [x.finding.beat, x.why])).toEqual([[4, "no patch: the fix needs more than the span"]]);
+
+    // the scene carries the patch, the beat is untouched otherwise, and nothing was regenerated
+    const scene3 = d.view(draw.id).scenes.find((s) => s.beat === 3)!;
+    expect(scene3.text).toContain(SCENE_3_PATCH);
+    expect(scene3.text).not.toContain("Scene 3 opens.");
+    expect(d.story(draw.id)).toContain(SCENE_3_PATCH);
+    expect(p.steps(draw.id).filter((s) => s.stage === "scene" && s.model === "patched")).toHaveLength(1);
+    expect(p.draw(draw.id).status).toBe("awaiting_draft_gate");
+
+    // the flag is settled, so a second patch is a no-op and the gate shows it applied
+    const after = d.view(draw.id).screenFindings.find((f) => f.beat === 3)!;
+    expect([after.decision, after.note]).toEqual(["accepted", "patched in place"]);
+    expect(d.patch(draw.id).applied).toEqual([]);
+    expect(() => d.patch(draw.id, [after.id])).toThrow(/no open screen finding/);
+  });
+
+  test("patch refuses a draw that is not at gate 2", async () => {
+    const { d, draw } = await drawn();
+    await d.check(draw.id);
+    expect(() => d.patch(draw.id)).toThrow();
   });
 
   test("keep exports drafts/<draw>/ with story, schedule, findings, config and trail; pass records a draft verdict", async () => {

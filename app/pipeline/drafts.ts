@@ -6,7 +6,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Pipeline } from "./draw.ts";
 import { BRIEFS, DRAFTS } from "./paths.ts";
-import { checkFindings, findingArtifacts, judgeNote, type FindingView } from "./briefparts.ts";
+import { checkFindings, decision, findingArtifacts, judgeNote, type FindingView } from "./briefparts.ts";
 import { score } from "./recur.ts";
 import { toToml, type Resolved } from "./draftconfig.ts";
 import { currentScenes, type Beat, type Profile, type Scene } from "./write.ts";
@@ -33,8 +33,9 @@ export function draftView(p: Pipeline, drawId: string): DraftView {
   for (const pr of profileArts) if (!latestPass.has(pr.beat) || latestPass.get(pr.beat)! < pr.pass) latestPass.set(pr.beat, pr.pass);
   const profiles = profileArts.filter((pr) => latestPass.get(pr.beat) === pr.pass).sort((a, b) => a.beat - b.beat);
   // a screen's denominator is the highest sample number it recurred in, the same figure the panes print
+  // a flag carries a verdict like a check finding does: applying its patch settles it
   const screenFindings = findingArtifacts(p, drawId).filter((f) => f.source === "screen" && (latestPass.get(f.beat!) ?? f.pass) === f.pass)
-    .map((f) => { const samples_run = Math.max(f.n, ...f.samples); return { ...f, decision: "open" as const, note: "", samples_run, score: score(f, samples_run), reported: true }; })
+    .map((f) => { const samples_run = Math.max(f.n, ...f.samples); return { ...f, ...decision(p, f.id), samples_run, score: score(f, samples_run), reported: true }; })
     .sort((a, b) => a.beat! - b.beat! || b.score - a.score);
   const slopArt = [...arts].reverse().find((a) => a.kind === "slop");
   return {

@@ -10,8 +10,8 @@ export const SPAN_A = "The director fires the reliquary";
 export const SPAN_B = "the twelfth relic, the Verona clavicle";
 export const SPAN_C = "tears on the silk";
 
-export const finding = (span: string, statement: string, invalidates: string, replacement: string, evidence = "a second quote from the outline", result = `contradicts:${evidence}`) =>
-  `<finding><span>${span}</span><statement>${statement}</statement><result>${result}</result><evidence>${evidence}</evidence><invalidates>${invalidates}</invalidates><replacement>${replacement}</replacement></finding>`;
+export const finding = (span: string, statement: string, invalidates: string, replacement: string, evidence = "a second quote from the outline", result = `contradicts:${evidence}`, patch = "") =>
+  `<finding><span>${span}</span><statement>${statement}</statement><result>${result}</result><evidence>${evidence}</evidence><invalidates>${invalidates}</invalidates><replacement>${replacement}</replacement>${patch ? `<patch>${patch}</patch>` : ""}</finding>`;
 
 export const A = (s = SPAN_A) => finding(s, "the director fires the reliquary herself", "debt audit", "Only the assembler can fire the reliquary.");
 export const B = (s = SPAN_B) => finding(s, "the twelfth relic is named differently in the two vignettes", "arithmetic", "The twelfth relic is the Verona clavicle in every account.");
@@ -61,9 +61,14 @@ export const sceneFor = (prompt: string, over: Record<number, number> = { 2: 700
   return `<scene>Scene ${n} opens.${rewrite} ${Array.from({ length: words - 3 }, (_, i) => `s${n}w${i}`).join(" ")}</scene>`;
 };
 
+export const SCENE_3_PATCH = "Scene 3 opens on the 3rd";
+
+/** Beat 3 carries a patchable flag; beat 4 one the fix is too big for, so `patch` must skip it. */
 export const screenLedger = (prompt: string) => {
   const n = Number(/<scene n="(\d+)">/.exec(prompt)?.[1] ?? 0);
-  const f = n === 3 ? finding("Scene 3 opens", "the date is off by two months", "3", "The fire was on the 3rd.", "time: the fire was on the 3rd") : "";
+  const f = n === 3 ? finding("Scene 3 opens", "the date is off by two months", "3", "The fire was on the 3rd.", "time: the fire was on the 3rd", undefined, SCENE_3_PATCH)
+    : n === 4 ? finding("Scene 4 opens", "the count is wrong throughout", "4", "1,106 died.", "detail: 1,106 dead")
+    : "";
   return `${f}<examined>ledger × scene ${n}${n > 1 ? `, scene ${n - 1} × scene ${n}` : ""}</examined>`;
 };
 

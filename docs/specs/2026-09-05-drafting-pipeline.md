@@ -109,7 +109,7 @@ brief → check ×K (parallel, S samples each)
       → schedule (beats, form, withholding)
       → scene ×M (each a fresh call)
       → screen ×M (ledger, structure, slop)
-      → GATE 2: keep | rewrite scene k | pass
+      → GATE 2: keep | patch | rewrite scene k | pass
       → drafts/<draw>/
 ```
 
@@ -144,6 +144,7 @@ stages are the next landing, not this one.
 17. As Chris, I want a deterministic slop screen that counts against the passage pool and never asks a model, so that lexical tells are marked the way a linter marks.
 18. As Chris, I want the withheld-revealed screen to flag a stated reveal and not a hint, so that foreshadowing is not reported as a leak.
 19. As Chris, I want to keep, pass, or rewrite one scene at gate 2, with the rewritten scene and its successor re-screened, so that a rewrite fixes one seam without regenerating the story.
+19a. As Chris, I want to apply a screen flag's own rewrite of its span in place, so that correcting one number does not cost a regenerated scene.
 20. As Chris, I want a kept story exported to a tracked directory with its schedule, findings, configuration and trail, so that the draft and how it was made travel together in git.
 21. As Chris, I want `--auto` to run gate 1 by a mechanical rule and stop at gate 2, so that a draft can be produced unattended without any model judging.
 22. As Chris, I want the models per stage, and the tools a stage may use, declared in the stages file, so that the claims checker alone reaches the web and every other stage stays sealed.
@@ -176,6 +177,7 @@ stages are the next landing, not this one.
 19. WHEN the structure screen runs on scene k THE prompt SHALL contain only the withheld items whose `until` is greater than k, and on scene M the fifth question SHALL be `resolves-everything` in place of `resolved`.
 20. WHEN screens run THE system SHALL run the slop screen once over the joined scenes with no model call and store a `slop` artifact with: hits of the slop lexicon (proper nouns excluded) with counts, the not-X-but-Y rate per 10,000 words against the pool's rate, trigrams occurring three or more times in the draft and zero times in the pool, and per-scene paragraph count, mean paragraph length and single-sentence-paragraph share.
 21. WHEN `cloudchamber story <draw>` runs THE system SHALL print the scenes in beat order separated by `* * *`, each screen finding inline after its scene as `[screen-<name> beat k] span → replacement`, and a footer `checked on <model family>; judge and generator share a family`.
+21a. WHEN `cloudchamber gate <draw> patch [<flag>...]` runs in `awaiting_draft_gate` THE system SHALL substitute each named open flag's `<patch>` for its `<span>` in the scene of its beat, matching the span loosely on whitespace, store the result as a new `scene` artifact on a `patched` step, record verdict `finding` `keep` for each flag it lands, and make no model call. IF no flag is named THEN THE system SHALL attempt every open flag. IF a flag has no patch, or its span is no longer in the scene, THEN THE system SHALL leave it open and report why.
 22. WHEN `cloudchamber gate <draw> rewrite <k> [--finding <id>]` runs in `awaiting_draft_gate` THE system SHALL run one `scene` step for beat k with the named finding's replacement (or all of beat k's reported replacements) in a `<constraints>` block and the kept scenes 1..k−1 as scenes so far, replace scene k, re-run the screens on k and k+1 only, and return to `awaiting_draft_gate`. IF k is the last beat THEN THE system SHALL re-screen k only.
 23. WHEN `cloudchamber gate <draw> keep` runs in `awaiting_draft_gate` THE system SHALL append a `draft` verdict `keep`, write `drafts/<draw>/` with `story.md`, `schedule.md`, `findings.md`, `config.toml`, `trail.md`, and set status `drafted`; WHEN `pass` runs THE system SHALL append a `draft` verdict `pass` and set status `passed`.
 24. WHEN `drafts/<draw>/findings.md` is written THE file SHALL contain the latest check pass's reported findings with each one's gate 1 decision (`accepted`, `dismissed: <note>`, or `open`), then the screen findings by beat.
@@ -500,8 +502,22 @@ the simulation tried is not built.
 | action | effect |
 | :-- | :-- |
 | keep | verdict `draft` `keep`; export; status `drafted` |
+| patch `[<flag>...]` | substitute each flag's `<patch>` into its scene; verdict `finding` `keep`; no model call |
 | rewrite `<k>` `[--finding <id>]` | one `scene` step under constraints; screens on k and k+1; back to the gate |
 | pass | verdict `draft` `pass`; status `passed` |
+
+A ledger screen emits a `<patch>`: the flagged span rewritten in the scene's
+own voice, short enough to stand in its place word for word, or `none` when
+the fix needs more than that span. `patch` applies those substitutions and
+settles the flags it lands, and reports the rest for `rewrite`. It exists
+because `rewrite` was the only way to act on a flag: correcting one number
+cost a regenerated scene and two re-screens, so in practice nobody paid it and
+correct flags stood in kept stories. Measured on draw `20260915211209-c264`,
+where the beat-4 screen supplied the right figure and the wrong one shipped.
+
+A patched scene is stored as a new `scene` artifact on a step with model
+`patched`, so it does not count against `repair.max_calls` and the trail shows
+which flags landed.
 
 ### Auto mode
 

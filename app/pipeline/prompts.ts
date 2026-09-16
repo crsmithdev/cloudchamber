@@ -358,7 +358,7 @@ The material above is the brief's own execution of this beat; use it as far as i
 {scene}
 </scene>
 
-Check the scene against the ledger and against the previous scene. Report each contradiction in a <finding> tag containing <span> (verbatim quote from the scene, under ${RUN.spanWords} words), <statement> (one sentence), <result> (contradicts:<verbatim quote of the ledger line or previous-scene span>), <invalidates> (the beat number, or none), <replacement> (one positive sentence that would hold). Then an <examined> tag naming what was compared. At most 6 findings. Under 500 words.`,
+Check the scene against the ledger and against the previous scene. Report each contradiction in a <finding> tag containing <span> (verbatim quote from the scene, under ${RUN.spanWords} words), <statement> (one sentence), <result> (contradicts:<verbatim quote of the ledger line or previous-scene span>), <invalidates> (the beat number, or none), <replacement> (one positive sentence that would hold), <patch> (the span rewritten in the scene's own voice so the contradiction is gone, no longer than the span, ready to stand in its place word for word; or none when the fix needs more than that span). Then an <examined> tag naming what was compared. At most 6 findings. Under 500 words.`,
 
   screenStructure: `<beat n="{n}">
 job: {job}
