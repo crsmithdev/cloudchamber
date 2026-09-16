@@ -8,10 +8,10 @@ const STAGES = ["premises", "execute", "gate", "outline", "context", "ending", "
 /** The stages a draw runs before its brief; checks, repairs and drafting belong to the check and write tabs. */
 export const IDEATION = new Set(["premises", "execute", "outline", "jobs", "context", "ending"]);
 export const LABEL: Record<string, string> = {
-  awaiting_gate: "awaiting the gate",
+  awaiting_gate: "choose a premise",
   done: "brief",
-  awaiting_check_gate: "gate 1",
-  awaiting_draft_gate: "gate 2",
+  awaiting_check_gate: "review findings",
+  awaiting_draft_gate: "review draft",
   checking: "checking",
   repairing: "repairing",
   drafting: "drafting",
@@ -354,7 +354,7 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
                   <Mark state={markFor(d.draw.status)} />
                   <span className={working ? "sweep" : ""}>
                     {label(d.draw.status)}
-                    {working && d.steps.some((s) => s.status === "running") ? ` · ${[...new Set(d.steps.filter((s) => s.status === "running").map((s) => s.stage))].join(", ")}` : ""}
+                    {working && d.steps.some((s) => s.status === "running") ? ` · ${[...new Set(d.steps.filter((s) => s.status === "running").map((s) => stageName(s.stage)))].join(", ")}` : ""}
                   </span>
                 </span>
                 {!step && (
@@ -441,8 +441,8 @@ function drawSummary(d: Detail) {
   const running = d.steps.filter((s) => s.status === "running" && IDEATION.has(s.stage));
   const chosen = d.candidates.find((c) => c.step_id === d.draw.chosen_step);
   const failed = d.steps.filter((s) => s.status === "failed" && IDEATION.has(s.stage)).length;
-  if (running.length) return `running · ${[...new Set(running.map((s) => s.stage))].join(", ")}`;
-  if (d.draw.status === "awaiting_gate") return `awaiting the gate · ${d.candidates.length} premises`;
+  if (running.length) return `running · ${[...new Set(running.map((s) => stageName(s.stage)))].join(", ")}`;
+  if (d.draw.status === "awaiting_gate") return `choose a premise · ${d.candidates.length} premises`;
   if (d.draw.status === "failed") return `failed · ${failed} step${failed === 1 ? "" : "s"}`;
   if (chosen) return `brief · #${chosen.index} chosen · in ${d.draw.stage}`;
   return label(d.draw.status);
@@ -450,31 +450,31 @@ function drawSummary(d: Detail) {
 
 /** What the step log calls each stage, and what the stage does: the row's tooltip. */
 const STAGE: Record<string, { name: string; does: string }> = {
-  premises: { name: "premises", does: "One model call proposes five premises from the seed and the six examples, each with its stated probability." },
-  execute: { name: "vignette", does: "Writes one premise as a vignette. The five calls run side by side, one for each premise." },
-  gate: { name: "gate", does: "The draw stops here until one premise is chosen to develop." },
-  outline: { name: "outline", does: "Derives the chosen vignette's structure: the one impossibility it buys, its settled numbers and dates, and who holds which evidence." },
-  jobs: { name: "context plan", does: "Names the job of each of the two context vignettes: the one thing about the outline each vignette tests." },
-  context: { name: "context vignette", does: "Writes one context vignette to its job from the plan. There are two." },
-  ending: { name: "ending", does: "Writes the last beat from the outline's numbers and its custody of the evidence." },
-  brief: { name: "brief", does: "The premise, the outline, the three vignettes and the ending, written to files under briefs/." },
-  "repair-vignette": { name: "vignette, kept", does: "A repair round starts from the chosen vignette, copied unchanged. No model call." },
-  "repair-outline": { name: "outline, repaired", does: "Rewrites the outline under the replacements of the findings accepted at gate 1." },
-  "repair-ending": { name: "ending, repaired", does: "Writes the ending again from the repaired outline." },
-  "ledger-extract": { name: "ledger", does: "Lists every settled fact in the outline: times, details, who knows what, who holds what, the world's rules." },
+  premises: { name: "propose premises", does: "One model call proposes five premises from the seed and the six examples, each with its stated probability." },
+  execute: { name: "write vignette", does: "Writes one premise as a vignette. The five calls run side by side, one for each premise." },
+  gate: { name: "choose premise", does: "The draw stops here until a premise is chosen to develop." },
+  outline: { name: "derive outline", does: "Derives the chosen vignette's structure: the one impossibility it buys, its settled numbers and dates, and who holds which evidence." },
+  jobs: { name: "plan context", does: "Names the job of each of the two context vignettes: the one thing about the outline each vignette tests." },
+  context: { name: "write context", does: "Writes one context vignette to its job from the plan. There are two." },
+  ending: { name: "write ending", does: "Writes the last beat from the outline's numbers and its custody of the evidence." },
+  brief: { name: "export brief", does: "The premise, the outline, the three vignettes and the ending, written to files under briefs/." },
+  "repair-vignette": { name: "copy vignette", does: "A repair round starts from the chosen vignette, copied as it was. No model call." },
+  "repair-outline": { name: "repair outline", does: "Rewrites the outline under the replacements of the findings you accepted." },
+  "repair-ending": { name: "repair ending", does: "Writes the ending again from the repaired outline." },
+  "ledger-extract": { name: "extract ledger", does: "Lists every settled fact in the outline: times, details, who knows what, who holds what, the world's rules." },
   "check-derivation": { name: "check derivation", does: "Checks that every assertion in the vignettes and the ending follows from the outline's one impossibility, and does every sum." },
   "check-ledger": { name: "check ledger", does: "Checks the vignettes and the ending against the ledger of settled facts, and against each other." },
   "check-structure": { name: "check structure", does: "Seven present-or-absent questions about the brief, each answered with a quote." },
   "check-resemblance": { name: "check resemblance", does: "Matches the brief against the list of overused premises and names the nearest published work." },
   "check-claims-extract": { name: "find claims", does: "Lists the brief's factual claims that the setting's authority can confirm or deny." },
   "check-claims-verify": { name: "verify claim", does: "Checks one claim against the setting's authority: the setting file, its reference files or the web." },
-  schedule: { name: "schedule", does: "Plans the story as beats: each beat's job, its word cap, what the reader knows by its end and what stays withheld." },
-  scene: { name: "scene", does: "Writes one beat of the schedule as a scene. A rewrite of a scene adds one more run." },
-  "screen-ledger": { name: "screen ledger", does: "Checks one scene against the ledger of settled facts and flags each contradiction with a replacement." },
+  schedule: { name: "plan scenes", does: "Plans the story as beats: each beat's job, its word cap, what the reader knows by its end and what stays withheld." },
+  scene: { name: "write scene", does: "Writes one beat of the schedule as a scene. A rewrite of a scene adds one more run." },
+  "screen-ledger": { name: "screen facts", does: "Checks one scene against the ledger of settled facts and flags each contradiction with a replacement." },
   "screen-structure": { name: "screen structure", does: "Asks one scene the present-or-absent questions that mark a weak draft, each answered with a quote." },
-  "screen-slop": { name: "screen slop", does: "Counts overused words, not-X-but-Y turns, repeated trigrams and paragraph shape against the passage pool. No model call." },
+  "screen-slop": { name: "count slop", does: "Counts overused words, not-X-but-Y turns, repeated trigrams and paragraph shape against the passage pool. No model call." },
 };
-const stageName = (stage: string) => STAGE[stage]?.name ?? stage;
+export const stageName = (stage: string) => STAGE[stage]?.name ?? stage;
 
 /**
  * The step log as a time table: step, started, seconds. Each row names its step in words, says which one of a
@@ -577,7 +577,7 @@ export function Log({ d, stepId, onStep, ideation }: { d: Detail; stepId: string
                 <Mark state="wait" />
               </td>
               <td className="n text-art">
-                gate<small>{d.draw.mode === "auto" ? "chosen automatically" : "waiting for you to choose a premise"}</small>
+                choose premise<small>{d.draw.mode === "auto" ? "chosen automatically" : "waiting for you"}</small>
               </td>
               <td className="num text-dim">{flat.length ? hhmm(flat[flat.length - 1].ended_at ?? flat[flat.length - 1].started_at) : "—"}</td>
               <td className="num text-right text-art">—</td>
@@ -591,7 +591,7 @@ export function Log({ d, stepId, onStep, ideation }: { d: Detail; stepId: string
                 <Mark state="held" />
               </td>
               <td className="n">
-                brief<small>written to briefs/</small>
+                export brief<small>to briefs/</small>
               </td>
               <td className="num text-dim">{d.draw.ended_at ? hhmm(d.draw.ended_at) : ""}</td>
               <td className="num text-right text-dim">—</td>
@@ -603,7 +603,7 @@ export function Log({ d, stepId, onStep, ideation }: { d: Detail; stepId: string
                 <Mark state={d.draw.status.startsWith("awaiting") ? "wait" : markFor(d.draw.status)} />
               </td>
               <td className="n">
-                in {d.draw.stage}
+                open in {d.draw.stage}
                 <small>{label(d.draw.status)}</small>
               </td>
               <td></td>
@@ -933,7 +933,9 @@ export function StepView({ step, chosen, onBack }: { step: Step; chosen: boolean
         <Icon name="arrow_back" /> back to the draw
       </button>
       <div className="mt-3 flex flex-wrap gap-4 text-mute">
-        <b className="num text-ink">{step.stage}</b>
+        <b className="text-ink" title={step.stage}>
+          {stageName(step.stage)}
+        </b>
         <span className={step.status === "failed" ? "text-pass" : ""}>
           {step.status}
           {step.fail_reason ? ` (${step.fail_reason})` : ""}
