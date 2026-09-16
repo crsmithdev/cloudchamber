@@ -6,9 +6,9 @@ import { Develop } from "./Develop.tsx";
 import { Icon } from "./ui.tsx";
 
 function useHash() {
-  const [h, setH] = useState(location.hash.slice(1) || "browse");
+  const [h, setH] = useState(location.hash.slice(1) || "sources");
   useEffect(() => {
-    const f = () => setH(location.hash.slice(1) || "browse");
+    const f = () => setH(location.hash.slice(1) || "sources");
     addEventListener("hashchange", f);
     return () => removeEventListener("hashchange", f);
   }, []);
@@ -16,11 +16,12 @@ function useHash() {
 }
 
 const TABS: [string, string][] = [
-  ["browse", "#browse"],
   ["ideate", "#draws"],
   ["check", "#check"],
   ["write", "#write"],
 ];
+/** Below the pipeline tabs, after a separator: the corpus the draws pull from. */
+const SOURCES: [string, string] = ["sources", "#sources"];
 
 export function App() {
   const hash = useHash();
@@ -63,7 +64,9 @@ export function App() {
       localStorage.setItem("fb-rail", folded ? "hidden" : "shown");
     } catch {}
   }, [folded]);
-  const on = (name: string) => (name === "ideate" ? drawsView : view === name);
+  // `browse` was the sources tab's old name; its links still land there
+  const sourcesView = view === "sources" || view === "browse";
+  const on = (name: string) => (name === "ideate" ? drawsView : name === "sources" ? sourcesView : view === name);
   const count = (name: string) => {
     if (!status) return null;
     const n =
@@ -93,6 +96,10 @@ export function App() {
                   {count(name)}
                 </a>
               ))}
+              <span className="railsep" aria-hidden="true" />
+              <a href={SOURCES[1]} className={"navlink" + (on(SOURCES[0]) ? " on" : "")}>
+                {SOURCES[0]}
+              </a>
             </nav>
           </>
         )}
@@ -103,19 +110,23 @@ export function App() {
                 {name[0]}
               </a>
             ))}
+            <span className="railsep" aria-hidden="true" />
+            <a href={SOURCES[1]} className={"navlink mini" + (on(SOURCES[0]) ? " on" : "")} title={SOURCES[0]}>
+              {SOURCES[0][0]}
+            </a>
           </nav>
         )}
         <button
-          className="link mt-auto grid h-8 w-8 place-items-center self-start"
+          className="railfold"
           aria-pressed={folded ? "true" : "false"}
           aria-label={folded ? "Show the sidebar" : "Hide the sidebar"}
           title={folded ? "Show the sidebar" : "Hide the sidebar"}
           onClick={() => setFolded((v) => !v)}
         >
-          <Icon name={folded ? "keyboard_double_arrow_right" : "keyboard_double_arrow_left"} className="text-dim" />
+          <Icon name={folded ? "keyboard_double_arrow_right" : "keyboard_double_arrow_left"} />
         </button>
       </aside>
-      {view === "browse" && <Browser status={status} onVerdict={refresh} />}
+      {sourcesView && <Browser status={status} onVerdict={refresh} />}
       {drawsView && <Draws status={status} selected={view === "draw" ? arg : arg === "new" ? "new" : undefined} like={arg === "new" ? arg2 : undefined} />}
       {view === "check" && <Develop stage="check" selected={arg} />}
       {view === "write" && <Develop stage="write" selected={arg} />}
