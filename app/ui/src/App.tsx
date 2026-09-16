@@ -6,9 +6,9 @@ import { Develop } from "./Develop.tsx";
 import { Icon } from "./ui.tsx";
 
 function useHash() {
-  const [h, setH] = useState(location.hash.slice(1) || "sources");
+  const [h, setH] = useState(location.hash.slice(1) || "draws");
   useEffect(() => {
-    const f = () => setH(location.hash.slice(1) || "sources");
+    const f = () => setH(location.hash.slice(1) || "draws");
     addEventListener("hashchange", f);
     return () => removeEventListener("hashchange", f);
   }, []);

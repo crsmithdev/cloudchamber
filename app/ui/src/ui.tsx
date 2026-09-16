@@ -126,4 +126,20 @@ export function useTick(active: boolean, ms = 1000) {
     return () => clearInterval(t);
   }, [active, ms]);
 }
+/** The draw last selected in a tab, kept in this browser so going back to the tab reopens it. */
+export const lastSelected = (tab: string) => {
+  try {
+    return localStorage.getItem(`fb-last-${tab}`) ?? undefined;
+  } catch {
+    return undefined;
+  }
+};
+export function useRememberSelected(tab: string, id: string | undefined) {
+  useEffect(() => {
+    if (!id) return;
+    try {
+      localStorage.setItem(`fb-last-${tab}`, id);
+    } catch {}
+  }, [tab, id]);
+}
 export const hhmm = (iso: string) => new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(iso));

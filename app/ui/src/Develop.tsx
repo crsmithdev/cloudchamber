@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api, when, type AutoResult, type Draw, type DraftConfig, type Finding, type Findings, type Story, type Step } from "./api.ts";
 import { BriefFiles, DrawAside, Md, RUNNING_STATUS, RowHead, SeedNote, StepView, boldLabels, firstParagraph, label, useBrief, type Detail } from "./Draws.tsx";
-import { Bar, Btn, Caret as Chevron, Facts, Field, Head, Icon, Mark, Seg, markFor, secs, usePoll } from "./ui.tsx";
+import { Bar, Btn, Caret as Chevron, Facts, Field, Head, Icon, Mark, Seg, lastSelected, markFor, secs, usePoll, useRememberSelected } from "./ui.tsx";
 
 /**
  * Develop a brief: the stages after a brief (docs/specs/2026-09-05-drafting-pipeline.md).
@@ -61,7 +61,10 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
   const busy = heads.some((r) => RUNNING_STATUS.has(r.status));
   const summarising = chains.some((c) => c.rounds.some((r) => r.check === null && r.status !== "done"));
   usePoll(loadDraws, busy || summarising, [stage], 3000, 15000);
-  const current = selected ?? (heads.find((r) => OPEN.has(r.status)) ?? heads[0])?.id;
+  // with nothing chosen, the draw last selected in this tab while its chain is still here, else the newest
+  const last = lastSelected(stage);
+  const current = selected ?? (all.some((c) => c.rounds.some((r) => r.id === last)) ? last : heads[0]?.id);
+  useRememberSelected(stage, selected);
   const chainOf = (id: string | undefined) => chains.find((c) => c.rounds.some((r) => r.id === id));
   const loadDetail = (id: string) =>
     api

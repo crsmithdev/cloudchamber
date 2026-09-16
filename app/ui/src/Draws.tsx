@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { marked } from "marked";
 import { api, when, type Artifact, type Candidate, type Example, type Facets, type Draw, type Fork, type FullStep, type Origin, type Source, type Status, type Step } from "./api.ts";
-import { Bar, Btn, Caret, Chip, Facts, Field, Head, Icon, LinkBtn, Mark, Seg, hhmm, markFor, secs, usePoll, useTick, type MarkState } from "./ui.tsx";
+import { Bar, Btn, Caret, Chip, Facts, Field, Head, Icon, LinkBtn, Mark, Seg, hhmm, lastSelected, markFor, secs, usePoll, useRememberSelected, useTick, type MarkState } from "./ui.tsx";
 
 export type Detail = { draw: Draw; origin: Origin | null; steps: Step[]; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] };
 const STAGES = ["premises", "execute", "gate", "outline", "context", "ending", "brief"];
@@ -173,10 +173,12 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
   // a repair round ran no premises: it belongs to check alone
   const ideate = draws.filter((r) => !r.repaired_from);
   const archived = ideate.filter((r) => r.archived_at).length;
-  // With nothing chosen, land on the draw that needs attention, else the newest; with no draws, the form.
+  // With nothing chosen, land on the draw last selected here while it is still in the list, else the newest; with no draws, the form.
   const live = ideate.filter((r) => !r.archived_at);
+  const last = lastSelected("draws");
   // the form only once the list has loaded and is empty; before that the pane waits
-  const current = selected ?? (live.find((r) => r.status === "awaiting_gate") ?? live[0])?.id ?? (loaded && !live.length ? "new" : undefined);
+  const current = selected ?? (ideate.find((r) => r.id === last) ?? live[0])?.id ?? (loaded && !live.length ? "new" : undefined);
+  useRememberSelected("draws", selected && selected !== "new" ? selected : undefined);
   const shown = ideate.filter((r) => showArchived || !r.archived_at || r.id === current);
   const isForm = current === "new";
   const loadDetail = (id: string) =>
