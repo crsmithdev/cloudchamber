@@ -966,7 +966,7 @@
     font-size: var(--text-head);
   }
   .grouphd[aria-pressed="true"] {
-    color: var(--color-gold);
+    color: var(--color-ink);
   }
   .grouphd:hover {
     color: var(--color-ink);

@@ -109,6 +109,14 @@ export function Facts({ rows, className = "" }: { rows: [React.ReactNode, React.
 /** Seconds between two timestamps, or "running". */
 /** Seconds from a start to an end, or to now while the step still runs; pair with useTick so the cell ticks. */
 export const secs = (a: string, b: string | null) => `${Math.max(0, Math.round(((b ? Date.parse(b) : Date.now()) - Date.parse(a)) / 1000))}`;
+/** Poll: call fn now and every `fast` ms while active, every `slow` ms otherwise, again whenever deps change. */
+export function usePoll(fn: () => void, active: boolean, deps: unknown[], fast = 2500, slow = 20000) {
+  useEffect(() => {
+    fn();
+    const t = setInterval(fn, active ? fast : slow);
+    return () => clearInterval(t);
+  }, [active, fast, slow, ...deps]);
+}
 /** Re-render once a second while something runs, so an elapsed cell ticks between polls. */
 export function useTick(active: boolean, ms = 1000) {
   const [, set] = useState(0);

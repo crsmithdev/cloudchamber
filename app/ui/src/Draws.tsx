@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { marked } from "marked";
 import { api, when, type Artifact, type Candidate, type Example, type Facets, type Draw, type Fork, type FullStep, type Origin, type Source, type Status, type Step } from "./api.ts";
-import { Bar, Btn, Caret, Chip, Facts, Field, Head, Icon, LinkBtn, Mark, Seg, hhmm, markFor, secs, useTick } from "./ui.tsx";
+import { Bar, Btn, Caret, Chip, Facts, Field, Head, Icon, LinkBtn, Mark, Seg, hhmm, markFor, secs, usePoll, useTick } from "./ui.tsx";
 
 export type Detail = { draw: Draw; origin: Origin | null; steps: Step[]; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] };
 const STAGES = ["premises", "execute", "gate", "outline", "context", "ending", "brief"];
@@ -88,11 +88,7 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
       })
       .catch(() => {});
   const busy = draws.some((r) => RUNNING_STATUS.has(r.status));
-  useEffect(() => {
-    loadDraws();
-    const t = setInterval(loadDraws, busy ? 3000 : 15000);
-    return () => clearInterval(t);
-  }, [busy]);
+  usePoll(loadDraws, busy, [], 3000, 15000);
 
   // Archived draws stay out of the list until asked for, and the open one stays visible whatever its state.
   const archived = draws.filter((r) => r.archived_at).length;
@@ -112,20 +108,22 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
     setStepId(null);
     setErr("");
     setOpen((o) => new Set(o).add(current));
-    loadDetail(current);
     return () => {};
   }, [current]);
   useEffect(() => {
-    for (const id of open) if (!details[id]) loadDetail(id);
+    // the current draw is loaded by the poll; this fetches the other rows the operator opened
+    for (const id of open) if (id !== current && !details[id]) loadDetail(id);
   }, [open]);
   const d = current && !isForm ? details[current] : undefined;
   // the pane refreshes itself while the pipeline is working on this draw, and rarely once it stops
   const working = !!d && (RUNNING_STATUS.has(d.draw.status) || d.steps.some((s) => s.status === "running"));
-  useEffect(() => {
-    if (!current || isForm) return;
-    const t = setInterval(() => loadDetail(current), working ? 2500 : 20000);
-    return () => clearInterval(t);
-  }, [current, working]);
+  usePoll(
+    () => {
+      if (current && !isForm) loadDetail(current);
+    },
+    working,
+    [current, isForm],
+  );
 
   const select = (id: string) => {
     if (id !== current) {
@@ -330,7 +328,7 @@ function RowFacts({ d }: { d: Detail }) {
             ? [
                 [
                   "lowest",
-                  <span className="num text-gold">
+                  <span className="num">
                     #{lowest.index} · {lowest.probability.toFixed(2)}
                   </span>,
                 ] as [React.ReactNode, React.ReactNode],
@@ -344,7 +342,7 @@ function RowFacts({ d }: { d: Detail }) {
             ? [
                 [
                   "chosen",
-                  <span className="num text-gold">
+                  <span className="num">
                     #{chosen.index} · {chosen.probability.toFixed(2)}
                   </span>,
                 ] as [React.ReactNode, React.ReactNode],
@@ -567,12 +565,12 @@ function DrawBody({
                             </Btn>
                           )}
                           {chosen && (
-                            <a className="link num text-gold" href={`#check/${d.draw.id}`}>
+                            <a className="link num" href={`#check/${d.draw.id}`}>
                               in check <Icon name="arrow_forward" />
                             </a>
                           )}
                           {fork && (
-                            <a className="link num text-gold" href={`#check/${fork.id}`}>
+                            <a className="link num" href={`#check/${fork.id}`}>
                               in check <Icon name="arrow_forward" />
                             </a>
                           )}

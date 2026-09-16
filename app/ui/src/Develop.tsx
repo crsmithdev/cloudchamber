@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api, when, type AutoResult, type Draw, type DraftConfig, type Finding, type Findings, type Story, type Step } from "./api.ts";
 import { DrawMeta, Log, Md, RUNNING_STATUS, SeedNote, StepView, firstParagraph, label, type Detail } from "./Draws.tsx";
-import { Bar, Btn, Caret as Chevron, Facts, Field, Head, Icon, Mark, Seg, markFor, secs } from "./ui.tsx";
+import { Bar, Btn, Caret as Chevron, Facts, Field, Head, Icon, Mark, Seg, markFor, secs, usePoll } from "./ui.tsx";
 
 /**
  * Develop a brief: the stages after a brief (docs/specs/2026-09-05-drafting-pipeline.md).
@@ -28,11 +28,7 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
       .then((all) => setDraws(all.filter((r) => r.stage === stage)))
       .catch(() => {});
   const busy = draws.some((r) => RUNNING_STATUS.has(r.status));
-  useEffect(() => {
-    loadDraws();
-    const t = setInterval(loadDraws, busy ? 3000 : 15000);
-    return () => clearInterval(t);
-  }, [stage, busy]);
+  usePoll(loadDraws, busy, [stage], 3000, 15000);
   const current = selected ?? (draws.find((r) => OPEN.has(r.status)) ?? draws.find((r) => !r.superseded_by))?.id;
   const loadDetail = (id: string) =>
     api
@@ -45,15 +41,16 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
     setStepId(null);
     setErr("");
     setSettings(false);
-    loadDetail(current);
     return () => {};
   }, [current]);
   const working = !!d && (RUNNING_STATUS.has(d.draw.status) || d.steps.some((s) => s.status === "running"));
-  useEffect(() => {
-    if (!current) return;
-    const t = setInterval(() => loadDetail(current), working ? 2500 : 20000);
-    return () => clearInterval(t);
-  }, [current, working]);
+  usePoll(
+    () => {
+      if (current) loadDetail(current);
+    },
+    working,
+    [current],
+  );
   const act = async (fn: () => Promise<any>, go?: (r: any) => string | undefined) => {
     setErr("");
     try {
@@ -95,7 +92,7 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
               <span className={RUNNING_STATUS.has(r.status) ? "sweep text-running" : ""}>{statusLine(r)}</span>
               <span className="text-dim">
                 {r.origin?.index ? (
-                  <span className="num text-gold">
+                  <span className="num text-mute">
                     {" "}
                     #{r.origin.index}
                     {r.origin.probability != null ? ` · ${r.origin.probability.toFixed(2)}` : ""}
@@ -153,7 +150,7 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
                 {d.origin && (
                   <>
                     {d.origin.id === d.draw.id ? "candidate" : "from"}{" "}
-                    <a href={`#draw/${d.origin.id}`} className="num text-gold">
+                    <a href={`#draw/${d.origin.id}`} className="num">
                       {d.origin.id === d.draw.id
                         ? `#${d.origin.index}${d.origin.probability != null ? ` · ${d.origin.probability.toFixed(2)}` : ""}`
                         : `${d.origin.name ?? d.origin.id}${d.origin.index ? ` #${d.origin.index}` : ""}`}
@@ -742,7 +739,7 @@ function FindingRow({ f, S, selected, onToggle, onDismiss, readOnly }: { f: Find
           {f.n}/{S}
         </span>
       </td>
-      <td className={"num " + (f.invalidates === "none" ? "text-dim" : "text-gold")}>
+      <td className={"num " + (f.invalidates === "none" ? "text-dim" : "")}>
         {f.invalidates}
         {f.relitigates && (
           <div>
@@ -1413,7 +1410,7 @@ function ScheduleView({ s }: { s: Story }) {
                 <td className="num">
                   {n} <span className="text-dim">/ {b.words}</span>
                   {n > b.words * 1.1 ? <div className="text-art">over cap</div> : null}
-                  {b.absorbs !== "none" && <div className="text-gold">absorbs {b.absorbs}</div>}
+                  {b.absorbs !== "none" && <div className="text-mute">absorbs {b.absorbs}</div>}
                 </td>
                 <td className="pt-4">
                   <Bar pct={pct} over={n > b.words * 1.1} />
