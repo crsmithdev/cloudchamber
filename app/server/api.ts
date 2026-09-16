@@ -139,6 +139,23 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
   type CheckSummary = { pass: string | null; reported: number; accepted: number; open: number; total: number };
   const summaries = new Map<string, CheckSummary | null>();
   const queued = new Set<string>();
+  // one computation per timer, each scheduling the next once it is done, so a request that
+  // arrives between two of them is answered instead of waiting for the whole batch
+  const summaryQueue: [string, string][] = [];
+  let pumping = false;
+  const pump = () => {
+    if (pumping) return;
+    const next = summaryQueue.shift();
+    if (!next) return;
+    pumping = true;
+    setTimeout(() => {
+      const [key, id] = next;
+      try { summaries.set(key, summarise(id)); } catch { summaries.set(key, null); }
+      queued.delete(key);
+      pumping = false;
+      pump();
+    }, 0);
+  };
   const findingVerdicts = () => (db.query("SELECT count(*) AS n FROM verdicts WHERE kind = 'finding'").get() as { n: number }).n;
   const summarise = (id: string): CheckSummary | null => {
     const f = drafting.findings(id);
@@ -152,10 +169,8 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     if (summaries.has(key)) return summaries.get(key);
     if (!queued.has(key)) {
       queued.add(key);
-      setTimeout(() => {
-        try { summaries.set(key, summarise(r.id)); } catch { summaries.set(key, null); }
-        queued.delete(key);
-      }, 0);
+      summaryQueue.push([key, r.id]);
+      pump();
     }
     return undefined;
   };

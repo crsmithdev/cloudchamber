@@ -622,44 +622,27 @@ function GateOne({ d, onAct, onDraft }: { d: Detail; onAct: (fn: () => Promise<a
           </Head>
           {f && f.findings.length === 0 && <div className="mt-2 text-mute">Nothing recurred in enough samples to report. What each checker examined is listed beside.</div>}
           {f && f.findings.length > 0 && (
-            <table className="ruled-fixed mt-1">
-              <thead>
-                <tr>
-                  <th className="head w-10">score</th>
-                  <th className="head w-20">recurred</th>
-                  <th className="head w-20">breaks</th>
-                  <th className="head w-20">checkers</th>
-                  <th className="head premise">finding</th>
-                  <th className="head w-10 text-center">state</th>
-                  <th className="head w-24"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {f.findings
-                  .filter((x) => !x.relitigates)
-                  .map((x) => (
+            <div className="findings mt-1">
+              {f.findings
+                .filter((x) => !x.relitigates)
+                .map((x) => (
+                  <FindingRow key={x.id} f={x} S={x.samples_run ?? S} selected={sel.has(x.id)} onToggle={() => toggle(x.id)} onDismiss={() => gate("dismiss", { finding: x.id })} readOnly={repaired} />
+                ))}
+              {reopened.length > 0 && (
+                <>
+                  <Head as="div" className="mt-5" note={`${reopened.length} finding${reopened.length > 1 ? "s" : ""} against a fix you already accepted · auto will not act on ${reopened.length > 1 ? "these" : "this"}`}>
+                    re-opened
+                  </Head>
+                  <div className="mt-1 mb-2 max-w-[66ch] text-mute">
+                    A repair round is free to trade one fix for another, and the checkers then report the fix as the defect. Either the earlier decision was wrong, in which case accept this and say so in the note, or
+                    this is the loop arguing with itself, in which case dismiss it.
+                  </div>
+                  {reopened.map((x) => (
                     <FindingRow key={x.id} f={x} S={x.samples_run ?? S} selected={sel.has(x.id)} onToggle={() => toggle(x.id)} onDismiss={() => gate("dismiss", { finding: x.id })} readOnly={repaired} />
                   ))}
-                {reopened.length > 0 && (
-                  <>
-                    <tr>
-                      <td colSpan={7} className="pt-5">
-                        <Head as="div" note={`${reopened.length} finding${reopened.length > 1 ? "s" : ""} against a fix you already accepted · auto will not act on ${reopened.length > 1 ? "these" : "this"}`}>
-                          re-opened
-                        </Head>
-                        <div className="mt-1 max-w-[66ch] text-mute">
-                          A repair round is free to trade one fix for another, and the checkers then report the fix as the defect. Either the earlier decision was wrong, in which case accept this and say so in the note,
-                          or this is the loop arguing with itself, in which case dismiss it.
-                        </div>
-                      </td>
-                    </tr>
-                    {reopened.map((x) => (
-                      <FindingRow key={x.id} f={x} S={x.samples_run ?? S} selected={sel.has(x.id)} onToggle={() => toggle(x.id)} onDismiss={() => gate("dismiss", { finding: x.id })} readOnly={repaired} />
-                    ))}
-                  </>
-                )}
-              </tbody>
-            </table>
+                </>
+              )}
+            </div>
           )}
           {f && (
             <>
@@ -788,83 +771,74 @@ function GateOne({ d, onAct, onDraft }: { d: Detail; onAct: (fn: () => Promise<a
 }
 
 /** A finding as a row: score, recurrence as marks, the job it breaks, the checkers, then the span, the statement and the ledger of result, evidence and replacement. */
+/** A finding: the values on one ruled line, then the span, the statement and the ledger at full width. */
 function FindingRow({ f, S, selected, onToggle, onDismiss, readOnly }: { f: Finding; S: number; selected: boolean; onToggle: () => void; onDismiss: () => void; readOnly: boolean }) {
   const acc = f.decision === "accepted" || selected;
-  const cls = (acc ? "sel" : "") + (f.decision === "dismissed" ? " old" : "");
+  const cls = "finding" + (acc ? " sel" : "") + (f.decision === "dismissed" ? " old" : "");
   return (
-    <tr className={cls}>
-      <td className="num text-center font-semibold" title={`score ${f.score} of ${SCORE_MAX}: recurrence, a second checker, what it invalidates, the kind of result, and whether it quotes evidence`}>
-        {f.score}
-      </td>
-      <td className="pt-3.5 whitespace-nowrap">
-        {Array.from({ length: S }, (_, i) => (
-          <React.Fragment key={i}>
-            <Mark state={i < f.n ? "held" : ""} />{" "}
-          </React.Fragment>
-        ))}
-        <span className="num ml-1">
-          {f.n}/{S}
+    <div className={cls}>
+      <div className="line">
+        <span className="num w-6 font-semibold" title={`score ${f.score} of ${SCORE_MAX}: recurrence, a second checker, what it invalidates, the kind of result, and whether it quotes evidence`}>
+          {f.score}
         </span>
-      </td>
-      <td className={"num " + (f.invalidates === "none" ? "text-dim" : "")}>
-        {f.invalidates}
+        <span className="whitespace-nowrap" title={`recurred in ${f.n} of ${S} samples`}>
+          {Array.from({ length: S }, (_, i) => (
+            <React.Fragment key={i}>
+              <Mark state={i < f.n ? "held" : ""} />{" "}
+            </React.Fragment>
+          ))}
+          <span className="num">
+            {f.n}/{S}
+          </span>
+        </span>
+        <span className="num text-dim">
+          breaks <b className={"font-normal " + (f.invalidates === "none" ? "" : "text-ink")}>{f.invalidates}</b>
+        </span>
+        <span className="num text-dim">{f.checkers.join(" · ")}</span>
         {f.relitigates && (
-          <div>
-            <a className="link text-pass" href={`#check/${f.relitigates.draw}`} title={`Accepted in round ${f.relitigates.round}: ${f.relitigates.replacement}`}>
-              re-opens round {f.relitigates.round}
-            </a>
-          </div>
+          <a className="link text-pass" href={`#check/${f.relitigates.draw}`} title={`Accepted in round ${f.relitigates.round}: ${f.relitigates.replacement}`}>
+            re-opens round {f.relitigates.round}
+          </a>
         )}
-      </td>
-      <td className="num text-dim">
-        {f.checkers.map((c) => (
-          <div key={c}>{c}</div>
-        ))}
-      </td>
-      <td className="premise">
-        <div className="quote">{unquote(f.span)}</div>
-        <div className="mt-1">{f.statement}</div>
-        <div className="kv">
-          <b>result</b>
-          <span className="font-mono">{f.result}</span>
-          <b>evidence</b>
-          <span>{f.evidence}</span>
-          <b>replacement</b>
-          <span className="text-ink">{f.replacement}</span>
-          {f.patch ? (
+        <Mark state={acc ? "held" : f.decision === "dismissed" ? "fail" : ""} title={f.decision} />
+        <span className="acts">
+          {f.decision === "accepted" ? (
+            <span className="num text-keep">accepted{f.note ? ` · ${f.note}` : ""}</span>
+          ) : f.decision === "dismissed" ? (
+            <span className="num text-dim">dismissed{f.note ? ` · ${f.note}` : ""}</span>
+          ) : readOnly ? (
+            <span className="num text-dim">open</span>
+          ) : (
             <>
-              <b>patch</b>
-              <span className="num text-keep" title="Accepting this substitutes the span for these words. Nothing is regenerated.">
-                {f.patch}
-              </span>
-            </>
-          ) : null}
-        </div>
-      </td>
-      <td className="text-center">
-        <Mark state={f.decision === "accepted" || selected ? "held" : f.decision === "dismissed" ? "fail" : ""} title={f.decision} />
-      </td>
-      <td className="text-right whitespace-nowrap">
-        {f.decision === "accepted" ? (
-          <span className="num text-keep">accepted{f.note ? ` · ${f.note}` : ""}</span>
-        ) : f.decision === "dismissed" ? (
-          <span className="num text-dim">dismissed{f.note ? ` · ${f.note}` : ""}</span>
-        ) : readOnly ? (
-          <span className="num text-dim">open</span>
-        ) : (
-          <>
-            <Btn variant={selected ? "keep" : undefined} pressed={selected} onClick={onToggle}>
-              {selected ? "selected" : "accept"}
-            </Btn>
-            <div className="mt-1">
+              <Btn variant={selected ? "keep" : undefined} pressed={selected} onClick={onToggle}>
+                {selected ? "selected" : "accept"}
+              </Btn>
               <button className="link" onClick={onDismiss}>
                 dismiss
               </button>
-            </div>
+            </>
+          )}
+        </span>
+      </div>
+      <div className="quote">{unquote(f.span)}</div>
+      <div className="mt-0.5">{f.statement}</div>
+      <div className="kv">
+        <b>result</b>
+        <span className="font-mono">{f.result}</span>
+        <b>evidence</b>
+        <span>{f.evidence}</span>
+        <b>replacement</b>
+        <span className="text-ink">{f.replacement}</span>
+        {f.patch ? (
+          <>
+            <b>patch</b>
+            <span className="num text-keep" title="Accepting this substitutes the span for these words. Nothing is regenerated.">
+              {f.patch}
+            </span>
           </>
-        )}
-      </td>
-    </tr>
+        ) : null}
+      </div>
+    </div>
   );
 }
 

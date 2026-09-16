@@ -274,16 +274,40 @@
   .tt td.premise {
     min-width: 26rem;
   }
-  /* a fixed layout: every column but the text takes its head's width, the text takes the rest */
-  .tt table.ruled-fixed {
-    table-layout: fixed;
+  /* a finding: its values on one ruled line, then the span, the statement and the ledger at full width */
+  .finding {
+    border-top: 1px solid var(--color-hair);
+    padding: 0.6rem 0.5rem 0.8rem;
   }
-  .tt table.ruled-fixed td {
-    overflow-wrap: anywhere;
+  .findings > .finding:last-child {
+    border-bottom: 1px solid var(--color-hair);
   }
-  .tt table.ruled-fixed td.premise,
-  .tt table.ruled-fixed th.premise {
-    min-width: 0;
+  .finding .line {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.4rem;
+  }
+  .finding .line .acts {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .finding .quote {
+    display: block;
+  }
+  .finding .kv {
+    grid-template-columns: 6rem minmax(0, 1fr);
+    margin-top: 0.35rem;
+  }
+  .finding.sel {
+    background: var(--color-raised);
+    box-shadow: inset 2px 0 0 var(--color-gold);
+  }
+  .finding.old > * {
+    opacity: 0.55;
   }
   .tt .num {
     font-family: var(--font-mono);
