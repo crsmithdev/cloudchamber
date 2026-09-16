@@ -10,6 +10,31 @@ import { Bar, Btn, Caret as Chevron, Facts, Field, Head, Icon, Mark, Seg, markFo
  * screens at gate 2, or the running log in between.
  */
 const OPEN = new Set(["awaiting_check_gate", "awaiting_draft_gate"]);
+/** A repair chain: the root draw, its rounds oldest first, and the head. A draw with no repairs is a chain of one. */
+type Chain = { root: Draw; rounds: Draw[]; head: Draw };
+function chainsOf(draws: Draw[]): Chain[] {
+  const by = new Map(draws.map((r) => [r.id, r]));
+  const rootOf = (r: Draw) => {
+    const seen = new Set<string>();
+    while (r.repaired_from && by.has(r.repaired_from) && !seen.has(r.id)) {
+      seen.add(r.id);
+      r = by.get(r.repaired_from)!;
+    }
+    return r;
+  };
+  const groups = new Map<string, Draw[]>();
+  for (const r of draws) {
+    const root = rootOf(r).id;
+    if (!groups.has(root)) groups.set(root, []);
+    groups.get(root)!.push(r);
+  }
+  return [...groups.values()]
+    .map((rounds) => {
+      rounds.sort((a, b) => (a.created_at < b.created_at ? -1 : 1));
+      return { root: rounds[0], rounds, head: rounds[rounds.length - 1] };
+    })
+    .sort((a, b) => (a.head.created_at < b.head.created_at ? 1 : -1));
+}
 const INVALIDATES = ["debt audit", "arithmetic", "custody"];
 /** A quoted span is shown between the row's own quotation marks; a span the model already quoted would show two. */
 const unquote = (s: string) => s.trim().replace(/^["“”'‘’]+|["“”'‘’]+$/g, "");
@@ -25,11 +50,16 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
   const loadDraws = () =>
     api
       .draws()
-      .then((all) => setDraws(all.filter((r) => r.stage === stage)))
+      .then(setDraws)
       .catch(() => {});
-  const busy = draws.some((r) => RUNNING_STATUS.has(r.status));
-  usePoll(loadDraws, busy, [stage], 3000, 15000);
-  const current = selected ?? (draws.find((r) => OPEN.has(r.status)) ?? draws.find((r) => !r.superseded_by))?.id;
+  // one entry per repair chain, named for its root, shown where its head is; the rounds in order
+  const chains = useMemo(() => chainsOf(draws).filter((c) => c.head.stage === stage), [draws, stage]);
+  const heads = chains.map((c) => c.head);
+  const busy = heads.some((r) => RUNNING_STATUS.has(r.status));
+  const summarising = chains.some((c) => c.rounds.some((r) => r.check === null && r.status !== "done"));
+  usePoll(loadDraws, busy || summarising, [stage], 3000, 15000);
+  const current = selected ?? (heads.find((r) => OPEN.has(r.status)) ?? heads[0])?.id;
+  const chainOf = (id: string | undefined) => chains.find((c) => c.rounds.some((r) => r.id === id));
   const loadDetail = (id: string) =>
     api
       .draw(id)
@@ -71,59 +101,90 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
       <div className="pane list">
         <div className="listhead">
           <span className="head">
-            {stage === "check" ? `${atGate} at gate 1 · ${draws.filter((r) => r.status === "done").length} unchecked` : `${atGate} at gate 2 · ${draws.filter((r) => r.status === "drafted").length} kept`}
+            {stage === "check"
+              ? `${heads.filter((r) => OPEN.has(r.status)).length} at gate 1 · ${heads.filter((r) => r.status === "done").length} unchecked`
+              : `${heads.filter((r) => OPEN.has(r.status)).length} at gate 2 · ${heads.filter((r) => r.status === "drafted").length} kept`}
+            {chains.some((c) => c.rounds.length > 1) && <span className="note"> · {chains.filter((c) => c.rounds.length > 1).length} repair chains</span>}
           </span>
         </div>
-        {draws.length === 0 && <div className="empty">{stage === "check" ? "No briefs yet. Choose a candidate at a gate under ideate." : "Nothing drafted yet. Send a checked brief here from check."}</div>}
-        {draws.map((r) => (
-          <div
-            key={r.id}
-            className={"row" + (r.id === current ? " on" : "") + (RUNNING_STATUS.has(r.status) ? " running" : "") + (r.superseded_by ? " old" : "")}
-            onClick={() => {
-              location.hash = `#${stage}/${r.id}`;
-            }}
-          >
-            <div className="l1">
-              <b>{r.name ?? r.id}</b>
-              <span className="when">{when(r.created_at)}</span>
-            </div>
-            <div className="l2">
-              <Mark state={markFor(r.status)} />
-              <span className={RUNNING_STATUS.has(r.status) ? "sweep text-running" : ""}>{statusLine(r)}</span>
-              <span className="text-dim">
-                {r.origin?.index ? (
-                  <span className="num text-mute">
-                    {" "}
-                    #{r.origin.index}
-                    {r.origin.probability != null ? ` · ${r.origin.probability.toFixed(2)}` : ""}
-                  </span>
-                ) : null}{" "}
-                · {r.setting ?? "unrestricted"} · {r.genre}
-                {r.repaired_from ? " · repaired" : null}
-                {r.flagged ? <span className="text-art"> · flagged</span> : null}
-                {r.superseded_by && " · superseded"}
-              </span>
-            </div>
-            <div className="sd">{r.seed_text}</div>
-            <div className="rid">{r.id}</div>
-            {stage === "check" && r.status === "done" && !r.superseded_by && (
-              <div className="acts" onClick={(e) => e.stopPropagation()}>
-                <Btn
-                  onClick={() =>
-                    act(
-                      () => api.check(r.id),
-                      () => r.id,
-                    )
-                  }
-                >
-                  check this brief
-                </Btn>
-                <span className="text-dim">derivation, ledger, structure, resemblance</span>
+        {chains.length === 0 && <div className="empty">{stage === "check" ? "No briefs yet. Choose a candidate at a gate under ideate." : "Nothing drafted yet. Send a checked brief here from check."}</div>}
+        {chains.map((c) => {
+          const r = c.head;
+          const on = c.rounds.some((x) => x.id === current);
+          const max = Math.max(...c.rounds.map((x) => x.check?.total ?? 0), 1);
+          const lowest = c.rounds.reduce((m, x) => (x.check && (!m || x.check.total < m.check!.total) ? x : m), null as Draw | null);
+          return (
+            <div
+              key={c.root.id}
+              className={"row" + (on ? " on" : "") + (RUNNING_STATUS.has(r.status) ? " running" : "")}
+              onClick={() => {
+                location.hash = `#${stage}/${r.id}`;
+              }}
+            >
+              <div className="l1">
+                <b>{c.root.name ?? c.root.id}</b>
+                <span className="when">{when(r.created_at)}</span>
               </div>
-            )}
-            {r.id === current && d && <Log d={d} stepId={stepId} onStep={setStepId} />}
-          </div>
-        ))}
+              <div className="l2">
+                <Mark state={markFor(r.status)} />
+                <span className={RUNNING_STATUS.has(r.status) ? "sweep text-running" : ""}>{statusLine(r)}</span>
+                <span className="text-dim">
+                  {c.rounds.length > 1 && ` · round ${c.rounds.length} of ${c.rounds.length}`}
+                  {r.origin?.index ? (
+                    <span className="num text-mute">
+                      {" "}
+                      · #{r.origin.index}
+                      {r.origin.probability != null ? ` · ${r.origin.probability.toFixed(2)}` : ""}
+                    </span>
+                  ) : null}{" "}
+                  · {r.setting ?? "unrestricted"} · {r.genre}
+                  {r.flagged ? <span className="text-art"> · flagged</span> : null}
+                </span>
+              </div>
+              <div className="sd">{r.seed_text}</div>
+              {c.rounds.length > 1 && (
+                <table className="ledger" onClick={(e) => e.stopPropagation()}>
+                  <tbody>
+                    {c.rounds.map((x, i) => (
+                      <tr
+                        key={x.id}
+                        className={x.id === current ? "sel" : ""}
+                        onClick={() => {
+                          location.hash = `#${x.stage}/${x.id}`;
+                        }}
+                        title={x.check ? `round ${i + 1} · ${x.check.reported} reported · ${x.check.accepted} accepted · score ${x.check.total}` : `round ${i + 1} · ${statusLine(x)}`}
+                      >
+                        <td className="num w-4">{i + 1}</td>
+                        <td>
+                          <Bar pct={x.check ? (x.check.total / max) * 100 : 0} gold={x === lowest} />
+                        </td>
+                        <td className={"num text-right" + (x === lowest ? " text-keep" : "")}>{x.check ? x.check.total : x.status === "done" ? "—" : "…"}</td>
+                        <td className="num text-right text-dim">{x.check ? `${x.check.accepted}/${x.check.reported}` : ""}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+              <div className="rid">{r.id}</div>
+              {stage === "check" && r.status === "done" && (
+                <div className="acts" onClick={(e) => e.stopPropagation()}>
+                  <Btn
+                    onClick={() =>
+                      act(
+                        () => api.check(r.id),
+                        () => r.id,
+                      )
+                    }
+                  >
+                    check this brief
+                  </Btn>
+                  <span className="text-dim">derivation, ledger, structure, resemblance</span>
+                </div>
+              )}
+              {on && d && <Log d={d} stepId={stepId} onStep={setStepId} />}
+            </div>
+          );
+        })}
       </div>
       <div className="pane read tt">
         {!current ? (
@@ -159,12 +220,18 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
                   </>
                 )}
               </DrawMeta>
-              {d.draw.repaired_from && (
+              {chainOf(d.draw.id) && chainOf(d.draw.id)!.rounds.length > 1 && (
                 <span className="text-dim">
-                  repairs{" "}
-                  <a href={`#${stage}/${d.draw.repaired_from}`} className="num">
-                    {d.draw.repaired_from}
-                  </a>
+                  round <b className="num text-ink">{chainOf(d.draw.id)!.rounds.findIndex((x) => x.id === d.draw.id) + 1}</b> of {chainOf(d.draw.id)!.rounds.length}
+                  {d.draw.repaired_from && (
+                    <>
+                      {" "}
+                      · repairs{" "}
+                      <a href={`#${stage}/${d.draw.repaired_from}`} className="num">
+                        {d.draw.repaired_from}
+                      </a>
+                    </>
+                  )}
                 </span>
               )}
               {d.draw.superseded_by && (

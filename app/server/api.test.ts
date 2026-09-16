@@ -142,7 +142,9 @@ describe("api", () => {
     expect(done.body.artifacts.filter((a: any) => a.kind === "vignette")).toHaveLength(7);   // 5 executed + 2 context
     const gateAgain = await j("POST", `/api/draws/${id}/gate`, { action: "choose", step_id: r.body.candidates[0].step_id });
     expect(gateAgain.code).toBe(400);
-    expect((await j("GET", "/api/draws")).body).toHaveLength(1);
+    const listed = (await j("GET", "/api/draws")).body;
+    expect(listed).toHaveLength(1);
+    expect(listed[0].check).toBeNull();   // a brief not yet checked has no summary
     expect((await j("GET", "/api/draws/nope")).code).toBe(404);
   });
 

@@ -1,20 +1,132 @@
 export type Latest = { verdict: "keep" | "pass"; artifact: boolean; note: string; at: string; inherited_from: string | null } | null;
-export type Item = { id: string; text: string; words?: number; cell?: string; suspect?: string[]; title?: string; author?: string; genre?: string; source?: string; passages?: number; attestation?: number; stories?: string; latest: Latest; setting?: string; status?: string };
+export type Item = {
+  id: string;
+  text: string;
+  words?: number;
+  cell?: string;
+  suspect?: string[];
+  title?: string;
+  author?: string;
+  genre?: string;
+  source?: string;
+  passages?: number;
+  attestation?: number;
+  stories?: string;
+  latest: Latest;
+  setting?: string;
+  status?: string;
+};
 export type Example = { id: string; text: string | null; words?: number; cell?: string; title?: string; author?: string; source?: string; story_id?: string; latest: Latest };
-export type Draw = { id: string; name: string | null; stage: "ideate" | "check" | "write"; origin?: Origin | null; archived_at: string | null; setting: string | null; genre: string; sampling: string; mode: string; segment: string | null; seed_mode: string; seed_text: string; example_ids: string; status: string; gate_method: string | null; chosen_step: string | null; flagged: number; flag_note: string; superseded_by: string | null; repaired_from: string | null; forked_from: string | null; draft_config: string | null; created_at: string; ended_at: string | null };
-export type Finding = { id: string; artifact_id: string; checkers: string[]; samples: number[]; n: number; span: string; statement: string; result: string; evidence: string; invalidates: string; replacement: string; patch: string; pass: string; source: "check" | "screen"; screen?: string; beat?: number; decision: "accepted" | "dismissed" | "open"; note: string; score: number; samples_run: number; reported: boolean; relitigates?: { finding: string; draw: string; round: number; replacement: string } };
+export type Draw = {
+  id: string;
+  name: string | null;
+  stage: "ideate" | "check" | "write";
+  origin?: Origin | null;
+  archived_at: string | null;
+  setting: string | null;
+  genre: string;
+  sampling: string;
+  mode: string;
+  segment: string | null;
+  seed_mode: string;
+  seed_text: string;
+  example_ids: string;
+  status: string;
+  gate_method: string | null;
+  chosen_step: string | null;
+  flagged: number;
+  flag_note: string;
+  superseded_by: string | null;
+  repaired_from: string | null;
+  forked_from: string | null;
+  draft_config: string | null;
+  created_at: string;
+  ended_at: string | null;
+  check?: CheckSummary | null;
+};
+/** What a round of a repair chain shows in the list: its reported findings, the accepted ones, and their total score. Null until the server has computed it. */
+export type CheckSummary = { pass: string | null; reported: number; accepted: number; open: number; total: number };
+export type Finding = {
+  id: string;
+  artifact_id: string;
+  checkers: string[];
+  samples: number[];
+  n: number;
+  span: string;
+  statement: string;
+  result: string;
+  evidence: string;
+  invalidates: string;
+  replacement: string;
+  patch: string;
+  pass: string;
+  source: "check" | "screen";
+  screen?: string;
+  beat?: number;
+  decision: "accepted" | "dismissed" | "open";
+  note: string;
+  score: number;
+  samples_run: number;
+  reported: boolean;
+  relitigates?: { finding: string; draw: string; round: number; replacement: string };
+};
 export type Claim = { statement: string; span: string; result: string; evidence: string; authority: string };
-export type Profile = { checker?: string; answers?: Record<string, { answer: string; quote: string }>; matches?: { entry: string; span: string }[]; nearest?: { title: string; author: string; shared: string }; beat?: number; flags?: string[] };
+export type Profile = {
+  checker?: string;
+  answers?: Record<string, { answer: string; quote: string }>;
+  matches?: { entry: string; span: string }[];
+  nearest?: { title: string; author: string; shared: string };
+  beat?: number;
+  flags?: string[];
+};
 export type AutoRound = { round: number; id: string; open: number; total: number; accepted: number; calls: number };
 export type AutoResult = { id: string; rounds: AutoRound[]; best: AutoRound; stopped: "floor" | "cap" | "patience" | "budget"; floor: number; calls: number; left_open?: number };
 export type Findings = { pass: string | null; findings: Finding[]; claims: Claim[]; profiles: Profile[]; examined: { stage: string; sample: number; examined: string }[]; judge: string | null };
 export type Beat = { n: number; words: number; job: string; known: string; withheld: { item: string; until: number }[]; stakes: string; absorbs: string };
 export type Scene = { beat: number; text: string; artifact_id: string; step_id: string };
-export type Slop = { words: number; pool_words: number; lexicon: { term: string; count: number }[]; not_but: { hits: number; per_10k: number; pool_per_10k: number; examples: string[] }; trigrams: { trigram: string; count: number }[]; paragraphs: { beat: number; words: number; paragraphs: number; mean_words: number; single_sentence_share: number }[] };
-export type Story = { schedule: { form: Record<string, string>; beats: Beat[]; raw: string } | null; scenes: Scene[]; profiles: (Profile & { beat: number; flags: string[]; answers: Record<string, { answer: string; quote: string }> })[]; screenFindings: Finding[]; slop: Slop | null; judge: string | null; text: string };
-export type DraftConfig = { length: { words: number; tolerance: number }; beats: { count: "auto" | number; min: number; max: number; words_min: number; words_max: number }; form: { tense: string; person: string; chronology: string; container: string; ending: string }; structure: { template: string }; scenes: { order: string }; checks: { enabled: string[]; samples: number; keep_if: number }; screens: { enabled: string[]; samples: number; keep_if: number }; repair: { rounds: number } };
+export type Slop = {
+  words: number;
+  pool_words: number;
+  lexicon: { term: string; count: number }[];
+  not_but: { hits: number; per_10k: number; pool_per_10k: number; examples: string[] };
+  trigrams: { trigram: string; count: number }[];
+  paragraphs: { beat: number; words: number; paragraphs: number; mean_words: number; single_sentence_share: number }[];
+};
+export type Story = {
+  schedule: { form: Record<string, string>; beats: Beat[]; raw: string } | null;
+  scenes: Scene[];
+  profiles: (Profile & { beat: number; flags: string[]; answers: Record<string, { answer: string; quote: string }> })[];
+  screenFindings: Finding[];
+  slop: Slop | null;
+  judge: string | null;
+  text: string;
+};
+export type DraftConfig = {
+  length: { words: number; tolerance: number };
+  beats: { count: "auto" | number; min: number; max: number; words_min: number; words_max: number };
+  form: { tense: string; person: string; chronology: string; container: string; ending: string };
+  structure: { template: string };
+  scenes: { order: string };
+  checks: { enabled: string[]; samples: number; keep_if: number };
+  screens: { enabled: string[]; samples: number; keep_if: number };
+  repair: { rounds: number };
+};
 /** A draw's steps come without their text; `/api/steps/:id` carries it when a step is opened. */
-export type Step = { id: string; parent_id: string | null; stage: string; model: string; system_prompt: string; status: string; fail_reason: string | null; attempt: number; started_at: string; ended_at: string | null; error: string | null; prompt_chars: number; raw_chars: number };
+export type Step = {
+  id: string;
+  parent_id: string | null;
+  stage: string;
+  model: string;
+  system_prompt: string;
+  status: string;
+  fail_reason: string | null;
+  attempt: number;
+  started_at: string;
+  ended_at: string | null;
+  error: string | null;
+  prompt_chars: number;
+  raw_chars: number;
+};
 export type FullStep = Step & { prompt: string; raw_response: string | null; parsed: string | null };
 export type Artifact = { id: string; step_id: string; kind: string; content: string; meta: string };
 export type Candidate = { step_id: string; index: number; probability: number; premise: string; vignette: string; warnings: string[] };
@@ -50,11 +162,23 @@ export const api = {
   briefFile: (id: string, file: string) => `/api/briefs/${id}/${file}`,
 };
 
-export type Status = { passages: number; passages_eligible: number; passages_suspect: number; per_source: { source: string; n: number; eligible: number }[]; themes: number; themes_eligible: number; verdicts: number; draws: { status: string; n: number }[] };
+export type Status = {
+  passages: number;
+  passages_eligible: number;
+  passages_suspect: number;
+  per_source: { source: string; n: number; eligible: number }[];
+  themes: number;
+  themes_eligible: number;
+  verdicts: number;
+  draws: { status: string; n: number }[];
+};
 export type Source = { id: string; genre: string; group: string; title: string };
 /** The options one draw was made with, for a form that starts another like it. */
 export type Like = {
-  mode: string; setting?: string; genre?: string; sampling?: string;
+  mode: string;
+  setting?: string;
+  genre?: string;
+  sampling?: string;
   segment?: { source?: string | string[]; author?: string };
   seed?: { mode: "picked"; themeId: string } | { mode: "typed"; text: string };
   seed_text: string;

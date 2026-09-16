@@ -802,6 +802,29 @@
     font-size: var(--text-head);
     color: var(--color-dim);
   }
+  /* a repair chain's ledger inside its list row: round, score bar, score, accepted over reported */
+  .row table.ledger {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0.4rem;
+  }
+  .row table.ledger td {
+    padding: 0.2rem 0.4rem 0.2rem 0;
+    border-bottom: 1px solid var(--color-hair);
+    vertical-align: middle;
+  }
+  .row table.ledger tr {
+    cursor: pointer;
+  }
+  .row table.ledger tr:hover td {
+    color: var(--color-ink);
+  }
+  .row table.ledger tr.sel td {
+    background: color-mix(in srgb, var(--color-gold) 10%, transparent);
+  }
+  .row table.ledger .bar {
+    min-width: 4rem;
+  }
   .row .acts {
     display: flex;
     align-items: center;

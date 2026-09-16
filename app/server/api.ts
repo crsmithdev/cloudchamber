@@ -132,12 +132,42 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     sampling: SAMPLING.map((mode) => ({ mode, ...BANDS[mode] })),
   }));
 
-  app.get<{ Querystring: { archived?: string } }>("/api/draws", async (req) =>
-    pipeline.draws(req.query.archived === "true").map((r) => {
+  // The check summary a list row shows for each round of a repair chain. The findings merge
+  // walks the whole chain and costs seconds, so summaries are memoised on the draw's status
+  // and the count of finding verdicts, and a missing one is computed after the reply, one at a
+  // time, so the list never waits. Until then the row carries null.
+  type CheckSummary = { pass: string | null; reported: number; accepted: number; open: number; total: number };
+  const summaries = new Map<string, CheckSummary | null>();
+  const queued = new Set<string>();
+  const findingVerdicts = () => (db.query("SELECT count(*) AS n FROM verdicts WHERE kind = 'finding'").get() as { n: number }).n;
+  const summarise = (id: string): CheckSummary | null => {
+    const f = drafting.findings(id);
+    const rep = f.findings.filter((x) => x.reported);
+    if (!f.pass && rep.length === 0) return null;
+    return { pass: f.pass, reported: rep.length, accepted: rep.filter((x) => x.decision === "accepted").length, open: rep.filter((x) => x.decision === "open").length, total: rep.reduce((n, x) => n + x.score, 0) };
+  };
+  const checkSummary = (r: { id: string; status: string }, stage: string, verdicts: number): CheckSummary | null | undefined => {
+    if (stage === "ideate" || r.status === "done") return null;
+    const key = `${r.id}|${r.status}|${verdicts}`;
+    if (summaries.has(key)) return summaries.get(key);
+    if (!queued.has(key)) {
+      queued.add(key);
+      setTimeout(() => {
+        try { summaries.set(key, summarise(r.id)); } catch { summaries.set(key, null); }
+        queued.delete(key);
+      }, 0);
+    }
+    return undefined;
+  };
+
+  app.get<{ Querystring: { archived?: string } }>("/api/draws", async (req) => {
+    const verdicts = findingVerdicts();
+    return pipeline.draws(req.query.archived === "true").map((r) => {
       const stage = stageOf(db, r);
       // the candidate is what tells two briefs of one batch apart, so the list needs it too
-      return { ...r, stage, origin: stage === "ideate" ? null : originOf(pipeline, r.id) };
-    }));
+      return { ...r, stage, origin: stage === "ideate" ? null : originOf(pipeline, r.id), check: checkSummary(r, stage, verdicts) ?? null };
+    });
+  });
 
   app.post<{ Body: { mode?: "auto" | "manual"; setting?: string; domains?: string; genre?: string; sampling?: string; source?: string; author?: string; seed?: string; seed_id?: string } }>("/api/draws", async (req, reply) => {
     const b = req.body ?? {};
