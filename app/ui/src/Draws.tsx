@@ -153,7 +153,8 @@ export function DrawMeta({ d, children }: { d: Detail; children?: React.ReactNod
   return (
     <span className="text-mute">
       {children}
-      <span className="text-dim">setting</span> {d.draw.setting ?? "unrestricted"} · <span className="text-dim">genre</span> {d.draw.genre || "none"} · <span className="text-dim">sampling</span> {d.draw.sampling} · <span className="text-dim">darkness</span> {d.draw.darkness ?? "none"}
+      <span className="text-dim">setting</span> {d.draw.setting ?? "unrestricted"} · <span className="text-dim">genre</span> {d.draw.genre || "none"} · <span className="text-dim">sampling</span> {d.draw.sampling} ·{" "}
+      <span className="text-dim">darkness</span> {d.draw.darkness ?? "none"}
     </span>
   );
 }
@@ -325,23 +326,16 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
               {isOpen && (
                 <>
                   <div className="l2">
-                    <span className={RUNNING_STATUS.has(r.status) ? "sweep text-running" : ""}>{label(r.status)}</span>
-                    <span className="text-dim">
-                      · {r.setting ?? "unrestricted"} · {r.genre} · {r.sampling}
-                      {r.flagged ? <span className="text-art"> · flagged</span> : null}
-                      {r.forked_from && " · fork"}
-                      {redrawn(r) && " · superseded"}
-                      {r.archived_at && " · archived"}
-                    </span>
+                    <span className={RUNNING_STATUS.has(r.status) ? "sweep text-running" : ""}>{details[r.id] ? drawSummary(details[r.id]) : label(r.status)}</span>
+                  </div>
+                  <div className="l2 text-dim">
+                    {r.setting ?? "unrestricted"} · {r.genre} · {r.sampling}
+                    {r.flagged ? <span className="text-art"> · flagged</span> : null}
+                    {r.forked_from && " · fork"}
+                    {redrawn(r) && " · superseded"}
+                    {r.archived_at && " · archived"}
                   </div>
                   <div className="sd">{r.seed_text}</div>
-                  <div className="rid">{r.id}</div>
-                  {details[r.id] && (
-                    <>
-                      <RowFacts d={details[r.id]} />
-                      <Log d={details[r.id]} stepId={stepId} onStep={setStepId} ideation />
-                    </>
-                  )}
                 </>
               )}
             </div>
@@ -427,7 +421,7 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
               {step ? (
                 <StepView step={step} chosen={step.id === d.draw.chosen_step} onBack={() => setStepId(null)} />
               ) : (
-                <DrawBody d={d} onChoose={(id) => gate("choose", id)} onFork={(id) => gate("fork", id)} onVerdict={verdict} />
+                <DrawBody d={d} onChoose={(id) => gate("choose", id)} onFork={(id) => gate("fork", id)} onVerdict={verdict} onStep={setStepId} />
               )}
             </>
           )}
@@ -437,55 +431,16 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
   );
 }
 
-function RowFacts({ d }: { d: Detail }) {
+/** The open row's one summary line: where the draw stands, in a few words. The step log is in the reading pane. */
+function drawSummary(d: Detail) {
+  const running = d.steps.filter((s) => s.status === "running" && IDEATION.has(s.stage));
   const chosen = d.candidates.find((c) => c.step_id === d.draw.chosen_step);
-  const lowest = d.candidates[0];
-  const since = d.steps.reduce((m, s) => (s.ended_at && s.ended_at > m ? s.ended_at : m), "");
   const failed = d.steps.filter((s) => s.status === "failed" && IDEATION.has(s.stage)).length;
-  const rows: [React.ReactNode, React.ReactNode][] =
-    d.draw.status === "awaiting_gate"
-      ? [
-          ["candidates", d.candidates.length],
-          ...(lowest
-            ? [
-                [
-                  "lowest",
-                  <span className="num">
-                    #{lowest.index} · {lowest.probability.toFixed(2)}
-                  </span>,
-                ] as [React.ReactNode, React.ReactNode],
-              ]
-            : []),
-          ...(since ? [["waiting since", when(since)] as [React.ReactNode, React.ReactNode]] : []),
-        ]
-      : [
-          ...(d.draw.gate_method ? [["gate", d.draw.gate_method] as [React.ReactNode, React.ReactNode]] : []),
-          ...(chosen
-            ? [
-                [
-                  "chosen",
-                  <span className="num">
-                    #{chosen.index} · {chosen.probability.toFixed(2)}
-                  </span>,
-                ] as [React.ReactNode, React.ReactNode],
-              ]
-            : []),
-          ["started", when(d.draw.created_at)],
-          ...(d.draw.ended_at ? [["ended", when(d.draw.ended_at)] as [React.ReactNode, React.ReactNode]] : []),
-          [
-            "steps",
-            <>
-              {d.steps.filter((s) => IDEATION.has(s.stage)).length}
-              {failed ? <span className="text-pass"> · {failed} failed</span> : null}
-            </>,
-          ],
-        ];
-  if (d.draw.flagged) rows.push(["flag", <span className="text-art">{d.draw.flag_note || "flagged"}</span>]);
-  return (
-    <div onClick={(e) => e.stopPropagation()}>
-      <Facts rows={rows} className="mt-2 text-head" />
-    </div>
-  );
+  if (running.length) return `running · ${[...new Set(running.map((s) => s.stage))].join(", ")}`;
+  if (d.draw.status === "awaiting_gate") return `awaiting the gate · ${d.candidates.length} premises`;
+  if (d.draw.status === "failed") return `failed · ${failed} step${failed === 1 ? "" : "s"}`;
+  if (chosen) return `brief · #${chosen.index} chosen · in ${d.draw.stage}`;
+  return label(d.draw.status);
 }
 
 /** The step log as a time table: stage, started, seconds. A running row sweeps; the gate waits; what is still to come is faint. */
@@ -617,11 +572,13 @@ function DrawBody({
   onChoose,
   onFork,
   onVerdict,
+  onStep,
 }: {
   d: Detail;
   onChoose: (stepId: string) => void;
   onFork: (stepId: string) => void;
   onVerdict: (e: Example, v: "keep" | "pass", artifact?: boolean, note?: string) => void;
+  onStep: (id: string) => void;
 }) {
   const [openVig, setOpenVig] = useState<string | null>(d.draw.chosen_step);
   const [openEx, setOpenEx] = useState<string | null>(null);
@@ -632,9 +589,6 @@ function DrawBody({
   const running = d.steps.filter((s) => s.status === "running");
   const runningExec = new Set(running.filter((s) => s.stage === "execute").map((s) => s.id));
   const landed = cands.filter((c) => !runningExec.has(c.step_id)).length;
-  const steps = d.steps.filter((s) => s.status === "done" && IDEATION.has(s.stage));
-  const ideationSteps = d.steps.filter((s) => IDEATION.has(s.stage)).length;
-  const callSecs = steps.reduce((n, s) => n + Number(secs(s.started_at, s.ended_at)), 0);
   return (
     <div className="drawbody">
       <div className="min-w-0">
@@ -812,68 +766,87 @@ function DrawBody({
         </table>
       </div>
       <div className="aside min-w-0">
-        <div>
-          <Head as="div" note={`${steps.length} of ${ideationSteps + (gating || d.draw.status === "running" ? STAGES.length - ideationSteps : 0)}`}>
-            steps
-          </Head>
-          <Log d={d} stepId={null} onStep={() => {}} wide ideation />
-        </div>
-        <div className="facts-block mt-6">
-          <Head as="div">draw</Head>
-          <table className="mt-1">
-            <tbody>
-              <tr>
-                <td className="w-24 text-dim">setting</td>
-                <td>{d.draw.setting ?? "unrestricted"}</td>
-              </tr>
-              <tr>
-                <td className="text-dim">genre</td>
-                <td>{d.draw.genre}</td>
-              </tr>
-              <tr>
-                <td className="text-dim">sampling</td>
-                <td>
-                  {d.draw.sampling} <span className="text-dim">· {d.draw.sampling === "tail" ? "0 to 0.1" : d.draw.sampling === "off-centre" ? "0.1 to 0.35" : "0.35 to 1"}</span>
-                </td>
-              </tr>
-              <tr>
-                <td className="text-dim">darkness</td>
-                <td>{d.draw.darkness ?? "none"}</td>
-              </tr>
-              <tr>
-                <td className="text-dim">gate</td>
-                <td>
-                  {d.draw.mode}
-                  {d.draw.gate_method ? ` · ${d.draw.gate_method}` : ""}
-                </td>
-              </tr>
-              {d.steps[0] && (
-                <tr>
-                  <td className="text-dim">model</td>
-                  <td className="num">{d.steps[0].model}</td>
-                </tr>
-              )}
-              <tr>
-                <td className="text-dim">calls</td>
-                <td>
-                  {steps.length} <span className="text-dim">· {callSecs} s</span>
-                </td>
-              </tr>
-              <tr>
-                <td className="text-dim">started</td>
-                <td className="num">{when(d.draw.created_at)}</td>
-              </tr>
-              {d.draw.ended_at && (
-                <tr>
-                  <td className="text-dim">ended</td>
-                  <td className="num">{when(d.draw.ended_at)}</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        <DrawAside d={d} ideation onStep={onStep} />
       </div>
     </div>
+  );
+}
+
+/**
+ * The reading pane's right column in every tab: the step log, then what the
+ * draw was drawn under and what it has cost. Ideate counts its own stages only.
+ */
+export function DrawAside({ d, ideation, onStep = () => {} }: { d: Detail; ideation?: boolean; onStep?: (id: string) => void }) {
+  const mine = d.steps.filter((s) => !ideation || IDEATION.has(s.stage));
+  const steps = mine.filter((s) => s.status === "done");
+  const gating = d.draw.status === "awaiting_gate" || d.draw.status === "running";
+  const total = mine.length + (ideation && gating ? STAGES.length - mine.length : 0);
+  const callSecs = steps.reduce((n, s) => n + Number(secs(s.started_at, s.ended_at)), 0);
+  // a repair round copies the chosen vignette: that step names no model
+  const models = [...new Set(mine.map((s) => s.model).filter((m) => m && m !== "copied"))];
+  return (
+    <>
+      <div>
+        <Head as="div" note={`${steps.length} of ${total}`}>
+          steps
+        </Head>
+        <Log d={d} stepId={null} onStep={onStep} wide ideation={ideation} />
+      </div>
+      <div className="facts-block mt-6">
+        <Head as="div">draw</Head>
+        <table className="mt-1">
+          <tbody>
+            <tr>
+              <td className="w-24 text-dim">setting</td>
+              <td>{d.draw.setting ?? "unrestricted"}</td>
+            </tr>
+            <tr>
+              <td className="text-dim">genre</td>
+              <td>{d.draw.genre}</td>
+            </tr>
+            <tr>
+              <td className="text-dim">sampling</td>
+              <td>
+                {d.draw.sampling} <span className="text-dim">· {d.draw.sampling === "tail" ? "0 to 0.1" : d.draw.sampling === "off-centre" ? "0.1 to 0.35" : "0.35 to 1"}</span>
+              </td>
+            </tr>
+            <tr>
+              <td className="text-dim">darkness</td>
+              <td>{d.draw.darkness ?? "none"}</td>
+            </tr>
+            <tr>
+              <td className="text-dim">gate</td>
+              <td>
+                {d.draw.mode}
+                {d.draw.gate_method ? ` · ${d.draw.gate_method}` : ""}
+              </td>
+            </tr>
+            {models.length > 0 && (
+              <tr>
+                <td className="text-dim">model</td>
+                <td className="num">{models.join(" · ")}</td>
+              </tr>
+            )}
+            <tr>
+              <td className="text-dim">calls</td>
+              <td>
+                {steps.length} <span className="text-dim">· {callSecs} s</span>
+              </td>
+            </tr>
+            <tr>
+              <td className="text-dim">started</td>
+              <td className="num">{when(d.draw.created_at)}</td>
+            </tr>
+            {d.draw.ended_at && (
+              <tr>
+                <td className="text-dim">ended</td>
+                <td className="num">{when(d.draw.ended_at)}</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 

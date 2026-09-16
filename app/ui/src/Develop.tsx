@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api, when, type AutoResult, type Draw, type DraftConfig, type Finding, type Findings, type Story, type Step } from "./api.ts";
-import { BriefFiles, DrawMeta, Log, Md, RUNNING_STATUS, RowHead, SeedNote, StepView, boldLabels, firstParagraph, label, useBrief, type Detail } from "./Draws.tsx";
+import { BriefFiles, DrawAside, DrawMeta, Md, RUNNING_STATUS, RowHead, SeedNote, StepView, boldLabels, firstParagraph, label, useBrief, type Detail } from "./Draws.tsx";
 import { Bar, Btn, Caret as Chevron, Facts, Field, Head, Icon, Mark, Seg, markFor, secs, usePoll } from "./ui.tsx";
 
 /**
@@ -101,6 +101,14 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
   const shown = all.filter((c) => showArchived || !c.head.archived_at || c.rounds.some((x) => x.id === current));
   const step = d && stepId ? d.steps.find((s) => s.id === stepId) : undefined;
   const statusLine = (r: Draw) => (r.status === "done" ? "brief · not yet checked" : label(r.status));
+  // the open row's one summary line; the step log is in the reading pane
+  const summary = (r: Draw, detail: Detail | null) => {
+    const running = detail?.steps.filter((s) => s.status === "running") ?? [];
+    if (running.length) return `${label(r.status)} · ${running.length} call${running.length > 1 ? "s" : ""} in flight`;
+    const round = chainOf(r.id)!.rounds.length > 1 ? ` · round ${chainOf(r.id)!.rounds.length}` : "";
+    if (r.check && OPEN.has(r.status)) return `${statusLine(r)}${round} · ${r.check.reported} findings · score ${r.check.total}`;
+    return `${statusLine(r)}${round}`;
+  };
   const atGate = draws.filter((r) => OPEN.has(r.status)).length;
   return (
     <>
@@ -153,17 +161,17 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
               {isOpen && (
                 <>
                   <div className="l2">
-                    <span className={RUNNING_STATUS.has(r.status) ? "sweep text-running" : ""}>{statusLine(r)}</span>
+                    <span className={RUNNING_STATUS.has(r.status) ? "sweep text-running" : ""}>{summary(r, on ? d : null)}</span>
+                  </div>
+                  <div className="l2">
                     <span className="text-dim">
-                      {c.rounds.length > 1 && ` · round ${c.rounds.length} of ${c.rounds.length}`}
                       {r.origin?.index ? (
                         <span className="num text-mute">
-                          {" "}
-                          · #{r.origin.index}
-                          {r.origin.probability != null ? ` · ${r.origin.probability.toFixed(2)}` : ""}
+                          #{r.origin.index}
+                          {r.origin.probability != null ? ` · ${r.origin.probability.toFixed(2)}` : ""} ·
                         </span>
                       ) : null}{" "}
-                      · {r.setting ?? "unrestricted"} · {r.genre}
+                      {r.setting ?? "unrestricted"} · {r.genre}
                       {r.flagged ? <span className="text-art"> · flagged</span> : null}
                     </span>
                   </div>
@@ -191,7 +199,6 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
                       </tbody>
                     </table>
                   )}
-                  <div className="rid">{r.id}</div>
                   {stage === "check" && r.status === "done" && (
                     <div className="acts" onClick={(e) => e.stopPropagation()}>
                       <Btn
@@ -207,7 +214,6 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
                       <span className="text-dim">derivation, ledger, structure, resemblance</span>
                     </div>
                   )}
-                  {d && <Log d={d} stepId={stepId} onStep={setStepId} />}
                 </>
               )}
             </div>
@@ -286,9 +292,9 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
                 }
               />
             ) : stage === "write" ? (
-              <StoryPane d={d} onAct={act} />
+              <StoryPane d={d} onAct={act} onStep={setStepId} />
             ) : d.draw.status === "awaiting_check_gate" || d.draw.status === "repaired" ? (
-              <GateOne d={d} onAct={act} onDraft={() => setSettings(true)} />
+              <GateOne d={d} onAct={act} onDraft={() => setSettings(true)} onStep={setStepId} />
             ) : d.draw.status === "done" || d.draw.status === "passed" ? (
               <BriefReady
                 d={d}
@@ -296,9 +302,10 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
                 onAuto={() => act(() => api.gate(d.draw.id, { action: "auto" }))}
                 onDraft={() => setSettings(true)}
                 onPass={(note) => act(() => api.gate(d.draw.id, { action: "pass", note }))}
+                onStep={setStepId}
               />
             ) : (
-              <Building d={d} />
+              <Building d={d} onStep={setStepId} />
             )}
           </>
         )}
@@ -307,7 +314,7 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
   );
 }
 
-function BriefReady({ d, onCheck, onAuto, onDraft, onPass }: { d: Detail; onCheck: () => void; onAuto: () => void; onDraft: () => void; onPass: (note: string) => void }) {
+function BriefReady({ d, onCheck, onAuto, onDraft, onPass, onStep }: { d: Detail; onCheck: () => void; onAuto: () => void; onDraft: () => void; onPass: (note: string) => void; onStep: (id: string) => void }) {
   const [note, setNote] = useState("");
   return (
     <>
@@ -326,7 +333,7 @@ function BriefReady({ d, onCheck, onAuto, onDraft, onPass }: { d: Detail; onChec
         </Btn>
         <input type="text" placeholder="note for the log" aria-label="Note" value={note} onChange={(e) => setNote(e.target.value)} />
       </div>
-      <div className="drawbody one">
+      <div className="drawbody">
         <div className="max-w-[66rem]">
           <Head>seed</Head>
           <SeedNote text={d.draw.seed_text} />
@@ -342,6 +349,9 @@ function BriefReady({ d, onCheck, onAuto, onDraft, onPass }: { d: Detail; onChec
           </Head>
           <BriefFiles id={d.draw.id} />
         </div>
+        <div className="aside min-w-0">
+          <DrawAside d={d} onStep={onStep} />
+        </div>
       </div>
     </>
   );
@@ -355,7 +365,7 @@ const BUILD = ["outline", "jobs", "context", "ending"];
  * time. Each part is read from its artifact, because the files under briefs/
  * are written last and all at once.
  */
-function Building({ d }: { d: Detail }) {
+function Building({ d, onStep }: { d: Detail; onStep: (id: string) => void }) {
   const stageOfStep = new Map(d.steps.map((s) => [s.id, s.stage]));
   const running = d.steps.filter((s) => s.status === "running");
   const done = new Set(d.steps.filter((s) => s.status === "done").map((s) => s.stage));
@@ -381,7 +391,7 @@ function Building({ d }: { d: Detail }) {
     </React.Fragment>
   );
   return (
-    <div className="drawbody one">
+    <div className="drawbody">
       <div className="max-w-[66rem]">
         <Head
           note={
@@ -409,13 +419,16 @@ function Building({ d }: { d: Detail }) {
           </tbody>
         </table>
       </div>
+      <div className="aside min-w-0">
+        <DrawAside d={d} onStep={onStep} />
+      </div>
     </div>
   );
 }
 
 // --- gate 1 ------------------------------------------------------------------
 
-function GateOne({ d, onAct, onDraft }: { d: Detail; onAct: (fn: () => Promise<any>, go?: (r: any) => string | undefined) => void; onDraft: () => void }) {
+function GateOne({ d, onAct, onDraft, onStep }: { d: Detail; onAct: (fn: () => Promise<any>, go?: (r: any) => string | undefined) => void; onDraft: () => void; onStep: (id: string) => void }) {
   const [f, setF] = useState<Findings | null>(null);
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [note, setNote] = useState("");
@@ -700,6 +713,9 @@ function GateOne({ d, onAct, onDraft }: { d: Detail; onAct: (fn: () => Promise<a
           )}
         </div>
         <div className="aside min-w-0">
+          <div className="mb-6">
+            <DrawAside d={d} onStep={onStep} />
+          </div>
           {f && <Profiles f={f} />}
           {f && f.examined.length > 0 && (
             <>
@@ -1033,7 +1049,7 @@ function DraftSettings({ d, onClose, onDraft }: { d: Detail; onClose: () => void
 
 // --- gate 2 ------------------------------------------------------------------
 
-function StoryPane({ d, onAct }: { d: Detail; onAct: (fn: () => Promise<any>, go?: (r: any) => string | undefined) => void }) {
+function StoryPane({ d, onAct, onStep }: { d: Detail; onAct: (fn: () => Promise<any>, go?: (r: any) => string | undefined) => void; onStep: (id: string) => void }) {
   const [s, setS] = useState<Story | null>(null);
   const [note, setNote] = useState("");
   const [k, setK] = useState(1);
@@ -1218,6 +1234,9 @@ function StoryPane({ d, onAct }: { d: Detail; onAct: (fn: () => Promise<any>, go
           )}
         </div>
         <div className="aside min-w-0">
+          <div className="mb-6">
+            <DrawAside d={d} onStep={onStep} />
+          </div>
           <Head note={`${words.toLocaleString()} words · ${s.screenFindings.length} ledger flags · ${nStructure} structure flags`}>scenes</Head>
           <table className="mt-1">
             <thead>
