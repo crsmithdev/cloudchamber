@@ -263,7 +263,7 @@ Instruments at ×10; dropping it from jobs and ending saves about 3,000 words.
 
 Two passes, because 276,000 words will not fit one call.
 
-*Map.* One call per reference file, cheap model, prompt carrying the Matrix,
+*Map.* One call per reference file, on opus, prompt carrying the Matrix,
 the four list definitions and the file. Output is candidate entries tagged
 with the file's `topic:`. Appended to `sources/settings/<id>/candidates.jsonl`
 as `{list, entry, source, file, hash}`. A file already in the sidecar at its
