@@ -10,7 +10,7 @@ import { FakeModel } from "./model.ts";
 import { Pipeline, StepFailure } from "./draw.ts";
 import { originOf, stageOf } from "./stage.ts";
 import { record } from "./verdicts.ts";
-import { checkTemplate } from "./prompts.ts";
+import { TEMPLATES, checkTemplate } from "./prompts.ts";
 import { loadStages } from "./config.ts";
 
 const CELLS = ["informational", "mixed", "involved"].flatMap((v) => ["non-narrative", "mixed", "narrative"].map((m) => [v, m]));
@@ -333,6 +333,27 @@ describe("draw graph", () => {
     const { p: p2 } = pipe(db, dir, script({ premises: [premises([0.40, 0.55, 0.05, 0.62, 0.44]), premises([0.40, 0.55, 0.05, 0.62, 0.44])] }));
     await expect(p2.start({ mode: "auto", genre: "horror", sampling: "standard" })).rejects.toThrow(StepFailure);
     await expect(p2.start({ mode: "auto", genre: "horror", sampling: "middle" as any })).rejects.toThrow(/not tail \| off-centre \| standard/);
+  });
+
+  test("darkness adds one sentence to the premises, execute and ending asks, and nothing when unset", async () => {
+    const { db, dir } = fixture();
+    const sentence = TEMPLATES.darknessAsk.black;
+    const { p, model } = pipe(db, dir, script({ premises: [premises(), premises()], outline: [outline(), outline()], jobs: [script().jobs[0], script().jobs[0]], ending: ["<ending>The last beat.</ending>", "<ending>The last beat.</ending>"] }));
+    const draw = await p.start({ mode: "auto", genre: "horror", darkness: "black" });
+    expect(draw.darkness).toBe("black");
+    const withIt = model.calls.filter((c) => c.stage === "premises" || c.stage === "execute" || c.stage === "ending");
+    expect(withIt).toHaveLength(7);
+    for (const c of withIt) expect(c.prompt).toContain(sentence);
+    for (const c of model.calls.filter((c) => c.stage === "outline" || c.stage === "jobs" || c.stage === "context")) expect(c.prompt).not.toContain(sentence);
+    expect(p.like(draw.id).darkness).toBe("black");
+    expect(readFileSync(join(dir, "briefs", draw.id, "trail.md"), "utf8")).toContain("darkness: black");
+    // unset: no level's sentence anywhere, and the asks keep their old joins
+    model.calls.length = 0;
+    const plain = await p.start({ mode: "auto", genre: "horror" });
+    expect(plain.darkness).toBeNull();
+    for (const c of model.calls) for (const s of Object.values(TEMPLATES.darknessAsk)) expect(c.prompt).not.toContain(s);
+    expect(model.calls.find((c) => c.stage === "premises")!.prompt).toMatch(/absurdity\. Output only the five tags\./);
+    await expect(p.start({ mode: "auto", genre: "horror", darkness: "pitch" as any })).rejects.toThrow(/not light \| grey \| dark \| black/);
   });
 
   test("a name is written once, and no later draw can change it", async () => {

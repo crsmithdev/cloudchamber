@@ -29,6 +29,13 @@ const SAMPLING_HELP: Record<string, string> = {
   "off-centre": "Off the centre but inside the tradition: unusual without being absurd.",
   standard: "The strongest conventional treatment: what a good writer would reach for.",
 };
+const DARKNESS_HELP: Record<string, string> = {
+  none: "Nothing asked: the seed and the examples set how dark the story is.",
+  light: "The cost is real, but someone keeps something and a way out exists.",
+  grey: "The cost is paid in full; whether it was worth it stays open.",
+  dark: "The cost is total or the way out is closed; no consolation.",
+  black: "The worst outcome the premise supports, reaching past the protagonist.",
+};
 const develop = (index: number) => `Develop premise ${index} as a draw of its own: the same seed and examples, its own outline, context vignettes, ending and brief.`;
 /** The band a stated probability falls in, as the sampling modes name them. */
 export const band = (p: number) => (p < 0.1 ? "tail" : p < 0.35 ? "off-centre" : "standard");
@@ -146,7 +153,7 @@ export function DrawMeta({ d, children }: { d: Detail; children?: React.ReactNod
   return (
     <span className="text-mute">
       {children}
-      <span className="text-dim">setting</span> {d.draw.setting ?? "unrestricted"} · <span className="text-dim">genre</span> {d.draw.genre || "none"} · <span className="text-dim">sampling</span> {d.draw.sampling}
+      <span className="text-dim">setting</span> {d.draw.setting ?? "unrestricted"} · <span className="text-dim">genre</span> {d.draw.genre || "none"} · <span className="text-dim">sampling</span> {d.draw.sampling} · <span className="text-dim">darkness</span> {d.draw.darkness ?? "none"}
     </span>
   );
 }
@@ -830,6 +837,10 @@ function DrawBody({
                 </td>
               </tr>
               <tr>
+                <td className="text-dim">darkness</td>
+                <td>{d.draw.darkness ?? "none"}</td>
+              </tr>
+              <tr>
                 <td className="text-dim">gate</td>
                 <td>
                   {d.draw.mode}
@@ -968,7 +979,7 @@ function StartForm({ status, like }: { status: Status | null; like?: string }) {
     api
       .like(like)
       .then((o) => {
-        setForm({ mode: o.mode, sampling: o.sampling ?? "tail", setting: o.setting ?? "", seed: o.seed_text });
+        setForm({ mode: o.mode, sampling: o.sampling ?? "tail", darkness: o.darkness ?? "", setting: o.setting ?? "", seed: o.seed_text });
         setLikedGenre(o.genre ?? "");
         setSeedTouched(false);
         setThemeId(o.seed?.mode === "picked" ? o.seed.themeId : "");
@@ -1064,6 +1075,9 @@ function StartForm({ status, like }: { status: Status | null; like?: string }) {
           }
         >
           <Seg label="Sampling" value={form.sampling} options={(facets?.sampling ?? []).map((s) => s.mode)} onChange={(v) => setForm({ ...form, sampling: v })} />
+        </Field>
+        <Field label="Darkness" help={DARKNESS_HELP[form.darkness || "none"]}>
+          <Seg label="Darkness" value={form.darkness || "none"} options={["none", ...(facets?.darkness ?? [])]} onChange={(v) => setForm({ ...form, darkness: v === "none" ? "" : v })} />
         </Field>
         <Field label="Genre" htmlFor="genre">
           <div className="flex flex-col gap-2">

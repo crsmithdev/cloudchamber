@@ -12,6 +12,7 @@ cloudchamber draw, POST /api/draws, and the Voice Bridge draw tool take the same
 | `--setting` | one of setting-a, setting-b, setting-c, or omitted for an unrestricted draw |
 | `--genre` | free text, dropped into one line of the premises ask; omitted, it follows the examples drawn |
 | `--sampling` | tail \| off-centre \| standard; where in the stated distribution the five premises are asked for |
+| `--darkness` | light \| grey \| dark \| black; how much the story takes, asked of the premises, the vignettes and the ending; omitted, nothing is asked |
 | `--source` | one or more source ids, comma-separated, to draw the six examples from |
 | `--author` | restrict the examples to one author |
 | `--seed / --seed-id` | a typed seed, or a theme id from the bank; omitted, one is drawn |
@@ -45,6 +46,17 @@ Each mode is a band the premises must state and a register the ask is written in
 | `tail` | 0 to 0.1 · the strangest readings of the seed; the default |
 | `off-centre` | 0.1 to 0.35 · unusual, but inside the tradition the seed belongs to |
 | `standard` | 0.35 to 1 · the strongest conventional treatment |
+
+## darkness
+
+One sentence per level, the same in the premises, execute and ending asks. Omitted, no sentence is added.
+
+| | |
+|---|---|
+| `light` | The cost is real, but someone keeps something that matters, and a way out exists even when it is narrow. |
+| `grey` | The cost is paid in full, and whether what it bought was worth it stays open. |
+| `dark` | The cost is total or the way out is closed, and the story offers no consolation. |
+| `black` | The worst outcome the premise can support, and it reaches past the protagonist to people who did nothing to earn it. |
 
 ## example sources
 

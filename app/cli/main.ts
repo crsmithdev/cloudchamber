@@ -10,7 +10,7 @@ const DOC = `cloudchamber — the one command the skill and the UI drive.
    cloudchamber verdict <example|theme|brief|story> <id> <keep|pass> [--artifact] [--note "..."]
                                           a passed story hides all its passages
    cloudchamber replay                         rebuild the verdicts table from bank/verdicts.jsonl
-   cloudchamber draw [--setting ID] [--genre G] [--sampling M] [--auto] [--source S[,S]] [--author A]
+   cloudchamber draw [--setting ID] [--genre G] [--sampling M] [--darkness D] [--auto] [--source S[,S]] [--author A]
                [--seed "text" | --seed-id ID] [--like DRAW]
                                           --like takes another draw's options; the rest override it
    cloudchamber setting lint <id>              check a setting file; exit 1 with one finding per line
@@ -42,7 +42,7 @@ import { extractAll } from "../pipeline/extract.ts";
 import { status } from "../pipeline/status.ts";
 import { KINDS, inherit, record, replay, type Kind } from "../pipeline/verdicts.ts";
 import { Pipeline, type DrawOpts, type SeedChoice } from "../pipeline/draw.ts";
-import type { Sampling } from "../pipeline/config.ts";
+import type { Darkness, Sampling } from "../pipeline/config.ts";
 import { ClaudeCli } from "../pipeline/model.ts";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -120,7 +120,7 @@ async function main() {
     case "draw": {
       const { values } = parseArgs({
         args: rest, allowPositionals: true,
-        options: { setting: { type: "string" }, genre: { type: "string" }, sampling: { type: "string" }, like: { type: "string" }, auto: { type: "boolean", default: false },
+        options: { setting: { type: "string" }, genre: { type: "string" }, sampling: { type: "string" }, darkness: { type: "string" }, like: { type: "string" }, auto: { type: "boolean", default: false },
           source: { type: "string" }, author: { type: "string" }, seed: { type: "string" }, "seed-id": { type: "string" } },
       });
       const seed: SeedChoice = values.seed ? { mode: "typed", text: values.seed } : values["seed-id"] ? { mode: "picked", themeId: values["seed-id"] } : { mode: "drawn" };
@@ -133,6 +133,7 @@ async function main() {
         ...(values.setting ? { setting: values.setting } : {}),
         ...(values.genre ? { genre: values.genre } : {}),
         ...(values.sampling ? { sampling: values.sampling as Sampling } : {}),
+        ...(values.darkness ? { darkness: values.darkness as Darkness } : {}),
         ...(segment ? { segment } : {}),
         ...(values.seed || values["seed-id"] ? { seed } : {}),
       });

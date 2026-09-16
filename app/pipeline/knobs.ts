@@ -6,7 +6,8 @@
  * Bridge's knobs tool.
  */
 import { readdirSync } from "node:fs";
-import { BANDS, GENRES, RUN, SAMPLING, loadStages } from "./config.ts";
+import { BANDS, DARKNESS, GENRES, RUN, SAMPLING, loadStages } from "./config.ts";
+import { TEMPLATES } from "./prompts.ts";
 import { LISTS, loadSetting } from "./settings.ts";
 import { profileNames } from "./draftconfig.ts";
 import { sourceLabel } from "./bank.ts";
@@ -36,6 +37,7 @@ export function knobs(db: Db, settingsDir: string = SETTINGS): Section[] {
         ["--setting", `one of ${settings.join(", ")}, or omitted for an unrestricted draw`],
         ["--genre", "free text, dropped into one line of the premises ask; omitted, it follows the examples drawn"],
         ["--sampling", `${SAMPLING.join(" | ")}; where in the stated distribution the five premises are asked for`],
+        ["--darkness", `${DARKNESS.join(" | ")}; how much the story takes, asked of the premises, the vignettes and the ending; omitted, nothing is asked`],
         ["--source", "one or more source ids, comma-separated, to draw the six examples from"],
         ["--author", "restrict the examples to one author"],
         ["--seed / --seed-id", "a typed seed, or a theme id from the bank; omitted, one is drawn"],
@@ -58,6 +60,11 @@ export function knobs(db: Db, settingsDir: string = SETTINGS): Section[] {
       title: "sampling",
       note: "Each mode is a band the premises must state and a register the ask is written in; the prose does most of the work.",
       rows: SAMPLING.map((m) => [m, `${BANDS[m].floor} to ${BANDS[m].ceiling} · ${SAMPLING_NOTE[m]}`] as [string, string]),
+    },
+    {
+      title: "darkness",
+      note: "One sentence per level, the same in the premises, execute and ending asks. Omitted, no sentence is added.",
+      rows: DARKNESS.map((d) => [d, TEMPLATES.darknessAsk[d]] as [string, string]),
     },
     {
       title: "example sources",

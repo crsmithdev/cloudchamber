@@ -22,6 +22,11 @@ export type Sampling = (typeof SAMPLING)[number];
 export const DEFAULT_SAMPLING: Sampling = "tail";
 export const isSampling = (s: string): s is Sampling => (SAMPLING as readonly string[]).includes(s);
 
+/** How much the story takes and how little it gives back. Unset asks for nothing, and the prompts read as before. */
+export const DARKNESS = ["light", "grey", "dark", "black"] as const;
+export type Darkness = (typeof DARKNESS)[number];
+export const isDarkness = (s: string): s is Darkness => (DARKNESS as readonly string[]).includes(s);
+
 /**
  * The stated-probability band each sampling mode asks for and accepts. The
  * band is only half of it: the prose that goes with each, in prompts.ts, is

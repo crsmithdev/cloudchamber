@@ -9,7 +9,7 @@
  * probability, never a judgement.
  */
 import { randomBytes } from "node:crypto";
-import { BANDS, DEFAULT_SAMPLING, RUN, isSampling, loadStages, type Sampling, type StageConfig, type StageName } from "./config.ts";
+import { BANDS, DEFAULT_SAMPLING, RUN, isDarkness, isSampling, type Darkness, loadStages, type Sampling, type StageConfig, type StageName } from "./config.ts";
 import { TEMPLATES, compose, fill } from "./prompts.ts";
 import { sections, tag, tags, words, type ModelAdapter } from "./model.ts";
 import { eligiblePassages, eligibleThemes, type Segment } from "./bank.ts";
@@ -29,12 +29,13 @@ export type DrawOpts = {
   segment?: Segment;
   seed?: SeedChoice;
   sampling?: Sampling;   // where in the stated distribution the premises are asked for
+  darkness?: Darkness;   // how much the story takes; unset asks for nothing
   seedRng?: () => number;
 };
 
 export type DrawRow = {
   id: string; name: string; setting: string | null; genre: string; mode: "auto" | "manual"; segment: string | null;
-  seed_mode: string; seed_text: string; seed_theme_id: string | null; example_ids: string; sampling: string; status: string;
+  seed_mode: string; seed_text: string; seed_theme_id: string | null; example_ids: string; sampling: string; darkness: string | null; status: string;
   gate_method: string | null; chosen_step: string | null; flagged: number; flag_note: string;
   superseded_by: string | null; repaired_from: string | null; forked_from: string | null; draft_config: string | null; archived_at: string | null; created_at: string; ended_at: string | null;
 };
@@ -51,6 +52,8 @@ export class StepFailure extends Error {
 }
 
 const id = (n = 6) => randomBytes(n).toString("hex");
+/** The darkness sentence as a template slot: empty when unset, so the prompt reads as it did before the knob. */
+const darknessLine = (d?: Darkness) => (d ? ` ${TEMPLATES.darknessAsk[d]}` : "");
 
 export class Pipeline {
   stages: Record<StageName, StageConfig>;
@@ -205,17 +208,18 @@ export class Pipeline {
   async start(opts: DrawOpts): Promise<DrawRow> {
     const sampling = opts.sampling ?? DEFAULT_SAMPLING;
     if (!isSampling(sampling)) throw new Error(`draw: sampling ${sampling} is not tail | off-centre | standard`);
+    if (opts.darkness && !isDarkness(opts.darkness)) throw new Error(`draw: darkness ${opts.darkness} is not light | grey | dark | black`);
     const setting = opts.setting ? loadChecked(opts.setting, this.settingsDir) : undefined;
     const examples = this.drawExamples(opts.segment);
     const seed = this.drawSeed(opts.seed, setting);
     const genre = this.inferGenre(opts, examples);
     const drawId = `${now().replace(/[-:TZ]/g, "").slice(0, 15)}-${id(2)}`;
-    this.db.query(`INSERT INTO draws (id, name, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, sampling, status, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?)`)
+    this.db.query(`INSERT INTO draws (id, name, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, sampling, darkness, status, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?)`)
       .run(drawId, this.nameFor(seed.text), setting?.id ?? null, genre, opts.mode, opts.segment ? JSON.stringify(opts.segment) : null,
-        seed.mode, seed.text, seed.themeId, JSON.stringify(examples.map((e) => e.id)), sampling, now());
+        seed.mode, seed.text, seed.themeId, JSON.stringify(examples.map((e) => e.id)), sampling, opts.darkness ?? null, now());
     try {
-      await this.premisesAndExecute(drawId, examples.map((e) => e.text), seed.text, genre, sampling, setting);
+      await this.premisesAndExecute(drawId, examples.map((e) => e.text), seed.text, genre, sampling, opts.darkness, setting);
     } catch (e) {
       this.fail(drawId, e);
       throw e;
@@ -225,9 +229,10 @@ export class Pipeline {
     return draw;
   }
 
-  private async premisesAndExecute(drawId: string, examples: string[], seed: string, genre: string, sampling: Sampling, setting?: Setting) {
+  private async premisesAndExecute(drawId: string, examples: string[], seed: string, genre: string, sampling: Sampling, darkness: Darkness | undefined, setting?: Setting) {
     const band = BANDS[sampling];
-    const ask = fill("premisesAsk", { genre, seed, sampling: TEMPLATES.samplingAsk[sampling] });
+    const dark = darknessLine(darkness);
+    const ask = fill("premisesAsk", { genre, seed, sampling: TEMPLATES.samplingAsk[sampling], darkness: dark });
     const head = examples.join("\n\n");
     const prompt = compose(head, ask, this.settingFor("premises", setting));
     const { step, value: premises } = await this.invoke(drawId, null, "premises", prompt, (text) => {
@@ -247,7 +252,7 @@ export class Pipeline {
     premises.sort((a, b) => a.probability - b.probability);
     premises.forEach((p, i) => this.artifact(step, "premise", p.text, { index: i + 1, probability: p.probability, warnings: words(p.text) > 120 ? ["length"] : [] }));
     await Promise.all(premises.map((p, i) => {
-      const ask = fill("executeAsk", { seed, premise: p.text });
+      const ask = fill("executeAsk", { seed, premise: p.text, darkness: dark });
       return this.invoke(drawId, step.id, "execute", compose(head, ask, this.settingFor("execute", setting)), (text) => {
         const v = tag(text, "vignette");
         if (!v) throw new Error("no <vignette> tag");
@@ -305,6 +310,7 @@ export class Pipeline {
     const draw = this.draw(drawId);
     return {
       mode: draw.mode, setting: draw.setting ?? undefined, genre: draw.genre, sampling: draw.sampling as Sampling,
+      darkness: (draw.darkness ?? undefined) as Darkness | undefined,
       segment: draw.segment ? JSON.parse(draw.segment) : undefined,
       seed: draw.seed_theme_id ? { mode: "picked", themeId: draw.seed_theme_id } : { mode: "typed", text: draw.seed_text },
     };
@@ -341,9 +347,9 @@ export class Pipeline {
     const already = this.forks(drawId).find((f) => f.step_id === executeStepId);
     if (already) throw new Error(`draw ${drawId}: candidate #${c.index} is already developed as ${already.id}`);
     const newId = `${now().replace(/[-:TZ]/g, "").slice(0, 15)}-${id(2)}`;
-    this.db.query(`INSERT INTO draws (id, name, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, sampling, status, gate_method, forked_from, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', 'manual', ?, ?)`)
-      .run(newId, this.nameFor(src.seed_text), src.setting, src.genre, src.mode, src.segment, src.seed_mode, src.seed_text, src.seed_theme_id, src.example_ids, src.sampling, drawId, now());
+    this.db.query(`INSERT INTO draws (id, name, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, sampling, darkness, status, gate_method, forked_from, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', 'manual', ?, ?)`)
+      .run(newId, this.nameFor(src.seed_text), src.setting, src.genre, src.mode, src.segment, src.seed_mode, src.seed_text, src.seed_theme_id, src.example_ids, src.sampling, src.darkness, drawId, now());
     const step = this.recordStep(newId, null, "execute", "copied", c.premise);
     this.artifact(step, "vignette", c.vignette, { index: c.index, probability: c.probability, premise: c.premise, warnings: c.warnings, forked_from: executeStepId });
     this.db.query("UPDATE draws SET chosen_step = ? WHERE id = ?").run(step.id, newId);
@@ -407,7 +413,7 @@ export class Pipeline {
       ...jobs.map((job, i) => this.invoke(drawId, outlineStep.id, "context", after("context", fill("context", { job })), (text) => {
         const v = tag(text, "vignette"); if (!v) throw new Error("no <vignette> tag"); return v;
       }).then((r) => this.artifact(r.step, "vignette", r.value, { index: i + 1, job, warnings: words(r.value) > 500 ? ["length"] : [] }))),
-      this.invoke(drawId, outlineStep.id, "ending", after("ending", fill("ending", {})), (text) => {
+      this.invoke(drawId, outlineStep.id, "ending", after("ending", fill("ending", { darkness: darknessLine((draw.darkness ?? undefined) as Darkness | undefined) })), (text) => {
         const e = tag(text, "ending"); if (!e) throw new Error("no <ending> tag"); return e;
       }).then((r) => this.artifact(r.step, "ending", r.value, { warnings: words(r.value) > 650 ? ["length"] : [] })),
     ]);

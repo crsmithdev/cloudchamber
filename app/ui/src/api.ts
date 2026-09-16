@@ -26,6 +26,7 @@ export type Draw = {
   setting: string | null;
   genre: string;
   sampling: string;
+  darkness: string | null;
   mode: string;
   segment: string | null;
   seed_mode: string;
@@ -179,12 +180,13 @@ export type Like = {
   setting?: string;
   genre?: string;
   sampling?: string;
+  darkness?: string;
   segment?: { source?: string | string[]; author?: string };
   seed?: { mode: "picked"; themeId: string } | { mode: "typed"; text: string };
   seed_text: string;
 };
 export type SamplingMode = { mode: string; floor: number; ceiling: number };
-export type Facets = { sources: Source[]; authors: string[]; cells: { cell: string; n: number }[]; settings: { id: string; name: string }[]; genres: Record<string, string[]>; sampling: SamplingMode[] };
+export type Facets = { sources: Source[]; authors: string[]; cells: { cell: string; n: number }[]; settings: { id: string; name: string }[]; genres: Record<string, string[]>; sampling: SamplingMode[]; darkness: string[] };
 
 /** "14:54 today" for today's timestamps, otherwise "Sep 4, 03:00". */
 export function when(iso: string): string {

@@ -38,7 +38,7 @@ Candidate: {candidate}
 
 {seed}
 
-Each premise goes in a <premise> tag containing a <text> (one paragraph, under ${RUN.premiseWords} words, the pitch itself) and a <probability>: your estimate of how likely this premise is as a response to this seed. {sampling} Output only the five tags.`,
+Each premise goes in a <premise> tag containing a <text> (one paragraph, under ${RUN.premiseWords} words, the pitch itself) and a <probability>: your estimate of how likely this premise is as a response to this seed. {sampling}{darkness} Output only the five tags.`,
 
   /** One per sampling mode: the band, and the register that goes with it. */
   samplingAsk: {
@@ -47,11 +47,19 @@ Each premise goes in a <premise> tag containing a <text> (one paragraph, under $
     standard: `Sample from the centre of the distribution: every probability must be over ${BANDS.standard.floor.toFixed(2)}. The strongest conventional treatment of this seed: the premise a good writer would reach for and execute well, not an unusual one.`,
   },
 
+  /** One per darkness level. The same sentence reaches the premises, the executions and the ending. */
+  darknessAsk: {
+    light: `The cost is real, but someone keeps something that matters, and a way out exists even when it is narrow.`,
+    grey: `The cost is paid in full, and whether what it bought was worth it stays open.`,
+    dark: `The cost is total or the way out is closed, and the story offers no consolation.`,
+    black: `The worst outcome the premise can support, and it reaches past the protagonist to people who did nothing to earn it.`,
+  },
+
   executeAsk: `Seed: {seed}
 
 Premise: {premise}
 
-Write ${RUN.vignetteWords} words of this story, in a <vignette> tag. Not a synopsis and not the opening unless the opening is where the story is: one execution, in the form the premise implies, that shows whether it can be written. Under ${RUN.vignetteWords + 50} words. Output only the tag.`,
+Write ${RUN.vignetteWords} words of this story, in a <vignette> tag. Not a synopsis and not the opening unless the opening is where the story is: one execution, in the form the premise implies, that shows whether it can be written.{darkness} Under ${RUN.vignetteWords + 50} words. Output only the tag.`,
 
   outlineHead: `Below is a seed, a premise, and a ${RUN.vignetteWords}-word execution of it. Derive from them the story's underlying structure: the layer below the one that gets told. Nothing here is prose for the page.
 
@@ -95,7 +103,7 @@ Write one vignette in a <vignette> tag, under ${RUN.vignetteWords + 50} words. I
 It is an execution, not discovery: the structure above has already settled the story. Output only the tag.`,
 
   ending: `
-Write the ending, in an <ending> tag: the last beat, derived from the arithmetic and custody sections above. Under ${RUN.endingWords} words. Prose or document form as the structure implies. Output only the tag.`,
+Write the ending, in an <ending> tag: the last beat, derived from the arithmetic and custody sections above. Under ${RUN.endingWords} words. Prose or document form as the structure implies.{darkness} Output only the tag.`,
 
   /** The four lists, defined once and shared by both distill passes and by nothing else. */
   listDefinitions: `<bodies>: organisations, offices, orders, departments and courts. What it issues or decides, whom it answers to, and what it cannot do.

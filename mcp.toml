@@ -26,6 +26,10 @@ flag = "--genre"
 description = "where in the stated distribution the five premises are asked for: tail is the strangest and the default, standard the most conventional"
 enum = ["tail", "off-centre", "standard"]
 flag = "--sampling"
+[tools.draw.args.darkness]
+description = "how much the story takes and how little it gives back: light keeps a way out, black reaches past the protagonist. Left out, nothing is asked."
+enum = ["light", "grey", "dark", "black"]
+flag = "--darkness"
 [tools.draw.args.setting]
 description = "a typed setting id: setting-a, setting-b, setting-c"
 flag = "--setting"
@@ -47,7 +51,7 @@ type = "boolean"
 flag = "--auto"
 
 [tools.knobs]
-description = "Every tunable and its live values: the settings and their domain slugs, the genre shortcuts, the sampling modes, the example sources, the drafting defaults and the model per stage. Read this before guessing an argument to draw."
+description = "Every tunable and its live values: the settings and their domain slugs, the genre shortcuts, the sampling modes, the darkness levels, the example sources, the drafting defaults and the model per stage. Read this before guessing an argument to draw."
 command = ["./cloudchamber", "help", "--md"]
 
 [tools.candidates]
@@ -81,7 +85,7 @@ position = 3
 required = true
 
 [tools.redraw]
-description = "Start another draw on an existing draw's options: same seed, setting, domains, genre, sampling and sources. The draw it copies is left open and untouched. Any argument of draw may be given as well, and overrides the copy."
+description = "Start another draw on an existing draw's options: same seed, setting, domains, genre, sampling, darkness and sources. The draw it copies is left open and untouched. Any argument of draw may be given as well, and overrides the copy."
 command = ["./cloudchamber", "draw"]
 background = true
 [tools.redraw.args.like]
@@ -92,6 +96,10 @@ required = true
 description = "override where in the distribution the premises are asked for"
 enum = ["tail", "off-centre", "standard"]
 flag = "--sampling"
+[tools.redraw.args.darkness]
+description = "override how dark the premises, vignettes and ending are asked to be"
+enum = ["light", "grey", "dark", "black"]
+flag = "--darkness"
 [tools.redraw.args.seed]
 description = "override the seed with one Chris dictates"
 flag = "--seed"

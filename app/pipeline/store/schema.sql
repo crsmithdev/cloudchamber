@@ -118,6 +118,7 @@ CREATE TABLE IF NOT EXISTS draws (
   seed_theme_id TEXT,
   example_ids   TEXT NOT NULL,         -- JSON array
   sampling      TEXT NOT NULL DEFAULT 'tail',   -- where in the stated distribution the premises were asked for
+  darkness      TEXT,                  -- light | grey | dark | black; null asked for none
   status        TEXT NOT NULL,         -- running | awaiting_gate | done | failed | rejected
                                        -- | awaiting_check_gate | repairing | repaired | drafting | awaiting_draft_gate | drafted | passed
   gate_method   TEXT,                  -- auto | manual

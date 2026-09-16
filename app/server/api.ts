@@ -9,7 +9,7 @@ import { Pipeline, type DrawOpts, type SeedChoice } from "../pipeline/draw.ts";
 import { KINDS, latest, passedStories, record, type Kind, type Method } from "../pipeline/verdicts.ts";
 import { status } from "../pipeline/status.ts";
 import { originOf, stageOf } from "../pipeline/stage.ts";
-import { BANDS, GENRES, SAMPLING } from "../pipeline/config.ts";
+import { BANDS, DARKNESS, GENRES, SAMPLING } from "../pipeline/config.ts";
 import { exportBank, sourceLabel } from "../pipeline/bank.ts";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
@@ -135,6 +135,7 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     }),
     genres: GENRES,
     sampling: SAMPLING.map((mode) => ({ mode, ...BANDS[mode] })),
+    darkness: DARKNESS,
   }));
 
   // The check summary a list row shows for each round of a repair chain. The findings merge
@@ -189,13 +190,13 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     });
   });
 
-  app.post<{ Body: { mode?: "auto" | "manual"; setting?: string; domains?: string; genre?: string; sampling?: string; source?: string; author?: string; seed?: string; seed_id?: string } }>("/api/draws", async (req, reply) => {
+  app.post<{ Body: { mode?: "auto" | "manual"; setting?: string; domains?: string; genre?: string; sampling?: string; darkness?: string; source?: string; author?: string; seed?: string; seed_id?: string } }>("/api/draws", async (req, reply) => {
     const b = req.body ?? {};
     const seed: SeedChoice = b.seed ? { mode: "typed", text: b.seed } : b.seed_id ? { mode: "picked", themeId: b.seed_id } : { mode: "drawn" };
     if (b.domains !== undefined) return reply.code(400).send({ error: "domains are gone; a setting loads whole lists" });
     const sources = b.source ? b.source.split(",").map((s) => s.trim()).filter(Boolean) : [];
     const opts: DrawOpts = { mode: b.mode ?? "manual", setting: b.setting || undefined, genre: b.genre || undefined,
-      sampling: (b.sampling || undefined) as DrawOpts["sampling"], seed,
+      sampling: (b.sampling || undefined) as DrawOpts["sampling"], darkness: (b.darkness || undefined) as DrawOpts["darkness"], seed,
       segment: sources.length || b.author ? { source: sources.length ? sources : undefined, author: b.author || undefined } : undefined };
     try {
       // The draw and validation are synchronous-ish and fail fast; the model steps continue after we reply.

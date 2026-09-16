@@ -824,9 +824,9 @@ describe("templates and store", () => {
     old.close();
     const db: Db = openDb(path, log);
     expect((db.query("PRAGMA user_version").get() as any).user_version).toBe(SCHEMA_VERSION);
-    expect(SCHEMA_VERSION).toBe(9);
-    expect(db.query("SELECT repaired_from, draft_config, forked_from, sampling, archived_at, name FROM draws WHERE id = 'r1'").get())
-      .toEqual({ repaired_from: null, draft_config: null, forked_from: null, sampling: "tail", archived_at: null, name: "seed" });
+    expect(SCHEMA_VERSION).toBe(10);
+    expect(db.query("SELECT repaired_from, draft_config, forked_from, sampling, archived_at, name, darkness FROM draws WHERE id = 'r1'").get())
+      .toEqual({ repaired_from: null, draft_config: null, forked_from: null, sampling: "tail", archived_at: null, name: "seed", darkness: null });
     expect(db.query("SELECT tools FROM steps WHERE id = 's1'").get()).toEqual({ tools: "" });
     expect((db.query("PRAGMA table_info(draws)").all() as { name: string }[]).map((c) => c.name)).not.toContain("domains");
     expect(() => record(db, { kind: "finding", target_id: "f-abc", verdict: "pass", method: "gate", note: "x" }, log)).not.toThrow();
