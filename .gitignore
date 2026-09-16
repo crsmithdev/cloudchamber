@@ -22,8 +22,14 @@ extracted/packets/
 # Agent worktrees
 .worktrees/
 
-# Scratch a session serves from the repo: mockups and the like
-tmp/
+# Scratch a session serves from the repo: mockups and the like. The phase B
+# world stylesheets and their generator are tracked; fixtures and renders are not.
+tmp/*
+!tmp/mockups/
+tmp/mockups/*
+!tmp/mockups/worlds.ts
+!tmp/mockups/tide-table.css
+!tmp/mockups/galley-proof.css
 
 # Working store: rebuildable from sources/ plus bank/verdicts.jsonl and bank/themes.jsonl
 data/
@@ -32,3 +38,8 @@ data/
 node_modules/
 app/ui/dist/
 .playwright-cli/
+
+# impeccable per-developer config
+.impeccable/config.local.json
+.impeccable/hook.cache.json
+.impeccable/review/

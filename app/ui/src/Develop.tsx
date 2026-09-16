@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api, when, type AutoResult, type Draw, type DraftConfig, type Finding, type Findings, type Story, type Step } from "./api.ts";
-import { Caret, DrawMetaItems, Log, Md, RUNNING_STATUS, StepView, firstParagraph, label, type Detail } from "./Draws.tsx";
+import { DrawMeta, Log, Md, RUNNING_STATUS, SeedNote, StepView, firstParagraph, label, type Detail } from "./Draws.tsx";
+import { Bar, Btn, Caret as Chevron, Facts, Field, Head, Icon, Mark, Seg, markFor, secs } from "./ui.tsx";
 
 /**
  * Develop a brief: the stages after a brief (docs/specs/2026-09-05-drafting-pipeline.md).
@@ -9,9 +10,6 @@ import { Caret, DrawMetaItems, Log, Md, RUNNING_STATUS, StepView, firstParagraph
  * screens at gate 2, or the running log in between.
  */
 const OPEN = new Set(["awaiting_check_gate", "awaiting_draft_gate"]);
-const RUNNING = new Set(["checking", "repairing", "drafting"]);
-const dot = (s: string) => "st " + (OPEN.has(s) ? "wait" : s === "failed" ? "fail" : RUNNING.has(s) ? "running" : s === "repaired" ? "rep" : s === "done" ? "todo" : "");
-const badge = (s: string) => "badge " + (OPEN.has(s) ? "awaiting_gate" : RUNNING.has(s) ? "running" : s === "drafted" ? "done" : s === "failed" ? "failed" : "");
 const INVALIDATES = ["debt audit", "arithmetic", "custody"];
 /** A quoted span is shown between the row's own quotation marks; a span the model already quoted would show two. */
 const unquote = (s: string) => s.trim().replace(/^["“”'‘’]+|["“”'‘’]+$/g, "");
@@ -24,14 +22,29 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
   const [stepId, setStepId] = useState<string | null>(null);
   const [err, setErr] = useState("");
   const [settings, setSettings] = useState(false);
-  const loadDraws = () => api.draws().then((all) => setDraws(all.filter((r) => r.stage === stage))).catch(() => {});
+  const loadDraws = () =>
+    api
+      .draws()
+      .then((all) => setDraws(all.filter((r) => r.stage === stage)))
+      .catch(() => {});
   const busy = draws.some((r) => RUNNING_STATUS.has(r.status));
-  useEffect(() => { loadDraws(); const t = setInterval(loadDraws, busy ? 3000 : 15000); return () => clearInterval(t); }, [stage, busy]);
+  useEffect(() => {
+    loadDraws();
+    const t = setInterval(loadDraws, busy ? 3000 : 15000);
+    return () => clearInterval(t);
+  }, [stage, busy]);
   const current = selected ?? (draws.find((r) => OPEN.has(r.status)) ?? draws.find((r) => !r.superseded_by))?.id;
-  const loadDetail = (id: string) => api.draw(id).then(setD).catch((e) => setErr(e.message));
+  const loadDetail = (id: string) =>
+    api
+      .draw(id)
+      .then(setD)
+      .catch((e) => setErr(e.message));
   useEffect(() => {
     if (!current) return;
-    setD(null); setStepId(null); setErr(""); setSettings(false);
+    setD(null);
+    setStepId(null);
+    setErr("");
+    setSettings(false);
     loadDetail(current);
     return () => {};
   }, [current]);
@@ -43,45 +56,160 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
   }, [current, working]);
   const act = async (fn: () => Promise<any>, go?: (r: any) => string | undefined) => {
     setErr("");
-    try { const r = await fn(); const to = go?.(r); if (to && to !== current) location.hash = `#${stage}/${to}`; else if (current) loadDetail(current); loadDraws(); } catch (e: any) { setErr(e.message); }
+    try {
+      const r = await fn();
+      const to = go?.(r);
+      if (to && to !== current) location.hash = `#${stage}/${to}`;
+      else if (current) loadDetail(current);
+      loadDraws();
+    } catch (e: any) {
+      setErr(e.message);
+    }
   };
   const step = d && stepId ? d.steps.find((s) => s.id === stepId) : undefined;
+  const statusLine = (r: Draw) => (r.status === "done" ? "brief · not yet checked" : label(r.status));
+  const atGate = draws.filter((r) => OPEN.has(r.status)).length;
   return (
     <>
       <div className="pane list">
+        <div className="listhead">
+          <span className="head">
+            {stage === "check" ? `${atGate} at gate 1 · ${draws.filter((r) => r.status === "done").length} unchecked` : `${atGate} at gate 2 · ${draws.filter((r) => r.status === "drafted").length} kept`}
+          </span>
+        </div>
         {draws.length === 0 && <div className="empty">{stage === "check" ? "No briefs yet. Choose a candidate at a gate under ideate." : "Nothing drafted yet. Send a checked brief here from check."}</div>}
         {draws.map((r) => (
-          <div key={r.id} className={"drawrow" + (r.id === current ? " on" : "") + (r.superseded_by ? " old" : "")} onClick={() => { location.hash = `#${stage}/${r.id}`; }}>
-            <div className="l1"><span className="nm">{r.name ?? r.id}</span><span className="when">{when(r.created_at)}</span></div>
-            <div className="l2"><span className={dot(r.status)} />{r.status === "done" ? "brief · not yet checked" : label(r.status)}{r.origin?.index ? <span className="cell"> · #{r.origin.index}{r.origin.probability != null ? ` · ${r.origin.probability.toFixed(2)}` : ""}</span> : null} · {r.setting ?? "unrestricted"} · {r.genre}{r.repaired_from ? <span className="dim"> · repaired</span> : null}{r.flagged ? <span className="art"> · flagged</span> : null}{r.superseded_by && <span className="dim"> · superseded</span>}</div>
+          <div
+            key={r.id}
+            className={"row" + (r.id === current ? " on" : "") + (RUNNING_STATUS.has(r.status) ? " running" : "") + (r.superseded_by ? " old" : "")}
+            onClick={() => {
+              location.hash = `#${stage}/${r.id}`;
+            }}
+          >
+            <div className="l1">
+              <b>{r.name ?? r.id}</b>
+              <span className="when">{when(r.created_at)}</span>
+            </div>
+            <div className="l2">
+              <Mark state={markFor(r.status)} />
+              <span className={RUNNING_STATUS.has(r.status) ? "sweep text-running" : ""}>{statusLine(r)}</span>
+              <span className="text-dim">
+                {r.origin?.index ? (
+                  <span className="num text-gold">
+                    {" "}
+                    #{r.origin.index}
+                    {r.origin.probability != null ? ` · ${r.origin.probability.toFixed(2)}` : ""}
+                  </span>
+                ) : null}{" "}
+                · {r.setting ?? "unrestricted"} · {r.genre}
+                {r.repaired_from ? " · repaired" : null}
+                {r.flagged ? <span className="text-art"> · flagged</span> : null}
+                {r.superseded_by && " · superseded"}
+              </span>
+            </div>
             <div className="sd">{r.seed_text}</div>
-            <div className="rid mono dim">{r.id}</div>
-            {stage === "check" && r.status === "done" && !r.superseded_by &&
-              <div className="rowacts" onClick={(e) => e.stopPropagation()}>
-                <button className="btn sm keep" onClick={() => act(() => api.check(r.id), () => r.id)}>check this brief</button>
-                <span className="dim">derivation, ledger, structure, resemblance</span>
-              </div>}
+            <div className="rid">{r.id}</div>
+            {stage === "check" && r.status === "done" && !r.superseded_by && (
+              <div className="acts" onClick={(e) => e.stopPropagation()}>
+                <Btn
+                  onClick={() =>
+                    act(
+                      () => api.check(r.id),
+                      () => r.id,
+                    )
+                  }
+                >
+                  check this brief
+                </Btn>
+                <span className="text-dim">derivation, ledger, structure, resemblance</span>
+              </div>
+            )}
             {r.id === current && d && <Log d={d} stepId={stepId} onStep={setStepId} />}
-          </div>))}
+          </div>
+        ))}
       </div>
-      <div className="pane read span dev">
-        {!current ? <div className="empty">{stage === "check" ? "Nothing to check yet." : "Nothing to write yet."}</div> : !d ? (err ? <div className="err">{err}</div> : <span className="dim">loading…</span>) : <>
-          <div className="drawhd"><h1>{d.draw.name ?? d.draw.id}</h1><span className="rid mono dim">{d.draw.id}</span><span className={badge(d.draw.status)}>{d.draw.status === "done" ? "brief" : label(d.draw.status)}</span>
-            <span className="meta">
-              {d.origin && <span><i>{d.origin.id === d.draw.id ? "candidate" : "from"}</i>{d.origin.id === d.draw.id
-                ? <a href={`#draw/${d.origin.id}`}>#{d.origin.index}{d.origin.probability != null ? ` · ${d.origin.probability.toFixed(2)}` : ""}</a>
-                : <a href={`#draw/${d.origin.id}`}>{d.origin.name ?? d.origin.id}{d.origin.index ? ` #${d.origin.index}` : ""}</a>}</span>}
-              <DrawMetaItems d={d} />
-              {d.draw.repaired_from && <span><i>repairs</i> <a href={`#${stage}/${d.draw.repaired_from}`} className="mono">{d.draw.repaired_from}</a></span>}
-              {d.draw.superseded_by && <span><i>superseded by</i> <a href={`#${stage}/${d.draw.superseded_by}`} className="mono">{d.draw.superseded_by}</a></span>}</span></div>
-          {err && <div className="err">{err}</div>}
-          {step ? <StepView step={step} chosen={false} onBack={() => setStepId(null)} />
-            : settings ? <DraftSettings d={d} onClose={() => setSettings(false)} onDraft={(b) => act(async () => { await api.draft(d.draw.id, b); location.hash = `#write/${d.draw.id}`; })} />
-            : stage === "write" ? <StoryPane d={d} onAct={act} />
-            : d.draw.status === "awaiting_check_gate" || d.draw.status === "repaired" ? <GateOne d={d} onAct={act} onDraft={() => setSettings(true)} />
-            : d.draw.status === "done" || d.draw.status === "passed" ? <BriefReady d={d} onCheck={() => act(() => api.check(d.draw.id))} onAuto={() => act(() => api.gate(d.draw.id, { action: "auto" }))} onDraft={() => setSettings(true)} onPass={(note) => act(() => api.gate(d.draw.id, { action: "pass", note }))} />
-            : <Building d={d} />}
-        </>}
+      <div className="pane read tt">
+        {!current ? (
+          <div className="empty">{stage === "check" ? "Nothing to check yet." : "Nothing to write yet."}</div>
+        ) : !d ? (
+          err ? (
+            <div className="err">{err}</div>
+          ) : (
+            <span className="text-dim">loading…</span>
+          )
+        ) : (
+          <>
+            <div className={"strip" + (working ? " running" : "")}>
+              <h1>{d.draw.name ?? d.draw.id}</h1>
+              <span className="num text-dim">{d.draw.id}</span>
+              <span className={"state " + (working ? "text-running" : OPEN.has(d.draw.status) ? "text-art" : d.draw.status === "failed" ? "text-pass" : "text-mute")}>
+                <Mark state={markFor(d.draw.status)} />
+                <span className={working ? "sweep" : ""}>
+                  {d.draw.status === "done" ? "brief · not yet checked" : label(d.draw.status)}
+                  {working && d.steps.some((s) => s.status === "running") ? ` · ${[...new Set(d.steps.filter((s) => s.status === "running").map((s) => s.stage))].join(", ")}` : ""}
+                </span>
+              </span>
+              <DrawMeta d={d}>
+                {d.origin && (
+                  <>
+                    {d.origin.id === d.draw.id ? "candidate" : "from"}{" "}
+                    <a href={`#draw/${d.origin.id}`} className="num text-gold">
+                      {d.origin.id === d.draw.id
+                        ? `#${d.origin.index}${d.origin.probability != null ? ` · ${d.origin.probability.toFixed(2)}` : ""}`
+                        : `${d.origin.name ?? d.origin.id}${d.origin.index ? ` #${d.origin.index}` : ""}`}
+                    </a>{" "}
+                    ·{" "}
+                  </>
+                )}
+              </DrawMeta>
+              {d.draw.repaired_from && (
+                <span className="text-dim">
+                  repairs{" "}
+                  <a href={`#${stage}/${d.draw.repaired_from}`} className="num">
+                    {d.draw.repaired_from}
+                  </a>
+                </span>
+              )}
+              {d.draw.superseded_by && (
+                <span className="text-dim">
+                  superseded by{" "}
+                  <a href={`#${stage}/${d.draw.superseded_by}`} className="num">
+                    {d.draw.superseded_by}
+                  </a>
+                </span>
+              )}
+            </div>
+            {err && <div className="err mt-2">{err}</div>}
+            {step ? (
+              <StepView step={step} chosen={false} onBack={() => setStepId(null)} />
+            ) : settings ? (
+              <DraftSettings
+                d={d}
+                onClose={() => setSettings(false)}
+                onDraft={(b) =>
+                  act(async () => {
+                    await api.draft(d.draw.id, b);
+                    location.hash = `#write/${d.draw.id}`;
+                  })
+                }
+              />
+            ) : stage === "write" ? (
+              <StoryPane d={d} onAct={act} />
+            ) : d.draw.status === "awaiting_check_gate" || d.draw.status === "repaired" ? (
+              <GateOne d={d} onAct={act} onDraft={() => setSettings(true)} />
+            ) : d.draw.status === "done" || d.draw.status === "passed" ? (
+              <BriefReady
+                d={d}
+                onCheck={() => act(() => api.check(d.draw.id))}
+                onAuto={() => act(() => api.gate(d.draw.id, { action: "auto" }))}
+                onDraft={() => setSettings(true)}
+                onPass={(note) => act(() => api.gate(d.draw.id, { action: "pass", note }))}
+              />
+            ) : (
+              <Building d={d} />
+            )}
+          </>
+        )}
       </div>
     </>
   );
@@ -89,18 +217,49 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
 
 function useBrief(id: string) {
   const [brief, setBrief] = useState<Record<string, string> | null>(null);
-  useEffect(() => { setBrief(null); api.brief(id).then(setBrief).catch(() => setBrief({})); }, [id]);
+  useEffect(() => {
+    setBrief(null);
+    api
+      .brief(id)
+      .then(setBrief)
+      .catch(() => setBrief({}));
+  }, [id]);
   return brief;
 }
 
 const BRIEF_FILES = ["outline.md", "vignette.md", "context-1.md", "context-2.md", "ending.md", "ending.previous.md"];
 
+/** The brief's files as a table: one row per file, the open one's text under it. */
 function BriefFiles({ id, open = "outline.md" }: { id: string; open?: string }) {
   const brief = useBrief(id);
-  if (!brief) return <span className="dim">loading…</span>;
+  const [openFile, setOpenFile] = useState<string | null>(open);
+  useEffect(() => setOpenFile(open), [open, id]);
+  if (!brief) return <span className="text-dim">loading…</span>;
   return (
-    <div className="brief" style={{ gridTemplateColumns: "minmax(0, 1fr)" }}>{BRIEF_FILES.filter((f) => brief[f]).map((f) => (
-      <details className="file ctx" key={f} open={f === open}><summary><Caret /><span className="fn">{f}</span><span className="dim"> · {firstParagraph(brief[f]).slice(0, 80)}…</span></summary><Md className="passage sm" text={boldLabels(brief[f])} /></details>))}</div>
+    <table className="mt-1">
+      <tbody>
+        {BRIEF_FILES.filter((f) => brief[f]).map((f) => (
+          <React.Fragment key={f}>
+            <tr className="pick" onClick={() => setOpenFile(openFile === f ? null : f)}>
+              <td className="w-4">
+                <Chevron open={openFile === f} />
+              </td>
+              <td className="num whitespace-nowrap text-dim">{f}</td>
+              <td className="text-mute">
+                <span className="line-clamp-1">{firstParagraph(brief[f]).slice(0, 90)}</span>
+              </td>
+            </tr>
+            {openFile === f && (
+              <tr className="spans">
+                <td colSpan={3} style={{ paddingLeft: "1.75rem" }}>
+                  <Md className="text-[14.5px]" text={boldLabels(brief[f])} />
+                </td>
+              </tr>
+            )}
+          </React.Fragment>
+        ))}
+      </tbody>
+    </table>
   );
 }
 
@@ -108,16 +267,38 @@ function BriefReady({ d, onCheck, onAuto, onDraft, onPass }: { d: Detail; onChec
   const [note, setNote] = useState("");
   return (
     <>
-      <div className="gatebar" role="group" aria-label="Brief">
-        <button className="btn primary" onClick={onCheck}>check · derivation, ledger, structure, resemblance{d.draw.setting ? ", claims" : ""}</button>
-        <button className="btn art" onClick={onAuto} title="Check, then repair round after round without asking, until nothing scores over the floor or the rounds run out.">check and auto-repair</button>
-        <button className="btn" onClick={onDraft}>draft without checking ▾</button>
-        <button className="btn pass" onClick={() => onPass(note)}>pass brief</button>
-        <input type="text" placeholder="note for the log…" aria-label="Note" value={note} onChange={(e) => setNote(e.target.value)} />
+      <div className="controls" role="group" aria-label="Brief">
+        <Btn variant="primary" onClick={onCheck}>
+          check · derivation, ledger, structure, resemblance{d.draw.setting ? ", claims" : ""}
+        </Btn>
+        <Btn variant="art" onClick={onAuto} title="Check, then repair round after round without asking, until nothing scores over the floor or the rounds run out.">
+          check and auto-repair
+        </Btn>
+        <Btn onClick={onDraft}>
+          draft without checking <Chevron open />
+        </Btn>
+        <Btn variant="pass" onClick={() => onPass(note)}>
+          pass brief
+        </Btn>
+        <input type="text" placeholder="note for the log" aria-label="Note" value={note} onChange={(e) => setNote(e.target.value)} />
       </div>
-      <div className="seed"><small>seed</small>{d.draw.seed_text}</div>
-      <h2 className="sec">brief <span>· <a href={api.briefFile(d.draw.id, "trail.md")} target="_blank" rel="noopener" className="mono">briefs/{d.draw.id}/trail.md</a></span></h2>
-      <div style={{ maxWidth: "58rem" }}><BriefFiles id={d.draw.id} /></div>
+      <div className="drawbody one">
+        <div className="max-w-[66rem]">
+          <Head>seed</Head>
+          <SeedNote text={d.draw.seed_text} />
+          <Head
+            className="mt-6"
+            note={
+              <a href={api.briefFile(d.draw.id, "trail.md")} target="_blank" rel="noopener" className="num">
+                briefs/{d.draw.id}/trail.md
+              </a>
+            }
+          >
+            brief
+          </Head>
+          <BriefFiles id={d.draw.id} />
+        </div>
+      </div>
     </>
   );
 }
@@ -138,23 +319,53 @@ function Building({ d }: { d: Detail }) {
   const outline = [...d.artifacts].reverse().find((a) => a.kind === "outline");
   const contexts = d.artifacts.filter((a) => a.kind === "vignette" && stageOfStep.get(a.step_id) === "context");
   const ending = [...d.artifacts].reverse().find((a) => a.kind === "ending");
-  const part = (name: string, body: string | undefined, open = false) => body
-    ? <details className="file ctx" key={name} open={open}><summary><Caret /><span className="fn">{name}</span><span className="dim"> · {firstParagraph(body).slice(0, 80)}…</span></summary><Md className="passage sm" text={boldLabels(body)} /></details>
-    : <div className="file ctx" key={name} style={{ padding: ".5rem .75rem", opacity: .5 }}><span className="fn">{name}</span><span className="dim"> · waiting</span></div>;
+  const [openPart, setOpenPart] = useState<string | null>("outline.md");
+  const part = (name: string, body: string | undefined) => (
+    <React.Fragment key={name}>
+      <tr className={body ? "pick" : "faded"} onClick={() => body && setOpenPart(openPart === name ? null : name)}>
+        <td className="w-4">{body ? <Chevron open={openPart === name} /> : <Mark state={running.length ? "run" : "todo"} />}</td>
+        <td className="num whitespace-nowrap text-dim">{name}</td>
+        <td className="text-mute">{body ? <span className="line-clamp-1">{firstParagraph(body).slice(0, 90)}</span> : <span className={running.length ? "sweep inline-block text-running" : ""}>waiting</span>}</td>
+      </tr>
+      {body && openPart === name && (
+        <tr className="spans">
+          <td colSpan={3} style={{ paddingLeft: "1.75rem" }}>
+            <Md className="text-[14.5px]" text={boldLabels(body)} />
+          </td>
+        </tr>
+      )}
+    </React.Fragment>
+  );
   return (
-    <>
-      <div className="seed"><small>{label(d.draw.status)}</small>
-        {running.length ? `${running.length} call${running.length > 1 ? "s" : ""} in flight: ${[...new Set(running.map((s) => s.stage))].join(", ")}` : "waiting for the next step"}
-        <div className="dim" style={{ fontStyle: "normal", fontFamily: "Instrument Sans, system-ui, sans-serif", fontSize: 12.5, marginTop: ".5rem" }}>
-          {BUILD.map((s) => `${s}${done.has(s) ? " ✓" : ""}`).join(" · ")}. The page refreshes itself.</div></div>
-      <h2 className="sec">the brief, as it lands</h2>
-      <div className="brief" style={{ gridTemplateColumns: "minmax(0, 1fr)", maxWidth: "58rem" }}>
-        {part("premise and vignette", chosen?.content, true)}
-        {part("outline.md", outline?.content, true)}
-        {contexts.length ? contexts.map((a, i) => part(`context-${i + 1}.md`, a.content)) : part("context-1.md", undefined)}
-        {part("ending.md", ending?.content)}
+    <div className="drawbody one">
+      <div className="max-w-[66rem]">
+        <Head
+          note={
+            <>
+              {BUILD.map((s, i) => (
+                <React.Fragment key={s}>
+                  {i > 0 && " · "}
+                  {s}
+                  {done.has(s) && <Icon name="check" />}
+                </React.Fragment>
+              ))}
+              {" · the page refreshes itself"}
+            </>
+          }
+        >
+          {running.length ? `${running.length} call${running.length > 1 ? "s" : ""} in flight: ${[...new Set(running.map((s) => s.stage))].join(", ")}` : "waiting for the next step"}
+        </Head>
+        <Head className="mt-6">the brief, as it lands</Head>
+        <table className="mt-1">
+          <tbody>
+            {part("premise and vignette", chosen?.content)}
+            {part("outline.md", outline?.content)}
+            {contexts.length ? contexts.map((a, i) => part(`context-${i + 1}.md`, a.content)) : part("context-1.md", undefined)}
+            {part("ending.md", ending?.content)}
+          </tbody>
+        </table>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -168,118 +379,433 @@ function GateOne({ d, onAct, onDraft }: { d: Detail; onAct: (fn: () => Promise<a
   const [floor, setFloor] = useState(DEFAULT_FLOOR);
   const [showAll, setShowAll] = useState(false);
   const id = d.draw.id;
-  useEffect(() => { api.findings(id, showAll).then(setF).catch(() => {}); }, [id, d.steps.length, showAll]);
+  useEffect(() => {
+    api
+      .findings(id, showAll)
+      .then(setF)
+      .catch(() => {});
+  }, [id, d.steps.length, showAll]);
   // only a gate action that returns a draw may move the pane; dismiss returns the finding
-  const gate = (action: string, extra: Record<string, unknown> = {}) => onAct(() => api.gate(id, { action, note, ...extra }), (r) => (r?.id && String(r.id).startsWith("f-") ? undefined : r?.id));
+  const gate = (action: string, extra: Record<string, unknown> = {}) =>
+    onAct(
+      () => api.gate(id, { action, note, ...extra }),
+      (r) => (r?.id && String(r.id).startsWith("f-") ? undefined : r?.id),
+    );
   const open = f?.findings.filter((x) => x.decision === "open") ?? [];
   const accepted = f?.findings.filter((x) => x.decision === "accepted") ?? [];
   const repaired = d.draw.status === "repaired";
   const outline = [...d.artifacts].reverse().find((a) => a.kind === "outline");
-  const constraints: string[] = outline ? JSON.parse(outline.meta).constraints ?? [] : [];
-  const settingJobs: string[] = outline ? (JSON.parse(outline.meta).jobs ?? []).filter((j: string) => !INVALIDATES.includes(j)) : [];
-  const toggle = (fid: string) => setSel((s) => { const n = new Set(s); n.has(fid) ? n.delete(fid) : n.add(fid); return n; });
+  const meta = outline ? JSON.parse(outline.meta) : {};
+  const constraints: string[] = meta.constraints ?? [];
+  const jobs: string[] = (meta.jobs ?? []).filter((j: string) => !INVALIDATES.includes(j) || true);
+  const toggle = (fid: string) =>
+    setSel((s) => {
+      const n = new Set(s);
+      n.has(fid) ? n.delete(fid) : n.add(fid);
+      return n;
+    });
   const atFloor = open.filter((x) => x.score >= floor && !x.relitigates);
   const reopened = f?.findings.filter((x) => x.relitigates) ?? [];
   const autoCfg = (d.draw.draft_config ? JSON.parse(d.draw.draft_config).config.repair : null) ?? { rounds: 4, stop_score: 7, patience: 2 };
   const autoArt = [...d.artifacts].reverse().find((a) => a.kind === "auto");
   const auto: AutoResult | null = autoArt ? JSON.parse(autoArt.content) : null;
+  const checkSteps = d.steps.filter((s) => s.stage.startsWith("check-") && s.status === "done");
+  const checkSecs = checkSteps.reduce((n, s) => n + Number(secs(s.started_at, s.ended_at)), 0);
+  const reported = f?.findings.filter((x) => x.reported) ?? [];
+  const S = f?.findings[0]?.samples_run ?? 3;
   return (
     <>
-      {!repaired && <div className="gatebar" role="group" aria-label="Gate 1">
-        <button className="btn primary" disabled={!sel.size && !accepted.length} onClick={() => gate("accept", { findings: [...sel] })} title="Accept the selected findings. The brief is repaired into a new draw under their replacements and re-checked.">accept {sel.size || accepted.length} · repair and re-check</button>
-        <span className="pick">
-          <button className="btn keep" disabled={!open.some((x) => !x.relitigates)} onClick={() => setSel(new Set(open.filter((x) => !x.relitigates).map((x) => x.id)))} title="Select every open finding that does not re-open a settled fix.">all {open.filter((x) => !x.relitigates).length}</button>
-          <button className="btn keep" disabled={!atFloor.length} onClick={() => setSel(new Set(atFloor.map((x) => x.id)))} title={`Select every open finding scoring ${floor} or more.`}>≥ {floor} · {atFloor.length}</button>
-          <input type="range" min={1} max={SCORE_MAX} step={1} value={floor} aria-label="Score floor" onChange={(e) => setFloor(Number(e.target.value))} />
-          <button className="btn quiet" disabled={!sel.size} onClick={() => setSel(new Set())} title="Clear the selection.">none</button>
-        </span>
-        <button className="btn art" disabled={!open.length} onClick={() => gate("auto")} title={`Repair round after round without asking: accept everything scoring ${autoCfg.stop_score} or more, dismiss the rest, re-check, repeat. It stops when nothing reaches the floor, after ${autoCfg.rounds} rounds, or when the total score has not fallen for ${autoCfg.patience} rounds.`}>auto · ≥ {autoCfg.stop_score}, to {autoCfg.rounds} rounds</button>
-        <button className="btn quiet" onClick={() => gate("hold")} title="Leave the brief here. Nothing runs.">hold</button>
-        <button className="btn pass" onClick={() => gate("pass")} title="Pass over this brief. Its verdict goes to the log.">pass brief</button>
-        <button className="btn art" onClick={() => gate("flag")} title="Mark a check call as looking wrong. Nothing runs.">flag · a check looks wrong</button>
-        <input type="text" placeholder="note for the log…" aria-label="Gate note" value={note} onChange={(e) => setNote(e.target.value)} />
-        <span className="gatesep" />
-        <button className="btn" onClick={onDraft} disabled={accepted.length > 0} title={accepted.length ? "Accepted findings are pending repair." : "Schedule and write the story from this brief as it stands."}>draft{d.draw.draft_config ? ` · ${JSON.parse(d.draw.draft_config).config.length.words} words` : ""} ▾</button>
-      </div>}
-      {repaired && <div className="seed"><small>repaired</small>This brief was repaired into <a href={`#check/${d.draw.superseded_by}`} className="mono">{d.draw.superseded_by}</a>; its findings and their decisions are kept here for the record.</div>}
-      {auto && <div className="rounds">
-        <div className="hd"><b>auto · {auto.rounds.length} round{auto.rounds.length > 1 ? "s" : ""}</b><span className="dim">stopped on {auto.stopped === "floor" ? `the floor: nothing scored ${auto.floor} or more` : auto.stopped === "patience" ? "patience: the total score stopped falling" : auto.stopped === "budget" ? `the call budget, at ${auto.calls} calls` : "the round cap"}</span></div>
-        <table><thead><tr><th>round</th><th>brief</th><th>open</th><th>total score</th><th>accepted</th><th>calls</th></tr></thead><tbody>
-          {auto.rounds.map((r) => <tr key={r.id} className={r.round === auto.best.round ? "best" : ""}>
-            <td>{r.round}</td>
-            <td>{r.id === id ? <span className="mono dim">{r.id}</span> : <a className="mono" href={`#check/${r.id}`}>{r.id}</a>}</td>
-            <td className="tnum">{r.open}</td><td className="tnum">{r.total}</td><td className="tnum">{r.accepted}</td><td className="tnum dim">{r.calls}</td>
-          </tr>)}
-        </tbody></table>
-        {auto.best.id !== auto.id && <div className="note dim">Round {auto.best.round} scored lowest. It is superseded, so auto left it where it is — read it if this round reads worse.</div>}
-        {!!auto.left_open && <div className="note">{auto.left_open} finding{auto.left_open > 1 ? "s" : ""} at or above the floor {auto.left_open > 1 ? "are" : "is"} still open here: auto stopped before repairing {auto.left_open > 1 ? "them" : "it"}.</div>}
-      </div>}
-      <div className="drawbody two"><div className="col">
-        <h2 className="sec">findings <span>· {f ? `${f.findings.filter((x) => x.reported).length} reported${f.findings.some((x) => !x.reported) ? ` · ${f.findings.filter((x) => !x.reported).length} below the bar` : ""}` : "…"}{f?.pass ? ` · pass ${f.pass.slice(0, 16).replace("T", " ")}` : ""} · ordered by score · merged across checkers</span>
-          <button className="btn sm quiet" aria-pressed={showAll} onClick={() => setShowAll((v) => !v)} title="A cluster one sample found is not reported, but it is still a reading. Nothing is re-run to show these.">{showAll ? "hide" : "show"} one-sample findings</button>
-        </h2>
-        {f && f.findings.length === 0 && <div className="note" style={{ padding: ".75rem 1rem", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 6 }}>Nothing recurred in enough samples to report. What each checker examined is listed on the right.</div>}
-        {f?.findings.filter((x) => !x.relitigates).map((x) => <FindingRow key={x.id} f={x} S={x.samples_run} selected={sel.has(x.id)} onToggle={() => toggle(x.id)} onDismiss={() => gate("dismiss", { finding: x.id })} readOnly={repaired} />)}
-        {reopened.length > 0 && <>
-          <h2 className="sec">re-opened <span>· {reopened.length} finding{reopened.length > 1 ? "s" : ""} against a fix you already accepted · auto will not act on {reopened.length > 1 ? "these" : "this"}</span></h2>
-          <div className="note reopen">A repair round is free to trade one fix for another, and the checkers then report the fix as the defect. Either the earlier decision was wrong, in which case accept this and say so in the note, or this is the loop arguing with itself, in which case dismiss it.</div>
-          {reopened.map((x) => <FindingRow key={x.id} f={x} S={x.samples_run} selected={sel.has(x.id)} onToggle={() => toggle(x.id)} onDismiss={() => gate("dismiss", { finding: x.id })} readOnly={repaired} />)}
-        </>}
-        {f && <>
-          <h2 className="sec">claims <span>· {f.claims.length ? `${f.claims.length} verified · ${f.claims.filter((c) => c.result === "supported").length} supported · ${f.claims.filter((c) => c.result === "contradicted").length} contradicted · ${f.claims[0].authority === "world" ? "the web, on sonnet" : f.claims[0].authority === "setting" ? "the setting file" : "the setting's reference files"}` : "off · no claims authority declared on the setting"}</span></h2>
-          {f.claims.map((c, i) => <div key={i} className="claim"><span className={"r mono " + (c.result === "supported" ? "keep" : c.result === "contradicted" ? "pass" : "dim")}>{c.result}</span><div>{c.statement}<div className="ev">{c.evidence}</div></div></div>)}
-        </>}
-        {constraints.length > 0 && <>
-          <h2 className="sec">constraints <span>· the accepted replacements, verbatim, in the repair prompts</span></h2>
-          <div className="cons"><div className="fn">&lt;constraints&gt;</div>{constraints.map((c, i) => <div key={i}>- {c}</div>)}<div className="fn">&lt;/constraints&gt;</div></div>
-        </>}
-      </div><div className="col">
-        {f && <Profiles f={f} settingJobs={settingJobs} />}
-        {f && f.examined.length > 0 && <>
-          <h2 className="sec">examined <span>· what an empty result would have looked at</span></h2>
-          <button className="fold" aria-expanded={examined} onClick={() => setExamined((e) => !e)}><Caret open={examined} /><span className="fn mono">{f.examined.length} lists</span><span className="dim">· {[...new Set(f.examined.map((e) => e.stage))].join(", ")}</span></button>
-          {examined && f.examined.map((e, i) => <div key={i} className="mono dim" style={{ fontSize: 11.5, lineHeight: 1.7, padding: ".25rem 0 .25rem 1.4rem", whiteSpace: "pre-wrap" }}><span className="mute">{e.stage} · sample {e.sample}</span>{"\n"}{e.examined}</div>)}
-        </>}
-        <h2 className="sec">brief <span>· <a href={api.briefFile(id, "trail.md")} target="_blank" rel="noopener" className="mono">briefs/{id}/trail.md</a></span></h2>
-        <BriefFiles id={id} open={d.draw.repaired_from ? "ending.previous.md" : "outline.md"} />
-        {f?.judge && <div className="judge">{f.judge}</div>}
-      </div></div>
+      {!repaired && (
+        <div className="controls" role="group" aria-label="Gate 1 judgement">
+          <span className="end">
+            <input type="text" placeholder="note for the log" aria-label="Gate note" value={note} onChange={(e) => setNote(e.target.value)} />
+            <Btn variant="art" onClick={() => gate("flag")} title="Mark a check call as looking wrong. Nothing runs.">
+              flag · a check looks wrong
+            </Btn>
+            <Btn variant="quiet" onClick={() => gate("hold")} title="Leave the brief here. Nothing runs.">
+              hold
+            </Btn>
+            <Btn variant="pass" onClick={() => gate("pass")} title="Pass over this brief. Its verdict goes to the log.">
+              pass brief
+            </Btn>
+          </span>
+        </div>
+      )}
+      {!repaired && (
+        <div className="controls" role="group" aria-label="Gate 1 repair">
+          <Btn
+            variant="primary"
+            disabled={!sel.size && !accepted.length}
+            onClick={() => gate("accept", { findings: [...sel] })}
+            title="Accept the selected findings. The brief is repaired into a new draw under their replacements and re-checked."
+          >
+            accept {sel.size || accepted.length} · repair and re-check
+          </Btn>
+          <span className="group">
+            <Btn
+              variant="keep"
+              disabled={!open.some((x) => !x.relitigates)}
+              onClick={() => setSel(new Set(open.filter((x) => !x.relitigates).map((x) => x.id)))}
+              title="Select every open finding that does not re-open a settled fix."
+            >
+              all {open.filter((x) => !x.relitigates).length}
+            </Btn>
+            <Btn variant="keep" disabled={!atFloor.length} onClick={() => setSel(new Set(atFloor.map((x) => x.id)))} title={`Select every open finding scoring ${floor} or more.`}>
+              ≥ {floor} · {atFloor.length}
+            </Btn>
+            <input type="range" min={1} max={SCORE_MAX} step={1} value={floor} aria-label="Score floor" onChange={(e) => setFloor(Number(e.target.value))} />
+            <Btn variant="quiet" disabled={!sel.size} onClick={() => setSel(new Set())} title="Clear the selection.">
+              none
+            </Btn>
+          </span>
+          <Btn
+            variant="art"
+            disabled={!open.length}
+            onClick={() => gate("auto")}
+            title={`Repair round after round without asking: accept everything scoring ${autoCfg.stop_score} or more, dismiss the rest, re-check, repeat. It stops when nothing reaches the floor, after ${autoCfg.rounds} rounds, or when the total score has not fallen for ${autoCfg.patience} rounds.`}
+          >
+            auto · ≥ {autoCfg.stop_score}, to {autoCfg.rounds} rounds
+          </Btn>
+          <span className="end">
+            <Btn onClick={onDraft} disabled={accepted.length > 0} title={accepted.length ? "Accepted findings are pending repair." : "Schedule and write the story from this brief as it stands."}>
+              draft{d.draw.draft_config ? ` · ${JSON.parse(d.draw.draft_config).config.length.words} words` : ""} <Chevron open />
+            </Btn>
+          </span>
+        </div>
+      )}
+      {repaired && (
+        <p className="seed">
+          This brief was repaired into{" "}
+          <a href={`#check/${d.draw.superseded_by}`} className="num not-italic">
+            {d.draw.superseded_by}
+          </a>
+          ; its findings and their decisions are kept here for the record.
+        </p>
+      )}
+      {auto && (
+        <div className="mt-4 max-w-[46rem]">
+          <Head
+            note={
+              auto.stopped === "floor"
+                ? `stopped on the floor: nothing scored ${auto.floor} or more`
+                : auto.stopped === "patience"
+                  ? "stopped on patience: the total score stopped falling"
+                  : auto.stopped === "budget"
+                    ? `stopped on the call budget, at ${auto.calls} calls`
+                    : "stopped on the round cap"
+            }
+          >
+            auto · {auto.rounds.length} round{auto.rounds.length > 1 ? "s" : ""}
+          </Head>
+          <table className="mt-1">
+            <thead>
+              <tr>
+                <th className="head">round</th>
+                <th className="head">brief</th>
+                <th className="head text-right">open</th>
+                <th className="head text-right">total score</th>
+                <th className="head text-right">accepted</th>
+                <th className="head text-right">calls</th>
+              </tr>
+            </thead>
+            <tbody>
+              {auto.rounds.map((r) => (
+                <tr key={r.id} className={r.round === auto.best.round ? "text-keep" : ""}>
+                  <td className="num">
+                    {r.round}
+                    {r.round === auto.best.round ? <span className="text-dim"> · lowest</span> : ""}
+                  </td>
+                  <td>
+                    {r.id === id ? (
+                      <span className="num text-dim">{r.id}</span>
+                    ) : (
+                      <a className="num" href={`#check/${r.id}`}>
+                        {r.id}
+                      </a>
+                    )}
+                  </td>
+                  <td className="num text-right">{r.open}</td>
+                  <td className="num text-right">{r.total}</td>
+                  <td className="num text-right">{r.accepted}</td>
+                  <td className="num text-right text-dim">{r.calls}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {auto.best.id !== auto.id && <div className="mt-2 text-dim">Round {auto.best.round} scored lowest. It is superseded, so auto left it where it is: read it if this round reads worse.</div>}
+          {!!auto.left_open && (
+            <div className="mt-2 text-mute">
+              {auto.left_open} finding{auto.left_open > 1 ? "s" : ""} at or above the floor {auto.left_open > 1 ? "are" : "is"} still open here: auto stopped before repairing {auto.left_open > 1 ? "them" : "it"}.
+            </div>
+          )}
+        </div>
+      )}
+      <div className="drawbody wide">
+        <div className="min-w-0">
+          <Head
+            note={
+              <>
+                {f ? `${reported.length} reported${f.findings.some((x) => !x.reported) ? ` · ${f.findings.filter((x) => !x.reported).length} below the bar` : ""}` : "…"}
+                {f?.pass ? ` · pass ${f.pass.slice(0, 16).replace("T", " ")}` : ""}
+                {checkSteps.length ? ` · ${checkSteps.length} checker calls · ${checkSecs} s` : ""} · by score · merged across checkers ·{" "}
+                <button className="link" aria-pressed={showAll} onClick={() => setShowAll((v) => !v)} title="A cluster one sample found is not reported, but it is still a reading. Nothing is re-run to show these.">
+                  {showAll ? "hide" : "show"} one-sample findings
+                </button>
+              </>
+            }
+          >
+            findings
+          </Head>
+          {f && f.findings.length === 0 && <div className="mt-2 text-mute">Nothing recurred in enough samples to report. What each checker examined is listed beside.</div>}
+          {f && f.findings.length > 0 && (
+            <table className="ruled-fixed mt-1">
+              <thead>
+                <tr>
+                  <th className="head w-10">score</th>
+                  <th className="head w-24">recurred</th>
+                  <th className="head w-24">breaks</th>
+                  <th className="head w-24">checkers</th>
+                  <th className="head premise">finding</th>
+                  <th className="head w-10 text-center">state</th>
+                  <th className="head w-24"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {f.findings
+                  .filter((x) => !x.relitigates)
+                  .map((x) => (
+                    <FindingRow key={x.id} f={x} S={x.samples_run ?? S} selected={sel.has(x.id)} onToggle={() => toggle(x.id)} onDismiss={() => gate("dismiss", { finding: x.id })} readOnly={repaired} />
+                  ))}
+                {reopened.length > 0 && (
+                  <>
+                    <tr>
+                      <td colSpan={7} className="pt-5">
+                        <Head as="div" note={`${reopened.length} finding${reopened.length > 1 ? "s" : ""} against a fix you already accepted · auto will not act on ${reopened.length > 1 ? "these" : "this"}`}>
+                          re-opened
+                        </Head>
+                        <div className="mt-1 max-w-[66ch] text-mute">
+                          A repair round is free to trade one fix for another, and the checkers then report the fix as the defect. Either the earlier decision was wrong, in which case accept this and say so in the note,
+                          or this is the loop arguing with itself, in which case dismiss it.
+                        </div>
+                      </td>
+                    </tr>
+                    {reopened.map((x) => (
+                      <FindingRow key={x.id} f={x} S={x.samples_run ?? S} selected={sel.has(x.id)} onToggle={() => toggle(x.id)} onDismiss={() => gate("dismiss", { finding: x.id })} readOnly={repaired} />
+                    ))}
+                  </>
+                )}
+              </tbody>
+            </table>
+          )}
+          {f && (
+            <>
+              <Head
+                className="mt-6"
+                note={
+                  f.claims.length
+                    ? `${f.claims.length} verified · ${f.claims.filter((c) => c.result === "supported").length} supported · ${f.claims.filter((c) => c.result === "contradicted").length} contradicted · ${f.claims[0].authority === "world" ? "the web, on sonnet" : f.claims[0].authority === "setting" ? "the setting file" : "the setting's reference files"}`
+                    : "off · no claims authority declared on the setting"
+                }
+              >
+                claims
+              </Head>
+              {f.claims.length > 0 && (
+                <table className="mt-1">
+                  <tbody>
+                    {f.claims.map((c, i) => (
+                      <tr key={i}>
+                        <td className="w-4">
+                          <Mark state={c.result === "supported" ? "held" : c.result === "contradicted" ? "fail" : ""} />
+                        </td>
+                        <td className={"num w-28 " + (c.result === "supported" ? "text-keep" : c.result === "contradicted" ? "text-pass" : "text-dim")}>{c.result}</td>
+                        <td>
+                          {c.statement}
+                          <div className="mt-1 text-dim">{c.evidence}</div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </>
+          )}
+          {jobs.length > 0 && meta.words && (
+            <>
+              <Head className="mt-6" note="from the outline · the words each carries">
+                jobs
+              </Head>
+              <table className="mt-1">
+                <thead>
+                  <tr>
+                    <th className="head">job</th>
+                    <th className="head text-right">words</th>
+                    <th className="head text-right">findings against it</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {jobs.map((j) => (
+                    <tr key={j}>
+                      <td className="num">{j}</td>
+                      <td className="num text-right">{meta.words[j]}</td>
+                      <td className="num text-right">{f?.findings.filter((x) => x.invalidates === j).length ?? 0}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
+          {constraints.length > 0 && (
+            <>
+              <Head className="mt-6" note="the accepted replacements, verbatim, in the repair prompts">
+                constraints
+              </Head>
+              <table className="mt-1">
+                <tbody>
+                  {constraints.map((c, i) => (
+                    <tr key={i}>
+                      <td className="num w-8 text-dim">{i + 1}</td>
+                      <td>{c}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
+        </div>
+        <div className="aside min-w-0">
+          {f && <Profiles f={f} />}
+          {f && f.examined.length > 0 && (
+            <>
+              <Head className="mt-6" note="what an empty result would have looked at">
+                examined
+              </Head>
+              <table className="mt-1">
+                <tbody>
+                  <tr className="pick" onClick={() => setExamined((e) => !e)}>
+                    <td className="w-4">
+                      <Chevron open={examined} />
+                    </td>
+                    <td className="num">{f.examined.length} lists</td>
+                    <td className="text-dim">{[...new Set(f.examined.map((e) => e.stage))].join(", ")}</td>
+                  </tr>
+                  {examined &&
+                    f.examined.map((e, i) => (
+                      <tr key={i}>
+                        <td></td>
+                        <td colSpan={2} className="num whitespace-pre-wrap text-dim">
+                          <span className="text-mute">
+                            {e.stage} · sample {e.sample}
+                          </span>
+                          {"\n"}
+                          {e.examined}
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </>
+          )}
+          <Head
+            className="mt-6"
+            note={
+              <a href={api.briefFile(id, "trail.md")} target="_blank" rel="noopener" className="num">
+                briefs/{id}/trail.md
+              </a>
+            }
+          >
+            brief
+          </Head>
+          <BriefFiles id={id} open={d.draw.repaired_from ? "ending.previous.md" : "outline.md"} />
+          {f?.judge && <div className="judge">{f.judge}</div>}
+        </div>
+      </div>
     </>
   );
 }
 
+/** A finding as a row: score, recurrence as marks, the job it breaks, the checkers, then the span, the statement and the ledger of result, evidence and replacement. */
 function FindingRow({ f, S, selected, onToggle, onDismiss, readOnly }: { f: Finding; S: number; selected: boolean; onToggle: () => void; onDismiss: () => void; readOnly: boolean }) {
-  const cls = "finding" + (f.decision === "accepted" || selected ? " acc" : "") + (f.decision === "dismissed" ? " dis" : "") + (f.reported ? "" : " sub");
+  const acc = f.decision === "accepted" || selected;
+  const cls = (acc ? "sel" : "") + (f.decision === "dismissed" ? " old" : "");
   return (
-    <div className={cls}>
-      <div className="rec">
-        <div className={"score s" + band(f.score)} title={`score ${f.score} of ${SCORE_MAX}: recurrence, a second checker, what it invalidates, the kind of result, and whether it quotes evidence`}><b className="tnum">{f.score}</b></div>
-        <div className="dots">{Array.from({ length: S }, (_, i) => <i key={i} className={i < f.n ? "on" : ""} />)}<b className="tnum">{f.n}/{S}</b></div>
-        <div className={"ptr" + (f.invalidates === "none" ? " none" : "")}>→ {f.invalidates}</div>
-        <div className="ck">{f.checkers.map((c) => <span key={c}>{c}</span>)}</div>
-        {f.relitigates && <a className="reopens" href={`#check/${f.relitigates.draw}`} title={`Accepted in round ${f.relitigates.round}: ${f.relitigates.replacement}`}>re-opens round {f.relitigates.round}</a>}
-      </div>
-      <div className="body">
-        <div className="span">{unquote(f.span)}</div>
-        <div>{f.statement}</div>
-        <div className="kv"><b>result</b><span className="mono" style={{ fontSize: 11.5 }}>{f.result}</span><b>evidence</b><span>{f.evidence}</span><b>replacement</b><span className="rep">{f.replacement}</span>{f.patch ? <><b>patch</b><span className="rep patch" title="Accepting this substitutes the span for these words. Nothing is regenerated.">{f.patch}</span></> : null}</div>
-      </div>
-      <div className="acts">
-        {f.decision === "accepted" ? <span className="state keep">accepted{f.note ? ` · ${f.note}` : ""}</span>
-          : f.decision === "dismissed" ? <span className="state dim">dismissed{f.note ? ` · ${f.note}` : ""}</span>
-          : readOnly ? <span className="state dim">open</span> : <>
-            <button className={"btn sm keep"} aria-pressed={selected} onClick={onToggle}>{selected ? "selected" : "accept"}</button>
-            <button className="btn sm pass" onClick={onDismiss}>dismiss</button>
-          </>}
-      </div>
-    </div>
+    <tr className={cls}>
+      <td className="num text-center font-semibold" title={`score ${f.score} of ${SCORE_MAX}: recurrence, a second checker, what it invalidates, the kind of result, and whether it quotes evidence`}>
+        {f.score}
+      </td>
+      <td className="pt-3.5 whitespace-nowrap">
+        {Array.from({ length: S }, (_, i) => (
+          <React.Fragment key={i}>
+            <Mark state={i < f.n ? "held" : ""} />{" "}
+          </React.Fragment>
+        ))}
+        <span className="num ml-1">
+          {f.n}/{S}
+        </span>
+      </td>
+      <td className={"num " + (f.invalidates === "none" ? "text-dim" : "text-gold")}>
+        {f.invalidates}
+        {f.relitigates && (
+          <div>
+            <a className="link text-pass" href={`#check/${f.relitigates.draw}`} title={`Accepted in round ${f.relitigates.round}: ${f.relitigates.replacement}`}>
+              re-opens round {f.relitigates.round}
+            </a>
+          </div>
+        )}
+      </td>
+      <td className="num text-dim">
+        {f.checkers.map((c) => (
+          <div key={c}>{c}</div>
+        ))}
+      </td>
+      <td className="premise">
+        <div className="quote">{unquote(f.span)}</div>
+        <div className="mt-1">{f.statement}</div>
+        <div className="kv">
+          <b>result</b>
+          <span className="font-mono">{f.result}</span>
+          <b>evidence</b>
+          <span>{f.evidence}</span>
+          <b>replacement</b>
+          <span className="text-ink">{f.replacement}</span>
+          {f.patch ? (
+            <>
+              <b>patch</b>
+              <span className="num text-keep" title="Accepting this substitutes the span for these words. Nothing is regenerated.">
+                {f.patch}
+              </span>
+            </>
+          ) : null}
+        </div>
+      </td>
+      <td className="text-center">
+        <Mark state={f.decision === "accepted" || selected ? "held" : f.decision === "dismissed" ? "fail" : ""} title={f.decision} />
+      </td>
+      <td className="text-right whitespace-nowrap">
+        {f.decision === "accepted" ? (
+          <span className="num text-keep">accepted{f.note ? ` · ${f.note}` : ""}</span>
+        ) : f.decision === "dismissed" ? (
+          <span className="num text-dim">dismissed{f.note ? ` · ${f.note}` : ""}</span>
+        ) : readOnly ? (
+          <span className="num text-dim">open</span>
+        ) : (
+          <>
+            <Btn variant={selected ? "keep" : undefined} pressed={selected} onClick={onToggle}>
+              {selected ? "selected" : "accept"}
+            </Btn>
+            <div className="mt-1">
+              <button className="link" onClick={onDismiss}>
+                dismiss
+              </button>
+            </div>
+          </>
+        )}
+      </td>
+    </tr>
   );
 }
 
 export const SCORE_MAX = 10;
 const DEFAULT_FLOOR = 7;
-/** Three bands: must fix, worth a look, noise. */
-const band = (n: number) => (n >= 7 ? "hi" : n >= 4 ? "mid" : "lo");
 
 const STRUCTURE_Q = ["threat", "category-violation", "agency", "obscurity", "thickening", "spectacle", "consequence"];
 /** The seven questions as the checker is asked them (app/pipeline/prompts.ts, checkStructure). */
@@ -292,28 +818,86 @@ const STRUCTURE_DEF: Record<string, string> = {
   spectacle: "The brief's entire payload is a shock, a gross-out or a final twist.",
   consequence: "The point of departure from the actual has its consequences taken seriously.",
 };
-const STRUCTURE_TIP = "Seven binary questions about the brief, from the evaluation review's list of what a judge can answer with a quote. Each is present or absent with one verbatim quote; they are a profile, never summed into a score.";
-const RESEMBLANCE_TIP = "Retrieval, not judgement: the brief is matched against the enumerated list of overused premises in app/pipeline/premises.md, and the nearest published work is named with one sentence on what is shared. Nothing is asked about originality.";
+const STRUCTURE_TIP =
+  "Seven binary questions about the brief, from the evaluation review's list of what a judge can answer with a quote. Each is present or absent with one verbatim quote; they are a profile, never summed into a score.";
+const RESEMBLANCE_TIP =
+  "Retrieval, not judgement: the brief is matched against the enumerated list of overused premises in app/pipeline/premises.md, and the nearest published work is named with one sentence on what is shared. Nothing is asked about originality.";
 const PREMISES_FILE = "app/pipeline/premises.md";
 
-function Profiles({ f, settingJobs }: { f: Findings; settingJobs: string[] }) {
+function Profiles({ f }: { f: Findings }) {
   const structure = f.profiles.find((p) => p.checker === "structure");
   const resemblance = f.profiles.find((p) => p.checker === "resemblance");
-  void settingJobs;
   return (
     <>
-      {structure?.answers && <>
-        <h2 className="sec" title={STRUCTURE_TIP}>structure <span>· present / absent · never summed</span></h2>
-        <div className="profile">{STRUCTURE_Q.map((q) => <div key={q} className={structure.answers![q]?.answer === "present" ? "on" : ""} title={`${STRUCTURE_DEF[q]}\n\n${structure.answers![q]?.answer ?? ""}: “${structure.answers![q]?.quote ?? ""}”`}>{q.replace("category-violation", "category")}</div>)}</div>
-        <details className="ctx" style={{ marginTop: ".6rem" }}><summary><Caret /><span className="fn">quotes</span></summary>
-          <dl className="facts" style={{ marginTop: ".5rem" }}>{STRUCTURE_Q.map((q) => <React.Fragment key={q}><dt title={STRUCTURE_DEF[q]}>{q}</dt><dd className="serif" style={{ fontStyle: "italic" }}>{structure.answers![q]?.quote}</dd></React.Fragment>)}</dl></details>
-      </>}
-      {resemblance && <>
-        <h2 className="sec" title={RESEMBLANCE_TIP}>resemblance <span>· retrieval, not judgement · against <span className="mono">{PREMISES_FILE}</span></span></h2>
-        {(resemblance.matches ?? []).length === 0 && <div className="note">no list entry matched</div>}
-        {(resemblance.matches ?? []).map((m, i) => <div key={i} className="note" style={{ marginBottom: 4 }} title={`Entry ${/^\d+/.exec(m.entry)?.[0] ?? "?"} of ${PREMISES_FILE}, quoted by the checker verbatim; the span is where the brief matches it.`}>matches <span className="mono dim">{PREMISES_FILE.split("/").pop()} </span><span style={{ color: "var(--ink)" }}>{m.entry}</span> <span className="dim">· “{unquote(m.span)}”</span></div>)}
-        {resemblance.nearest && <div className="note" style={{ marginTop: 6 }}>nearest <span style={{ color: "var(--ink)" }}>{resemblance.nearest.title}</span>, {resemblance.nearest.author} <span className="dim">· {resemblance.nearest.shared}</span></div>}
-      </>}
+      {structure?.answers && (
+        <>
+          <Head note="present or absent · never summed">
+            <span title={STRUCTURE_TIP}>structure</span>
+          </Head>
+          <table className="mt-1">
+            <tbody>
+              {STRUCTURE_Q.map((q) => {
+                const a = structure.answers![q];
+                const present = a?.answer === "present";
+                return (
+                  <tr key={q} title={STRUCTURE_DEF[q]}>
+                    <td className="w-4">
+                      <Mark state={present ? "held" : ""} />
+                    </td>
+                    <td className={"num whitespace-nowrap " + (present ? "" : "text-dim")}>{q.replace("category-violation", "category")}</td>
+                    <td className="text-mute">
+                      <div className="line-clamp-1">
+                        <span className="quote">{a?.quote}</span>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </>
+      )}
+      {resemblance && (
+        <>
+          <Head
+            className="mt-6"
+            note={
+              <>
+                retrieval, not judgement · against <span className="num">{PREMISES_FILE.split("/").pop()}</span>
+              </>
+            }
+          >
+            <span title={RESEMBLANCE_TIP}>resemblance</span>
+          </Head>
+          <table className="mt-1">
+            <tbody>
+              {(resemblance.matches ?? []).length === 0 && (
+                <tr>
+                  <td className="text-dim">no list entry matched</td>
+                </tr>
+              )}
+              {(resemblance.matches ?? []).map((m, i) => (
+                <tr key={i}>
+                  <td className="num w-16 whitespace-nowrap text-dim">matches</td>
+                  <td title={`Entry ${/^\d+/.exec(m.entry)?.[0] ?? "?"} of ${PREMISES_FILE}, quoted by the checker verbatim; the span is where the brief matches it.`}>
+                    <div>{m.entry}</div>
+                    <div className="quote mt-1 text-mute">{unquote(m.span)}</div>
+                  </td>
+                </tr>
+              ))}
+              {resemblance.nearest && (
+                <tr>
+                  <td className="num whitespace-nowrap text-dim">nearest</td>
+                  <td>
+                    <span className="serif-cell">{resemblance.nearest.title}</span>, {resemblance.nearest.author}
+                    <div className="mt-1 text-mute">{resemblance.nearest.shared}</div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </>
+      )}
     </>
   );
 }
@@ -322,22 +906,28 @@ function Profiles({ f, settingJobs }: { f: Findings; settingJobs: string[] }) {
 
 const AXES: Record<string, string[]> = { tense: ["past", "present"], person: ["first", "second", "third"], chronology: ["linear", "nonlinear"], container: ["prose", "document", "interleaved"] };
 
-function Seg({ value, options, onChange, label: lbl }: { value: string; options: string[]; onChange: (v: string) => void; label: string }) {
-  return <div className="seg" role="group" aria-label={lbl}>{options.map((o) => <button key={o} type="button" aria-pressed={value === o} onClick={() => onChange(o)}>{o}</button>)}</div>;
-}
-
 function DraftSettings({ d, onClose, onDraft }: { d: Detail; onClose: () => void; onDraft: (b: { auto?: boolean; profile?: string; overrides?: Record<string, string | number> }) => void }) {
   const [cfg, setCfg] = useState<{ defaults: DraftConfig; profiles: string[] } | null>(null);
   const [profile, setProfile] = useState<string>("");
   const [v, setV] = useState<Record<string, string>>({});
   const [auto, setAuto] = useState(false);
-  useEffect(() => { api.draftConfig().then(setCfg); }, []);
-  if (!cfg) return <span className="dim">loading…</span>;
+  useEffect(() => {
+    api.draftConfig().then(setCfg);
+  }, []);
+  if (!cfg) return <span className="text-dim">loading…</span>;
   const def = cfg.defaults;
   const base: Record<string, string> = {
-    "length.words": String(def.length.words), "beats.count": String(def.beats.count), "beats.min": String(def.beats.min), "beats.max": String(def.beats.max),
-    "beats.words_min": String(def.beats.words_min), "beats.words_max": String(def.beats.words_max),
-    "form.tense": def.form.tense, "form.person": def.form.person, "form.chronology": def.form.chronology, "form.container": def.form.container, "form.ending": def.form.ending,
+    "length.words": String(def.length.words),
+    "beats.count": String(def.beats.count),
+    "beats.min": String(def.beats.min),
+    "beats.max": String(def.beats.max),
+    "beats.words_min": String(def.beats.words_min),
+    "beats.words_max": String(def.beats.words_max),
+    "form.tense": def.form.tense,
+    "form.person": def.form.person,
+    "form.chronology": def.form.chronology,
+    "form.container": def.form.container,
+    "form.ending": def.form.ending,
     "scenes.order": def.scenes.order,
   };
   const val = (k: string) => v[k] ?? base[k];
@@ -345,26 +935,80 @@ function DraftSettings({ d, onClose, onDraft }: { d: Detail; onClose: () => void
   const overrides: Record<string, string | number> = {};
   for (const [k, x] of Object.entries(v)) if (x !== base[k] && x !== "") overrides[k] = x;
   const checked = d.artifacts.some((a) => a.kind === "ledger");
+  const num = (k: string, label: string, w = "4rem") => <input type="text" className="num" style={{ width: w }} aria-label={label} value={val(k)} onChange={(e) => set(k)(e.target.value)} />;
   return (
-    <div className="form">
-      <button className="back" onClick={onClose}>← back</button>
-      <h1>Draft</h1>
-      <p className="lede">Defaults from <span className="mono">app/pipeline/draft.toml</span>. Whatever you change here is written to the trail and to <span className="mono">config.toml</span> on keep.</p>
-      <div className="field"><span className="lbl">Profile</span><Seg label="Profile" value={profile || "default"} options={["default", ...cfg.profiles]} onChange={(p) => setProfile(p === "default" ? "" : p)} /><span className="help">A profile bundles overrides; the flags below override it again.</span></div>
-      <div className="field"><label htmlFor="words">Length</label><div style={{ display: "flex", gap: ".6rem", alignItems: "center" }}><input id="words" type="text" className="mono" style={{ width: "6rem" }} value={val("length.words")} onChange={(e) => set("length.words")(e.target.value)} /><span className="dim">words · ±{Math.round(def.length.tolerance * 100)}%</span></div></div>
-      <div className="field"><span className="lbl">Beats</span><div style={{ display: "flex", gap: ".6rem", alignItems: "center", flexWrap: "wrap" }}>
-        <Seg label="Beat count" value={val("beats.count") === "auto" ? "auto" : "fixed"} options={["auto", "fixed"]} onChange={(m) => set("beats.count")(m === "auto" ? "auto" : val("beats.min"))} />
-        {val("beats.count") === "auto" ? <><span className="dim">between</span><input type="text" className="mono" style={{ width: "3.5rem" }} aria-label="Minimum beats" value={val("beats.min")} onChange={(e) => set("beats.min")(e.target.value)} /><span className="dim">and</span><input type="text" className="mono" style={{ width: "3.5rem" }} aria-label="Maximum beats" value={val("beats.max")} onChange={(e) => set("beats.max")(e.target.value)} /></>
-          : <><span className="dim">exactly</span><input type="text" className="mono" style={{ width: "3.5rem" }} aria-label="Beat count" value={val("beats.count")} onChange={(e) => set("beats.count")(e.target.value)} /></>}
-        <span className="dim">· each</span><input type="text" className="mono" style={{ width: "4rem" }} aria-label="Minimum words per beat" value={val("beats.words_min")} onChange={(e) => set("beats.words_min")(e.target.value)} /><span className="dim">–</span><input type="text" className="mono" style={{ width: "4rem" }} aria-label="Maximum words per beat" value={val("beats.words_max")} onChange={(e) => set("beats.words_max")(e.target.value)} /><span className="dim">words</span>
-      </div><span className="help">The schedule chooses the count within the range and assigns each beat its cap.</span></div>
-      <div className="field"><span className="lbl">Form</span><div style={{ display: "grid", gap: ".5rem" }}>
-        {Object.entries(AXES).map(([axis, opts]) => <div key={axis} style={{ display: "flex", gap: ".6rem", alignItems: "center" }}><span className="dim mono" style={{ width: "5.5rem", fontSize: 11.5 }}>{axis}</span><Seg label={axis} value={val(`form.${axis}`)} options={["auto", ...opts]} onChange={set(`form.${axis}`)} />{overrides[`form.${axis}`] !== undefined && <span className="art" style={{ fontSize: 11.5 }}>overridden</span>}</div>)}
-        <div style={{ display: "flex", gap: ".6rem", alignItems: "center" }}><span className="dim mono" style={{ width: "5.5rem", fontSize: 11.5 }}>ending</span><Seg label="ending" value={val("form.ending")} options={["brief", "open"]} onChange={set("form.ending")} /></div>
-      </div><span className="help">auto: the schedule derives the axis from the brief and states it. A fixed axis is checked on the schedule and fails shape when contradicted.</span></div>
-      <div className="field"><span className="lbl">Scenes</span><Seg label="Scene order" value={val("scenes.order")} options={["sequential", "parallel"]} onChange={set("scenes.order")} /><span className="help">Sequential carries the text so far into each scene call. Parallel writes all beats at once from the schedule alone.</span></div>
-      {!checked && <div className="field"><span className="lbl">Gate 1</span><Seg label="Gate 1" value={auto ? "auto" : "skip"} options={["skip", "auto"]} onChange={(x) => setAuto(x === "auto")} /><span className="help">This brief has not been checked. Skip drafts it as it stands (one ledger extraction supplies the ledger). Auto runs the check, accepts what recurred in every sample with evidence, dismisses the rest, repairs once and re-checks, then drafts and stops at gate 2.</span></div>}
-      <div className="actions"><button className="btn primary" onClick={() => onDraft({ auto, profile: profile || undefined, overrides: Object.keys(overrides).length ? overrides : undefined })}>Draft</button><span className="dim" style={{ fontSize: 12.5 }}>One schedule call, then the scene calls in sequence, then the screens. About eight minutes at the defaults.</span></div>
+    <div className="form mt-4">
+      <button className="link" onClick={onClose}>
+        <Icon name="arrow_back" /> back
+      </button>
+      <h1 className="mt-3">Draft</h1>
+      <p className="lede">
+        Defaults from <span className="num">app/pipeline/draft.toml</span>. Whatever you change here is written to the trail and to <span className="num">config.toml</span> on keep.
+      </p>
+      <Field label="Profile" help="A profile bundles overrides; the flags below override it again.">
+        <Seg label="Profile" value={profile || "default"} options={["default", ...cfg.profiles]} onChange={(p) => setProfile(p === "default" ? "" : p)} />
+      </Field>
+      <Field label="Length" htmlFor="words">
+        <div className="inline">
+          <input id="words" type="text" className="num" style={{ width: "6rem" }} value={val("length.words")} onChange={(e) => set("length.words")(e.target.value)} />
+          <span className="text-dim">words · ±{Math.round(def.length.tolerance * 100)}%</span>
+        </div>
+      </Field>
+      <Field label="Beats" help="The schedule chooses the count within the range and assigns each beat its cap.">
+        <div className="inline">
+          <Seg label="Beat count" value={val("beats.count") === "auto" ? "auto" : "fixed"} options={["auto", "fixed"]} onChange={(m) => set("beats.count")(m === "auto" ? "auto" : val("beats.min"))} />
+          {val("beats.count") === "auto" ? (
+            <>
+              <span className="text-dim">between</span>
+              {num("beats.min", "Minimum beats", "3.5rem")}
+              <span className="text-dim">and</span>
+              {num("beats.max", "Maximum beats", "3.5rem")}
+            </>
+          ) : (
+            <>
+              <span className="text-dim">exactly</span>
+              {num("beats.count", "Beat count", "3.5rem")}
+            </>
+          )}
+          <span className="text-dim">· each</span>
+          {num("beats.words_min", "Minimum words per beat")}
+          <span className="text-dim">–</span>
+          {num("beats.words_max", "Maximum words per beat")}
+          <span className="text-dim">words</span>
+        </div>
+      </Field>
+      <Field label="Form" help="auto: the schedule derives the axis from the brief and states it. A fixed axis is checked on the schedule and fails shape when contradicted.">
+        <div className="grid gap-2">
+          {Object.entries(AXES).map(([axis, opts]) => (
+            <div key={axis} className="inline">
+              <span className="num w-24 text-dim">{axis}</span>
+              <Seg label={axis} value={val(`form.${axis}`)} options={["auto", ...opts]} onChange={set(`form.${axis}`)} />
+              {overrides[`form.${axis}`] !== undefined && <span className="text-art">overridden</span>}
+            </div>
+          ))}
+          <div className="inline">
+            <span className="num w-24 text-dim">ending</span>
+            <Seg label="ending" value={val("form.ending")} options={["brief", "open"]} onChange={set("form.ending")} />
+          </div>
+        </div>
+      </Field>
+      <Field label="Scenes" help="Sequential carries the text so far into each scene call. Parallel writes all beats at once from the schedule alone.">
+        <Seg label="Scene order" value={val("scenes.order")} options={["sequential", "parallel"]} onChange={set("scenes.order")} />
+      </Field>
+      {!checked && (
+        <Field
+          label="Gate 1"
+          help="This brief has not been checked. Skip drafts it as it stands (one ledger extraction supplies the ledger). Auto runs the check, accepts what recurred in every sample with evidence, dismisses the rest, repairs once and re-checks, then drafts and stops at gate 2."
+        >
+          <Seg label="Gate 1" value={auto ? "auto" : "skip"} options={["skip", "auto"]} onChange={(x) => setAuto(x === "auto")} />
+        </Field>
+      )}
+      <div className="actions">
+        <Btn variant="primary" pad onClick={() => onDraft({ auto, profile: profile || undefined, overrides: Object.keys(overrides).length ? overrides : undefined })}>
+          draft
+        </Btn>
+        <span className="text-dim">One schedule call, then the scene calls in sequence, then the screens. About eight minutes at the defaults.</span>
+      </div>
     </div>
   );
 }
@@ -377,63 +1021,322 @@ function StoryPane({ d, onAct }: { d: Detail; onAct: (fn: () => Promise<any>, go
   const [k, setK] = useState(1);
   const [view, setView] = useState<"story" | "schedule">("story");
   const id = d.draw.id;
-  useEffect(() => { api.story(id).then(setS).catch(() => {}); }, [id, d.steps.length]);
-  if (!s) return <span className="dim">loading…</span>;
+  useEffect(() => {
+    api
+      .story(id)
+      .then(setS)
+      .catch(() => {});
+  }, [id, d.steps.length]);
+  if (!s) return <span className="text-dim">loading…</span>;
   const gating = d.draw.status === "awaiting_draft_gate";
   const gate = (action: string, extra: Record<string, unknown> = {}) => onAct(() => api.gate(id, { action, note, ...extra }));
   const M = s.scenes.length;
   const flagsFor = (beat: number) => ({ ledger: s.screenFindings.filter((f) => f.beat === beat), structure: s.profiles.find((p) => p.beat === beat) });
-  const words = s.scenes.reduce((a, x) => a + x.text.split(/\s+/).filter(Boolean).length, 0);
+  const wordsOf = (t: string) => t.split(/\s+/).filter(Boolean).length;
+  const words = s.scenes.reduce((a, x) => a + wordsOf(x.text), 0);
   const cfg = d.draw.draft_config ? JSON.parse(d.draw.draft_config) : null;
   const nStructure = s.profiles.reduce((a, p) => a + p.flags.length, 0);
   return (
     <>
-      {gating && <div className="gatebar" role="group" aria-label="Gate 2">
-        <button className="btn primary keepbg" onClick={() => gate("keep")} title={`Keep the story. It is exported to drafts/${id}/ with its schedule, findings, configuration and trail.`}>keep · export drafts/{id}/</button>
-        <span className="rewrite"><button className="btn art" onClick={() => gate("rewrite", { beat: k })} title="Regenerate one scene from its beat under its flags' replacements, then screen it and the next scene again.">rewrite scene</button><select className="sel" aria-label="Scene to rewrite" value={k} onChange={(e) => setK(Number(e.target.value))}>{s.scenes.map((x) => <option key={x.beat} value={x.beat}>{x.beat}</option>)}</select><span className="dim" style={{ fontSize: 12 }}>· screens {k}{k < M ? ` and ${k + 1}` : ""} run again</span></span>
-        <button className="btn pass" onClick={() => gate("pass")} title="Pass over this draft. Its verdict goes to the log.">pass</button>
-        <input type="text" placeholder="note for the log…" aria-label="Gate note" value={note} onChange={(e) => setNote(e.target.value)} />
-        <span className="gatesep" />
-        <button className="btn quiet" aria-pressed={view === "schedule"} onClick={() => setView(view === "schedule" ? "story" : "schedule")}>{view === "schedule" ? "story" : "schedule"}</button>
-      </div>}
-      {!gating && <div className="seed"><small>{label(d.draw.status)}</small>{d.draw.status === "drafted" ? <>Kept and exported to <span className="mono">drafts/{id}/</span>.</> : "Passed over."}{d.draw.flag_note && <div className="dim" style={{ fontStyle: "normal", fontFamily: "Instrument Sans, system-ui, sans-serif", fontSize: 12.5, marginTop: ".5rem", whiteSpace: "pre-wrap" }}>{d.draw.flag_note}</div>}<div style={{ marginTop: ".6rem" }}><button className="btn sm" aria-pressed={view === "schedule"} onClick={() => setView(view === "schedule" ? "story" : "schedule")}>{view === "schedule" ? "story" : "schedule"}</button></div></div>}
-      <div className="chips form-chips">{cfg && <><span className="chip on mono">{cfg.config.length.words.toLocaleString()} words</span><span className="chip on mono">{M} beats{cfg.config.beats.count === "auto" ? ` · auto ${cfg.config.beats.min}–${cfg.config.beats.max}` : ""}</span>{s.schedule && Object.entries(s.schedule.form).map(([a, x]) => <span key={a} className="chip on mono" title={a}>{x.split(/[,;]/)[0].replace(/^[a-z]+\s*[:=]\s*/i, "").trim().slice(0, 28)}</span>)}<span className="chip on mono">ending = {cfg.config.form.ending}</span><span className="chip on mono">{cfg.config.scenes.order}</span>{cfg.profile && <span className="chip mono">profile {cfg.profile}</span>}</>}<span className="chip mono">{words.toLocaleString()} written</span></div>
-      <div className="drawbody two"><div className="col">
-        {view === "schedule" && s.schedule ? <ScheduleView s={s} /> : s.scenes.map((sc) => {
-          const fl = flagsFor(sc.beat), beat = s.schedule?.beats[sc.beat - 1];
-          const n = sc.text.split(/\s+/).filter(Boolean).length;
-          const over = beat ? n > beat.words * 1.1 : false;
-          const nf = fl.ledger.length + (fl.structure?.flags.length ?? 0);
-          return (
-            <div key={sc.beat} className="scene" id={`beat-${sc.beat}`}>
-              <div className="hd"><b>beat {sc.beat}</b><span className={over ? "over" : ""}>{n}{beat ? ` / ${beat.words}` : ""}{over ? " · over cap" : ""}</span>{beat && beat.absorbs !== "none" && <span>absorbs {beat.absorbs}</span>}<span className={nf ? "art" : "keep"}>{nf ? `${nf} flag${nf > 1 ? "s" : ""}` : "no flags"}</span></div>
-              <Md className="prose" text={sc.text} />
-              {fl.ledger.map((f) => <div key={f.id} className={"flag" + (f.decision === "accepted" ? " done" : "")}><div className="k">screen-ledger<small>×{f.n} of {Math.max(...f.samples, f.n)} samples</small></div><div><div className="q">“{f.span}”</div><div className="rep"><b>replacement</b> {f.replacement}</div>{f.patch && <div className="rep"><b>patch</b> {f.patch}</div>}</div>{gating && f.decision === "open" && <span className="flagacts">{f.patch && <button className="btn sm" onClick={() => gate("patch", { finding: f.id })} title="Put this flag's own rewrite of the span into the scene, word for word. No model call.">apply patch</button>}<button className="btn sm art" onClick={() => gate("rewrite", { beat: sc.beat, finding: f.id })}>rewrite with this</button></span>}{f.decision === "accepted" && <span className="keep">applied</span>}</div>)}
-              {fl.structure?.flags.map((q) => <div key={q} className="flag"><div className="k">screen-structure<small>{q} · {fl.structure!.answers[q].answer}</small></div><div><div className="q">“{fl.structure!.answers[q].quote}”</div></div><span /></div>)}
-            </div>);
-        })}
-      </div><div className="col">
-        <h2 className="sec">scenes <span>· {words.toLocaleString()} words · {s.screenFindings.length} ledger flags · {nStructure} structure flags</span></h2>
-        <div className="tree">{s.scenes.map((sc) => { const fl = flagsFor(sc.beat), beat = s.schedule?.beats[sc.beat - 1]; const n = sc.text.split(/\s+/).filter(Boolean).length; return (
-          <a key={sc.beat} href={`#write/${id}`} onClick={(e) => { e.preventDefault(); setView("story"); setK(sc.beat); document.getElementById(`beat-${sc.beat}`)?.scrollIntoView({ block: "start" }); }} className={"row" + (k === sc.beat ? " on" : "")}><span className="b mono">{sc.beat}</span><span className="j">{beat?.job ?? firstParagraph(sc.text)}</span><span className={"w mono" + (beat && n > beat.words * 1.1 ? " art" : "")}>{n}</span><span className="f">{fl.ledger.map((f) => <i key={f.id} className="l" />)}{fl.structure?.flags.map((q) => <i key={q} />)}</span></a>); })}</div>
-        <div className="note" style={{ marginTop: 8 }}><i className="dotl" /> ledger flag <i className="dots2" /> structure flag</div>
-        {s.profiles.length > 0 && <>
-          <h2 className="sec">structure <span>· present across the draft · a tell, not a score</span></h2>
-          <dl className="facts">
-            {["theme-stated", "bodily-emotion", "withheld-revealed", "protagonist-never-wrong", "resolved", "resolves-everything"].map((q) => { const hits = s.profiles.filter((p) => p.flags.includes(q)); if (!hits.length && q !== "theme-stated" && q !== "bodily-emotion") return null; return <React.Fragment key={q}><dt>{q.replace(/-/g, " ")}</dt><dd className={hits.length ? "art" : "keep"}>{hits.length ? `${hits.length} of ${M} · beats ${hits.map((h) => h.beat).join(", ")}` : "none"}</dd></React.Fragment>; })}
-          </dl>
-        </>}
-        {s.slop && <>
-          <h2 className="sec">slop <span>· deterministic · against the passage pool</span></h2>
-          <div className="slop">
-            <div><div className="k">lexicon hits · proper nouns excluded</div><div className="lex">{s.slop.lexicon.length ? s.slop.lexicon.slice(0, 12).map((l) => <span key={l.term}>{l.term} <b>{l.count}</b></span>) : <span className="dim">none</span>}</div></div>
-            <div><div className="k">not X but Y</div><div className="rate mono">{s.slop.not_but.per_10k} per 10k <span className="dim">· pool {s.slop.not_but.pool_per_10k}</span></div></div>
-            <div><div className="k">trigrams repeated ×3+, absent from the pool</div><div className="lex">{s.slop.trigrams.length ? s.slop.trigrams.slice(0, 10).map((t) => <span key={t.trigram}>{t.trigram} <b>{t.count}</b></span>) : <span className="dim">none</span>}</div></div>
-            <div><div className="k">mean paragraph length by scene · single-sentence share</div><div className="paras">{s.slop.paragraphs.map((p) => { const max = Math.max(...s.slop!.paragraphs.map((x) => x.mean_words), 1); return <i key={p.beat} className={p.single_sentence_share > .5 ? "hi" : ""} style={{ height: `${Math.max(8, Math.round((p.mean_words / max) * 100))}%` }} title={`beat ${p.beat}: ${p.paragraphs} paragraphs, mean ${p.mean_words} words, ${Math.round(p.single_sentence_share * 100)}% single-sentence`} />; })}</div></div>
+      {gating && (
+        <div className="controls" role="group" aria-label="Gate 2">
+          <Btn variant="primary" onClick={() => gate("keep")} title={`Keep the story. It is exported to drafts/${id}/ with its schedule, findings, configuration and trail.`}>
+            keep · export drafts/{id}/
+          </Btn>
+          <span className="group">
+            <Btn variant="art" onClick={() => gate("rewrite", { beat: k })} title="Regenerate one scene from its beat under its flags' replacements, then screen it and the next scene again.">
+              rewrite scene
+            </Btn>
+            <select className="sel" style={{ minWidth: "4rem", padding: "0.15rem 1.6rem 0.2rem 0.5rem" }} aria-label="Scene to rewrite" value={k} onChange={(e) => setK(Number(e.target.value))}>
+              {s.scenes.map((x) => (
+                <option key={x.beat} value={x.beat}>
+                  {x.beat}
+                </option>
+              ))}
+            </select>
+            <span className="text-dim">
+              screens {k}
+              {k < M ? ` and ${k + 1}` : ""} run again
+            </span>
+          </span>
+          <Btn variant="pass" onClick={() => gate("pass")} title="Pass over this draft. Its verdict goes to the log.">
+            pass
+          </Btn>
+          <input type="text" placeholder="note for the log" aria-label="Gate note" value={note} onChange={(e) => setNote(e.target.value)} />
+          <span className="end">
+            <Btn variant="quiet" pressed={view === "schedule"} onClick={() => setView(view === "schedule" ? "story" : "schedule")}>
+              {view === "schedule" ? "story" : "schedule"}
+            </Btn>
+          </span>
+        </div>
+      )}
+      {!gating && (
+        <div className="controls">
+          <span className="text-mute">
+            {d.draw.status === "drafted" ? (
+              <>
+                Kept and exported to <span className="num">drafts/{id}/</span>.
+              </>
+            ) : d.draw.status === "passed" ? (
+              "Passed over."
+            ) : (
+              label(d.draw.status)
+            )}
+            {d.draw.flag_note && <span className="text-dim"> · {d.draw.flag_note}</span>}
+          </span>
+          <span className="end">
+            <Btn variant="quiet" pressed={view === "schedule"} onClick={() => setView(view === "schedule" ? "story" : "schedule")}>
+              {view === "schedule" ? "story" : "schedule"}
+            </Btn>
+          </span>
+        </div>
+      )}
+      <Facts
+        className="mt-3 max-w-[48rem]"
+        rows={[
+          ...(cfg
+            ? ([
+                ["length", `${cfg.config.length.words.toLocaleString()} words · ${words.toLocaleString()} written`],
+                ["beats", `${M}${cfg.config.beats.count === "auto" ? ` · auto ${cfg.config.beats.min}–${cfg.config.beats.max}` : ""}`],
+                ...Object.entries(s.schedule?.form ?? {}).map(([a, x]) => [a, x] as [React.ReactNode, React.ReactNode]),
+                ["ending", cfg.config.form.ending],
+                ["scenes", cfg.config.scenes.order],
+                ...(cfg.profile ? [["profile", cfg.profile] as [React.ReactNode, React.ReactNode]] : []),
+              ] as [React.ReactNode, React.ReactNode][])
+            : ([["written", `${words.toLocaleString()} words`]] as [React.ReactNode, React.ReactNode][])),
+        ]}
+      />
+      <div className="drawbody wide">
+        <div className="min-w-0">
+          {view === "schedule" && s.schedule ? (
+            <ScheduleView s={s} />
+          ) : (
+            s.scenes.map((sc) => {
+              const fl = flagsFor(sc.beat),
+                beat = s.schedule?.beats[sc.beat - 1];
+              const n = wordsOf(sc.text);
+              const over = beat ? n > beat.words * 1.1 : false;
+              const nf = fl.ledger.length + (fl.structure?.flags.length ?? 0);
+              return (
+                <div key={sc.beat} className="mb-6 max-w-[66ch]" id={`beat-${sc.beat}`}>
+                  <Head
+                    note={
+                      <>
+                        <span>
+                          {n}
+                          {beat ? ` / ${beat.words}` : ""}
+                          {over ? " · over cap" : ""}
+                        </span>
+                        {beat && beat.absorbs !== "none" && <> · absorbs {beat.absorbs}</>} · <span className="text-mute">{nf ? `${nf} flag${nf > 1 ? "s" : ""}` : "no flags"}</span>
+                      </>
+                    }
+                  >
+                    beat {sc.beat}
+                  </Head>
+                  <Md className="mt-2" text={sc.text} />
+                  {fl.ledger.length > 0 || fl.structure?.flags.length ? (
+                    <table className="mt-3">
+                      <tbody>
+                        {fl.ledger.map((f) => (
+                          <tr key={f.id} className={f.decision === "accepted" ? "old" : ""}>
+                            <td className="num w-28 text-art">
+                              ledger
+                              <div className="text-dim">
+                                ×{f.n} of {Math.max(...f.samples, f.n)}
+                              </div>
+                            </td>
+                            <td>
+                              <div className="quote">{f.span}</div>
+                              <div className="kv">
+                                <b>replacement</b>
+                                <span>{f.replacement}</span>
+                                {f.patch && (
+                                  <>
+                                    <b>patch</b>
+                                    <span>{f.patch}</span>
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                            <td className="text-right whitespace-nowrap">
+                              {gating && f.decision === "open" && (
+                                <>
+                                  {f.patch && (
+                                    <Btn onClick={() => gate("patch", { finding: f.id })} title="Put this flag's own rewrite of the span into the scene, word for word. No model call.">
+                                      apply patch
+                                    </Btn>
+                                  )}
+                                  <div className="mt-1">
+                                    <Btn variant="art" onClick={() => gate("rewrite", { beat: sc.beat, finding: f.id })}>
+                                      rewrite with this
+                                    </Btn>
+                                  </div>
+                                </>
+                              )}
+                              {f.decision === "accepted" && <span className="num text-keep">applied</span>}
+                            </td>
+                          </tr>
+                        ))}
+                        {fl.structure?.flags.map((q) => (
+                          <tr key={q}>
+                            <td className="num w-28 text-art">
+                              structure
+                              <div className="text-dim">
+                                {q} · {fl.structure!.answers[q].answer}
+                              </div>
+                            </td>
+                            <td>
+                              <div className="quote">{fl.structure!.answers[q].quote}</div>
+                            </td>
+                            <td></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : null}
+                </div>
+              );
+            })
+          )}
+        </div>
+        <div className="aside min-w-0">
+          <Head note={`${words.toLocaleString()} words · ${s.screenFindings.length} ledger flags · ${nStructure} structure flags`}>scenes</Head>
+          <table className="mt-1">
+            <thead>
+              <tr>
+                <th className="head w-8">beat</th>
+                <th className="head">job</th>
+                <th className="head text-right">words</th>
+                <th className="head text-right">flags</th>
+              </tr>
+            </thead>
+            <tbody>
+              {s.scenes.map((sc) => {
+                const fl = flagsFor(sc.beat),
+                  beat = s.schedule?.beats[sc.beat - 1];
+                const n = wordsOf(sc.text);
+                return (
+                  <tr
+                    key={sc.beat}
+                    className={"pick" + (k === sc.beat ? " sel" : "")}
+                    onClick={() => {
+                      setView("story");
+                      setK(sc.beat);
+                      document.getElementById(`beat-${sc.beat}`)?.scrollIntoView({ block: "start" });
+                    }}
+                  >
+                    <td className="num">{sc.beat}</td>
+                    <td className="serif-cell">
+                      <span className="line-clamp-2">{beat?.job ?? firstParagraph(sc.text)}</span>
+                    </td>
+                    <td className="num text-right">{n}</td>
+                    <td className="text-right whitespace-nowrap">
+                      {fl.ledger.map((f) => (
+                        <React.Fragment key={f.id}>
+                          <Mark state="fail" small />{" "}
+                        </React.Fragment>
+                      ))}
+                      {fl.structure?.flags.map((q) => (
+                        <React.Fragment key={q}>
+                          <Mark state="art" small />{" "}
+                        </React.Fragment>
+                      ))}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <div className="mt-2 text-dim">
+            <Mark state="fail" small /> ledger flag &nbsp; <Mark state="art" small /> structure flag
           </div>
-        </>}
-        {s.judge && <div className="judge">{s.judge}</div>}
-      </div></div>
+          {s.profiles.length > 0 && (
+            <>
+              <Head className="mt-6" note="present across the draft · a tell, not a score">
+                structure
+              </Head>
+              <Facts
+                className="mt-1"
+                rows={["theme-stated", "bodily-emotion", "withheld-revealed", "protagonist-never-wrong", "resolved", "resolves-everything"].flatMap((q) => {
+                  const hits = s.profiles.filter((p) => p.flags.includes(q));
+                  if (!hits.length && q !== "theme-stated" && q !== "bodily-emotion") return [];
+                  return [
+                    [
+                      q.replace(/-/g, " "),
+                      <span className="text-mute">
+                        <Mark state={hits.length ? "art" : "held"} /> {hits.length ? `${hits.length} of ${M} · beats ${hits.map((h) => h.beat).join(", ")}` : "none"}
+                      </span>,
+                    ] as [React.ReactNode, React.ReactNode],
+                  ];
+                })}
+              />
+            </>
+          )}
+          {s.slop && (
+            <>
+              <Head className="mt-6" note="deterministic · against the passage pool">
+                slop
+              </Head>
+              <Facts
+                className="mt-1"
+                rows={[
+                  [
+                    "lexicon hits",
+                    s.slop.lexicon.length ? (
+                      <span className="chips">
+                        {s.slop.lexicon.slice(0, 12).map((l) => (
+                          <span key={l.term} className="chip num">
+                            {l.term} <b className="text-ink">{l.count}</b>
+                          </span>
+                        ))}
+                      </span>
+                    ) : (
+                      <span className="text-dim">none</span>
+                    ),
+                  ],
+                  [
+                    "not X but Y",
+                    <span className="num">
+                      {s.slop.not_but.per_10k} per 10k <span className="text-dim">· pool {s.slop.not_but.pool_per_10k}</span>
+                    </span>,
+                  ],
+                  [
+                    "trigrams ×3+",
+                    s.slop.trigrams.length ? (
+                      <span className="chips">
+                        {s.slop.trigrams.slice(0, 10).map((t) => (
+                          <span key={t.trigram} className="chip num">
+                            {t.trigram} <b className="text-ink">{t.count}</b>
+                          </span>
+                        ))}
+                      </span>
+                    ) : (
+                      <span className="text-dim">none</span>
+                    ),
+                  ],
+                  [
+                    "paragraphs",
+                    <div className="paras">
+                      {s.slop.paragraphs.map((p) => {
+                        const max = Math.max(...s.slop!.paragraphs.map((x) => x.mean_words), 1);
+                        return (
+                          <i
+                            key={p.beat}
+                            className={p.single_sentence_share > 0.5 ? "hi" : ""}
+                            style={{ height: `${Math.max(8, Math.round((p.mean_words / max) * 100))}%` }}
+                            title={`beat ${p.beat}: ${p.paragraphs} paragraphs, mean ${p.mean_words} words, ${Math.round(p.single_sentence_share * 100)}% single-sentence`}
+                          />
+                        );
+                      })}
+                    </div>,
+                  ],
+                ]}
+              />
+            </>
+          )}
+          {s.judge && <div className="judge">{s.judge}</div>}
+        </div>
+      </div>
     </>
   );
 }
@@ -444,24 +1347,93 @@ function ScheduleView({ s }: { s: Story }) {
   // one row per withheld item: first beat that lists it, and the beat that reveals it
   const rows = useMemo(() => {
     const m = new Map<string, { from: number; until: number }>();
-    for (const b of sched.beats) for (const w of b.withheld) { const key = w.item.toLowerCase(); if (!m.has(key)) m.set(key, { from: b.n, until: w.until }); }
+    for (const b of sched.beats)
+      for (const w of b.withheld) {
+        const key = w.item.toLowerCase();
+        if (!m.has(key)) m.set(key, { from: b.n, until: w.until });
+      }
     return [...m.entries()].map(([, v], i) => ({ item: [...new Set(sched.beats.flatMap((b) => b.withheld.map((w) => w.item)))][i] ?? "", ...v })).sort((a, b) => a.until - b.until);
   }, [sched]);
-  const wordsOf = (beat: number) => s.scenes.find((x) => x.beat === beat)?.text.split(/\s+/).filter(Boolean).length ?? 0;
+  const wordsOf = (beat: number) =>
+    s.scenes
+      .find((x) => x.beat === beat)
+      ?.text.split(/\s+/)
+      .filter(Boolean).length ?? 0;
   return (
     <>
-      <h2 className="sec">withholding <span>· what stays hidden until which beat · shaded is withheld, the marked cell is the beat that reveals it</span></h2>
-      <div className="chartwrap"><div className="chart" style={{ gridTemplateColumns: `minmax(0, 2fr) repeat(${M}, minmax(0, 1fr))` }}>
-        <div className="h" style={{ textAlign: "right", paddingRight: 12 }}>beat</div>{sched.beats.map((b) => <div key={b.n} className="h">{b.n}{b.n === M ? " · ending" : ""}</div>)}
-        {rows.map((r) => <React.Fragment key={r.item}><div className="lbl" title={r.item}>{r.item}</div>{sched.beats.map((b) => <div key={b.n} className={"c " + (b.n === r.until ? "rev" : b.n >= r.from && b.n < r.until ? "held" : "open")} />)}</React.Fragment>)}
-      </div></div>
-      <div className="note" style={{ marginTop: 10 }}>form as derived: {Object.entries(sched.form).map(([a, x]) => `${a} ${x}`).join(" · ")}</div>
-      <h2 className="sec">beats <span>· job · known by its end · withheld after it · cap and words written</span></h2>
-      {sched.beats.map((b) => { const n = wordsOf(b.n); const pct = Math.min(100, Math.round((n / b.words) * 100)); return (
-        <div key={b.n} className="beat">
-          <div className="n"><b className="tnum">{b.n}<small>cap {b.words}</small></b><div className="bar"><i className={n > b.words * 1.1 ? "over" : ""} style={{ width: `${pct}%` }} /></div><span className="mono dim" style={{ fontSize: 11 }}>{n} written{n > b.words * 1.1 ? " · over cap" : ""}</span>{b.absorbs !== "none" && <span className="tag">absorbs {b.absorbs}</span>}</div>
-          <div className="body"><div className="job">{b.job}</div><div className="kv"><b>known</b><span>{b.known}</span><b>withheld</b><span>{b.withheld.length ? b.withheld.map((w) => `${w.item} → ${w.until}`).join(" · ") : "nothing"}</span><b>stakes</b><span>{b.stakes}</span></div></div>
-        </div>); })}
+      <Head note="what stays hidden until which beat · shaded is withheld, the gold cell is the beat that reveals it">withholding</Head>
+      <div className="mt-2 overflow-x-auto">
+        <div className="chart" style={{ gridTemplateColumns: `minmax(0, 2fr) repeat(${M}, minmax(0, 1fr))` }}>
+          <div className="h" style={{ textAlign: "right", paddingRight: 12 }}>
+            beat
+          </div>
+          {sched.beats.map((b) => (
+            <div key={b.n} className="h">
+              {b.n}
+              {b.n === M ? " · ending" : ""}
+            </div>
+          ))}
+          {rows.map((r) => (
+            <React.Fragment key={r.item}>
+              <div className="lbl" title={r.item}>
+                {r.item}
+              </div>
+              {sched.beats.map((b) => (
+                <div key={b.n} className={"c " + (b.n === r.until ? "rev" : b.n >= r.from && b.n < r.until ? "held" : "")} />
+              ))}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+      <div className="mt-2 text-dim">
+        form as derived:{" "}
+        {Object.entries(sched.form)
+          .map(([a, x]) => `${a} ${x}`)
+          .join(" · ")}
+      </div>
+      <Head className="mt-6" note="job · known by its end · withheld after it · cap and words written">
+        beats
+      </Head>
+      <table className="mt-1">
+        <thead>
+          <tr>
+            <th className="head w-8">#</th>
+            <th className="head w-24">words</th>
+            <th className="head w-20"></th>
+            <th className="head">beat</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sched.beats.map((b) => {
+            const n = wordsOf(b.n);
+            const pct = Math.min(100, Math.round((n / b.words) * 100));
+            return (
+              <tr key={b.n}>
+                <td className="num font-semibold">{b.n}</td>
+                <td className="num">
+                  {n} <span className="text-dim">/ {b.words}</span>
+                  {n > b.words * 1.1 ? <div className="text-art">over cap</div> : null}
+                  {b.absorbs !== "none" && <div className="text-gold">absorbs {b.absorbs}</div>}
+                </td>
+                <td className="pt-4">
+                  <Bar pct={pct} over={n > b.words * 1.1} />
+                </td>
+                <td>
+                  <div className="serif-cell">{b.job}</div>
+                  <div className="kv">
+                    <b>known</b>
+                    <span>{b.known}</span>
+                    <b>withheld</b>
+                    <span>{b.withheld.length ? b.withheld.map((w) => `${w.item} → ${w.until}`).join(" · ") : "nothing"}</span>
+                    <b>stakes</b>
+                    <span>{b.stakes}</span>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </>
   );
 }

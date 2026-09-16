@@ -1,0 +1,28 @@
+{
+  "hook": {
+    "enabled": true,
+    "limits": {
+      "maxFindings": 5,
+      "maxChars": 8000
+    }
+  },
+  "buildPath": "code",
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-font",
+        "value": "material symbols rounded",
+        "createdAt": "2026-09-16T02:17:30.451Z",
+        "reason": "spec docs/specs/2026-09-15-ui-redesign.md stack table: icons are Material Symbols; app/ui/index.html already loads it"
+      },
+      {
+        "rule": "overused-font",
+        "value": "instrument sans",
+        "createdAt": "2026-09-16T03:28:23.852Z",
+        "reason": "spec docs/specs/2026-09-15-ui-redesign.md stack table pins Instrument Sans, Newsreader and IBM Plex Mono as the three registers"
+      }
+    ]
+  }
+}

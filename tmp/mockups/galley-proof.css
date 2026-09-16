@@ -1,0 +1,126 @@
+/* World B: The Galley Proof. The draw page as a typeset proof sheet under a desk lamp, judged in the margin. */
+@import "tailwindcss";
+@source "./draw-galley-gate.html";
+@source "./draw-galley-open.html";
+@source "./draw-galley-running.html";
+
+@theme static {
+  --color-*: initial;
+  /* the desk: rail, list, the dark around the sheet */
+  --color-desk: #14181b;
+  --color-desk-raised: #1c2226;
+  --color-desk-line: #2a3237;
+  --color-desk-ink: #c9d1d5;
+  --color-desk-mute: #7f8c93;
+  --color-desk-dim: #66727b;
+  /* the sheet: cool proof stock, not cream */
+  --color-sheet: #f3f5f2;
+  --color-sheet-ink: #1c2124;
+  --color-sheet-mute: #5c6670;
+  --color-sheet-dim: #6a747c;
+  --color-sheet-rule: #d3d8d4;
+  --color-sheet-tint: #e9ece8;
+  /* the one accent: the blue pencil */
+  --color-pencil: #2a63c7;
+  --color-keep: #2f7d4f;
+  --color-pass: #c0392b;
+  --color-art: #b07d0c;
+  --color-running: #2a63c7;
+  --color-gold: #e3b463;
+
+  --font-sans: "Instrument Sans", system-ui, sans-serif;
+  --font-serif: "Newsreader", Georgia, serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+
+  --text-chrome: 12.5px;
+  --text-chrome--line-height: 1.45;
+  --text-slug: 11.5px;
+  --text-slug--line-height: 1.5;
+  --text-galley: 16.5px;
+  --text-galley--line-height: 1.6;
+  --text-name: 15px;
+  --text-name--line-height: 1.3;
+
+  --radius-*: initial;
+  --radius-none: 0;
+}
+
+@layer base {
+  body { background: var(--color-desk); color: var(--color-desk-ink); font-family: var(--font-sans); font-size: var(--text-chrome); line-height: var(--text-chrome--line-height); font-variant-numeric: tabular-nums; }
+  ::selection { background: color-mix(in srgb, var(--color-pencil) 22%, transparent); }
+  :focus-visible { outline: 2px solid var(--color-pencil); outline-offset: 1px; }
+  * { scrollbar-color: var(--color-desk-line) transparent; scrollbar-width: thin; }
+}
+
+@layer components {
+  .icon { font-family: "Material Symbols Rounded"; font-size: 1.3em; line-height: 1; font-variation-settings: "FILL" 0, "wght" 500, "GRAD" 0, "opsz" 20; user-select: none; vertical-align: -0.2em; }
+  .sheet { background: var(--color-sheet); color: var(--color-sheet-ink); color-scheme: light; }
+  /* the slug line: the compositor's register, mono, across the head of the sheet */
+  .slug { font-family: var(--font-mono); font-size: var(--text-slug); line-height: var(--text-slug--line-height); color: var(--color-sheet-mute); }
+  .slugline { display: flex; flex-wrap: wrap; gap: 0 1.4rem; border-bottom: 1px solid var(--color-sheet-rule); padding-bottom: 0.5rem; position: relative; }
+  /* while the draw runs, the rule under the slug line itself travels, the full width of the sheet */
+  .slugline.running { border-bottom-color: var(--color-running); }
+  .slugline.running::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: linear-gradient(90deg, transparent, var(--color-running) 40%, var(--color-running) 60%, transparent); background-size: 50% 100%; background-repeat: no-repeat; }
+  @media (prefers-reduced-motion: no-preference) { .slugline.running::after { animation: setting 1.6s linear infinite; } }
+  .slugline .step { padding-bottom: 2px; white-space: nowrap; }
+  .slugline .step b { color: var(--color-sheet-ink); font-weight: 500; }
+  .slugline .step.done { color: var(--color-sheet-dim); }
+  /* the running step: the slug still being set, an underline that travels */
+  .setting { position: relative; color: var(--color-running); }
+  .setting::after { content: ""; position: absolute; left: 0; right: 0; bottom: -2px; height: 2px; background: linear-gradient(90deg, transparent, var(--color-running) 40%, var(--color-running) 60%, transparent); background-size: 50% 100%; background-repeat: no-repeat; }
+  @media (prefers-reduced-motion: no-preference) {
+    .setting::after { animation: setting 1.6s linear infinite; }
+    @keyframes setting { from { background-position: -50% 0; } to { background-position: 150% 0; } }
+  }
+  /* a galley: slug in the left margin, type in the column, marks in the right margin */
+  .galley { display: grid; grid-template-columns: 6.5rem minmax(0, 60ch) 8rem; gap: 0 1.25rem; padding: 1.1rem 0; border-top: 1px solid var(--color-sheet-rule); align-items: start; }
+  .galley .type { font-family: var(--font-serif); font-size: var(--text-galley); line-height: var(--text-galley--line-height); font-optical-sizing: auto; text-wrap: pretty; }
+  .galley .type p { margin: 0 0 0.75em; } .galley .type p:last-child { margin-bottom: 0; }
+  .galley .type .premise { font-weight: 500; }
+  .galley .fold { color: var(--color-sheet-mute); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  /* the opened galley: a pencil bracket down the margin */
+  .galley.open .type { color: var(--color-sheet-ink); }
+  .galley.open .marks { border-left: 1px solid var(--color-pencil); padding-left: 0.75rem; }
+  .galley.open .marks::before { content: ""; display: block; width: 0.5rem; height: 1px; background: var(--color-pencil); margin: 0 0 0.35rem -0.75rem; }
+  .galley.faded .type { color: var(--color-sheet-dim); }
+  .galley.faded .type .premise { color: var(--color-sheet-mute); }
+  .marks { display: flex; flex-direction: column; gap: 0.35rem; align-items: flex-start; font-family: var(--font-sans); }
+  /* the marks: the proofreader's hand in the blue pencil */
+  .mark { display: inline-flex; align-items: center; gap: 0.3rem; color: var(--color-pencil); font-size: var(--text-chrome); font-weight: 500; font-style: italic; background: transparent; border: 0; padding: 0; cursor: pointer; text-decoration: none; }
+  .mark:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .mark.keep { color: var(--color-keep); }
+  .mark.pass { color: var(--color-pass); }
+  .mark.art { color: var(--color-art); }
+  .mark.quiet { color: var(--color-sheet-mute); font-style: normal; }
+  .mark .icon { font-size: 1.15em; }
+  .mark.choose { border: 1px solid var(--color-pencil); padding: 0.1rem 0.55rem 0.15rem 0.4rem; font-style: normal; }
+  .mark.choose:hover { background: var(--color-pencil); color: var(--color-sheet); text-decoration: none; }
+  .slugbar { height: 4px; width: 100%; background: var(--color-sheet-tint); margin-top: 0.3rem; }
+  .slugbar i { display: block; height: 100%; background: var(--color-sheet-mute); }
+  .galley.open .slugbar i { background: var(--color-pencil); }
+  .headnote { font-family: var(--font-serif); font-style: italic; font-size: 17px; line-height: 1.5; font-optical-sizing: auto; max-width: 92ch; }
+  .source { display: grid; grid-template-columns: 6.5rem minmax(0, 60ch) 8rem; gap: 0 1.25rem; padding: 0.45rem 0; border-top: 1px solid var(--color-sheet-rule); align-items: baseline; }
+  .source .t { font-family: var(--font-serif); font-size: 15px; }
+  .source .t b { font-weight: 500; }
+  /* the desk: list rows and rail */
+  .row { display: grid; gap: 0.15rem; padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--color-desk-line); color: var(--color-desk-mute); }
+  .row.on { background: var(--color-desk-raised); box-shadow: inset 2px 0 0 var(--color-pencil); }
+  .row.running { box-shadow: inset 2px 0 0 #8fb8d9; }
+  .row.old { opacity: 0.55; }
+  .row .seed { font-family: var(--font-serif); font-style: italic; font-size: 13.5px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .dot { display: inline-block; width: 7px; height: 7px; border-radius: 999px; background: var(--color-desk-dim); vertical-align: 0; }
+  .dot.wait { background: var(--color-gold); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-gold) 25%, transparent); }
+  .dot.run { background: #8fb8d9; box-shadow: 0 0 0 3px color-mix(in srgb, #8fb8d9 25%, transparent); }
+  .dot.fail { background: #ee8f8b; }
+  .dot.done { background: #8bd1a0; }
+  .navlink { display: flex; justify-content: space-between; padding: 0.35rem 0.5rem; color: var(--color-desk-mute); font-weight: 500; text-decoration: none; }
+  .navlink.on { color: var(--color-desk-ink); background: var(--color-desk-raised); }
+  .mocktag { position: fixed; right: 0.75rem; bottom: 0.75rem; z-index: 9; font-family: var(--font-mono); font-size: 11px; color: var(--color-desk); background: var(--color-gold); padding: 0.15rem 0.5rem; }
+  /* two galleys side by side once the sheet is wide enough for it */
+  .galleys { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: 2.5rem; }
+  @container sheet (min-width: 1300px) {
+    .galleys.two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .galleys.two .galley { grid-template-columns: 5rem minmax(0, 54ch) 7.5rem; gap: 0 1rem; padding: 0.9rem 0; }
+    .galleys.two .galley .type { font-size: 15.5px; line-height: 1.55; }
+  }
+}

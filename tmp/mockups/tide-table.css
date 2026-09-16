@@ -1,0 +1,115 @@
+/* World A: The Tide Table. The draw page as a page of a nautical almanac read at a chart table at night. */
+@import "tailwindcss";
+@source "./draw-tide-gate.html";
+@source "./draw-tide-open.html";
+@source "./draw-tide-running.html";
+@source "./check-tide-gate.html";
+
+@theme static {
+  --color-*: initial;
+  --color-desk: #0d1114;
+  --color-sheet: #151b1f;
+  --color-raised: #1c242a;
+  --color-hair: #2a343b;
+  --color-rule: #5a6970;
+  --color-ink: #d6dde0;
+  --color-mute: #8a98a0;
+  --color-dim: #6a7981;
+  --color-gold: #e3b463;
+  --color-keep: #8bd1a0;
+  --color-pass: #ee8f8b;
+  --color-art: #e9c36a;
+  --color-running: #8fb8d9;
+  --color-rev: #d6dde0;
+  --color-rev-ink: #0d1114;
+
+  --font-sans: "Instrument Sans", system-ui, sans-serif;
+  --font-serif: "Newsreader", Georgia, serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+
+  /* one chrome size; rank is weight, case, reversal and rule */
+  --text-chrome: 12.5px;
+  --text-chrome--line-height: 1.45;
+  --text-head: 11px;
+  --text-head--line-height: 1.4;
+  --text-cell: 14px;
+  --text-cell--line-height: 1.45;
+  --text-prose: 16px;
+  --text-prose--line-height: 1.55;
+  --text-name: 15px;
+  --text-name--line-height: 1.3;
+
+  --radius-*: initial;
+  --radius-none: 0;
+  --radius-dot: 999px;
+}
+
+@layer base {
+  html { color-scheme: dark; }
+  body { background: var(--color-desk); color: var(--color-ink); font-family: var(--font-sans); font-size: var(--text-chrome); line-height: var(--text-chrome--line-height); font-variant-numeric: tabular-nums; }
+  ::selection { background: color-mix(in srgb, var(--color-gold) 30%, transparent); }
+  :focus-visible { outline: 2px solid var(--color-gold); outline-offset: 1px; }
+  * { scrollbar-color: var(--color-hair) transparent; scrollbar-width: thin; }
+}
+
+@layer components {
+  .icon { font-family: "Material Symbols Rounded"; font-size: 1.3em; line-height: 1; font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 20; user-select: none; vertical-align: -0.2em; }
+  /* column heads: small caps, letterspaced, a heavy rule beneath */
+  .head { font-family: var(--font-sans); font-size: var(--text-head); line-height: var(--text-head--line-height); font-variant-caps: all-small-caps; letter-spacing: 0.08em; color: var(--color-mute); font-weight: 500; }
+  .tt table { width: 100%; border-collapse: collapse; }
+  .tt th { text-align: left; padding: 0.25rem 0.5rem 0.35rem; border-bottom: 2px solid var(--color-rule); vertical-align: bottom; }
+  .tt td { padding: 0.55rem 0.5rem; border-bottom: 1px solid var(--color-hair); vertical-align: top; }
+  .tt tr.faded td { color: var(--color-dim); }
+  .tt tr.faded .serif-cell { color: var(--color-dim); }
+  /* the opened row: the raised fill and the inset accent bar; a reversed light line read wrong on the desk (Chris, 2026-09-15) */
+  .tt tr.rev td { background: var(--color-raised); }
+  .tt tr.rev td:first-child { box-shadow: inset 2px 0 0 var(--color-gold); }
+  .tt tr.rev .bar i { background: var(--color-gold); }
+  .tt tr.rev .choose { border-color: var(--color-ink); }
+  /* the opened vignette sits on the sheet under its reversed row, never on the light */
+  .tt tr.spans td { padding: 1rem 0.5rem 1.25rem 4.75rem; border-bottom: 2px solid var(--color-rule); }
+  .tt th.premise { min-width: 26rem; }
+  /* the reading pane: table and log side by side; the log folds above the table on a narrow pane */
+  .drawbody { display: grid; grid-template-columns: minmax(0, 1fr) 19rem; column-gap: 2.5rem; align-items: start; }
+  @container (max-width: 1150px) {
+    .drawbody { grid-template-columns: minmax(0, 1fr); }
+    .drawbody .log { order: -1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 2.5rem; margin-bottom: 1.25rem; }
+    .drawbody .log .facts { margin-top: 0; }
+  }
+  /* state is a mark in a fixed cell: filled holds, hollow does not, a strike passes, a tick confirms */
+  .mark { display: inline-block; width: 9px; height: 9px; border: 1.5px solid var(--color-mute); border-radius: 999px; vertical-align: -1px; }
+  .mark.held { background: var(--color-keep); border-color: var(--color-keep); }
+  .mark.wait { border-color: var(--color-art); }
+  .mark.fail { border-color: var(--color-pass); background: var(--color-pass); }
+  .mark.run { border-color: var(--color-running); background: color-mix(in srgb, var(--color-running) 35%, transparent); }
+  .mark.todo { border-color: var(--color-hair); }
+  .strike { display: inline-block; width: 12px; height: 1.5px; background: var(--color-pass); vertical-align: 3px; }
+  .bar { height: 5px; background: var(--color-raised); width: 100%; }
+  .bar i { display: block; height: 100%; background: var(--color-mute); }
+  .choose { font-variant-caps: all-small-caps; letter-spacing: 0.08em; font-weight: 600; font-size: var(--text-chrome); border: 1px solid var(--color-rule); padding: 0.1rem 0.55rem 0.2rem; color: var(--color-ink); background: transparent; cursor: pointer; white-space: nowrap; }
+  .choose:hover { border-color: var(--color-ink); }
+  .choose.primary { background: var(--color-gold); color: var(--color-desk); border-color: var(--color-gold); }
+  .choose .icon { font-variant-caps: normal; letter-spacing: 0; }
+  /* the check body: findings beside the profile, one column on a narrow pane */
+  .checkbody { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); column-gap: 2.5rem; align-items: start; }
+  .checkbody td.finding-col { min-width: 26rem; }
+  @container (max-width: 1150px) { .checkbody { grid-template-columns: minmax(0, 1fr); } .checkbody > div + div { margin-top: 1.5rem; } .checkbody td.finding-col { min-width: 0; } }
+  /* the running state is a sweep, not a dot: a rule that travels under the step in flight */
+  .sweep { position: relative; }
+  .sweep::after { content: ""; position: absolute; left: 0; right: 0; bottom: -2px; height: 2px; background: linear-gradient(90deg, transparent, var(--color-running) 40%, var(--color-running) 60%, transparent); background-size: 50% 100%; background-repeat: no-repeat; }
+  @media (prefers-reduced-motion: no-preference) {
+    .sweep::after { animation: sweep 1.6s linear infinite; }
+    @keyframes sweep { from { background-position: -50% 0; } to { background-position: 150% 0; } }
+  }
+  .serif-cell { font-family: var(--font-serif); font-size: var(--text-cell); line-height: var(--text-cell--line-height); font-optical-sizing: auto; text-wrap: pretty; }
+  .prose-open { font-family: var(--font-serif); font-size: var(--text-prose); line-height: var(--text-prose--line-height); font-optical-sizing: auto; max-width: 66ch; text-wrap: pretty; }
+  .prose-open p { margin: 0 0 0.8em; } .prose-open p:last-child { margin-bottom: 0; }
+  .seed { font-family: var(--font-serif); font-style: italic; font-size: 15px; line-height: 1.5; font-optical-sizing: auto; }
+  .row { display: grid; gap: 0.15rem; padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--color-hair); }
+  .row.on { box-shadow: inset 2px 0 0 var(--color-gold); background: var(--color-raised); }
+  .row.running { box-shadow: inset 2px 0 0 var(--color-running); }
+  .row.old { opacity: 0.55; }
+  .navlink { display: flex; justify-content: space-between; padding: 0.35rem 0.5rem; color: var(--color-mute); font-weight: 500; text-decoration: none; }
+  .navlink.on { color: var(--color-ink); box-shadow: inset 2px 0 0 var(--color-gold); }
+  .mocktag { position: fixed; right: 0.75rem; bottom: 0.75rem; z-index: 9; font-family: var(--font-mono); font-size: 11px; color: var(--color-desk); background: var(--color-art); padding: 0.15rem 0.5rem; }
+}

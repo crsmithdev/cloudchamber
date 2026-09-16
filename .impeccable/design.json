@@ -1,0 +1,427 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-16T06:03:42Z",
+  "title": "Design System: Cloud Chamber",
+  "extensions": {
+    "colorMeta": {
+      "desk": {
+        "role": "neutral",
+        "displayName": "Desk",
+        "canonical": "oklch(17.5% 0.009 240.5)",
+        "tonalRamp": [
+          "oklch(15.0% 0.005 240.5)",
+          "oklch(26.4% 0.005 240.5)",
+          "oklch(37.9% 0.009 240.5)",
+          "oklch(49.3% 0.009 240.5)",
+          "oklch(60.7% 0.009 240.5)",
+          "oklch(72.1% 0.009 240.5)",
+          "oklch(83.6% 0.009 240.5)",
+          "oklch(95.0% 0.005 240.5)"
+        ]
+      },
+      "sheet": {
+        "role": "neutral",
+        "displayName": "Sheet",
+        "canonical": "oklch(21.8% 0.012 237.3)",
+        "tonalRamp": [
+          "oklch(15.0% 0.007 237.3)",
+          "oklch(26.4% 0.007 237.3)",
+          "oklch(37.9% 0.012 237.3)",
+          "oklch(49.3% 0.012 237.3)",
+          "oklch(60.7% 0.012 237.3)",
+          "oklch(72.1% 0.012 237.3)",
+          "oklch(83.6% 0.012 237.3)",
+          "oklch(95.0% 0.007 237.3)"
+        ]
+      },
+      "raised": {
+        "role": "neutral",
+        "displayName": "Raised",
+        "canonical": "oklch(25.5% 0.016 240.7)",
+        "tonalRamp": [
+          "oklch(15.0% 0.010 240.7)",
+          "oklch(26.4% 0.010 240.7)",
+          "oklch(37.9% 0.016 240.7)",
+          "oklch(49.3% 0.016 240.7)",
+          "oklch(60.7% 0.016 240.7)",
+          "oklch(72.1% 0.016 240.7)",
+          "oklch(83.6% 0.016 240.7)",
+          "oklch(95.0% 0.010 240.7)"
+        ]
+      },
+      "hair": {
+        "role": "neutral",
+        "displayName": "Hair",
+        "canonical": "oklch(31.9% 0.018 238.7)",
+        "tonalRamp": [
+          "oklch(15.0% 0.011 238.7)",
+          "oklch(26.4% 0.011 238.7)",
+          "oklch(37.9% 0.018 238.7)",
+          "oklch(49.3% 0.018 238.7)",
+          "oklch(60.7% 0.018 238.7)",
+          "oklch(72.1% 0.018 238.7)",
+          "oklch(83.6% 0.018 238.7)",
+          "oklch(95.0% 0.011 238.7)"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Rule",
+        "canonical": "oklch(51.1% 0.021 227.6)",
+        "tonalRamp": [
+          "oklch(15.0% 0.013 227.6)",
+          "oklch(26.4% 0.013 227.6)",
+          "oklch(37.9% 0.021 227.6)",
+          "oklch(49.3% 0.021 227.6)",
+          "oklch(60.7% 0.021 227.6)",
+          "oklch(72.1% 0.021 227.6)",
+          "oklch(83.6% 0.021 227.6)",
+          "oklch(95.0% 0.013 227.6)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "oklch(89.3% 0.009 225.1)",
+        "tonalRamp": [
+          "oklch(15.0% 0.005 225.1)",
+          "oklch(26.4% 0.005 225.1)",
+          "oklch(37.9% 0.009 225.1)",
+          "oklch(49.3% 0.009 225.1)",
+          "oklch(60.7% 0.009 225.1)",
+          "oklch(72.1% 0.009 225.1)",
+          "oklch(83.6% 0.009 225.1)",
+          "oklch(95.0% 0.005 225.1)"
+        ]
+      },
+      "mute": {
+        "role": "neutral",
+        "displayName": "Mute",
+        "canonical": "oklch(67.1% 0.020 232.7)",
+        "tonalRamp": [
+          "oklch(15.0% 0.012 232.7)",
+          "oklch(26.4% 0.012 232.7)",
+          "oklch(37.9% 0.020 232.7)",
+          "oklch(49.3% 0.020 232.7)",
+          "oklch(60.7% 0.020 232.7)",
+          "oklch(72.1% 0.020 232.7)",
+          "oklch(83.6% 0.020 232.7)",
+          "oklch(95.0% 0.012 232.7)"
+        ]
+      },
+      "dim": {
+        "role": "neutral",
+        "displayName": "Dim",
+        "canonical": "oklch(56.7% 0.022 231.0)",
+        "tonalRamp": [
+          "oklch(15.0% 0.013 231.0)",
+          "oklch(26.4% 0.013 231.0)",
+          "oklch(37.9% 0.022 231.0)",
+          "oklch(49.3% 0.022 231.0)",
+          "oklch(60.7% 0.022 231.0)",
+          "oklch(72.1% 0.022 231.0)",
+          "oklch(83.6% 0.022 231.0)",
+          "oklch(95.0% 0.013 231.0)"
+        ]
+      },
+      "gold": {
+        "role": "primary",
+        "displayName": "Chart Gold",
+        "canonical": "oklch(79.6% 0.113 79.6)",
+        "tonalRamp": [
+          "oklch(15.0% 0.068 79.6)",
+          "oklch(26.4% 0.068 79.6)",
+          "oklch(37.9% 0.113 79.6)",
+          "oklch(49.3% 0.113 79.6)",
+          "oklch(60.7% 0.113 79.6)",
+          "oklch(72.1% 0.113 79.6)",
+          "oklch(83.6% 0.113 79.6)",
+          "oklch(95.0% 0.068 79.6)"
+        ]
+      },
+      "keep": {
+        "role": "secondary",
+        "displayName": "Keep Green",
+        "canonical": "oklch(80.1% 0.099 153.2)",
+        "tonalRamp": [
+          "oklch(15.0% 0.059 153.2)",
+          "oklch(26.4% 0.059 153.2)",
+          "oklch(37.9% 0.099 153.2)",
+          "oklch(49.3% 0.099 153.2)",
+          "oklch(60.7% 0.099 153.2)",
+          "oklch(72.1% 0.099 153.2)",
+          "oklch(83.6% 0.099 153.2)",
+          "oklch(95.0% 0.059 153.2)"
+        ]
+      },
+      "pass": {
+        "role": "secondary",
+        "displayName": "Pass Red",
+        "canonical": "oklch(74.8% 0.116 22.8)",
+        "tonalRamp": [
+          "oklch(15.0% 0.070 22.8)",
+          "oklch(26.4% 0.070 22.8)",
+          "oklch(37.9% 0.116 22.8)",
+          "oklch(49.3% 0.116 22.8)",
+          "oklch(60.7% 0.116 22.8)",
+          "oklch(72.1% 0.116 22.8)",
+          "oklch(83.6% 0.116 22.8)",
+          "oklch(95.0% 0.070 22.8)"
+        ]
+      },
+      "art": {
+        "role": "secondary",
+        "displayName": "Artifact Amber",
+        "canonical": "oklch(83.2% 0.116 86.7)",
+        "tonalRamp": [
+          "oklch(15.0% 0.070 86.7)",
+          "oklch(26.4% 0.070 86.7)",
+          "oklch(37.9% 0.116 86.7)",
+          "oklch(49.3% 0.116 86.7)",
+          "oklch(60.7% 0.116 86.7)",
+          "oklch(72.1% 0.116 86.7)",
+          "oklch(83.6% 0.116 86.7)",
+          "oklch(95.0% 0.070 86.7)"
+        ]
+      },
+      "running": {
+        "role": "tertiary",
+        "displayName": "Running Blue",
+        "canonical": "oklch(76.5% 0.065 243.0)",
+        "tonalRamp": [
+          "oklch(15.0% 0.039 243.0)",
+          "oklch(26.4% 0.039 243.0)",
+          "oklch(37.9% 0.065 243.0)",
+          "oklch(49.3% 0.065 243.0)",
+          "oklch(60.7% 0.065 243.0)",
+          "oklch(72.1% 0.065 243.0)",
+          "oklch(83.6% 0.065 243.0)",
+          "oklch(95.0% 0.039 243.0)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "head": {
+        "displayName": "Head",
+        "purpose": "Column heads, section heads, field labels; small caps at 0.08em in mute."
+      },
+      "chrome": {
+        "displayName": "Chrome",
+        "purpose": "Every interface string; the one chrome size, tabular figures."
+      },
+      "cell": {
+        "displayName": "Cell",
+        "purpose": "Generated prose inside a closed table row: a premise, a passage, a finding's quote."
+      },
+      "name": {
+        "displayName": "Name",
+        "purpose": "The draw name in a pane's head strip."
+      },
+      "prose": {
+        "displayName": "Prose",
+        "purpose": "An opened row's vignette, a brief, rendered markdown; 66ch."
+      },
+      "passage": {
+        "displayName": "Passage",
+        "purpose": "An opened passage or scene at reading width; 38rem, pre-wrap."
+      },
+      "mark": {
+        "displayName": "Mark",
+        "purpose": "The wordmark in the rail and the start form's title."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "The step log, probabilities, word counts, ids, times, slugs, mini nav letters."
+      }
+    },
+    "shadows": [
+      {
+        "name": "selection-bar",
+        "value": "inset 2px 0 0 #e3b463",
+        "purpose": "The left edge of the selected list row, nav link, facet option and opened table row. Running blue (#8fb8d9) on a list row whose draw is in flight. The only box-shadow in the system; there are no drop shadows."
+      }
+    ],
+    "motion": [
+      {
+        "name": "sweep",
+        "value": "sweep 1.6s linear infinite",
+        "purpose": "A 2px running-blue rule that travels under the thing in flight; still under prefers-reduced-motion."
+      },
+      {
+        "name": "state-transition",
+        "value": "color 0.12s, background-color 0.12s, border-color 0.12s",
+        "purpose": "Hover and press on a control, chip, nav link and link; only under no reduced-motion preference."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "shell-one-column",
+        "value": "1100px",
+        "purpose": "Under this the shell stacks: rail as a row, list pane above the reading pane."
+      },
+      {
+        "name": "pane-one-column",
+        "value": "1150px",
+        "purpose": "Container query on the reading pane: the draw body drops its 19rem aside under the table."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Control",
+      "kind": "button",
+      "refersTo": "btn",
+      "description": "The default control and its quiet form: small caps in a hairline box; the quiet one has no box until hover.",
+      "html": "<div style=\"display:flex;gap:0.5rem;align-items:center;background:#0d1114;padding:1rem\"><button class=\"ds-btn\">redraw</button><button class=\"ds-btn ds-btn-pad\">start the draw</button><button class=\"ds-btn ds-btn-quiet\">archive</button><button class=\"ds-btn\" disabled>delete</button></div>",
+      "css": ".ds-btn { font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 12.5px; line-height: 1.45; font-variant-caps: all-small-caps; letter-spacing: 0.08em; font-weight: 600; border: 1px solid #5a6970; border-radius: 0; padding: 0.1rem 0.55rem 0.2rem; color: #d6dde0; background: transparent; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.35rem; text-decoration: none; transition: color 0.12s, background-color 0.12s, border-color 0.12s; } .ds-btn:hover { border-color: #d6dde0; } .ds-btn:focus-visible { outline: 2px solid #e3b463; outline-offset: 1px; } .ds-btn:disabled { opacity: 0.45; cursor: default; } .ds-btn:disabled:hover { border-color: #5a6970; } .ds-btn-pad { padding: 0.35rem 0.9rem 0.45rem; } .ds-btn-quiet { color: #8a98a0; border-color: transparent; } .ds-btn-quiet:hover { color: #d6dde0; border-color: #5a6970; } .ds-btn-quiet[aria-pressed=\"true\"] { color: #d6dde0; border-color: #5a6970; }"
+    },
+    {
+      "name": "Primary Control",
+      "kind": "button",
+      "refersTo": "btn-primary",
+      "description": "The one gold fill on a surface: choose, pass brief, draw. Disabled drops to a dim hairline box.",
+      "html": "<div style=\"display:flex;gap:0.5rem;align-items:center;background:#0d1114;padding:1rem\"><button class=\"ds-btn ds-btn-primary\">choose</button><button class=\"ds-btn ds-btn-primary\" disabled>pass brief</button></div>",
+      "css": ".ds-btn { font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 12.5px; line-height: 1.45; font-variant-caps: all-small-caps; letter-spacing: 0.08em; font-weight: 600; border: 1px solid #5a6970; border-radius: 0; padding: 0.1rem 0.55rem 0.2rem; color: #d6dde0; background: transparent; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.35rem; text-decoration: none; transition: color 0.12s, background-color 0.12s, border-color 0.12s; } .ds-btn:hover { border-color: #d6dde0; } .ds-btn:focus-visible { outline: 2px solid #e3b463; outline-offset: 1px; } .ds-btn:disabled { opacity: 0.45; cursor: default; } .ds-btn:disabled:hover { border-color: #5a6970; } .ds-btn-primary { background: #e3b463; color: #0d1114; border-color: #e3b463; } .ds-btn-primary:hover:not(:disabled) { background: #e6bd75; border-color: #e6bd75; } .ds-btn-primary:disabled { background: transparent; color: #6a7981; border-color: #2a343b; }"
+    },
+    {
+      "name": "Verdict Controls",
+      "kind": "button",
+      "refersTo": "btn-keep",
+      "description": "Keep, pass and artifact: the verdict triad as coloured text on the hairline box; pressed takes an 18% wash of its own colour.",
+      "html": "<div style=\"display:flex;gap:0.5rem;align-items:center;background:#0d1114;padding:1rem\"><button class=\"ds-btn ds-btn-keep\">keep</button><button class=\"ds-btn ds-btn-pass\">pass</button><button class=\"ds-btn ds-btn-art\">artifact</button><button class=\"ds-btn ds-btn-keep\" aria-pressed=\"true\">keep</button></div>",
+      "css": ".ds-btn { font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 12.5px; line-height: 1.45; font-variant-caps: all-small-caps; letter-spacing: 0.08em; font-weight: 600; border: 1px solid #5a6970; border-radius: 0; padding: 0.1rem 0.55rem 0.2rem; color: #d6dde0; background: transparent; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.35rem; text-decoration: none; transition: color 0.12s, background-color 0.12s, border-color 0.12s; } .ds-btn:hover { border-color: #d6dde0; } .ds-btn:focus-visible { outline: 2px solid #e3b463; outline-offset: 1px; } .ds-btn:disabled { opacity: 0.45; cursor: default; } .ds-btn:disabled:hover { border-color: #5a6970; } .ds-btn-keep { color: #8bd1a0; } .ds-btn-pass { color: #ee8f8b; } .ds-btn-art { color: #e9c36a; } .ds-btn-keep[aria-pressed=\"true\"], .ds-btn-art[aria-pressed=\"true\"] { background: color-mix(in srgb, currentColor 18%, transparent); border-color: currentColor; }"
+    },
+    {
+      "name": "Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "A pressable filter in a hairline box; pressed takes the raised fill and a rule border.",
+      "html": "<div style=\"display:flex;gap:0.35rem;flex-wrap:wrap;background:#0d1114;padding:1rem\"><button class=\"ds-chip\" aria-pressed=\"true\">passages</button><button class=\"ds-chip\" aria-pressed=\"false\">stories</button><button class=\"ds-chip\" aria-pressed=\"false\">themes</button><button class=\"ds-chip\" aria-pressed=\"false\">briefs</button></div>",
+      "css": ".ds-chip { font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 12.5px; line-height: 1.45; border: 1px solid #2a343b; border-radius: 0; background: transparent; color: #8a98a0; padding: 0.15rem 0.5rem; cursor: pointer; white-space: nowrap; transition: color 0.12s, background-color 0.12s, border-color 0.12s; } .ds-chip:hover { color: #d6dde0; } .ds-chip[aria-pressed=\"true\"] { background: #1c242a; color: #d6dde0; border-color: #5a6970; } .ds-chip:focus-visible { outline: 2px solid #e3b463; outline-offset: 1px; }"
+    },
+    {
+      "name": "Marks",
+      "kind": "custom",
+      "refersTo": "mark",
+      "description": "State in a fixed cell: filled holds, hollow does not, a strike passes. Colour lives here and nowhere else.",
+      "html": "<div style=\"display:flex;gap:1.25rem;flex-wrap:wrap;background:#0d1114;padding:1rem;font-family:'Instrument Sans', system-ui, sans-serif;font-size:12.5px;color:#8a98a0\"><span><i class=\"ds-mark ds-mark-held\"></i> held</span><span><i class=\"ds-mark\"></i> open</span><span><i class=\"ds-mark ds-mark-wait\"></i> waiting</span><span><i class=\"ds-mark ds-mark-run\"></i> running</span><span><i class=\"ds-mark ds-mark-fail\"></i> failed</span><span><i class=\"ds-mark ds-mark-rep\"></i> repaired</span><span><i class=\"ds-mark ds-mark-art\"></i> artifact</span><span><i class=\"ds-mark ds-mark-gold\"></i> chosen</span><span><i class=\"ds-mark ds-mark-todo\"></i> to come</span><span><i class=\"ds-strike\"></i> passed</span></div>",
+      "css": ".ds-mark { display: inline-block; width: 9px; height: 9px; border: 1.5px solid #8a98a0; border-radius: 999px; vertical-align: -1px; } .ds-mark-held { background: #8bd1a0; border-color: #8bd1a0; } .ds-mark-wait { border-color: #e9c36a; } .ds-mark-fail { background: #ee8f8b; border-color: #ee8f8b; } .ds-mark-run { border-color: #8fb8d9; background: color-mix(in srgb, #8fb8d9 35%, transparent); } .ds-mark-todo { border-color: #2a343b; } .ds-mark-rep { background: #6a7981; border-color: #6a7981; } .ds-mark-art { background: #e9c36a; border-color: #e9c36a; } .ds-mark-gold { background: #e3b463; border-color: #e3b463; } .ds-strike { display: inline-block; width: 12px; height: 1.5px; background: #ee8f8b; vertical-align: 3px; }"
+    },
+    {
+      "name": "List Row",
+      "kind": "card",
+      "refersTo": "row",
+      "description": "A draw in the list pane: name and time, a mark and a status line, a two-line seed, the id. The selected row takes the raised fill and the gold inset bar.",
+      "html": "<div style=\"background:#151b1f;width:340px\"><div class=\"ds-row ds-row-on\" tabindex=\"0\"><div class=\"ds-row-l1\"><b>nineveh-novus-ground-3</b><span class=\"ds-row-when\">09:51 today</span></div><div class=\"ds-row-l2\"><i class=\"ds-row-mark ds-row-mark-wait\"></i>awaiting the gate<span class=\"ds-row-meta\">· setting-b · horror · standard</span></div><div class=\"ds-row-sd\">Nineveh Novus was a city under the ground, raised by hermetic sorcery by scholars who had fled the ruin of the old Nineveh, and filled with libraries.</div><div class=\"ds-row-rid\">20260915003123-a17c</div></div><div class=\"ds-row\" tabindex=\"0\"><div class=\"ds-row-l1\"><b>hired-hands-retrieving-5</b><span class=\"ds-row-when\">14:12 today</span></div><div class=\"ds-row-l2\"><i class=\"ds-row-mark ds-row-mark-run\"></i><span class=\"ds-sweep\">drafting</span><span class=\"ds-row-meta\">· unrestricted · horror · tail</span></div><div class=\"ds-row-sd\">Hired hands die retrieving a stranger's unnamed package, and the money paid for their families makes asking what it was a betrayal.</div><div class=\"ds-row-rid\">20260915211209-c264</div></div></div>",
+      "css": ".ds-row { display: grid; gap: 0.15rem; padding: 0.6rem 0.75rem; border-bottom: 1px solid #2a343b; cursor: pointer; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 12.5px; line-height: 1.45; color: #d6dde0; font-variant-numeric: tabular-nums; transition: background-color 0.12s; } .ds-row:hover { background: color-mix(in srgb, #1c242a 60%, transparent); } .ds-row-on { background: #1c242a; box-shadow: inset 2px 0 0 #e3b463; } .ds-row:focus-visible { outline: 2px solid #e3b463; outline-offset: 1px; } .ds-row-l1 { display: flex; justify-content: space-between; gap: 0.5rem; } .ds-row-l1 b { font-weight: 600; } .ds-row-when { color: #6a7981; font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; white-space: nowrap; } .ds-row-l2 { display: flex; align-items: center; gap: 0.5rem; color: #8a98a0; flex-wrap: wrap; } .ds-row-meta { color: #6a7981; } .ds-row-mark { display: inline-block; width: 9px; height: 9px; border: 1.5px solid #8a98a0; border-radius: 999px; } .ds-row-mark-wait { border-color: #e9c36a; } .ds-row-mark-run { border-color: #8fb8d9; background: color-mix(in srgb, #8fb8d9 35%, transparent); } .ds-sweep { position: relative; color: #8fb8d9; } .ds-sweep::after { content: \"\"; position: absolute; left: 0; right: 0; bottom: -2px; height: 2px; background: linear-gradient(90deg, transparent, #8fb8d9 40%, #8fb8d9 60%, transparent); background-size: 50% 100%; background-repeat: no-repeat; animation: ds-sweep 1.6s linear infinite; } @keyframes ds-sweep { from { background-position: -50% 0; } to { background-position: 150% 0; } } @media (prefers-reduced-motion: reduce) { .ds-sweep::after { animation: none; } } .ds-row-sd { font-family: 'Newsreader', Georgia, serif; font-style: italic; font-size: 13.5px; line-height: 1.4; color: #8a98a0; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; } .ds-row-rid { font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; font-size: 11px; color: #6a7981; }"
+    },
+    {
+      "name": "Ruled Table",
+      "kind": "custom",
+      "refersTo": "table-cell",
+      "description": "The draw as a table: small-caps heads over a 2px rule, hairlines between rows, a mono probability column with its bar, the opened row raised with a gold inset bar and its prose spanning beneath.",
+      "html": "<div style=\"background:#0d1114;padding:1rem\"><table class=\"ds-tt\"><thead><tr><th class=\"ds-th\">#</th><th class=\"ds-th\">p</th><th class=\"ds-th\"></th><th class=\"ds-th ds-premise\">premise</th><th class=\"ds-th\" style=\"text-align:center\">state</th><th class=\"ds-th\"></th></tr></thead><tbody><tr class=\"ds-tr ds-faded\"><td class=\"ds-td ds-num\">1</td><td class=\"ds-td ds-num\">0.42<div class=\"ds-band\">standard</div></td><td class=\"ds-td\"><div class=\"ds-bar\"><i style=\"width:68%\"></i></div></td><td class=\"ds-td ds-premise ds-serif\">A cartographer of the under-city maps the siege as it advances, tunnel by tunnel, in an account addressed to whoever digs down through the ash.</td><td class=\"ds-td\" style=\"text-align:center\"><i class=\"ds-tmark\"></i></td><td class=\"ds-td\" style=\"text-align:right\"><button class=\"ds-tbtn\">choose</button></td></tr><tr class=\"ds-tr ds-sel\"><td class=\"ds-td ds-num\">2</td><td class=\"ds-td ds-num\">0.48<div class=\"ds-band\">standard</div></td><td class=\"ds-td\"><div class=\"ds-bar\"><i class=\"ds-bar-gold\" style=\"width:77%\"></i></div></td><td class=\"ds-td ds-premise ds-serif\">A grandmaster of the hermetic college writes his confession in the sealed vault where the Solomonic tablets were unlocked, while the city burns above and below him.</td><td class=\"ds-td\" style=\"text-align:center\"><i class=\"ds-tmark\"></i></td><td class=\"ds-td\" style=\"text-align:right\"><button class=\"ds-tbtn ds-tbtn-primary\">choose</button></td></tr><tr class=\"ds-tr ds-spans\"><td class=\"ds-td\" colspan=\"6\"><div class=\"ds-prose\">He admits what they did: they took an angel apart to learn its architecture, and a demon, and made from both a thing that was neither and that fed. The fire from the Church is punishment; the fire from below is a retrieval.</div><div class=\"ds-words\">412 words</div></td></tr></tbody></table></div>",
+      "css": ".ds-tt { width: 100%; border-collapse: collapse; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 12.5px; line-height: 1.45; color: #d6dde0; font-variant-numeric: tabular-nums; } .ds-th { text-align: left; padding: 0.25rem 0.5rem 0.35rem; border-bottom: 2px solid #5a6970; vertical-align: bottom; font-size: 11px; line-height: 1.4; font-variant-caps: all-small-caps; letter-spacing: 0.08em; color: #8a98a0; font-weight: 500; } .ds-td { padding: 0.55rem 0.5rem; border-bottom: 1px solid #2a343b; vertical-align: top; } .ds-tr { cursor: pointer; } .ds-tr:hover .ds-td { background: color-mix(in srgb, #1c242a 60%, transparent); } .ds-sel .ds-td { background: #1c242a; } .ds-sel .ds-td:first-child { box-shadow: inset 2px 0 0 #e3b463; } .ds-faded .ds-td { color: #6a7981; } .ds-num { font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; white-space: nowrap; } .ds-band { color: #8a98a0; } .ds-premise { min-width: 18rem; } .ds-serif { font-family: 'Newsreader', Georgia, serif; font-size: 14px; line-height: 1.45; text-wrap: pretty; } .ds-bar { height: 5px; background: #1c242a; width: 100%; min-width: 3rem; margin-top: 0.4rem; } .ds-bar i { display: block; height: 100%; background: #8a98a0; } .ds-bar-gold { background: #e3b463 !important; } .ds-tmark { display: inline-block; width: 9px; height: 9px; border: 1.5px solid #8a98a0; border-radius: 999px; vertical-align: -1px; } .ds-tbtn { font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 12.5px; line-height: 1.45; font-variant-caps: all-small-caps; letter-spacing: 0.08em; font-weight: 600; border: 1px solid #5a6970; border-radius: 0; padding: 0.1rem 0.55rem 0.2rem; color: #d6dde0; background: transparent; cursor: pointer; } .ds-tbtn:hover { border-color: #d6dde0; } .ds-tbtn-primary { background: #e3b463; color: #0d1114; border-color: #e3b463; } .ds-tbtn:focus-visible { outline: 2px solid #e3b463; outline-offset: 1px; } .ds-spans .ds-td { padding: 1rem 0.5rem 1.25rem 4.75rem; border-bottom: 2px solid #5a6970; cursor: default; } .ds-spans:hover .ds-td { background: transparent; } .ds-prose { font-family: 'Newsreader', Georgia, serif; font-size: 16px; line-height: 1.55; max-width: 66ch; text-wrap: pretty; } .ds-words { font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; color: #6a7981; margin-top: 0.75rem; }"
+    },
+    {
+      "name": "Section Head",
+      "kind": "custom",
+      "refersTo": "head",
+      "description": "A small-caps head with a dim note after it; the same style heads a table column above the 2px rule.",
+      "html": "<div style=\"background:#0d1114;padding:1rem\"><h2 class=\"ds-head\">premises<span class=\"ds-head-note\"> · lowest probability first · 5 vignettes</span></h2><h2 class=\"ds-head\">examples<span class=\"ds-head-note\"> · 6 passages the premises were drawn against</span></h2></div>",
+      "css": ".ds-head { font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 11px; line-height: 1.4; font-variant-caps: all-small-caps; letter-spacing: 0.08em; color: #8a98a0; font-weight: 500; margin: 1.5rem 0 0.25rem; display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; } .ds-head:first-child { margin-top: 0; } .ds-head-note { font-variant-caps: normal; letter-spacing: 0; color: #6a7981; font-weight: 400; }"
+    },
+    {
+      "name": "Segmented Control",
+      "kind": "button",
+      "refersTo": "seg-item",
+      "description": "A choice of one: small-caps segments in one rule border; the pressed segment reverses to ink on desk.",
+      "html": "<div style=\"background:#0d1114;padding:1rem\"><div class=\"ds-seg\" role=\"group\" aria-label=\"Gate\"><button aria-pressed=\"true\">manual</button><button aria-pressed=\"false\">auto</button></div></div>",
+      "css": ".ds-seg { display: inline-flex; border: 1px solid #5a6970; border-radius: 0; } .ds-seg button { appearance: none; border: 0; background: transparent; color: #8a98a0; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 12.5px; line-height: 1.45; font-variant-caps: all-small-caps; letter-spacing: 0.08em; font-weight: 600; padding: 0.15rem 0.7rem 0.25rem; cursor: pointer; transition: color 0.12s, background-color 0.12s; } .ds-seg button:hover { color: #d6dde0; } .ds-seg button + button { border-left: 1px solid #5a6970; } .ds-seg button[aria-pressed=\"true\"] { background: #d6dde0; color: #0d1114; } .ds-seg button:focus-visible { outline: 2px solid #e3b463; outline-offset: 1px; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "A desk-filled box with a hairline border; the border goes rule on hover and the outline goes gold on focus.",
+      "html": "<div style=\"display:flex;gap:0.5rem;align-items:center;background:#0d1114;padding:1rem\"><input class=\"ds-input\" type=\"text\" placeholder=\"note for the log\" /><select class=\"ds-select\"><option>any author</option><option>Ted Chiang</option></select></div>",
+      "css": ".ds-input, .ds-select { font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 12.5px; line-height: 1.45; background: #0d1114; color: #d6dde0; border: 1px solid #2a343b; border-radius: 0; padding: 0.3rem 0.5rem; width: 14rem; } .ds-input:hover, .ds-select:hover { border-color: #5a6970; } .ds-input::placeholder { color: #6a7981; } .ds-input:focus-visible { outline: 2px solid #e3b463; outline-offset: 1px; } .ds-select:focus-visible { outline: 2px solid #e3b463; outline-offset: 1px; } .ds-select { appearance: none; padding-right: 1.8rem; min-width: 12rem; cursor: pointer; background-image: url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M1 1l4 4 4-4' fill='none' stroke='%238a98a0' stroke-width='1.5'/></svg>\"); background-repeat: no-repeat; background-position: right 0.6rem center; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Tide Table",
+    "overview": "A nautical almanac read at a chart table at night. The desk is cold and near black; the panes are dusky sheets one step lighter, never cream. The draw is a table before it is a page: five premises are five rows of one ruled table, ranked by a column of numbers, and the prose is a row that opens. The world refuses the card-and-pill dashboard and the chat transcript.\n\nHierarchy is carried by rule, case, weight and tone, not by size or by boxes. Two rule weights do the structural work: a hairline between rows and a heavy rule under every column head. Column heads are small-caps sans. Every number is tabular and set in the mono. Generated prose is the serif, at cell size in a row and at reading size only when the row is open. State is a mark in a fixed cell: filled holds, hollow does not, a strike passes, a tick confirms. Colour lives on the mark and on the verdict control that casts it; the surfaces stay grey. Gold marks the operator's position: the focused control, the one primary control on a surface, the inset bar of the opened row.\n\nThe product voice is terse and factual, and the chrome matches it: short lower-case labels, no exclamation, no marketing register. Density is a feature; the operator reads twenty rows at once on purpose.",
+    "keyCharacteristics": [
+      "One chrome size (12.5px); rank by weight, small caps, tone and rule",
+      "Three type registers: sans for the interface, serif for generated prose, mono for every number and identifier",
+      "Two rule weights: 1px hair between rows, 2px rule under a head",
+      "Colour on the mark and the verdict control only; no coloured fill, panel or border",
+      "Gold for the operator's position: focus, one primary control, the selection bar",
+      "Square corners everywhere but the round mark; no drop shadows",
+      "The running state is a sweep under the thing in flight, not a spinner"
+    ],
+    "rules": [
+      {
+        "name": "The Marks-Only Rule",
+        "body": "Colour belongs to the mark, to the state word beside it, and to the verdict control that casts it. No surface, panel, border or row takes a verdict colour; the only coloured fills are the mark, the primary control, and low-alpha washes on a pressed verdict control (18%), a running mark (35%) and the open log row (14%).",
+        "section": "colors"
+      },
+      {
+        "name": "The One Gold Rule",
+        "body": "Gold is where the operator is: the focus ring, one primary control per surface, the 2px inset bar on the selected row, and the chosen candidate's bar and mark. A second gold fill on a surface is a defect.",
+        "section": "colors"
+      },
+      {
+        "name": "The Three-Step Tone Rule",
+        "body": "Text has three tones: ink for the thing, mute for the label of the thing, dim for the note about it. Rank is tone, never a fourth grey.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Chrome Size Rule",
+        "body": "Interface text is 12.5px. Rank inside the chrome is weight (500, 600), small caps, the ink/mute/dim step and the rule under it. Never add a second chrome size.",
+        "section": "typography"
+      },
+      {
+        "name": "The Three Registers Rule",
+        "body": "Sans for the interface, serif for what the pipeline wrote, mono for every number and identifier. A number in the sans is a defect; a label in the serif is a defect.",
+        "section": "typography"
+      },
+      {
+        "name": "The Reading-Size Rule",
+        "body": "The serif sits at cell size (14px) while a row is closed and reaches reading size (16px, 17.5px for a passage) only in the opened row's span. Nothing else grows when opened.",
+        "section": "typography"
+      },
+      {
+        "name": "The Two Rules Rule",
+        "body": "Every division is a 1px hairline or a 2px rule. There is no third weight, no box and no shadow.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Fill-In-Hand Rule",
+        "body": "The raised fill marks one thing per pane: the row that is selected or open. Hover is the same fill at 60%. Nothing else is filled.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do set every number and identifier in IBM Plex Mono with tabular figures; a probability, a word count, a time, an id, a slug.",
+      "Do rank chrome by weight, small caps and the ink/mute/dim step at one size (12.5px); a column head is 11px small caps at 500.",
+      "Do divide with the two rule weights only: a 1px hairline between rows, a 2px rule under a head, a strip and an action row.",
+      "Do mark the selected or opened row with the raised fill and the 2px gold inset bar, and fade the rows beside an opened one to dim.",
+      "Do put state in a fixed column as a mark: filled holds, hollow does not, a strike passes; colour on the mark, its state word and its verdict control.",
+      "Do keep one gold primary control per surface and give focus the 2px gold outline.",
+      "Do show a running step as the sweep under it and a ticking seconds cell.",
+      "Do open generated prose in a span row under its table row, in the serif at 16px and 66ch; a passage at 17.5px and 38rem.",
+      "Do keep every corner square except the round mark."
+    ],
+    "donts": [
+      "Don't add a box, a card, a panel or a coloured fill to fix hierarchy; fix it with a rule, a weight or a tone.",
+      "Don't add a second chrome size, a drop shadow or a third rule weight.",
+      "Don't put a state word in a pill, or fill a row, a panel or a surface by its state; state is the mark, the inset bar, the strip's rule and the sweep.",
+      "Don't spend gold on a second fill, a heading or decoration; gold is the operator's position.",
+      "Don't set a number in the sans, or a label in the serif; the serif is for what the pipeline wrote.",
+      "Don't round a control, a chip, an input or a table cell; the mark is the only circle.",
+      "Don't use a spinner, a pulsing dot or a progress ring for a running state.",
+      "Don't raise the interface register: labels stay short, lower case and factual, with no exclamation."
+    ]
+  }
+}
