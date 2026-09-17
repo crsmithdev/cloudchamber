@@ -126,6 +126,16 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
   return { pass, findings: merged.filter((c) => !dropped.has(c.id)), claims };
 }
 
+/**
+ * Verify readings per pass. A finding stays only when every reading keeps it.
+ * One reading kept a borderline line about one time in five and dropped it the
+ * rest ("12:41" against a noon break of no stated length, on the fresh draw);
+ * over a chain of passes that was enough to repair it. Two readings that must
+ * agree cut that to about one in twenty-five, and a real finding one reading
+ * drops comes back on the next pass.
+ */
+export const VERIFY_READINGS = 2;
+
 export const NOT_IN_PROSE = "the span is not in a vignette or the ending, which is all a reader of the story sees";
 
 /**
@@ -145,8 +155,11 @@ async function verifyFindings(p: Pipeline, drawId: string, parts: BriefParts, br
   if (!subject.length) return out;
   const findings = subject.map((c, i) => `${i + 1}. span: "${c.span}"\n   statement: ${c.statement}\n   result: ${c.result}\n   evidence: ${c.evidence}`).join("\n");
   const cap = String(50 + 40 * subject.length);
-  const { value } = await p.invoke(drawId, parts.outlineStepId, "check-verify", fill("checkVerify", { brief, ledger: ledger ? fill("pinnedLedger", { ledger }) : "", findings, cap }), (t) => parseVerdicts(t, subject.length));
-  value.forEach((v, i) => { if (v.answer === "drop") out.set(subject[i].id, v.why); });
+  const prompt = fill("checkVerify", { brief, ledger: ledger ? fill("pinnedLedger", { ledger }) : "", findings, cap });
+  const readings = await Promise.all(Array.from({ length: VERIFY_READINGS }, () =>
+    p.invoke(drawId, parts.outlineStepId, "check-verify", prompt, (t) => parseVerdicts(t, subject.length)).then((r) => r.value)));
+  // dropped when any reading drops it; the first reading that drops it gives the reason
+  subject.forEach((c, i) => { const drop = readings.map((r) => r[i]).find((v) => v.answer === "drop"); if (drop) out.set(c.id, drop.why); });
   return out;
 }
 

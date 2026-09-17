@@ -61,7 +61,7 @@ describe("check and gate 1", () => {
     const { model, p, d, draw } = await drawn();
     const r = await d.check(draw.id);
     expect(p.draw(draw.id).status).toBe("awaiting_check_gate");
-    expect(stagesOf(model, /^check-/).sort()).toEqual(["check-derivation", "check-derivation", "check-derivation", "check-ledger", "check-ledger", "check-ledger", "check-resemblance", "check-structure", "check-verify"]);
+    expect(stagesOf(model, /^check-/).sort()).toEqual(["check-derivation", "check-derivation", "check-derivation", "check-ledger", "check-ledger", "check-ledger", "check-resemblance", "check-structure", "check-verify", "check-verify"]);
     expect(r.claims).toBe("off");
     // A recurs 3/3 in both checkers and merges; B recurs 2/3; C (1/3) is not stored
     const f = d.findings(draw.id);
@@ -912,8 +912,11 @@ describe("auto acts on reported findings only, and reads its accepted set agains
 describe("the verify pass", () => {
   test("a reported finding the verify pass drops goes under the bar with the reason, and the gate does not see it", async () => {
     const script = draftScript({
-      // A and B are reported, C is under the bar; one call reads all three
-      "check-verify": [`<verdict n="1"><answer>keep</answer><why>holds</why></verdict><verdict n="2"><answer>drop</answer><why>the span does not name the relic</why></verdict><verdict n="3"><answer>drop</answer><why>the silk is never wet</why></verdict>`],
+      // A and B are reported, C is under the bar; each of two readings reads all three, and one drop is enough
+      "check-verify": [
+        `<verdict n="1"><answer>keep</answer><why>holds</why></verdict><verdict n="2"><answer>drop</answer><why>the span does not name the relic</why></verdict><verdict n="3"><answer>keep</answer><why>holds</why></verdict>`,
+        `<verdict n="1"><answer>keep</answer><why>holds</why></verdict><verdict n="2"><answer>keep</answer><why>holds</why></verdict><verdict n="3"><answer>drop</answer><why>the silk is never wet</why></verdict>`,
+      ],
     });
     const { d, draw, model } = await drawn(script);
     const r = await d.check(draw.id);
@@ -924,6 +927,7 @@ describe("the verify pass", () => {
     expect([b.reported, (b as any).dropped]).toEqual([false, "the span does not name the relic"]);
     expect((all.find((f) => f.span === SPAN_C) as any).dropped).toBe("the silk is never wet");   // under the bar and dropped: the reason is kept
     expect(model.calls.find((c) => c.stage === "check-verify")!.prompt).toContain(`3. span: "${SPAN_C}"`);
+    expect(model.calls.filter((c) => c.stage === "check-verify")).toHaveLength(2);   // two readings of one pass
     expect(model.calls.find((c) => c.stage === "check-verify")!.prompt).toContain(`1. span: "${SPAN_A}"`);
     expect(model.calls.find((c) => c.stage === "check-verify")!.prompt).toContain(`2. span: "${SPAN_B}"`);
   });
@@ -933,7 +937,10 @@ describe("the verify pass", () => {
     const script = draftScript({
       "check-ledger": [...ledgerSamples(), ...cleanSamples(), ...cleanSamples()],
       "check-derivation": [...derivationSamples(), ...cleanSamples(), ...cleanSamples()],
-      "check-verify": [`<verdict n="1"><answer>drop</answer><why>the span is a figure of speech</why></verdict><verdict n="2"><answer>keep</answer><why>holds</why></verdict><verdict n="3"><answer>keep</answer><why>holds</why></verdict>`],
+      "check-verify": [
+        `<verdict n="1"><answer>drop</answer><why>the span is a figure of speech</why></verdict><verdict n="2"><answer>keep</answer><why>holds</why></verdict><verdict n="3"><answer>keep</answer><why>holds</why></verdict>`,
+        `<verdict n="1"><answer>keep</answer><why>holds</why></verdict><verdict n="2"><answer>keep</answer><why>holds</why></verdict><verdict n="3"><answer>keep</answer><why>holds</why></verdict>`,
+      ],
     });
     const { d, draw, model } = await drawn(script);
     await d.check(draw.id);
