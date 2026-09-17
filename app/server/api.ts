@@ -257,7 +257,6 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
       }
       if (action === "dismiss") { if (!finding) return reply.code(400).send({ error: "finding required" }); return drafting.dismiss(id, finding, note); }
       if (action === "hold") return drafting.hold(id);
-      if (action === "pass") return pipeline.draw(id).status === "awaiting_draft_gate" ? drafting.passDraft(id, note) : drafting.passBrief(id, note);
       if (action === "keep") return drafting.keep(id, note);
       // a patch is a text substitution, so it answers on this request rather than through running
       if (action === "patch") return drafting.patch(id, findings ?? (finding ? [finding] : undefined), note);
@@ -284,7 +283,7 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
         running.set(forkId, started.catch(() => undefined));
         return reply.code(202).send({ id: forkId, forked_from: id });
       }
-      return reply.code(400).send({ error: "action must be choose | fork | flag | archive | unarchive | accept | auto | dismiss | hold | pass | keep | patch | rewrite" });
+      return reply.code(400).send({ error: "action must be choose | fork | flag | archive | unarchive | accept | auto | dismiss | hold | keep | patch | rewrite" });
     } catch (e: any) { return reply.code(400).send({ error: e.message }); }
   });
 

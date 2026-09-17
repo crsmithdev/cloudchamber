@@ -16,7 +16,6 @@ export const LABEL: Record<string, string> = {
   repairing: "repairing",
   drafting: "drafting",
   drafted: "drafted",
-  passed: "passed",
   repaired: "repaired",
   running: "running",
 };
@@ -504,7 +503,7 @@ export function Log({ d, stepId, onStep, ideation }: { d: Detail; stepId: string
   for (const s of flat) ofStage.set(s.stage, [...(ofStage.get(s.stage) ?? []), s]);
   const seen = new Set(d.steps.map((s) => s.stage));
   const inFlight = d.draw.status === "awaiting_gate" || d.draw.status === "running";
-  const developed = !["awaiting_gate", "running", "done", "failed", "rejected"].includes(d.draw.status);
+  const developed = !["awaiting_gate", "running", "done", "failed"].includes(d.draw.status);
   const noteFor = (s: Step) => {
     const c = cand.get(s.id);
     const runs = ofStage.get(s.stage) ?? [];

@@ -1,13 +1,13 @@
 /**
  * The stages after a brief, and the two gates:
  *
- *   brief → check → GATE 1 (accept | dismiss | hold | pass | flag | draft)
+ *   brief → check → GATE 1 (accept | dismiss | hold | flag | draft)
  *         → repair → check again → GATE 1
- *         → schedule → scene ×M → screen ×M → GATE 2 (keep | patch | rewrite k | pass)
+ *         → schedule → scene ×M → screen ×M → GATE 2 (keep | patch | rewrite k)
  *         → drafts/<draw>/
  *
  * Statuses on the draw: done → awaiting_check_gate → repairing | drafting →
- * awaiting_draft_gate → drafted | passed. A repaired brief is a new draw
+ * awaiting_draft_gate → drafted. A repaired brief is a new draw
  * (repaired_from) and the source becomes `repaired`. `--auto` works gate 1 by
  * the mechanical rule and stops at gate 2.
  */
@@ -131,13 +131,6 @@ export class Drafting {
   }
 
   hold(drawId: string): DrawRow { return this.must(drawId, "awaiting_check_gate"); }
-
-  passBrief(drawId: string, note = ""): DrawRow {
-    this.must(drawId, "awaiting_check_gate", "done");
-    record(this.p.db, { kind: "brief", target_id: drawId, verdict: "pass", method: "gate", note });
-    this.p.db.query("UPDATE draws SET status = 'passed', ended_at = ? WHERE id = ?").run(now(), drawId);
-    return this.p.draw(drawId);
-  }
 
   // --- stages 3 to 5 ---------------------------------------------------------
 
@@ -344,13 +337,6 @@ export class Drafting {
     const dir = exportDraft(this.p, drawId, resolved, gate2, this.opts.draftsDir, this.p.briefsDir);
     this.p.db.query("UPDATE draws SET status = 'drafted', ended_at = ? WHERE id = ?").run(now(), drawId);
     return { draw: this.p.draw(drawId), dir };
-  }
-
-  passDraft(drawId: string, note = ""): DrawRow {
-    this.must(drawId, "awaiting_draft_gate");
-    record(this.p.db, { kind: "draft", target_id: drawId, verdict: "pass", method: "gate", note });
-    this.p.db.query("UPDATE draws SET status = 'passed', ended_at = ? WHERE id = ?").run(now(), drawId);
-    return this.p.draw(drawId);
   }
 
   // --- reads -----------------------------------------------------------------

@@ -159,7 +159,6 @@ async function main() {
         : action === "auto" ? await d.autoRounds(drawId!, { note: values.note || undefined })
         : action === "dismiss" ? (args[0] ? d.dismiss(drawId!, args[0], values.note) : usage())
         : action === "hold" ? d.hold(drawId!)
-        : action === "pass" ? (p.draw(drawId!).status === "awaiting_draft_gate" ? d.passDraft(drawId!, values.note) : d.passBrief(drawId!, values.note))
         : action === "keep" ? d.keep(drawId!, values.note)
         : action === "rewrite" ? (args[0] ? await d.rewrite(drawId!, Number(args[0]), values.finding) : usage())
         : action === "patch" ? d.patch(drawId!, args, values.note)

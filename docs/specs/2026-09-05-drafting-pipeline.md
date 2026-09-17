@@ -104,12 +104,12 @@ or prose.
 
 ```
 brief → check ×K (parallel, S samples each)
-      → GATE 1: accept findings | dismiss | hold | pass | flag | draft
+      → GATE 1: accept findings | dismiss | hold | flag | draft
       → repair (accepted replacements as constraints) → check again, once → GATE 1
       → schedule (beats, form, withholding)
       → scene ×M (each a fresh call)
       → screen ×M (ledger, structure, slop)
-      → GATE 2: keep | patch | rewrite scene k | pass
+      → GATE 2: keep | patch | rewrite scene k
       → drafts/<draw>/
 ```
 
@@ -167,7 +167,7 @@ stages are the next landing, not this one.
 9. WHEN repair runs THE system SHALL create a new draw row with `repaired_from` set to the source draw, copying setting, genre, mode, segment, seed, examples and domains; set `superseded_by` on the source and its status to `repaired`; rewrite the chosen vignette from itself only if an accepted finding's span is inside it, else copy it; re-derive the outline with a `<constraints>` block; run jobs and two context vignettes; and rewrite the ending from itself only if an accepted finding's span is inside it or its `invalidates` is `arithmetic` or `custody`, else copy it. The new brief directory's trail SHALL carry `## repaired_from` with the source id and the constraint lines.
 10. WHEN repair completes THE system SHALL run the check stage on the new draw without a further command, up to `repair.rounds` automatic rounds, then leave it in `awaiting_check_gate`. A further round SHALL require `cloudchamber gate <draw> accept`.
 11. WHEN a repaired brief is written THE system SHALL include `ending.md` and, when the ending was rewritten, `ending.previous.md`.
-12. WHEN `cloudchamber gate <draw> hold` runs THE system SHALL change nothing and exit 0; WHEN `pass` runs THE system SHALL append a `brief` verdict `pass` and set status `passed`; WHEN `flag [--note]` runs THE system SHALL set `flagged` and the note and start nothing.
+12. WHEN `cloudchamber gate <draw> hold` runs THE system SHALL change nothing and exit 0; WHEN `flag [--note]` runs THE system SHALL set `flagged` and the note and start nothing.
 13. WHEN `cloudchamber draft <draw> [overrides]` runs in `awaiting_check_gate` or `done` THE system SHALL resolve the configuration (defaults, then profile, then flags), store it on the draw as `draft_config` JSON, run `schedule`, then `scene` ×M, then screens, and move the draw to `awaiting_draft_gate`. IF a finding was accepted and repair has not run THEN THE system SHALL exit 1 with `accepted findings pending repair`.
 14. WHEN the schedule step completes THE system SHALL store a `schedule` artifact with `form` and one entry per beat (`n`, `words`, `job`, `known`, `withheld` as a list of `{item, until}`, `stakes`, `absorbs`); IF the beat count is outside `beats.min..beats.max`, or any cap is outside `words_min..words_max`, or the caps sum to more than `length.words × (1 + tolerance)` or less than `length.words × (1 − tolerance)`, or any of `chosen`, `context-1`, `context-2`, `ending` appears in more than one beat's `absorbs`, THEN THE system SHALL fail the step `shape` and retry once per the adapter's table.
 15. IF `beats.count` is an integer THEN THE schedule prompt SHALL ask for exactly that many beats and the shape check SHALL require it. IF a `[form]` key is not `auto` THEN THE schedule prompt SHALL state it as fixed and the parsed `form` SHALL match it.
@@ -179,7 +179,7 @@ stages are the next landing, not this one.
 21. WHEN `cloudchamber story <draw>` runs THE system SHALL print the scenes in beat order separated by `* * *`, each screen finding inline after its scene as `[screen-<name> beat k] span → replacement`, and a footer `checked on <model family>; judge and generator share a family`.
 21a. WHEN `cloudchamber gate <draw> patch [<flag>...]` runs in `awaiting_draft_gate` THE system SHALL substitute each named open flag's `<patch>` for its `<span>` in the scene of its beat, matching the span loosely on whitespace, store the result as a new `scene` artifact on a `patched` step, record verdict `finding` `keep` for each flag it lands, and make no model call. IF no flag is named THEN THE system SHALL attempt every open flag. IF a flag has no patch, or its span is no longer in the scene, THEN THE system SHALL leave it open and report why.
 22. WHEN `cloudchamber gate <draw> rewrite <k> [--finding <id>]` runs in `awaiting_draft_gate` THE system SHALL run one `scene` step for beat k with the named finding's replacement (or all of beat k's reported replacements) in a `<constraints>` block and the kept scenes 1..k−1 as scenes so far, replace scene k, re-run the screens on k and k+1 only, and return to `awaiting_draft_gate`. IF k is the last beat THEN THE system SHALL re-screen k only.
-23. WHEN `cloudchamber gate <draw> keep` runs in `awaiting_draft_gate` THE system SHALL append a `draft` verdict `keep`, write `drafts/<draw>/` with `story.md`, `schedule.md`, `findings.md`, `config.toml`, `trail.md`, and set status `drafted`; WHEN `pass` runs THE system SHALL append a `draft` verdict `pass` and set status `passed`.
+23. WHEN `cloudchamber gate <draw> keep` runs in `awaiting_draft_gate` THE system SHALL append a `draft` verdict `keep`, write `drafts/<draw>/` with `story.md`, `schedule.md`, `findings.md`, `config.toml`, `trail.md`, and set status `drafted`. A brief or draft the operator does not want is archived, not passed; archive is the only way off the board.
 24. WHEN `drafts/<draw>/findings.md` is written THE file SHALL contain the latest check pass's reported findings with each one's gate 1 decision (`accepted`, `dismissed: <note>`, or `open`), then the screen findings by beat.
 25. WHEN `cloudchamber draft <draw> --auto` runs THE system SHALL run the check stage if none has run, accept every `finding` from derivation, ledger and claims whose `n` equals that checker's sample count and whose `evidence` is not `none`, dismiss the rest with note `auto`, run repair and re-check up to `repair.rounds` times, then schedule, scenes and screens, and stop in `awaiting_draft_gate`. Structure and resemblance findings SHALL never be accepted by the rule.
 26. WHEN a stage in `stages.toml` declares `tools` THE adapter SHALL pass `--tools <list> --allowedTools <list>`; otherwise `--tools ""`. The step row SHALL store the tool list in a `tools` column.

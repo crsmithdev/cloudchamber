@@ -40,7 +40,7 @@ export const markFor = (status: string): MarkState =>
         ? "fail"
         : status === "repaired"
           ? "rep"
-          : status === "done" || status === "drafted" || status === "passed"
+          : status === "done" || status === "drafted"
             ? "held"
             : "";
 

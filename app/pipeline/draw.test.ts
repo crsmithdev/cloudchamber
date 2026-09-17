@@ -9,7 +9,6 @@ import { openDb, type Db } from "./store/db.ts";
 import { FakeModel } from "./model.ts";
 import { Pipeline, StepFailure } from "./draw.ts";
 import { originOf, stageOf } from "./stage.ts";
-import { record } from "./verdicts.ts";
 import { TEMPLATES, checkTemplate } from "./prompts.ts";
 import { loadStages } from "./config.ts";
 
@@ -390,11 +389,6 @@ describe("draw graph", () => {
     const fork = await p.fork(draw.id, cs[1].step_id);
     expect(stageOf(db, fork)).toBe("check");
     expect(originOf(p, fork.id)).toMatchObject({ id: draw.id, name: draw.name, index: 2 });
-    // gate 1 and gate 2 both write `passed`; the verdict says which gate it was
-    db.query("UPDATE draws SET status = 'passed' WHERE id = ?").run(fork.id);
-    expect(stageOf(db, p.draw(fork.id))).toBe("check");
-    record(db, { kind: "draft", target_id: fork.id, verdict: "pass", method: "gate" });
-    expect(stageOf(db, p.draw(fork.id))).toBe("write");
     // a repair sets chosen_step a few seconds in; the link to the brief it repairs holds the stage until then
     expect(stageOf(db, { id: "x", status: "running", chosen_step: null, repaired_from: draw.id })).toBe("check");
   });

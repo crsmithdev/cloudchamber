@@ -369,15 +369,12 @@ describe("check and gate 1", () => {
     }
   });
 
-  test("pass at gate 1 records a brief verdict and ends the draw; flag starts nothing", async () => {
+  test("flag at gate 1 starts nothing and keeps the gate open", async () => {
     const { p, d, draw } = await drawn();
     await d.check(draw.id);
     p.flag(draw.id, "looks wrong");
-    expect(p.draw(draw.id).status).toBe("awaiting_check_gate");
-    const out = d.passBrief(draw.id, "not this one");
-    expect(out.status).toBe("passed");
-    expect(latest(p.db, "brief", draw.id)).toMatchObject({ verdict: "pass", note: "not this one" });
-    expect(readLog(VERDICT_LOG).filter((v) => v.kind === "brief" && v.target_id === draw.id)).toHaveLength(1);
+    expect(p.draw(draw.id)).toMatchObject({ status: "awaiting_check_gate", flagged: 1, flag_note: "looks wrong" });
+    expect(readLog(VERDICT_LOG).filter((v) => v.kind === "brief" && v.target_id === draw.id)).toHaveLength(0);
   });
 });
 
@@ -665,11 +662,6 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(trail).toContain("- scene: claude-opus-5");
     expect(latest(p.db, "draft", draw.id)).toMatchObject({ verdict: "keep", note: "good enough" });
     expect(() => d.keep(draw.id)).toThrow(/is drafted, not awaiting_draft_gate/);
-    // pass at gate 2 on another draw
-    const { d: d2, draw: draw2, p: p2 } = await drawn();
-    await d2.draft(draw2.id);
-    expect(d2.passDraft(draw2.id, "flat").status).toBe("passed");
-    expect(latest(p2.db, "draft", draw2.id)).toMatchObject({ verdict: "pass", note: "flat" });
   });
 
   test("--auto: accepts findings at or above the score floor, dismisses the rest, repairs, re-checks, drafts, stops at gate 2", async () => {

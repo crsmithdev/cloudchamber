@@ -5,8 +5,8 @@ import { Bar, Btn, Caret as Chevron, Facts, Field, Head, Icon, Mark, Seg, lastSe
 
 /**
  * Develop a brief: the stages after a brief (docs/specs/2026-09-05-drafting-pipeline.md).
- * The list holds briefs from the moment they exist to the moment they are kept
- * or passed; the reading pane is the findings at gate 1, the story with its
+ * The list holds briefs from the moment they exist to the moment they are kept;
+ * the reading pane is the findings at gate 1, the story with its
  * screens at gate 2, or the running log in between.
  */
 const OPEN = new Set(["awaiting_check_gate", "awaiting_draft_gate"]);
@@ -267,7 +267,7 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
               <StoryPane d={d} onAct={act} aside={aside} />
             ) : d.draw.status === "awaiting_check_gate" || d.draw.status === "repaired" ? (
               <GateOne d={d} onAct={act} onDraft={() => setSettings(true)} aside={aside} />
-            ) : d.draw.status === "done" || d.draw.status === "passed" ? (
+            ) : d.draw.status === "done" ? (
               <BriefReady d={d} onCheck={() => act(() => api.check(d.draw.id))} onAuto={() => act(() => api.gate(d.draw.id, { action: "auto" }))} onDraft={() => setSettings(true)} aside={aside} />
             ) : (
               <Building d={d} aside={aside} />
@@ -356,7 +356,7 @@ function CheckControls({
 }) {
   const unchecked = d.draw.status === "done";
   const atGate = d.draw.status === "awaiting_check_gate";
-  const passed = "This brief was passed over. Nothing more runs on it.";
+  const replaced = "This brief was repaired into a new round. Work there.";
   const cfg = d.draw.draft_config ? JSON.parse(d.draw.draft_config).config : null;
   const repair = cfg?.repair ?? { rounds: 4, stop_score: 7, patience: 2 };
   const checks = `derivation, ledger, structure, resemblance${d.draw.setting ? ", claims" : ""}`;
@@ -369,7 +369,7 @@ function CheckControls({
         title={
           unchecked || atGate
             ? `${unchecked ? `Check the brief (${checks}), then repair` : "Repair"} round after round without asking: accept every finding scoring ${repair.stop_score} or more, dismiss the rest, re-check, repeat. It stops when nothing reaches ${repair.stop_score}, after ${repair.rounds} rounds, or when the total score has not fallen for ${repair.patience} rounds.${atGate && !openFindings ? " No finding is open." : ""}`
-            : passed
+            : replaced
         }
       >
         check – auto repair
@@ -377,23 +377,23 @@ function CheckControls({
       <Btn
         disabled={!unchecked}
         onClick={onCheck}
-        title={unchecked ? `Run the checkers once (${checks}) and stop for you to review the findings.` : atGate ? "Checked already: rule on the findings below, or auto repair them." : passed}
+        title={unchecked ? `Run the checkers once (${checks}) and stop for you to review the findings.` : atGate ? "Checked already: rule on the findings below, or auto repair them." : replaced}
       >
         check
       </Btn>
       <Btn
         disabled={!(unchecked || atGate) || pendingRepair > 0}
         onClick={onDraft}
-        title={!(unchecked || atGate) ? passed : pendingRepair ? "Accepted findings are waiting for their repair." : `Set up the draft and write the story from this brief as it stands${unchecked ? ", unchecked" : ""}.`}
+        title={!(unchecked || atGate) ? replaced : pendingRepair ? "Accepted findings are waiting for their repair." : `Set up the draft and write the story from this brief as it stands${unchecked ? ", unchecked" : ""}.`}
       >
         draft{cfg ? ` · ${cfg.length.words} words` : ""} <Chevron open />
       </Btn>
       <span className="end">
         <input type="text" placeholder="note for the log" aria-label="Note for the log" value={note} onChange={(e) => onNote(e.target.value)} />
-        <Btn variant="art" disabled={!atGate} onClick={onFlag} title={atGate ? "Mark a check call as looking wrong, with the note. Nothing runs." : unchecked ? "Nothing is checked yet." : passed}>
+        <Btn variant="art" disabled={!atGate} onClick={onFlag} title={atGate ? "Mark a check call as looking wrong, with the note. Nothing runs." : unchecked ? "Nothing is checked yet." : replaced}>
           flag
         </Btn>
-        <Btn variant="quiet" disabled={!atGate} onClick={onHold} title={atGate ? "Leave the findings open to review later. Nothing runs." : unchecked ? "Nothing is checked yet." : passed}>
+        <Btn variant="quiet" disabled={!atGate} onClick={onHold} title={atGate ? "Leave the findings open to review later. Nothing runs." : unchecked ? "Nothing is checked yet." : replaced}>
           hold
         </Btn>
       </span>
@@ -1149,9 +1149,6 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
               {k < M ? ` and ${k + 1}` : ""} again
             </span>
           </span>
-          <Btn variant="pass" onClick={() => gate("pass")} title="Pass over this draft. Its verdict goes to the log.">
-            pass
-          </Btn>
           <input type="text" placeholder="note for the log" aria-label="Gate note" value={note} onChange={(e) => setNote(e.target.value)} />
           <span className="end">
             <Btn variant="quiet" pressed={view === "schedule"} onClick={() => setView(view === "schedule" ? "story" : "schedule")}>
@@ -1167,8 +1164,6 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
               <>
                 Kept and exported to <span className="num">drafts/{id}/</span>.
               </>
-            ) : d.draw.status === "passed" ? (
-              "Passed over."
             ) : (
               label(d.draw.status)
             )}
