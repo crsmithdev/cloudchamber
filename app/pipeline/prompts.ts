@@ -337,7 +337,7 @@ satisfy a constraint above.`,
 
 {settled}
 
-Rewrite it in a <vignette> tag so that every line of the constraints holds, keeping its people, place, form and length. Change only the sentences that state a fact a constraint corrects; every other name, number, date, time and place stays word for word, even where a constraint mentions it. Add no name, number, date or time that is not already in it or in a constraint, and add a sentence only when a constraint cannot hold without one. Under ${RUN.vignetteWords + 50} words. Output only the tag.`,
+Rewrite it in a <vignette> tag so that every line of the constraints holds, keeping its people, place, form and length. Change only the sentences that state a fact a constraint corrects, and within such a sentence change only the words that state that fact; every other word, name, number, date, time and place stays as written, even where a constraint mentions it. Add no name, number, date or time that is not already in it or in a constraint, and add a sentence only when a constraint cannot hold without one. Under ${RUN.vignetteWords + 50} words. Output only the tag.`,
 
   repairOutlineHead: `Below is a seed, a premise, a ${RUN.vignetteWords}-word execution of it, the story's underlying structure as it stands, and a set of constraints that hold. Nothing here is prose for the page.
 
@@ -373,7 +373,7 @@ Rewrite the structure so that every line of the constraints holds. Change only t
 
 {settled}
 
-Rewrite the ending in an <ending> tag so that every line of the constraints holds, keeping its people, place, form and length. Change only the sentences that state a fact a constraint corrects; every other name, number, date, time and place stays word for word, even where a constraint mentions it. Add no name, number, date or time that is not already in it or in a constraint, and add a sentence only when a constraint cannot hold without one. Under ${RUN.endingWords} words. Output only the tag.`,
+Rewrite the ending in an <ending> tag so that every line of the constraints holds, keeping its people, place, form and length. Change only the sentences that state a fact a constraint corrects, and within such a sentence change only the words that state that fact; every other word, name, number, date, time and place stays as written, even where a constraint mentions it. Add no name, number, date or time that is not already in it or in a constraint, and add a sentence only when a constraint cannot hold without one. Under ${RUN.endingWords} words. Output only the tag.`,
 
   schedule: `Below is a story brief: a seed, a premise, an outline in three sections, three vignettes and an ending. Below that, the story's configuration.
 
