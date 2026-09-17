@@ -64,6 +64,13 @@
 > - **The skill (REQ 36).** The Voice Bridge also takes `--domains` and
 >   `--sampling`, and a `knobs` tool prints every tunable and its live values.
 >   `cloudchamber help` prints the same on the CLI; `docs/knobs.md` is that output.
+> - **Statuses and failures (REQ 33 and the shape flag), 2026-09-17.**
+>   `app/pipeline/lifecycle.ts` owns the statuses, each action's preconditions
+>   and the failure rule: an action that throws on a draw already standing
+>   somewhere puts it back there with the reason in `draws.error`, cleared by
+>   the next action that succeeds. `failed` is only for a draw whose own
+>   creation failed. A premise call failing `shape` records the error and
+>   flags nothing: `flagged` and `flag_note` are the person's alone.
 > - **The queue (REQ 32), 2026-09-17.** The queue view and `GET /api/queue`
 >   are gone. The browse tab replaced them; `GET /api/items` with
 >   `verdict=unreviewed` and `suspect=true` serves the same items.

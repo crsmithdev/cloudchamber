@@ -77,8 +77,10 @@ Browse is the only pure judgement surface. Extraction happens outside the UI.
 
 ## Capabilities and Constraints
 
-Four tabs, fixed: browse, ideate, check, write. `tabFor(draw)` decides where a
-draw appears, and the lists and the router both use it.
+Four tabs, fixed: browse, ideate, check, write. `app/pipeline/lifecycle.ts`
+decides where a draw appears, whether it is running, whether it waits at a
+gate, and which actions it allows; the API sends those answers and the UI
+keeps no status rules of its own.
 
 Red-teaming is not a coming stage. The six checkers — `derivation`, `ledger`,
 `structure`, `resemblance`, `claims-extract`, `claims-verify` — plus the repair

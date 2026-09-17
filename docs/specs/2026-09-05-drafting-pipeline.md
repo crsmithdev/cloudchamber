@@ -61,6 +61,11 @@ differ, this file wins.
 >   same authority is not verified again; the cached verdict is stored against
 >   the new pass with `cached_from`. A lore setting's distillate does not change
 >   between rounds, and this was one call per extracted claim per round.
+> - **Gate 2 and failures, 2026-09-17.** A check, draft or rewrite that throws
+>   returns the draw to the gate it stood at, with the reason in `draws.error`
+>   (store version 11); it no longer becomes `failed`, which nothing could pick
+>   up again. A gate-2 rewrite is recorded on the scene it rewrote, so the
+>   trail `keep` exports survives a flag.
 > - **AC 1, Samples.** `checks.samples` is 2 and `screens.samples` is 1. The
 >   score's recurrence term already separates 2 of 2 from 1 of 2, and four
 >   calls a scene was most of gate 2.
