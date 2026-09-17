@@ -444,7 +444,10 @@ function Building({ d, aside }: { d: Detail; aside: React.ReactNode }) {
   const done = new Set(d.steps.filter((s) => s.status === "done").map((s) => s.stage));
   const chosen = d.artifacts.find((a) => a.kind === "vignette" && a.step_id === d.draw.chosen_step);
   const outline = [...d.artifacts].reverse().find((a) => a.kind === "outline");
-  const contexts = d.artifacts.filter((a) => a.kind === "vignette" && stageOfStep.get(a.step_id) === "context");
+  // a repair that rewrites a context records it on repair-context
+  const contexts = d.artifacts
+    .filter((a) => a.kind === "vignette" && ["context", "repair-context"].includes(stageOfStep.get(a.step_id) ?? ""))
+    .sort((a, b) => (JSON.parse(a.meta).index ?? 0) - (JSON.parse(b.meta).index ?? 0));
   const ending = [...d.artifacts].reverse().find((a) => a.kind === "ending");
   const [openPart, setOpenPart] = useState<string | null>("outline.md");
   const part = (name: string, body: string | undefined) => (

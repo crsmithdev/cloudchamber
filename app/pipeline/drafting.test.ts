@@ -17,7 +17,7 @@ import { loadStages } from "./config.ts";
 import { loadDraftConfig } from "./draftconfig.ts";
 import { VERDICT_LOG } from "./paths.ts";
 import { A, B, LEDGER, SCENE_3_PATCH, SPAN_A, SPAN_B, SPAN_C, cleanSamples, derivationSamples, draftScript, finding, ledgerSamples, schedule, vignette } from "./drafting.fixture.ts";
-import { gateFindings } from "./briefparts.ts";
+import { briefParts, gateFindings } from "./briefparts.ts";
 
 const CELLS = ["informational", "mixed", "involved"].flatMap((v) => ["non-narrative", "mixed", "narrative"].map((m) => [v, m]));
 
@@ -996,5 +996,38 @@ describe("what a reader sees", () => {
     expect(constraints("repair-ending")).toContain("The twelfth relic is the Verona clavicle in every account.");
     expect(constraints("repair-outline")).toContain("Only the assembler can fire the reliquary.");
     expect(constraints("repair-outline")).toContain("The twelfth relic is the Verona clavicle in every account.");
+  });
+});
+
+describe("a repaired context vignette", () => {
+  test("stays a context vignette: the next repair carries both with their jobs, and the brief lists both in job order", async () => {
+    const span = "context for Test the first thing: scene one.";
+    const inContext = () => finding(span, "context-1 contradicts the ledger", "none", "The first context holds.", "the fire was on the 3rd");
+    const script = draftScript({
+      "check-ledger": [
+        ...[1, 2, 3].map(() => `<ledger>${LEDGER}</ledger>${inContext()}<examined>x</examined>`),
+        ...[1, 2, 3].map(() => `<ledger>${LEDGER}</ledger>${A()}<examined>x</examined>`),
+        ...cleanSamples(),
+      ],
+      "check-derivation": [...cleanSamples(), ...cleanSamples(), ...cleanSamples()],
+    });
+    const { p, d, draw, model, dir } = await drawn(script);
+    await d.check(draw.id);
+    const second = await d.accept(draw.id, [d.findings(draw.id).findings.find((f) => f.reported)!.id]);
+    expect(p.steps(second.id).filter((s) => s.stage === "repair-context")).toHaveLength(1);
+    const a = d.findings(second.id).findings.find((f) => f.reported && f.span === SPAN_A)!;
+    const third = await d.accept(second.id, [a.id]);
+
+    const stages = p.steps(third.id).map((s) => [s.stage, s.model]);
+    expect(stages.filter(([s]) => s === "jobs")).toEqual([["jobs", "copied"]]);
+    expect(stages.filter(([s]) => s === "context" || s === "repair-context").map(([, m]) => m)).toEqual(["copied", "copied"]);
+    expect(model.calls.filter((c) => c.stage === "context" || c.stage === "jobs")).toHaveLength(3);   // the draw's own jobs and two contexts, nothing since
+
+    const parts = briefParts(p, third.id);
+    expect(parts.contexts[0]).toContain("rewritten context");
+    expect(parts.contexts[1]).toBe("context for Test a second thing: scene two.");
+    expect(readFileSync(join(dir, "briefs", third.id, "context-1.md"), "utf8")).toContain("*Job: Test the first thing: scene one.*");
+    expect(readFileSync(join(dir, "briefs", third.id, "context-1.md"), "utf8")).toContain("rewritten context");
+    expect(readFileSync(join(dir, "briefs", third.id, "context-2.md"), "utf8")).toContain("context for Test a second thing: scene two.");
   });
 });

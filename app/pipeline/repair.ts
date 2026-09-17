@@ -9,7 +9,7 @@
  * contradiction in, so a repair rewrites as little as the findings allow.
  */
 import { randomBytes } from "node:crypto";
-import { RUN } from "./config.ts";
+import { CONTEXT_STAGES, RUN } from "./config.ts";
 import type { DrawRow, Pipeline } from "./draw.ts";
 import { compose, fill } from "./prompts.ts";
 import { sections, tag, tags, words } from "./model.ts";
@@ -104,7 +104,7 @@ export async function repair(p: Pipeline, drawId: string, accepted: Accepted[]):
 async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof briefParts>, accepted: Accepted[]) {
   const srcArts = p.artifacts(parts.draw.id);
   const srcStages = new Map(p.steps(parts.draw.id).map((s) => [s.id, s.stage]));
-  const srcContexts = srcArts.filter((a) => a.kind === "vignette" && srcStages.get(a.step_id) === "context")
+  const srcContexts = srcArts.filter((a) => a.kind === "vignette" && CONTEXT_STAGES.has(srcStages.get(a.step_id) ?? ""))
     .map((a) => ({ content: a.content, meta: JSON.parse(a.meta) as { index?: number; job?: string } }))
     .sort((a, b) => (a.meta.index ?? 0) - (b.meta.index ?? 0));
   // a context vignette can only be carried over when its job line came with it

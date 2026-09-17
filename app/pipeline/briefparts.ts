@@ -3,7 +3,7 @@
  * pieces as artifacts, the six example passages, and the findings recorded
  * against it. Shared by check, repair, schedule, scenes, screens and export.
  */
-import { RUN } from "./config.ts";
+import { RUN, CONTEXT_STAGES } from "./config.ts";
 import type { DrawRow, Pipeline } from "./draw.ts";
 import { fill } from "./prompts.ts";
 import { latest } from "./verdicts.ts";
@@ -39,7 +39,9 @@ export function briefParts(p: Pipeline, drawId: string): BriefParts {
   const outline = [...arts].reverse().find((a) => a.kind === "outline");
   const ending = [...arts].reverse().find((a) => a.kind === "ending");
   if (!outline || !ending) throw new Error(`draw ${drawId}: brief incomplete (outline or ending missing)`);
-  const contexts = arts.filter((a) => a.kind === "vignette" && stageOf(a) === "context").map((a) => a.content);
+  // by the job's index, so context-1 is the same job in every round whichever step wrote it
+  const contexts = arts.filter((a) => a.kind === "vignette" && CONTEXT_STAGES.has(stageOf(a)))
+    .sort((a, b) => (JSON.parse(a.meta).index ?? 0) - (JSON.parse(b.meta).index ?? 0)).map((a) => a.content);
   const jobs = (JSON.parse(outline.meta).jobs as string[] | undefined) ?? [];
   const examples = (JSON.parse(draw.example_ids) as string[]).map((pid) => (p.db.query("SELECT text FROM passages WHERE id = ?").get(pid) as any)?.text).filter(Boolean);
   return {

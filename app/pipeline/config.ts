@@ -8,6 +8,13 @@ export type StageName = GenStageName | CheckStageName | DraftStageName;
 /** `tools` is the comma-separated list a call may use; absent or empty means `--tools ""`. */
 export type StageConfig = { model: string; fallback: string; system: string; tools?: string };
 
+/**
+ * The stages whose vignette is a context vignette. A repair that rewrites one
+ * from itself records it on `repair-context`; reading `context` alone lost it,
+ * and the next repair wrote both contexts afresh under new jobs.
+ */
+export const CONTEXT_STAGES: ReadonlySet<string> = new Set(["context", "repair-context"]);
+
 export const STAGES: StageName[] = [
   "themes", "redundancy", "distill-map", "distill", "premises", "execute", "outline", "jobs", "context", "ending",
   "ledger-extract", "check-derivation", "check-ledger", "check-verify", "check-structure", "check-resemblance", "check-claims-extract", "check-claims-verify",
