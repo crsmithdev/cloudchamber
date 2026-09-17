@@ -12,8 +12,8 @@ import { status } from "../pipeline/status.ts";
 import { originOf, stageOf } from "../pipeline/stage.ts";
 import { BANDS, DARKNESS, GENRES, SAMPLING } from "../pipeline/config.ts";
 import { exportBank, sourceLabel } from "../pipeline/bank.ts";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { join, resolve, sep } from "node:path";
 import { BRIEFS } from "../pipeline/paths.ts";
 import { CHECKABLE, Drafting } from "../pipeline/drafting.ts";
 import { loadSetting } from "../pipeline/settings.ts";
@@ -341,17 +341,23 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     try { const v = drafting.view(req.params.id); return { ...v, text: renderStory(v) }; } catch (e: any) { return reply.code(404).send({ error: e.message }); }
   });
 
+  // a route parameter is decoded, so `..%2F` arrives as `../`: a path must resolve inside briefs/
+  const underBriefs = (...parts: string[]) => {
+    const path = resolve(BRIEFS, ...parts);
+    return path.startsWith(resolve(BRIEFS) + sep) && existsSync(path) ? path : null;
+  };
+
   app.get<{ Params: { id: string } }>("/api/briefs/:id", async (req, reply) => {
-    const dir = join(BRIEFS, req.params.id);
-    if (!existsSync(dir)) return reply.code(404).send({ error: "no brief" });
+    const dir = underBriefs(req.params.id);
+    if (!dir || !statSync(dir).isDirectory()) return reply.code(404).send({ error: "no brief" });
     const files: Record<string, string> = {};
-    for (const f of readdirSync(dir)) files[f] = readFileSync(join(dir, f), "utf8");
+    for (const f of readdirSync(dir)) if (statSync(join(dir, f)).isFile()) files[f] = readFileSync(join(dir, f), "utf8");
     return files;
   });
 
   app.get<{ Params: { id: string; file: string } }>("/api/briefs/:id/:file", async (req, reply) => {
-    const path = join(BRIEFS, req.params.id, req.params.file);
-    if (req.params.file.includes("/") || req.params.file.includes("..") || !existsSync(path)) return reply.code(404).send({ error: "no such brief file" });
+    const path = underBriefs(req.params.id, req.params.file);
+    if (!path || !statSync(path).isFile()) return reply.code(404).send({ error: "no such brief file" });
     return reply.type("text/plain; charset=utf-8").send(readFileSync(path, "utf8"));
   });
 

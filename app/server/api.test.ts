@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtempSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { openDb } from "../pipeline/store/db.ts";
@@ -300,5 +300,24 @@ describe("api: background jobs", () => {
     release();
     await jobs.idle();
     expect(jobs.count).toBe(0);
+  });
+});
+
+describe("api: briefs", () => {
+  test("serves a brief and its files, and nothing a decoded .. reaches outside briefs/", async () => {
+    const { app } = await setup();
+    const briefs = process.env.CLOUDCHAMBER_BRIEFS!;
+    mkdirSync(join(briefs, "d1"), { recursive: true });
+    writeFileSync(join(briefs, "d1", "vignette.md"), "the vignette");
+    mkdirSync(join(briefs, "..", "outside"), { recursive: true });
+    writeFileSync(join(briefs, "..", "outside", "secret.txt"), "not a brief");
+    const get = (url: string) => app.inject({ method: "GET", url });
+    expect(JSON.parse((await get("/api/briefs/d1")).body)).toEqual({ "vignette.md": "the vignette" });
+    expect((await get("/api/briefs/d1/vignette.md")).body).toBe("the vignette");
+    for (const url of ["/api/briefs/..%2Foutside", "/api/briefs/..%2Foutside/secret.txt", "/api/briefs/d1/..%2F..%2Foutside%2Fsecret.txt", "/api/briefs/..", "/api/briefs/d1/.."]) {
+      const r = await get(url);
+      expect(r.statusCode).toBe(404);
+      expect(r.body).not.toContain("not a brief");
+    }
   });
 });
