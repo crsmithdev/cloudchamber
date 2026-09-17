@@ -80,11 +80,15 @@ export function checkPasses(p: Pipeline, drawId: string): string[] {
 }
 
 /**
- * How many samples each checker ran in one pass, read off the steps rather
- * than the configuration, so the score reflects what actually happened even
- * when draft.toml has changed since. Claims run once per claim, not S times.
+ * How many samples each checker ran in the latest pass, as the pass recorded
+ * them rather than as the configuration says, so the score reflects what
+ * actually happened. Claims run once per claim, not S times.
  */
 export function samplesPerChecker(p: Pipeline, drawId: string): Record<string, number> {
+  const pass = latestCheckPass(p, drawId);
+  const recorded = p.artifacts(drawId).find((a) => a.kind === "pass" && a.content === pass && JSON.parse(a.meta).samples);
+  if (recorded) return { claims: 1, ...(JSON.parse(recorded.meta).samples as Record<string, number>) };
+  // a pass stored before the counts were recorded: the steps averaged over every pass
   const passes = Math.max(1, checkPasses(p, drawId).length);
   const out: Record<string, number> = { claims: 1 };
   const done = p.steps(drawId).filter((s) => s.status === "done" && /^check-/.test(s.stage));

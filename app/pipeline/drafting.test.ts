@@ -866,6 +866,21 @@ describe("finding ids are scoped by draw", () => {
   });
 });
 
+describe("a check pass scores against its own sample count", () => {
+  test("a re-check at fewer samples reads a finding in every sample as that many, not an average over passes", async () => {
+    const script = draftScript();
+    script["check-ledger"].push(...[1, 2].map(() => `<ledger>${LEDGER}</ledger>${A()}<examined>x</examined>`));
+    script["check-derivation"].push(...[1, 2].map(() => `<impossibility>One.</impossibility>${A()}<examined>x</examined>`));
+    const { d, draw } = await drawn(script);
+    await d.check(draw.id, { samples: 3 });
+    const a3 = d.findings(draw.id).findings.find((f) => f.span === SPAN_A)!;
+    expect([a3.n, a3.samples_run]).toEqual([3, 3]);
+    await d.check(draw.id, { samples: 2 });
+    const a2 = d.findings(draw.id).findings.find((f) => f.span === SPAN_A)!;
+    expect([a2.n, a2.samples_run, a2.score]).toEqual([2, 2, a3.score]);         // 2 of 2 recurs as fully as 3 of 3
+  });
+});
+
 describe("auto acts on reported findings only, and reads its accepted set against itself", () => {
   test("one clean pass with the budget spent stops on budget, not on the floor", async () => {
     const script = draftScript({

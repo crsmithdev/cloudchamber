@@ -72,7 +72,7 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
   const dismissed = dismissedFindings(p, drawId);
   const shape = findingShape(parts.settingJobs);
   const S = (name: string) => opts.samples ? { samples: opts.samples, keep_if: Math.min(cfg.checks.keep_if, opts.samples) } : samplesFor(cfg.checks, name);
-  const perChecker: { checker: string; clusters: Cluster[]; firstStep: StepRow }[] = [];
+  const perChecker: { checker: string; clusters: Cluster[]; firstStep: StepRow; samples?: number }[] = [];
 
   const runs: Promise<unknown>[] = [];
   if (enabled.includes("derivation")) runs.push(sampled(p, drawId, parts, "check-derivation", fill("checkDerivation", { brief, findingShape: shape }), S("derivation"), "derivation", (t) => {
@@ -114,7 +114,9 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
   const under = excludeDismissed(merge(perChecker.flatMap((c) => c.clusters.filter((x) => !x.reported)), parts.settingJobs), dismissed)
     .filter((c) => !merged.some((m) => same(m, c)));
   // a clean pass leaves no finding or profile behind, so the pass is marked on its own: the gate reads the latest pass, not the latest with findings
-  if (perChecker.length) p.artifact(perChecker[0].firstStep, "pass", pass, { pass });
+  // with the samples each checker ran in this pass, which the score reads: an earlier pass may have run a different count
+  const samples = Object.fromEntries(perChecker.filter((c) => c.samples).map((c) => [c.checker, c.samples]));
+  if (perChecker.length) p.artifact(perChecker[0].firstStep, "pass", pass, { pass, samples });
   const dropped = await verifyFindings(p, drawId, parts, brief, pinnedLedger(p, drawId) ?? "", [...merged, ...under]);
   const store = (c: Cluster, extra: Record<string, unknown>) => {
     const owner = perChecker.find((x) => x.checker === c.checkers[0])!;
@@ -177,7 +179,7 @@ export function parseVerdicts(text: string, n: number): { answer: "keep" | "drop
 
 /** S concurrent samples of one checker; the parsed value goes on each step, the findings are clustered. */
 async function sampled(p: Pipeline, drawId: string, parts: BriefParts, stage: any, prompt: string, s: { samples: number; keep_if: number }, checker: string,
-  parse: (text: string) => any, store?: (step: StepRow, value: any, sample: number) => void): Promise<{ checker: string; clusters: Cluster[]; firstStep: StepRow }> {
+  parse: (text: string) => any, store?: (step: StepRow, value: any, sample: number) => void): Promise<{ checker: string; clusters: Cluster[]; firstStep: StepRow; samples: number }> {
   const results = await Promise.all(Array.from({ length: s.samples }, (_, i) => p.invoke(drawId, parts.outlineStepId, stage, prompt, parse).then((r) => ({ ...r, sample: i + 1 }))));
   results.sort((a, b) => a.sample - b.sample);
   const findings: Finding[] = [];
@@ -185,7 +187,7 @@ async function sampled(p: Pipeline, drawId: string, parts: BriefParts, stage: an
     store?.(r.step, r.value, r.sample);
     for (const f of (r.value.findings ?? []) as Finding[]) findings.push({ ...f, sample: r.sample });
   }
-  return { checker, clusters: cluster(findings, s.keep_if, parts.settingJobs, drawId), firstStep: results[0].step };
+  return { checker, clusters: cluster(findings, s.keep_if, parts.settingJobs, drawId), firstStep: results[0].step, samples: results.length };
 }
 
 const RESULTS = new Set(["supported", "contradicted", "unverifiable"]);
