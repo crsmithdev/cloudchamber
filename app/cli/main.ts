@@ -52,6 +52,7 @@ import { draftAll, failures, histogram, replayThemes } from "../pipeline/themes.
 import { formatFinding, lintFile, loadSetting, LISTS } from "../pipeline/settings.ts";
 import { distill, readKept } from "../pipeline/distill.ts";
 import { Drafting } from "../pipeline/drafting.ts";
+import { gateCommand, isGateAction, type GateArgs } from "../pipeline/gate.ts";
 import type { Overrides } from "../pipeline/draftconfig.ts";
 
 const [cmd, ...rest] = process.argv.slice(2);
@@ -149,19 +150,15 @@ async function main() {
       const [drawId, action, ...args] = positionals;
       const p = pipeline(), d = drafting();
       if (!drawId || !action) usage();
-      const out = action === "choose" ? await p.choose(drawId!, args[0]!)
-        : action === "fork" ? await p.fork(drawId!, args[0]!)
-        : action === "flag" ? p.flag(drawId!, values.note)
-        : action === "archive" ? p.archive(drawId!)
-        : action === "unarchive" ? p.archive(drawId!, false)
-        : action === "accept" ? (args.length ? await d.accept(drawId!, args, { note: values.note }) : usage())
-        : action === "auto" ? await d.autoRounds(drawId!, { note: values.note || undefined })
-        : action === "dismiss" ? (args[0] ? d.dismiss(drawId!, args[0], values.note) : usage())
-        : action === "hold" ? d.hold(drawId!)
-        : action === "keep" ? d.keep(drawId!, values.note)
-        : action === "rewrite" ? (args[0] ? await d.rewrite(drawId!, Number(args[0]), values.finding) : usage())
-        : action === "patch" ? d.patch(drawId!, args, values.note)
-        : usage();
+      if (!isGateAction(action!)) usage();
+      // the positionals each action reads; the command itself refuses what is missing
+      if ((action === "accept" || action === "dismiss" || action === "rewrite") && !args.length) usage();
+      const gateArgs: GateArgs = {
+        note: values.note, finding: action === "dismiss" ? args[0] : values.finding,
+        step_id: args[0], findings: args, beat: action === "rewrite" ? Number(args[0]) : undefined,
+      };
+      // the CLI waits for the work whether or not it runs on: there is nothing else to go back to
+      const out = await gateCommand(p, d, drawId!, action!, gateArgs).done;
       if (action === "patch") {
         const r = out as { applied: any[]; skipped: { finding: any; why: string }[] };
         console.log(`${r.applied.length} applied, ${r.skipped.length} left for a rewrite · no model calls`);

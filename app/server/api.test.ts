@@ -121,7 +121,7 @@ describe("api", () => {
     // before the gate an executed vignette is a candidate, not a part, so the brief is empty and the page says so
     expect(r.body.parts).toEqual({ vignette: null, outline: null, contexts: [], ending: null });
     const flag = await j("POST", `/api/draws/${id}/gate`, { action: "flag", note: "looks wrong" });
-    expect(flag.body.flagged).toBe(1);
+    expect(flag.body.payload.flagged).toBe(1);
     const chosen = await j("POST", `/api/draws/${id}/gate`, { action: "choose", step_id: r.body.candidates[1].step_id });
     expect(chosen.code).toBe(202);
     for (let i = 0; i < 50 && pipeline.draw(id).status !== "done"; i++) await Bun.sleep(10);
@@ -169,7 +169,7 @@ describe("api", () => {
     pipeline.db.query("INSERT INTO draws (id, genre, mode, seed_mode, seed_text, example_ids, status, created_at) VALUES ('later', 'horror', 'manual', 'typed', 'one shared seed', '[]', 'done', '2027-01-01T00:00:00Z')").run();
     const named = (rows: any[]) => Object.fromEntries(rows.map((r) => [r.id, r.name]));
     const before = named((await j("GET", "/api/draws?archived=true")).body);
-    expect((await j("POST", `/api/draws/${id}/gate`, { action: "archive" })).body.archived_at).toBeTruthy();
+    expect((await j("POST", `/api/draws/${id}/gate`, { action: "archive" })).body.payload.archived_at).toBeTruthy();
     const list = await j("GET", "/api/draws");
     expect(list.body.map((r: any) => r.id)).toEqual(["later"]);
     // names are deterministic over every draw, so hiding one must not renumber the others
@@ -245,12 +245,13 @@ describe("api: check, gate 1, draft, gate 2", () => {
     expect(f.body.judge).toBe("checked on opus; judge and generator share a family");
     const dis = await j2("POST", `/api/draws/${d2.id}/gate`, { action: "dismiss", finding: f.body.findings[1].id, note: "fine" });
     expect(dis.code).toBe(200);
-    expect(dis.body.decision).toBe("dismissed");
+    // a dismissal answers with the finding and names no draw, so the pane stays where it is
+    expect([dis.body.draw, dis.body.running, dis.body.payload.decision]).toEqual([null, false, "dismissed"]);
     expect((await j2("POST", `/api/draws/${d2.id}/gate`, { action: "accept" })).code).toBe(400);
     // a status or id the method rejects comes back as a 400 at once, not a 202 for work that never runs
     const stale = await j2("POST", `/api/draws/${d2.id}/gate`, { action: "accept", findings: ["f-nosuch"] });
     expect([stale.code, stale.body.error]).toEqual([400, `draw ${d2.id}: no reported finding f-nosuch`]);
-    expect((await j2("POST", `/api/draws/${d2.id}/gate`, { action: "hold" })).body.status).toBe("awaiting_check_gate");
+    expect((await j2("POST", `/api/draws/${d2.id}/gate`, { action: "hold" })).body.payload.status).toBe("awaiting_check_gate");
     expect((await j2("POST", `/api/draws/${d2.id}/draft`, { overrides: { "scenes.order": "parallel" } })).code).toBe(202);
     for (let i = 0; i < 200 && p2.draw(d2.id).status !== "awaiting_draft_gate"; i++) await Bun.sleep(10);
     expect(p2.draw(d2.id).status).toBe("awaiting_draft_gate");
@@ -267,8 +268,8 @@ describe("api: check, gate 1, draft, gate 2", () => {
     for (let i = 0; i < 200 && p2.draw(d2.id).status !== "awaiting_draft_gate"; i++) await Bun.sleep(10);
     const kept = await j2("POST", `/api/draws/${d2.id}/gate`, { action: "keep", note: "ship it" });
     expect(kept.code).toBe(200);
-    expect(kept.body.draw.status).toBe("drafted");
-    expect(kept.body.dir).toBe(join(dir, "drafts", d2.id));
+    expect(kept.body.payload.draw.status).toBe("drafted");
+    expect(kept.body.payload.dir).toBe(join(dir, "drafts", d2.id));
     expect((await j2("GET", `/api/draws/${d2.id}`)).body.draw.status).toBe("drafted");
     expect((await j2("POST", `/api/draws/${d2.id}/draft`, {})).code).toBe(400);
     expect((await j2("POST", `/api/draws/${d2.id}/gate`, { action: "sing" })).code).toBe(400);

@@ -500,11 +500,11 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
       .then(setF)
       .catch(() => {});
   }, [id, d.steps.length, showAll]);
-  // only a gate action that returns a draw may move the pane; dismiss returns the finding
+  // the command names the draw to show next; dismiss names none, so the pane stays where it is
   const gate = (action: string, extra: Record<string, unknown> = {}) =>
     onAct(
       () => api.gate(id, { action, note, ...extra }),
-      (r) => (r?.id && String(r.id).startsWith("f-") ? undefined : r?.id),
+      (r) => r?.draw ?? undefined,
     );
   const open = f?.findings.filter((x) => x.decision === "open") ?? [];
   const accepted = f?.findings.filter((x) => x.decision === "accepted") ?? [];

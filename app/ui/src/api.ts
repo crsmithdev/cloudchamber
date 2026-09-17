@@ -139,6 +139,8 @@ export type Step = {
 };
 export type FullStep = Step & { prompt: string; raw_response: string | null; parsed: string | null };
 export type Artifact = { id: string; step_id: string; kind: string; content: string; meta: string };
+/** What every gate action answers: the draw to show next, whether the work goes on, and the action's own payload. */
+export type GateResult = { draw: string | null; running: boolean; payload: any };
 /** One part of a brief, as the server reads it: its role, its text and the meta of the step that wrote it. */
 export type Part = { role: string; stage: string; stepId: string; text: string; meta: any; index: number };
 /** The part standing in each role of a brief now. The server decides which; the page only shows them. */
@@ -165,7 +167,7 @@ export const api = {
   like: (id: string) => j<Like>(`/api/draws/${id}/like`),
   deleteDraw: (id: string) => j<{ deleted: string }>(`/api/draws/${id}`, { method: "DELETE", body: "{}" }),
   startDraw: (b: Record<string, string | undefined>) => j<{ id: string }>("/api/draws", { method: "POST", body: JSON.stringify(b) }),
-  gate: (id: string, b: { action: string; step_id?: string; note?: string; findings?: string[]; finding?: string; beat?: number }) => j<any>(`/api/draws/${id}/gate`, { method: "POST", body: JSON.stringify(b) }),
+  gate: (id: string, b: { action: string; step_id?: string; note?: string; findings?: string[]; finding?: string; beat?: number }) => j<GateResult>(`/api/draws/${id}/gate`, { method: "POST", body: JSON.stringify(b) }),
   check: (id: string) => j<{ id: string; status: string }>(`/api/draws/${id}/check`, { method: "POST", body: "{}" }),
   draft: (id: string, b: { auto?: boolean; profile?: string; overrides?: Record<string, string | number> }) => j<{ id: string; status: string }>(`/api/draws/${id}/draft`, { method: "POST", body: JSON.stringify(b) }),
   step: (id: string) => j<{ step: FullStep; artifacts: Artifact[] }>(`/api/steps/${id}`),

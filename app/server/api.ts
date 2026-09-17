@@ -10,6 +10,7 @@ import { KINDS, latest, latestAll, passedStories, record, type Kind, type Method
 import { renderStory } from "../pipeline/drafts.ts";
 import { status } from "../pipeline/status.ts";
 import { originOf } from "../pipeline/stage.ts";
+import { gateCommand, type GateArgs, type GateResult } from "../pipeline/gate.ts";
 import { partsView } from "../pipeline/briefparts.ts";
 import { lifecycleView, type DrawFacts } from "../pipeline/lifecycle.ts";
 import { BANDS, DARKNESS, GENRES, SAMPLING } from "../pipeline/config.ts";
@@ -223,50 +224,16 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     return { step, artifacts };
   });
 
-  app.post<{ Params: { id: string }; Body: { action: string; step_id?: string; note?: string; findings?: string[]; finding?: string; beat?: number } }>("/api/draws/:id/gate", async (req, reply) => {
-    const { action, step_id, note = "", findings, finding, beat } = req.body ?? ({} as any);
-    const id = req.params.id;
+  // gate 1 and gate 2 (docs/specs/2026-09-05-drafting-pipeline.md); the commands are pipeline/gate.ts
+  app.post<{ Params: { id: string }; Body: GateArgs & { action: string } }>("/api/draws/:id/gate", async (req, reply) => {
+    const { action, ...args } = req.body ?? ({} as any);
     try {
-      if (action === "flag") return pipeline.flag(id, note);
-      if (action === "archive" || action === "unarchive") return pipeline.archive(id, action === "archive");
-      // gate 1 and gate 2 (docs/specs/2026-09-05-drafting-pipeline.md); the long ones continue after the reply
-      if (action === "accept") {
-        if (!findings?.length) return reply.code(400).send({ error: "findings required" });
-        const failed = await launch(drafting.accept(id, findings, { note }));
-        if (failed) return reply.code(400).send({ error: failed.message });
-        return reply.code(202).send({ id, status: "repairing" });
-      }
-      if (action === "auto") {
-        const failed = await launch(drafting.autoRounds(id, { note: note || undefined }));
-        if (failed) return reply.code(400).send({ error: failed.message });
-        return reply.code(202).send({ id, status: "repairing" });
-      }
-      if (action === "dismiss") { if (!finding) return reply.code(400).send({ error: "finding required" }); return drafting.dismiss(id, finding, note); }
-      if (action === "hold") return drafting.hold(id);
-      if (action === "keep") return drafting.keep(id, note);
-      // a patch is a text substitution, so it answers on this request rather than in the background
-      if (action === "patch") return drafting.patch(id, findings ?? (finding ? [finding] : undefined), note);
-      if (action === "rewrite") {
-        if (!beat) return reply.code(400).send({ error: "beat required" });
-        const failed = await launch(drafting.rewrite(id, Number(beat), finding));
-        if (failed) return reply.code(400).send({ error: failed.message });
-        return reply.code(202).send({ id, status: "drafting" });
-      }
-      if (action === "choose") {
-        if (!step_id) return reply.code(400).send({ error: "step_id required" });
-        if (!pipeline.candidates(id).some((c) => c.step_id === step_id)) return reply.code(400).send({ error: `no execute step ${step_id} on draw ${id}` });
-        const failed = await launch(pipeline.choose(id, step_id));
-        if (failed) return reply.code(400).send({ error: failed.message });
-        return reply.code(202).send({ id, status: "running" });
-      }
-      if (action === "fork") {
-        if (!step_id) return reply.code(400).send({ error: "step_id required" });
-        const forkId = newDrawId();
-        const failed = await launch(pipeline.fork(id, step_id, forkId));
-        if (failed) return reply.code(400).send({ error: failed.message });
-        return reply.code(202).send({ id: forkId, forked_from: id });
-      }
-      return reply.code(400).send({ error: "action must be choose | fork | flag | archive | unarchive | accept | auto | dismiss | hold | keep | patch | rewrite" });
+      const c = gateCommand(pipeline, drafting, req.params.id, action, args);
+      // a running command answers now and finishes in the background; only a failure it reaches at once is an error
+      if (!c.running) return { draw: c.draw, running: false, payload: await c.done } satisfies GateResult;
+      const failed = await launch(c.done);
+      if (failed) return reply.code(400).send({ error: failed.message });
+      return reply.code(202).send({ draw: c.draw, running: true, payload: null } satisfies GateResult);
     } catch (e: any) { return reply.code(400).send({ error: e.message }); }
   });
 

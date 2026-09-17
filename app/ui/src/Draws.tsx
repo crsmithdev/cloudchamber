@@ -239,7 +239,7 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
     try {
       const r = await api.gate(d.draw.id, { action, step_id, note });
       setNote("");
-      if (r.id && r.id !== d.draw.id) location.hash = `#draw/${r.id}`;
+      if (r.draw && r.draw !== d.draw.id) location.hash = `#draw/${r.draw}`;
       else loadDetail(d.draw.id);
       loadDraws();
     } catch (e: any) {

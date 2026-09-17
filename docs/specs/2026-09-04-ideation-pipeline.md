@@ -71,6 +71,13 @@
 >   the next action that succeeds. `failed` is only for a draw whose own
 >   creation failed. A premise call failing `shape` records the error and
 >   flags nothing: `flagged` and `flag_note` are the person's alone.
+> - **The gate commands, 2026-09-17.** The twelve gate actions are one
+>   interface, `app/pipeline/gate.ts`, and the HTTP route and the CLI are two
+>   adapters over it. A command validates its own arguments, names the draw to
+>   show next and says whether its work continues after the answer; the adapter
+>   decides only what to do with that. `POST /api/draws/:id/gate` now answers
+>   one shape for every action — `{ draw, running, payload }` — where it used to
+>   answer eight. The CLI prints what it always printed.
 > - **The queue (REQ 32), 2026-09-17.** The queue view and `GET /api/queue`
 >   are gone. The browse tab replaced them; `GET /api/items` with
 >   `verdict=unreviewed` and `suspect=true` serves the same items.
