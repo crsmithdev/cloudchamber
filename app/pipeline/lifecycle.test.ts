@@ -1,7 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { ACTIONS, STATUSES, lifecycleView, tabOf, waitsIn, whyNot, type Action } from "./lifecycle.ts";
+import { ACTIONS, STATUSES, lifecycleView, stageTab, tabOf, waitsIn, whyNot, type Action } from "./lifecycle.ts";
+import { STAGES } from "./config.ts";
 import { FakeModel } from "./model.ts";
 import { Pipeline } from "./draw.ts";
 import { cleanSamples, derivationSamples, draftScript, drawn, fixture, ledgerSamples } from "./drafting.fixture.ts";
@@ -46,6 +47,15 @@ describe("the rules", () => {
     expect(Object.keys(v.actions).sort()).toEqual([...ACTIONS].sort());
     expect(tabOf({ status: "failed", chosen_step: null, repaired_from: "r" })).toBe("check");
     expect(["awaiting_gate", "done", "awaiting_check_gate", "awaiting_draft_gate", "checking"].map(waitsIn)).toEqual(["ideate", "check", "check", "write", null]);
+  });
+
+  test("every stage is placed in a tab, or placed outside every tab as a stage no draw runs", () => {
+    // the page filters a draw's steps by this; a stage nobody placed would vanish from the list
+    const placed = Object.fromEntries(STAGES.map((s) => [s, stageTab(s)]));
+    expect(Object.entries(placed).filter(([, t]) => t === null).map(([s]) => s)).toEqual(["themes", "redundancy", "distill-map", "distill"]);
+    expect(STAGES.filter((s) => stageTab(s) === "ideate")).toEqual(["premises", "execute", "outline", "jobs", "context", "ending"]);
+    expect(stageTab("screen-slop")).toBe("write");   // recorded, but not one of STAGES
+    expect(stageTab("nonesuch")).toBeNull();
   });
 });
 

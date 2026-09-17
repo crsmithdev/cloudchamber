@@ -71,6 +71,13 @@
 >   the next action that succeeds. `failed` is only for a draw whose own
 >   creation failed. A premise call failing `shape` records the error and
 >   flags nothing: `flagged` and `flag_note` are the person's alone.
+> - **The server publishes what the page states, 2026-09-17.** The page kept
+>   its own copies of the server's facts and four had drifted. The detail now
+>   carries `checks_next` (the checkers a check would run on this draw, from the
+>   one rule in `check.ts` `checkersNext`), `repair` (the settings the draw would
+>   run under, its own or the defaults) and a `tab` on each step; the findings
+>   carry `score_max` and the structure questions in order. The page keeps the
+>   prose and holds no number, list or rule of its own.
 > - **The gate commands, 2026-09-17.** The twelve gate actions are one
 >   interface, `app/pipeline/gate.ts`, and the HTTP route and the CLI are two
 >   adapters over it. A command validates its own arguments, names the draw to

@@ -91,7 +91,7 @@ export type Profile = {
 };
 export type AutoRound = { round: number; id: string; open: number; total: number; accepted: number; calls: number };
 export type AutoResult = { id: string; rounds: AutoRound[]; best: AutoRound; stopped: "floor" | "cap" | "patience" | "budget"; floor: number; calls: number; left_open?: number };
-export type Findings = { pass: string | null; findings: Finding[]; claims: Claim[]; profiles: Profile[]; examined: { stage: string; sample: number; examined: string }[]; judge: string | null };
+export type Findings = { pass: string | null; findings: Finding[]; claims: Claim[]; profiles: Profile[]; examined: { stage: string; sample: number; examined: string }[]; judge: string | null; score_max: number; structure: string[] };
 export type Beat = { n: number; words: number; job: string; known: string; withheld: { item: string; until: number }[]; stakes: string; absorbs: string };
 export type Scene = { beat: number; text: string; artifact_id: string; step_id: string };
 export type Slop = {
@@ -126,6 +126,7 @@ export type Step = {
   id: string;
   parent_id: string | null;
   stage: string;
+  tab: string | null;   // the tab this step belongs in; the server decides, the page filters by it
   model: string;
   system_prompt: string;
   status: string;
@@ -139,6 +140,8 @@ export type Step = {
 };
 export type FullStep = Step & { prompt: string; raw_response: string | null; parsed: string | null };
 export type Artifact = { id: string; step_id: string; kind: string; content: string; meta: string };
+/** The repair settings a draw would run under: its own, or the defaults until it has its own. */
+export type Repair = { rounds: number; stop_score: number; patience: number; max_calls: number };
 /** What every gate action answers: the draw to show next, whether the work goes on, and the action's own payload. */
 export type GateResult = { draw: string | null; running: boolean; payload: any };
 /** One part of a brief, as the server reads it: its role, its text and the meta of the step that wrote it. */
@@ -163,7 +166,7 @@ export const api = {
   verdict: (b: { kind: string; target_id: string; verdict: "keep" | "pass"; artifact: boolean; note: string; method: string }) => j("/api/verdicts", { method: "POST", body: JSON.stringify(b) }),
   items: (q: Record<string, string>) => j<{ total: number; items: Item[] }>(`/api/items?${new URLSearchParams(q)}`),
   draws: (archived = false) => j<Draw[]>(`/api/draws${archived ? "?archived=true" : ""}`),
-  draw: (id: string) => j<{ draw: Draw; origin: Origin | null; steps: Step[]; parts: Parts; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] }>(`/api/draws/${id}`),
+  draw: (id: string) => j<{ draw: Draw; origin: Origin | null; steps: Step[]; parts: Parts; checks_next: string[]; repair: Repair; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] }>(`/api/draws/${id}`),
   like: (id: string) => j<Like>(`/api/draws/${id}/like`),
   deleteDraw: (id: string) => j<{ deleted: string }>(`/api/draws/${id}`, { method: "DELETE", body: "{}" }),
   startDraw: (b: Record<string, string | undefined>) => j<{ id: string }>("/api/draws", { method: "POST", body: JSON.stringify(b) }),

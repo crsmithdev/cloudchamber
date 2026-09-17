@@ -31,6 +31,24 @@ export const STRUCTURE_QUESTIONS = ["threat", "category-violation", "agency", "o
 
 export type CheckResult = { pass: string; findings: Cluster[]; claims: "off" | ClaimsAuthority };
 
+/**
+ * The checkers a check pass would run on this draw now. Three of the five are
+ * conditional: structure and resemblance profile the premise, which a repair
+ * never changes, so they run once per chain; claims runs only when the setting
+ * names an authority to check against. The page reads this rather than naming
+ * the five itself.
+ */
+export function checkersNext(p: Pipeline, drawId: string, enabled: readonly string[]): Checker[] {
+  const chain = chainOf(p, drawId);
+  const setting = p.loadDrawSetting(p.draw(drawId)).setting;
+  return (CHECKERS as readonly Checker[]).filter((c) => {
+    if (!enabled.includes(c)) return false;
+    if (c === "structure" || c === "resemblance") return !chain.profile(c);
+    if (c === "claims") return !!setting?.claims;
+    return true;
+  });
+}
+
 /** The prompt pair each authority runs: the web asks for real-world claims, the distillate asks for claims about the setting. */
 const CLAIMS_PROMPTS: Record<ClaimsAuthority, { extract: TemplateName; verify: TemplateName }> = {
   world: { extract: "claimsExtract", verify: "claimsVerifyWorld" },
@@ -70,7 +88,7 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
   // the prose is held to the author's outline and the fixes accepted since, not to what a repair wrote into the outline
   const brief = briefBlock({ ...parts, outline: chain.outline() });
   const pass = passId();
-  const enabled = (opts.checks ?? cfg.checks.enabled).filter((c) => (CHECKERS as readonly string[]).includes(c)) as Checker[];
+  const enabled = checkersNext(p, drawId, opts.checks ?? cfg.checks.enabled);
   const dismissed = chain.dismissed();
   const shape = findingShape(parts.settingJobs);
   const S = (name: string) => opts.samples ? { samples: opts.samples, keep_if: Math.min(cfg.checks.keep_if, opts.samples) } : samplesFor(cfg.checks, name);
@@ -92,9 +110,9 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
     }).then((r) => { perChecker.push(r); }));
   }
   // structure and resemblance profile the premise, which a repair never changes: once per chain
-  if (enabled.includes("structure") && !chain.profile("structure")) runs.push(sampled(p, drawId, parts, "check-structure", fill("checkStructure", { brief }), S("structure"), "structure", (t) => ({ answers: parseQuestions(t, STRUCTURE_QUESTIONS) }),
+  if (enabled.includes("structure")) runs.push(sampled(p, drawId, parts, "check-structure", fill("checkStructure", { brief }), S("structure"), "structure", (t) => ({ answers: parseQuestions(t, STRUCTURE_QUESTIONS) }),
     (step, value, sample) => p.artifact(step, "profile", JSON.stringify(value.answers), { pass, sample, source: "check", checker: "structure", answers: value.answers })));
-  if (enabled.includes("resemblance") && !chain.profile("resemblance")) runs.push(sampled(p, drawId, parts, "check-resemblance", fill("checkResemblance", { brief, list: loadPremiseList(opts.premisesPath) }), S("resemblance"), "resemblance", (t) => {
+  if (enabled.includes("resemblance")) runs.push(sampled(p, drawId, parts, "check-resemblance", fill("checkResemblance", { brief, list: loadPremiseList(opts.premisesPath) }), S("resemblance"), "resemblance", (t) => {
     const nearest = tag(t, "nearest");
     if (!nearest) throw new Error("no <nearest> tag");
     const matches = tags(t, "match").map((m) => ({ entry: tag(m, "entry") ?? "", span: tag(m, "span") ?? "" }));
@@ -103,6 +121,7 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
 
   let claims: CheckResult["claims"] = "off";
   const { setting } = p.loadDrawSetting(parts.draw);
+  // the list already holds claims only when the setting names an authority
   if (enabled.includes("claims") && setting?.claims) {
     claims = setting.claims;
     const reference = claims === "setting" ? distillate(setting) : "";

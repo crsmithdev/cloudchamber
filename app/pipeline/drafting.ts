@@ -15,7 +15,7 @@ import type { DrawRow, Pipeline } from "./draw.ts";
 import { record } from "./verdicts.ts";
 import { must, settle, under, type Action, type Status } from "./lifecycle.ts";
 import { loadDraftConfig, type DraftConfig, type Overrides, type Resolved } from "./draftconfig.ts";
-import { extractLedger, runCheck, type CheckResult } from "./check.ts";
+import { extractLedger, runCheck, STRUCTURE_QUESTIONS, type CheckResult } from "./check.ts";
 import { applyPatches, constraintsBlock, repair, type Accepted } from "./repair.ts";
 import { briefBlock, briefParts, passId } from "./briefparts.ts";
 import { chainOf, type FindingView } from "./chain.ts";
@@ -23,6 +23,7 @@ import { currentScenes, runScenes, runSchedule, runScreens, writeScene, type Sch
 import { draftView, exportDraft, renderStory, type DraftView } from "./drafts.ts";
 import { tag, words } from "./model.ts";
 import { fill } from "./prompts.ts";
+import { SCORE_MAX } from "./recur.ts";
 
 export type AutoRound = { round: number; id: string; open: number; total: number; accepted: number; calls: number };
 export type AutoResult = { id: string; rounds: AutoRound[]; best: AutoRound; stopped: "floor" | "cap" | "patience" | "budget"; floor: number; calls: number; left_open: number };
@@ -75,7 +76,7 @@ export class Drafting {
     return r;
   }
 
-  findings(drawId: string, opts: { all?: boolean } = {}): { pass: string | null; findings: FindingView[]; claims: unknown[]; profiles: unknown[]; examined: { stage: string; sample: number; examined: string }[]; judge: string | null } {
+  findings(drawId: string, opts: { all?: boolean } = {}): { pass: string | null; findings: FindingView[]; claims: unknown[]; profiles: unknown[]; examined: { stage: string; sample: number; examined: string }[]; judge: string | null; score_max: number; structure: string[] } {
     this.p.draw(drawId);
     const chain = chainOf(this.p, drawId);
     const pass = chain.pass();
@@ -94,6 +95,8 @@ export class Drafting {
         return up ? [{ ...up.meta, from_draw: up.draw }] : [];
       }),
       examined, judge: chain.judge(),
+      // what the page needs to read a finding and a profile: the score it is out of, and the profile's questions in order
+      score_max: SCORE_MAX, structure: STRUCTURE_QUESTIONS,
     };
   }
 

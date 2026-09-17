@@ -68,6 +68,27 @@ export function tabOf(draw: Pick<DrawRow, "status" | "chosen_step" | "repaired_f
   return "ideate";
 }
 
+/**
+ * The tab a step belongs in: generation is ideate, checking and repair are
+ * check, and scheduling, scenes and screens are write. The page filters its
+ * step list by this rather than holding the stage names itself.
+ */
+/**
+ * The tab each stage's steps belong in. `null` is a stage that runs on no draw
+ * — the corpus and setting stages — so no draw's step list holds one. The page
+ * filters its steps by this rather than keeping the stage names itself; a new
+ * stage has to be placed here, which is the point of writing them all out.
+ */
+const STAGE_TAB: Readonly<Record<string, Tab | null>> = {
+  themes: null, redundancy: null, "distill-map": null, distill: null,
+  premises: "ideate", execute: "ideate", outline: "ideate", jobs: "ideate", context: "ideate", ending: "ideate",
+  "ledger-extract": "check", "check-derivation": "check", "check-ledger": "check", "check-verify": "check",
+  "check-structure": "check", "check-resemblance": "check", "check-claims-extract": "check", "check-claims-verify": "check",
+  reconcile: "check", "repair-vignette": "check", "repair-context": "check", "repair-outline": "check", "repair-ending": "check",
+  schedule: "write", scene: "write", "screen-ledger": "write", "screen-structure": "write", "screen-slop": "write",
+};
+export const stageTab = (stage: string): Tab | null => STAGE_TAB[stage] ?? null;
+
 /** The tab where a draw at this status waits for a person: at a gate, or a brief nobody has checked. */
 export function waitsIn(status: string): Tab | null {
   return status === "awaiting_gate" ? "ideate" : status === "done" || status === "awaiting_check_gate" ? "check" : status === "awaiting_draft_gate" ? "write" : null;

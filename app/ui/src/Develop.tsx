@@ -348,9 +348,10 @@ function CheckControls({
   const replaced = "This brief was repaired into a new round. Work there.";
   // a refused action says why: the server's reason, or on a superseded round where to work instead
   const why = (reason: string | null) => (d.draw.status === "repaired" ? replaced : (reason ?? ""));
-  const cfg = d.draw.draft_config ? JSON.parse(d.draw.draft_config).config : null;
-  const repair = cfg?.repair ?? { rounds: 4, stop_score: 7, patience: 2 };
-  const checks = `derivation, ledger, structure, resemblance${d.draw.setting ? ", claims" : ""}`;
+  const repair = d.repair;
+  const checks = d.checks_next.join(", ");
+  // the words a draft would run to, once the draw has settled a config of its own
+  const drafted = d.draw.draft_config ? JSON.parse(d.draw.draft_config).config : null;
   return (
     <div className="controls" role="group" aria-label="Brief">
       <Btn
@@ -359,7 +360,7 @@ function CheckControls({
         onClick={onAuto}
         title={
           !a.auto
-            ? `${unchecked ? `Check the brief (${checks}), then repair` : "Repair"} round after round without asking: accept every finding scoring ${repair.stop_score} or more, dismiss the rest, re-check, repeat. It stops when nothing reaches ${repair.stop_score}, after ${repair.rounds} rounds, or when the total score has not fallen for ${repair.patience} rounds.${atGate && !openFindings ? " No finding is open." : ""}`
+            ? `${unchecked ? `Check the brief (${checks}), then repair` : "Repair"} round after round without asking: accept every finding scoring ${repair.stop_score} or more, dismiss the rest, re-check, repeat. It stops when nothing reaches ${repair.stop_score}, after ${repair.rounds} rounds, after ${repair.max_calls} model calls, or when the total score has not fallen for ${repair.patience} rounds.${atGate && !openFindings ? " No finding is open." : ""}`
             : why(a.auto)
         }
       >
@@ -379,7 +380,7 @@ function CheckControls({
           a.draft ? why(a.draft) : pendingRepair ? "Accepted findings are waiting for their repair." : `Set up the draft and write the story from this brief as it stands${unchecked ? ", unchecked" : ""}.`
         }
       >
-        draft{cfg ? ` · ${cfg.length.words} words` : ""} <Chevron open />
+        draft{drafted ? ` · ${drafted.length.words} words` : ""} <Chevron open />
       </Btn>
       <span className="end">
         <input type="text" placeholder="note for the log" aria-label="Note for the log" value={note} onChange={(e) => onNote(e.target.value)} />
@@ -491,19 +492,21 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [note, setNote] = useState("");
   const [examined, setExamined] = useState(false);
-  const [floor, setFloor] = useState(DEFAULT_FLOOR);
+  const [floor, setFloor] = useState(d.repair.stop_score);
   const [showAll, setShowAll] = useState(false);
+  // a dismissal adds no step, so the list also reloads on demand: without this it kept showing the finding as open
+  const [ruled, setRuled] = useState(0);
   const id = d.draw.id;
   useEffect(() => {
     api
       .findings(id, showAll)
       .then(setF)
       .catch(() => {});
-  }, [id, d.steps.length, showAll]);
+  }, [id, d.steps.length, showAll, ruled]);
   // the command names the draw to show next; dismiss names none, so the pane stays where it is
   const gate = (action: string, extra: Record<string, unknown> = {}) =>
     onAct(
-      () => api.gate(id, { action, note, ...extra }),
+      () => api.gate(id, { action, note, ...extra }).then((r) => { setRuled((n) => n + 1); return r; }),
       (r) => r?.draw ?? undefined,
     );
   const open = f?.findings.filter((x) => x.decision === "open") ?? [];
@@ -563,7 +566,7 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
             <Btn variant="keep" disabled={!atFloor.length} onClick={() => setSel(new Set(atFloor.map((x) => x.id)))} title={`Select every open finding scoring ${floor} or more.`}>
               ≥ {floor} ({atFloor.length})
             </Btn>
-            <input type="range" min={1} max={SCORE_MAX} step={1} value={floor} aria-label="Score floor" onChange={(e) => setFloor(Number(e.target.value))} />
+            <input type="range" min={1} max={f?.score_max ?? floor} step={1} value={floor} aria-label="Score floor" onChange={(e) => setFloor(Number(e.target.value))} />
             <Btn variant="quiet" disabled={!sel.size} onClick={() => setSel(new Set())} title="Clear the selection.">
               clear
             </Btn>
@@ -664,7 +667,7 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
               {f.findings
                 .filter((x) => !x.relitigates)
                 .map((x) => (
-                  <FindingRow key={x.id} f={x} S={x.samples_run ?? S} selected={sel.has(x.id)} onToggle={() => toggle(x.id)} onDismiss={() => gate("dismiss", { finding: x.id })} readOnly={repaired} />
+                  <FindingRow key={x.id} f={x} S={x.samples_run ?? S} scoreMax={f.score_max} selected={sel.has(x.id)} onToggle={() => toggle(x.id)} onDismiss={() => gate("dismiss", { finding: x.id })} readOnly={repaired} />
                 ))}
               {reopened.length > 0 && (
                 <>
@@ -676,7 +679,7 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
                     this is the loop arguing with itself, in which case dismiss it.
                   </div>
                   {reopened.map((x) => (
-                    <FindingRow key={x.id} f={x} S={x.samples_run ?? S} selected={sel.has(x.id)} onToggle={() => toggle(x.id)} onDismiss={() => gate("dismiss", { finding: x.id })} readOnly={repaired} />
+                    <FindingRow key={x.id} f={x} S={x.samples_run ?? S} scoreMax={f.score_max} selected={sel.has(x.id)} onToggle={() => toggle(x.id)} onDismiss={() => gate("dismiss", { finding: x.id })} readOnly={repaired} />
                   ))}
                 </>
               )}
@@ -811,13 +814,13 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
 
 /** A finding as a row: score, recurrence as marks, the job it breaks, the checkers, then the span, the statement and the ledger of result, evidence and replacement. */
 /** A finding: the values on one ruled line, then the span, the statement and the ledger at full width. */
-function FindingRow({ f, S, selected, onToggle, onDismiss, readOnly }: { f: Finding; S: number; selected: boolean; onToggle: () => void; onDismiss: () => void; readOnly: boolean }) {
+function FindingRow({ f, S, scoreMax, selected, onToggle, onDismiss, readOnly }: { f: Finding; S: number; scoreMax: number; selected: boolean; onToggle: () => void; onDismiss: () => void; readOnly: boolean }) {
   const acc = f.decision === "accepted" || selected;
   const cls = "finding" + (acc ? " sel" : "") + (f.decision === "dismissed" ? " old" : "");
   return (
     <div className={cls}>
       <div className="line">
-        <span className="num w-6 font-semibold" title={`score ${f.score} of ${SCORE_MAX}: recurrence, a second checker, what it invalidates, the kind of result, and whether it quotes evidence`}>
+        <span className="num w-6 font-semibold" title={`score ${f.score} of ${scoreMax}: recurrence, a second checker, what it invalidates, the kind of result, and whether it quotes evidence`}>
           {f.score}
         </span>
         <span className="whitespace-nowrap" title={`recurred in ${f.n} of ${S} samples`}>
@@ -886,11 +889,7 @@ function FindingRow({ f, S, selected, onToggle, onDismiss, readOnly }: { f: Find
   );
 }
 
-export const SCORE_MAX = 10;
-const DEFAULT_FLOOR = 7;
-
-const STRUCTURE_Q = ["threat", "category-violation", "agency", "obscurity", "thickening", "spectacle", "consequence"];
-/** The seven questions as the checker is asked them (app/pipeline/prompts.ts, checkStructure). */
+/** The questions as the checker is asked them (app/pipeline/prompts.ts, checkStructure); the server names which it asks and in what order. */
 const STRUCTURE_DEF: Record<string, string> = {
   threat: "Something in the brief would harm or endanger someone in it.",
   "category-violation": "A boundary is violated: between living and dead, self and other, inside and outside, one thing and another. Not: something is disgusting.",
@@ -918,7 +917,7 @@ function Profiles({ f }: { f: Findings }) {
           </Head>
           <table className="mt-1">
             <tbody>
-              {STRUCTURE_Q.map((q) => {
+              {f.structure.map((q) => {
                 const a = structure.answers![q];
                 const present = a?.answer === "present";
                 return (

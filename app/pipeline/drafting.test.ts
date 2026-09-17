@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { SCHEMA_VERSION, openDb, type Db } from "./store/db.ts";
 import { FakeModel } from "./model.ts";
 import { parseConflicts } from "./drafting.ts";
-import { NOT_IN_PROSE } from "./check.ts";
+import { checkersNext, NOT_IN_PROSE } from "./check.ts";
 import { settingsFixture } from "./settings.fixture.ts";
 import { LISTS, loadSetting } from "./settings.ts";
 import { latest, readLog, record } from "./verdicts.ts";
@@ -322,6 +322,10 @@ describe("check and gate 1", () => {
     const next = await d.accept(draw.id, [a.id]);
     expect(profiled()).toEqual(["check-resemblance", "check-structure"]);      // the re-check runs neither again
     expect(p.artifacts(next.id).filter((x) => x.kind === "profile")).toHaveLength(0);
+    // the same rule answers what the next check would run, which is what the page states
+    const enabled = ["claims", "derivation", "ledger", "structure", "resemblance"];
+    expect(checkersNext(p, draw.id, enabled)).toEqual(["derivation", "ledger"]);   // profiled already, and the draw has no setting
+    expect(checkersNext(p, draw.id, ["derivation"])).toEqual(["derivation"]);
 
     const profiles = d.findings(next.id).profiles as any[];                    // the gate still shows both
     expect(profiles.map((x) => x.checker).sort()).toEqual(["resemblance", "structure"]);

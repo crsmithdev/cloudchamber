@@ -11,8 +11,9 @@ import { renderStory } from "../pipeline/drafts.ts";
 import { status } from "../pipeline/status.ts";
 import { originOf } from "../pipeline/stage.ts";
 import { gateCommand, type GateArgs, type GateResult } from "../pipeline/gate.ts";
+import { checkersNext } from "../pipeline/check.ts";
 import { partsView } from "../pipeline/briefparts.ts";
-import { lifecycleView, type DrawFacts } from "../pipeline/lifecycle.ts";
+import { lifecycleView, stageTab, type DrawFacts } from "../pipeline/lifecycle.ts";
 import { BANDS, DARKNESS, GENRES, SAMPLING } from "../pipeline/config.ts";
 import { exportBank, sourceLabel } from "../pipeline/bank.ts";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
@@ -20,7 +21,7 @@ import { join, resolve, sep } from "node:path";
 import { BRIEFS } from "../pipeline/paths.ts";
 import { Drafting } from "../pipeline/drafting.ts";
 import { loadSetting } from "../pipeline/settings.ts";
-import { loadDraftConfig, profileNames, type Overrides } from "../pipeline/draftconfig.ts";
+import { loadDraftConfig, profileNames, type DraftConfig, type Overrides } from "../pipeline/draftconfig.ts";
 
 export type ItemOrder = "source" | "suspects" | "shuffle";
 export type ItemFilter = { kind: Kind; source?: string; author?: string; genre?: string; cell?: string; verdict?: "unreviewed" | "keep" | "pass"; artifact?: boolean; suspect?: boolean; order?: ItemOrder; seed?: number; limit?: number; offset?: number };
@@ -211,8 +212,12 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
       const draw = { ...row, ...lifecycleView({ ...row, referenced_by: pipeline.referencedBy(row.id) }) };
       // the pane polls this every few seconds; a step's prompt and response are read from /api/steps/:id when one is opened
       const steps = pipeline.steps(draw.id).map(({ prompt, raw_response, parsed, ...s }) =>
-        ({ ...s, prompt_chars: prompt.length, raw_chars: raw_response?.length ?? 0, parsed_chars: parsed?.length ?? 0 }));
-      return { draw, origin: originOf(pipeline, row.id), steps, parts: partsView(pipeline, draw.id), artifacts: pipeline.artifacts(draw.id), candidates: pipeline.candidates(draw.id), examples: drawExamples(db, draw.example_ids), forks: pipeline.forks(draw.id) };
+        ({ ...s, tab: stageTab(s.stage), prompt_chars: prompt.length, raw_chars: raw_response?.length ?? 0, parsed_chars: parsed?.length ?? 0 }));
+      // what a check would run on this draw now, and the repair settings it would run under: the page states neither itself
+      const cfg = row.draft_config ? (JSON.parse(row.draft_config).config as DraftConfig) : loadDraftConfig().config;
+      const checks_next = row.chosen_step ? checkersNext(pipeline, row.id, cfg.checks.enabled) : [];
+      return { draw, origin: originOf(pipeline, row.id), steps, parts: partsView(pipeline, draw.id), checks_next, repair: cfg.repair,
+               artifacts: pipeline.artifacts(draw.id), candidates: pipeline.candidates(draw.id), examples: drawExamples(db, draw.example_ids), forks: pipeline.forks(draw.id) };
     } catch (e: any) { return reply.code(404).send({ error: e.message }); }
   });
 

@@ -1,12 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { marked } from "marked";
-import { api, when, type Artifact, type Candidate, type Example, type Facets, type Draw, type Fork, type FullStep, type Origin, type Parts, type Source, type Status, type Step } from "./api.ts";
+import { api, when, type Artifact, type Candidate, type Example, type Facets, type Draw, type Fork, type FullStep, type Origin, type Parts, type Repair, type Source, type Status, type Step } from "./api.ts";
 import { ArchivedToggle, Bar, Btn, Caret, Chip, Field, Head, Icon, LinkBtn, Mark, Seg, hhmm, lastSelected, markFor, secs, usePoll, useRememberSelected, useTick, type MarkState } from "./ui.tsx";
 
-export type Detail = { draw: Draw; origin: Origin | null; steps: Step[]; parts: Parts; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] };
+export type Detail = { draw: Draw; origin: Origin | null; steps: Step[]; parts: Parts; checks_next: string[]; repair: Repair; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] };
 const STAGES = ["premises", "execute", "gate", "outline", "context", "ending", "brief"];
-/** The stages a draw runs before its brief; checks, repairs and drafting belong to the check and write tabs. */
-export const IDEATION = new Set(["premises", "execute", "outline", "jobs", "context", "ending"]);
 export const LABEL: Record<string, string> = {
   awaiting_gate: "choose a premise",
   done: "brief",
@@ -418,9 +416,9 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
 
 /** The open row's one summary line: where the draw stands, in a few words. The step log is in the reading pane. */
 function drawSummary(d: Detail) {
-  const running = d.steps.filter((s) => s.status === "running" && IDEATION.has(s.stage));
+  const running = d.steps.filter((s) => s.status === "running" && s.tab === "ideate");
   const chosen = d.candidates.find((c) => c.step_id === d.draw.chosen_step);
-  const failed = d.steps.filter((s) => s.status === "failed" && IDEATION.has(s.stage)).length;
+  const failed = d.steps.filter((s) => s.status === "failed" && s.tab === "ideate").length;
   if (running.length) return `running · ${stageNames(running)}`;
   if (d.draw.status === "awaiting_gate") return `choose a premise · ${d.candidates.length} written`;
   if (d.draw.status === "failed") return `failed · ${failed} step${failed === 1 ? "" : "s"}`;
@@ -438,8 +436,8 @@ const STAGE: Record<string, { name: string; does: string }> = {
   context: { name: "write context", does: "Writes one context vignette to its job from the plan. There are two." },
   ending: { name: "write ending", does: "Writes the last beat from the outline's numbers and its custody of the evidence." },
   brief: { name: "export brief", does: "The premise, the outline, the three vignettes and the ending, written to files under briefs/." },
-  "repair-vignette": { name: "copy vignette", does: "A repair round starts from the chosen vignette, copied as it was. No model call." },
-  "repair-context": { name: "repair context", does: "Rewrites one context vignette from itself under the replacements of the findings that landed in it." },
+  "repair-vignette": { name: "repair vignette", does: "A repair round starts from the chosen vignette: rewritten from itself when an accepted finding lands in it, carried over otherwise. The step's model says which." },
+  "repair-context": { name: "repair context", does: "Rewrites one context vignette from itself under the replacements of the findings that landed in it. A context nothing landed in is carried over instead." },
   "repair-outline": { name: "repair outline", does: "Edits the outline as it stands under the replacements of the findings you accepted, and changes nothing else." },
   "repair-ending": { name: "repair ending", does: "Writes the ending again from the repaired outline." },
   "ledger-extract": { name: "extract ledger", does: "Lists every settled fact in the outline: times, details, who knows what, who holds what, the world's rules." },
@@ -497,7 +495,7 @@ export function Log({ d, stepId, onStep, ideation }: { d: Detail; stepId: string
     }
   };
   walk(null);
-  if (ideation) flat.splice(0, flat.length, ...flat.filter((s) => IDEATION.has(s.stage)));
+  if (ideation) flat.splice(0, flat.length, ...flat.filter((s) => s.tab === "ideate"));
   useTick(d.steps.some((s) => s.status === "running" && Date.now() - Date.parse(s.started_at) < 30 * 60 * 1000));
   const cand = new Map(d.candidates.map((c) => [c.step_id, c]));
   // a stage that runs more than once (samples, claims, the two context vignettes) numbers each run
@@ -831,7 +829,7 @@ function DrawBody({
  */
 type Row = [React.ReactNode, React.ReactNode];
 export function DrawAside({ d, ideation, onStep, top, rows = [] }: { d: Detail; ideation?: boolean; onStep: (id: string) => void; top?: React.ReactNode; rows?: Row[] }) {
-  const mine = d.steps.filter((s) => !ideation || IDEATION.has(s.stage));
+  const mine = d.steps.filter((s) => !ideation || s.tab === "ideate");
   const steps = mine.filter((s) => s.status === "done");
   const gating = d.draw.status === "awaiting_gate" || d.draw.status === "running";
   const total = mine.length + (ideation && gating ? STAGES.length - mine.length : 0);

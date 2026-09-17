@@ -120,6 +120,10 @@ describe("api", () => {
     expect(r.body.candidates.map((c: any) => c.probability)).toEqual([0.02, 0.03, 0.05, 0.06, 0.08]);
     // before the gate an executed vignette is a candidate, not a part, so the brief is empty and the page says so
     expect(r.body.parts).toEqual({ vignette: null, outline: null, contexts: [], ending: null });
+    // before the gate a check would run nothing, and the repair settings are the defaults until the draw has its own
+    expect(r.body.checks_next).toEqual([]);
+    expect(r.body.repair).toEqual({ rounds: 4, stop_score: 7, patience: 2, max_calls: 120 });
+    expect(r.body.steps.map((s: any) => s.tab)).toEqual(["ideate", "ideate", "ideate", "ideate", "ideate", "ideate"]);
     const flag = await j("POST", `/api/draws/${id}/gate`, { action: "flag", note: "looks wrong" });
     expect(flag.body.payload.flagged).toBe(1);
     const chosen = await j("POST", `/api/draws/${id}/gate`, { action: "choose", step_id: r.body.candidates[1].step_id });
@@ -128,6 +132,8 @@ describe("api", () => {
     const done = await j("GET", `/api/draws/${id}`);
     expect(done.body.draw.status).toBe("done");
     expect(done.body.draw.gate_method).toBe("manual");
+    // the brief exists now, so a check would run the four that need no setting; claims is out, the draw is unrestricted
+    expect(done.body.checks_next).toEqual(["derivation", "ledger", "structure", "resemblance"]);
     expect(done.body.artifacts.filter((a: any) => a.kind === "vignette")).toHaveLength(7);   // 5 executed + 2 context
     // the parts of the brief come by role, so the page never tells a context vignette from the chosen one itself
     const parts = done.body.parts;
