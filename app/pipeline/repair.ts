@@ -15,9 +15,10 @@ import { need, words } from "./model.ts";
 import { now } from "./paths.ts";
 import { writeBrief } from "./brief.ts";
 import { settle, under } from "./lifecycle.ts";
-import { briefParts, pinnedLedger, settledConstraints, type Settled } from "./briefparts.ts";
+import { briefParts } from "./briefparts.ts";
+import { chainOf, type Settled } from "./chain.ts";
 import { quoted } from "./recur.ts";
-import type { FindingView } from "./briefparts.ts";
+import type { FindingView } from "./chain.ts";
 
 export type Accepted = Pick<FindingView, "id" | "span" | "invalidates" | "replacement"> & { patch?: string; result?: string };
 
@@ -164,10 +165,11 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
   const landed = new Set([patchedVignette, patchedEnding, ...patchedContexts].flatMap((x) => x.applied.map((f) => f.id)));
   const endingExtra = accepted.filter((f) => ENDING_SECTIONS.has(f.invalidates.toLowerCase()) && (!f.patch?.trim() || !landed.has(f.id)));
   // the accepted set of this round is not the whole record: every earlier round's fix still holds
-  const settledLines = settledConstraints(p, parts.draw.id).filter((sc) => !accepted.some((a) => a.id === sc.finding));
+  const chain = chainOf(p, parts.draw.id);
+  const settledLines = chain.settled().filter((sc) => !accepted.some((a) => a.id === sc.finding));
   const settled = settledBlock(settledLines);
   // the repair writes against the same pinned contract the check will hold it to
-  const pinned = pinnedLedger(p, parts.draw.id);
+  const pinned = chain.ledger();
   const ledger = pinned ? fill("pinnedLedger", { ledger: pinned }) : "";
   const { setting } = p.loadDrawSetting(parts.draw);
   // a repair rewrites one passage against constraints it is given; the six example passages set

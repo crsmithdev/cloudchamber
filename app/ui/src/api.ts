@@ -44,7 +44,6 @@ export type Draw = {
   created_at: string;
   ended_at: string | null;
   check?: CheckSummary | null;
-  check_pending?: boolean;
   /** Why the last action on the draw failed; null once a later one succeeds. */
   error: string | null;
   /** The server's lifecycle answers: the UI keeps no status rules of its own. */

@@ -6,7 +6,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Pipeline } from "./draw.ts";
 import { BRIEFS, DRAFTS } from "./paths.ts";
-import { checkFindings, decision, findingArtifacts, judgeNote, type FindingView } from "./briefparts.ts";
+import { chainOf, type FindingView } from "./chain.ts";
 import { score } from "./recur.ts";
 import { words } from "./model.ts";
 import { toToml, type Resolved } from "./draftconfig.ts";
@@ -35,13 +35,14 @@ export function draftView(p: Pipeline, drawId: string): DraftView {
   const profiles = profileArts.filter((pr) => latestPass.get(pr.beat) === pr.pass).sort((a, b) => a.beat - b.beat);
   // a screen's denominator is the highest sample number it recurred in, the same figure the panes print
   // a flag carries a verdict like a check finding does: applying its patch settles it
-  const screenFindings = findingArtifacts(p, drawId).filter((f) => f.source === "screen" && (latestPass.get(f.beat!) ?? f.pass) === f.pass)
-    .map((f) => { const samples_run = Math.max(f.n, ...f.samples); return { ...f, ...decision(p, f.id), samples_run, score: score(f, samples_run), reported: true }; })
+  const chain = chainOf(p, drawId);
+  const screenFindings = chain.findingArtifacts().filter((f) => f.source === "screen" && (latestPass.get(f.beat!) ?? f.pass) === f.pass)
+    .map((f) => { const samples_run = Math.max(f.n, ...f.samples); return { ...f, ...chain.decision(f.id), samples_run, score: score(f, samples_run), reported: true }; })
     .sort((a, b) => a.beat! - b.beat! || b.score - a.score);
   const slopArt = [...arts].reverse().find((a) => a.kind === "slop");
   return {
     schedule: sched ? { ...(JSON.parse(sched.meta) as { form: Record<string, string>; beats: Beat[] }), raw: sched.content } : null,
-    scenes, profiles, screenFindings, slop: slopArt ? (JSON.parse(slopArt.content) as SlopReport) : null, judge: judgeNote(p, drawId),
+    scenes, profiles, screenFindings, slop: slopArt ? (JSON.parse(slopArt.content) as SlopReport) : null, judge: chain.judge(),
   };
 }
 
@@ -70,7 +71,7 @@ export function renderSchedule(v: DraftView): string {
 }
 
 export function renderFindings(p: Pipeline, drawId: string, v: DraftView): string {
-  const checks = checkFindings(p, drawId);
+  const checks = chainOf(p, drawId).findings();
   const out = ["# Findings", ""];
   out.push("## Check", "");
   if (!checks.length) out.push("none reported", "");

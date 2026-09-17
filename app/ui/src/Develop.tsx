@@ -50,8 +50,7 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
   const archived = all.length - chains.length;
   const heads = chains.map((c) => c.head);
   const busy = heads.some((r) => r.running);
-  const summarising = chains.some((c) => c.rounds.some((r) => r.check_pending));
-  usePoll(loadDraws, busy || summarising, [stage], 3000, 15000);
+  usePoll(loadDraws, busy, [stage], 3000, 15000);
   // with nothing chosen, the draw last selected in this tab while its chain is still here, else the newest
   const last = lastSelected(stage);
   const current = selected ?? (all.some((c) => c.rounds.some((r) => r.id === last)) ? last : heads[0]?.id);
@@ -305,7 +304,7 @@ function Rounds({ chain, current, statusLine }: { chain: Chain; current: string;
               <td>
                 <Bar pct={x.check ? (x.check.total / max) * 100 : 0} gold={x === lowest} />
               </td>
-              <td className={"num text-right" + (x === lowest ? " text-keep" : "")}>{x.check ? x.check.total : x.check_pending ? "…" : "—"}</td>
+              <td className={"num text-right" + (x === lowest ? " text-keep" : "")}>{x.check ? x.check.total : "—"}</td>
               <td className="num text-right text-dim">{x.check ? `${x.check.accepted}/${x.check.reported}` : ""}</td>
             </tr>
           ))}

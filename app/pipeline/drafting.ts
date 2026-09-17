@@ -17,7 +17,8 @@ import { must, settle, under, type Action, type Status } from "./lifecycle.ts";
 import { loadDraftConfig, type DraftConfig, type Overrides, type Resolved } from "./draftconfig.ts";
 import { extractLedger, runCheck, type CheckResult } from "./check.ts";
 import { applyPatches, constraintsBlock, repair, type Accepted } from "./repair.ts";
-import { briefBlock, briefParts, chainIds, chainProfile, checkFindings, gateFindings, judgeNote, latestCheckPass, passId, pinnedLedger, type FindingView } from "./briefparts.ts";
+import { briefBlock, briefParts, passId } from "./briefparts.ts";
+import { chainOf, type FindingView } from "./chain.ts";
 import { currentScenes, runScenes, runSchedule, runScreens, writeScene, type Schedule } from "./write.ts";
 import { draftView, exportDraft, renderStory, type DraftView } from "./drafts.ts";
 import { tag, words } from "./model.ts";
@@ -76,22 +77,23 @@ export class Drafting {
 
   findings(drawId: string, opts: { all?: boolean } = {}): { pass: string | null; findings: FindingView[]; claims: unknown[]; profiles: unknown[]; examined: { stage: string; sample: number; examined: string }[]; judge: string | null } {
     this.p.draw(drawId);
-    const pass = latestCheckPass(this.p, drawId);
+    const chain = chainOf(this.p, drawId);
+    const pass = chain.pass();
     const arts = this.p.artifacts(drawId);
     const meta = (a: { meta: string }) => JSON.parse(a.meta);
     const steps = this.p.steps(drawId).filter((s) => /^check-/.test(s.stage) && s.status === "done");
     const examined = steps.map((s, i) => ({ stage: s.stage, sample: i + 1, examined: String((JSON.parse(s.parsed ?? "{}") as any).examined ?? "") })).filter((x) => x.examined);
     return {
-      pass, findings: gateFindings(this.p, drawId, opts.all),
+      pass, findings: chain.findings(opts.all),
       claims: arts.filter((a) => a.kind === "claim" && meta(a).pass === pass).map((a) => ({ statement: a.content, ...meta(a) })),
       // a repair round runs neither profile checker, so the chain's own profile stands in
       profiles: ["structure", "resemblance"].flatMap((c) => {
         const here = arts.filter((a) => a.kind === "profile" && meta(a).source === "check" && meta(a).checker === c && meta(a).pass === pass).map((a) => meta(a));
         if (here.length) return here;
-        const up = chainProfile(this.p, drawId, c);
+        const up = chain.profile(c);
         return up ? [{ ...up.meta, from_draw: up.draw }] : [];
       }),
-      examined, judge: judgeNote(this.p, drawId),
+      examined, judge: chain.judge(),
     };
   }
 
@@ -100,7 +102,7 @@ export class Drafting {
   /** Accept findings by id and run the repair, then the re-check. Returns the repaired draw. */
   async accept(drawId: string, ids: string[], opts: { method?: "gate" | "draw"; note?: string } = {}): Promise<DrawRow> {
     const draw = this.must(drawId, "accept");
-    const open = gateFindings(this.p, drawId, true);
+    const open = chainOf(this.p, drawId).findings(true);
     const chosen = ids.map((id) => { const f = open.find((x) => x.id === id); if (!f) throw new Error(`draw ${drawId}: no reported finding ${id}`); return this.promote(drawId, f); });
     for (const f of chosen) record(this.p.db, { kind: "finding", target_id: f.id, verdict: "keep", method: opts.method ?? "gate", note: opts.note ?? "" });
     const accepted: Accepted[] = [...open.filter((f) => f.decision === "accepted"), ...chosen].filter((f, i, a) => a.findIndex((x) => x.id === f.id) === i);
@@ -115,7 +117,7 @@ export class Drafting {
 
   dismiss(drawId: string, id: string, note = "", method: "gate" | "draw" = "gate"): FindingView {
     this.must(drawId, "dismiss");
-    const f = gateFindings(this.p, drawId, true).find((x) => x.id === id);
+    const f = chainOf(this.p, drawId).findings(true).find((x) => x.id === id);
     if (!f) throw new Error(`draw ${drawId}: no reported finding ${id}`);
     this.promote(drawId, f);
     record(this.p.db, { kind: "finding", target_id: id, verdict: "pass", method, note });
@@ -149,7 +151,7 @@ export class Drafting {
       const next = await this.autoGate(drawId, resolved.config);
       if (next !== drawId) { drawId = next; draw = this.p.draw(drawId); }
     }
-    if (checkFindings(this.p, drawId).some((f) => f.decision === "accepted")) throw new Error("accepted findings pending repair");
+    if (chainOf(this.p, drawId).findings().some((f) => f.decision === "accepted")) throw new Error("accepted findings pending repair");
     const id = drawId;
     await under(this.p.db, id, "drafting", this.p.draw(id).status as Status, async () => {
       const parts = briefParts(this.p, id);
@@ -164,7 +166,7 @@ export class Drafting {
 
   /** A draft started without a check has no ledger; one extraction supplies it. */
   private async ensureLedger(drawId: string): Promise<string> {
-    const have = pinnedLedger(this.p, drawId);
+    const have = chainOf(this.p, drawId).ledger();
     if (have) return have;
     const parts = briefParts(this.p, drawId);
     return extractLedger(this.p, drawId, parts, briefBlock(parts), { pass: passId(), sample: 1, ledger_only: true });
@@ -204,16 +206,18 @@ export class Drafting {
     const draw = this.must(drawId, "auto");
     const cfg = opts.cfg ?? this.resolved(draw).config;
     let id = drawId;
-    if (!latestCheckPass(this.p, id)) await this.recheck(id, cfg);
+    if (!chainOf(this.p, id).pass()) await this.recheck(id, cfg);
     const rounds: AutoRound[] = [];
     let stopped: AutoResult["stopped"] = "cap";
     let clean = 0;
     for (let round = 1; ; round++) {
+      // one read of the chain answers this round's findings, its calls and, after the repair, the next round's
+      const chain = chainOf(this.p, id);
       // a finding the verify pass dropped is stored under the bar and open: not auto's either
-      const open = gateFindings(this.p, id).filter((f) => f.decision === "open" && f.reported);
+      const open = chain.findings().filter((f) => f.decision === "open" && f.reported);
       let accept = open.filter((f) => f.score >= cfg.repair.stop_score && autoEligible(f));
       const total = open.reduce((a, f) => a + f.score, 0);
-      const calls = this.chainCalls(id);
+      const calls = chain.calls();
       const row: AutoRound = { round, id, open: open.length, total, accepted: accept.length, calls };
       rounds.push(row);
       // a finding auto will never act on is dismissed with the reason, whatever ends the loop
@@ -244,8 +248,8 @@ export class Drafting {
     const best = rounds.reduce((a, r) => (r.total < a.total ? r : a), rounds[0]);
     this.p.db.query("UPDATE draws SET draft_config = (SELECT draft_config FROM draws WHERE id = ?) WHERE id = ?").run(drawId, id);
     // what the last round would have repaired had the loop gone on: the gate's work, not auto's
-    const left = gateFindings(this.p, id).filter((f) => f.decision === "open" && f.reported && f.score >= cfg.repair.stop_score && autoEligible(f));
-    const result: AutoResult = { id, rounds, best, stopped, floor: cfg.repair.stop_score, calls: this.chainCalls(id), left_open: left.length };
+    const left = chainOf(this.p, id).findings().filter((f) => f.decision === "open" && f.reported && f.score >= cfg.repair.stop_score && autoEligible(f));
+    const result: AutoResult = { id, rounds, best, stopped, floor: cfg.repair.stop_score, calls: chainOf(this.p, id).calls(), left_open: left.length };
     // the round table belongs to the brief auto stopped on, so the gate can show how it got there
     const last = this.p.steps(id).filter((s) => s.status === "done").at(-1);
     if (last) this.p.artifact(last, "auto", JSON.stringify(result), { rounds: rounds.length, stopped, best: best.id });
@@ -288,16 +292,11 @@ export class Drafting {
     return accept.filter((f) => !dropped.has(f.id));
   }
 
-  /** Model calls spent on this repair chain, so a run cannot cost more than it is worth. */
-  private chainCalls(drawId: string): number {
-    return chainIds(this.p, drawId).reduce((n, id) => n + this.p.steps(id).filter((s) => !["copied", "deterministic", "patched"].includes(s.model)).length, 0);
-  }
-
   /** `draft --auto` works gate 1 by the same rule and drafts from where it stops. */
   private async autoGate(drawId: string, cfg: DraftConfig): Promise<string> {
     const r = await this.autoRounds(drawId, { cfg });
     // whatever is still open at the last round is not going to be repaired
-    for (const f of gateFindings(this.p, r.id, true).filter((f) => f.decision === "open")) this.dismiss(r.id, f.id, `auto: stopped on ${r.stopped}`, "draw");
+    for (const f of chainOf(this.p, r.id).findings(true).filter((f) => f.decision === "open")) this.dismiss(r.id, f.id, `auto: stopped on ${r.stopped}`, "draw");
     return r.id;
   }
 
@@ -363,7 +362,7 @@ export class Drafting {
     await under(this.p.db, drawId, "drafting", "awaiting_draft_gate", async () => {
       const parts = briefParts(this.p, drawId);
       // the pinned one: a repaired draw carries no ledger of its own, the chain root holds it
-      const ledger = pinnedLedger(this.p, drawId) ?? "";
+      const ledger = chainOf(this.p, drawId).ledger() ?? "";
       const scheduleStep = this.p.steps(drawId).find((s) => s.stage === "schedule" && s.status === "done")!;
       const before = v.scenes.filter((s) => s.beat < k).map((s) => s.text);
       // the scene carries the gate-2 record: which beat was rewritten, and under which flag

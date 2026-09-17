@@ -143,7 +143,23 @@ export function quoted(text: string, quote: string, minWords = 3): boolean {
   const parts = quote.split(/…|\.\.\./).map(loose).filter((x) => x && x.split(" ").length >= minWords);
   return parts.length > 0 && parts.every((x) => t.includes(x));
 }
-const loose = (s: string) => s.toLowerCase().replace(/[*_`"“”'’]/g, "").replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim();
+
+/**
+ * The brief is loosened once per text, not once per finding: a score reads the
+ * same prose, outline and ledger for every finding of a pass, and loosening a
+ * brief is the most expensive part of scoring one.
+ */
+const looseCache = new Map<string, string>();
+const loose = (s: string) => {
+  if (s.length < 512) return looseOf(s);
+  const hit = looseCache.get(s);
+  if (hit !== undefined) return hit;
+  const out = looseOf(s);
+  if (looseCache.size > 16) looseCache.clear();
+  looseCache.set(s, out);
+  return out;
+};
+const looseOf = (s: string) => s.toLowerCase().replace(/[*_`"“”'’]/g, "").replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim();
 
 /**
  * What a reader sees is worth two: the span and a second quote both in the
@@ -153,7 +169,7 @@ const loose = (s: string) => s.toLowerCase().replace(/[*_`"“”'’]/g, "").re
  * geometry that auto fixed while the name in two registries waited.
  */
 export function visibility(f: Scorable, ctx: ScoreContext): number {
-  const prose = loose(ctx.prose), outline = loose(ctx.outline), ledger = loose(ctx.ledger);
+  const prose = ctx.prose, outline = ctx.outline, ledger = ctx.ledger;
   const span = f.span ?? "";
   const qs = quotesOf(f);
   if (quoted(prose, span) && qs.some((q) => quoted(prose, q))) return 2;

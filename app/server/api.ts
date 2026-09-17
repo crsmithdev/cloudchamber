@@ -140,51 +140,22 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     darkness: DARKNESS,
   }));
 
-  // The check summary a list row shows for each round of a repair chain. The findings merge
-  // walks the whole chain and costs seconds, so summaries are memoised on the draw's status
-  // and the count of finding verdicts, and a missing one is computed after the reply, one at a
-  // time, so the list never waits. Until then the row carries null.
+  /**
+   * The check summary a list row shows for each round of a repair chain. One read
+   * of the chain answers it in about four milliseconds, so the list computes it
+   * for every row rather than caching it; the cache it replaces was keyed on a
+   * global verdict count, so any verdict anywhere recomputed all of them.
+   */
   type CheckSummary = { pass: string | null; reported: number; accepted: number; open: number; total: number };
-  const summaries = new Map<string, CheckSummary | null>();
-  const queued = new Set<string>();
-  // one computation per timer, each scheduling the next once it is done, so a request that
-  // arrives between two of them is answered instead of waiting for the whole batch
-  const summaryQueue: [string, string][] = [];
-  let pumping = false;
-  const pump = () => {
-    if (pumping) return;
-    const next = summaryQueue.shift();
-    if (!next) return;
-    pumping = true;
-    setTimeout(() => {
-      const [key, id] = next;
-      try { summaries.set(key, summarise(id)); } catch { summaries.set(key, null); }
-      queued.delete(key);
-      pumping = false;
-      pump();
-    }, 0);
-  };
-  const findingVerdicts = () => (db.query("SELECT count(*) AS n FROM verdicts WHERE kind = 'finding'").get() as { n: number }).n;
-  const summarise = (id: string): CheckSummary | null => {
-    const f = drafting.findings(id);
+  const checkSummary = (r: { id: string; status: string }, stage: string): CheckSummary | null => {
+    if (stage === "ideate" || r.status === "done") return null;
+    const f = drafting.findings(r.id);
     const rep = f.findings.filter((x) => x.reported);
     if (!f.pass && rep.length === 0) return null;
     return { pass: f.pass, reported: rep.length, accepted: rep.filter((x) => x.decision === "accepted").length, open: rep.filter((x) => x.decision === "open").length, total: rep.reduce((n, x) => n + x.score, 0) };
   };
-  const checkSummary = (r: { id: string; status: string }, stage: string, verdicts: number): CheckSummary | null | undefined => {
-    if (stage === "ideate" || r.status === "done") return null;
-    const key = `${r.id}|${r.status}|${verdicts}`;
-    if (summaries.has(key)) return summaries.get(key);
-    if (!queued.has(key)) {
-      queued.add(key);
-      summaryQueue.push([key, r.id]);
-      pump();
-    }
-    return undefined;
-  };
 
   app.get<{ Querystring: { archived?: string } }>("/api/draws", async (req) => {
-    const verdicts = findingVerdicts();
     const all = pipeline.draws(true);
     const refs = new Map<string, string[]>();
     for (const r of all) for (const to of [r.superseded_by, r.repaired_from, r.forked_from]) if (to) refs.set(to, [...(refs.get(to) ?? []), r.id]);
@@ -192,9 +163,7 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
       const view = lifecycleView({ ...r, referenced_by: refs.get(r.id) ?? [] } as DrawFacts);
       const stage = view.stage;
       // the candidate is what tells two briefs of one batch apart, so the list needs it too
-      const check = checkSummary(r, stage, verdicts);
-      // null is "no summary"; pending is "still computing", which the list polls for and a failed round never becomes
-      return { ...r, ...view, origin: stage === "ideate" ? null : originOf(pipeline, r.id), check: check ?? null, check_pending: check === undefined };
+      return { ...r, ...view, origin: stage === "ideate" ? null : originOf(pipeline, r.id), check: checkSummary(r, stage) };
     });
   });
 

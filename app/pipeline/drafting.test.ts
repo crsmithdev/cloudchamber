@@ -16,7 +16,8 @@ import { loadStages } from "./config.ts";
 import { loadDraftConfig } from "./draftconfig.ts";
 import { VERDICT_LOG } from "./paths.ts";
 import { A, B, LEDGER, SCENE_3_PATCH, SPAN_A, SPAN_B, SPAN_C, cleanSamples, derivationSamples, draftScript, drawn, finding, fixture, ledgerSamples, schedule, vignette } from "./drafting.fixture.ts";
-import { briefParts, gateFindings } from "./briefparts.ts";
+import { briefParts } from "./briefparts.ts";
+import { chainOf } from "./chain.ts";
 
 /** The default floor is 7; B, an arithmetic finding at two of three samples, sits at 6, so a test that needs two fixes at once lowers it. */
 const floor6 = () => ({ ...loadDraftConfig().config, repair: { ...loadDraftConfig().config.repair, stop_score: 6 } });
@@ -701,7 +702,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     // patience breaks after the last round chose what to accept and before it was applied
     expect(r.rounds.at(-1)!.accepted).toBe(0);                                 // so the row claims no repair
     expect(r.left_open).toBeGreaterThan(0);                                    // and says what the gate still has to rule on
-    expect(gateFindings((d as any).p, r.id, true).filter((f) => f.decision === "open" && f.score >= 7))
+    expect(chainOf((d as any).p, r.id).findings(true).filter((f) => f.decision === "open" && f.score >= 7))
       .toHaveLength(r.left_open);
   });
 

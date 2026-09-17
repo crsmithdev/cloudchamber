@@ -20,7 +20,8 @@ import { need, tag, tags } from "./model.ts";
 import { distillate, type ClaimsAuthority } from "./settings.ts";
 import { samplesFor, type DraftConfig } from "./draftconfig.ts";
 import { cluster, excludeDismissed, findingId, merge, normalise, parseFindings, quoted, same, type Cluster, type Finding } from "./recur.ts";
-import { briefBlock, briefParts, chainProfile, claimVerdicts, dismissedFindings, passId, pinnedLedger, pinnedOutline, type BriefParts } from "./briefparts.ts";
+import { briefBlock, briefParts, passId, type BriefParts } from "./briefparts.ts";
+import { chainOf } from "./chain.ts";
 import { RUN } from "./config.ts";
 
 export const PREMISES_PATH = resolve(import.meta.dir, "premises.md");
@@ -65,11 +66,12 @@ export async function extractLedger(p: Pipeline, drawId: string, parts: BriefPar
 
 export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, opts: { checks?: string[]; samples?: number; premisesPath?: string } = {}): Promise<CheckResult> {
   const parts = briefParts(p, drawId);
+  const chain = chainOf(p, drawId);
   // the prose is held to the author's outline and the fixes accepted since, not to what a repair wrote into the outline
-  const brief = briefBlock({ ...parts, outline: pinnedOutline(p, drawId) });
+  const brief = briefBlock({ ...parts, outline: chain.outline() });
   const pass = passId();
   const enabled = (opts.checks ?? cfg.checks.enabled).filter((c) => (CHECKERS as readonly string[]).includes(c)) as Checker[];
-  const dismissed = dismissedFindings(p, drawId);
+  const dismissed = chain.dismissed();
   const shape = findingShape(parts.settingJobs);
   const S = (name: string) => opts.samples ? { samples: opts.samples, keep_if: Math.min(cfg.checks.keep_if, opts.samples) } : samplesFor(cfg.checks, name);
   const perChecker: { checker: string; clusters: Cluster[]; firstStep: StepRow; samples?: number }[] = [];
@@ -81,7 +83,7 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
   }).then((r) => { perChecker.push(r); }));
   if (enabled.includes("ledger")) {
     // the ledger is extracted once for the chain and pinned; every round is checked against it
-    let ledger = pinnedLedger(p, drawId);
+    let ledger = chain.ledger();
     if (!ledger) ledger = await extractLedger(p, drawId, parts, brief, { pass, sample: 1, pinned: true });
     const block = fill("pinnedLedger", { ledger });
     runs.push(sampled(p, drawId, parts, "check-ledger", fill("checkLedger", { brief, ledger: block, findingShape: shape }), S("ledger"), "ledger", (t) => {
@@ -90,9 +92,9 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
     }).then((r) => { perChecker.push(r); }));
   }
   // structure and resemblance profile the premise, which a repair never changes: once per chain
-  if (enabled.includes("structure") && !chainProfile(p, drawId, "structure")) runs.push(sampled(p, drawId, parts, "check-structure", fill("checkStructure", { brief }), S("structure"), "structure", (t) => ({ answers: parseQuestions(t, STRUCTURE_QUESTIONS) }),
+  if (enabled.includes("structure") && !chain.profile("structure")) runs.push(sampled(p, drawId, parts, "check-structure", fill("checkStructure", { brief }), S("structure"), "structure", (t) => ({ answers: parseQuestions(t, STRUCTURE_QUESTIONS) }),
     (step, value, sample) => p.artifact(step, "profile", JSON.stringify(value.answers), { pass, sample, source: "check", checker: "structure", answers: value.answers })));
-  if (enabled.includes("resemblance") && !chainProfile(p, drawId, "resemblance")) runs.push(sampled(p, drawId, parts, "check-resemblance", fill("checkResemblance", { brief, list: loadPremiseList(opts.premisesPath) }), S("resemblance"), "resemblance", (t) => {
+  if (enabled.includes("resemblance") && !chain.profile("resemblance")) runs.push(sampled(p, drawId, parts, "check-resemblance", fill("checkResemblance", { brief, list: loadPremiseList(opts.premisesPath) }), S("resemblance"), "resemblance", (t) => {
     const nearest = tag(t, "nearest");
     if (!nearest) throw new Error("no <nearest> tag");
     const matches = tags(t, "match").map((m) => ({ entry: tag(m, "entry") ?? "", span: tag(m, "span") ?? "" }));
@@ -117,7 +119,7 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
   // with the samples each checker ran in this pass, which the score reads: an earlier pass may have run a different count
   const samples = Object.fromEntries(perChecker.filter((c) => c.samples).map((c) => [c.checker, c.samples]));
   if (perChecker.length) p.artifact(perChecker[0].firstStep, "pass", pass, { pass, samples });
-  const dropped = await verifyFindings(p, drawId, parts, brief, pinnedLedger(p, drawId) ?? "", [...merged, ...under]);
+  const dropped = await verifyFindings(p, drawId, parts, brief, chain.ledger() ?? "", [...merged, ...under]);
   const store = (c: Cluster, extra: Record<string, unknown>) => {
     const owner = perChecker.find((x) => x.checker === c.checkers[0])!;
     const { reported: _r, ...meta } = c;
@@ -198,7 +200,7 @@ async function runClaims(p: Pipeline, drawId: string, parts: BriefParts, brief: 
     tags(t, "claim").map((c) => ({ span: tag(c, "span") ?? "", statement: tag(c, "statement") ?? "" })).filter((c) => c.span && c.statement));
   // a claim already verified anywhere in this chain against the same authority is not re-verified:
   // the distillate does not change, so the verdict cannot. This was 12 calls a round, every round.
-  const priorClaims = claimVerdicts(p, drawId, authority);
+  const priorClaims = chainOf(p, drawId).claims(authority);
   const verified = await Promise.all(claims.map((c) => {
     const known = priorClaims.find((v) => normalise(v.statement) === normalise(c.statement));
     if (known) return Promise.resolve({ ...known, cached: true });
