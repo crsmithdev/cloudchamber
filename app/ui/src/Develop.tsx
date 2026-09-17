@@ -384,7 +384,9 @@ function CheckControls({
       <Btn
         disabled={!(unchecked || atGate) || pendingRepair > 0}
         onClick={onDraft}
-        title={!(unchecked || atGate) ? replaced : pendingRepair ? "Accepted findings are waiting for their repair." : `Set up the draft and write the story from this brief as it stands${unchecked ? ", unchecked" : ""}.`}
+        title={
+          !(unchecked || atGate) ? replaced : pendingRepair ? "Accepted findings are waiting for their repair." : `Set up the draft and write the story from this brief as it stands${unchecked ? ", unchecked" : ""}.`
+        }
       >
         draft{cfg ? ` · ${cfg.length.words} words` : ""} <Chevron open />
       </Btn>
@@ -847,6 +849,11 @@ function FindingRow({ f, S, selected, onToggle, onDismiss, readOnly }: { f: Find
           breaks <b className={"font-normal " + (f.invalidates === "none" ? "" : "text-ink")}>{f.invalidates === "none" ? "no section" : f.invalidates}</b>
         </span>
         <span className="text-dim">{f.checkers.join(" · ")}</span>
+        {f.dropped && (
+          <span className="text-dim" title={f.dropped}>
+            dropped: {f.dropped}
+          </span>
+        )}
         {f.relitigates && (
           <a className="link text-pass" href={`#check/${f.relitigates.draw}`} title={`This finding would undo the fix you accepted in round ${f.relitigates.round}: ${f.relitigates.replacement}`}>
             undoes round {f.relitigates.round} fix

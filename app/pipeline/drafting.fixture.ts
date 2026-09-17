@@ -15,8 +15,9 @@ export const finding = (span: string, statement: string, invalidates: string, re
   `<finding><span>${span}</span><statement>${statement}</statement><result>${result}</result><evidence>${evidence}</evidence><invalidates>${invalidates}</invalidates><replacement>${replacement}</replacement>${patch ? `<patch>${patch}</patch>` : ""}</finding>`;
 
 export const A = (s = SPAN_A) => finding(s, "the director fires the reliquary herself", "debt audit", "Only the assembler can fire the reliquary.");
-export const B = (s = SPAN_B) => finding(s, "the twelfth relic is named differently in the two vignettes", "arithmetic", "The twelfth relic is the Verona clavicle in every account.");
-export const C = () => finding(SPAN_C, "the tears the outline cut are back", "custody", "The silk is dry.");
+// B and C quote the ledger, not the prose: a rule a reader does not see scores one where a line they do see scores two
+export const B = (s = SPAN_B) => finding(s, "the twelfth relic is named differently in the two vignettes", "arithmetic", "The twelfth relic is the Verona clavicle in every account.", "the fire was on the 3rd");
+export const C = () => finding(SPAN_C, "the tears the outline cut are back", "custody", "The silk is dry.", "the director holds the order");
 
 export const LEDGER = "time: the fire was on the 3rd\ndetail: 1,106 dead\ncustody: the director holds the order";
 
@@ -88,7 +89,8 @@ export const vignette = (n: number, extra = "") => `<vignette>${extra ? extra + 
 export function draftScript(over: Record<string, any> = {}) {
   return {
     premises: () => [0.05, 0.03, 0.08, 0.03, 0.06].map((p, i) => `<premise><text>Premise ${i + 1} text.</text><probability>${p}</probability></premise>`).join("\n"),
-    execute: (p: string) => vignette(Number(/Premise (\d)/.exec(p)?.[1] ?? 0)),
+    // the chosen vignette carries B and C, so every fixture span is in the prose a reader sees
+    execute: (p: string) => vignette(Number(/Premise (\d)/.exec(p)?.[1] ?? 0)).replace("</vignette>", ` ${SPAN_B}, ${SPAN_C}.</vignette>`),
     outline: () => ["debt audit", "arithmetic", "custody"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n"),
     jobs: () => "<job>Test the first thing: scene one.</job><job>Test a second thing: scene two.</job>",
     context: (p: string) => `<vignette>context for ${/Its job: (.*)/.exec(p)?.[1]}</vignette>`,
@@ -102,10 +104,11 @@ export function draftScript(over: Record<string, any> = {}) {
     "check-claims-extract": () => claimsExtract(),
     "check-claims-verify": claimVerify,
     reconcile: () => "<conflicts></conflicts>",
-    "repair-context": (p: string) => `<vignette>rewritten context ${tag(p, "constraints")?.split("\n")[0] ?? ""}</vignette>`,
-    "repair-vignette": (p: string) => `<vignette>rewritten vignette ${tag(p, "constraints")?.split("\n")[0] ?? ""} ${"w ".repeat(390)}</vignette>`,
+    // repairs edit in place: the rewrite keeps the passage it was given
+    "repair-context": (p: string) => `<vignette>rewritten context ${tag(p, "constraints")?.split("\n")[0] ?? ""} ${tag(p, "vignette") ?? ""}</vignette>`,
+    "repair-vignette": (p: string) => `<vignette>rewritten vignette ${tag(p, "constraints")?.split("\n")[0] ?? ""} ${tag(p, "vignette") ?? ""}</vignette>`,
     "repair-outline": () => ["debt audit", "arithmetic", "custody"].map((n) => `<section name="${n}">Repaired ${n} body.</section>`).join("\n"),
-    "repair-ending": () => "<ending>Only the assembler fires the reliquary, and the count closes.</ending>",
+    "repair-ending": (p: string) => `<ending>${tag(p, "ending") ?? ""} Only the assembler fires the reliquary.</ending>`,
     schedule: () => schedule(),
     scene: (p: string) => sceneFor(p),
     "screen-ledger": screenLedger,

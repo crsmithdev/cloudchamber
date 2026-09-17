@@ -118,7 +118,12 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
 
   const plan = repairPlan(accepted, parts.vignette, parts.ending, carryable ? srcContexts.map((c) => c.content) : []);
   if (!carryable) plan.context = Array.from({ length: RUN.contextVignettes }, () => true);
+  // the outline takes every constraint; a passage takes only those that land in it. On the pit chain a vignette
+  // rewrite given a registry row's constraint ("every haul, including number 219's") made Ruth number 219.
   const constraints = constraintsBlock(accepted);
+  const within = (text: string, extra: Accepted[] = []) =>
+    constraintsBlock([...accepted.filter((f) => inside(f.span, text)), ...extra.filter((f) => !inside(f.span, text))]);
+  const endingExtra = accepted.filter((f) => ENDING_SECTIONS.has(f.invalidates.toLowerCase()) && !f.patch?.trim());
   // the accepted set of this round is not the whole record: every earlier round's fix still holds
   const settledLines = settledConstraints(p, parts.draw.id).filter((sc) => !accepted.some((a) => a.id === sc.finding));
   const settled = settledBlock(settledLines);
@@ -138,7 +143,7 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
   let vignette = patchedVignette.text;
   let vStep;
   if (plan.vignette) {
-    const r = await p.invoke(newId, null, "repair-vignette", rewriteAsk("execute", fill("repairVignette", { ledger, settled, vignette: patchedVignette.text, constraints })), (t) => {
+    const r = await p.invoke(newId, null, "repair-vignette", rewriteAsk("execute", fill("repairVignette", { ledger, settled, vignette: patchedVignette.text, constraints: within(parts.vignette) })), (t) => {
       const v = tag(t, "vignette"); if (!v) throw new Error("no <vignette> tag"); return v;
     });
     vignette = r.value; vStep = r.step;
@@ -186,14 +191,14 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
         const v = tag(text, "vignette"); if (!v) throw new Error("no <vignette> tag"); return v;
       }).then((r) => p.artifact(r.step, "vignette", r.value, { index: i + 1, job, warnings: words(r.value) > 500 ? ["length"] : [] }))
     : plan.context[i]
-    ? p.invoke(newId, outlineStep.id, "repair-context", rewriteAsk("execute", fill("repairVignette", { ledger, settled, vignette: patchedContexts[i].text, constraints })), (text) => {
+    ? p.invoke(newId, outlineStep.id, "repair-context", rewriteAsk("execute", fill("repairVignette", { ledger, settled, vignette: patchedContexts[i].text, constraints: within(srcContexts[i].content) })), (text) => {
         const v = tag(text, "vignette"); if (!v) throw new Error("no <vignette> tag"); return v;
       }).then((r) => p.artifact(r.step, "vignette", r.value, { index: i + 1, job, rewritten_from: parts.draw.id, warnings: words(r.value) > 500 ? ["length"] : [] }))
     : Promise.resolve(p.artifact(p.recordStep(newId, outlineStep.id, "context", patchedContexts[i].applied.length ? "patched" : "copied"), "vignette", patchedContexts[i].text, { index: i + 1, job, copied_from: parts.draw.id, ...(patchedContexts[i].applied.length ? { patched: patchedContexts[i].applied.map((f) => f.id) } : {}) })));
 
   // the ending: rewritten from itself under the constraints, or carried over
   const endingRun = plan.ending
-    ? p.invoke(newId, outlineStep.id, "repair-ending", rewriteAsk("ending", fill("repairEnding", { ledger, settled, outline: outlineText, ending: patchedEnding.text, constraints })), (t) => {
+    ? p.invoke(newId, outlineStep.id, "repair-ending", rewriteAsk("ending", fill("repairEnding", { ledger, settled, outline: outlineText, ending: patchedEnding.text, constraints: within(parts.ending, endingExtra) })), (t) => {
         const e = tag(t, "ending"); if (!e) throw new Error("no <ending> tag"); return e;
       }).then((r) => p.artifact(r.step, "ending", r.value, { previous: parts.ending, warnings: words(r.value) > 650 ? ["length"] : [] }))
     : Promise.resolve(p.artifact(p.recordStep(newId, outlineStep.id, "repair-ending", patchedEnding.applied.length ? "patched" : "copied"), "ending", patchedEnding.text,

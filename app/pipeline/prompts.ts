@@ -188,13 +188,13 @@ Candidates:
 
   findingShape: `Each finding goes in a <finding> tag containing: <span> (a verbatim quote from the brief, under ${RUN.spanWords} words), <statement> (what the span asserts, one sentence), <result> (one of: supported | contradicted | unverifiable | contradicts:<a second verbatim quote> | underived), <evidence> (the second quote, the sum written out, a URL and quoted line, or none), <invalidates> (which outline section would have to change if the finding stands: {sections} | none), <replacement> (one factual sentence in the outline's register that would hold in its place; not dialogue, not a scene), <patch> (the span rewritten so the finding no longer holds, in the voice and register of the text it came from and no longer than the span, ready to stand in its place word for word; or none when the fix needs more than that span).
 
-A result of contradicted or contradicts needs the span to assert the conflicting fact itself. A count, a duration or a detail the span does not state is not a contradiction: the span may be one of several, and what it leaves out is unverifiable. The replacement and the patch keep every event the span reports and change only the quantity, the timing or the mechanism that conflicts. Never turn an event into its absence.`,
+Quote every span from a vignette or the ending, never from the outline: the reader of the story sees only those. When the conflicting fact is also stated in a vignette or the ending, quote it from there. A result of contradicted or contradicts needs the span to assert the conflicting fact itself. A count, a duration or a detail the span does not state is not a contradiction: the span may be one of several, and what it leaves out is unverifiable. The replacement and the patch keep every event the span reports and change only the quantity, the timing or the mechanism that conflicts. Never turn an event into its absence.`,
 
   checkDerivation: `Below is a story brief: a seed, a premise, an outline in three sections, three vignettes and an ending. The debt audit section claims to derive everything from one impossibility.
 
 {brief}
 
-State the single impossibility the debt audit buys, in an <impossibility> tag, one sentence. Then check every assertion in the vignettes and ending against that derivation, and do every sum in the arithmetic section. Report each assertion that does not follow from the one impossibility, and each sum that does not add up. Report an assertion only when the outline states the rule it breaks, and a sum only when the brief states both figures: a consequence you work out yourself from physics, geometry or a unit is not a finding.
+State the single impossibility the debt audit buys, in an <impossibility> tag, one sentence. Then check every assertion in the vignettes and ending against that derivation, and do each sum whose figures a vignette or the ending states. Report each assertion that does not follow from the one impossibility, and each sum that does not add up. Report an assertion only when the outline states the rule it breaks, and a sum only when the brief states both figures: a consequence you work out yourself from physics, geometry or a unit is not a finding.
 
 {findingShape}
 
@@ -281,7 +281,7 @@ As a checkable sentence: {statement}
 
 Find the line in the setting above that confirms or denies it. The setting is the whole authority: a claim it does not settle is unverifiable, not wrong. Output a <finding> tag containing <span> (the quote above, verbatim), <statement> (the sentence above), <result> (supported | contradicted | unverifiable), <evidence> (the heading it sits under and one quoted line from it, or none), <invalidates> (none), <replacement> (if contradicted, one positive sentence that would hold, keeping what the span reports and changing only the figure or the rule that conflicts; otherwise none). Under 120 words.`,
 
-  checkVerify: `Below is a story brief, then the findings its checkers reported against it, numbered.
+  checkVerify: `Below is a story brief, then the findings its checkers raised against it, numbered.
 
 {brief}
 
@@ -289,7 +289,16 @@ Find the line in the setting above that confirms or denies it. The setting is th
 {findings}
 </findings>
 
-Read each finding back against the whole brief. Keep it when the span asserts the fact the statement gives it, the evidence conflicts with that fact on a careful reading of the brief, and a reader of the brief would see the two statements disagree. Drop it when the span does not state the fact, when what the span leaves out is stated elsewhere or left open, when the two quotes can both hold, when the evidence is not in the brief, or when seeing the conflict needs a sum, a unit conversion or a physical inference the brief does not state. Output one <verdict n="..."> tag per finding, containing <answer>keep|drop</answer> and <why> (one sentence). Under 400 words.`,
+A reader of the story sees only the vignettes and the ending, reads them once and with attention, and never sees the outline. Read each finding back against the whole brief. Keep it only when the span asserts the fact the statement gives it, the evidence is a quote from the brief that conflicts with that fact, and the conflict is one that reader would notice, or one that breaks a rule the outline states in words.
+
+Drop it when any of these is true:
+- the span does not state the fact, or what it leaves out is stated elsewhere or left open;
+- the two quotes can both hold, and that includes a stated rule and an exception the text marks or explains;
+- the span is a character's loose, everyday wording of a fact the brief states exactly elsewhere;
+- seeing the conflict needs a sum of more than two figures, a count of weekdays, a unit conversion, or a physical inference about how liquid, blood, light, an instrument or a body behaves that the brief does not state in words;
+- the evidence is not in the brief.
+
+Output one <verdict n="..."> tag per finding, containing <answer>keep|drop</answer> and <why> (one sentence). Under {cap} words.`,
 
   reconcile: `Below are the fixes one repair round is about to apply to a story brief together, numbered.
 
@@ -323,7 +332,7 @@ satisfy a constraint above.`,
 
 {settled}
 
-Rewrite it in a <vignette> tag so that every line of the constraints holds, keeping its people, place, form and length. Change only the sentences a constraint touches; every other name, number, date, time and place stays word for word. Under ${RUN.vignetteWords + 50} words. Output only the tag.`,
+Rewrite it in a <vignette> tag so that every line of the constraints holds, keeping its people, place, form and length. Change only the sentences a constraint touches; every other name, number, date, time and place stays word for word. Add no name, number, date or time that is not already in it or in a constraint. Under ${RUN.vignetteWords + 50} words. Output only the tag.`,
 
   repairOutlineHead: `Below is a seed, a premise, a ${RUN.vignetteWords}-word execution of it, the story's underlying structure as it stands, and a set of constraints that hold. Nothing here is prose for the page.
 
@@ -359,7 +368,7 @@ Rewrite the structure so that every line of the constraints holds. Change only t
 
 {settled}
 
-Rewrite the ending in an <ending> tag so that every line of the constraints holds, keeping its people, place, form and length. Change only the sentences a constraint touches; every other name, number, date, time and place stays word for word. Under ${RUN.endingWords} words. Output only the tag.`,
+Rewrite the ending in an <ending> tag so that every line of the constraints holds, keeping its people, place, form and length. Change only the sentences a constraint touches; every other name, number, date, time and place stays word for word. Add no name, number, date or time that is not already in it or in a constraint. Under ${RUN.endingWords} words. Output only the tag.`,
 
   schedule: `Below is a story brief: a seed, a premise, an outline in three sections, three vignettes and an ending. Below that, the story's configuration.
 

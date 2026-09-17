@@ -5,11 +5,12 @@
  * resemblance produce profiles, never findings, and run once for the whole
  * repair chain. Claims run only when the setting declares an authority.
  *
- * The reported findings then go back to the model once, with the brief, and
- * only those whose span asserts the fact and whose evidence conflicts with it
- * stay reported; the rest are stored under the bar with the reason. The
- * checkers over-flag: on the pit chain they read an unstated count as a
- * contradiction and a stated rule as its own violation.
+ * Every finding, reported or under the bar, then goes back to the model once
+ * with the brief, and only those a reader of the story would notice stay; the
+ * rest are stored under the bar with the reason. A finding whose span is not
+ * in a vignette or the ending is dropped before that call: the reader never
+ * sees the outline, and on the pit chain the outline's own calendar sums were
+ * most of what was left.
  */
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -18,7 +19,7 @@ import { fill, type TemplateName } from "./prompts.ts";
 import { tag, tags } from "./model.ts";
 import { distillate, type ClaimsAuthority } from "./settings.ts";
 import { samplesFor, type DraftConfig } from "./draftconfig.ts";
-import { cluster, excludeDismissed, findingId, merge, normalise, parseFindings, type Cluster, type Finding } from "./recur.ts";
+import { cluster, excludeDismissed, findingId, merge, normalise, parseFindings, quoted, same, type Cluster, type Finding } from "./recur.ts";
 import { briefBlock, briefParts, chainProfile, claimVerdicts, dismissedFindings, passId, pinnedLedger, type BriefParts } from "./briefparts.ts";
 import { RUN } from "./config.ts";
 
@@ -107,29 +108,43 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
 
   const reported = perChecker.flatMap((c) => c.clusters.filter((x) => x.reported));
   const merged = excludeDismissed(merge(reported, parts.settingJobs), dismissed);
+  // the clusters under keep_if, merged as the gate reads them back, so one verify call grades the whole list
+  const under = excludeDismissed(merge(perChecker.flatMap((c) => c.clusters.filter((x) => !x.reported)), parts.settingJobs), dismissed)
+    .filter((c) => !merged.some((m) => same(m, c)));
   // a clean pass leaves no finding or profile behind, so the pass is marked on its own: the gate reads the latest pass, not the latest with findings
   if (perChecker.length) p.artifact(perChecker[0].firstStep, "pass", pass, { pass });
-  const dropped = await verifyFindings(p, drawId, parts, brief, merged);
-  for (const c of merged) {
+  const dropped = await verifyFindings(p, drawId, parts, brief, [...merged, ...under]);
+  const store = (c: Cluster, extra: Record<string, unknown>) => {
     const owner = perChecker.find((x) => x.checker === c.checkers[0])!;
     const { reported: _r, ...meta } = c;
-    const why = dropped.get(c.id);
-    p.artifact(owner.firstStep, "finding", c.statement, { ...meta, pass, source: "check", ...(why ? { sub_threshold: true, dropped: why } : {}) });
-  }
+    p.artifact(owner.firstStep, "finding", c.statement, { ...meta, pass, source: "check", ...extra });
+  };
+  for (const c of merged) { const why = dropped.get(c.id); store(c, why ? { sub_threshold: true, dropped: why } : {}); }
+  // a finding under the bar is stored only when dropped, so the list read back later carries the reason
+  for (const c of under) { const why = dropped.get(c.id); if (why) store(c, { sub_threshold: true, dropped: why }); }
   return { pass, findings: merged.filter((c) => !dropped.has(c.id)), claims };
 }
 
+export const NOT_IN_PROSE = "the span is not in a vignette or the ending, which is all a reader of the story sees";
+
 /**
- * The pairing step: one call reads every reported finding back against the
- * brief. Returns the ids to drop, each with the reason. Claims have their own
+ * The pairing step: a finding whose span is not in the prose is dropped with no
+ * call, then one call reads every other finding back against the brief.
+ * Returns the ids to drop, each with the reason. Claims have their own
  * verifier and are not read again.
  */
-async function verifyFindings(p: Pipeline, drawId: string, parts: BriefParts, brief: string, merged: Cluster[]): Promise<Map<string, string>> {
-  const subject = merged.filter((c) => !(c.checkers.length === 1 && c.checkers[0] === "claims"));
+async function verifyFindings(p: Pipeline, drawId: string, parts: BriefParts, brief: string, all: Cluster[]): Promise<Map<string, string>> {
   const out = new Map<string, string>();
+  const prose = [parts.vignette, ...parts.contexts, parts.ending].join("\n\n");
+  const subject: Cluster[] = [];
+  for (const c of all) {
+    if (c.checkers.length === 1 && c.checkers[0] === "claims") continue;
+    if (!quoted(prose, c.span, 1)) out.set(c.id, NOT_IN_PROSE); else subject.push(c);
+  }
   if (!subject.length) return out;
   const findings = subject.map((c, i) => `${i + 1}. span: "${c.span}"\n   statement: ${c.statement}\n   result: ${c.result}\n   evidence: ${c.evidence}`).join("\n");
-  const { value } = await p.invoke(drawId, parts.outlineStepId, "check-verify", fill("checkVerify", { brief, findings }), (t) => parseVerdicts(t, subject.length));
+  const cap = String(50 + 40 * subject.length);
+  const { value } = await p.invoke(drawId, parts.outlineStepId, "check-verify", fill("checkVerify", { brief, findings, cap }), (t) => parseVerdicts(t, subject.length));
   value.forEach((v, i) => { if (v.answer === "drop") out.set(subject[i].id, v.why); });
   return out;
 }

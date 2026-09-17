@@ -137,10 +137,11 @@ export function quotesOf(f: Pick<Scorable, "result" | "evidence">): string[] {
   return out.map((q) => q.trim().replace(/^["“]|["”]$/g, "").replace(/^\*+|\*+$/g, ""));
 }
 
-/** Whether a quote is in a text, read across an ellipsis, on words alone. Three words is the shortest quote that counts. */
-export function quoted(text: string, quote: string): boolean {
-  const parts = quote.split(/…|\.\.\./).map(loose).filter((x) => x.split(" ").length >= 3);
-  return parts.length > 0 && parts.every((x) => text.includes(x));
+/** Whether a quote is in a text, read across an ellipsis, on words alone. `minWords` is the shortest part that counts. */
+export function quoted(text: string, quote: string, minWords = 3): boolean {
+  const t = loose(text);
+  const parts = quote.split(/…|\.\.\./).map(loose).filter((x) => x && x.split(" ").length >= minWords);
+  return parts.length > 0 && parts.every((x) => t.includes(x));
 }
 const loose = (s: string) => s.toLowerCase().replace(/[*_`"“”'’]/g, "").replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim();
 

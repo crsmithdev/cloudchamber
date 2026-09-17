@@ -69,6 +69,8 @@ export type Finding = {
   score: number;
   samples_run: number;
   reported: boolean;
+  /** Why the verify pass took it off the reported list. */
+  dropped?: string;
   relitigates?: { finding: string; draw: string; round: number; replacement: string };
 };
 export type Claim = { statement: string; span: string; result: string; evidence: string; authority: string };
@@ -186,7 +188,15 @@ export type Like = {
   seed_text: string;
 };
 export type SamplingMode = { mode: string; floor: number; ceiling: number };
-export type Facets = { sources: Source[]; authors: string[]; cells: { cell: string; n: number }[]; settings: { id: string; name: string }[]; genres: Record<string, string[]>; sampling: SamplingMode[]; darkness: string[] };
+export type Facets = {
+  sources: Source[];
+  authors: string[];
+  cells: { cell: string; n: number }[];
+  settings: { id: string; name: string }[];
+  genres: Record<string, string[]>;
+  sampling: SamplingMode[];
+  darkness: string[];
+};
 
 /** "14:54 today" for today's timestamps, otherwise "Sep 4, 03:00". */
 export function when(iso: string): string {
