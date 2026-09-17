@@ -7,7 +7,11 @@ This file is the design of record for the redesign. Decided with Chris on
 2026-09-15. `PRODUCT.md` holds the product truth the redesign must preserve;
 this file holds the visual contract and the order of work.
 
-The work happens in the worktree `.worktrees/ui-redesign`, on branch
+> Landed on `main` on 2026-09-16 (`2f7c641`): phase D1, the tide table won.
+> The worktree and branch named here are gone, and `DESIGN.incumbent.md` is
+> no longer needed.
+
+The work happened in the worktree `.worktrees/ui-redesign`, on branch
 `refactor/ui-redesign`.
 
 ## Why

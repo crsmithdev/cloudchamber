@@ -105,7 +105,7 @@ It is an execution, not discovery: the structure above has already settled the s
   ending: `
 Write the ending, in an <ending> tag: the last beat, derived from the arithmetic and custody sections above. Under ${RUN.endingWords} words. Prose or document form as the structure implies.{darkness} Output only the tag.`,
 
-  /** The four lists, defined once and shared by both distill passes and by nothing else. */
+  /** The five lists, defined once and shared by both distill passes and by nothing else. */
   listDefinitions: `<bodies>: organisations, offices, orders, departments and courts. What it issues or decides, whom it answers to, and what it cannot do.
 <events>: something that happened, on a date — a disaster, a closure, a founding, a strike, a judgment, a removal, an exodus. What happened and when, then what it changed. An event has actors and a before and after. The date a rule took effect is not an event: a commencement belongs on the instrument it commences.
 <instruments>: documents, devices, drugs, weapons and rites. What it does, who holds it, and what follows from having it, losing it or undergoing it.

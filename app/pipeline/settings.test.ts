@@ -29,7 +29,7 @@ describe("setting lint", () => {
     expect(lint(FIXTURE_SETTING.replace("## Jobs", "## Hard rules\n\n- One impossibility.\n\n## Jobs")))
       .toEqual(["setting › Hard rules: retired by the four-list shape"]);   // a setting is reference, not a rulebook
     expect(lint(FIXTURE_SETTING.replace("Take the regional element out and a mechanism goes with it.\n", ""))).toEqual(["setting › Matrix: a section that is present holds something"]);
-    // Matrix and Jobs are prose a person wrote, so a setting may carry neither: setting-a is its four lists alone
+    // Matrix and Jobs are prose a person wrote, so a setting may carry neither: setting-a is its five lists alone
     const bare = FIXTURE_SETTING.replace(/## Matrix\n\n[\s\S]*?(?=## Bodies)/, "");
     expect(lint(bare)).toEqual([]);
     const s = parseSetting(bare, "basin");

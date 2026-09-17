@@ -1,5 +1,8 @@
 # Typed settings
 
+> Superseded in full by `2026-09-13-four-lists.md`. Domains are gone; this
+> file records the design they came from.
+
 Supersedes the *Settings* subsection of `2026-09-04-ideation-pipeline.md`.
 Decided 2026-09-05 after a grill over the design; the twelve decisions and the
 loading table are also drawn at the Cloud Chamber Settings artifact.

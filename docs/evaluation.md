@@ -43,7 +43,7 @@ accept them by hand; that ends the evaluation run.
 
 ## The stop conditions
 
-Step 3 ends by itself, on one of three outcomes. Which one it was is the first
+Step 3 ends by itself, on one of four outcomes. Which one it was is the first
 result of the evaluation.
 
 | Stopped on | Means |
@@ -51,9 +51,11 @@ result of the evaluation.
 | `floor` | nothing left scoring `stop_score` or more. **The pipeline converged.** |
 | `patience` | the total open score stopped falling. Converged as far as it will. |
 | `cap` | the rounds ran out with findings still over the floor. **Non-convergence: a problem, and the run's headline result.** |
+| `budget` | the chain spent `repair.max_calls` model calls. Non-convergence, as for `cap`. |
 
-A `cap` stop is a failure of the pipeline, not of the seed. Record the round
-table and stop; do not raise `rounds` to force it through.
+A `cap` or `budget` stop is a failure of the pipeline, not of the seed. Record
+the round table and stop; do not raise `rounds` or `max_calls` to force it
+through.
 
 ## What to record
 
@@ -63,7 +65,7 @@ Every number is already stored; none of it needs a model call.
 ```
 seed
 premise chosen (index, stated probability)
-stopped on            floor | patience | cap
+stopped on            floor | patience | cap | budget
 rounds
 best round            id, and whether it was the last
 drafted round         id — the tip, unless the tip is also the best

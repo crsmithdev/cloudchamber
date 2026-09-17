@@ -1,5 +1,8 @@
 # Five lists
 
+> Events became the fifth list on 2026-09-14. Where the text below counts four
+> lists, the count is now five.
+
 Supersedes `2026-09-05-typed-settings.md` in full, and the *Settings*
 subsection of `2026-09-05-drafting-pipeline.md`. Decided 2026-09-13 over a
 long pass on what a domain was actually buying.

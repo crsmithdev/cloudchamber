@@ -44,9 +44,9 @@ Three other mechanisms carry the same intent:
 
 - A verdict log. Every accept, reject and flag on a passage or theme is
   recorded and replayed, so a regeneration does not lose earlier judgement.
-- Lore settings as four lists — bodies, instruments, places, terms — carried
-  whole into every draw under that setting. Caps: 40 entries a list, 45 words
-  an entry.
+- Lore settings as five lists — bodies, events, instruments, places, terms.
+  Each stage of a draw under a setting loads the lists it needs, each list
+  whole. Caps: 40 entries a list, 45 words an entry.
 - A pinned ledger. The brief's settled facts are extracted once per repair
   chain and every later round is measured against that same ledger.
 
@@ -108,15 +108,17 @@ no exclamation.
 
 Real content exists and mockups must use it:
 
-- `data/cloudchamber.db`, 110 MB, the live store.
-- 17 brief directories under `briefs/`.
-- One exported draft: `drafts/20260915150228-3904`.
-- Real store fixtures already extracted for mockups: `tmp/mockups/draws.json`,
+- `data/cloudchamber.db`, the live store. It is not in git.
+- The brief directories under `briefs/`.
+- Exported drafts go to `drafts/<draw>/`.
+- Real store fixtures extracted for mockups: `tmp/mockups/draws.json`,
   `gate.json`, `checked.json`, `findings.json`, `brief.json`, rendered to
-  static HTML by `tmp/mockups/gen.ts`.
+  static HTML by `tmp/mockups/gen.ts`. These are local scratch and not in
+  git; only `worlds.ts` and the two stylesheets are tracked.
 - Ten hand-written reference stories in `stories/`. These are setting-a
   reference material, not pipeline output.
-- One recorded evaluation run in `docs/evaluation.md`.
+- The evaluation protocol in `docs/evaluation.md`, and its recorded runs in
+  `evals/`.
 
 Absences future work must not fill with invention: the write tab has rendered
 real content once. No second user has ever used the tool, so there is no usage

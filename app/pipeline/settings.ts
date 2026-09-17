@@ -1,7 +1,7 @@
 /**
  * A setting is one file under sources/settings/<id>.md: metadata-only front
- * matter, the Matrix, the outline Jobs, and four flat lists of named things.
- * Every stage of a draw loads whole lists, never a subset. The setting's
+ * matter, the Matrix, the outline Jobs, and five flat lists of named things.
+ * Every stage of a draw loads whole lists, never part of one. The setting's
  * reference/ directory never enters a prompt; it is what `distill` reads.
  *
  * A setting is reference, not a rulebook. It states what is in the world and
@@ -23,7 +23,7 @@
  *   - name — what it does; what it cannot do, or what follows from it
  *
  * A list earns its place by being enumerable and by an invented entry being a
- * canon violation; that is why there are four and not nine. An empty section
+ * canon violation; that is why there are five and not nine. An empty section
  * is the single line `none`. Unrestricted mode is the absence of a setting.
  * See docs/specs/2026-09-13-four-lists.md.
  */
@@ -32,7 +32,7 @@ import { join } from "node:path";
 import { SETTINGS } from "./paths.ts";
 import { RUN } from "./config.ts";
 
-/** Optional, and both are prose a person wrote: a setting may be its four lists alone. */
+/** Optional, and both are prose a person wrote: a setting may be its five lists alone. */
 export const SETTING_SECTIONS = ["Matrix", "Jobs"] as const;
 export const LISTS = ["Bodies", "Events", "Instruments", "Places", "Terms"] as const;
 export type SettingSection = (typeof SETTING_SECTIONS)[number];
@@ -42,7 +42,7 @@ export const FRONT_MATTER_KEYS = ["id", "name", "seed_segments", "claims"];
 export const CLAIMS_VALUES = ["world", "setting"] as const;
 export type ClaimsAuthority = (typeof CLAIMS_VALUES)[number];
 export const REDRAFT = "<!-- redraft -->";
-/** What each list is to the model. All four are closed classes; people, intervals and sensations are unlisted and so unconstrained. */
+/** What each list is to the model. All five are closed classes; people, intervals and sensations are unlisted and so unconstrained. */
 export const INTENT = "the setting records these; anything else must be marked for a source";
 
 export type Span = { start: number; end: number };   // body offsets in the file text, heading excluded
@@ -174,7 +174,7 @@ export function slice(setting: Setting, stage: GenStage): string {
 }
 
 /**
- * The setting as it was written down: the setting-wide sections and all four
+ * The setting as it was written down: the setting-wide sections and all five
  * lists. Only the claims verifier under `claims: setting` reads this; no
  * generation stage does.
  */

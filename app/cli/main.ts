@@ -10,6 +10,7 @@ const DOC = `cloudchamber — the one command the skill and the UI drive.
    cloudchamber verdict <example|theme|brief|story> <id> <keep|pass> [--artifact] [--note "..."]
                                           a passed story hides all its passages
    cloudchamber replay                         rebuild the verdicts table from bank/verdicts.jsonl
+   cloudchamber replay-themes                  rebuild the themes from bank/themes.jsonl
    cloudchamber draw [--setting ID] [--genre G] [--sampling M] [--darkness D] [--auto] [--source S[,S]] [--author A]
                [--seed "text" | --seed-id ID] [--like DRAW]
                                           --like takes another draw's options; the rest override it
@@ -25,7 +26,7 @@ const DOC = `cloudchamber — the one command the skill and the UI drive.
    cloudchamber brief <draw>                   print the brief
    cloudchamber check <draw> [--checks a,b] [--samples N]   run the checkers over a brief; stops at gate 1
    cloudchamber findings <draw> [--examined] [--all]   the findings of the latest check, by score
-   cloudchamber gate <draw> accept <finding>... | auto | dismiss <finding> | hold | pass | keep | patch [<flag>...] | rewrite <k> [--finding ID]  [--note "..."]
+   cloudchamber gate <draw> accept <finding>... | auto | dismiss <finding> | hold | keep | patch [<flag>...] | rewrite <k> [--finding ID]  [--note "..."]
        patch applies a screen flag's own rewrite of its span in place, with no model call;
        named flags only, or every open flag that carries one
        auto repairs round after round, accepting what scores repair.stop_score or more,
@@ -56,7 +57,7 @@ import type { Overrides } from "../pipeline/draftconfig.ts";
 const [cmd, ...rest] = process.argv.slice(2);
 
 function usage(code = 1): never {
-  console.error("usage: cloudchamber <extract|status|export|verdict|replay|draw|gate|draws|candidates|draw-show|brief|check|findings|draft|story|themes|setting|distill|serve|help>");
+  console.error("usage: cloudchamber <extract|status|export|verdict|replay|replay-themes|draw|delete|gate|draws|candidates|draw-show|brief|check|findings|draft|story|themes|setting|distill|serve|help>");
   console.error("run `cloudchamber help` for the full grammar and the tunable values");
   process.exit(code);
 }
@@ -168,7 +169,7 @@ async function main() {
         console.log(`${r.applied.length} applied, ${r.skipped.length} left for a rewrite · no model calls`);
         for (const f of r.applied) console.log(`  ${f.id}  beat ${f.beat}  “${f.span}”\n      → ${f.patch}`);
         for (const x of r.skipped) console.log(`  ${x.finding.id}  beat ${x.finding.beat}  skipped: ${x.why}`);
-        if (r.applied.length) console.log(`\ncloudchamber story ${drawId}  ·  cloudchamber gate ${drawId} keep | rewrite <k> | pass`);
+        if (r.applied.length) console.log(`\ncloudchamber story ${drawId}  ·  cloudchamber gate ${drawId} keep | rewrite <k>`);
         break;
       }
       console.log(JSON.stringify(out, null, 2));
@@ -189,7 +190,7 @@ async function main() {
       if (!drawId) usage();
       const r = await drafting().check(drawId!, { checks: values.checks?.split(",").map((x) => x.trim()).filter(Boolean), samples: values.samples ? Number(values.samples) : undefined });
       printFindings(drawId!);
-      console.log(`\ncloudchamber gate ${drawId} accept <finding>... | auto | dismiss <finding> --note "..." | hold | pass | flag  ·  cloudchamber draft ${drawId}  (${r.findings.length} reported)`);
+      console.log(`\ncloudchamber gate ${drawId} accept <finding>... | auto | dismiss <finding> --note "..." | hold | flag  ·  cloudchamber draft ${drawId}  (${r.findings.length} reported)`);
       break;
     }
     case "findings": {
@@ -210,7 +211,7 @@ async function main() {
       for (const [flag, key] of Object.entries(map)) if ((values as any)[flag] !== undefined) overrides[key] = (values as any)[flag];
       const draw = await drafting().draft(drawId!, { auto: values.auto, profile: values.profile, overrides: Object.keys(overrides).length ? overrides : undefined });
       console.log(JSON.stringify(draw, null, 2));
-      console.log(`\ncloudchamber story ${draw.id}  ·  cloudchamber gate ${draw.id} keep | patch [<flag>...] | rewrite <k> [--finding ID] | pass`);
+      console.log(`\ncloudchamber story ${draw.id}  ·  cloudchamber gate ${draw.id} keep | patch [<flag>...] | rewrite <k> [--finding ID]`);
       break;
     }
     case "story": {
