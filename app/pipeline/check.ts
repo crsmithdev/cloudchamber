@@ -113,7 +113,7 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
     .filter((c) => !merged.some((m) => same(m, c)));
   // a clean pass leaves no finding or profile behind, so the pass is marked on its own: the gate reads the latest pass, not the latest with findings
   if (perChecker.length) p.artifact(perChecker[0].firstStep, "pass", pass, { pass });
-  const dropped = await verifyFindings(p, drawId, parts, brief, [...merged, ...under]);
+  const dropped = await verifyFindings(p, drawId, parts, brief, pinnedLedger(p, drawId) ?? "", [...merged, ...under]);
   const store = (c: Cluster, extra: Record<string, unknown>) => {
     const owner = perChecker.find((x) => x.checker === c.checkers[0])!;
     const { reported: _r, ...meta } = c;
@@ -133,7 +133,7 @@ export const NOT_IN_PROSE = "the span is not in a vignette or the ending, which 
  * Returns the ids to drop, each with the reason. Claims have their own
  * verifier and are not read again.
  */
-async function verifyFindings(p: Pipeline, drawId: string, parts: BriefParts, brief: string, all: Cluster[]): Promise<Map<string, string>> {
+async function verifyFindings(p: Pipeline, drawId: string, parts: BriefParts, brief: string, ledger: string, all: Cluster[]): Promise<Map<string, string>> {
   const out = new Map<string, string>();
   const prose = [parts.vignette, ...parts.contexts, parts.ending].join("\n\n");
   const subject: Cluster[] = [];
@@ -144,7 +144,7 @@ async function verifyFindings(p: Pipeline, drawId: string, parts: BriefParts, br
   if (!subject.length) return out;
   const findings = subject.map((c, i) => `${i + 1}. span: "${c.span}"\n   statement: ${c.statement}\n   result: ${c.result}\n   evidence: ${c.evidence}`).join("\n");
   const cap = String(50 + 40 * subject.length);
-  const { value } = await p.invoke(drawId, parts.outlineStepId, "check-verify", fill("checkVerify", { brief, findings, cap }), (t) => parseVerdicts(t, subject.length));
+  const { value } = await p.invoke(drawId, parts.outlineStepId, "check-verify", fill("checkVerify", { brief, ledger: ledger ? fill("pinnedLedger", { ledger }) : "", findings, cap }), (t) => parseVerdicts(t, subject.length));
   value.forEach((v, i) => { if (v.answer === "drop") out.set(subject[i].id, v.why); });
   return out;
 }

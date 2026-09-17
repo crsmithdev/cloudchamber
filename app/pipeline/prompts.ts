@@ -281,15 +281,17 @@ As a checkable sentence: {statement}
 
 Find the line in the setting above that confirms or denies it. The setting is the whole authority: a claim it does not settle is unverifiable, not wrong. Output a <finding> tag containing <span> (the quote above, verbatim), <statement> (the sentence above), <result> (supported | contradicted | unverifiable), <evidence> (the heading it sits under and one quoted line from it, or none), <invalidates> (none), <replacement> (if contradicted, one positive sentence that would hold, keeping what the span reports and changing only the figure or the rule that conflicts; otherwise none). Under 120 words.`,
 
-  checkVerify: `Below is a story brief, then the findings its checkers raised against it, numbered.
+  checkVerify: `Below is a story brief, the ledger of its settled facts, then the findings its checkers raised against it, numbered.
 
 {brief}
+
+{ledger}
 
 <findings>
 {findings}
 </findings>
 
-A reader of the story sees only the vignettes and the ending, reads them once and with attention, and never sees the outline. Read each finding back against the whole brief. Keep it only when the span asserts the fact the statement gives it, the evidence is a quote from the brief that conflicts with that fact, and the conflict is one that reader would notice, or one that breaks a rule the outline states in words.
+A reader of the story sees only the vignettes and the ending, reads them once and with attention, and never sees the outline. Read each finding back against the whole brief. Keep it only when the span asserts the fact the statement gives it, the evidence is a quote from the brief or the ledger that conflicts with that fact, and the conflict is one that reader would notice, or one that breaks a rule the outline or the ledger states in words.
 
 Drop it when any of these is true:
 - the span does not state the fact, or what it leaves out is stated elsewhere or left open;
@@ -298,7 +300,7 @@ Drop it when any of these is true:
 - seeing the conflict needs any arithmetic beyond comparing two stated values or counting a day or two from a dated entry: a sum, a product, a division, a rate, a count of weekdays or a unit conversion;
 - seeing the conflict needs a physical inference about how liquid, blood, light, an instrument or a body behaves that the brief does not state in words;
 - the span hedges the fact it states, with words such as "on a good day", "about", "nearly" or "if";
-- the evidence is not in the brief.
+- the evidence is not in the brief or the ledger.
 
 Output one <verdict n="..."> tag per finding, containing <answer>keep|drop</answer> and <why> (one sentence). Under {cap} words.`,
 

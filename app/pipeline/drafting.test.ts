@@ -1031,3 +1031,25 @@ describe("a repaired context vignette", () => {
     expect(readFileSync(join(dir, "briefs", third.id, "context-2.md"), "utf8")).toContain("context for Test a second thing: scene two.");
   });
 });
+
+describe("a fix with no patch", () => {
+  test("goes to the passage holding its span and to the one holding its second quote, and to no other", async () => {
+    // the span is in context-1, the second quote in the ending; "none" invalidates nothing, so only the quote can pull the ending in
+    const span = "context for Test the first thing: scene one.";
+    const cross = () => finding(span, "context-1 and the ending disagree", "none", "The first context and the ending agree.", "the fire was on the 3rd", "contradicts:and the count closes. The last beat.");
+    const script = draftScript({
+      "check-ledger": [...[1, 2, 3].map(() => `<ledger>${LEDGER}</ledger>${cross()}<examined>x</examined>`), ...cleanSamples()],
+      "check-derivation": [...cleanSamples(), ...cleanSamples()],
+    });
+    const { p, d, draw } = await drawn(script);
+    await d.check(draw.id);
+    const f = d.findings(draw.id).findings.find((x) => x.reported)!;
+    const next = await d.accept(draw.id, [f.id]);
+    const step = (stage: string) => p.steps(next.id).find((s) => s.stage === stage)!;
+    const constraints = (stage: string) => /<constraints>([\s\S]*?)<\/constraints>/.exec(step(stage).prompt)?.[1] ?? "";
+    expect(step("repair-ending").model).not.toBe("copied");
+    expect(constraints("repair-ending")).toContain("The first context and the ending agree.");
+    expect(constraints("repair-context")).toContain("The first context and the ending agree.");
+    expect(step("repair-vignette").model).toBe("copied");                      // the chosen vignette holds neither half
+  });
+});

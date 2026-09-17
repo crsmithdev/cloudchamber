@@ -16,13 +16,29 @@ import { sections, tag, tags, words } from "./model.ts";
 import { now } from "./paths.ts";
 import { writeBrief } from "./brief.ts";
 import { briefParts, pinnedLedger, settledConstraints, type Settled } from "./briefparts.ts";
-import { normalise } from "./recur.ts";
+import { normalise, quoted } from "./recur.ts";
 import { nextName } from "./names.ts";
 import type { FindingView } from "./briefparts.ts";
 
-export type Accepted = Pick<FindingView, "id" | "span" | "invalidates" | "replacement"> & { patch?: string };
+export type Accepted = Pick<FindingView, "id" | "span" | "invalidates" | "replacement"> & { patch?: string; result?: string };
 
 const inside = (span: string, text: string) => normalise(text).includes(normalise(span));
+
+/**
+ * Whether a finding lands in a passage: its span is there, or, for a finding with
+ * no patch, the second quote its result names is. A patch settles the conflict on
+ * the span's side; without one the fix can need the other side, and on the fresh
+ * draw of 2026-09-17 a constraint given only to the span's passage was met by
+ * restating the span there while the conflicting half stayed in the ending.
+ * Quotes in the evidence do not count: on the pit chain one of those carried a
+ * registry row's fix into a notebook entry.
+ */
+export function landsIn(f: Accepted, text: string): boolean {
+  if (inside(f.span, text)) return true;
+  if (f.patch?.trim()) return false;
+  const second = /^contradicts:\s*([\s\S]+)$/i.exec((f.result ?? "").trim())?.[1];
+  return !!second && quoted(text, second);
+}
 const ENDING_SECTIONS = new Set(["arithmetic", "custody"]);
 
 /**
@@ -64,10 +80,10 @@ function looseIndex(text: string, span: string): { from: number; to: number } | 
 export function repairPlan(accepted: Accepted[], vignette: string, ending: string, contexts: string[] = []): { vignette: boolean; ending: boolean; context: boolean[] } {
   const unpatchable = accepted.filter((f) => !f.patch?.trim());
   return {
-    vignette: unpatchable.some((f) => inside(f.span, vignette)),
+    vignette: unpatchable.some((f) => landsIn(f, vignette)),
     // an arithmetic or custody finding moves the mechanism, so the ending is re-derived even when patched elsewhere
-    ending: unpatchable.some((f) => inside(f.span, ending)) || accepted.some((f) => ENDING_SECTIONS.has(f.invalidates.toLowerCase()) && !f.patch?.trim()),
-    context: contexts.map((c) => unpatchable.some((f) => inside(f.span, c))),
+    ending: unpatchable.some((f) => landsIn(f, ending)) || accepted.some((f) => ENDING_SECTIONS.has(f.invalidates.toLowerCase()) && !f.patch?.trim()),
+    context: contexts.map((c) => unpatchable.some((f) => landsIn(f, c))),
   };
 }
 
@@ -122,7 +138,7 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
   // rewrite given a registry row's constraint ("every haul, including number 219's") made Ruth number 219.
   const constraints = constraintsBlock(accepted);
   const within = (text: string, extra: Accepted[] = []) =>
-    constraintsBlock([...accepted.filter((f) => inside(f.span, text)), ...extra.filter((f) => !inside(f.span, text))]);
+    constraintsBlock([...accepted.filter((f) => landsIn(f, text)), ...extra.filter((f) => !landsIn(f, text))]);
   const endingExtra = accepted.filter((f) => ENDING_SECTIONS.has(f.invalidates.toLowerCase()) && !f.patch?.trim());
   // the accepted set of this round is not the whole record: every earlier round's fix still holds
   const settledLines = settledConstraints(p, parts.draw.id).filter((sc) => !accepted.some((a) => a.id === sc.finding));
