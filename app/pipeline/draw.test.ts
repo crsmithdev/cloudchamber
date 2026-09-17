@@ -225,6 +225,18 @@ describe("draw graph", () => {
     expect(p.draws()[0].status).toBe("failed");
   });
 
+  test("a model call that throws fails its step with the reason, rather than leaving it running", async () => {
+    const { db, dir } = fixture();
+    const { p, model } = pipe(db, dir);
+    model.call = async () => { throw new Error("Executable not found in $PATH: \"claude\""); };
+    const err = await p.start({ mode: "auto", genre: "horror" }).catch((e) => e);
+    expect(err).toBeInstanceOf(StepFailure);
+    expect(err.reason).toBe("error");
+    const [step] = p.steps(p.draws()[0].id);
+    expect([step.status, step.fail_reason, step.error]).toEqual(["failed", "error", 'Executable not found in $PATH: "claude"']);
+    expect(p.draws()[0].status).toBe("failed");
+  });
+
   test("a setting is sliced by stage: whole lists, the loaded ones only, no rules, jobs on the outline", async () => {
     const { db, dir } = fixture();
     const sdir = settingsFixture(dir);

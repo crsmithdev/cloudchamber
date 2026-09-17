@@ -11,7 +11,7 @@
 import { randomBytes } from "node:crypto";
 import { BANDS, DEFAULT_SAMPLING, RUN, isDarkness, isSampling, type Darkness, loadStages, type Sampling, type StageConfig, type StageName } from "./config.ts";
 import { TEMPLATES, compose, fill } from "./prompts.ts";
-import { need, sections, tag, tags, words, type ModelAdapter } from "./model.ts";
+import { need, sections, tag, tags, words, type ModelAdapter, type ModelResult } from "./model.ts";
 import { eligiblePassages, eligibleThemes, type Segment } from "./bank.ts";
 import { loadChecked, slice, type GenStage, type Setting } from "./settings.ts";
 import { SETTINGS } from "./paths.ts";
@@ -149,7 +149,9 @@ export class Pipeline {
     const allowed = tools ?? cfg.tools ?? "";
     const attempt = async (model: string, n: number): Promise<{ step: StepRow; value?: T; outcome: "ok" | "shape" | "refusal" | "error" }> => {
       const step = this.insertStep(draw, parent, stage, model, cfg.system, prompt, n, storyId, allowed);
-      const r = await this.model.call(stage, cfg.system, prompt, model, allowed);
+      // a call that throws (no claude on PATH, a spawn that fails) is an error result, so the step does not stay running
+      const r = await this.model.call(stage, cfg.system, prompt, model, allowed)
+        .catch((e: unknown): ModelResult => ({ text: "", stop: "error", raw: "", model, durationMs: 0, error: String((e as Error)?.message ?? e) }));
       step.raw_response = r.raw;
       step.model = r.model || model;
       if (r.stop === "refusal") { this.finishStep(step, { status: "failed", fail_reason: "refusal", error: r.text.slice(0, 500) }); return { step, outcome: "refusal" }; }
