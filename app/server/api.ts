@@ -5,7 +5,7 @@
  */
 import Fastify, { type FastifyInstance } from "fastify";
 import type { Db } from "../pipeline/store/db.ts";
-import { Pipeline, type DrawOpts, type SeedChoice } from "../pipeline/draw.ts";
+import { newDrawId, Pipeline, type DrawOpts, type SeedChoice } from "../pipeline/draw.ts";
 import { KINDS, latest, latestAll, passedStories, record, type Kind, type Method } from "../pipeline/verdicts.ts";
 import { renderStory } from "../pipeline/drafts.ts";
 import { status } from "../pipeline/status.ts";
@@ -229,10 +229,10 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
       sampling: (b.sampling || undefined) as DrawOpts["sampling"], darkness: (b.darkness || undefined) as DrawOpts["darkness"], seed,
       segment: sources.length || b.author ? { source: sources.length ? sources : undefined, author: b.author || undefined } : undefined };
     try {
-      // The draw and validation are synchronous-ish and fail fast; the model steps continue after we reply.
-      const started = pipeline.start(opts);
-      const drawId = await Promise.race([started.then((r) => r.id), new Promise<string>((res) => setTimeout(() => res(pipeline.draws()[0]?.id ?? ""), 300))]);
-      background(started);
+      // validation fails before the first model call; the model steps continue after the reply
+      const drawId = newDrawId();
+      const failed = await launch(pipeline.start(opts, drawId));
+      if (failed) return reply.code(400).send({ error: failed.message });
       return reply.code(202).send({ id: drawId });
     } catch (e: any) {
       return reply.code(400).send({ error: e.message });
@@ -307,10 +307,9 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
       }
       if (action === "fork") {
         if (!step_id) return reply.code(400).send({ error: "step_id required" });
-        // the fork row exists before its first model call, so the id is readable well inside the race
-        const started = pipeline.fork(id, step_id);
-        const forkId = await Promise.race([started.then((r) => r.id), new Promise<string>((res) => setTimeout(() => res(pipeline.forks(id).find((f) => f.step_id === step_id)?.id ?? ""), 300))]);
-        background(started);
+        const forkId = newDrawId();
+        const failed = await launch(pipeline.fork(id, step_id, forkId));
+        if (failed) return reply.code(400).send({ error: failed.message });
         return reply.code(202).send({ id: forkId, forked_from: id });
       }
       return reply.code(400).send({ error: "action must be choose | fork | flag | archive | unarchive | accept | auto | dismiss | hold | keep | patch | rewrite" });

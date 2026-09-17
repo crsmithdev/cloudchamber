@@ -238,7 +238,8 @@ export class Pipeline {
 
   // --- the draw ---------------------------------------------------------------
 
-  async start(opts: DrawOpts): Promise<DrawRow> {
+  /** `drawId` is chosen by a caller that must answer with it before the draw finishes. */
+  async start(opts: DrawOpts, drawId: string = newDrawId()): Promise<DrawRow> {
     const sampling = opts.sampling ?? DEFAULT_SAMPLING;
     if (!isSampling(sampling)) throw new Error(`draw: sampling ${sampling} is not tail | off-centre | standard`);
     if (opts.darkness && !isDarkness(opts.darkness)) throw new Error(`draw: darkness ${opts.darkness} is not light | grey | dark | black`);
@@ -246,7 +247,6 @@ export class Pipeline {
     const examples = this.drawExamples(opts.segment);
     const seed = this.drawSeed(opts.seed, setting);
     const genre = this.inferGenre(opts, examples);
-    const drawId = newDrawId();
     this.db.query(`INSERT INTO draws (id, name, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, sampling, darkness, status, created_at)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?)`)
       .run(drawId, this.nameFor(seed.text), setting?.id ?? null, genre, opts.mode, opts.segment ? JSON.stringify(opts.segment) : null,
@@ -366,7 +366,7 @@ export class Pipeline {
    * the candidate's premise and vignette across as a copied step, so every
    * later stage reads it the way it reads any other draw.
    */
-  async fork(drawId: string, executeStepId: string): Promise<DrawRow> {
+  async fork(drawId: string, executeStepId: string, newId: string = newDrawId()): Promise<DrawRow> {
     const src = this.draw(drawId);
     if (src.status === "awaiting_gate") throw new Error(`draw ${drawId} is awaiting the gate; choose a candidate instead of forking`);
     if (!src.chosen_step) throw new Error(`draw ${drawId} chose no candidate; there is nothing to fork from`);
@@ -375,7 +375,6 @@ export class Pipeline {
     if (!c) throw new Error(`draw ${drawId}: no execute step ${executeStepId}`);
     const already = this.forks(drawId).find((f) => f.step_id === executeStepId);
     if (already) throw new Error(`draw ${drawId}: candidate #${c.index} is already developed as ${already.id}`);
-    const newId = newDrawId();
     this.db.query(`INSERT INTO draws (id, name, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, sampling, darkness, status, gate_method, forked_from, created_at)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', 'manual', ?, ?)`)
       .run(newId, this.nameFor(src.seed_text), src.setting, src.genre, src.mode, src.segment, src.seed_mode, src.seed_text, src.seed_theme_id, src.example_ids, src.sampling, src.darkness, drawId, now());

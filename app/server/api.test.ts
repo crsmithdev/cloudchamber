@@ -181,6 +181,19 @@ describe("api", () => {
     expect((await j("GET", "/api/draws")).body).toHaveLength(2);
   });
 
+  test("a started draw answers with its own id, whatever draw is made meanwhile", async () => {
+    const { app, pipeline } = await setup();
+    const call = pipeline.model.call.bind(pipeline.model);
+    pipeline.model.call = async (...a: Parameters<typeof call>) => { await Bun.sleep(400); return call(...a); };   // slower than any reply
+    const pending = app.inject({ method: "POST", url: "/api/draws", payload: { mode: "manual", genre: "horror" } });
+    pipeline.db.query("INSERT INTO draws (id, genre, mode, seed_mode, seed_text, example_ids, status, created_at) VALUES ('newer', 'horror', 'manual', 'typed', 's', '[]', 'running', '2099-01-01T00:00:00Z')").run();
+    const r = await pending;
+    expect(r.statusCode).toBe(202);
+    const id = JSON.parse(r.body).id;
+    expect(id).not.toBe("newer");
+    expect(pipeline.draw(id).genre).toBe("horror");
+  });
+
   test("a draw that sends domains is a 400", async () => {
     const { j } = await setup();
     const bad = await j("POST", "/api/draws", { mode: "manual", genre: "horror", setting: "basin", domains: "labour" });
