@@ -1,0 +1,17 @@
+#!/bin/sh
+# Called by post-commit and post-merge with the commit main moved from.
+# When main moves in the main checkout and the change touches the app, rebuild
+# the UI and ask the cloudchamber service to restart on the new code. The
+# service restarts once its background work is done (app/server/index.ts).
+from="$1"
+[ "$(git rev-parse --git-dir)" = "$(git rev-parse --git-common-dir)" ] || exit 0   # a worktree
+[ "$(git symbolic-ref --short -q HEAD)" = main ] || exit 0
+git rev-parse -q --verify "$from" >/dev/null || exit 0
+git diff --name-only "$from" HEAD | grep -qE '^(app/|package\.json$|bun\.lock$)' || exit 0
+systemctl --user is-active -q cloudchamber || exit 0
+
+bun=$(command -v bun || echo "$HOME/.bun/bin/bun")
+if ! "$bun" run ui:build >/dev/null 2>&1; then
+  echo "cloudchamber: the ui build failed; run: bun run ui:build" >&2
+fi
+systemctl --user reload cloudchamber && echo "cloudchamber: reload requested; the service restarts when its background work is done"

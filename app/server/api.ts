@@ -97,10 +97,28 @@ export function drawExamples(db: Db, exampleIds: string) {
   });
 }
 
-export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; drafting?: Drafting } = {}): FastifyInstance {
+/**
+ * The long work a request starts and the reply does not wait for. Its failure
+ * is on the draw row, so the rejection is dropped here. `idle` lets a restart
+ * wait for the work instead of killing it.
+ */
+export class Jobs {
+  private n = 0;
+  private waiters: (() => void)[] = [];
+  get count(): number { return this.n; }
+  run(work: Promise<unknown>): void {
+    this.n++;
+    work.catch(() => undefined).finally(() => { if (--this.n === 0) for (const w of this.waiters.splice(0)) w(); });
+  }
+  idle(): Promise<void> {
+    return this.n ? new Promise((resolve) => this.waiters.push(resolve)) : Promise.resolve();
+  }
+}
+
+export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; drafting?: Drafting; jobs?: Jobs } = {}): FastifyInstance {
   const app = Fastify({ logger: opts.logger ?? false });
-  // long work continues after the reply; its failure is on the draw row, so the rejection is dropped here
-  const background = (work: Promise<unknown>) => { work.catch(() => undefined); };
+  const jobs = opts.jobs ?? new Jobs();
+  const background = (work: Promise<unknown>) => jobs.run(work);
   const drafting = opts.drafting ?? new Drafting(pipeline);
 
   app.get("/api/status", async () => status(db));

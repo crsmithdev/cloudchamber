@@ -6,7 +6,7 @@ import { openDb } from "../pipeline/store/db.ts";
 import { FakeModel } from "../pipeline/model.ts";
 import { Pipeline } from "../pipeline/draw.ts";
 import { loadDraftConfig } from "../pipeline/draftconfig.ts";
-import { buildApi } from "./api.ts";
+import { buildApi, Jobs } from "./api.ts";
 import { settingsFixture } from "../pipeline/settings.fixture.ts";
 
 const CELLS = ["informational", "mixed", "involved"].flatMap((v) => ["non-narrative", "mixed", "narrative"].map((m) => [v, m]));
@@ -265,5 +265,40 @@ describe("api: draft config", () => {
     expect(r.body.defaults.length.words).toBe(5000);
     expect(r.body.defaults.beats).toMatchObject({ count: "auto", min: 5, max: 10 });
     expect(r.body.profiles).toEqual(["flash", "novelette"]);
+  });
+});
+
+describe("api: background jobs", () => {
+  test("idle waits for every job, a failed one included, and is immediate with none", async () => {
+    const jobs = new Jobs();
+    let idle = false;
+    await jobs.idle();
+    let ok!: () => void, fail!: (e: Error) => void;
+    jobs.run(new Promise<void>((r) => { ok = r; }));
+    jobs.run(new Promise<void>((_, r) => { fail = r; }));
+    const waiting = jobs.idle().then(() => { idle = true; });
+    ok();
+    await Bun.sleep(0);
+    expect(idle).toBe(false);
+    expect(jobs.count).toBe(1);
+    fail(new Error("the draw failed"));
+    await waiting;
+    expect(jobs.count).toBe(0);
+  });
+
+  test("a draw started through the api counts until it finishes", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "cloudchamber-jobs-"));
+    const db = openDb(join(dir, "t.db"));
+    let release!: () => void;
+    const gate = new Promise<void>((r) => { release = r; });
+    const pipeline = new Pipeline(db, new FakeModel({}), { briefsDir: join(dir, "briefs"), settingsDir: settingsFixture(dir) });
+    pipeline.start = async () => { await gate; throw new Error("no examples"); };
+    const jobs = new Jobs();
+    const app = buildApi(db, pipeline, { jobs });
+    await app.inject({ method: "POST", url: "/api/draws", payload: {} });
+    expect(jobs.count).toBe(1);
+    release();
+    await jobs.idle();
+    expect(jobs.count).toBe(0);
   });
 });

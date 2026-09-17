@@ -6,12 +6,28 @@ import { openDb } from "../pipeline/store/db.ts";
 import { Pipeline } from "../pipeline/draw.ts";
 import { ClaudeCli } from "../pipeline/model.ts";
 import { ROOT } from "../pipeline/paths.ts";
-import { buildApi } from "./api.ts";
+import { buildApi, Jobs } from "./api.ts";
 
+/**
+ * SIGHUP asks for a restart on new code: the process waits until no request's
+ * background work is left, then exits, and systemd starts it again. A draw or
+ * a repair in flight finishes on the old code rather than dying mid-call.
+ */
 export async function serve(port: number, opts: { db?: string; uiDir?: string; host?: string } = {}) {
   const db = openDb(opts.db);
   const pipeline = new Pipeline(db, new ClaudeCli());
-  const app = buildApi(db, pipeline, { logger: false });
+  const jobs = new Jobs();
+  const app = buildApi(db, pipeline, { logger: false, jobs });
+  let reloading = false;
+  process.on("SIGHUP", async () => {
+    if (reloading) return;
+    reloading = true;
+    console.log(`reload requested; waiting for ${jobs.count} background job(s)`);
+    await jobs.idle();
+    await app.close();
+    console.log("reload: exiting for a restart on the new code");
+    process.exit(0);
+  });
   const ui = opts.uiDir ?? join(ROOT, "app", "ui", "dist");
   if (!existsSync(ui) && !opts.uiDir) {
     const b = Bun.spawnSync(["bun", "run", "ui:build"], { cwd: ROOT, stdout: "pipe", stderr: "pipe" });
