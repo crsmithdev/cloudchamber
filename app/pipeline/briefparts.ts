@@ -114,8 +114,9 @@ export function checkFindings(p: Pipeline, drawId: string): FindingView[] {
   const per = samplesPerChecker(p, drawId);
   const jobs = briefSettingJobs(p, drawId);
   const settled = settledConstraints(p, drawId);
+  const outline = briefOutline(p, drawId);
   return findingArtifacts(p, drawId).filter((f) => f.source === "check" && f.pass === pass)
-    .map((f) => withScore(p, f, per, jobs, !(f as { sub_threshold?: boolean }).sub_threshold, settled))
+    .map((f) => withScore(p, f, per, jobs, !(f as { sub_threshold?: boolean }).sub_threshold, settled, outline))
     .sort((a, b) => b.score - a.score);
 }
 
@@ -126,10 +127,15 @@ function briefSettingJobs(p: Pipeline, drawId: string): string[] {
   return jobs.filter((j) => !(RUN.coreJobs as readonly string[]).includes(j));
 }
 
-export function withScore(p: Pipeline, f: FindingMeta & { artifact_id: string }, per: Record<string, number>, settingJobs: string[], reported: boolean, settled: Settled[] = []): FindingView {
+/** The text of a draw's outline, so the score can tell a span quoted from it. Empty when the draw has no brief yet. */
+function briefOutline(p: Pipeline, drawId: string): string {
+  return [...p.artifacts(drawId)].reverse().find((a) => a.kind === "outline")?.content ?? "";
+}
+
+export function withScore(p: Pipeline, f: FindingMeta & { artifact_id: string }, per: Record<string, number>, settingJobs: string[], reported: boolean, settled: Settled[] = [], outline = ""): FindingView {
   const samples_run = samplesAgainst(f, per);
   const re = relitigated(f, settled);
-  return { ...f, ...decision(p, f.id), score: score(f, samples_run, settingJobs), samples_run, reported, ...(re ? { relitigates: re } : {}) };
+  return { ...f, ...decision(p, f.id), score: score(f, samples_run, settingJobs, outline), samples_run, reported, ...(re ? { relitigates: re } : {}) };
 }
 
 /**
@@ -162,9 +168,10 @@ export function subThresholdFindings(p: Pipeline, drawId: string): FindingView[]
   // the same span from two checkers is one finding, as it is above the bar
   const hidden = excludeDismissed(merge(perChecker, jobs).filter((c) => !reported.some((r) => same(r, c))), dismissed);
   const settled = settledConstraints(p, drawId);
+  const outline = briefOutline(p, drawId);
   return hidden.map((c) => {
     const { reported: _r, ...meta } = c;
-    return withScore(p, { ...meta, pass, source: "check", artifact_id: "" }, per, jobs, false, settled);
+    return withScore(p, { ...meta, pass, source: "check", artifact_id: "" }, per, jobs, false, settled, outline);
   }).sort((a, b) => b.score - a.score);
 }
 
@@ -232,6 +239,11 @@ export function dismissedFindings(p: Pipeline, drawId: string): { span: string; 
  * and the categories changed wholesale, so each round measured the brief
  * against a standard it had just invented. Pinned, the standard moves only
  * when Chris accepts a finding, and the amendment says so.
+ *
+ * An amendment overrides the base line it overturns; the base line is not
+ * struck. On the pit chain the base said the copy of down points at the pit
+ * and round 1 settled that it points at the person, and the checker held the
+ * prose to both. The header now says which one holds.
  */
 export function pinnedLedger(p: Pipeline, drawId: string): string | null {
   let root = drawId;
@@ -241,7 +253,7 @@ export function pinnedLedger(p: Pipeline, drawId: string): string | null {
   if (!base) return null;
   const amendments = settledConstraints(p, drawId);
   if (!amendments.length) return base;
-  return [base, "", "amended by the findings accepted since:", ...amendments.map((a) => `- ${a.replacement}`)].join("\n");
+  return [base, "", "amended by the findings accepted since; where an amendment and a line above disagree, the amendment holds and the line above is void:", ...amendments.map((a) => `- ${a.replacement}`)].join("\n");
 }
 
 /**

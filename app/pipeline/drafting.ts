@@ -20,7 +20,7 @@ import { applyPatches, constraintsBlock, repair, type Accepted } from "./repair.
 import { briefBlock, briefParts, chainProfile, checkFindings, gateFindings, judgeNote, latestCheckPass, passId, pinnedLedger, type FindingView } from "./briefparts.ts";
 import { currentScenes, runScenes, runSchedule, runScreens, writeScene, type Schedule } from "./write.ts";
 import { draftView, exportDraft, renderStory, type DraftView } from "./drafts.ts";
-import { tag } from "./model.ts";
+import { tag, tags } from "./model.ts";
 import { fill } from "./prompts.ts";
 
 export const CHECKABLE = new Set(["done", "awaiting_check_gate"]);
@@ -173,12 +173,20 @@ export class Drafting {
   }
 
   /**
-   * Repair rounds without a gate. Each round accepts every open finding
-   * scoring `repair.stop_score` or more, dismisses the rest as `auto`, repairs
-   * and re-checks. It stops when no finding reaches the floor, when the rounds
-   * run out, or when the total open score has not fallen for `repair.patience`
-   * rounds — the loop does not converge on zero findings, so a round cap and a
-   * patience are what end it.
+   * Repair rounds without a gate. Each round accepts every open reported
+   * finding scoring `repair.stop_score` or more, dismisses the rest as `auto`,
+   * repairs and re-checks. It stops when no finding reaches the floor, when the
+   * rounds run out, or when the total open score has not fallen for
+   * `repair.patience` rounds — the loop does not converge on zero findings, so
+   * a round cap and a patience are what end it.
+   *
+   * A finding under `keep_if` is not auto's to act on: with two samples a lone
+   * debt-audit contradiction scored 7 and rewrote the pit chain's physics on
+   * one sample, and round 2 accepted two lone findings that contradict each
+   * other. Sub-threshold findings stay open for a person and are neither
+   * accepted nor dismissed here. When a round accepts two or more fixes, one
+   * call reads them against each other and the lower-scoring side of every
+   * conflicting pair is dismissed before the repair.
    *
    * The round with the lowest total score is reported but not restored: an
    * earlier round is superseded, and reviving it would leave the chain in two
@@ -197,8 +205,8 @@ export class Drafting {
     const rounds: AutoRound[] = [];
     let stopped: AutoResult["stopped"] = "cap";
     for (let round = 1; ; round++) {
-      const open = gateFindings(this.p, id, true).filter((f) => f.decision === "open");
-      const accept = open.filter((f) => f.score >= cfg.repair.stop_score && autoEligible(f));
+      const open = gateFindings(this.p, id).filter((f) => f.decision === "open");
+      let accept = open.filter((f) => f.score >= cfg.repair.stop_score && autoEligible(f));
       const total = open.reduce((a, f) => a + f.score, 0);
       const calls = this.chainCalls(id);
       const row: AutoRound = { round, id, open: open.length, total, accepted: accept.length, calls };
@@ -218,17 +226,45 @@ export class Drafting {
       if (since >= cfg.repair.patience) { row.accepted = 0; stopped = "patience"; break; }
       if (round > cfg.repair.rounds) { row.accepted = 0; stopped = "cap"; break; }
       if (calls >= cfg.repair.max_calls) { row.accepted = 0; stopped = "budget"; break; }
+      accept = await this.reconcile(id, accept);
+      row.accepted = accept.length;
       id = (await this.accept(id, accept.map((f) => f.id), { method: "draw", note: opts.note ?? "auto" })).id;
     }
     const best = rounds.reduce((a, r) => (r.total < a.total ? r : a), rounds[0]);
     this.p.db.query("UPDATE draws SET draft_config = (SELECT draft_config FROM draws WHERE id = ?) WHERE id = ?").run(drawId, id);
     // what the last round would have repaired had the loop gone on: the gate's work, not auto's
-    const left = gateFindings(this.p, id, true).filter((f) => f.decision === "open" && f.score >= cfg.repair.stop_score && autoEligible(f));
+    const left = gateFindings(this.p, id).filter((f) => f.decision === "open" && f.score >= cfg.repair.stop_score && autoEligible(f));
     const result: AutoResult = { id, rounds, best, stopped, floor: cfg.repair.stop_score, calls: this.chainCalls(id), left_open: left.length };
     // the round table belongs to the brief auto stopped on, so the gate can show how it got there
     const last = this.p.steps(id).filter((s) => s.status === "done").at(-1);
     if (last) this.p.artifact(last, "auto", JSON.stringify(result), { rounds: rounds.length, stopped, best: best.id });
     return result;
+  }
+
+  /**
+   * The accepted set with every conflicting pair reduced to its higher-scoring
+   * side. One call, only when there are two or more fixes; `accept` is sorted
+   * by score, so on a tie the earlier one is kept.
+   */
+  private async reconcile(drawId: string, accept: FindingView[]): Promise<FindingView[]> {
+    if (accept.length < 2) return accept;
+    const parent = this.p.steps(drawId).filter((s) => s.status === "done").at(-1)?.id ?? null;
+    const prompt = fill("reconcile", { fixes: accept.map((f, i) => `${i + 1}. ${f.replacement}`).join("\n") });
+    const { value: pairs } = await this.p.invoke<{ a: number; b: number; why: string }[]>(drawId, parent, "reconcile", prompt, (t) => {
+      const block = tag(t, "conflicts");
+      if (block === null) throw new Error("no <conflicts> tag");
+      return tags(block, "conflict").map((c) => ({ a: Number(tag(c, "a")), b: Number(tag(c, "b")), why: tag(c, "why") ?? "" }))
+        .filter((x) => x.a >= 1 && x.a <= accept.length && x.b >= 1 && x.b <= accept.length && x.a !== x.b);
+    });
+    const dropped = new Map<string, FindingView>();
+    for (const { a, b } of pairs) {
+      const [hi, lo] = a < b ? [a, b] : [b, a];
+      // the list is sorted by score, so the earlier index is the higher score or the tie-break
+      const keep = accept[hi - 1], drop = accept[lo - 1];
+      if (!dropped.has(keep.id) && !dropped.has(drop.id)) dropped.set(drop.id, keep);
+    }
+    for (const [id, keep] of dropped) this.dismiss(drawId, id, `auto: conflicts with ${keep.id}`, "draw");
+    return accept.filter((f) => !dropped.has(f.id));
   }
 
   /** Model calls spent on this repair chain, so a run cannot cost more than it is worth. */

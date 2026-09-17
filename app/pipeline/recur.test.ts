@@ -90,6 +90,11 @@ describe("recurrence", () => {
     expect(s("four hundred sixty-two kilos, 1,075 bomblets")).toBe(7);     // a stated figure keeps its severity
     expect(s("a story about the archive")).toBe(7);                        // "about" alone is not a hedge
     expect(s("roughly 1,200 steps a day", "debt audit")).toBe(8);          // the guard is arithmetic only
+    // the outline's own sums are not estimates: a span quoted from it keeps its severity
+    const outline = "## arithmetic\n\nFive nights × 3.8 is about 19 days, which is why residents take two to three weeks.";
+    const inOutline = (span: string) => score({ n: 3, checkers: ["derivation"], invalidates: "arithmetic", result: "contradicted", evidence: "a quote", span }, 3, [], outline);
+    expect(inOutline("Five nights × 3.8 is about 19 days")).toBe(7);
+    expect(inOutline("about 19 days in the notebook")).toBe(5);             // the same hedge in prose is still an estimate
   });
 
   test("parseFindings reads the tag shape and drops findings without a span", () => {

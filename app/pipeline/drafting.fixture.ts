@@ -99,6 +99,7 @@ export function draftScript(over: Record<string, any> = {}) {
     "check-resemblance": () => resemblance(),
     "check-claims-extract": () => claimsExtract(),
     "check-claims-verify": claimVerify,
+    reconcile: () => "<conflicts></conflicts>",
     "repair-vignette": (p: string) => `<vignette>rewritten vignette ${tag(p, "constraints")?.split("\n")[0] ?? ""} ${"w ".repeat(390)}</vignette>`,
     "repair-outline": () => ["debt audit", "arithmetic", "custody"].map((n) => `<section name="${n}">Repaired ${n} body.</section>`).join("\n"),
     "repair-ending": () => "<ending>Only the assembler fires the reliquary, and the count closes.</ending>",

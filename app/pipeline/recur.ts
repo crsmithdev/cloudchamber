@@ -112,18 +112,21 @@ export const SCORE_MAX = 10;
  * A hedge immediately before a number, or a trailing "or so", marks a
  * character's estimate rather than a claim. Doing long division on "roughly
  * 1,200 steps a day" is pedantry, so an arithmetic finding quoting one scores
- * no severity at all.
+ * no severity at all. The outline's own sums are not estimates: "about 19
+ * days" in the arithmetic section zeroed a real dose error on the pit chain,
+ * so a span quoted from the outline keeps its severity.
  */
 export const HEDGED = /\b(roughly|approximately|about|around|nearly|almost|some|upwards of|maybe)\s+[\d,.]+|\bor so\b|\bgive or take\b/i;
 
 export type Scorable = { n: number; checkers: string[]; invalidates: string; result: string; evidence: string; span?: string };
 
-export function score(f: Scorable, samples: number, settingJobs: string[] = []): number {
+export function score(f: Scorable, samples: number, settingJobs: string[] = [], outline = ""): number {
   const recurrence = f.n >= samples ? 3 : f.n === samples - 1 ? 2 : 1;
   const crossChecker = f.checkers.length > 1 ? 2 : 0;
   const inv = f.invalidates.toLowerCase();
   const weight = INVALIDATES_WEIGHT[inv] ?? (settingJobs.some((j) => j.toLowerCase() === inv) ? 2 : 0);
-  const severity = inv === "arithmetic" && HEDGED.test(f.span ?? "") ? 0 : weight;
+  const inOutline = !!f.span && !!outline && normalise(outline).includes(normalise(f.span));
+  const severity = inv === "arithmetic" && !inOutline && HEDGED.test(f.span ?? "") ? 0 : weight;
   const r = f.result.toLowerCase().trim();
   const kind = r.startsWith("contradict") ? 2 : r.includes("underived") ? 1 : 0;
   const unevidenced = !f.evidence.trim() || f.evidence.trim().toLowerCase() === "none" ? -2 : 0;

@@ -3,7 +3,7 @@ import genresToml from "./genres.toml";
 
 export type GenStageName = "themes" | "redundancy" | "distill-map" | "distill" | "premises" | "execute" | "outline" | "jobs" | "context" | "ending";
 export type CheckStageName = "ledger-extract" | "check-derivation" | "check-ledger" | "check-structure" | "check-resemblance" | "check-claims-extract" | "check-claims-verify";
-export type DraftStageName = "repair-vignette" | "repair-outline" | "repair-ending" | "schedule" | "scene" | "screen-ledger" | "screen-structure";
+export type DraftStageName = "reconcile" | "repair-vignette" | "repair-outline" | "repair-ending" | "schedule" | "scene" | "screen-ledger" | "screen-structure";
 export type StageName = GenStageName | CheckStageName | DraftStageName;
 /** `tools` is the comma-separated list a call may use; absent or empty means `--tools ""`. */
 export type StageConfig = { model: string; fallback: string; system: string; tools?: string };
@@ -11,7 +11,7 @@ export type StageConfig = { model: string; fallback: string; system: string; too
 export const STAGES: StageName[] = [
   "themes", "redundancy", "distill-map", "distill", "premises", "execute", "outline", "jobs", "context", "ending",
   "ledger-extract", "check-derivation", "check-ledger", "check-structure", "check-resemblance", "check-claims-extract", "check-claims-verify",
-  "repair-vignette", "repair-outline", "repair-ending", "schedule", "scene", "screen-ledger", "screen-structure",
+  "reconcile", "repair-vignette", "repair-outline", "repair-ending", "schedule", "scene", "screen-ledger", "screen-structure",
 ];
 
 /** The start form's genre shortcuts, by group. Free text is accepted; this list only saves typing. */

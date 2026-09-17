@@ -186,7 +186,9 @@ Candidates:
 {ending}
 </ending>`,
 
-  findingShape: `Each finding goes in a <finding> tag containing: <span> (a verbatim quote from the brief, under ${RUN.spanWords} words), <statement> (what the span asserts, one sentence), <result> (one of: supported | contradicted | unverifiable | contradicts:<a second verbatim quote> | underived), <evidence> (the second quote, the sum written out, a URL and quoted line, or none), <invalidates> (which outline section would have to change if the finding stands: {sections} | none), <replacement> (one factual sentence in the outline's register that would hold in its place; not dialogue, not a scene), <patch> (the span rewritten so the finding no longer holds, in the voice and register of the text it came from and no longer than the span, ready to stand in its place word for word; or none when the fix needs more than that span).`,
+  findingShape: `Each finding goes in a <finding> tag containing: <span> (a verbatim quote from the brief, under ${RUN.spanWords} words), <statement> (what the span asserts, one sentence), <result> (one of: supported | contradicted | unverifiable | contradicts:<a second verbatim quote> | underived), <evidence> (the second quote, the sum written out, a URL and quoted line, or none), <invalidates> (which outline section would have to change if the finding stands: {sections} | none), <replacement> (one factual sentence in the outline's register that would hold in its place; not dialogue, not a scene), <patch> (the span rewritten so the finding no longer holds, in the voice and register of the text it came from and no longer than the span, ready to stand in its place word for word; or none when the fix needs more than that span).
+
+A result of contradicted or contradicts needs the span to assert the conflicting fact itself. A count, a duration or a detail the span does not state is not a contradiction: the span may be one of several, and what it leaves out is unverifiable. The replacement and the patch keep every event the span reports and change only the quantity, the timing or the mechanism that conflicts. Never turn an event into its absence.`,
 
   checkDerivation: `Below is a story brief: a seed, a premise, an outline in three sections, three vignettes and an ending. The debt audit section claims to derive everything from one impossibility.
 
@@ -210,7 +212,7 @@ Extract from the outline every settled fact into a <ledger> tag, one per line, e
 
 {brief}
 
-The ledger is fixed. It was settled for this brief and every repair of it, and where the prose and the ledger disagree it is the prose that is wrong. Check each vignette and the ending against the ledger, and against each other, pairwise. Report each contradiction.
+The ledger is fixed. It was settled for this brief and every repair of it, and where the prose and the ledger disagree it is the prose that is wrong. An amendment listed under the ledger overrides any earlier line it disagrees with, and that earlier line is void. Check each vignette and the ending against the ledger, and against each other, pairwise. Report each contradiction.
 
 {findingShape}
 
@@ -261,14 +263,14 @@ Extract only claims about the setting the story is set in, that carry a quantity
   claimsVerifyWorld: `Claim from a story, quoted: "{span}"
 As a checkable sentence: {statement}
 
-Search for a published source that confirms or denies it. Output a <finding> tag containing <span> (the quote above, verbatim), <statement> (the sentence above), <result> (supported | contradicted | unverifiable), <evidence> (a URL and one quoted line from it, or none), <invalidates> (none), <replacement> (if contradicted, one positive sentence that would hold; otherwise none). Under 120 words.`,
+Search for a published source that confirms or denies it. Output a <finding> tag containing <span> (the quote above, verbatim), <statement> (the sentence above), <result> (supported | contradicted | unverifiable), <evidence> (a URL and one quoted line from it, or none), <invalidates> (none), <replacement> (if contradicted, one positive sentence that would hold, keeping what the span reports and changing only the figure or the rule that conflicts; otherwise none). Under 120 words.`,
 
   claimsVerifyReference: `{reference}
 
 Claim from a story, quoted: "{span}"
 As a checkable sentence: {statement}
 
-Find the line in the reference material above that confirms or denies it. Output a <finding> tag containing <span> (the quote above, verbatim), <statement> (the sentence above), <result> (supported | contradicted | unverifiable), <evidence> (the file name and one quoted line from it, or none), <invalidates> (none), <replacement> (if contradicted, one positive sentence that would hold; otherwise none). Under 120 words.`,
+Find the line in the reference material above that confirms or denies it. Output a <finding> tag containing <span> (the quote above, verbatim), <statement> (the sentence above), <result> (supported | contradicted | unverifiable), <evidence> (the file name and one quoted line from it, or none), <invalidates> (none), <replacement> (if contradicted, one positive sentence that would hold, keeping what the span reports and changing only the figure or the rule that conflicts; otherwise none). Under 120 words.`,
 
   claimsVerifySetting: `<setting>
 {reference}
@@ -277,7 +279,15 @@ Find the line in the reference material above that confirms or denies it. Output
 Claim from a story, quoted: "{span}"
 As a checkable sentence: {statement}
 
-Find the line in the setting above that confirms or denies it. The setting is the whole authority: a claim it does not settle is unverifiable, not wrong. Output a <finding> tag containing <span> (the quote above, verbatim), <statement> (the sentence above), <result> (supported | contradicted | unverifiable), <evidence> (the heading it sits under and one quoted line from it, or none), <invalidates> (none), <replacement> (if contradicted, one positive sentence that would hold; otherwise none). Under 120 words.`,
+Find the line in the setting above that confirms or denies it. The setting is the whole authority: a claim it does not settle is unverifiable, not wrong. Output a <finding> tag containing <span> (the quote above, verbatim), <statement> (the sentence above), <result> (supported | contradicted | unverifiable), <evidence> (the heading it sits under and one quoted line from it, or none), <invalidates> (none), <replacement> (if contradicted, one positive sentence that would hold, keeping what the span reports and changing only the figure or the rule that conflicts; otherwise none). Under 120 words.`,
+
+  reconcile: `Below are the fixes one repair round is about to apply to a story brief together, numbered.
+
+<fixes>
+{fixes}
+</fixes>
+
+Each fix is a sentence that must hold in the repaired brief. Find every pair that cannot both hold: two fixes that give one quantity two values, or that state a rule and its opposite. Output a <conflicts> tag containing one <conflict> per pair, each with <a> and <b> (the two numbers) and <why> (one sentence). Output an empty <conflicts> tag when every pair can hold together. Under 150 words.`,
 
   constraints: `<constraints>
 {constraints}

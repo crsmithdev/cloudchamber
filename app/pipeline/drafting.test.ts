@@ -289,8 +289,8 @@ describe("check and gate 1", () => {
     expect(same.relitigates).toMatchObject({ round: 1, draw: draw.id });
     expect(same.relitigates!.replacement).toBe("Only the assembler can fire the reliquary.");
 
-    // auto will not act on it, and says why
-    const r = await d.autoRounds(next.id);
+    // auto will not act on it, and says why (B sits at 6, so the floor is held at 7 to leave it for the hand-driven round below)
+    const r = await d.autoRounds(next.id, { cfg: { ...loadDraftConfig().config, repair: { ...loadDraftConfig().config.repair, stop_score: 7 } } });
     expect(r.rounds[0].accepted).toBe(0);
     expect(r.stopped).toBe("floor");
     expect(d.findings(next.id, { all: true }).findings.find((f) => f.span === SPAN_A)!.note).toBe("auto: re-opens the fix accepted in round 1");
@@ -323,7 +323,7 @@ describe("check and gate 1", () => {
     const later = model.calls.filter((c) => c.stage === "check-ledger").at(-1)!.prompt;
     expect(later).toContain(LEDGER);
     expect(later).not.toContain("a different ledger entirely");
-    expect(later).toContain("amended by the findings accepted since:");        // the accepted fix amends it
+    expect(later).toContain("amended by the findings accepted since; where an amendment and a line above disagree, the amendment holds and the line above is void:");        // the accepted fix amends it, and overrides
     expect(later).toContain("Only the assembler can fire the reliquary.");
     // and the repair itself writes against the same contract
     expect(p.steps(next.id).find((s) => s.stage === "repair-outline")!.prompt).toContain(LEDGER);
@@ -672,11 +672,13 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(out.repaired_from).toBe(draw.id);
     expect(out.status).toBe("awaiting_draft_gate");
     expect(p.draw(draw.id).status).toBe("repaired");
-    // only A reaches the floor: B is arithmetic at 2 of 3 and C recurred once, so both are dismissed with their number
+    // A and B reach the floor; C recurred once of three, under keep_if, so auto leaves it open for a person
     const first = d.findings(draw.id, { all: true }).findings;
-    expect(first.map((f) => [f.score, f.decision])).toEqual([[10, "accepted"], [6, "dismissed"], [5, "dismissed"]]);
-    expect(first[1].note).toBe("auto: scored 6, under 7");
-    expect(first[2].note).toBe("auto: scored 5, under 7");
+    expect(first.map((f) => [f.score, f.decision])).toEqual([[10, "accepted"], [6, "accepted"], [5, "open"]]);
+    expect(first[2].reported).toBe(false);
+    // two fixes at once are read against each other before the repair, once
+    expect(stagesOf(model, /^reconcile$/)).toHaveLength(1);
+    expect(model.calls.find((c) => c.stage === "reconcile")!.prompt).toContain("1. Only the assembler can fire the reliquary.\n2. The twelfth relic is the Verona clavicle in every account.");
     expect((p.db.query("SELECT DISTINCT method FROM verdicts WHERE kind = 'finding'").all() as any[]).map((v) => v.method)).toEqual(["draw"]);
     expect(stagesOf(model, /^check-ledger$/)).toHaveLength(6);                // one round of repair, then a clean re-check ends it
     expect(stagesOf(model, /^scene$/)).toHaveLength(8);
@@ -690,15 +692,15 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     await d.check(draw.id);
     const r = await d.autoRounds(draw.id);
     expect(r.stopped).toBe("floor");
-    expect(r.floor).toBe(7);
-    expect(r.rounds.map((x) => [x.round, x.open, x.total, x.accepted])).toEqual([[1, 3, 21, 1], [2, 0, 0, 0]]);
+    expect(r.floor).toBe(6);
+    expect(r.rounds.map((x) => [x.round, x.open, x.total, x.accepted])).toEqual([[1, 2, 16, 2], [2, 0, 0, 0]]);   // C is under keep_if: not open to auto
     expect(r.left_open).toBe(0);                                               // a floor stop leaves nothing to rule on
     expect(r.best.round).toBe(2);
     expect(r.id).toBe(r.rounds[1].id);
     expect(r.id).not.toBe(draw.id);
     // the round table is stored on the brief auto stopped on, so the gate can render it
     const art = p.artifacts(r.id).find((a) => a.kind === "auto")!;
-    expect(JSON.parse(art.content)).toMatchObject({ stopped: "floor", floor: 7 });
+    expect(JSON.parse(art.content)).toMatchObject({ stopped: "floor", floor: 6 });
     expect(JSON.parse(art.meta)).toMatchObject({ rounds: 2, best: r.best.id });
   });
 
@@ -793,7 +795,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
 
 describe("templates and store", () => {
   test("every check and drafting template states a word cap and passes the vocabulary rule", () => {
-    const names = ["checkDerivation", "checkLedger", "checkStructure", "checkResemblance", "claimsExtract", "claimsVerifyWorld", "claimsVerifyReference", "repairVignette", "repairEnding", "schedule", "sceneAsk", "screenLedger", "screenStructure"] as const;
+    const names = ["checkDerivation", "checkLedger", "checkStructure", "checkResemblance", "claimsExtract", "claimsVerifyWorld", "claimsVerifyReference", "reconcile", "repairVignette", "repairEnding", "schedule", "sceneAsk", "screenLedger", "screenStructure"] as const;
     for (const n of names) {
       const t = (TEMPLATES as any)[n] as string;
       expect(t).toMatch(/Under \{?\w*\}? ?words|Under \d+ words|Under \{cap\} words/);
@@ -851,5 +853,47 @@ describe("finding ids are scoped by draw", () => {
     const out = await d.draft(next.id);                                   // not "accepted findings pending repair"
     expect(out.status).toBe("awaiting_draft_gate");
     expect(p.draw(draw.id).status).toBe("repaired");
+  });
+});
+
+describe("auto acts on reported findings only, and reads its accepted set against itself", () => {
+  test("a lone finding over the floor is left open, neither accepted nor dismissed", async () => {
+    // two samples: A in one of them scores 2 + 3 + 2 = 7, over the floor, but under keep_if
+    const script = draftScript({
+      "check-ledger": [`<ledger>${LEDGER}</ledger>${A()}<examined>x</examined>`, `<ledger>${LEDGER}</ledger><examined>x</examined>`],
+      "check-derivation": [`<impossibility>One.</impossibility><examined>x</examined>`, `<impossibility>One.</impossibility><examined>x</examined>`],
+    });
+    const { db, p, d, draw } = await drawn(script);
+    db.query("UPDATE draws SET draft_config = ? WHERE id = ?").run(JSON.stringify(loadDraftConfig(undefined, { "checks.samples": 2 })), draw.id);
+    await d.check(draw.id);
+    const r = await d.autoRounds(draw.id);
+    expect(r.stopped).toBe("floor");
+    expect(r.rounds.map((x) => [x.round, x.open, x.total, x.accepted])).toEqual([[1, 0, 0, 0]]);
+    expect(r.left_open).toBe(0);
+    expect(p.steps(draw.id).filter((s) => /^repair/.test(s.stage))).toHaveLength(0);
+    const [a] = d.findings(draw.id, { all: true }).findings;
+    expect([a.span, a.score, a.reported, a.decision, a.note]).toEqual([SPAN_A, 7, false, "open", ""]);
+  });
+
+  test("of two accepted fixes that cannot both hold, the lower-scoring one is dismissed before the repair", async () => {
+    const script = draftScript({
+      "check-ledger": [...ledgerSamples(), ...cleanSamples()],
+      "check-derivation": [...derivationSamples(), ...cleanSamples()],
+      reconcile: ["<conflicts><conflict><a>1</a><b>2</b><why>one relic cannot be fired by two rules</why></conflict></conflicts>"],
+    });
+    const { p, d, draw, model } = await drawn(script);
+    await d.check(draw.id);
+    const [a, b] = d.findings(draw.id).findings;
+    expect([a.score, b.score]).toEqual([10, 6]);                              // both at or over the floor
+    const r = await d.autoRounds(draw.id);
+    expect(r.stopped).toBe("floor");
+    expect(r.rounds[0].accepted).toBe(1);                                      // the row counts what was applied
+    expect(stagesOf(model, /^reconcile$/)).toHaveLength(1);
+    const after = d.findings(draw.id, { all: true }).findings;
+    expect(after.find((f) => f.id === a.id)!.decision).toBe("accepted");
+    expect(after.find((f) => f.id === b.id)).toMatchObject({ decision: "dismissed", note: `auto: conflicts with ${a.id}` });
+    const prompt = p.steps(r.id).find((s) => s.stage === "repair-outline")!.prompt;
+    expect(prompt).toContain("Only the assembler can fire the reliquary.");
+    expect(prompt).not.toContain("The twelfth relic is the Verona clavicle in every account.");
   });
 });
