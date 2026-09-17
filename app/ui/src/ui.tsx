@@ -25,8 +25,6 @@ export function Chip({ pressed, className = "", type = "button", ...rest }: Reac
   return <button type={type} className={"chip " + className} aria-pressed={pressed ? "true" : "false"} {...rest} />;
 }
 
-/** The statuses that mean a model call is in flight, so the views refresh while they hold. */
-export const RUNNING_STATUS = new Set(["running", "checking", "repairing", "drafting"]);
 
 /** " · show N archived", or nothing when none are. */
 export function ArchivedToggle({ archived, shown, onToggle }: { archived: number; shown: boolean; onToggle: () => void }) {
@@ -47,11 +45,11 @@ export type MarkState = "" | "held" | "wait" | "run" | "fail" | "todo" | "rep" |
 export function Mark({ state = "", small, title }: { state?: MarkState; small?: boolean; title?: string }) {
   return <span className={["mark", state, small ? "small" : ""].filter(Boolean).join(" ")} title={title} />;
 }
-/** The mark for a draw or step status. */
-export const markFor = (status: string): MarkState =>
-  RUNNING_STATUS.has(status)
+/** The mark for a draw: running and waiting come from the server, the rest from the status it names. */
+export const markFor = ({ status, running, at_gate }: { status: string; running: boolean; at_gate: boolean }): MarkState =>
+  running
     ? "run"
-    : status.startsWith("awaiting")
+    : at_gate
       ? "wait"
       : status === "failed"
         ? "fail"

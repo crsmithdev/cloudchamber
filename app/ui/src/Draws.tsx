@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { marked } from "marked";
 import { api, when, type Artifact, type Candidate, type Example, type Facets, type Draw, type Fork, type FullStep, type Origin, type Source, type Status, type Step } from "./api.ts";
-import { ArchivedToggle, Bar, Btn, Caret, Chip, Field, RUNNING_STATUS, Head, Icon, LinkBtn, Mark, Seg, hhmm, lastSelected, markFor, secs, usePoll, useRememberSelected, useTick, type MarkState } from "./ui.tsx";
+import { ArchivedToggle, Bar, Btn, Caret, Chip, Field, Head, Icon, LinkBtn, Mark, Seg, hhmm, lastSelected, markFor, secs, usePoll, useRememberSelected, useTick, type MarkState } from "./ui.tsx";
 
 export type Detail = { draw: Draw; origin: Origin | null; steps: Step[]; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] };
 const STAGES = ["premises", "execute", "gate", "outline", "context", "ending", "brief"];
@@ -163,7 +163,7 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
         setLoaded(true);
       })
       .catch(() => {});
-  const busy = draws.some((r) => RUNNING_STATUS.has(r.status));
+  const busy = draws.some((r) => r.running);
   usePoll(loadDraws, busy, [], 3000, 15000);
 
   // Archived draws stay out of the list until asked for, and the open one stays visible whatever its state.
@@ -233,12 +233,6 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
   };
   // superseded by a redraw is old; superseded by its own repair is a draw that went on to check
   const redrawn = (r: Draw) => !!r.superseded_by && !draws.some((x) => x.id === r.superseded_by && x.repaired_from === r.id);
-  // the server refuses these two; the row says why rather than letting the click fail
-  const deleteBlock = (r: Draw) => {
-    if (r.chosen_step) return "a premise was chosen from it; archive it instead";
-    const by = draws.find((x) => x.superseded_by === r.id || x.repaired_from === r.id || x.forked_from === r.id);
-    return by ? `${by.name ?? by.id} refers to it` : "";
-  };
   const gate = async (action: string, step_id?: string) => {
     if (!d) return;
     setErr("");
@@ -287,23 +281,23 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
           return (
             <div
               key={r.id}
-              className={"row" + (r.id === current ? " on" : "") + (isOpen ? " open" : "") + (RUNNING_STATUS.has(r.status) ? " running" : "") + (redrawn(r) || r.archived_at ? " old" : "")}
+              className={"row" + (r.id === current ? " on" : "") + (isOpen ? " open" : "") + (r.running ? " running" : "") + (redrawn(r) || r.archived_at ? " old" : "")}
               onClick={() => select(r.id)}
             >
               <RowHead
                 name={r.name ?? r.id}
                 status={label(r.status)}
-                mark={markFor(r.status)}
+                mark={markFor(r)}
                 at={r.created_at}
                 archived={!!r.archived_at}
-                blocked={deleteBlock(r)}
+                blocked={r.actions.delete ?? ""}
                 onArchive={() => archiveRow(r)}
                 onDelete={() => deleteRow(r)}
               />
               {isOpen && (
                 <>
                   <div className="l2">
-                    <span className={RUNNING_STATUS.has(r.status) ? "sweep text-running" : ""}>{details[r.id] ? drawSummary(details[r.id]) : label(r.status)}</span>
+                    <span className={r.running ? "sweep text-running" : ""}>{details[r.id] ? drawSummary(details[r.id]) : label(r.status)}</span>
                   </div>
                   <div className="l2 text-dim">
                     {r.setting ?? "unrestricted"} · {r.genre} · {r.sampling}
@@ -339,7 +333,7 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
               <div className={"strip" + (working ? " running" : "")}>
                 <h1>{d.draw.name ?? d.draw.id}</h1>
                 <span className={"state " + (working ? "text-running" : d.draw.status === "awaiting_gate" ? "text-art" : d.draw.status === "failed" ? "text-pass" : "text-mute")}>
-                  <Mark state={markFor(d.draw.status)} />
+                  <Mark state={markFor(d.draw)} />
                   <span className={working ? "sweep" : ""}>
                     {label(d.draw.status)}
                     {working ? inFlight(d) : ""}
@@ -348,15 +342,13 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
                 {!step && (
                   <span className="tools" role="group" aria-label="Draw">
                     <input type="text" name="gate-note" placeholder="note for the log" aria-label="Gate note" value={note} onChange={(e) => setNote(e.target.value)} />
+                    <Btn variant="art" title="Mark this draw as a wrong call to look at later, with the note. It stays open and nothing else changes." onClick={() => gate("flag")}>
+                      flag
+                    </Btn>
                     {d.draw.status === "awaiting_gate" && (
-                      <>
-                        <Btn variant="art" title="Mark this draw as a wrong call to look at later, with the note. It stays open and nothing else changes." onClick={() => gate("flag")}>
-                          flag
-                        </Btn>
-                        <LinkBtn variant="quiet" href={`#draws/new/${d.draw.id}`} title="Open the draw form with this draw's options, to start another like it. This one stays open.">
-                          redraw
-                        </LinkBtn>
-                      </>
+                      <LinkBtn variant="quiet" href={`#draws/new/${d.draw.id}`} title="Open the draw form with this draw's options, to start another like it. This one stays open.">
+                        redraw
+                      </LinkBtn>
                     )}
                     <Btn
                       variant="quiet"
@@ -367,8 +359,8 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
                     </Btn>
                     <Btn
                       variant="quiet"
-                      title={d.draw.chosen_step ? "This draw produced a brief; archive it instead." : "Remove this draw and every step under it. There is no undo."}
-                      disabled={!!d.draw.chosen_step}
+                      title={d.draw.actions.delete ?? "Remove this draw and every step under it. There is no undo."}
+                      disabled={!!d.draw.actions.delete}
                       onClick={remove}
                     >
                       delete
@@ -469,7 +461,16 @@ export const stageName = (stage: string) => STAGE[stage]?.name ?? stage;
 /** The distinct stage names of some steps, in the order they first appear. */
 export const stageNames = (steps: { stage: string }[]) => [...new Set(steps.map((s) => stageName(s.stage)))].join(", ");
 /** Whether the pipeline is working on a draw: its status says so, or a call is in flight. */
-export const isWorking = (d: Detail | undefined | null) => !!d && (RUNNING_STATUS.has(d.draw.status) || d.steps.some((s) => s.status === "running"));
+export const isWorking = (d: Detail | undefined | null) => !!d && (d.draw.running || d.steps.some((s) => s.status === "running"));
+/** A person's flag, and why the last action failed, each said as what it is. */
+export function DrawNotes({ draw }: { draw: Draw }) {
+  return (
+    <>
+      {draw.error && <div className="err mt-2">{draw.status === "failed" ? "failed" : "the last action failed"}: {draw.error}</div>}
+      {draw.flag_note && <div className="warn mt-2">flagged: {draw.flag_note}</div>}
+    </>
+  );
+}
 /** " · " and the stages of the calls in flight, or nothing when none is. */
 export const inFlight = (d: Detail) => {
   const running = d.steps.filter((s) => s.status === "running");
@@ -600,7 +601,7 @@ export function Log({ d, stepId, onStep, ideation }: { d: Detail; stepId: string
           {developed && (
             <tr className="pick" title={`The brief is in the ${d.draw.stage} tab now. Open it there.`} onClick={() => (location.hash = `#${d.draw.stage}/${d.draw.id}`)}>
               <td>
-                <Mark state={d.draw.status.startsWith("awaiting") ? "wait" : markFor(d.draw.status)} />
+                <Mark state={markFor(d.draw)} />
               </td>
               <td className="n">
                 open in {d.draw.stage}
@@ -639,7 +640,7 @@ function DrawBody({
   const [exNote, setExNote] = useState<Record<string, string>>({});
   const cands = d.candidates;
   const maxP = Math.max(...cands.map((c) => c.probability), 0.01);
-  const gating = d.draw.status === "awaiting_gate";
+  const gating = d.draw.actions.choose === null;
   const running = d.steps.filter((s) => s.status === "running");
   const runningExec = new Set(running.filter((s) => s.stage === "execute").map((s) => s.id));
   return (
@@ -647,7 +648,7 @@ function DrawBody({
       <div className="min-w-0">
         <Head>seed</Head>
         <SeedNote text={d.draw.seed_text} />
-        {d.draw.flag_note && <div className="warn mt-2">flagged: {d.draw.flag_note}</div>}
+        <DrawNotes draw={d.draw} />
         {cands.length > 0 && (
           <>
             <Head className="mt-5" note="lowest probability first">

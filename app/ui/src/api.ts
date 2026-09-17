@@ -45,7 +45,14 @@ export type Draw = {
   ended_at: string | null;
   check?: CheckSummary | null;
   check_pending?: boolean;
+  /** Why the last action on the draw failed; null once a later one succeeds. */
+  error: string | null;
+  /** The server's lifecycle answers: the UI keeps no status rules of its own. */
+  running: boolean;
+  at_gate: boolean;
+  actions: Record<DrawAction, string | null>;
 };
+export type DrawAction = "choose" | "fork" | "flag" | "archive" | "unarchive" | "delete" | "check" | "auto" | "accept" | "dismiss" | "hold" | "draft" | "patch" | "rewrite" | "keep";
 /** What a round of a repair chain shows in the list: its reported findings, the accepted ones, and their total score. Null until the server has computed it. */
 export type CheckSummary = { pass: string | null; reported: number; accepted: number; open: number; total: number };
 export type Finding = {
@@ -175,6 +182,8 @@ export type Status = {
   themes_eligible: number;
   verdicts: number;
   draws: { status: string; n: number }[];
+  /** How many draws wait for a person in each tab. */
+  waiting: { ideate: number; check: number; write: number };
 };
 export type Source = { id: string; genre: string; group: string; title: string };
 /** The options one draw was made with, for a form that starts another like it. */

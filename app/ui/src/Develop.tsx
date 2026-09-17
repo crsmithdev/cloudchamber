@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api, type AutoResult, type Draw, type DraftConfig, type Finding, type Findings, type Story, type Step } from "./api.ts";
-import { BriefFiles, DrawAside, Md, RowHead, SeedNote, StepView, boldLabels, firstParagraph, inFlight, isWorking, label, stageName, stageNames, type Detail } from "./Draws.tsx";
-import { ArchivedToggle, Bar, Btn, Caret as Chevron, Facts, RUNNING_STATUS, Field, Head, Icon, Mark, Seg, lastSelected, markFor, secs, usePoll, useRememberSelected } from "./ui.tsx";
+import { BriefFiles, DrawAside, Md, RowHead, SeedNote, StepView, boldLabels, firstParagraph, DrawNotes, inFlight, isWorking, label, stageName, stageNames, type Detail } from "./Draws.tsx";
+import { ArchivedToggle, Bar, Btn, Caret as Chevron, Facts, Field, Head, Icon, Mark, Seg, lastSelected, markFor, secs, usePoll, useRememberSelected } from "./ui.tsx";
 
 /**
  * Develop a brief: the stages after a brief (docs/specs/2026-09-05-drafting-pipeline.md).
@@ -9,7 +9,6 @@ import { ArchivedToggle, Bar, Btn, Caret as Chevron, Facts, RUNNING_STATUS, Fiel
  * the reading pane is the findings at gate 1, the story with its
  * screens at gate 2, or the running log in between.
  */
-const OPEN = new Set(["awaiting_check_gate", "awaiting_draft_gate"]);
 /** A repair chain: the root draw, its rounds oldest first, and the head. A draw with no repairs is a chain of one. */
 type Chain = { root: Draw; rounds: Draw[]; head: Draw };
 /**
@@ -50,7 +49,7 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
   const chains = all.filter((c) => !c.head.archived_at);
   const archived = all.length - chains.length;
   const heads = chains.map((c) => c.head);
-  const busy = heads.some((r) => RUNNING_STATUS.has(r.status));
+  const busy = heads.some((r) => r.running);
   const summarising = chains.some((c) => c.rounds.some((r) => r.check_pending));
   usePoll(loadDraws, busy || summarising, [stage], 3000, 15000);
   // with nothing chosen, the draw last selected in this tab while its chain is still here, else the newest
@@ -108,7 +107,7 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
     const running = detail?.steps.filter((s) => s.status === "running") ?? [];
     if (running.length) return `${label(r.status)} · ${running.length} call${running.length > 1 ? "s" : ""} in flight`;
     const round = chainOf(r.id)!.rounds.length > 1 ? ` · round ${chainOf(r.id)!.rounds.length}` : "";
-    if (r.check && OPEN.has(r.status)) return `${statusLine(r)}${round} · ${r.check.reported} findings · total score ${r.check.total}`;
+    if (r.check && r.at_gate) return `${statusLine(r)}${round} · ${r.check.reported} findings · total score ${r.check.total}`;
     return `${statusLine(r)}${round}`;
   };
   const chain = chainOf(current);
@@ -147,8 +146,8 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
         <div className="listhead">
           <span className="head">
             {stage === "check"
-              ? `${heads.filter((r) => OPEN.has(r.status)).length} to review · ${heads.filter((r) => r.status === "done").length} unchecked`
-              : `${heads.filter((r) => OPEN.has(r.status)).length} to review · ${heads.filter((r) => r.status === "drafted").length} kept`}
+              ? `${heads.filter((r) => r.at_gate).length} to review · ${heads.filter((r) => r.status === "done").length} unchecked`
+              : `${heads.filter((r) => r.at_gate).length} to review · ${heads.filter((r) => r.status === "drafted").length} kept`}
             {chains.some((c) => c.rounds.length > 1) && <span className="note"> · {chains.filter((c) => c.rounds.length > 1).length} repair chains</span>}
             <ArchivedToggle archived={archived} shown={showArchived} onToggle={() => setShowArchived((v) => !v)} />
           </span>
@@ -161,7 +160,7 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
           return (
             <div
               key={c.head.id}
-              className={"row" + (on ? " on" : "") + (isOpen ? " open" : "") + (RUNNING_STATUS.has(r.status) ? " running" : "") + (r.archived_at ? " old" : "")}
+              className={"row" + (on ? " on" : "") + (isOpen ? " open" : "") + (r.running ? " running" : "") + (r.archived_at ? " old" : "")}
               onClick={() => {
                 if (!on) location.hash = `#${stage}/${r.id}`;
                 else if (stepId) setStepId(null);
@@ -171,7 +170,7 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
               <RowHead
                 name={c.root.name ?? c.root.id}
                 status={statusLine(r)}
-                mark={markFor(r.status)}
+                mark={markFor(r)}
                 rounds={c.rounds.length}
                 at={r.created_at}
                 archived={!!r.archived_at}
@@ -181,7 +180,7 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
               {isOpen && (
                 <>
                   <div className="l2">
-                    <span className={RUNNING_STATUS.has(r.status) ? "sweep text-running" : ""}>{summary(r, on ? d : null)}</span>
+                    <span className={r.running ? "sweep text-running" : ""}>{summary(r, on ? d : null)}</span>
                   </div>
                   <div className="l2">
                     <span className="text-dim">
@@ -230,8 +229,8 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
           <>
             <div className={"strip" + (working ? " running" : "")}>
               <h1>{d.draw.name ?? d.draw.id}</h1>
-              <span className={"state " + (working ? "text-running" : OPEN.has(d.draw.status) ? "text-art" : d.draw.status === "failed" ? "text-pass" : "text-mute")}>
-                <Mark state={markFor(d.draw.status)} />
+              <span className={"state " + (working ? "text-running" : d.draw.at_gate ? "text-art" : d.draw.status === "failed" ? "text-pass" : "text-mute")}>
+                <Mark state={markFor(d.draw)} />
                 <span className={working ? "sweep" : ""}>
                   {d.draw.status === "done" ? "unchecked" : label(d.draw.status)}
                   {working ? inFlight(d) : ""}
@@ -239,6 +238,7 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
               </span>
             </div>
             {err && <div className="err mt-2">{err}</div>}
+            {stage !== "write" && <DrawNotes draw={d.draw} />}
             {step ? (
               <StepView step={step} chosen={false} onBack={() => setStepId(null)} />
             ) : settings ? (
@@ -257,7 +257,7 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
             ) : d.draw.status === "awaiting_check_gate" || d.draw.status === "repaired" ? (
               <GateOne d={d} onAct={act} onDraft={() => setSettings(true)} aside={aside} />
             ) : d.draw.status === "done" ? (
-              <BriefReady d={d} onCheck={() => act(() => api.check(d.draw.id))} onAuto={() => act(() => api.gate(d.draw.id, { action: "auto" }))} onDraft={() => setSettings(true)} aside={aside} />
+              <BriefReady d={d} onCheck={() => act(() => api.check(d.draw.id))} onAuto={() => act(() => api.gate(d.draw.id, { action: "auto" }))} onFlag={(note) => act(() => api.gate(d.draw.id, { action: "flag", note }))} onDraft={() => setSettings(true)} aside={aside} />
             ) : (
               <Building d={d} aside={aside} />
             )}
@@ -345,7 +345,10 @@ function CheckControls({
 }) {
   const unchecked = d.draw.status === "done";
   const atGate = d.draw.status === "awaiting_check_gate";
+  const a = d.draw.actions;
   const replaced = "This brief was repaired into a new round. Work there.";
+  // a refused action says why: the server's reason, or on a superseded round where to work instead
+  const why = (reason: string | null) => (d.draw.status === "repaired" ? replaced : (reason ?? ""));
   const cfg = d.draw.draft_config ? JSON.parse(d.draw.draft_config).config : null;
   const repair = cfg?.repair ?? { rounds: 4, stop_score: 7, patience: 2 };
   const checks = `derivation, ledger, structure, resemblance${d.draw.setting ? ", claims" : ""}`;
@@ -353,38 +356,38 @@ function CheckControls({
     <div className="controls" role="group" aria-label="Brief">
       <Btn
         variant="primary"
-        disabled={!(unchecked || (atGate && openFindings > 0))}
+        disabled={!!a.auto || (atGate && openFindings === 0)}
         onClick={onAuto}
         title={
-          unchecked || atGate
+          !a.auto
             ? `${unchecked ? `Check the brief (${checks}), then repair` : "Repair"} round after round without asking: accept every finding scoring ${repair.stop_score} or more, dismiss the rest, re-check, repeat. It stops when nothing reaches ${repair.stop_score}, after ${repair.rounds} rounds, or when the total score has not fallen for ${repair.patience} rounds.${atGate && !openFindings ? " No finding is open." : ""}`
-            : replaced
+            : why(a.auto)
         }
       >
         check – auto repair
       </Btn>
       <Btn
-        disabled={!unchecked}
+        disabled={!!a.check || atGate}
         onClick={onCheck}
-        title={unchecked ? `Run the checkers once (${checks}) and stop for you to review the findings.` : atGate ? "Checked already: rule on the findings below, or auto repair them." : replaced}
+        title={unchecked ? `Run the checkers once (${checks}) and stop for you to review the findings.` : atGate ? "Checked already: rule on the findings below, or auto repair them." : why(a.check)}
       >
         check
       </Btn>
       <Btn
-        disabled={!(unchecked || atGate) || pendingRepair > 0}
+        disabled={!!a.draft || pendingRepair > 0}
         onClick={onDraft}
         title={
-          !(unchecked || atGate) ? replaced : pendingRepair ? "Accepted findings are waiting for their repair." : `Set up the draft and write the story from this brief as it stands${unchecked ? ", unchecked" : ""}.`
+          a.draft ? why(a.draft) : pendingRepair ? "Accepted findings are waiting for their repair." : `Set up the draft and write the story from this brief as it stands${unchecked ? ", unchecked" : ""}.`
         }
       >
         draft{cfg ? ` · ${cfg.length.words} words` : ""} <Chevron open />
       </Btn>
       <span className="end">
         <input type="text" placeholder="note for the log" aria-label="Note for the log" value={note} onChange={(e) => onNote(e.target.value)} />
-        <Btn variant="art" disabled={!atGate} onClick={onFlag} title={atGate ? "Mark a check call as looking wrong, with the note. Nothing runs." : unchecked ? "Nothing is checked yet." : replaced}>
+        <Btn variant="art" disabled={!!a.flag || !onFlag} onClick={onFlag} title={a.flag ?? "Mark this brief as looking wrong, with the note. Nothing runs."}>
           flag
         </Btn>
-        <Btn variant="quiet" disabled={!atGate} onClick={onHold} title={atGate ? "Leave the findings open to review later. Nothing runs." : unchecked ? "Nothing is checked yet." : replaced}>
+        <Btn variant="quiet" disabled={!!a.hold || !onHold} onClick={onHold} title={a.hold ? (unchecked ? "Nothing is checked yet." : why(a.hold)) : "Leave the findings open to review later. Nothing runs."}>
           hold
         </Btn>
       </span>
@@ -392,11 +395,11 @@ function CheckControls({
   );
 }
 
-function BriefReady({ d, onCheck, onAuto, onDraft, aside }: { d: Detail; onCheck: () => void; onAuto: () => void; onDraft: () => void; aside: React.ReactNode }) {
+function BriefReady({ d, onCheck, onAuto, onFlag, onDraft, aside }: { d: Detail; onCheck: () => void; onAuto: () => void; onFlag: (note: string) => void; onDraft: () => void; aside: React.ReactNode }) {
   const [note, setNote] = useState("");
   return (
     <>
-      <CheckControls d={d} note={note} onNote={setNote} onAuto={onAuto} onCheck={onCheck} onDraft={onDraft} />
+      <CheckControls d={d} note={note} onNote={setNote} onAuto={onAuto} onCheck={onCheck} onFlag={() => onFlag(note)} onDraft={onDraft} />
       <div className="drawbody">
         <div className="max-w-[66rem]">
           <Head>seed</Head>
@@ -1116,7 +1119,7 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
       .catch(() => {});
   }, [id, d.steps.length]);
   if (!s) return <span className="text-dim">loading the story…</span>;
-  const gating = d.draw.status === "awaiting_draft_gate";
+  const gating = d.draw.actions.keep === null;
   const gate = (action: string, extra: Record<string, unknown> = {}) => onAct(() => api.gate(id, { action, note, ...extra }));
   const M = s.scenes.length;
   const flagsFor = (beat: number) => ({ ledger: s.screenFindings.filter((f) => f.beat === beat), structure: s.profiles.find((p) => p.beat === beat) });
@@ -1165,7 +1168,8 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
             ) : (
               label(d.draw.status)
             )}
-            {d.draw.flag_note && <span className="text-dim"> · {d.draw.flag_note}</span>}
+            {d.draw.flag_note && <span className="text-dim"> · flagged: {d.draw.flag_note}</span>}
+            {d.draw.error && <span className="text-pass"> · the last action failed: {d.draw.error}</span>}
           </span>
           <span className="end">
             <Btn variant="quiet" pressed={view === "schedule"} onClick={() => setView(view === "schedule" ? "story" : "schedule")}>

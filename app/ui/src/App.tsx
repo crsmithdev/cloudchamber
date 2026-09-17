@@ -80,14 +80,7 @@ export function App() {
   const on = (name: string) => (name === "ideate" ? drawsView : name === "sources" ? sourcesView : view === name);
   const count = (name: string) => {
     if (!status) return null;
-    const n =
-      name === "ideate"
-        ? status.draws.filter((d) => d.status === "awaiting_gate").reduce((a, d) => a + d.n, 0)
-        : name === "check"
-          ? status.draws.filter((d) => d.status === "awaiting_check_gate" || d.status === "done").reduce((a, d) => a + d.n, 0)
-          : name === "write"
-            ? status.draws.filter((d) => d.status === "awaiting_draft_gate").reduce((a, d) => a + d.n, 0)
-            : 0;
+    const n = name === "ideate" || name === "check" || name === "write" ? status.waiting[name] : 0;
     return n ? <span>{n}</span> : null;
   };
   return (
