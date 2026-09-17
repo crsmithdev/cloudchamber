@@ -2,8 +2,7 @@
  * Every tunable, read at run time rather than written down: the settings and
  * their list sizes come from sources/settings, the vocabularies from the
  * tomls, the sources from the store. `cloudchamber help` prints this after the
- * command grammar, and `--md` writes docs/knobs.md and answers the Voice
- * Bridge's knobs tool.
+ * command grammar, and `--md` writes docs/knobs.md.
  */
 import { readdirSync } from "node:fs";
 import { BANDS, DARKNESS, GENRES, RUN, SAMPLING, loadStages } from "./config.ts";
@@ -31,7 +30,7 @@ export function knobs(db: Db, settingsDir: string = SETTINGS): Section[] {
   return [
     {
       title: "draw",
-      note: "cloudchamber draw, POST /api/draws, and the Voice Bridge draw tool take the same knobs.",
+      note: "cloudchamber draw and POST /api/draws take the same knobs.",
       rows: [
         ["--auto", "skip the gate by taking the lowest stated probability; otherwise the draw waits for you"],
         ["--setting", `one of ${settings.join(", ")}, or omitted for an unrestricted draw`],

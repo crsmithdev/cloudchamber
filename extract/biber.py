@@ -10,8 +10,8 @@ over this corpus recovered them; D3-D6 were added on 2026-09-03 against a
 corpus that is about to get much wider — the anthology PDFs are several times
 the size of the SCP pool and are fiction rather than documents, and a
 dimension that does not discriminate 947 containment reports may well
-discriminate those. Which of them earn their place is decided by `PLAN.md`
-Part 3 against real verdicts, not here.
+discriminate those. Which of them earn their place is decided against real
+verdicts, not here.
 
 Two backends, chosen at import time:
 
@@ -31,8 +31,8 @@ passage. `probe()` settles it for real.
 
 The two backends are *not* interchangeable across a corpus: standardisation is
 corpus-relative, so a pool scored with one must be rescored end to end if the
-backend changes. `pipeline facets` records the backend in
-`extracted/facet-stats.json` and refuses to mix them.
+backend changes. `python -m extract facets` records the backend in the
+store's `facet_fit` row and refuses to mix them.
 
 Usage:
 

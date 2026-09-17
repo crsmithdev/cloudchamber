@@ -9,7 +9,7 @@ this file holds the visual contract and the order of work.
 
 > Landed on `main` on 2026-09-16 (`2f7c641`): phase D1, the tide table won.
 > The worktree and branch named here are gone, and `DESIGN.incumbent.md` is
-> no longer needed.
+> deleted.
 
 The work happened in the worktree `.worktrees/ui-redesign`, on branch
 `refactor/ui-redesign`.
