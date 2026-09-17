@@ -44,6 +44,7 @@ export type Draw = {
   created_at: string;
   ended_at: string | null;
   check?: CheckSummary | null;
+  check_pending?: boolean;
 };
 /** What a round of a repair chain shows in the list: its reported findings, the accepted ones, and their total score. Null until the server has computed it. */
 export type CheckSummary = { pass: string | null; reported: number; accepted: number; open: number; total: number };

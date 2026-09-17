@@ -145,6 +145,13 @@ describe("api", () => {
     const listed = (await j("GET", "/api/draws")).body;
     expect(listed).toHaveLength(1);
     expect(listed[0].check).toBeNull();   // a brief not yet checked has no summary
+    expect(listed[0].check_pending).toBe(false);
+    // a failed repair round has no check pass: pending while it is computed, then no summary, and never pending again
+    pipeline.db.query("INSERT INTO draws (id, genre, mode, seed_mode, seed_text, example_ids, status, repaired_from, created_at) VALUES ('failed-round', 'horror', 'manual', 'typed', 's', '[]', 'failed', ?, '2099-01-01T00:00:00Z')").run(id);
+    const round = async () => (await j("GET", "/api/draws")).body.find((r: any) => r.id === "failed-round");
+    expect(await round()).toMatchObject({ check: null, check_pending: true });
+    await Bun.sleep(20);
+    expect(await round()).toMatchObject({ check: null, check_pending: false });
     expect((await j("GET", "/api/draws/nope")).code).toBe(404);
   });
 

@@ -216,7 +216,9 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     return pipeline.draws(req.query.archived === "true").map((r) => {
       const stage = stageOf(r);
       // the candidate is what tells two briefs of one batch apart, so the list needs it too
-      return { ...r, stage, origin: stage === "ideate" ? null : originOf(pipeline, r.id), check: checkSummary(r, stage, verdicts) ?? null };
+      const check = checkSummary(r, stage, verdicts);
+      // null is "no summary"; pending is "still computing", which the list polls for and a failed round never becomes
+      return { ...r, stage, origin: stage === "ideate" ? null : originOf(pipeline, r.id), check: check ?? null, check_pending: check === undefined };
     });
   });
 
