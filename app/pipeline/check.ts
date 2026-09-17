@@ -16,7 +16,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { Pipeline, StepRow } from "./draw.ts";
 import { fill, type TemplateName } from "./prompts.ts";
-import { need, tag, tags } from "./model.ts";
+import { need, samples, tag, tags } from "./model.ts";
 import { distillate, type ClaimsAuthority } from "./settings.ts";
 import { samplesFor, type DraftConfig } from "./draftconfig.ts";
 import { cluster, excludeDismissed, findingId, merge, normalise, parseFindings, quoted, same, type Cluster, type Finding } from "./recur.ts";
@@ -201,8 +201,7 @@ export function parseVerdicts(text: string, n: number): { answer: "keep" | "drop
 /** S concurrent samples of one checker; the parsed value goes on each step, the findings are clustered. */
 async function sampled(p: Pipeline, drawId: string, parts: BriefParts, stage: any, prompt: string, s: { samples: number; keep_if: number }, checker: string,
   parse: (text: string) => any, store?: (step: StepRow, value: any, sample: number) => void): Promise<{ checker: string; clusters: Cluster[]; firstStep: StepRow; samples: number }> {
-  const results = await Promise.all(Array.from({ length: s.samples }, (_, i) => p.invoke(drawId, parts.outlineStepId, stage, prompt, parse).then((r) => ({ ...r, sample: i + 1 }))));
-  results.sort((a, b) => a.sample - b.sample);
+  const results = await samples(s.samples, () => p.invoke(drawId, parts.outlineStepId, stage, prompt, parse));
   const findings: Finding[] = [];
   for (const r of results) {
     store?.(r.step, r.value, r.sample);

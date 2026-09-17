@@ -61,6 +61,11 @@ differ, this file wins.
 >   same authority is not verified again; the cached verdict is stored against
 >   the new pass with `cached_from`. A lore setting's distillate does not change
 >   between rounds, and this was one call per extracted claim per round.
+> - **One sampling fan-out, 2026-09-17.** `samples(n, run)` in model.ts runs one
+>   ask n times side by side and answers in sample order, each result carrying
+>   its sample. The check pass and both screens fan out through it. What each
+>   does with the results — cluster them, or vote per question — differs and
+>   stays with the caller.
 > - **The parts of a brief, 2026-09-17.** A stage declares the role it writes —
 >   `context` and `repair-context` both write `context` — and
 >   `app/pipeline/briefparts.ts` is the only reader and writer of the parts. It

@@ -6,7 +6,7 @@
  */
 import type { Pipeline, StepRow } from "./draw.ts";
 import { fill } from "./prompts.ts";
-import { need, tag, words } from "./model.ts";
+import { need, samples, tag, words } from "./model.ts";
 import { RUN } from "./config.ts";
 import { eligiblePassages } from "./bank.ts";
 import { FORM_VALUES, samplesFor, type DraftConfig, type FormAxis } from "./draftconfig.ts";
@@ -151,12 +151,12 @@ export async function runScreens(p: Pipeline, drawId: string, ledger: string, s:
     const prev = scenes.find((x) => x.beat === k - 1);
     const runs: Promise<unknown>[] = [];
     if (enabled.includes("ledger")) {
-      const { samples, keep_if } = samplesFor(cfg.screens, "ledger");
+      const { samples: n, keep_if } = samplesFor(cfg.screens, "ledger");
       const prompt = fill("screenLedger", { ledger, previous: prev ? `<previous-scene>\n${prev.text}\n</previous-scene>\n\n` : "", n: String(k), scene: scene.text });
-      runs.push(Promise.all(Array.from({ length: samples }, (_, i) => p.invoke(drawId, scene.step_id, "screen-ledger", prompt, (t) => {
+      runs.push(samples(n, (sample) => p.invoke(drawId, scene.step_id, "screen-ledger", prompt, (t) => {
         need(t, "examined");
-        return { findings: parseFindings(t, "ledger", i + 1), examined: tag(t, "examined") };
-      }).then((r) => ({ ...r, sample: i + 1 })))).then((rs) => {
+        return { findings: parseFindings(t, "ledger", sample), examined: tag(t, "examined") };
+      })).then((rs) => {
         const all: Finding[] = rs.flatMap((r) => r.value.findings.map((f: Finding) => ({ ...f, sample: r.sample })));
         for (const c of cluster(all, keep_if, [], `${drawId}/${k}`).filter((c) => c.reported)) {
           const { reported: _r, ...meta } = c;
@@ -166,10 +166,10 @@ export async function runScreens(p: Pipeline, drawId: string, ledger: string, s:
       }));
     }
     if (enabled.includes("structure")) {
-      const { samples, keep_if } = samplesFor(cfg.screens, "structure");
+      const { samples: n, keep_if } = samplesFor(cfg.screens, "structure");
       const names = [...STRUCTURE_SCREEN, k === M ? "resolves-everything" : "resolved"];
       const prompt = structurePrompt(b, scene.text, k === M);
-      runs.push(Promise.all(Array.from({ length: samples }, () => p.invoke(drawId, scene.step_id, "screen-structure", prompt, (t) => parseQuestions(t, names)))).then((rs) => {
+      runs.push(samples(n, () => p.invoke(drawId, scene.step_id, "screen-structure", prompt, (t) => parseQuestions(t, names))).then((rs) => {
         // an answer is present when it recurs in keep_if samples; the quote is the first sample's
         const answers: Record<string, Answer> = {};
         for (const q of names) {
@@ -178,7 +178,7 @@ export async function runScreens(p: Pipeline, drawId: string, ledger: string, s:
           answers[q] = { answer: present.length >= keep_if ? "present" : "absent", quote: pick.value[q].quote };
         }
         const flags = flagsOf(answers);
-        p.artifact(rs[0].step, "profile", JSON.stringify(answers), { pass, source: "screen", screen: "structure", beat: k, answers, flags, samples });
+        p.artifact(rs[0].step, "profile", JSON.stringify(answers), { pass, source: "screen", screen: "structure", beat: k, answers, flags, samples: n });
         profiles.push({ beat: k, pass, answers, flags });
       }));
     }

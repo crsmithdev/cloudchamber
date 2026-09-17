@@ -103,3 +103,13 @@ export function sections(text: string): Record<string, string> {
 }
 
 export const words = (s: string) => s.split(/\s+/).filter(Boolean).length;
+
+/**
+ * Run one ask `n` times side by side and answer in sample order, each result
+ * carrying the sample it came from. Every sampled call in the pipeline fans out
+ * this way; what each does with the results — cluster them, vote per question —
+ * differs, and stays with the caller.
+ */
+export async function samples<T>(n: number, run: (sample: number) => Promise<T>): Promise<(T & { sample: number })[]> {
+  return Promise.all(Array.from({ length: n }, (_, i) => run(i + 1).then((r) => ({ ...r, sample: i + 1 }))));
+}
