@@ -141,21 +141,31 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
   }));
 
   /**
-   * The check summary a list row shows for each round of a repair chain. One read
-   * of the chain answers it in about four milliseconds, so the list computes it
-   * for every row rather than caching it; the cache it replaces was keyed on a
-   * global verdict count, so any verdict anywhere recomputed all of them.
+   * The check summary a list row shows for each round of a repair chain. It is
+   * computed during the request and memoised on what can change it: the draw's
+   * status and the number of finding verdicts. A read of one chain is about 4 ms
+   * with the store on the Linux filesystem and 45 ms on the Windows mount, and a
+   * list holds every round of every chain.
    */
   type CheckSummary = { pass: string | null; reported: number; accepted: number; open: number; total: number };
-  const checkSummary = (r: { id: string; status: string }, stage: string): CheckSummary | null => {
+  const summaries = new Map<string, CheckSummary | null>();
+  const findingVerdicts = () => (db.query("SELECT count(*) AS n FROM verdicts WHERE kind = 'finding'").get() as { n: number }).n;
+  const checkSummary = (r: { id: string; status: string }, stage: string, verdicts: number): CheckSummary | null => {
     if (stage === "ideate" || r.status === "done") return null;
+    const key = `${r.id}|${r.status}|${verdicts}`;
+    if (summaries.has(key)) return summaries.get(key)!;
     const f = drafting.findings(r.id);
     const rep = f.findings.filter((x) => x.reported);
-    if (!f.pass && rep.length === 0) return null;
-    return { pass: f.pass, reported: rep.length, accepted: rep.filter((x) => x.decision === "accepted").length, open: rep.filter((x) => x.decision === "open").length, total: rep.reduce((n, x) => n + x.score, 0) };
+    const out = !f.pass && rep.length === 0 ? null
+      : { pass: f.pass, reported: rep.length, accepted: rep.filter((x) => x.decision === "accepted").length, open: rep.filter((x) => x.decision === "open").length, total: rep.reduce((n, x) => n + x.score, 0) };
+    // one entry per draw: the key carries what invalidates it, so the old ones are dead
+    for (const k of summaries.keys()) if (k.startsWith(`${r.id}|`)) summaries.delete(k);
+    summaries.set(key, out);
+    return out;
   };
 
   app.get<{ Querystring: { archived?: string } }>("/api/draws", async (req) => {
+    const verdicts = findingVerdicts();
     const all = pipeline.draws(true);
     const refs = new Map<string, string[]>();
     for (const r of all) for (const to of [r.superseded_by, r.repaired_from, r.forked_from]) if (to) refs.set(to, [...(refs.get(to) ?? []), r.id]);
@@ -163,7 +173,7 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
       const view = lifecycleView({ ...r, referenced_by: refs.get(r.id) ?? [] } as DrawFacts);
       const stage = view.stage;
       // the candidate is what tells two briefs of one batch apart, so the list needs it too
-      return { ...r, ...view, origin: stage === "ideate" ? null : originOf(pipeline, r.id), check: checkSummary(r, stage) };
+      return { ...r, ...view, origin: stage === "ideate" ? null : originOf(pipeline, r.id), check: checkSummary(r, stage, verdicts) };
     });
   });
 

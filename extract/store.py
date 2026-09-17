@@ -17,7 +17,8 @@ def now() -> str:
 
 
 def open_db(root: Path, path: str | None = None) -> sqlite3.Connection:
-    db = Path(path or os.environ.get("CLOUDCHAMBER_DB") or root / "data" / "cloudchamber.db")
+    # the store lives on the Linux filesystem: the repo is on the Windows mount, where reads cost about ten times as much
+    db = Path(path or os.environ.get("CLOUDCHAMBER_DB") or Path.home() / ".cloudchamber" / "cloudchamber.db")
     db.parent.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(db)
     con.row_factory = sqlite3.Row

@@ -17,7 +17,7 @@ at gate 2.
 
 ```sh
 bun install
-./cloudchamber extract                 # read, segment and score the dev subset into data/
+./cloudchamber extract                 # read, segment and score the dev subset into the store
 ./cloudchamber draw --genre horror     # five premises, then wait at the gate
 ./cloudchamber gate <draw> choose <execute-step>
 bun run ui:build && ./cloudchamber serve   # the UI at http://127.0.0.1:3002
@@ -41,7 +41,7 @@ bun run ui:build && ./cloudchamber serve   # the UI at http://127.0.0.1:3002
 | `docs/` | the knobs, the evaluation protocol and the specs |
 | `evals/` | one report per evaluation run |
 | `research/` | literature reviews behind the pipeline's design |
-| `data/` | the SQLite store; not in git, rebuilt from `sources/` and `bank/` |
+| `~/.cloudchamber/` | the SQLite store, off the Windows mount; rebuilt from `sources/` and `bank/` |
 
 ## Docs
 

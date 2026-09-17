@@ -1,3 +1,4 @@
+import { homedir } from "node:os";
 import { resolve } from "node:path";
 
 /** Repo root: this file lives at app/pipeline/paths.ts. */
@@ -11,7 +12,13 @@ export const SETTINGS = process.env.CLOUDCHAMBER_SETTINGS ?? resolve(ROOT, "sour
 export const VERDICT_LOG = resolve(BANK, "verdicts.jsonl");
 export const THEME_LOG = resolve(BANK, "themes.jsonl");
 export const SCHEMA = resolve(ROOT, "app", "pipeline", "store", "schema.sql");
-export const DEFAULT_DB = process.env.CLOUDCHAMBER_DB ?? resolve(ROOT, "data", "cloudchamber.db");
+/**
+ * The store lives on the Linux filesystem, not under the repo: the repo is on
+ * the Windows mount, where the same reads cost about ten times as much (245 ms
+ * against 2,670 ms for one pass over every draw's findings). It is rebuildable
+ * from sources/ and bank/, so nothing tracked moves with it.
+ */
+export const DEFAULT_DB = process.env.CLOUDCHAMBER_DB ?? resolve(homedir(), ".cloudchamber", "cloudchamber.db");
 
 export function now(): string {
   return new Date().toISOString().replace(/\.\d{3}Z$/, "Z");

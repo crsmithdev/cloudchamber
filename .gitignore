@@ -18,8 +18,9 @@ tmp/mockups/*
 !tmp/mockups/tide-table.css
 !tmp/mockups/galley-proof.css
 
-# Working store: rebuildable from sources/ plus bank/verdicts.jsonl and
-# bank/themes.jsonl, which are tracked because nothing else reproduces them.
+# The store lived here before it moved to ~/.cloudchamber/; backups may remain.
+# It is rebuildable from sources/ plus bank/verdicts.jsonl and bank/themes.jsonl,
+# which are tracked because nothing else reproduces them.
 data/
 .pytest_cache/
 

@@ -110,7 +110,8 @@ no exclamation.
 
 Real content exists and mockups must use it:
 
-- `data/cloudchamber.db`, the live store. It is not in git.
+- `~/.cloudchamber/cloudchamber.db`, the live store, off the Windows mount and
+  out of the repo. It is not in git.
 - The brief directories under `briefs/`.
 - Exported drafts go to `drafts/<draw>/`.
 - Real store fixtures extracted for mockups: `tmp/mockups/draws.json`,
