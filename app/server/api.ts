@@ -63,31 +63,6 @@ export function listItems(db: Db, f: ItemFilter) {
   return { total: ordered.length, items: ordered.slice(offset, offset + limit) };
 }
 
-export type QueueMode = "suspects-first" | "suspects" | "sample";
-
-/**
- * Next unreviewed items. Sources round-robin, random within a source. By
- * default passages the artifact screen marked come first; `suspects` serves
- * only those and `sample` ignores the screen.
- */
-export function queue(db: Db, kind: Kind, n = 1, source?: string, mode: QueueMode = "suspects-first") {
-  const { items } = listItems(db, { kind, verdict: "unreviewed", source, limit: 100000 });
-  const suspects = items.filter((it) => it.suspect?.length);
-  const pools = mode === "sample" ? [items] : mode === "suspects" ? [suspects] : [suspects, items.filter((it) => !it.suspect?.length)];
-  const out: any[] = [];
-  for (const pool of pools) {
-    const bySource = new Map<string, any[]>();
-    for (const it of pool) { const k = it.source ?? "themes"; if (!bySource.has(k)) bySource.set(k, []); bySource.get(k)!.push(it); }
-    const keys = [...bySource.keys()];
-    let i = 0;
-    while (out.length < n && keys.some((k) => bySource.get(k)!.length)) {
-      const k = keys[i++ % keys.length]; const arr = bySource.get(k)!;
-      if (arr.length) out.push(arr.splice(Math.floor(Math.random() * arr.length), 1)[0]);
-    }
-  }
-  return { remaining: mode === "suspects" ? suspects.length : items.length, suspects: suspects.length, items: out };
-}
-
 /** The six passages a draw drew, with their latest verdicts; a passage gone from the pool keeps its id only. */
 export function drawExamples(db: Db, exampleIds: string) {
   return (JSON.parse(exampleIds) as string[]).map((id) => {
@@ -131,10 +106,6 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
   const drafting = opts.drafting ?? new Drafting(pipeline);
 
   app.get("/api/status", async () => status(db));
-
-  app.get<{ Querystring: { kind?: Kind; n?: string; source?: string; suspect?: string; sample?: string } }>("/api/queue", async (req) =>
-    queue(db, (req.query.kind ?? "example") as Kind, Number(req.query.n ?? 1), req.query.source,
-      req.query.suspect === "true" ? "suspects" : req.query.sample === "true" ? "sample" : "suspects-first"));
 
   app.post<{ Body: { kind: Kind; target_id: string; verdict: "keep" | "pass"; artifact?: boolean; note?: string; method?: Method } }>("/api/verdicts", async (req, reply) => {
     const b = req.body;

@@ -64,6 +64,9 @@
 > - **The skill (REQ 36).** The Voice Bridge also takes `--domains` and
 >   `--sampling`, and a `knobs` tool prints every tunable and its live values.
 >   `cloudchamber help` prints the same on the CLI; `docs/knobs.md` is that output.
+> - **The queue (REQ 32), 2026-09-17.** The queue view and `GET /api/queue`
+>   are gone. The browse tab replaced them; `GET /api/items` with
+>   `verdict=unreviewed` and `suspect=true` serves the same items.
 
 Spec derived from the grilling session of 2026-09-04 over `plan.md`. Every
 decision below was put to Chris and answered; the few that were not are under

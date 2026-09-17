@@ -36,18 +36,17 @@ async function setup() {
 }
 
 describe("api", () => {
-  test("queue, verdict, items and filters", async () => {
+  test("verdict, items and filters", async () => {
     const { j } = await setup();
-    let q = await j("GET", "/api/queue?kind=example&n=2");
-    expect(q.body.remaining).toBe(18);
+    let q = await j("GET", "/api/items?kind=example&verdict=unreviewed&limit=2");
+    expect(q.body.total).toBe(18);
     expect(q.body.items).toHaveLength(2);
-    expect(new Set(q.body.items.map((i: any) => i.source))).toEqual(new Set(["scp", "d1"]));   // round-robin
     const first = q.body.items[0];
-    const v = await j("POST", "/api/verdicts", { kind: "example", target_id: first.id, verdict: "pass", method: "queue" });
+    const v = await j("POST", "/api/verdicts", { kind: "example", target_id: first.id, verdict: "pass", method: "browse" });
     expect(v.code).toBe(200);
     expect(v.body).toMatchObject({ kind: "example", target_id: first.id, verdict: "pass", artifact: false });
-    q = await j("GET", "/api/queue?kind=example");
-    expect(q.body.remaining).toBe(17);
+    q = await j("GET", "/api/items?kind=example&verdict=unreviewed");
+    expect(q.body.total).toBe(17);
     expect(q.body.items[0].id).not.toBe(first.id);
     await j("POST", "/api/verdicts", { kind: "example", target_id: "a1", verdict: "keep", artifact: true, note: "header" });
     expect((await j("GET", "/api/items?kind=example&verdict=pass")).body.total).toBe(1);
@@ -60,7 +59,7 @@ describe("api", () => {
     expect(bad.code).toBe(400);
   });
 
-  test("a passed story row hides its passages from queue, browser and draw", async () => {
+  test("a passed story row hides its passages from the browser and the draw", async () => {
     const { j } = await setup();
     const stories = await j("GET", "/api/items?kind=story");
     expect(stories.body.total).toBe(2);
@@ -71,8 +70,8 @@ describe("api", () => {
     expect((await j("GET", "/api/items?kind=example")).body.total).toBe(9);
     expect((await j("GET", "/api/items?kind=example&source=d1")).body.total).toBe(0);
     expect((await j("GET", "/api/items?kind=story&verdict=pass")).body.items.map((s: any) => s.id)).toEqual(["d1/b"]);
-    const q = await j("GET", "/api/queue?kind=example&n=4");
-    expect(q.body.remaining).toBe(9);
+    const q = await j("GET", "/api/items?kind=example&verdict=unreviewed");
+    expect(q.body.total).toBe(9);
     expect(new Set(q.body.items.map((i: any) => i.source))).toEqual(new Set(["scp"]));
     const status = await j("GET", "/api/status");
     expect(status.body).toMatchObject({ stories_passed: 1, passages_eligible: 9 });
@@ -82,25 +81,13 @@ describe("api", () => {
     expect(new Set(detail.body.examples.map((e: any) => e.source))).toEqual(new Set(["scp"]));   // the draw skips the passed story
   });
 
-  test("queue serves suspects first, only suspects, or a plain sample", async () => {
+  test("items filter and order by the artifact screen's suspects", async () => {
     const { j, db } = await setup();
     db.exec(`UPDATE passages SET suspect = '["hyphen"]' WHERE id IN ('a0', 'b0')`);
     db.exec(`UPDATE passages SET suspect = '["ocr","markup"]' WHERE id = 'a1'`);
-    let q = await j("GET", "/api/queue?kind=example&n=5");
-    expect(q.body).toMatchObject({ remaining: 18, suspects: 3 });
-    expect(new Set(q.body.items.slice(0, 3).map((i: any) => i.id))).toEqual(new Set(["a0", "b0", "a1"]));
-    expect(q.body.items[0].suspect).toEqual(expect.arrayContaining(["hyphen"]));
-    expect(q.body.items[3].suspect).toEqual([]);
-    q = await j("GET", "/api/queue?kind=example&n=5&suspect=true");
-    expect(q.body.remaining).toBe(3);
-    expect(q.body.items).toHaveLength(3);
-    await j("POST", "/api/verdicts", { kind: "example", target_id: "a1", verdict: "keep", artifact: true, note: "ocr" });
-    q = await j("GET", "/api/queue?kind=example&suspect=true");
-    expect(q.body).toMatchObject({ remaining: 2, suspects: 2 });
-    q = await j("GET", "/api/queue?kind=example&n=17&sample=true");
-    expect(q.body.items).toHaveLength(17);
-    expect(q.body.items.filter((i: any) => i.suspect.length)).toHaveLength(2);
     expect((await j("GET", "/api/items?kind=example&suspect=true")).body.total).toBe(3);
+    await j("POST", "/api/verdicts", { kind: "example", target_id: "a1", verdict: "keep", artifact: true, note: "ocr" });
+    expect((await j("GET", "/api/items?kind=example&suspect=true&verdict=unreviewed")).body.total).toBe(2);
     expect((await j("GET", "/api/items?kind=example&suspect=false")).body.total).toBe(15);
     // items can be ordered suspects-first, or shuffled stably under a seed
     const sus = (await j("GET", "/api/items?kind=example&order=suspects")).body.items;
