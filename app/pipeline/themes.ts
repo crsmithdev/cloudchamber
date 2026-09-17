@@ -151,10 +151,8 @@ export async function draftStory(p: Pipeline, storyId: string, embed: Embedder =
   const valid: string[] = [];
   for (const t of rows) {
     const why = validateTheme(t);
-    if (why.length) {
-      report.rejected.push({ text: t, why });
-      p.db.query("INSERT INTO theme_rejections (story_id, text, reason, at) VALUES (?, ?, ?, ?)").run(storyId, t, why.join("; "), now());
-    } else valid.push(t);
+    if (why.length) report.rejected.push({ text: t, why });
+    else valid.push(t);
   }
   const vecs = await embed(valid);
   for (let i = 0; i < valid.length; i++) {

@@ -84,14 +84,6 @@ CREATE TABLE IF NOT EXISTS theme_failures (      -- one row per story draftAll g
   at       TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS theme_rejections (
-  id       INTEGER PRIMARY KEY AUTOINCREMENT,
-  story_id TEXT NOT NULL,
-  text     TEXT NOT NULL,
-  reason   TEXT NOT NULL,
-  at       TEXT NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS verdicts (                -- replay of bank/verdicts.jsonl
   id               TEXT PRIMARY KEY,
   kind             TEXT NOT NULL CHECK (kind IN ('example','theme','brief','story','finding','draft')),

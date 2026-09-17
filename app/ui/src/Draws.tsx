@@ -480,7 +480,7 @@ export const inFlight = (d: Detail) => {
  * set it is under the name, and explains the step on hover. A running row sweeps; the gate waits; what is still
  * to come is faint.
  */
-export function Log({ d, stepId, onStep, ideation }: { d: Detail; stepId: string | null; onStep: (id: string) => void; ideation?: boolean }) {
+export function Log({ d, onStep, ideation }: { d: Detail; onStep: (id: string) => void; ideation?: boolean }) {
   const byParent = new Map<string | null, Step[]>();
   for (const s of d.steps) {
     const k = s.parent_id;
@@ -552,7 +552,7 @@ export function Log({ d, stepId, onStep, ideation }: { d: Detail; stepId: string
             return (
               <tr
                 key={s.id}
-                className={"pick" + (s.id === stepId ? " on" : "") + (running ? " sweep" : "")}
+                className={"pick" + (running ? " sweep" : "")}
                 onClick={() => onStep(s.id)}
                 title={`${STAGE[s.stage]?.does ?? s.stage} Open the step to read its prompt and response.`}
               >
@@ -902,7 +902,7 @@ export function DrawAside({ d, ideation, onStep, top, rows = [] }: { d: Detail; 
         <Head as="div" note={`${steps.length} of ${total} done · hover a step for what it does`}>
           steps
         </Head>
-        <Log d={d} stepId={null} onStep={onStep} ideation={ideation} />
+        <Log d={d} onStep={onStep} ideation={ideation} />
       </div>
     </>
   );

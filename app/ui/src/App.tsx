@@ -83,49 +83,33 @@ export function App() {
     const n = name === "ideate" || name === "check" || name === "write" ? status.waiting[name] : 0;
     return n ? <span>{n}</span> : null;
   };
+  // folded, a link is its initial with the name as its title; open, it is the name and its count
+  const navLink = ([name, href]: [string, string]) => (
+    <a key={name} href={href} className={"navlink" + (folded ? " mini" : "") + (on(name) ? " on" : "")} title={folded ? name : undefined}>
+      {folded ? name[0] : name}
+      {!folded && count(name)}
+    </a>
+  );
   return (
     <div className={"shell" + (folded ? " folded" : "")}>
       <aside className={"rail" + (folded ? " folded" : "")}>
-        {!folded && (
-          <>
-            <div className="brand">
-              <Logo />
-              <div className="font-serif text-mark font-medium">
-                Cloud
-                <br />
-                Chamber
-              </div>
+        {folded ? (
+          <Logo label="Cloud Chamber" />
+        ) : (
+          <div className="brand">
+            <Logo />
+            <div className="font-serif text-mark font-medium">
+              Cloud
+              <br />
+              Chamber
             </div>
-            <nav className="flex flex-col" aria-label="Sections">
-              {TABS.map(([name, href]) => (
-                <a key={name} href={href} className={"navlink" + (on(name) ? " on" : "")}>
-                  {name}
-                  {count(name)}
-                </a>
-              ))}
-              <span className="railsep" aria-hidden="true" />
-              <a href={SOURCES[1]} className={"navlink" + (on(SOURCES[0]) ? " on" : "")}>
-                {SOURCES[0]}
-              </a>
-            </nav>
-          </>
+          </div>
         )}
-        {folded && (
-          <>
-            <Logo label="Cloud Chamber" />
-            <nav className="flex flex-col items-center gap-1" aria-label="Sections">
-              {TABS.map(([name, href]) => (
-                <a key={name} href={href} className={"navlink mini" + (on(name) ? " on" : "")} title={name}>
-                  {name[0]}
-                </a>
-              ))}
-              <span className="railsep" aria-hidden="true" />
-              <a href={SOURCES[1]} className={"navlink mini" + (on(SOURCES[0]) ? " on" : "")} title={SOURCES[0]}>
-                {SOURCES[0][0]}
-              </a>
-            </nav>
-          </>
-        )}
+        <nav className={"flex flex-col" + (folded ? " items-center gap-1" : "")} aria-label="Sections">
+          {TABS.map(navLink)}
+          <span className="railsep" aria-hidden="true" />
+          {navLink(SOURCES)}
+        </nav>
         <button
           className="railfold"
           aria-pressed={folded ? "true" : "false"}

@@ -63,7 +63,6 @@ describe("theme drafting", () => {
     expect(JSON.parse(banked[0].stories)).toEqual(["scp/a", "scp/b"]);
     const dup = db.query("SELECT duplicate_of FROM themes WHERE duplicate_of IS NOT NULL").get() as any;
     expect(dup.duplicate_of).toBe(banked[0].id);
-    expect(db.query("SELECT count(*) AS n FROM theme_rejections").get()).toEqual({ n: 1 });
     expect((db.query("SELECT story_id FROM steps WHERE stage = 'themes' ORDER BY started_at").all() as any[]).map((s) => s.story_id)).toEqual(["scp/a", "scp/b"]);
     // draftAll skips drafted stories
     expect(await draftAll(p, {}, fakeEmbed, log)).toEqual([]);

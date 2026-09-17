@@ -528,6 +528,10 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
   const checkSteps = d.steps.filter((s) => s.stage.startsWith("check-") && s.status === "done");
   const checkSecs = checkSteps.reduce((n, s) => n + Number(secs(s.started_at, s.ended_at)), 0);
   const reported = f?.findings.filter((x) => x.reported) ?? [];
+  // the open list and the list that undoes an earlier fix are the same row
+  const row = (x: Finding) => (
+    <FindingRow key={x.id} f={x} S={x.samples_run ?? S} scoreMax={f!.score_max} selected={sel.has(x.id)} onToggle={() => toggle(x.id)} onDismiss={() => gate("dismiss", { finding: x.id })} readOnly={repaired} />
+  );
   const S = f?.findings[0]?.samples_run ?? 3;
   return (
     <>
@@ -664,11 +668,7 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
           {f && f.findings.length === 0 && <div className="mt-2 text-mute">Nothing recurred in enough samples to report. What each checker examined is listed beside.</div>}
           {f && f.findings.length > 0 && (
             <div className="findings mt-1">
-              {f.findings
-                .filter((x) => !x.relitigates)
-                .map((x) => (
-                  <FindingRow key={x.id} f={x} S={x.samples_run ?? S} scoreMax={f.score_max} selected={sel.has(x.id)} onToggle={() => toggle(x.id)} onDismiss={() => gate("dismiss", { finding: x.id })} readOnly={repaired} />
-                ))}
+              {f.findings.filter((x) => !x.relitigates).map(row)}
               {reopened.length > 0 && (
                 <>
                   <Head as="div" className="mt-5" note={`${reopened.length} finding${reopened.length > 1 ? "s" : ""} that would undo a fix you accepted · auto repair skips ${reopened.length > 1 ? "them" : "it"}`}>
@@ -678,9 +678,7 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
                     A repair round is free to trade one fix for another, and the checkers then report the fix as the defect. Either the earlier decision was wrong, in which case accept this and say so in the note, or
                     this is the loop arguing with itself, in which case dismiss it.
                   </div>
-                  {reopened.map((x) => (
-                    <FindingRow key={x.id} f={x} S={x.samples_run ?? S} scoreMax={f.score_max} selected={sel.has(x.id)} onToggle={() => toggle(x.id)} onDismiss={() => gate("dismiss", { finding: x.id })} readOnly={repaired} />
-                  ))}
+                  {reopened.map(row)}
                 </>
               )}
             </div>
@@ -1426,13 +1424,13 @@ function ScheduleView({ s }: { s: Story }) {
   const M = sched.beats.length;
   // one row per withheld item: first beat that lists it, and the beat that reveals it
   const rows = useMemo(() => {
-    const m = new Map<string, { from: number; until: number }>();
+    const m = new Map<string, { item: string; from: number; until: number }>();
     for (const b of sched.beats)
       for (const w of b.withheld) {
         const key = w.item.toLowerCase();
-        if (!m.has(key)) m.set(key, { from: b.n, until: w.until });
+        if (!m.has(key)) m.set(key, { item: w.item, from: b.n, until: w.until });
       }
-    return [...m.entries()].map(([, v], i) => ({ item: [...new Set(sched.beats.flatMap((b) => b.withheld.map((w) => w.item)))][i] ?? "", ...v })).sort((a, b) => a.until - b.until);
+    return [...m.values()].sort((a, b) => a.until - b.until);
   }, [sched]);
   const wordsOf = (beat: number) =>
     s.scenes
