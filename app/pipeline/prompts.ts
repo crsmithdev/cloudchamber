@@ -297,7 +297,7 @@ Read each finding back against the whole brief. Keep it when the span asserts th
 {fixes}
 </fixes>
 
-Each fix is a sentence that must hold in the repaired brief. Find every pair that cannot both hold: two fixes that give one quantity two values, or that state a rule and its opposite. Output a <conflicts> tag containing one <conflict> per pair, each with <a> and <b> (the two numbers) and <why> (one sentence). Output an empty <conflicts> tag when every pair can hold together. Under 150 words.`,
+Each fix is a sentence that must hold in the repaired brief, and a patch under it is text that will stand in the brief word for word. First output a <shared> tag: one line per quantity, date, count, position or rule that two or more fixes or patches give a value to, naming each fix's value ("gap reaches zero: fix 1 Day 19; fix 4 Day 16"). Then output a <conflicts> tag containing one <conflict> per pair whose values for one line differ, each with <a> and <b> (the two fix numbers from the list above, not the values) and <why> (one sentence). Output an empty <conflicts> tag when no line has two values. Under 250 words.`,
 
   constraints: `<constraints>
 {constraints}

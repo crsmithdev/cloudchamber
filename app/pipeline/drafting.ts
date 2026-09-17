@@ -41,6 +41,16 @@ const autoEligible = (f: FindingView) =>
   f.checkers.some((c) => AUTO_CHECKERS.includes(c)) && !!f.evidence.trim() && f.evidence.trim().toLowerCase() !== "none"
   && !f.relitigates;
 
+/** A <conflict> carries its two numbers as <a> and <b> children or as a and b attributes; either form is read. */
+export function parseConflicts(block: string): { a: number; b: number; why: string }[] {
+  const out: { a: number; b: number; why: string }[] = [];
+  for (const m of block.matchAll(/<conflict((?:\s+[a-z]+="[^"]*")*)\s*>([\s\S]*?)<\/conflict>/gi)) {
+    const attr = (name: string) => new RegExp(`\\b${name}="(\\d+)"`).exec(m[1])?.[1];
+    out.push({ a: Number(tag(m[2], "a") ?? attr("a")), b: Number(tag(m[2], "b") ?? attr("b")), why: tag(m[2], "why") ?? "" });
+  }
+  return out;
+}
+
 export class Drafting {
   constructor(public p: Pipeline, public opts: { draftsDir?: string; lexiconPath?: string; premisesPath?: string } = {}) {}
 
@@ -213,7 +223,8 @@ export class Drafting {
     let stopped: AutoResult["stopped"] = "cap";
     let clean = 0;
     for (let round = 1; ; round++) {
-      const open = gateFindings(this.p, id).filter((f) => f.decision === "open");
+      // a finding the verify pass dropped is stored under the bar and open: not auto's either
+      const open = gateFindings(this.p, id).filter((f) => f.decision === "open" && f.reported);
       let accept = open.filter((f) => f.score >= cfg.repair.stop_score && autoEligible(f));
       const total = open.reduce((a, f) => a + f.score, 0);
       const calls = this.chainCalls(id);
@@ -245,7 +256,7 @@ export class Drafting {
     const best = rounds.reduce((a, r) => (r.total < a.total ? r : a), rounds[0]);
     this.p.db.query("UPDATE draws SET draft_config = (SELECT draft_config FROM draws WHERE id = ?) WHERE id = ?").run(drawId, id);
     // what the last round would have repaired had the loop gone on: the gate's work, not auto's
-    const left = gateFindings(this.p, id).filter((f) => f.decision === "open" && f.score >= cfg.repair.stop_score && autoEligible(f));
+    const left = gateFindings(this.p, id).filter((f) => f.decision === "open" && f.reported && f.score >= cfg.repair.stop_score && autoEligible(f));
     const result: AutoResult = { id, rounds, best, stopped, floor: cfg.repair.stop_score, calls: this.chainCalls(id), left_open: left.length };
     // the round table belongs to the brief auto stopped on, so the gate can show how it got there
     const last = this.p.steps(id).filter((s) => s.status === "done").at(-1);
@@ -268,12 +279,14 @@ export class Drafting {
   private async reconcile(drawId: string, accept: FindingView[]): Promise<FindingView[]> {
     if (accept.length < 2) return accept;
     const parent = this.p.steps(drawId).filter((s) => s.status === "done").at(-1)?.id ?? null;
-    const prompt = fill("reconcile", { fixes: accept.map((f, i) => `${i + 1}. ${f.replacement}`).join("\n") });
+    // the patch goes in too: on the pit chain a fix moved Ruth off the block and another patched the table for her being on it,
+    // and read as sentences the second was conditional on the first, so nothing conflicted
+    const fixes = accept.map((f, i) => `${i + 1}. ${f.replacement}${f.patch?.trim() ? `\n   patch: "${f.patch.trim()}"` : ""}`).join("\n");
+    const prompt = fill("reconcile", { fixes });
     const { value: pairs } = await this.p.invoke<{ a: number; b: number; why: string }[]>(drawId, parent, "reconcile", prompt, (t) => {
       const block = tag(t, "conflicts");
       if (block === null) throw new Error("no <conflicts> tag");
-      return tags(block, "conflict").map((c) => ({ a: Number(tag(c, "a")), b: Number(tag(c, "b")), why: tag(c, "why") ?? "" }))
-        .filter((x) => x.a >= 1 && x.a <= accept.length && x.b >= 1 && x.b <= accept.length && x.a !== x.b);
+      return parseConflicts(block).filter((x) => x.a >= 1 && x.a <= accept.length && x.b >= 1 && x.b <= accept.length && x.a !== x.b);
     });
     const dropped = new Map<string, FindingView>();
     for (const { a, b } of pairs) {

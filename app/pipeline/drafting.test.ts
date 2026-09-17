@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { SCHEMA_VERSION, openDb, type Db } from "./store/db.ts";
 import { FakeModel } from "./model.ts";
 import { Pipeline } from "./draw.ts";
-import { Drafting } from "./drafting.ts";
+import { Drafting, parseConflicts } from "./drafting.ts";
 import { settingsFixture } from "./settings.fixture.ts";
 import { LISTS, loadSetting } from "./settings.ts";
 import { latest, readLog, record } from "./verdicts.ts";
@@ -917,5 +917,38 @@ describe("the verify pass", () => {
     expect([b.reported, (b as any).dropped]).toEqual([false, "the span does not name the relic"]);
     expect(model.calls.find((c) => c.stage === "check-verify")!.prompt).toContain(`1. span: "${SPAN_A}"`);
     expect(model.calls.find((c) => c.stage === "check-verify")!.prompt).toContain(`2. span: "${SPAN_B}"`);
+  });
+
+  test("auto does not accept a dropped finding, whatever it scores", async () => {
+    // A scores 10 and is dropped; B scores 6 and is kept, so the round accepts B alone
+    const script = draftScript({
+      "check-ledger": [...ledgerSamples(), ...cleanSamples(), ...cleanSamples()],
+      "check-derivation": [...derivationSamples(), ...cleanSamples(), ...cleanSamples()],
+      "check-verify": [`<verdict n="1"><answer>drop</answer><why>the span is a figure of speech</why></verdict><verdict n="2"><answer>keep</answer><why>holds</why></verdict>`, "", ""],
+    });
+    const { d, draw, model } = await drawn(script);
+    await d.check(draw.id);
+    const r = await d.autoRounds(draw.id);
+    expect(r.rounds[0].accepted).toBe(1);
+    const first = d.findings(draw.id, { all: true }).findings;
+    expect(first.find((f) => f.span === SPAN_A)).toMatchObject({ decision: "open", reported: false, score: 10 });
+    expect(first.find((f) => f.span === SPAN_B)).toMatchObject({ decision: "accepted" });
+    expect(stagesOf(model, /^reconcile$/)).toHaveLength(0);                  // one fix: nothing to reconcile
+  });
+
+  test("the reconcile prompt carries each fix's patch, and a conflict is read in either tag form", async () => {
+    const script = draftScript({
+      "check-ledger": [...ledgerSamples(A(), finding(SPAN_B, "the twelfth relic is named differently in the two vignettes", "arithmetic", "The twelfth relic is the Verona clavicle in every account.", undefined, undefined, "the twelfth relic, the Bruges clavicle")), ...cleanSamples(), ...cleanSamples()],
+      "check-derivation": [...derivationSamples(), ...cleanSamples(), ...cleanSamples()],
+      reconcile: ['<conflicts><conflict a="1" b="2"><why>one relic, two names</why></conflict></conflicts>'],
+    });
+    const { d, draw, model } = await drawn(script);
+    await d.check(draw.id);
+    const r = await d.autoRounds(draw.id);
+    expect(r.rounds[0].accepted).toBe(1);
+    const prompt = model.calls.find((c) => c.stage === "reconcile")!.prompt;
+    expect(prompt).toContain("2. The twelfth relic is the Verona clavicle in every account.\n   patch: \"the twelfth relic, the Bruges clavicle\"");
+    expect(prompt).not.toContain("1. Only the assembler can fire the reliquary.\n   patch");
+    expect(parseConflicts('<conflict a="1" b="2"><why>w</why></conflict><conflict><a>3</a><b>4</b></conflict>')).toEqual([{ a: 1, b: 2, why: "w" }, { a: 3, b: 4, why: "" }]);
   });
 });
