@@ -12,26 +12,19 @@ import { ArchivedToggle, Bar, Btn, Caret as Chevron, Facts, RUNNING_STATUS, Fiel
 const OPEN = new Set(["awaiting_check_gate", "awaiting_draft_gate"]);
 /** A repair chain: the root draw, its rounds oldest first, and the head. A draw with no repairs is a chain of one. */
 type Chain = { root: Draw; rounds: Draw[]; head: Draw };
+/**
+ * One chain per draw that nothing repairs: its rounds are its ancestry, as the repair itself reads them.
+ * A draw repaired more than once starts several chains, and each of them holds it.
+ */
 function chainsOf(draws: Draw[]): Chain[] {
   const by = new Map(draws.map((r) => [r.id, r]));
-  const rootOf = (r: Draw) => {
-    const seen = new Set<string>();
-    while (r.repaired_from && by.has(r.repaired_from) && !seen.has(r.id)) {
-      seen.add(r.id);
-      r = by.get(r.repaired_from)!;
-    }
-    return r;
-  };
-  const groups = new Map<string, Draw[]>();
-  for (const r of draws) {
-    const root = rootOf(r).id;
-    if (!groups.has(root)) groups.set(root, []);
-    groups.get(root)!.push(r);
-  }
-  return [...groups.values()]
-    .map((rounds) => {
-      rounds.sort((a, b) => (a.created_at < b.created_at ? -1 : 1));
-      return { root: rounds[0], rounds, head: rounds[rounds.length - 1] };
+  const repaired = new Set(draws.map((r) => r.repaired_from));
+  return draws
+    .filter((head) => !repaired.has(head.id))
+    .map((head) => {
+      const rounds = [head];
+      for (let r = head; r.repaired_from && by.has(r.repaired_from) && !rounds.includes(by.get(r.repaired_from)!); ) rounds.unshift((r = by.get(r.repaired_from)!));
+      return { root: rounds[0], rounds, head };
     })
     .sort((a, b) => (a.head.created_at < b.head.created_at ? 1 : -1));
 }
@@ -64,7 +57,11 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
   const last = lastSelected(stage);
   const current = selected ?? (all.some((c) => c.rounds.some((r) => r.id === last)) ? last : heads[0]?.id);
   useRememberSelected(stage, selected);
-  const chainOf = (id: string | undefined) => chains.find((c) => c.rounds.some((r) => r.id === id));
+  // a draw repaired more than once is in several chains: the newest open one wins
+  const chainOf = (id: string | undefined) => {
+    const holds = (c: Chain) => c.rounds.some((r) => r.id === id);
+    return chains.find(holds) ?? all.find(holds);
+  };
   const loadDetail = (id: string) =>
     api
       .draw(id)
@@ -99,8 +96,12 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
       setErr(e.message);
     }
   };
-  const archiveChain = (c: Chain) => act(() => Promise.all(c.rounds.map((x) => api.gate(x.id, { action: c.head.archived_at ? "unarchive" : "archive" }))));
-  const shown = all.filter((c) => showArchived || !c.head.archived_at || c.rounds.some((x) => x.id === current));
+  // a round another chain also holds stays as it is
+  const archiveChain = (c: Chain) => {
+    const own = c.rounds.filter((x) => !all.some((o) => o !== c && o.rounds.includes(x)));
+    return act(() => Promise.all(own.map((x) => api.gate(x.id, { action: c.head.archived_at ? "unarchive" : "archive" }))));
+  };
+  const shown = all.filter((c) => showArchived || !c.head.archived_at || c === chainOf(current));
   const step = d && stepId ? d.steps.find((s) => s.id === stepId) : undefined;
   const statusLine = (r: Draw) => (r.status === "done" ? "unchecked" : label(r.status));
   // the open row's one summary line; the step log is in the reading pane
@@ -156,11 +157,11 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
         {chains.length === 0 && <div className="empty">{stage === "check" ? "No briefs yet. Choose a premise in ideate to make one." : "Nothing drafted yet. Draft a brief from check."}</div>}
         {shown.map((c) => {
           const r = c.head;
-          const on = c.rounds.some((x) => x.id === current);
+          const on = chain === c;
           const isOpen = on && !folded;
           return (
             <div
-              key={c.root.id}
+              key={c.head.id}
               className={"row" + (on ? " on" : "") + (isOpen ? " open" : "") + (RUNNING_STATUS.has(r.status) ? " running" : "") + (r.archived_at ? " old" : "")}
               onClick={() => {
                 if (!on) location.hash = `#${stage}/${r.id}`;
