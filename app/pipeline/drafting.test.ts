@@ -1,15 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { Database } from "bun:sqlite";
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { tmpdir } from "node:os";
-import { SCHEMA_VERSION, openDb, type Db } from "./store/db.ts";
 import { FakeModel } from "./model.ts";
 import { parseConflicts } from "./drafting.ts";
 import { checkersNext, NOT_IN_PROSE } from "./check.ts";
 import { settingsFixture } from "./settings.fixture.ts";
 import { LISTS, loadSetting } from "./settings.ts";
-import { latest, readLog, record } from "./verdicts.ts";
+import { latest, readLog } from "./verdicts.ts";
 import { status } from "./status.ts";
 import { TEMPLATES } from "./prompts.ts";
 import { loadStages } from "./config.ts";
@@ -788,36 +785,6 @@ describe("templates and store", () => {
       expect(t).toMatch(/Under \{?\w*\}? ?words|Under \d+ words|Under \{cap\} words/);
       expect(t).not.toMatch(/\b(reason|think)\b/i);
     }
-  });
-
-  test("a version-3 store migrates to 11: the new columns arrive, the domains column goes, a failure note becomes the error, and the rows survive", () => {
-    const dir = mkdtempSync(join(tmpdir(), "cloudchamber-mig4-"));
-    const path = join(dir, "v3.db"), log = join(dir, "verdicts.jsonl");
-    writeFileSync(log, "");
-    const old = new Database(path);
-    old.exec(`CREATE TABLE verdicts (id TEXT PRIMARY KEY, kind TEXT NOT NULL CHECK (kind IN ('example','theme','brief','story')), target_id TEXT NOT NULL, verdict TEXT NOT NULL, artifact INTEGER NOT NULL DEFAULT 0, note TEXT NOT NULL DEFAULT '', method TEXT NOT NULL, at TEXT NOT NULL, by TEXT NOT NULL, pipeline_version TEXT NOT NULL, inherited_from TEXT);
-      CREATE TABLE draws (id TEXT PRIMARY KEY, setting TEXT, genre TEXT NOT NULL, mode TEXT NOT NULL, segment TEXT, seed_mode TEXT NOT NULL, seed_text TEXT NOT NULL, seed_theme_id TEXT, example_ids TEXT NOT NULL, domains TEXT, status TEXT NOT NULL, gate_method TEXT, chosen_step TEXT, flagged INTEGER NOT NULL DEFAULT 0, flag_note TEXT NOT NULL DEFAULT '', superseded_by TEXT REFERENCES draws(id), created_at TEXT NOT NULL, ended_at TEXT);
-      CREATE TABLE steps (id TEXT PRIMARY KEY, draw_id TEXT REFERENCES draws(id), story_id TEXT, parent_id TEXT REFERENCES steps(id), stage TEXT NOT NULL, model TEXT NOT NULL, system_prompt TEXT NOT NULL, prompt TEXT NOT NULL, raw_response TEXT, parsed TEXT, status TEXT NOT NULL, fail_reason TEXT, attempt INTEGER NOT NULL DEFAULT 1, started_at TEXT NOT NULL, ended_at TEXT, error TEXT);
-      CREATE TABLE artifacts (id TEXT PRIMARY KEY, step_id TEXT NOT NULL REFERENCES steps(id), kind TEXT NOT NULL, content TEXT NOT NULL, meta TEXT NOT NULL DEFAULT '{}');
-      INSERT INTO draws (id, genre, mode, seed_mode, seed_text, example_ids, status, created_at) VALUES ('r1', 'horror', 'manual', 'drawn', 'A seed.', '[]', 'done', 'now');
-      INSERT INTO draws (id, genre, mode, seed_mode, seed_text, example_ids, status, flag_note, created_at) VALUES ('r2', 'horror', 'manual', 'drawn', 'A seed.', '[]', 'failed', 'premises failed: error', 'now');
-      INSERT INTO draws (id, genre, mode, seed_mode, seed_text, example_ids, status, flagged, flag_note, created_at) VALUES ('r3', 'horror', 'manual', 'drawn', 'A seed.', '[]', 'failed', 1, 'looks wrong', 'now');
-      INSERT INTO steps (id, draw_id, stage, model, system_prompt, prompt, status, started_at) VALUES ('s1', 'r1', 'outline', 'm', '', '', 'done', 'now');
-      PRAGMA user_version = 3;`);
-    old.close();
-    const db: Db = openDb(path, log);
-    expect((db.query("PRAGMA user_version").get() as any).user_version).toBe(SCHEMA_VERSION);
-    expect(SCHEMA_VERSION).toBe(11);
-    expect(db.query("SELECT id, flag_note, error FROM draws WHERE id IN ('r2', 'r3') ORDER BY id").all())
-      .toEqual([{ id: "r2", flag_note: "", error: "premises failed: error" }, { id: "r3", flag_note: "looks wrong", error: null }]);
-    expect(db.query("SELECT repaired_from, draft_config, forked_from, sampling, archived_at, name, darkness FROM draws WHERE id = 'r1'").get())
-      .toEqual({ repaired_from: null, draft_config: null, forked_from: null, sampling: "tail", archived_at: null, name: "seed", darkness: null });
-    expect(db.query("SELECT tools FROM steps WHERE id = 's1'").get()).toEqual({ tools: "" });
-    expect((db.query("PRAGMA table_info(draws)").all() as { name: string }[]).map((c) => c.name)).not.toContain("domains");
-    expect(() => record(db, { kind: "finding", target_id: "f-abc", verdict: "pass", method: "gate", note: "x" }, log)).not.toThrow();
-    expect(() => record(db, { kind: "draft", target_id: "r1", verdict: "keep", method: "gate" }, log)).not.toThrow();
-    const again = openDb(path, log);
-    expect(again.query("SELECT count(*) AS n FROM verdicts").get()).toEqual({ n: 2 });
   });
 
   test("every new stage names a model, and only the claims verifier declares tools", () => {

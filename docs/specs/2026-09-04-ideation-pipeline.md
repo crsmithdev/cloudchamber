@@ -78,6 +78,12 @@
 >   run under, its own or the defaults) and a `tab` on each step; the findings
 >   carry `score_max` and the structure questions in order. The page keeps the
 >   prose and holds no number, list or rule of its own.
+> - **The migrations are gone, 2026-09-17.** Every live store is at schema 11,
+>   so `openDb` refuses anything below it instead of carrying the ladder from
+>   version 1. The refusal names the commit that still holds the migrations
+>   (`7978c4d`): check it out, open the old file once so it migrates in place,
+>   come back. A change to an existing table still bumps `SCHEMA_VERSION` and
+>   still needs a migration written for it; what went is the history.
 > - **The gate commands, 2026-09-17.** The twelve gate actions are one
 >   interface, `app/pipeline/gate.ts`, and the HTTP route and the CLI are two
 >   adapters over it. A command validates its own arguments, names the draw to

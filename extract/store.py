@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 SCHEMA = Path("app/pipeline/store/schema.sql")
-# Mirrors SCHEMA_VERSION in app/pipeline/store/db.ts, which owns migrations.
+# Mirrors SCHEMA_VERSION in app/pipeline/store/db.ts, which owns the schema.
 SCHEMA_VERSION = 11
 
 
@@ -30,5 +30,5 @@ def open_db(root: Path, path: str | None = None) -> sqlite3.Connection:
         con.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
     version = con.execute("PRAGMA user_version").fetchone()[0]
     if version < SCHEMA_VERSION:
-        raise SystemExit(f"store {db} is at schema version {version}, need {SCHEMA_VERSION}: run any `cloudchamber` command to migrate it")
+        raise SystemExit(f"store {db} is at schema version {version}, need {SCHEMA_VERSION}: the migrations were removed, see app/pipeline/store/db.ts")
     return con
