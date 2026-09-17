@@ -22,6 +22,14 @@ import type { Db } from "./store/db.ts";
 import { writeBrief } from "./brief.ts";
 
 export type SeedChoice = { mode: "drawn" } | { mode: "picked"; themeId: string } | { mode: "typed"; text: string };
+/** The seed and the segment a request names in flat fields, as the CLI and the API take them; unnamed, the draw draws them. */
+export function seedAndSegment(f: { seed?: string; seedId?: string; source?: string; author?: string }): { seed?: SeedChoice; segment?: Segment } {
+  const seed: SeedChoice | undefined = f.seed ? { mode: "typed", text: f.seed } : f.seedId ? { mode: "picked", themeId: f.seedId } : undefined;
+  const sources = f.source ? f.source.split(",").map((s) => s.trim()).filter(Boolean) : [];
+  const segment = sources.length || f.author ? { source: sources.length ? sources : undefined, author: f.author || undefined } : undefined;
+  return { seed, segment };
+}
+
 export type DrawOpts = {
   mode: "auto" | "manual";
   setting?: string;

@@ -42,7 +42,7 @@ import { exportBank } from "../pipeline/bank.ts";
 import { extractAll } from "../pipeline/extract.ts";
 import { status } from "../pipeline/status.ts";
 import { KINDS, inherit, record, replay, type Kind } from "../pipeline/verdicts.ts";
-import { Pipeline, type DrawOpts, type SeedChoice } from "../pipeline/draw.ts";
+import { Pipeline, seedAndSegment, type DrawOpts } from "../pipeline/draw.ts";
 import type { Darkness, Sampling } from "../pipeline/config.ts";
 import { ClaudeCli } from "../pipeline/model.ts";
 import { existsSync, readFileSync } from "node:fs";
@@ -124,9 +124,7 @@ async function main() {
         options: { setting: { type: "string" }, genre: { type: "string" }, sampling: { type: "string" }, darkness: { type: "string" }, like: { type: "string" }, auto: { type: "boolean", default: false },
           source: { type: "string" }, author: { type: "string" }, seed: { type: "string" }, "seed-id": { type: "string" } },
       });
-      const seed: SeedChoice = values.seed ? { mode: "typed", text: values.seed } : values["seed-id"] ? { mode: "picked", themeId: values["seed-id"] } : { mode: "drawn" };
-      const sources = values.source ? values.source.split(",").map((s) => s.trim()).filter(Boolean) : [];
-      const segment = sources.length || values.author ? { source: sources.length ? sources : undefined, author: values.author } : undefined;
+      const { seed, segment } = seedAndSegment({ seed: values.seed, seedId: values["seed-id"], source: values.source, author: values.author });
       const base = values.like ? pipeline().like(values.like) : {};
       const draw = await pipeline().start({
         ...base,
@@ -136,7 +134,7 @@ async function main() {
         ...(values.sampling ? { sampling: values.sampling as Sampling } : {}),
         ...(values.darkness ? { darkness: values.darkness as Darkness } : {}),
         ...(segment ? { segment } : {}),
-        ...(values.seed || values["seed-id"] ? { seed } : {}),
+        ...(seed ? { seed } : {}),
       });
       console.log(JSON.stringify(draw, null, 2));
       if (draw.status === "awaiting_gate") {
