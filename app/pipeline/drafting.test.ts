@@ -5,8 +5,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SCHEMA_VERSION, openDb, type Db } from "./store/db.ts";
 import { FakeModel } from "./model.ts";
-import { Pipeline } from "./draw.ts";
-import { Drafting, parseConflicts } from "./drafting.ts";
+import { parseConflicts } from "./drafting.ts";
 import { NOT_IN_PROSE } from "./check.ts";
 import { settingsFixture } from "./settings.fixture.ts";
 import { LISTS, loadSetting } from "./settings.ts";
@@ -16,39 +15,8 @@ import { TEMPLATES } from "./prompts.ts";
 import { loadStages } from "./config.ts";
 import { loadDraftConfig } from "./draftconfig.ts";
 import { VERDICT_LOG } from "./paths.ts";
-import { A, B, LEDGER, SCENE_3_PATCH, SPAN_A, SPAN_B, SPAN_C, cleanSamples, derivationSamples, draftScript, finding, ledgerSamples, schedule, vignette } from "./drafting.fixture.ts";
+import { A, B, LEDGER, SCENE_3_PATCH, SPAN_A, SPAN_B, SPAN_C, cleanSamples, derivationSamples, draftScript, drawn, finding, fixture, ledgerSamples, schedule, vignette } from "./drafting.fixture.ts";
 import { briefParts, gateFindings } from "./briefparts.ts";
-
-const CELLS = ["informational", "mixed", "involved"].flatMap((v) => ["non-narrative", "mixed", "narrative"].map((m) => [v, m]));
-
-function fixture() {
-  const dir = mkdtempSync(join(tmpdir(), "cloudchamber-drafting-"));
-  const db = openDb(join(dir, "t.db"));
-  db.exec(`INSERT INTO sources (id, path, reader, genre) VALUES ('scp', 'x', 'scp', 'horror')`);
-  db.exec(`INSERT INTO stories (id, source_id, ord, title, author, genre, words, text) VALUES ('scp/a', 'scp', 0, 'A', 'Ann', 'horror', 9000, 'x')`);
-  const ins = db.query("INSERT INTO passages (id, story_id, text, words, stratum, position, seed, first_seen, voice, mode) VALUES (?, ?, ?, 200, 0, 0, 0, 'now', ?, ?)");
-  CELLS.forEach(([v, m], i) => ins.run(`h${i}`, "scp/a", `horror passage ${i} ${v} ${m}. Nothing here is strange, and the ledger holds.`, v, m));
-  db.exec(`INSERT INTO themes (id, text, attestation, stories, drafted_at) VALUES ('t1', 'A theme with a turn.', 1, '["scp/a"]', 'now')`);
-  return { db, dir };
-}
-
-async function drawn(script = draftScript(), setting?: { id: string; dir: string; claims?: string }) {
-  const { db, dir } = fixture();
-  const model = new FakeModel(script);
-  const p = new Pipeline(db, model, { rng: () => 0.001, briefsDir: join(dir, "briefs"), settingsDir: setting?.dir });
-  if (setting) {
-    const path = join(setting.dir, `${setting.id}.md`);
-    const text = readFileSync(path, "utf8");
-    writeFileSync(path, setting.claims ? text.replace("claims: setting", `claims: ${setting.claims}`) : text.replace("claims: setting\n", ""));
-  }
-  const draw = await p.start({ mode: "auto", genre: "horror", setting: setting?.id, seed: { mode: "typed", text: "a typed seed" } });
-  const d = new Drafting(p, { draftsDir: join(dir, "drafts") });
-  // the fixtures script three samples per checker and three per screen; pin that here so a
-  // change to the defaults in draft.toml does not rewrite every assertion in this file
-  const cfg = loadDraftConfig(undefined, { "checks.samples": 3, "screens.samples": 3, "screens.keep_if": 2 });
-  db.query("UPDATE draws SET draft_config = ? WHERE id = ?").run(JSON.stringify(cfg), draw.id);
-  return { db, dir, model, p, d, draw };
-}
 
 /** The default floor is 7; B, an arithmetic finding at two of three samples, sits at 6, so a test that needs two fixes at once lowers it. */
 const floor6 = () => ({ ...loadDraftConfig().config, repair: { ...loadDraftConfig().config.repair, stop_score: 6 } });
@@ -557,7 +525,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     const { d, draw, p } = await drawn(draftScript({ schedule: [schedule(), schedule()] }));
     await expect(d.draft(draw.id, { overrides: { "form.tense": "present" } })).rejects.toThrow(/schedule failed: shape/);
     expect(p.steps(draw.id).filter((s) => s.stage === "schedule")[0].error).toMatch(/tense is fixed to present, schedule said past/);
-    expect(p.draw(draw.id).status).toBe("failed");
+    expect(p.draw(draw.id)).toMatchObject({ status: "done", error: expect.stringMatching(/^schedule failed: shape/) });   // back to the brief it was drafting
     const { d: d2, draw: draw2, p: p2 } = await drawn(draftScript({ schedule: [schedule({ beats: 3, cap: 800 }), schedule({ beats: 3, cap: 800 })] }));
     await expect(d2.draft(draw2.id)).rejects.toThrow(/shape/);
     expect(p2.steps(draw2.id).filter((s) => s.stage === "schedule")[0].error).toMatch(/3 beats; config asks 5\.\.10/);
@@ -598,7 +566,9 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(v.scenes[2].text).toContain("Scene 3 opens. REWRITTEN");
     expect(v.scenes).toHaveLength(8);
     expect(after.find((c) => c.stage === "screen-ledger" && /<scene n="4">/.test(c.prompt))!.prompt).toContain("REWRITTEN");   // scene 4 is screened against the new scene 3
-    expect(p.draw(draw.id).flag_note).toBe(`rewrite 3 ${flag.id}`);
+    const rewrites = p.artifacts(draw.id).filter((a) => a.kind === "scene" && JSON.parse(a.meta).rewrite).map((a) => JSON.parse(a.meta));
+    expect(rewrites.map((m) => [m.beat, m.rewrite_finding])).toEqual([[3, flag.id]]);   // the gate-2 record is on the scene
+    expect(p.draw(draw.id).flag_note).toBe("");
     await expect(d.rewrite(draw.id, 9)).rejects.toThrow(/beat 9 is not in 1\.\.8/);
     await expect(d.rewrite(draw.id, 2, "f-nope")).rejects.toThrow(/no screen finding f-nope/);
     // rewriting the last beat re-screens it alone
@@ -813,7 +783,7 @@ describe("templates and store", () => {
     }
   });
 
-  test("a version-3 store migrates to 9: the new columns arrive, the domains column goes, and the row survives", () => {
+  test("a version-3 store migrates to 11: the new columns arrive, the domains column goes, a failure note becomes the error, and the rows survive", () => {
     const dir = mkdtempSync(join(tmpdir(), "cloudchamber-mig4-"));
     const path = join(dir, "v3.db"), log = join(dir, "verdicts.jsonl");
     writeFileSync(log, "");
@@ -823,12 +793,16 @@ describe("templates and store", () => {
       CREATE TABLE steps (id TEXT PRIMARY KEY, draw_id TEXT REFERENCES draws(id), story_id TEXT, parent_id TEXT REFERENCES steps(id), stage TEXT NOT NULL, model TEXT NOT NULL, system_prompt TEXT NOT NULL, prompt TEXT NOT NULL, raw_response TEXT, parsed TEXT, status TEXT NOT NULL, fail_reason TEXT, attempt INTEGER NOT NULL DEFAULT 1, started_at TEXT NOT NULL, ended_at TEXT, error TEXT);
       CREATE TABLE artifacts (id TEXT PRIMARY KEY, step_id TEXT NOT NULL REFERENCES steps(id), kind TEXT NOT NULL, content TEXT NOT NULL, meta TEXT NOT NULL DEFAULT '{}');
       INSERT INTO draws (id, genre, mode, seed_mode, seed_text, example_ids, status, created_at) VALUES ('r1', 'horror', 'manual', 'drawn', 'A seed.', '[]', 'done', 'now');
+      INSERT INTO draws (id, genre, mode, seed_mode, seed_text, example_ids, status, flag_note, created_at) VALUES ('r2', 'horror', 'manual', 'drawn', 'A seed.', '[]', 'failed', 'premises failed: error', 'now');
+      INSERT INTO draws (id, genre, mode, seed_mode, seed_text, example_ids, status, flagged, flag_note, created_at) VALUES ('r3', 'horror', 'manual', 'drawn', 'A seed.', '[]', 'failed', 1, 'looks wrong', 'now');
       INSERT INTO steps (id, draw_id, stage, model, system_prompt, prompt, status, started_at) VALUES ('s1', 'r1', 'outline', 'm', '', '', 'done', 'now');
       PRAGMA user_version = 3;`);
     old.close();
     const db: Db = openDb(path, log);
     expect((db.query("PRAGMA user_version").get() as any).user_version).toBe(SCHEMA_VERSION);
-    expect(SCHEMA_VERSION).toBe(10);
+    expect(SCHEMA_VERSION).toBe(11);
+    expect(db.query("SELECT id, flag_note, error FROM draws WHERE id IN ('r2', 'r3') ORDER BY id").all())
+      .toEqual([{ id: "r2", flag_note: "", error: "premises failed: error" }, { id: "r3", flag_note: "looks wrong", error: null }]);
     expect(db.query("SELECT repaired_from, draft_config, forked_from, sampling, archived_at, name, darkness FROM draws WHERE id = 'r1'").get())
       .toEqual({ repaired_from: null, draft_config: null, forked_from: null, sampling: "tail", archived_at: null, name: "seed", darkness: null });
     expect(db.query("SELECT tools FROM steps WHERE id = 's1'").get()).toEqual({ tools: "" });

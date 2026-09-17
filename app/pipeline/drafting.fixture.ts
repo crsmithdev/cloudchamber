@@ -4,7 +4,14 @@
  * recur in all three, one in two, one in one; the derivation samples repeat
  * the top finding so the cross-checker merge has something to merge.
  */
-import { tag } from "./model.ts";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { FakeModel, tag } from "./model.ts";
+import { openDb } from "./store/db.ts";
+import { Pipeline } from "./draw.ts";
+import { Drafting } from "./drafting.ts";
+import { loadDraftConfig } from "./draftconfig.ts";
 
 export const SPAN_A = "The director fires the reliquary";
 export const SPAN_B = "the twelfth relic, the Verona clavicle";
@@ -115,4 +122,37 @@ export function draftScript(over: Record<string, any> = {}) {
     "screen-structure": screenStructure,
     ...over,
   };
+}
+
+// --- a store and a finished draw -------------------------------------------------
+
+const CELLS = ["informational", "mixed", "involved"].flatMap((v) => ["non-narrative", "mixed", "narrative"].map((m) => [v, m]));
+
+export function fixture() {
+  const dir = mkdtempSync(join(tmpdir(), "cloudchamber-drafting-"));
+  const db = openDb(join(dir, "t.db"));
+  db.exec(`INSERT INTO sources (id, path, reader, genre) VALUES ('scp', 'x', 'scp', 'horror')`);
+  db.exec(`INSERT INTO stories (id, source_id, ord, title, author, genre, words, text) VALUES ('scp/a', 'scp', 0, 'A', 'Ann', 'horror', 9000, 'x')`);
+  const ins = db.query("INSERT INTO passages (id, story_id, text, words, stratum, position, seed, first_seen, voice, mode) VALUES (?, ?, ?, 200, 0, 0, 0, 'now', ?, ?)");
+  CELLS.forEach(([v, m], i) => ins.run(`h${i}`, "scp/a", `horror passage ${i} ${v} ${m}. Nothing here is strange, and the ledger holds.`, v, m));
+  db.exec(`INSERT INTO themes (id, text, attestation, stories, drafted_at) VALUES ('t1', 'A theme with a turn.', 1, '["scp/a"]', 'now')`);
+  return { db, dir };
+}
+
+export async function drawn(script = draftScript(), setting?: { id: string; dir: string; claims?: string }) {
+  const { db, dir } = fixture();
+  const model = new FakeModel(script);
+  const p = new Pipeline(db, model, { rng: () => 0.001, briefsDir: join(dir, "briefs"), settingsDir: setting?.dir });
+  if (setting) {
+    const path = join(setting.dir, `${setting.id}.md`);
+    const text = readFileSync(path, "utf8");
+    writeFileSync(path, setting.claims ? text.replace("claims: setting", `claims: ${setting.claims}`) : text.replace("claims: setting\n", ""));
+  }
+  const draw = await p.start({ mode: "auto", genre: "horror", setting: setting?.id, seed: { mode: "typed", text: "a typed seed" } });
+  const d = new Drafting(p, { draftsDir: join(dir, "drafts") });
+  // the fixtures script three samples per checker and three per screen; pin that here so a
+  // change to the defaults in draft.toml does not rewrite every assertion in this file
+  const cfg = loadDraftConfig(undefined, { "checks.samples": 3, "screens.samples": 3, "screens.keep_if": 2 });
+  db.query("UPDATE draws SET draft_config = ? WHERE id = ?").run(JSON.stringify(cfg), draw.id);
+  return { db, dir, model, p, d, draw };
 }

@@ -9,13 +9,14 @@ import { newDrawId, Pipeline, seedAndSegment, type DrawOpts } from "../pipeline/
 import { KINDS, latest, latestAll, passedStories, record, type Kind, type Method } from "../pipeline/verdicts.ts";
 import { renderStory } from "../pipeline/drafts.ts";
 import { status } from "../pipeline/status.ts";
-import { originOf, stageOf } from "../pipeline/stage.ts";
+import { originOf } from "../pipeline/stage.ts";
+import { lifecycleView, type DrawFacts } from "../pipeline/lifecycle.ts";
 import { BANDS, DARKNESS, GENRES, SAMPLING } from "../pipeline/config.ts";
 import { exportBank, sourceLabel } from "../pipeline/bank.ts";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, resolve, sep } from "node:path";
 import { BRIEFS } from "../pipeline/paths.ts";
-import { CHECKABLE, Drafting } from "../pipeline/drafting.ts";
+import { Drafting } from "../pipeline/drafting.ts";
 import { loadSetting } from "../pipeline/settings.ts";
 import { loadDraftConfig, profileNames, type Overrides } from "../pipeline/draftconfig.ts";
 
@@ -184,12 +185,16 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
 
   app.get<{ Querystring: { archived?: string } }>("/api/draws", async (req) => {
     const verdicts = findingVerdicts();
-    return pipeline.draws(req.query.archived === "true").map((r) => {
-      const stage = stageOf(r);
+    const all = pipeline.draws(true);
+    const refs = new Map<string, string[]>();
+    for (const r of all) for (const to of [r.superseded_by, r.repaired_from, r.forked_from]) if (to) refs.set(to, [...(refs.get(to) ?? []), r.id]);
+    return all.filter((r) => req.query.archived === "true" || !r.archived_at).map((r) => {
+      const view = lifecycleView({ ...r, referenced_by: refs.get(r.id) ?? [] } as DrawFacts);
+      const stage = view.stage;
       // the candidate is what tells two briefs of one batch apart, so the list needs it too
       const check = checkSummary(r, stage, verdicts);
       // null is "no summary"; pending is "still computing", which the list polls for and a failed round never becomes
-      return { ...r, stage, origin: stage === "ideate" ? null : originOf(pipeline, r.id), check: check ?? null, check_pending: check === undefined };
+      return { ...r, ...view, origin: stage === "ideate" ? null : originOf(pipeline, r.id), check: check ?? null, check_pending: check === undefined };
     });
   });
 
@@ -222,7 +227,7 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
   app.get<{ Params: { id: string } }>("/api/draws/:id", async (req, reply) => {
     try {
       const row = pipeline.draw(req.params.id);
-      const draw = { ...row, stage: stageOf(row) };
+      const draw = { ...row, ...lifecycleView({ ...row, referenced_by: pipeline.referencedBy(row.id) }) };
       // the pane polls this every few seconds; a step's prompt and response are read from /api/steps/:id when one is opened
       const steps = pipeline.steps(draw.id).map(({ prompt, raw_response, parsed, ...s }) =>
         ({ ...s, prompt_chars: prompt.length, raw_chars: raw_response?.length ?? 0, parsed_chars: parsed?.length ?? 0 }));
@@ -269,8 +274,6 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
       }
       if (action === "choose") {
         if (!step_id) return reply.code(400).send({ error: "step_id required" });
-        const draw = pipeline.draw(id);
-        if (draw.status !== "awaiting_gate") return reply.code(400).send({ error: `draw ${id} is ${draw.status}, not awaiting_gate` });
         if (!pipeline.candidates(id).some((c) => c.step_id === step_id)) return reply.code(400).send({ error: `no execute step ${step_id} on draw ${id}` });
         const failed = await launch(pipeline.choose(id, step_id));
         if (failed) return reply.code(400).send({ error: failed.message });
@@ -300,8 +303,7 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
   app.post<{ Params: { id: string }; Body: { auto?: boolean; profile?: string; overrides?: Overrides } }>("/api/draws/:id/draft", async (req, reply) => {
     const id = req.params.id;
     try {
-      const d = pipeline.draw(id);
-      if (!CHECKABLE.has(d.status)) return reply.code(400).send({ error: `draw ${id} is ${d.status}, not done | awaiting_check_gate` });
+      pipeline.draw(id);
       const failed = await launch(drafting.draft(id, { auto: !!req.body?.auto, profile: req.body?.profile, overrides: req.body?.overrides }));
       if (failed) return reply.code(400).send({ error: failed.message });
       return reply.code(202).send({ id, status: "drafting" });

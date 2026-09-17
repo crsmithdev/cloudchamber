@@ -8,7 +8,7 @@ import { drawNames } from "../names.ts";
 export type Db = Database;
 
 /** Bump with every change to an existing table, and mirror it in extract/store.py. */
-export const SCHEMA_VERSION = 10;
+export const SCHEMA_VERSION = 11;
 
 /** `log` is the verdict log a migration replays from; only tests pass it. */
 export function openDb(path: string = DEFAULT_DB, log?: string): Db {
@@ -89,6 +89,8 @@ function renameBeforeSchema(db: Db) {
  *   8 -> 9  draws loses domains: a setting loads whole lists, so a draw
  *           selects nothing before the premise exists (four lists).
  *   9 -> 10 draws gains darkness; every draw made before it asked for none.
+ *  10 -> 11 draws gains error. flag_note held a failure's reason too, on a draw
+ *           nobody flagged; that reason moves to error.
  */
 function migrate(db: Db, schema: string, log?: string) {
   if (userVersion(db) < 1) {
@@ -144,6 +146,11 @@ function migrate(db: Db, schema: string, log?: string) {
   if (userVersion(db) < 10) {
     if (!columns(db, "draws").includes("darkness")) db.exec("ALTER TABLE draws ADD COLUMN darkness TEXT");
     db.exec("PRAGMA user_version = 10");
+  }
+  if (userVersion(db) < 11) {
+    if (!columns(db, "draws").includes("error")) db.exec("ALTER TABLE draws ADD COLUMN error TEXT");
+    db.exec("UPDATE draws SET error = flag_note, flag_note = '' WHERE status = 'failed' AND flagged = 0 AND flag_note <> ''");
+    db.exec("PRAGMA user_version = 11");
   }
 }
 

@@ -20,6 +20,7 @@ import { pipelineVersion } from "./version.ts";
 import { nextName } from "./names.ts";
 import type { Db } from "./store/db.ts";
 import { writeBrief } from "./brief.ts";
+import { must, settle, under } from "./lifecycle.ts";
 
 export type SeedChoice = { mode: "drawn" } | { mode: "picked"; themeId: string } | { mode: "typed"; text: string };
 /** The seed and the segment a request names in flat fields, as the CLI and the API take them; unnamed, the draw draws them. */
@@ -44,7 +45,7 @@ export type DrawOpts = {
 export type DrawRow = {
   id: string; name: string; setting: string | null; genre: string; mode: "auto" | "manual"; segment: string | null;
   seed_mode: string; seed_text: string; seed_theme_id: string | null; example_ids: string; sampling: string; darkness: string | null; status: string;
-  gate_method: string | null; chosen_step: string | null; flagged: number; flag_note: string;
+  gate_method: string | null; chosen_step: string | null; flagged: number; flag_note: string; error: string | null;
   superseded_by: string | null; repaired_from: string | null; forked_from: string | null; draft_config: string | null; archived_at: string | null; created_at: string; ended_at: string | null;
 };
 export type StepRow = {
@@ -261,12 +262,8 @@ export class Pipeline {
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?)`)
       .run(drawId, this.nameFor(seed.text), setting?.id ?? null, genre, opts.mode, opts.segment ? JSON.stringify(opts.segment) : null,
         seed.mode, seed.text, seed.themeId, JSON.stringify(examples.map((e) => e.id)), sampling, opts.darkness ?? null, now());
-    try {
-      await this.premisesAndExecute(drawId, examples.map((e) => e.text), seed.text, genre, sampling, opts.darkness, setting);
-    } catch (e) {
-      this.fail(drawId, e);
-      throw e;
-    }
+    await under(this.db, drawId, "running", "failed", () => this.premisesAndExecute(drawId, examples.map((e) => e.text), seed.text, genre, sampling, opts.darkness, setting));
+    settle(this.db, drawId, "awaiting_gate");
     const draw = this.draw(drawId);
     if (draw.mode === "auto") return this.autoGate(drawId);
     return draw;
@@ -287,9 +284,6 @@ export class Pipeline {
         if (p.probability < band.floor || p.probability >= band.ceiling) throw new Error(`probability ${p.probability} is outside the ${sampling} band ${band.floor}–${band.ceiling}`);
       }
       return ps as { text: string; probability: number }[];
-    }).catch((e) => {
-      if (e instanceof StepFailure && e.reason === "shape") this.db.query("UPDATE draws SET flagged = 1, flag_note = ? WHERE id = ?").run(`premise call failed shape: ${e.message}`, drawId);
-      throw e;
     });
     // Number the premises from the tail: #1 is the lowest stated probability. Ties keep the model's order.
     premises.sort((a, b) => a.probability - b.probability);
@@ -301,7 +295,6 @@ export class Pipeline {
         warnings: words(r.value) < 300 || words(r.value) > 500 ? ["length"] : [],
       }));
     }));
-    this.db.query("UPDATE draws SET status = 'awaiting_gate' WHERE id = ?").run(drawId);
   }
 
   /** The five executed candidates, sorted by stated probability ascending. */
@@ -326,17 +319,14 @@ export class Pipeline {
   // --- gate actions ----------------------------------------------------------
 
   async choose(drawId: string, executeStepId: string): Promise<DrawRow> {
-    const draw = this.draw(drawId);
-    if (draw.status !== "awaiting_gate") throw new Error(`draw ${drawId} is ${draw.status}, not awaiting_gate`);
+    must(this.draw(drawId), "choose");
     const c = this.candidates(drawId).find((c) => c.step_id === executeStepId);
     if (!c) throw new Error(`draw ${drawId}: no execute step ${executeStepId}`);
-    this.db.query("UPDATE draws SET status = 'running', chosen_step = ?, gate_method = coalesce(gate_method, 'manual') WHERE id = ?").run(executeStepId, drawId);
-    try {
-      await this.develop(drawId, c);
-    } catch (e) {
-      this.fail(drawId, e);
-      throw e;
-    }
+    this.db.query("UPDATE draws SET chosen_step = ?, gate_method = coalesce(gate_method, 'manual') WHERE id = ?").run(executeStepId, drawId);
+    // a failed development leaves the draw at the gate, where a candidate can be chosen again
+    await under(this.db, drawId, "running", "awaiting_gate", () => this.develop(drawId, c))
+      .catch((e) => { this.db.query("UPDATE draws SET chosen_step = NULL WHERE id = ?").run(drawId); throw e; });
+    settle(this.db, drawId, "done", { ended: true });
     return this.draw(drawId);
   }
 
@@ -361,10 +351,7 @@ export class Pipeline {
    * instead. A draw another draw points at is refused, so no link is orphaned.
    */
   delete(drawId: string): void {
-    const draw = this.draw(drawId);
-    if (draw.chosen_step) throw new Error(`draw ${drawId} developed a candidate; archive it instead of deleting it`);
-    const linked = this.db.query("SELECT id FROM draws WHERE superseded_by = ? OR repaired_from = ? OR forked_from = ?").all(drawId, drawId, drawId) as { id: string }[];
-    if (linked.length) throw new Error(`draw ${drawId} is referenced by ${linked.map((r) => r.id).join(", ")}`);
+    must({ ...this.draw(drawId), referenced_by: this.referencedBy(drawId) }, "delete");
     this.db.query("DELETE FROM artifacts WHERE step_id IN (SELECT id FROM steps WHERE draw_id = ?)").run(drawId);
     this.db.query("DELETE FROM steps WHERE draw_id = ?").run(drawId);
     this.db.query("DELETE FROM draws WHERE id = ?").run(drawId);
@@ -378,8 +365,7 @@ export class Pipeline {
    */
   async fork(drawId: string, executeStepId: string, newId: string = newDrawId()): Promise<DrawRow> {
     const src = this.draw(drawId);
-    if (src.status === "awaiting_gate") throw new Error(`draw ${drawId} is awaiting the gate; choose a candidate instead of forking`);
-    if (!src.chosen_step) throw new Error(`draw ${drawId} chose no candidate; there is nothing to fork from`);
+    must(src, "fork");
     if (executeStepId === src.chosen_step) throw new Error(`draw ${drawId} was itself developed from that candidate`);
     const c = this.candidates(drawId).find((x) => x.step_id === executeStepId);
     if (!c) throw new Error(`draw ${drawId}: no execute step ${executeStepId}`);
@@ -391,12 +377,8 @@ export class Pipeline {
     const step = this.recordStep(newId, null, "execute", "copied", c.premise);
     this.artifact(step, "vignette", c.vignette, { index: c.index, probability: c.probability, premise: c.premise, warnings: c.warnings, forked_from: executeStepId });
     this.db.query("UPDATE draws SET chosen_step = ? WHERE id = ?").run(step.id, newId);
-    try {
-      await this.develop(newId, { step_id: step.id, premise: c.premise, vignette: c.vignette });
-    } catch (e) {
-      this.fail(newId, e);
-      throw e;
-    }
+    await under(this.db, newId, "running", "failed", () => this.develop(newId, { step_id: step.id, premise: c.premise, vignette: c.vignette }));
+    settle(this.db, newId, "done", { ended: true });
     return this.draw(newId);
   }
 
@@ -442,13 +424,7 @@ export class Pipeline {
       this.invoke(drawId, outlineStep.id, "ending", after("ending", fill("ending", { darkness: darknessLine((draw.darkness ?? undefined) as Darkness | undefined) })), (text) => need(text, "ending")).then((r) => this.artifact(r.step, "ending", r.value, { warnings: words(r.value) > 650 ? ["length"] : [] })),
     ]);
     const dir = writeBrief(this.db, drawId, this.briefsDir);
-    this.db.query("UPDATE draws SET status = 'done', ended_at = ? WHERE id = ?").run(now(), drawId);
     this.artifact(outlineStep, "brief", dir, {});
-  }
-
-  fail(drawId: string, e: unknown) {
-    this.db.query("UPDATE draws SET status = 'failed', flag_note = coalesce(nullif(flag_note, ''), ?), ended_at = ? WHERE id = ?")
-      .run(String((e as any)?.message ?? e).slice(0, 500), now(), drawId);
   }
 
   // --- reads -----------------------------------------------------------------
@@ -459,6 +435,10 @@ export class Pipeline {
     return r;
   }
   // created_at is second-resolution, so two draws started in one second need the insertion order to break the tie
+  /** The draws that point at this one: its repair, its fork, what superseded it. */
+  referencedBy(drawId: string): string[] {
+    return (this.db.query("SELECT id FROM draws WHERE superseded_by = ? OR repaired_from = ? OR forked_from = ?").all(drawId, drawId, drawId) as { id: string }[]).map((r) => r.id);
+  }
   draws(archived = false): DrawRow[] {
     return this.db.query(`SELECT * FROM draws ${archived ? "" : "WHERE archived_at IS NULL "}ORDER BY created_at DESC, rowid DESC`).all() as DrawRow[];
   }

@@ -14,6 +14,7 @@ import { compose, fill } from "./prompts.ts";
 import { need, words } from "./model.ts";
 import { now } from "./paths.ts";
 import { writeBrief } from "./brief.ts";
+import { settle, under } from "./lifecycle.ts";
 import { briefParts, pinnedLedger, settledConstraints, type Settled } from "./briefparts.ts";
 import { quoted } from "./recur.ts";
 import type { FindingView } from "./briefparts.ts";
@@ -95,8 +96,9 @@ export const settledBlock = (settled: Settled[]) =>
   settled.length ? fill("settled", { settled: settled.map((sc) => `- ${sc.replacement}`).join("\n") }) : "";
 
 /**
- * Create the repaired draw and write its brief. Returns the new draw. The
- * source is marked repaired and superseded; the caller runs the check.
+ * Create the repaired draw and write its brief. Returns the new draw, a brief
+ * nobody has checked yet. The source is marked repaired and superseded; the
+ * caller runs the check. A repair that fails leaves the source at its gate.
  */
 export async function repair(p: Pipeline, drawId: string, accepted: Accepted[]): Promise<DrawRow> {
   const parts = briefParts(p, drawId);
@@ -106,15 +108,10 @@ export async function repair(p: Pipeline, drawId: string, accepted: Accepted[]):
   p.db.query(`INSERT INTO draws (id, name, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, sampling, darkness, status, gate_method, repaired_from, created_at)
               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?, ?, ?)`)
     .run(newId, name, src.setting, src.genre, src.mode, src.segment, src.seed_mode, src.seed_text, src.seed_theme_id, src.example_ids, src.sampling, src.darkness, src.gate_method, drawId, now());
-  p.db.query("UPDATE draws SET status = 'repairing' WHERE id = ?").run(drawId);
-  try {
-    await develop(p, newId, parts, accepted);
-  } catch (e) {
-    p.fail(newId, e);
-    p.db.query("UPDATE draws SET status = 'awaiting_check_gate' WHERE id = ?").run(drawId);
-    throw e;
-  }
-  p.db.query("UPDATE draws SET status = 'repaired', superseded_by = ?, ended_at = ? WHERE id = ?").run(newId, now(), drawId);
+  await under(p.db, drawId, "repairing", "awaiting_check_gate", () => under(p.db, newId, "running", "failed", () => develop(p, newId, parts, accepted)));
+  settle(p.db, newId, "done", { ended: true });
+  settle(p.db, drawId, "repaired", { ended: true });
+  p.db.query("UPDATE draws SET superseded_by = ? WHERE id = ?").run(newId, drawId);
   return p.draw(newId);
 }
 

@@ -104,10 +104,11 @@ export function scenePrompt(parts: BriefParts, ledger: string, s: Schedule, b: B
   return blocks.filter(Boolean).join("\n\n");
 }
 
-export async function writeScene(p: Pipeline, drawId: string, parent: string, parts: BriefParts, ledger: string, s: Schedule, b: Beat, soFar: string[], constraints?: string): Promise<Scene> {
+/** `rewrite` marks a gate-2 rewrite of the beat, with the flag it answers when there is one. */
+export async function writeScene(p: Pipeline, drawId: string, parent: string, parts: BriefParts, ledger: string, s: Schedule, b: Beat, soFar: string[], constraints?: string, rewrite?: { finding?: string }): Promise<Scene> {
   const { step, value } = await p.invoke(drawId, parent, "scene", scenePrompt(parts, ledger, s, b, soFar, constraints), (t) => need(t, "scene"));
   const n = words(value);
-  const artifact_id = p.artifact(step, "scene", value, { beat: b.n, words: n, cap: b.words, warnings: n > b.words * (1 + RUN.sceneCapSlack) ? ["over_cap"] : [], ...(constraints ? { rewrite: true } : {}) });
+  const artifact_id = p.artifact(step, "scene", value, { beat: b.n, words: n, cap: b.words, warnings: n > b.words * (1 + RUN.sceneCapSlack) ? ["over_cap"] : [], ...(rewrite ? { rewrite: true, ...(rewrite.finding ? { rewrite_finding: rewrite.finding } : {}) } : {}) });
   return { beat: b.n, text: value, artifact_id, step_id: step.id };
 }
 

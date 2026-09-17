@@ -13,7 +13,7 @@
  */
 import type { DrawRow, Pipeline } from "./draw.ts";
 import { record } from "./verdicts.ts";
-import { now } from "./paths.ts";
+import { must, settle, under, type Action, type Status } from "./lifecycle.ts";
 import { loadDraftConfig, type DraftConfig, type Overrides, type Resolved } from "./draftconfig.ts";
 import { extractLedger, runCheck, type CheckResult } from "./check.ts";
 import { applyPatches, constraintsBlock, repair, type Accepted } from "./repair.ts";
@@ -23,7 +23,6 @@ import { draftView, exportDraft, renderStory, type DraftView } from "./drafts.ts
 import { tag, words } from "./model.ts";
 import { fill } from "./prompts.ts";
 
-export const CHECKABLE = new Set(["done", "awaiting_check_gate"]);
 export type AutoRound = { round: number; id: string; open: number; total: number; accepted: number; calls: number };
 export type AutoResult = { id: string; rounds: AutoRound[]; best: AutoRound; stopped: "floor" | "cap" | "patience" | "budget"; floor: number; calls: number; left_open: number };
 export type DraftOpts = { profile?: string; overrides?: Overrides; auto?: boolean };
@@ -54,10 +53,10 @@ export function parseConflicts(block: string): { a: number; b: number; why: stri
 export class Drafting {
   constructor(public p: Pipeline, public opts: { draftsDir?: string; lexiconPath?: string; premisesPath?: string } = {}) {}
 
-  private status(drawId: string, status: string) { this.p.db.query("UPDATE draws SET status = ? WHERE id = ?").run(status, drawId); }
-  private must(drawId: string, ...statuses: string[]): DrawRow {
+  /** The draw, when `action` is allowed on it now; otherwise the reason is thrown. */
+  private must(drawId: string, action: Action): DrawRow {
     const d = this.p.draw(drawId);
-    if (!statuses.includes(d.status)) throw new Error(`draw ${drawId} is ${d.status}, not ${statuses.join(" | ")}`);
+    must(d, action);
     return d;
   }
   private resolved(draw: DrawRow, opts: DraftOpts = {}): Resolved {
@@ -68,17 +67,11 @@ export class Drafting {
   // --- stage 1 ---------------------------------------------------------------
 
   async check(drawId: string, opts: { checks?: string[]; samples?: number; profile?: string; overrides?: Overrides } = {}): Promise<CheckResult> {
-    const draw = this.must(drawId, ...CHECKABLE);
+    const draw = this.must(drawId, "check");
     const cfg = this.resolved(draw, opts).config;
-    this.status(drawId, "checking");
-    try {
-      const r = await runCheck(this.p, drawId, cfg, { checks: opts.checks, samples: opts.samples, premisesPath: this.opts.premisesPath });
-      this.status(drawId, "awaiting_check_gate");
-      return r;
-    } catch (e) {
-      this.p.fail(drawId, e);
-      throw e;
-    }
+    const r = await under(this.p.db, drawId, "checking", draw.status as Status, () => runCheck(this.p, drawId, cfg, { checks: opts.checks, samples: opts.samples, premisesPath: this.opts.premisesPath }));
+    settle(this.p.db, drawId, "awaiting_check_gate");
+    return r;
   }
 
   findings(drawId: string, opts: { all?: boolean } = {}): { pass: string | null; findings: FindingView[]; claims: unknown[]; profiles: unknown[]; examined: { stage: string; sample: number; examined: string }[]; judge: string | null } {
@@ -106,7 +99,7 @@ export class Drafting {
 
   /** Accept findings by id and run the repair, then the re-check. Returns the repaired draw. */
   async accept(drawId: string, ids: string[], opts: { method?: "gate" | "draw"; note?: string } = {}): Promise<DrawRow> {
-    const draw = this.must(drawId, "awaiting_check_gate");
+    const draw = this.must(drawId, "accept");
     const open = gateFindings(this.p, drawId, true);
     const chosen = ids.map((id) => { const f = open.find((x) => x.id === id); if (!f) throw new Error(`draw ${drawId}: no reported finding ${id}`); return this.promote(drawId, f); });
     for (const f of chosen) record(this.p.db, { kind: "finding", target_id: f.id, verdict: "keep", method: opts.method ?? "gate", note: opts.note ?? "" });
@@ -114,13 +107,14 @@ export class Drafting {
     const cfg = this.resolved(draw).config;
     const next = await repair(this.p, drawId, accepted);
     if (draw.draft_config) this.p.db.query("UPDATE draws SET draft_config = ? WHERE id = ?").run(draw.draft_config, next.id);
-    await runCheck(this.p, next.id, cfg, { premisesPath: this.opts.premisesPath }).catch((e) => { this.p.fail(next.id, e); throw e; });
-    this.status(next.id, "awaiting_check_gate");
+    // the new round is a brief nobody has checked: a check that fails leaves it there
+    await under(this.p.db, next.id, "checking", "done", () => runCheck(this.p, next.id, cfg, { premisesPath: this.opts.premisesPath }));
+    settle(this.p.db, next.id, "awaiting_check_gate");
     return this.p.draw(next.id);
   }
 
   dismiss(drawId: string, id: string, note = "", method: "gate" | "draw" = "gate"): FindingView {
-    this.must(drawId, "awaiting_check_gate");
+    this.must(drawId, "dismiss");
     const f = gateFindings(this.p, drawId, true).find((x) => x.id === id);
     if (!f) throw new Error(`draw ${drawId}: no reported finding ${id}`);
     this.promote(drawId, f);
@@ -142,12 +136,12 @@ export class Drafting {
     return { ...f, artifact_id: this.p.artifact(step, "finding", f.statement, { ...meta, sub_threshold: true }) };
   }
 
-  hold(drawId: string): DrawRow { return this.must(drawId, "awaiting_check_gate"); }
+  hold(drawId: string): DrawRow { return this.must(drawId, "hold"); }
 
   // --- stages 3 to 5 ---------------------------------------------------------
 
   async draft(drawId: string, opts: DraftOpts = {}): Promise<DrawRow> {
-    let draw = this.must(drawId, "done", "awaiting_check_gate");
+    let draw = this.must(drawId, "draft");
     const resolved = this.resolved(draw, opts);
     if (resolved.config.structure.template !== "auto") throw new Error(`structure mode not built: ${resolved.config.structure.template}`);
     this.p.db.query("UPDATE draws SET draft_config = ? WHERE id = ?").run(JSON.stringify(resolved), drawId);
@@ -156,18 +150,15 @@ export class Drafting {
       if (next !== drawId) { drawId = next; draw = this.p.draw(drawId); }
     }
     if (checkFindings(this.p, drawId).some((f) => f.decision === "accepted")) throw new Error("accepted findings pending repair");
-    this.status(drawId, "drafting");
-    try {
-      const parts = briefParts(this.p, drawId);
-      const ledger = await this.ensureLedger(drawId);
-      const { step, schedule } = await runSchedule(this.p, drawId, parts, briefBlock(parts), resolved.config);
-      const scenes = await runScenes(this.p, drawId, step, parts, ledger, schedule, resolved.config);
-      await runScreens(this.p, drawId, ledger, schedule, scenes, resolved.config, undefined, { lexiconPath: this.opts.lexiconPath });
-    } catch (e) {
-      this.p.fail(drawId, e);
-      throw e;
-    }
-    this.status(drawId, "awaiting_draft_gate");
+    const id = drawId;
+    await under(this.p.db, id, "drafting", this.p.draw(id).status as Status, async () => {
+      const parts = briefParts(this.p, id);
+      const ledger = await this.ensureLedger(id);
+      const { step, schedule } = await runSchedule(this.p, id, parts, briefBlock(parts), resolved.config);
+      const scenes = await runScenes(this.p, id, step, parts, ledger, schedule, resolved.config);
+      await runScreens(this.p, id, ledger, schedule, scenes, resolved.config, undefined, { lexiconPath: this.opts.lexiconPath });
+    });
+    settle(this.p.db, drawId, "awaiting_draft_gate");
     return this.p.draw(drawId);
   }
 
@@ -210,7 +201,7 @@ export class Drafting {
    * to rule on at the gate.
    */
   async autoRounds(drawId: string, opts: { cfg?: DraftConfig; note?: string } = {}): Promise<AutoResult> {
-    const draw = this.must(drawId, ...CHECKABLE);
+    const draw = this.must(drawId, "auto");
     const cfg = opts.cfg ?? this.resolved(draw).config;
     let id = drawId;
     if (!latestCheckPass(this.p, id)) await this.recheck(id, cfg);
@@ -263,9 +254,8 @@ export class Drafting {
 
   /** A fresh check pass on a brief that already has one. */
   private async recheck(drawId: string, cfg: DraftConfig): Promise<void> {
-    this.status(drawId, "checking");
-    await runCheck(this.p, drawId, cfg, { premisesPath: this.opts.premisesPath }).catch((e) => { this.p.fail(drawId, e); throw e; });
-    this.status(drawId, "awaiting_check_gate");
+    await under(this.p.db, drawId, "checking", this.p.draw(drawId).status as Status, () => runCheck(this.p, drawId, cfg, { premisesPath: this.opts.premisesPath }));
+    settle(this.p.db, drawId, "awaiting_check_gate");
   }
 
   /**
@@ -281,12 +271,12 @@ export class Drafting {
     const fixes = accept.map((f, i) => `${i + 1}. ${f.replacement}${f.patch?.trim() ? `\n   patch: "${f.patch.trim()}"` : ""}`).join("\n");
     const prompt = fill("reconcile", { fixes });
     // the call is the start of the repair: while it runs the gate is closed, so no second accept, auto or draft starts
-    this.status(drawId, "repairing");
-    const { value: pairs } = await this.p.invoke<{ a: number; b: number; why: string }[]>(drawId, parent, "reconcile", prompt, (t) => {
+    const { value: pairs } = await under(this.p.db, drawId, "repairing", "awaiting_check_gate", () => this.p.invoke<{ a: number; b: number; why: string }[]>(drawId, parent, "reconcile", prompt, (t) => {
       const block = tag(t, "conflicts");
       if (block === null) throw new Error("no <conflicts> tag");
       return parseConflicts(block).filter((x) => x.a >= 1 && x.a <= accept.length && x.b >= 1 && x.b <= accept.length && x.a !== x.b);
-    }).finally(() => this.status(drawId, "awaiting_check_gate"));
+    }));
+    settle(this.p.db, drawId, "awaiting_check_gate");
     const dropped = new Map<string, FindingView>();
     for (const { a, b } of pairs) {
       const [hi, lo] = a < b ? [a, b] : [b, a];
@@ -324,7 +314,7 @@ export class Drafting {
    * untouched: those are what `rewrite k` is still for.
    */
   patch(drawId: string, ids?: string[], note = ""): { applied: FindingView[]; skipped: { finding: FindingView; why: string }[] } {
-    this.must(drawId, "awaiting_draft_gate");
+    this.must(drawId, "patch");
     const flags = draftView(this.p, drawId).screenFindings.filter((f) => f.decision === "open");
     const wanted = ids?.length ? ids.map((id) => {
       const f = flags.find((x) => x.id === id);
@@ -359,7 +349,7 @@ export class Drafting {
   }
 
   async rewrite(drawId: string, k: number, findingId?: string): Promise<DrawRow> {
-    const draw = this.must(drawId, "awaiting_draft_gate");
+    const draw = this.must(drawId, "rewrite");
     const cfg = this.resolved(draw).config;
     const v = draftView(this.p, drawId);
     if (!v.schedule) throw new Error(`draw ${drawId}: no schedule`);
@@ -369,33 +359,30 @@ export class Drafting {
     const chosen = findingId ? flags.filter((f) => f.id === findingId) : flags;
     if (findingId && !chosen.length) throw new Error(`beat ${k}: no screen finding ${findingId}`);
     const constraints = chosen.length ? constraintsBlock(chosen) : undefined;
-    this.status(drawId, "drafting");
-    try {
+    const schedule: Schedule = { form: v.schedule.form as Schedule["form"], beats: v.schedule.beats, raw: v.schedule.raw };
+    await under(this.p.db, drawId, "drafting", "awaiting_draft_gate", async () => {
       const parts = briefParts(this.p, drawId);
       // the pinned one: a repaired draw carries no ledger of its own, the chain root holds it
       const ledger = pinnedLedger(this.p, drawId) ?? "";
-      const schedule: Schedule = { form: v.schedule.form as Schedule["form"], beats: v.schedule.beats, raw: v.schedule.raw };
       const scheduleStep = this.p.steps(drawId).find((s) => s.stage === "schedule" && s.status === "done")!;
       const before = v.scenes.filter((s) => s.beat < k).map((s) => s.text);
-      await writeScene(this.p, drawId, scheduleStep.id, parts, ledger, schedule, schedule.beats[k - 1], cfg.scenes.order === "sequential" ? before : [], constraints);
+      // the scene carries the gate-2 record: which beat was rewritten, and under which flag
+      await writeScene(this.p, drawId, scheduleStep.id, parts, ledger, schedule, schedule.beats[k - 1], cfg.scenes.order === "sequential" ? before : [], constraints, { finding: findingId });
       const scenes = currentScenes(this.p, drawId);
       await runScreens(this.p, drawId, ledger, schedule, scenes, cfg, k < M ? [k, k + 1] : [k], { lexiconPath: this.opts.lexiconPath });
-    } catch (e) {
-      this.p.fail(drawId, e);
-      throw e;
-    }
-    this.status(drawId, "awaiting_draft_gate");
-    this.p.db.query("UPDATE draws SET flag_note = ? WHERE id = ?").run(`${draw.flag_note ? draw.flag_note + "\n" : ""}rewrite ${k}${findingId ? ` ${findingId}` : ""}`, drawId);
+    });
+    settle(this.p.db, drawId, "awaiting_draft_gate");
     return this.p.draw(drawId);
   }
 
   keep(drawId: string, note = ""): { draw: DrawRow; dir: string } {
-    const draw = this.must(drawId, "awaiting_draft_gate");
+    const draw = this.must(drawId, "keep");
     record(this.p.db, { kind: "draft", target_id: drawId, verdict: "keep", method: "gate", note });
     const resolved = this.resolved(draw);
-    const gate2 = draw.flag_note.split("\n").filter((l) => l.startsWith("rewrite "));
+    const gate2 = this.p.artifacts(drawId).filter((a) => a.kind === "scene" && JSON.parse(a.meta).rewrite)
+      .map((a) => { const m = JSON.parse(a.meta); return `rewrite ${m.beat}${m.rewrite_finding ? ` ${m.rewrite_finding}` : ""}`; });
     const dir = exportDraft(this.p, drawId, resolved, gate2, this.opts.draftsDir, this.p.briefsDir);
-    this.p.db.query("UPDATE draws SET status = 'drafted', ended_at = ? WHERE id = ?").run(now(), drawId);
+    settle(this.p.db, drawId, "drafted", { ended: true });
     return { draw: this.p.draw(drawId), dir };
   }
 

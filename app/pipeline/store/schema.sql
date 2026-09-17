@@ -119,12 +119,12 @@ CREATE TABLE IF NOT EXISTS draws (
   example_ids   TEXT NOT NULL,         -- JSON array
   sampling      TEXT NOT NULL DEFAULT 'tail',   -- where in the stated distribution the premises were asked for
   darkness      TEXT,                  -- light | grey | dark | black; null asked for none
-  status        TEXT NOT NULL,         -- running | awaiting_gate | done | failed | rejected
-                                       -- | awaiting_check_gate | repairing | repaired | drafting | awaiting_draft_gate | drafted | passed
+  status        TEXT NOT NULL,         -- written only by app/pipeline/lifecycle.ts, which lists the statuses
   gate_method   TEXT,                  -- auto | manual
   chosen_step   TEXT,
   flagged       INTEGER NOT NULL DEFAULT 0,
-  flag_note     TEXT NOT NULL DEFAULT '',
+  flag_note     TEXT NOT NULL DEFAULT '',      -- the person's flag, and nothing else
+  error         TEXT,                  -- why the last action failed; cleared when a later one succeeds
   superseded_by TEXT REFERENCES draws(id),
   repaired_from TEXT REFERENCES draws(id),   -- the brief this one repairs
   forked_from   TEXT REFERENCES draws(id),   -- the draw whose candidate this one develops

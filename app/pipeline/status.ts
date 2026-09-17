@@ -1,11 +1,13 @@
 import type { Db } from "./store/db.ts";
 import { eligibleCounts } from "./bank.ts";
 import { passedStories } from "./verdicts.ts";
+import { waitsIn } from "./lifecycle.ts";
 
 export function status(db: Db) {
   const count = (sql: string) => (db.query(sql).get() as any)?.n ?? 0;
   const perSource = db.query("SELECT s.source_id AS source, count(*) AS n FROM passages p JOIN stories s ON s.id = p.story_id GROUP BY s.source_id").all() as { source: string; n: number }[];
   const eligible = eligibleCounts(db);
+  const byStatus = db.query("SELECT status, count(*) AS n FROM draws WHERE archived_at IS NULL GROUP BY status").all() as { status: string; n: number }[];
   return {
     sources: count("SELECT count(*) AS n FROM sources"),
     stories: count("SELECT count(*) AS n FROM stories"),
@@ -17,7 +19,9 @@ export function status(db: Db) {
     themes: count("SELECT count(*) AS n FROM themes WHERE duplicate_of IS NULL"),
     themes_eligible: eligible.themes,
     verdicts: count("SELECT count(*) AS n FROM verdicts"),
-    draws: db.query("SELECT status, count(*) AS n FROM draws WHERE archived_at IS NULL GROUP BY status").all(),
+    draws: byStatus,
+    // how many draws wait for a person in each tab, which the tab names show
+    waiting: Object.fromEntries((["ideate", "check", "write"] as const).map((t) => [t, byStatus.filter((r) => waitsIn(r.status) === t).reduce((a, r) => a + r.n, 0)])),
     facet_fit: db.query("SELECT backend, n, fitted_at FROM facet_fit WHERE id = 1").get(),
   };
 }

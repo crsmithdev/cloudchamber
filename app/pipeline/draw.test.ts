@@ -8,7 +8,8 @@ import { tmpdir } from "node:os";
 import { openDb, type Db } from "./store/db.ts";
 import { FakeModel } from "./model.ts";
 import { Pipeline, StepFailure } from "./draw.ts";
-import { originOf, stageOf } from "./stage.ts";
+import { originOf } from "./stage.ts";
+import { tabOf } from "./lifecycle.ts";
 import { TEMPLATES, checkTemplate } from "./prompts.ts";
 import { loadStages } from "./config.ts";
 
@@ -193,14 +194,15 @@ describe("draw graph", () => {
     expect(() => p.delete(kept.id)).toThrow(/archive it instead/);
   });
 
-  test("shape failures retry once on the same model then fail and flag the draw", async () => {
+  test("shape failures retry once on the same model then fail the draw with the reason, and flag nothing", async () => {
     const { db, dir } = fixture();
     const bad = premises([0.05, 0.03, 0.12, 0.03, 0.06]);            // one over the ceiling
     const { p, model } = pipe(db, dir, script({ premises: [bad, "<premise>only one</premise>"] }));
     await expect(p.start({ mode: "auto", genre: "horror" })).rejects.toThrow(StepFailure);
     const draw = p.draws()[0];
     expect(draw.status).toBe("failed");
-    expect(draw.flagged).toBe(1);
+    expect(draw.flagged).toBe(0);                                      // a flag is a person's; the reason is the error
+    expect(draw.error).toMatch(/^premises failed: shape/);
     const steps = p.steps(draw.id);
     expect(steps.map((s) => [s.stage, s.status, s.fail_reason, s.attempt])).toEqual([["premises", "failed", "shape", 1], ["premises", "failed", "shape", 2]]);
     expect(model.calls.every((c) => c.model === loadStages().premises.model)).toBe(true);
@@ -391,18 +393,18 @@ describe("draw graph", () => {
     });
     const { p } = pipe(db, dir, twice);
     const draw = await p.start({ mode: "manual", genre: "horror" });
-    expect(stageOf(draw)).toBe("ideate");
+    expect(tabOf(draw)).toBe("ideate");
     expect(originOf(p, draw.id)).toBeNull();                       // nothing chosen: it is only a batch
     const cs = p.candidates(draw.id);
     await p.choose(draw.id, cs[0].step_id);
-    expect(stageOf(p.draw(draw.id))).toBe("check");            // check from the choice, not from the brief
+    expect(tabOf(p.draw(draw.id))).toBe("check");            // check from the choice, not from the brief
     expect(originOf(p, draw.id)).toMatchObject({ id: draw.id, index: 1, probability: 0.03 });
     // a fork reports the candidate it develops, and the draw it came from
     const fork = await p.fork(draw.id, cs[1].step_id);
-    expect(stageOf(fork)).toBe("check");
+    expect(tabOf(fork)).toBe("check");
     expect(originOf(p, fork.id)).toMatchObject({ id: draw.id, name: draw.name, index: 2 });
     // a repair sets chosen_step a few seconds in; the link to the brief it repairs holds the stage until then
-    expect(stageOf({ id: "x", status: "running", chosen_step: null, repaired_from: draw.id })).toBe("check");
+    expect(tabOf({ status: "running", chosen_step: null, repaired_from: draw.id })).toBe("check");
   });
 
   test("archiving hides a draw from the list and changes nothing else about it", async () => {
