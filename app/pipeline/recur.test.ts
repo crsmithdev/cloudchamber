@@ -67,16 +67,16 @@ describe("recurrence", () => {
   test("score weighs recurrence, cross-checker agreement, severity, result kind and evidence", () => {
     const s = (over: Partial<Parameters<typeof score>[0]>, samples = 3, jobs: string[] = []) =>
       score({ n: 3, checkers: ["ledger"], invalidates: "none", result: "contradicted", evidence: "a quote", ...over }, samples, jobs);
-    expect(s({ invalidates: "debt audit", checkers: ["ledger", "derivation"] })).toBe(10);   // 3 + 2 + 3 + 2
-    expect(s({ invalidates: "arithmetic" })).toBe(7);                                       // 3 + 0 + 2 + 2: a stated sum reaches the floor
-    expect(s({ invalidates: "arithmetic", n: 2 })).toBe(6);                                 // one sample short, so under the floor
-    expect(s({ invalidates: "arithmetic", n: 1 })).toBe(5);
-    expect(s({ invalidates: "custody", result: "underived" })).toBe(6);                     // 3 + 0 + 2 + 1
+    expect(s({ invalidates: "debt audit", checkers: ["ledger", "derivation"] })).toBe(9);    // 3 + 2 + 2 + 2
+    expect(s({ invalidates: "arithmetic" })).toBe(6);                                       // 3 + 0 + 1 + 2: a sum alone does not reach the floor
+    expect(s({ invalidates: "arithmetic", n: 2 })).toBe(5);                                 // one sample short
+    expect(s({ invalidates: "arithmetic", n: 1 })).toBe(4);
+    expect(s({ invalidates: "custody", result: "underived" })).toBe(5);                     // 3 + 0 + 1 + 1
     expect(s({ result: "supported" })).toBe(3);                                             // recurrence alone
     expect(s({ result: "unverifiable", evidence: "none" })).toBe(1);                        // and no evidence costs 2
     expect(s({ invalidates: "matrix" })).toBe(5);                                           // an unknown job is worth nothing
     expect(s({ invalidates: "matrix" }, 3, ["matrix"])).toBe(7);                            // a declared setting job is worth 2
-    expect(s({ invalidates: "debt audit", checkers: ["ledger", "derivation"], result: "contradicts:the ledger says otherwise" })).toBe(10);
+    expect(s({ invalidates: "debt audit", checkers: ["ledger", "derivation"], result: "contradicts:the ledger says otherwise" })).toBe(9);
     expect(s({ n: 1 }, 1)).toBe(5);                                                          // one sample is full recurrence
     expect(s({ result: "supported", evidence: "none", n: 1 })).toBe(0);                      // never below zero
   });
@@ -87,14 +87,15 @@ describe("recurrence", () => {
     expect(s("and back by 64: roughly 1,200 steps a day")).toBe(5);        // the narrator is estimating
     expect(s("about 40 kilos of ordnance")).toBe(5);
     expect(s("a thousand guavas or so")).toBe(5);
-    expect(s("four hundred sixty-two kilos, 1,075 bomblets")).toBe(7);     // a stated figure keeps its severity
-    expect(s("a story about the archive")).toBe(7);                        // "about" alone is not a hedge
-    expect(s("roughly 1,200 steps a day", "debt audit")).toBe(8);          // the guard is arithmetic only
+    expect(s("four hundred sixty-two kilos, 1,075 bomblets")).toBe(6);     // a stated figure keeps its severity
+    expect(s("a story about the archive")).toBe(6);                        // "about" alone is not a hedge
+    expect(s("roughly 1,200 steps a day", "debt audit")).toBe(7);          // the guard is arithmetic only
     // the outline's own sums are not estimates: a span quoted from it keeps its severity
     const outline = "## arithmetic\n\nFive nights × 3.8 is about 19 days, which is why residents take two to three weeks.";
-    const inOutline = (span: string) => score({ n: 3, checkers: ["derivation"], invalidates: "arithmetic", result: "contradicted", evidence: "a quote", span }, 3, [], outline);
-    expect(inOutline("Five nights × 3.8 is about 19 days")).toBe(7);
-    expect(inOutline("about 19 days in the notebook")).toBe(5);             // the same hedge in prose is still an estimate
+    const ctx = { outline, prose: "about 19 days in the notebook, she wrote", ledger: "" };
+    const inOutline = (span: string) => score({ n: 3, checkers: ["derivation"], invalidates: "arithmetic", result: "contradicted", evidence: "5 × 3.8 = 19, but a night is 8 h", span }, 3, [], ctx);
+    expect(inOutline("Five nights × 3.8 is about 19 days")).toBe(7);       // 3 + 1 + 2 + 1: the outline's own sum, checked
+    expect(inOutline("about 19 days in the notebook")).toBe(3);             // the same hedge in prose is still an estimate, and the sum quotes nothing
   });
 
   test("parseFindings reads the tag shape and drops findings without a span", () => {

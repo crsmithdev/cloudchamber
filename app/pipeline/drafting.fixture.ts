@@ -10,7 +10,8 @@ export const SPAN_A = "The director fires the reliquary";
 export const SPAN_B = "the twelfth relic, the Verona clavicle";
 export const SPAN_C = "tears on the silk";
 
-export const finding = (span: string, statement: string, invalidates: string, replacement: string, evidence = "a second quote from the outline", result = `contradicts:${evidence}`, patch = "") =>
+/** The default evidence quotes the fixture ending, so a finding is grounded; A's span sits in the ending too, so A is what a reader sees. */
+export const finding = (span: string, statement: string, invalidates: string, replacement: string, evidence = "and the count closes. The last beat.", result = `contradicts:${evidence}`, patch = "") =>
   `<finding><span>${span}</span><statement>${statement}</statement><result>${result}</result><evidence>${evidence}</evidence><invalidates>${invalidates}</invalidates><replacement>${replacement}</replacement>${patch ? `<patch>${patch}</patch>` : ""}</finding>`;
 
 export const A = (s = SPAN_A) => finding(s, "the director fires the reliquary herself", "debt audit", "Only the assembler can fire the reliquary.");
@@ -101,6 +102,7 @@ export function draftScript(over: Record<string, any> = {}) {
     "check-claims-extract": () => claimsExtract(),
     "check-claims-verify": claimVerify,
     reconcile: () => "<conflicts></conflicts>",
+    "repair-context": (p: string) => `<vignette>rewritten context ${tag(p, "constraints")?.split("\n")[0] ?? ""}</vignette>`,
     "repair-vignette": (p: string) => `<vignette>rewritten vignette ${tag(p, "constraints")?.split("\n")[0] ?? ""} ${"w ".repeat(390)}</vignette>`,
     "repair-outline": () => ["debt audit", "arithmetic", "custody"].map((n) => `<section name="${n}">Repaired ${n} body.</section>`).join("\n"),
     "repair-ending": () => "<ending>Only the assembler fires the reliquary, and the count closes.</ending>",

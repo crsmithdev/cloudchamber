@@ -7,7 +7,7 @@ import { RUN } from "./config.ts";
 import type { DrawRow, Pipeline } from "./draw.ts";
 import { fill } from "./prompts.ts";
 import { latest } from "./verdicts.ts";
-import { cluster, excludeDismissed, merge, normalise, same, score, type Cluster, type Finding } from "./recur.ts";
+import { cluster, excludeDismissed, merge, normalise, same, score, type Cluster, type Finding, type ScoreContext } from "./recur.ts";
 
 export type Artifact = { id: string; step_id: string; kind: string; content: string; meta: string };
 
@@ -114,9 +114,9 @@ export function checkFindings(p: Pipeline, drawId: string): FindingView[] {
   const per = samplesPerChecker(p, drawId);
   const jobs = briefSettingJobs(p, drawId);
   const settled = settledConstraints(p, drawId);
-  const outline = briefOutline(p, drawId);
+  const ctx = scoreContext(p, drawId);
   return findingArtifacts(p, drawId).filter((f) => f.source === "check" && f.pass === pass)
-    .map((f) => withScore(p, f, per, jobs, !(f as { sub_threshold?: boolean }).sub_threshold, settled, outline))
+    .map((f) => withScore(p, f, per, jobs, !(f as { sub_threshold?: boolean }).sub_threshold, settled, ctx))
     .sort((a, b) => b.score - a.score);
 }
 
@@ -127,15 +127,18 @@ function briefSettingJobs(p: Pipeline, drawId: string): string[] {
   return jobs.filter((j) => !(RUN.coreJobs as readonly string[]).includes(j));
 }
 
-/** The text of a draw's outline, so the score can tell a span quoted from it. Empty when the draw has no brief yet. */
-function briefOutline(p: Pipeline, drawId: string): string {
-  return [...p.artifacts(drawId)].reverse().find((a) => a.kind === "outline")?.content ?? "";
+/** The texts a finding's quotes are scored against. Undefined when the draw has no brief yet. */
+export function scoreContext(p: Pipeline, drawId: string): ScoreContext | undefined {
+  try {
+    const b = briefParts(p, drawId);
+    return { prose: [b.vignette, ...b.contexts, b.ending].join("\n\n"), outline: b.outline, ledger: pinnedLedger(p, drawId) ?? "" };
+  } catch { return undefined; }
 }
 
-export function withScore(p: Pipeline, f: FindingMeta & { artifact_id: string }, per: Record<string, number>, settingJobs: string[], reported: boolean, settled: Settled[] = [], outline = ""): FindingView {
+export function withScore(p: Pipeline, f: FindingMeta & { artifact_id: string }, per: Record<string, number>, settingJobs: string[], reported: boolean, settled: Settled[] = [], ctx?: ScoreContext): FindingView {
   const samples_run = samplesAgainst(f, per);
   const re = relitigated(f, settled);
-  return { ...f, ...decision(p, f.id), score: score(f, samples_run, settingJobs, outline), samples_run, reported, ...(re ? { relitigates: re } : {}) };
+  return { ...f, ...decision(p, f.id), score: score(f, samples_run, settingJobs, ctx), samples_run, reported, ...(re ? { relitigates: re } : {}) };
 }
 
 /**
@@ -168,10 +171,10 @@ export function subThresholdFindings(p: Pipeline, drawId: string): FindingView[]
   // the same span from two checkers is one finding, as it is above the bar
   const hidden = excludeDismissed(merge(perChecker, jobs).filter((c) => !reported.some((r) => same(r, c))), dismissed);
   const settled = settledConstraints(p, drawId);
-  const outline = briefOutline(p, drawId);
+  const ctx = scoreContext(p, drawId);
   return hidden.map((c) => {
     const { reported: _r, ...meta } = c;
-    return withScore(p, { ...meta, pass, source: "check", artifact_id: "" }, per, jobs, false, settled, outline);
+    return withScore(p, { ...meta, pass, source: "check", artifact_id: "" }, per, jobs, false, settled, ctx);
   }).sort((a, b) => b.score - a.score);
 }
 

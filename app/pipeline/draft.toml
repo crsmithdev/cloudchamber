@@ -46,7 +46,7 @@ samples = 1
 [repair]
 rounds = 4              # auto repair rounds at most
 max_calls = 120          # stop the loop when the chain has spent this many model calls
-stop_score = 6          # auto accepts reported findings scoring this or more, and stops when none do
+stop_score = 7          # auto accepts reported findings scoring this or more, and stops when none do
 patience = 2            # stop when the total open score has not fallen for this many rounds
 
 [profiles.flash]

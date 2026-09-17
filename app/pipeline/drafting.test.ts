@@ -49,6 +49,8 @@ async function drawn(script = draftScript(), setting?: { id: string; dir: string
   return { db, dir, model, p, d, draw };
 }
 
+/** The default floor is 7; B, an arithmetic finding at two of three samples, sits at 6, so a test that needs two fixes at once lowers it. */
+const floor6 = () => ({ ...loadDraftConfig().config, repair: { ...loadDraftConfig().config.repair, stop_score: 6 } });
 const stagesOf = (model: FakeModel, re: RegExp) => model.calls.filter((c) => re.test(c.stage)).map((c) => c.stage);
 
 describe("check and gate 1", () => {
@@ -260,16 +262,18 @@ describe("check and gate 1", () => {
     expect(f).toHaveLength(1);
     const next = await d.accept(draw.id, [f[0].id]);
     const by = (stage: string) => p.steps(next.id).filter((s) => s.stage === stage);
-    expect(by("jobs").map((s) => s.model)).not.toEqual(["copied"]);              // a fresh job for the rewritten slot
-    expect(by("context").map((s) => s.model === "copied")).toEqual([false, true]);
-    // the carried-over vignette keeps its own job line; the rewritten one takes the fresh job
+    expect(by("jobs").map((s) => s.model)).toEqual(["copied"]);                  // both jobs travel with their vignettes
+    expect(by("repair-context")).toHaveLength(1);                               // the one with the finding is rewritten from itself
+    expect(by("context").map((s) => s.model)).toEqual(["copied"]);              // the other is carried over
     const jobs = p.artifacts(next.id).filter((a) => a.kind === "job").sort((a, b) => JSON.parse(a.meta).index - JSON.parse(b.meta).index);
-    expect(jobs.map((a) => JSON.parse(a.meta).copied)).toEqual([false, true]);
-    expect(jobs[1].content).toBe("Test a second thing: scene two.");
-    const ctx = p.artifacts(next.id).filter((a) => a.kind === "vignette" && by("context").some((s) => s.id === a.step_id))
+    expect(jobs.map((a) => [a.content, JSON.parse(a.meta).copied])).toEqual([["Test the first thing: scene one.", true], ["Test a second thing: scene two.", true]]);
+    const ctx = p.artifacts(next.id).filter((a) => a.kind === "vignette" && [...by("context"), ...by("repair-context")].some((s) => s.id === a.step_id))
       .sort((a, b) => JSON.parse(a.meta).index - JSON.parse(b.meta).index);
+    expect(ctx[0].content).toContain("rewritten context");
+    expect(JSON.parse(ctx[0].meta)).toMatchObject({ index: 1, job: "Test the first thing: scene one.", rewritten_from: draw.id });
     expect(ctx[1].content).toBe("context for Test a second thing: scene two.");
-    expect(model.calls.filter((c) => c.stage === "context")).toHaveLength(3);    // two on the draw, one on the repair
+    expect(model.calls.filter((c) => c.stage === "context")).toHaveLength(2);    // two on the draw, none on the repair
+    expect(model.calls.find((c) => c.stage === "repair-context")!.prompt).toContain("The first context holds.");
   });
 
   test("a fix accepted in an earlier round is carried into every later repair and is not re-argued", async () => {
@@ -674,11 +678,10 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(p.draw(draw.id).status).toBe("repaired");
     // A and B reach the floor; C recurred once of three, under keep_if, so auto leaves it open for a person
     const first = d.findings(draw.id, { all: true }).findings;
-    expect(first.map((f) => [f.score, f.decision])).toEqual([[10, "accepted"], [6, "accepted"], [5, "open"]]);
+    expect(first.map((f) => [f.score, f.decision])).toEqual([[10, "accepted"], [6, "dismissed"], [5, "open"]]);
+    expect(first[1].note).toBe("auto: scored 6, under 7");
     expect(first[2].reported).toBe(false);
-    // two fixes at once are read against each other before the repair, once
-    expect(stagesOf(model, /^reconcile$/)).toHaveLength(1);
-    expect(model.calls.find((c) => c.stage === "reconcile")!.prompt).toContain("1. Only the assembler can fire the reliquary.\n2. The twelfth relic is the Verona clavicle in every account.");
+    expect(stagesOf(model, /^reconcile$/)).toHaveLength(0);                    // one fix: nothing to read against itself
     expect((p.db.query("SELECT DISTINCT method FROM verdicts WHERE kind = 'finding'").all() as any[]).map((v) => v.method)).toEqual(["draw"]);
     expect(stagesOf(model, /^check-ledger$/)).toHaveLength(9);                // one round of repair, then two clean passes end it
     expect(stagesOf(model, /^scene$/)).toHaveLength(8);
@@ -692,8 +695,8 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     await d.check(draw.id);
     const r = await d.autoRounds(draw.id);
     expect(r.stopped).toBe("floor");
-    expect(r.floor).toBe(6);
-    expect(r.rounds.map((x) => [x.round, x.open, x.total, x.accepted])).toEqual([[1, 2, 16, 2], [2, 0, 0, 0], [3, 0, 0, 0]]);   // C is under keep_if: not open to auto; two clean passes end it
+    expect(r.floor).toBe(7);
+    expect(r.rounds.map((x) => [x.round, x.open, x.total, x.accepted])).toEqual([[1, 2, 16, 1], [2, 0, 0, 0], [3, 0, 0, 0]]);   // C is under keep_if: not open to auto; two clean passes end it
     expect(r.rounds[2].id).toBe(r.rounds[1].id);                               // the second clean pass is a re-check of the same brief
     expect(r.left_open).toBe(0);                                               // a floor stop leaves nothing to rule on
     expect(r.best.round).toBe(2);
@@ -701,7 +704,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(r.id).not.toBe(draw.id);
     // the round table is stored on the brief auto stopped on, so the gate can render it
     const art = p.artifacts(r.id).find((a) => a.kind === "auto")!;
-    expect(JSON.parse(art.content)).toMatchObject({ stopped: "floor", floor: 6 });
+    expect(JSON.parse(art.content)).toMatchObject({ stopped: "floor", floor: 7 });
     expect(JSON.parse(art.meta)).toMatchObject({ rounds: 3, best: r.best.id });
   });
 
@@ -780,13 +783,13 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
   });
 
   test("--auto never accepts structure or resemblance, and evidence-less findings are dismissed however they score", async () => {
-    const strip = (f: string) => f.replace("<evidence>a second quote from the outline</evidence>", "<evidence>none</evidence>");
+    const strip = (f: string) => f.replace("<evidence>and the count closes. The last beat.</evidence>", "<evidence>none</evidence>");
     const noEv = strip(A());
     const script = draftScript({ "check-ledger": [...ledgerSamples(noEv, strip(B())), ...cleanSamples()], "check-derivation": [...derivationSamples(noEv), ...cleanSamples()] });
     const { p, d, draw } = await drawn(script);
     await d.check(draw.id);
     const fs = d.findings(draw.id).findings;
-    expect(fs.map((f) => f.score)).toEqual([8, 4]);                            // C recurred once: under the bar, and no longer auto's to decide
+    expect(fs.map((f) => f.score)).toEqual([7, 3]);                            // C recurred once: under the bar, and no longer auto's to decide
     const out = await d.draft(draw.id, { auto: true });
     expect(out.id).toBe(draw.id);                                             // nothing accepted, no repair
     // the first pass's findings keep their verdicts; the second clean pass is what the gate now shows
@@ -876,7 +879,7 @@ describe("auto acts on reported findings only, and reads its accepted set agains
     expect(r.left_open).toBe(0);
     expect(p.steps(draw.id).filter((s) => /^repair/.test(s.stage))).toHaveLength(0);
     const [a] = d.findings(draw.id, { all: true }).findings;
-    expect([a.span, a.score, a.reported, a.decision, a.note]).toEqual([SPAN_A, 7, false, "open", ""]);
+    expect([a.span, a.score, a.reported, a.decision, a.note]).toEqual([SPAN_A, 8, false, "open", ""]);
   });
 
   test("of two accepted fixes that cannot both hold, the lower-scoring one is dismissed before the repair", async () => {
@@ -889,8 +892,8 @@ describe("auto acts on reported findings only, and reads its accepted set agains
     const { p, d, draw, model } = await drawn(script);
     await d.check(draw.id);
     const [a, b] = d.findings(draw.id).findings;
-    expect([a.score, b.score]).toEqual([10, 6]);                              // both at or over the floor
-    const r = await d.autoRounds(draw.id);
+    expect([a.score, b.score]).toEqual([10, 6]);
+    const r = await d.autoRounds(draw.id, { cfg: floor6() });                  // both at or over this floor
     expect(r.stopped).toBe("floor");
     expect(r.rounds[0].accepted).toBe(1);                                      // the row counts what was applied
     expect(stagesOf(model, /^reconcile$/)).toHaveLength(1);
@@ -928,7 +931,7 @@ describe("the verify pass", () => {
     });
     const { d, draw, model } = await drawn(script);
     await d.check(draw.id);
-    const r = await d.autoRounds(draw.id);
+    const r = await d.autoRounds(draw.id, { cfg: floor6() });
     expect(r.rounds[0].accepted).toBe(1);
     const first = d.findings(draw.id, { all: true }).findings;
     expect(first.find((f) => f.span === SPAN_A)).toMatchObject({ decision: "open", reported: false, score: 10 });
@@ -944,7 +947,7 @@ describe("the verify pass", () => {
     });
     const { d, draw, model } = await drawn(script);
     await d.check(draw.id);
-    const r = await d.autoRounds(draw.id);
+    const r = await d.autoRounds(draw.id, { cfg: floor6() });
     expect(r.rounds[0].accepted).toBe(1);
     const prompt = model.calls.find((c) => c.stage === "reconcile")!.prompt;
     expect(prompt).toContain("2. The twelfth relic is the Verona clavicle in every account.\n   patch: \"the twelfth relic, the Bruges clavicle\"");

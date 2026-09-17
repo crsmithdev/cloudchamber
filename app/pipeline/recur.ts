@@ -105,7 +105,12 @@ export function invalidatesRank(inv: string, settingJobs: string[] = []): number
  * below, which zeroes severity on an estimate, so the weight can carry the
  * real ones. Measured on chain 20260915204445-b776.
  */
-export const INVALIDATES_WEIGHT: Record<string, number> = { "debt audit": 3, custody: 2, arithmetic: 2 };
+/**
+ * Lowered on 2026-09-17: at 3/2/2 the sums and the geometry reached the floor
+ * and the contradictions a reader sees did not. What a reader sees now carries
+ * its own term below, and the section weights only break ties.
+ */
+export const INVALIDATES_WEIGHT: Record<string, number> = { "debt audit": 2, custody: 1, arithmetic: 1 };
 export const SCORE_MAX = 10;
 
 /**
@@ -120,17 +125,55 @@ export const HEDGED = /\b(roughly|approximately|about|around|nearly|almost|some|
 
 export type Scorable = { n: number; checkers: string[]; invalidates: string; result: string; evidence: string; span?: string };
 
-export function score(f: Scorable, samples: number, settingJobs: string[] = [], outline = ""): number {
+/** The texts a finding's quotes are read against: the prose a reader sees, the outline, and the pinned ledger. */
+export type ScoreContext = { prose: string; outline: string; ledger: string };
+
+/** The quotes a finding rests on besides its span: the second quote of a contradicts: result, and anything the evidence quotes. */
+export function quotesOf(f: Pick<Scorable, "result" | "evidence">): string[] {
+  const out: string[] = [];
+  const m = /^contradicts:\s*([\s\S]+)$/i.exec(f.result.trim());
+  if (m) out.push(m[1]);
+  for (const q of f.evidence.matchAll(/["“]([^"”]{12,})["”]/g)) out.push(q[1]);
+  return out.map((q) => q.trim().replace(/^["“]|["”]$/g, "").replace(/^\*+|\*+$/g, ""));
+}
+
+/** Whether a quote is in a text, read across an ellipsis, on words alone. Three words is the shortest quote that counts. */
+export function quoted(text: string, quote: string): boolean {
+  const parts = quote.split(/…|\.\.\./).map(loose).filter((x) => x.split(" ").length >= 3);
+  return parts.length > 0 && parts.every((x) => text.includes(x));
+}
+const loose = (s: string) => s.toLowerCase().replace(/[*_`"“”'’]/g, "").replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim();
+
+/**
+ * What a reader sees is worth two: the span and a second quote both in the
+ * prose. A quote that lands in the outline or the ledger is worth one. A
+ * finding that quotes nothing the brief or the ledger says is a chain of
+ * inference, and costs two: on the pit chain those were the sums and the
+ * geometry that auto fixed while the name in two registries waited.
+ */
+export function visibility(f: Scorable, ctx: ScoreContext): number {
+  const prose = loose(ctx.prose), outline = loose(ctx.outline), ledger = loose(ctx.ledger);
+  const span = f.span ?? "";
+  const qs = quotesOf(f);
+  if (quoted(prose, span) && qs.some((q) => quoted(prose, q))) return 2;
+  if (qs.some((q) => quoted(prose, q) || quoted(outline, q) || quoted(ledger, q))) return 1;
+  // the outline's own sum, checked: the span is the stated figure and the evidence is the arithmetic
+  if (quoted(outline, span) && /\d/.test(f.evidence)) return 1;
+  return -2;
+}
+
+export function score(f: Scorable, samples: number, settingJobs: string[] = [], ctx?: ScoreContext): number {
   const recurrence = f.n >= samples ? 3 : f.n === samples - 1 ? 2 : 1;
   const crossChecker = f.checkers.length > 1 ? 2 : 0;
   const inv = f.invalidates.toLowerCase();
   const weight = INVALIDATES_WEIGHT[inv] ?? (settingJobs.some((j) => j.toLowerCase() === inv) ? 2 : 0);
-  const inOutline = !!f.span && !!outline && normalise(outline).includes(normalise(f.span));
+  const inOutline = !!f.span && !!ctx?.outline && normalise(ctx.outline).includes(normalise(f.span));
   const severity = inv === "arithmetic" && !inOutline && HEDGED.test(f.span ?? "") ? 0 : weight;
   const r = f.result.toLowerCase().trim();
   const kind = r.startsWith("contradict") ? 2 : r.includes("underived") ? 1 : 0;
   const unevidenced = !f.evidence.trim() || f.evidence.trim().toLowerCase() === "none" ? -2 : 0;
-  return Math.max(0, Math.min(SCORE_MAX, recurrence + crossChecker + severity + kind + unevidenced));
+  const visible = ctx && !unevidenced ? visibility(f, ctx) : 0;
+  return Math.max(0, Math.min(SCORE_MAX, recurrence + crossChecker + severity + kind + unevidenced + visible));
 }
 
 /** Cluster one checker's findings across its samples. Sorted by n descending, then by what the finding invalidates. */

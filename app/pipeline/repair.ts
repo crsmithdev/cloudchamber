@@ -152,7 +152,8 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
   // the outline, re-derived under the constraints
   const settingJobs = (setting?.jobs ?? []).map((j) => fill("settingJob", { name: j.name, description: j.description })).join("");
   const jobNames = [...RUN.coreJobs, ...(setting?.jobs ?? []).map((j) => j.name.toLowerCase())];
-  const outlineHead = fill("repairOutlineHead", { ledger, settled, seed: parts.seed, premise: parts.premise, vignette, constraints });
+  // the structure as it stands goes in: re-deriving it from the vignette each round gave every round new numbers and names to find
+  const outlineHead = fill("repairOutlineHead", { ledger, settled, seed: parts.seed, premise: parts.premise, vignette, outline: `<outline>\n${parts.outline}\n</outline>`, constraints });
   const { step: outlineStep, value: outline } = await p.invoke(newId, vStep.id, "repair-outline", compose(outlineHead, fill("outlineAsk", { settingJobs }), p.settingFor("outline", setting)), (text) => {
     const secs = sections(text);
     for (const j of jobNames) if (!secs[j]) throw new Error(`missing <section name="${j}">`);
@@ -161,12 +162,13 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
   const outlineText = Object.entries(outline).map(([n, body]) => `## ${n}\n\n${body}`).join("\n\n");
   p.artifact(outlineStep, "outline", outlineText, { jobs: jobNames, constraints: accepted.map((f) => f.replacement), accepted: accepted.map((f) => f.id), words: Object.fromEntries(Object.entries(outline).map(([n, b]) => [n, words(b)])) });
 
-  // the context vignettes: each rewritten under a fresh job, or carried over with its own
+  // the context vignettes: each rewritten from itself when a finding lands in it, carried over otherwise;
+  // only a brief whose contexts came without their jobs is written afresh under new jobs
   const briefHead = fill("head", { outline: outlineText, vignette });
   const after = (stage: "jobs" | "context" | "ending", ask: string) => compose(briefHead, ask, p.settingFor(stage, setting), "");
   let fresh: string[] = [];
   let jobsStep;
-  if (plan.context.some(Boolean)) {
+  if (!carryable) {
     const r = await p.invoke(newId, outlineStep.id, "jobs", after("jobs", fill("jobs", {})), (text) => {
       const js = tags(text, "job");
       if (js.length !== RUN.contextVignettes) throw new Error(`expected ${RUN.contextVignettes} jobs, got ${js.length}`);
@@ -177,12 +179,16 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
   } else {
     jobsStep = p.recordStep(newId, outlineStep.id, "jobs", "copied");
   }
-  const jobs = plan.context.map((rewrite, i) => (rewrite ? fresh[i] : srcContexts[i].meta.job!));
-  jobs.forEach((j, i) => p.artifact(jobsStep, "job", j, { index: i + 1, copied: !plan.context[i] }));
-  const contextRuns = jobs.map((job, i) => plan.context[i]
+  const jobs = plan.context.map((_, i) => (carryable ? srcContexts[i].meta.job! : fresh[i]));
+  jobs.forEach((j, i) => p.artifact(jobsStep, "job", j, { index: i + 1, copied: carryable }));
+  const contextRuns = jobs.map((job, i) => !carryable
     ? p.invoke(newId, outlineStep.id, "context", after("context", fill("context", { job })), (text) => {
         const v = tag(text, "vignette"); if (!v) throw new Error("no <vignette> tag"); return v;
       }).then((r) => p.artifact(r.step, "vignette", r.value, { index: i + 1, job, warnings: words(r.value) > 500 ? ["length"] : [] }))
+    : plan.context[i]
+    ? p.invoke(newId, outlineStep.id, "repair-context", rewriteAsk("execute", fill("repairVignette", { ledger, settled, vignette: patchedContexts[i].text, constraints })), (text) => {
+        const v = tag(text, "vignette"); if (!v) throw new Error("no <vignette> tag"); return v;
+      }).then((r) => p.artifact(r.step, "vignette", r.value, { index: i + 1, job, rewritten_from: parts.draw.id, warnings: words(r.value) > 500 ? ["length"] : [] }))
     : Promise.resolve(p.artifact(p.recordStep(newId, outlineStep.id, "context", patchedContexts[i].applied.length ? "patched" : "copied"), "vignette", patchedContexts[i].text, { index: i + 1, job, copied_from: parts.draw.id, ...(patchedContexts[i].applied.length ? { patched: patchedContexts[i].applied.map((f) => f.id) } : {}) })));
 
   // the ending: rewritten from itself under the constraints, or carried over

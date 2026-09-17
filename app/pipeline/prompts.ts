@@ -194,7 +194,7 @@ A result of contradicted or contradicts needs the span to assert the conflicting
 
 {brief}
 
-State the single impossibility the debt audit buys, in an <impossibility> tag, one sentence. Then check every assertion in the vignettes and ending against that derivation, and do every sum in the arithmetic section. Report each assertion that does not follow from the one impossibility, and each sum that does not add up.
+State the single impossibility the debt audit buys, in an <impossibility> tag, one sentence. Then check every assertion in the vignettes and ending against that derivation, and do every sum in the arithmetic section. Report each assertion that does not follow from the one impossibility, and each sum that does not add up. Report an assertion only when the outline states the rule it breaks, and a sum only when the brief states both figures: a consequence you work out yourself from physics, geometry or a unit is not a finding.
 
 {findingShape}
 
@@ -289,7 +289,7 @@ Find the line in the setting above that confirms or denies it. The setting is th
 {findings}
 </findings>
 
-Read each finding back against the whole brief. Keep it when the span asserts the fact the statement gives it and the evidence conflicts with that fact on a careful reading of the brief. Drop it when the span does not state the fact, when what the span leaves out is stated elsewhere or left open, when the two quotes can both hold, or when the evidence is not in the brief. Output one <verdict n="..."> tag per finding, containing <answer>keep|drop</answer> and <why> (one sentence). Under 400 words.`,
+Read each finding back against the whole brief. Keep it when the span asserts the fact the statement gives it, the evidence conflicts with that fact on a careful reading of the brief, and a reader of the brief would see the two statements disagree. Drop it when the span does not state the fact, when what the span leaves out is stated elsewhere or left open, when the two quotes can both hold, when the evidence is not in the brief, or when seeing the conflict needs a sum, a unit conversion or a physical inference the brief does not state. Output one <verdict n="..."> tag per finding, containing <answer>keep|drop</answer> and <why> (one sentence). Under 400 words.`,
 
   reconcile: `Below are the fixes one repair round is about to apply to a story brief together, numbered.
 
@@ -323,9 +323,9 @@ satisfy a constraint above.`,
 
 {settled}
 
-Rewrite it in a <vignette> tag so that every line of the constraints holds, keeping its people, place, form and length. Under ${RUN.vignetteWords + 50} words. Output only the tag.`,
+Rewrite it in a <vignette> tag so that every line of the constraints holds, keeping its people, place, form and length. Change only the sentences a constraint touches; every other name, number, date, time and place stays word for word. Under ${RUN.vignetteWords + 50} words. Output only the tag.`,
 
-  repairOutlineHead: `Below is a seed, a premise, a ${RUN.vignetteWords}-word execution of it, and a set of constraints that hold. Derive from them the story's underlying structure: the layer below the one that gets told. Nothing here is prose for the page.
+  repairOutlineHead: `Below is a seed, a premise, a ${RUN.vignetteWords}-word execution of it, the story's underlying structure as it stands, and a set of constraints that hold. Nothing here is prose for the page.
 
 Seed: {seed}
 
@@ -335,11 +335,15 @@ Premise: {premise}
 {vignette}
 </vignette>
 
+{outline}
+
 {constraints}
 
 {ledger}
 
-{settled}`,
+{settled}
+
+Rewrite the structure so that every line of the constraints holds. Change only the sentences a constraint touches; every other name, number, date, time, rule and table row stays word for word. Do not re-derive what no constraint touches.`,
 
   repairEnding: `Below is a story's derived structure, the ending written from it, and a set of constraints that hold.
 
@@ -355,7 +359,7 @@ Premise: {premise}
 
 {settled}
 
-Rewrite the ending in an <ending> tag so that every line of the constraints holds, keeping its people, place, form and length. Under ${RUN.endingWords} words. Output only the tag.`,
+Rewrite the ending in an <ending> tag so that every line of the constraints holds, keeping its people, place, form and length. Change only the sentences a constraint touches; every other name, number, date, time and place stays word for word. Under ${RUN.endingWords} words. Output only the tag.`,
 
   schedule: `Below is a story brief: a seed, a premise, an outline in three sections, three vignettes and an ending. Below that, the story's configuration.
 
