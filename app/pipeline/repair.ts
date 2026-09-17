@@ -117,7 +117,31 @@ export async function repair(p: Pipeline, drawId: string, accepted: Accepted[]):
   return p.draw(newId);
 }
 
-async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof briefParts>, accepted: Accepted[]) {
+const NAME = /\b\p{Lu}[\p{L}'’.-]{2,}/gu;
+const namesIn = (t: string) => new Set(t.match(NAME) ?? []);
+
+/**
+ * A patch renames one mention. When it takes out a name that the rest of its
+ * passage still uses and puts another in, the passage ends up with both: on a
+ * fresh draw "Clearwater held the contract" became "Brightwell held the
+ * contract" beside "the Clearwater cart". Such a patch is not applied, and the
+ * finding repairs its passage as a whole.
+ */
+export function localPatch(f: Accepted, passages: string[]): boolean {
+  if (!f.patch?.trim()) return false;
+  const passage = passages.find((t) => inside(f.span, t));
+  if (!passage) return true;
+  const before = namesIn(f.span), after = namesIn(f.patch);
+  const added = [...after].filter((n) => !before.has(n));
+  if (!added.length) return true;
+  const rest = namesIn(passage.replace(f.span, " "));
+  return ![...before].some((n) => !after.has(n) && rest.has(n));
+}
+
+async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof briefParts>, given: Accepted[]) {
+  // a patch that would leave its passage with two names for one thing repairs the passage instead
+  const passages = [parts.vignette, ...parts.contexts, parts.ending];
+  const accepted = given.map((f) => (f.patch?.trim() && !localPatch(f, passages) ? { ...f, patch: "" } : f));
   const srcArts = p.artifacts(parts.draw.id);
   const srcStages = new Map(p.steps(parts.draw.id).map((s) => [s.id, s.stage]));
   const srcContexts = srcArts.filter((a) => a.kind === "vignette" && CONTEXT_STAGES.has(srcStages.get(a.step_id) ?? ""))

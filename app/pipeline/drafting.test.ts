@@ -1053,3 +1053,30 @@ describe("a fix with no patch", () => {
     expect(step("repair-vignette").model).toBe("copied");                      // the chosen vignette holds neither half
   });
 });
+
+describe("a patch that renames one mention", () => {
+  const scene = "The Clearwater cart came at nine. Clearwater held the contract.";
+  const rename = (patch: string) => finding("Clearwater held the contract.", "the contractor is named twice", "none", "Brightwell held the contract, and its cart came at nine.", "the fire was on the 3rd", undefined, patch);
+  const run = async (text: string) => {
+    const script = draftScript({
+      execute: (p: string) => vignette(Number(/Premise (\d)/.exec(p)?.[1] ?? 0)).replace("</vignette>", ` ${text}</vignette>`),
+      "check-ledger": [...[1, 2, 3].map(() => `<ledger>${LEDGER}</ledger>${rename("Brightwell held the contract.")}<examined>x</examined>`), ...cleanSamples()],
+      "check-derivation": [...cleanSamples(), ...cleanSamples()],
+    });
+    const { p, d, draw } = await drawn(script);
+    await d.check(draw.id);
+    const next = await d.accept(draw.id, [d.findings(draw.id).findings.find((f) => f.reported)!.id]);
+    return p.steps(next.id).find((s) => s.stage === "repair-vignette")!;
+  };
+
+  test("is not applied when the old name stays in its passage; the passage is rewritten under the constraint", async () => {
+    const step = await run(scene);
+    expect(step.model).not.toBe("patched");
+    expect(step.prompt).toContain("Brightwell held the contract, and its cart came at nine.");
+  });
+
+  test("is applied when the old name is used nowhere else in its passage", async () => {
+    const step = await run("Clearwater held the contract.");
+    expect(step.model).toBe("patched");
+  });
+});
