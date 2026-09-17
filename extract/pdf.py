@@ -136,18 +136,48 @@ def _running_lines(pages: list[str], edge: int = 2, min_share: float = 0.25) -> 
     return {k for k, v in counter.items() if v >= need}
 
 
+# A scan speck on a line of its own: `..` under a Google Books stamp.
+_SPECK = re.compile(r"^[.,'`]{1,2}$")
+
+
 def _strip_furniture(page: str, running: set[str], edge: int = 2) -> str:
+    """Drop page numbers from the first and last `edge` lines, and running lines
+    and specks from the first and last `edge` lines that hold text, which is
+    how `_running_lines` counts them."""
     lines = page.splitlines()
+    filled = [i for i, l in enumerate(lines) if l.strip()]
+    edges = set(filled[:edge] + filled[-edge:])
     keep = []
     for i, line in enumerate(lines):
         s = line.strip()
-        near_edge = i < edge or i >= len(lines) - edge
-        if near_edge and (
-            _PAGE_NUM.match(s) or re.sub(r"\d+", "#", s).lower() in running
-        ):
+        at_edge = i < edge or i >= len(lines) - edge
+        if (at_edge and _PAGE_NUM.match(s)) or (i in edges and (_SPECK.match(s) or re.sub(r"\d+", "#", s).lower() in running)):
             continue
         keep.append(line)
     return "\n".join(keep)
+
+
+def _peel_furniture(raw: list[str]) -> tuple[list[str], set[str]]:
+    """Strip furniture until the page edges hold none.
+
+    Furniture can be deeper than the edge: a Google Books scan ends each page
+    with `Digitized by`, `Google`, `Original from` and `UNIVERSITY OF
+    MICHIGAN`. The first pass removes the last two lines, and the next pass
+    finds the other two at the new edge. A later pass changes a page only when
+    it removes a line, so the page keeps the line breaks the first pass left.
+    """
+    running = _running_lines(raw)
+    pages = [_strip_furniture(p, running) for p in raw]
+    while True:
+        more = running | _running_lines(pages)
+        peeled = [q if _filled(q) < _filled(p) else p for p, q in zip(pages, (_strip_furniture(p, more) for p in pages))]
+        if peeled == pages and more == running:
+            return pages, running
+        pages, running = peeled, more
+
+
+def _filled(page: str) -> int:
+    return sum(1 for l in page.splitlines() if l.strip())
 
 
 # --- de-hyphenation and paragraph reflow ----------------------------------
@@ -456,9 +486,8 @@ def read(path: str | Path, source_id: str, author: str = "", genre: str = "",
          manifest_stories: list[dict] | None = None) -> list[Doc]:
     """One Doc per story."""
     path = Path(path)
-    raw = raw_pages(path)
-    running = _running_lines(raw)
-    pages = [_rejoin_dropcaps(_strip_furniture(p, running)) for p in raw]
+    pages, running = _peel_furniture(raw_pages(path))
+    pages = [_rejoin_dropcaps(p) for p in pages]
 
     if manifest_stories:
         secs = split_by_manifest(manifest_stories, len(pages), author)

@@ -4,7 +4,7 @@ import json
 import pytest
 import re
 
-from extract import pdf, segment
+from extract import pdf, segment, store
 from extract.tests.conftest import ROOT, SOURCES, run
 
 VOL01 = SOURCES / "horror" / "Ellen Datlow - The Best Horror of the Year Volume 01.pdf"
@@ -135,7 +135,12 @@ def test_suspects_are_stored_as_json_reasons_and_are_a_minority(db):
     marked = [json.loads(r[0]) for r in rows if r[0] is not None]
     assert all(m and set(m) <= set(segment.SUSPECT_REASONS) for m in marked)
     assert len(marked) < len(rows) * 0.5, f"{len(marked)} of {len(rows)} passages marked suspect"
-    assert db.execute("PRAGMA user_version").fetchone()[0] == 1
+    assert db.execute("PRAGMA user_version").fetchone()[0] == store.SCHEMA_VERSION
+
+
+def test_store_version_mirrors_the_typescript_store():
+    ts = (ROOT / "app" / "pipeline" / "store" / "db.ts").read_text(encoding="utf-8")
+    assert int(re.search(r"SCHEMA_VERSION = (\d+);", ts).group(1)) == store.SCHEMA_VERSION
 
 
 def test_windows_are_anchored_to_content():
