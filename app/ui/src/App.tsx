@@ -15,6 +15,17 @@ function useHash() {
   return h;
 }
 
+/** The logo: an unseen seed turns visible at the gold vertex and splits into two spirals. */
+function Logo({ label }: { label?: string }) {
+  return (
+    <svg className="logo" viewBox="-2 20 100 58" role={label ? "img" : undefined} aria-label={label} aria-hidden={label ? undefined : "true"}>
+      <path d="M34 54 A30 30 0 0 1 94 54 A20 20 0 0 1 54 54 A10 10 0 0 1 74 54" />
+      <path d="M34 54 A16 16 0 0 0 2 54 A8 8 0 0 0 18 54" />
+      <circle cx="34" cy="54" r="11" />
+    </svg>
+  );
+}
+
 const TABS: [string, string][] = [
   ["ideate", "#draws"],
   ["check", "#check"],
@@ -84,10 +95,13 @@ export function App() {
       <aside className={"rail" + (folded ? " folded" : "")}>
         {!folded && (
           <>
-            <div className="px-2 font-serif text-mark font-medium">
-              Cloud
-              <br />
-              Chamber
+            <div className="brand">
+              <Logo />
+              <div className="font-serif text-mark font-medium">
+                Cloud
+                <br />
+                Chamber
+              </div>
             </div>
             <nav className="flex flex-col" aria-label="Sections">
               {TABS.map(([name, href]) => (
@@ -104,17 +118,20 @@ export function App() {
           </>
         )}
         {folded && (
-          <nav className="flex flex-col items-center gap-1" aria-label="Sections">
-            {TABS.map(([name, href]) => (
-              <a key={name} href={href} className={"navlink mini" + (on(name) ? " on" : "")} title={name}>
-                {name[0]}
+          <>
+            <Logo label="Cloud Chamber" />
+            <nav className="flex flex-col items-center gap-1" aria-label="Sections">
+              {TABS.map(([name, href]) => (
+                <a key={name} href={href} className={"navlink mini" + (on(name) ? " on" : "")} title={name}>
+                  {name[0]}
+                </a>
+              ))}
+              <span className="railsep" aria-hidden="true" />
+              <a href={SOURCES[1]} className={"navlink mini" + (on(SOURCES[0]) ? " on" : "")} title={SOURCES[0]}>
+                {SOURCES[0][0]}
               </a>
-            ))}
-            <span className="railsep" aria-hidden="true" />
-            <a href={SOURCES[1]} className={"navlink mini" + (on(SOURCES[0]) ? " on" : "")} title={SOURCES[0]}>
-              {SOURCES[0][0]}
-            </a>
-          </nav>
+            </nav>
+          </>
         )}
         <button
           className="railfold"

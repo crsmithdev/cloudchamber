@@ -443,11 +443,16 @@ mark; selection is a fill and a bar.
 - **Error / Warning:** text in pass or art; no coloured border or fill
 
 ### Navigation
-- **Rail:** 168px, desk fill, a hairline on the right; the wordmark in the
+- **Logo:** the pair mark: an ink spiral each side of a gold vertex. Ink
+  strokes at 6.5 in a 100-unit box, round caps; gold on the vertex only. It is
+  2.75rem wide beside the wordmark and 1.75rem alone at the head of the
+  folded rail. The tab icon sets it on a desk square at stroke 9, so it holds
+  at 16px
+- **Rail:** 168px, desk fill, a hairline on the right; the logo, then the wordmark in the
   serif at 18px with "ideation pipeline" under it in head size dim; the four
   tabs as links at 500 in mute, ink when on with the gold inset bar, a mono
   count in dim at the end; the pool counts at the bottom in dim
-- **Folded:** a 40px strip of 1.75rem mono letter squares
+- **Folded:** a 40px strip: the logo, then 1.75rem mono letter squares
 - **Mobile:** a wrapped row under the wordmark with a hairline under it; the
   fold button and pool hide
 
