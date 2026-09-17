@@ -8,14 +8,13 @@
  * Every regenerated word is a new surface for the next check to find a
  * contradiction in, so a repair rewrites as little as the findings allow.
  */
-import { CONTEXT_STAGES, RUN } from "./config.ts";
+import { RUN } from "./config.ts";
 import { newDrawId, outlineJobs, parseJobs, parseOutline, renderOutline, type DrawRow, type Pipeline } from "./draw.ts";
 import { compose, fill } from "./prompts.ts";
-import { need, words } from "./model.ts";
 import { now } from "./paths.ts";
 import { writeBrief } from "./brief.ts";
 import { settle, under } from "./lifecycle.ts";
-import { briefParts } from "./briefparts.ts";
+import { briefParts, partOf, partsIn, partsOf, revisePart } from "./briefparts.ts";
 import { chainOf, type Settled } from "./chain.ts";
 import { quoted } from "./recur.ts";
 import type { FindingView } from "./chain.ts";
@@ -142,20 +141,17 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
   // a patch that would leave its passage with two names for one thing repairs the passage instead
   const passages = [parts.vignette, ...parts.contexts, parts.ending];
   const accepted = given.map((f) => (f.patch?.trim() && !localPatch(f, passages) ? { ...f, patch: "" } : f));
-  const srcArts = p.artifacts(parts.draw.id);
-  const srcStages = new Map(p.steps(parts.draw.id).map((s) => [s.id, s.stage]));
-  const srcContexts = srcArts.filter((a) => a.kind === "vignette" && CONTEXT_STAGES.has(srcStages.get(a.step_id) ?? ""))
-    .map((a) => ({ content: a.content, meta: JSON.parse(a.meta) as { index?: number; job?: string } }))
-    .sort((a, b) => (a.meta.index ?? 0) - (b.meta.index ?? 0));
+  const src = partsOf(p, parts.draw.id);
+  const srcContexts = partsIn(src, "context");
   // a context vignette can only be carried over when its job line came with it
   const carryable = srcContexts.length === RUN.contextVignettes && srcContexts.every((c) => c.meta.job);
 
   // the patched findings land first, in place, with no model call; the plan then covers what is left
   const patchedVignette = applyPatches(parts.vignette, accepted);
   const patchedEnding = applyPatches(parts.ending, accepted);
-  const patchedContexts = srcContexts.map((c) => applyPatches(c.content, accepted));
+  const patchedContexts = srcContexts.map((c) => applyPatches(c.text, accepted));
 
-  const plan = repairPlan(accepted, parts.vignette, parts.ending, carryable ? srcContexts.map((c) => c.content) : []);
+  const plan = repairPlan(accepted, parts.vignette, parts.ending, carryable ? srcContexts.map((c) => c.text) : []);
   if (!carryable) plan.context = Array.from({ length: RUN.contextVignettes }, () => true);
   // the outline takes every constraint; a passage takes only those that land in it. On the pit chain a vignette
   // rewrite given a registry row's constraint ("every haul, including number 219's") made Ruth number 219.
@@ -178,19 +174,15 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
     const slice = p.settingFor(stage, setting)?.slice;
     return slice ? `${slice}\n\n${ask}` : ask;
   };
-  const chosenMeta = JSON.parse(srcArts.find((a) => a.step_id === parts.chosenStepId && a.kind === "vignette")!.meta);
-
   // the chosen vignette: rewritten from itself, or carried over
-  let vignette = patchedVignette.text;
-  let vStep;
-  if (plan.vignette) {
-    const r = await p.invoke(newId, null, "repair-vignette", rewriteAsk("execute", fill("repairVignette", { ledger, settled, vignette: patchedVignette.text, constraints: within(parts.vignette) })), (t) => need(t, "vignette"));
-    vignette = r.value; vStep = r.step;
-    p.artifact(vStep, "vignette", vignette, { ...chosenMeta, rewritten_from: parts.chosenStepId, warnings: words(vignette) < 300 || words(vignette) > 500 ? ["length"] : [] });
-  } else {
-    vStep = p.recordStep(newId, null, "repair-vignette", patchedVignette.applied.length ? "patched" : "copied");
-    p.artifact(vStep, "vignette", vignette, { ...chosenMeta, copied_from: parts.chosenStepId, ...(patchedVignette.applied.length ? { patched: patchedVignette.applied.map((f) => f.id) } : {}) });
-  }
+  const { step: vStep, text: vignette } = await revisePart(p, {
+    drawId: newId, parent: null, role: "vignette", from: parts.chosenStepId,
+    text: patchedVignette.text, applied: patchedVignette.applied.map((f) => f.id), meta: partOf(src, "vignette")!.meta,
+    rewrite: plan.vignette
+      ? { stage: "repair-vignette", prompt: rewriteAsk("execute", fill("repairVignette", { ledger, settled, vignette: patchedVignette.text, constraints: within(parts.vignette) })) }
+      : undefined,
+    carry: { stage: "repair-vignette" },
+  });
   p.db.query("UPDATE draws SET chosen_step = ? WHERE id = ?").run(vStep.id, newId);
 
   // the outline, re-derived under the constraints
@@ -213,19 +205,29 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
   } else {
     jobsStep = p.recordStep(newId, outlineStep.id, "jobs", "copied");
   }
-  const jobs = plan.context.map((_, i) => (carryable ? srcContexts[i].meta.job! : fresh[i]));
+  const jobs = plan.context.map((_, i) => (carryable ? (srcContexts[i].meta.job as string) : fresh[i]));
   jobs.forEach((j, i) => p.artifact(jobsStep, "job", j, { index: i + 1, copied: carryable }));
-  const contextRuns = jobs.map((job, i) => !carryable
-    ? p.invoke(newId, outlineStep.id, "context", after("context", fill("context", { job })), (text) => need(text, "vignette")).then((r) => p.artifact(r.step, "vignette", r.value, { index: i + 1, job, warnings: words(r.value) > 500 ? ["length"] : [] }))
-    : plan.context[i]
-    ? p.invoke(newId, outlineStep.id, "repair-context", rewriteAsk("execute", fill("repairVignette", { ledger, settled, vignette: patchedContexts[i].text, constraints: within(srcContexts[i].content) })), (text) => need(text, "vignette")).then((r) => p.artifact(r.step, "vignette", r.value, { index: i + 1, job, rewritten_from: parts.draw.id, warnings: words(r.value) > 500 ? ["length"] : [] }))
-    : Promise.resolve(p.artifact(p.recordStep(newId, outlineStep.id, "context", patchedContexts[i].applied.length ? "patched" : "copied"), "vignette", patchedContexts[i].text, { index: i + 1, job, copied_from: parts.draw.id, ...(patchedContexts[i].applied.length ? { patched: patchedContexts[i].applied.map((f) => f.id) } : {}) })));
+  const contextRuns = jobs.map((job, i) => revisePart(p, {
+    drawId: newId, parent: outlineStep.id, role: "context", meta: { index: i + 1, job },
+    from: carryable ? srcContexts[i].stepId : undefined,
+    text: patchedContexts[i]?.text, applied: patchedContexts[i]?.applied.map((f) => f.id),
+    rewrite: !carryable
+      ? { stage: "context", prompt: after("context", fill("context", { job })) }
+      : plan.context[i]
+      ? { stage: "repair-context", prompt: rewriteAsk("execute", fill("repairVignette", { ledger, settled, vignette: patchedContexts[i].text, constraints: within(srcContexts[i].text) })) }
+      : undefined,
+    carry: { stage: "context" },
+  }));
 
   // the ending: rewritten from itself under the constraints, or carried over
-  const endingRun = plan.ending
-    ? p.invoke(newId, outlineStep.id, "repair-ending", rewriteAsk("ending", fill("repairEnding", { ledger, settled, outline: outlineText, ending: patchedEnding.text, constraints: within(parts.ending, endingExtra) })), (t) => need(t, "ending")).then((r) => p.artifact(r.step, "ending", r.value, { previous: parts.ending, warnings: words(r.value) > 650 ? ["length"] : [] }))
-    : Promise.resolve(p.artifact(p.recordStep(newId, outlineStep.id, "repair-ending", patchedEnding.applied.length ? "patched" : "copied"), "ending", patchedEnding.text,
-        patchedEnding.applied.length ? { previous: parts.ending, patched: patchedEnding.applied.map((f) => f.id) } : { copied: true }));
+  const endingRun = revisePart(p, {
+    drawId: newId, parent: outlineStep.id, role: "ending", from: partOf(src, "ending")!.stepId,
+    text: patchedEnding.text, applied: patchedEnding.applied.map((f) => f.id), previous: parts.ending,
+    rewrite: plan.ending
+      ? { stage: "repair-ending", prompt: rewriteAsk("ending", fill("repairEnding", { ledger, settled, outline: outlineText, ending: patchedEnding.text, constraints: within(parts.ending, endingExtra) })) }
+      : undefined,
+    carry: { stage: "repair-ending" },
+  });
   await Promise.all([...contextRuns, endingRun]);
 
   // this round's accepted findings are already listed under ## repaired_from

@@ -9,11 +9,25 @@ export type StageName = GenStageName | CheckStageName | DraftStageName;
 export type StageConfig = { model: string; fallback: string; system: string; tools?: string };
 
 /**
- * The stages whose vignette is a context vignette. A repair that rewrites one
- * from itself records it on `repair-context`; reading `context` alone lost it,
- * and the next repair wrote both contexts afresh under new jobs.
+ * The role a part of a brief plays. A part's role is the stage that wrote it,
+ * not its artifact kind: the chosen vignette, a context vignette and a repair
+ * of either are all `vignette` artifacts, and only the stage tells them apart.
  */
-export const CONTEXT_STAGES: ReadonlySet<string> = new Set(["context", "repair-context"]);
+export type PartRole = "vignette" | "outline" | "context" | "ending" | "job";
+
+/**
+ * The role each stage writes. A repair stage writes the same role as the stage
+ * it repairs, so a reader that asks for `context` finds the rewritten one too;
+ * reading `context` alone lost it, and the next repair wrote both contexts
+ * afresh under new jobs.
+ */
+export const STAGE_ROLE: Readonly<Record<string, PartRole>> = {
+  execute: "vignette", "repair-vignette": "vignette",
+  outline: "outline", "repair-outline": "outline",
+  context: "context", "repair-context": "context",
+  ending: "ending", "repair-ending": "ending",
+  jobs: "job",
+};
 
 export const STAGES: StageName[] = [
   "themes", "redundancy", "distill-map", "distill", "premises", "execute", "outline", "jobs", "context", "ending",
@@ -60,6 +74,12 @@ export const RUN = {
   mapConcurrency: 8,    // reference files the map pass sends at once
   sceneCapSlack: 0.10,  // a scene over its cap by more than this carries the over_cap warning
   spanWords: 30,        // a finding's quoted span is under this
+  // the length a part carries a `length` warning outside of, by role
+  partWords: {
+    vignette: { min: 300, max: 500 },
+    context: { max: 500 },
+    ending: { max: 650 },
+  } as Readonly<Record<string, { min?: number; max?: number }>>,
 };
 
 export function loadStages(): Record<StageName, StageConfig> {

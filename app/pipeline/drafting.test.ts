@@ -16,7 +16,7 @@ import { loadStages } from "./config.ts";
 import { loadDraftConfig } from "./draftconfig.ts";
 import { VERDICT_LOG } from "./paths.ts";
 import { A, B, LEDGER, SCENE_3_PATCH, SPAN_A, SPAN_B, SPAN_C, cleanSamples, derivationSamples, draftScript, drawn, finding, fixture, ledgerSamples, schedule, vignette } from "./drafting.fixture.ts";
-import { briefParts } from "./briefparts.ts";
+import { briefParts, partsIn, partsOf } from "./briefparts.ts";
 import { chainOf } from "./chain.ts";
 
 /** The default floor is 7; B, an arithmetic finding at two of three samples, sits at 6, so a test that needs two fixes at once lowers it. */
@@ -242,7 +242,9 @@ describe("check and gate 1", () => {
     const ctx = p.artifacts(next.id).filter((a) => a.kind === "vignette" && [...by("context"), ...by("repair-context")].some((s) => s.id === a.step_id))
       .sort((a, b) => JSON.parse(a.meta).index - JSON.parse(b.meta).index);
     expect(ctx[0].content).toContain("rewritten context");
-    expect(JSON.parse(ctx[0].meta)).toMatchObject({ index: 1, job: "Test the first thing: scene one.", rewritten_from: draw.id });
+    // the part names the step it was rewritten from, which is the context of the draw being repaired
+    const srcContext1 = partsIn(partsOf(p, draw.id), "context")[0];
+    expect(JSON.parse(ctx[0].meta)).toMatchObject({ index: 1, job: "Test the first thing: scene one.", rewritten_from: srcContext1.stepId });
     expect(ctx[1].content).toBe("context for Test a second thing: scene two.");
     expect(model.calls.filter((c) => c.stage === "context")).toHaveLength(2);    // two on the draw, none on the repair
     expect(model.calls.find((c) => c.stage === "repair-context")!.prompt).toContain("The first context holds.");
