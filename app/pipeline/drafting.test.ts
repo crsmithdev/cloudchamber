@@ -1085,3 +1085,19 @@ describe("a patch that renames one mention", () => {
     expect(step.model).toBe("patched");
   });
 });
+
+describe("the outline a check reads", () => {
+  test("is the chain root's with the accepted fixes appended, never what a repair wrote into the outline", async () => {
+    const script = draftScript({ "check-ledger": [...ledgerSamples(), ...cleanSamples()], "check-derivation": [...derivationSamples(), ...cleanSamples()] });
+    const { p, d, draw } = await drawn(script);
+    await d.check(draw.id);
+    const [a] = d.findings(draw.id).findings.filter((f) => f.reported);
+    const next = await d.accept(draw.id, [a.id]);
+    // the repair's outline is "Repaired ... body."; the recheck must read the author's "Section ... body." instead
+    expect(p.artifacts(next.id).find((x) => x.kind === "outline")!.content).toContain("Repaired debt audit body.");
+    const prompt = p.steps(next.id).find((s) => s.stage === "check-derivation")!.prompt;
+    expect(prompt).toContain("Section debt audit body.");
+    expect(prompt).not.toContain("Repaired debt audit body.");
+    expect(prompt).toContain("where an amendment and a line above disagree, the amendment holds and the line above is void:\n- Only the assembler can fire the reliquary.");
+  });
+});

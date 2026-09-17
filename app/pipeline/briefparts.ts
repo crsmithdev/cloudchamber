@@ -133,7 +133,7 @@ function briefSettingJobs(p: Pipeline, drawId: string): string[] {
 export function scoreContext(p: Pipeline, drawId: string): ScoreContext | undefined {
   try {
     const b = briefParts(p, drawId);
-    return { prose: [b.vignette, ...b.contexts, b.ending].join("\n\n"), outline: b.outline, ledger: pinnedLedger(p, drawId) ?? "" };
+    return { prose: [b.vignette, ...b.contexts, b.ending].join("\n\n"), outline: pinnedOutline(p, drawId), ledger: pinnedLedger(p, drawId) ?? "" };
   } catch { return undefined; }
 }
 
@@ -251,15 +251,34 @@ export function dismissedFindings(p: Pipeline, drawId: string): { span: string; 
  * prose to both. The header now says which one holds.
  */
 export function pinnedLedger(p: Pipeline, drawId: string): string | null {
+  const base = firstLedger(p, chainRoot(p, drawId)) ?? latestLedger(p, drawId);
+  if (!base) return null;
+  return amended(base, settledConstraints(p, drawId));
+}
+
+/**
+ * The outline a check holds the prose to: the chain root's, with the fixes
+ * accepted since appended the way the pinned ledger carries them. A repair
+ * re-edits the outline every round, and what it adds there is not the
+ * author's: on the pit chain it wrote "a single reading with no earlier survey
+ * to compare against", and the next round rewrote the author's line about last
+ * year's survey to match.
+ */
+export function pinnedOutline(p: Pipeline, drawId: string): string {
+  const base = [...p.artifacts(chainRoot(p, drawId))].reverse().find((a) => a.kind === "outline")?.content ?? "";
+  return amended(base, settledConstraints(p, drawId));
+}
+
+/** The first draw of a repair chain. */
+export function chainRoot(p: Pipeline, drawId: string): string {
   let root = drawId;
   const seen = new Set<string>();
   while (!seen.has(root)) { seen.add(root); const up: string | null = p.draw(root).repaired_from; if (!up) break; root = up; }
-  const base = firstLedger(p, root) ?? latestLedger(p, drawId);
-  if (!base) return null;
-  const amendments = settledConstraints(p, drawId);
-  if (!amendments.length) return base;
-  return [base, "", "amended by the findings accepted since; where an amendment and a line above disagree, the amendment holds and the line above is void:", ...amendments.map((a) => `- ${a.replacement}`)].join("\n");
+  return root;
 }
+
+const amended = (base: string, amendments: Settled[]) => !amendments.length ? base
+  : [base, "", "amended by the findings accepted since; where an amendment and a line above disagree, the amendment holds and the line above is void:", ...amendments.map((a) => `- ${a.replacement}`)].join("\n");
 
 /**
  * The profile each profile-only checker produced anywhere in this repair chain,

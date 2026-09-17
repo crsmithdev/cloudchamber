@@ -357,7 +357,7 @@ Premise: {premise}
 
 {settled}
 
-Rewrite the structure so that every line of the constraints holds. Change only the sentences a constraint touches; every other name, number, date, time, rule and table row stays word for word. Do not re-derive what no constraint touches. Add no name, number, date or time that is not already in the structure, the vignette or a constraint; where a constraint leaves a name open, leave it unnamed.`,
+Rewrite the structure so that every line of the constraints holds. Change only the sentences a constraint touches; every other name, number, date, time, rule and table row stays word for word. Do not re-derive what no constraint touches. Add no name, number, date or time that is not already in the structure, the vignette or a constraint; where a constraint leaves a name open, leave it unnamed. Add no fact, claim or explanation that no constraint states.`,
 
   repairEnding: `Below is a story's derived structure, the ending written from it, and a set of constraints that hold.
 

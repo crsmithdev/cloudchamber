@@ -20,7 +20,7 @@ import { tag, tags } from "./model.ts";
 import { distillate, type ClaimsAuthority } from "./settings.ts";
 import { samplesFor, type DraftConfig } from "./draftconfig.ts";
 import { cluster, excludeDismissed, findingId, merge, normalise, parseFindings, quoted, same, type Cluster, type Finding } from "./recur.ts";
-import { briefBlock, briefParts, chainProfile, claimVerdicts, dismissedFindings, passId, pinnedLedger, type BriefParts } from "./briefparts.ts";
+import { briefBlock, briefParts, chainProfile, claimVerdicts, dismissedFindings, passId, pinnedLedger, pinnedOutline, type BriefParts } from "./briefparts.ts";
 import { RUN } from "./config.ts";
 
 export const PREMISES_PATH = resolve(import.meta.dir, "premises.md");
@@ -58,7 +58,8 @@ const findingShape = (settingJobs: string[]) => fill("findingShape", { sections:
 /** Run every enabled checker over the brief. The draw must hold a brief; status is the caller's. */
 export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, opts: { checks?: string[]; samples?: number; premisesPath?: string } = {}): Promise<CheckResult> {
   const parts = briefParts(p, drawId);
-  const brief = briefBlock(parts);
+  // the prose is held to the author's outline and the fixes accepted since, not to what a repair wrote into the outline
+  const brief = briefBlock({ ...parts, outline: pinnedOutline(p, drawId) });
   const pass = passId();
   const enabled = (opts.checks ?? cfg.checks.enabled).filter((c) => (CHECKERS as readonly string[]).includes(c)) as Checker[];
   const dismissed = dismissedFindings(p, drawId);
