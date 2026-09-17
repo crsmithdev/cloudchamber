@@ -188,7 +188,7 @@ Candidates:
 
   findingShape: `Each finding goes in a <finding> tag containing: <span> (a verbatim quote from the brief, under ${RUN.spanWords} words), <statement> (what the span asserts, one sentence), <result> (one of: supported | contradicted | unverifiable | contradicts:<a second verbatim quote> | underived), <evidence> (the second quote, the sum written out, a URL and quoted line, or none), <invalidates> (which outline section would have to change if the finding stands: {sections} | none), <replacement> (one factual sentence in the outline's register that would hold in its place; not dialogue, not a scene), <patch> (the span rewritten so the finding no longer holds, in the voice and register of the text it came from and no longer than the span, ready to stand in its place word for word; or none when the fix needs more than that span).
 
-Quote every span from a vignette or the ending, never from the outline: the reader of the story sees only those. Report only a conflict that reader would see by comparing two quotes, or a line that breaks a rule the outline states in words. A conflict you find only by arithmetic beyond comparing two stated values, by counting weekdays, or by working out how liquid, light, an instrument or a body behaves is not a finding, and neither is a stated rule beside an exception the text marks. When the conflicting fact is also stated in a vignette or the ending, quote it from there. A result of contradicted or contradicts needs the span to assert the conflicting fact itself. A count, a duration or a detail the span does not state is not a contradiction: the span may be one of several, and what it leaves out is unverifiable. The replacement and the patch keep every event the span reports and change only the quantity, the timing or the mechanism that conflicts. Never turn an event into its absence. When the two quotes give one person, place, company or thing two names, or one quantity two values, the replacement names one of the two the brief already uses, and never a third.`,
+Quote every span from a vignette or the ending, never from the outline: the reader of the story sees only those. Report only a conflict that reader would see by comparing two quotes, or a line that breaks a rule the outline states in words. A conflict you find only by arithmetic beyond comparing two stated values, by counting weekdays, or by working out how liquid, light, an instrument or a body behaves is not a finding, and neither is a stated rule beside an exception the text marks. When the conflicting fact is also stated in a vignette or the ending, quote it from there. A result of contradicted or contradicts needs the span to assert the conflicting fact itself. A count, a duration or a detail the span does not state is not a contradiction: the span may be one of several, and what it leaves out is unverifiable. The replacement and the patch keep every event the span reports and change only the quantity, the timing or the mechanism that conflicts. Never turn an event into its absence. When the two quotes give one person, place, company or thing two names, or one quantity two values, the replacement names the one of the two that the rest of the brief supports, and never a third. The replacement states the corrected fact and nothing else: no place, count, cause or detail that neither quote states.`,
 
   checkDerivation: `Below is a story brief: a seed, a premise, an outline in three sections, three vignettes and an ending. The debt audit section claims to derive everything from one impossibility.
 
@@ -291,7 +291,7 @@ Find the line in the setting above that confirms or denies it. The setting is th
 {findings}
 </findings>
 
-A reader of the story sees only the vignettes and the ending, reads them once and with attention, and never sees the outline. Read each finding back against the whole brief. Keep it only when the span asserts the fact the statement gives it, the evidence is a quote from the brief or the ledger that conflicts with that fact, and the conflict is one that reader would notice, or one that breaks a rule the outline or the ledger states in words.
+A reader of the story sees only the vignettes and the ending, reads them once and with attention, and never sees the outline. Read each finding back against the whole brief. Keep it only when the span asserts the fact the statement gives it, the evidence is a quote from the brief or the ledger that conflicts with that fact, and the conflict is one that reader would notice, or one that breaks a rule the outline states in words. The ledger restates the outline and can state a rule more strongly than the outline does; where the two differ, the outline holds.
 
 Drop it when any of these is true:
 - the span does not state the fact, or what it leaves out is stated elsewhere or left open;
@@ -336,7 +336,7 @@ satisfy a constraint above.`,
 
 {settled}
 
-Rewrite it in a <vignette> tag so that every line of the constraints holds, keeping its people, place, form and length. Change only the sentences a constraint touches; every other name, number, date, time and place stays word for word. Add no name, number, date or time that is not already in it or in a constraint. Under ${RUN.vignetteWords + 50} words. Output only the tag.`,
+Rewrite it in a <vignette> tag so that every line of the constraints holds, keeping its people, place, form and length. Change only the sentences that state a fact a constraint corrects; every other name, number, date, time and place stays word for word, even where a constraint mentions it. Add no name, number, date or time that is not already in it or in a constraint. Under ${RUN.vignetteWords + 50} words. Output only the tag.`,
 
   repairOutlineHead: `Below is a seed, a premise, a ${RUN.vignetteWords}-word execution of it, the story's underlying structure as it stands, and a set of constraints that hold. Nothing here is prose for the page.
 
@@ -372,7 +372,7 @@ Rewrite the structure so that every line of the constraints holds. Change only t
 
 {settled}
 
-Rewrite the ending in an <ending> tag so that every line of the constraints holds, keeping its people, place, form and length. Change only the sentences a constraint touches; every other name, number, date, time and place stays word for word. Add no name, number, date or time that is not already in it or in a constraint. Under ${RUN.endingWords} words. Output only the tag.`,
+Rewrite the ending in an <ending> tag so that every line of the constraints holds, keeping its people, place, form and length. Change only the sentences that state a fact a constraint corrects; every other name, number, date, time and place stays word for word, even where a constraint mentions it. Add no name, number, date or time that is not already in it or in a constraint. Under ${RUN.endingWords} words. Output only the tag.`,
 
   schedule: `Below is a story brief: a seed, a premise, an outline in three sections, three vignettes and an ending. Below that, the story's configuration.
 

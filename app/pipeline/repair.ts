@@ -118,7 +118,8 @@ export async function repair(p: Pipeline, drawId: string, accepted: Accepted[]):
 }
 
 const NAME = /\b\p{Lu}[\p{L}'’.-]{2,}/gu;
-const namesIn = (t: string) => new Set(t.match(NAME) ?? []);
+// case is folded: a header's BRIGHTWELL and a line's Brightwell are one name
+const namesIn = (t: string) => new Set((t.match(NAME) ?? []).map((n) => n.toLowerCase()));
 
 /**
  * A patch renames one mention. When it takes out a name that the rest of its

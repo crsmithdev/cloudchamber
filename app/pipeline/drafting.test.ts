@@ -1075,6 +1075,11 @@ describe("a patch that renames one mention", () => {
     expect(step.prompt).toContain("Brightwell held the contract, and its cart came at nine.");
   });
 
+  test("is not applied when the old name stays in its passage in another case", async () => {
+    const step = await run("THE CLEARWATER CART came at nine. Clearwater held the contract.");
+    expect(step.model).not.toBe("patched");
+  });
+
   test("is applied when the old name is used nowhere else in its passage", async () => {
     const step = await run("Clearwater held the contract.");
     expect(step.model).toBe("patched");
