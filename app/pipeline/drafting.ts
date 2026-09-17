@@ -278,11 +278,13 @@ export class Drafting {
     // and read as sentences the second was conditional on the first, so nothing conflicted
     const fixes = accept.map((f, i) => `${i + 1}. ${f.replacement}${f.patch?.trim() ? `\n   patch: "${f.patch.trim()}"` : ""}`).join("\n");
     const prompt = fill("reconcile", { fixes });
+    // the call is the start of the repair: while it runs the gate is closed, so no second accept, auto or draft starts
+    this.status(drawId, "repairing");
     const { value: pairs } = await this.p.invoke<{ a: number; b: number; why: string }[]>(drawId, parent, "reconcile", prompt, (t) => {
       const block = tag(t, "conflicts");
       if (block === null) throw new Error("no <conflicts> tag");
       return parseConflicts(block).filter((x) => x.a >= 1 && x.a <= accept.length && x.b >= 1 && x.b <= accept.length && x.a !== x.b);
-    });
+    }).finally(() => this.status(drawId, "awaiting_check_gate"));
     const dropped = new Map<string, FindingView>();
     for (const { a, b } of pairs) {
       const [hi, lo] = a < b ? [a, b] : [b, a];

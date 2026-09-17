@@ -886,13 +886,16 @@ describe("auto acts on reported findings only, and reads its accepted set agains
   });
 
   test("of two accepted fixes that cannot both hold, the lower-scoring one is dismissed before the repair", async () => {
+    let status = () => "";
+    const during: string[] = [];
     const script = draftScript({
       "check-ledger": [...ledgerSamples(), ...cleanSamples()],
       "check-derivation": [...derivationSamples(), ...cleanSamples()],
-      reconcile: ["<conflicts><conflict><a>1</a><b>2</b><why>one relic cannot be fired by two rules</why></conflict></conflicts>"],
+      reconcile: () => { during.push(status()); return "<conflicts><conflict><a>1</a><b>2</b><why>one relic cannot be fired by two rules</why></conflict></conflicts>"; },
     });
     script["check-ledger"].push(...cleanSamples()); script["check-derivation"].push(...cleanSamples());
     const { p, d, draw, model } = await drawn(script);
+    status = () => p.draw(draw.id).status;
     await d.check(draw.id);
     const [a, b] = d.findings(draw.id).findings;
     expect([a.score, b.score]).toEqual([10, 6]);
@@ -900,6 +903,7 @@ describe("auto acts on reported findings only, and reads its accepted set agains
     expect(r.stopped).toBe("floor");
     expect(r.rounds[0].accepted).toBe(1);                                      // the row counts what was applied
     expect(stagesOf(model, /^reconcile$/)).toHaveLength(1);
+    expect(during).toEqual(["repairing"]);                                     // the gate is closed while the call runs
     const after = d.findings(draw.id, { all: true }).findings;
     expect(after.find((f) => f.id === a.id)!.decision).toBe("accepted");
     expect(after.find((f) => f.id === b.id)).toMatchObject({ decision: "dismissed", note: `auto: conflicts with ${a.id}` });
