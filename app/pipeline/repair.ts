@@ -15,12 +15,13 @@ import { need, words } from "./model.ts";
 import { now } from "./paths.ts";
 import { writeBrief } from "./brief.ts";
 import { briefParts, pinnedLedger, settledConstraints, type Settled } from "./briefparts.ts";
-import { normalise, quoted } from "./recur.ts";
+import { quoted } from "./recur.ts";
 import type { FindingView } from "./briefparts.ts";
 
 export type Accepted = Pick<FindingView, "id" | "span" | "invalidates" | "replacement"> & { patch?: string; result?: string };
 
-const inside = (span: string, text: string) => normalise(text).includes(normalise(span));
+// as loose as the checker that quoted it, so a span the verify pass kept is found here too
+const inside = (span: string, text: string) => !span.trim() || quoted(text, span, 1);
 
 /**
  * Whether a finding lands in a passage: its span is there, or, for a finding with
@@ -76,11 +77,13 @@ function looseIndex(text: string, span: string): { from: number; to: number } | 
  * lands in it that a substitution cannot express.
  */
 export function repairPlan(accepted: Accepted[], vignette: string, ending: string, contexts: string[] = []): { vignette: boolean; ending: boolean; context: boolean[] } {
-  const unpatchable = accepted.filter((f) => !f.patch?.trim());
+  // a patch whose span matches no text exactly is a rewrite: the checker's quote matching is looser than the substitution
+  const landed = new Set([vignette, ending, ...contexts].flatMap((t) => applyPatches(t, accepted).applied.map((f) => f.id)));
+  const unpatchable = accepted.filter((f) => !f.patch?.trim() || !landed.has(f.id));
   return {
     vignette: unpatchable.some((f) => landsIn(f, vignette)),
     // an arithmetic or custody finding moves the mechanism, so the ending is re-derived even when patched elsewhere
-    ending: unpatchable.some((f) => landsIn(f, ending)) || accepted.some((f) => ENDING_SECTIONS.has(f.invalidates.toLowerCase()) && !f.patch?.trim()),
+    ending: unpatchable.some((f) => landsIn(f, ending)) || unpatchable.some((f) => ENDING_SECTIONS.has(f.invalidates.toLowerCase())),
     context: contexts.map((c) => unpatchable.some((f) => landsIn(f, c))),
   };
 }
@@ -161,7 +164,8 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
   const constraints = constraintsBlock(accepted);
   const within = (text: string, extra: Accepted[] = []) =>
     constraintsBlock([...accepted.filter((f) => landsIn(f, text)), ...extra.filter((f) => !landsIn(f, text))]);
-  const endingExtra = accepted.filter((f) => ENDING_SECTIONS.has(f.invalidates.toLowerCase()) && !f.patch?.trim());
+  const landed = new Set([patchedVignette, patchedEnding, ...patchedContexts].flatMap((x) => x.applied.map((f) => f.id)));
+  const endingExtra = accepted.filter((f) => ENDING_SECTIONS.has(f.invalidates.toLowerCase()) && (!f.patch?.trim() || !landed.has(f.id)));
   // the accepted set of this round is not the whole record: every earlier round's fix still holds
   const settledLines = settledConstraints(p, parts.draw.id).filter((sc) => !accepted.some((a) => a.id === sc.finding));
   const settled = settledBlock(settledLines);

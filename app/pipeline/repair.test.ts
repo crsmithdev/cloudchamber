@@ -53,4 +53,13 @@ describe("patching a brief in place", () => {
     expect(repairPlan([f("holds the silk", "", "arithmetic")], vignette, ending, contexts).ending).toBe(true);
     expect(repairPlan([f("holds the silk", "holds the linen", "arithmetic")], vignette, ending, contexts).ending).toBe(false);
   });
+
+  test("a patch whose span the text does not hold word for word is rewritten, not dropped", () => {
+    const vignette = "She said, “Hold the reliquary” and left.";
+    // the checker quoted straight quotes; the prose has curly ones, so the quote matches loosely and the substitution misses
+    const miss = f(`said, "Hold the reliquary"`, `said, "Burn the reliquary"`);
+    expect(applyPatches(vignette, [miss]).applied).toEqual([]);
+    expect(repairPlan([miss], vignette, "The count closes.", []).vignette).toBe(true);
+    expect(repairPlan([f(`said, "Hold the reliquary"`, "x", "arithmetic")], vignette, "The count closes.", []).ending).toBe(true);
+  });
 });
