@@ -61,6 +61,13 @@ differ, this file wins.
 >   same authority is not verified again; the cached verdict is stored against
 >   the new pass with `cached_from`. A lore setting's distillate does not change
 >   between rounds, and this was one call per extracted claim per round.
+> - **The parts of a brief, 2026-09-17.** A stage declares the role it writes —
+>   `context` and `repair-context` both write `context` — and
+>   `app/pipeline/briefparts.ts` is the only reader and writer of the parts. It
+>   answers them by role, holds each role's length band (`RUN.partWords`) and
+>   writes a repair's part one way: rewritten from itself or carried over, with
+>   the patches that landed and the step it came from. No artifact changed, and
+>   a carried part now names the step it came from, contexts included.
 > - **Gate 2 and failures, 2026-09-17.** A check, draft or rewrite that throws
 >   returns the draw to the gate it stood at, with the reason in `draws.error`
 >   (store version 11); it no longer becomes `failed`, which nothing could pick
