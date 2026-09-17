@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api, type AutoResult, type Draw, type DraftConfig, type Finding, type Findings, type Story, type Step } from "./api.ts";
-import { BriefFiles, DrawAside, Md, RowHead, SeedNote, StepView, boldLabels, firstParagraph, label, stageName, stageNames, type Detail } from "./Draws.tsx";
+import { BriefFiles, DrawAside, Md, RowHead, SeedNote, StepView, boldLabels, firstParagraph, inFlight, isWorking, label, stageName, stageNames, type Detail } from "./Draws.tsx";
 import { ArchivedToggle, Bar, Btn, Caret as Chevron, Facts, RUNNING_STATUS, Field, Head, Icon, Mark, Seg, lastSelected, markFor, secs, usePoll, useRememberSelected } from "./ui.tsx";
 
 /**
@@ -74,9 +74,8 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
     setErr("");
     setSettings(false);
     setFolded(false);
-    return () => {};
   }, [current]);
-  const working = !!d && (RUNNING_STATUS.has(d.draw.status) || d.steps.some((s) => s.status === "running"));
+  const working = isWorking(d);
   usePoll(
     () => {
       if (current) loadDetail(current);
@@ -178,7 +177,6 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
                 archived={!!r.archived_at}
                 blocked="a premise was chosen from it; archive it instead"
                 onArchive={() => archiveChain(c)}
-                onDelete={() => {}}
               />
               {isOpen && (
                 <>
@@ -236,7 +234,7 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
                 <Mark state={markFor(d.draw.status)} />
                 <span className={working ? "sweep" : ""}>
                   {d.draw.status === "done" ? "unchecked" : label(d.draw.status)}
-                  {working && d.steps.some((s) => s.status === "running") ? ` · ${stageNames(d.steps.filter((s) => s.status === "running"))}` : ""}
+                  {working ? inFlight(d) : ""}
                 </span>
               </span>
             </div>
@@ -338,10 +336,10 @@ function CheckControls({
   note: string;
   onNote: (v: string) => void;
   onAuto: () => void;
-  onCheck: () => void;
+  onCheck?: () => void;
   onDraft: () => void;
-  onFlag: () => void;
-  onHold: () => void;
+  onFlag?: () => void;
+  onHold?: () => void;
   openFindings?: number;
   pendingRepair?: number;
 }) {
@@ -398,7 +396,7 @@ function BriefReady({ d, onCheck, onAuto, onDraft, aside }: { d: Detail; onCheck
   const [note, setNote] = useState("");
   return (
     <>
-      <CheckControls d={d} note={note} onNote={setNote} onAuto={onAuto} onCheck={onCheck} onDraft={onDraft} onFlag={() => {}} onHold={() => {}} />
+      <CheckControls d={d} note={note} onNote={setNote} onAuto={onAuto} onCheck={onCheck} onDraft={onDraft} />
       <div className="drawbody">
         <div className="max-w-[66rem]">
           <Head>seed</Head>
@@ -542,7 +540,6 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
           note={note}
           onNote={setNote}
           onAuto={() => gate("auto")}
-          onCheck={() => {}}
           onDraft={onDraft}
           onFlag={() => gate("flag")}
           onHold={() => gate("hold")}

@@ -87,7 +87,7 @@ export function RowHead({
   /** why this row cannot be deleted, or empty when it can */
   blocked: string;
   onArchive: () => void;
-  onDelete: () => void;
+  onDelete?: () => void;
 }) {
   const [asking, setAsking] = useState(false);
   const stop = (e: React.MouseEvent) => e.stopPropagation();
@@ -129,7 +129,7 @@ export function RowHead({
             variant="pass"
             onClick={() => {
               setAsking(false);
-              onDelete();
+              onDelete?.();
             }}
           >
             delete
@@ -188,11 +188,10 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
     setStepId(null);
     setErr("");
     setFolded(false);
-    return () => {};
   }, [current]);
   const d = current && !isForm ? details[current] : undefined;
   // the pane refreshes itself while the pipeline is working on this draw, and rarely once it stops
-  const working = !!d && (RUNNING_STATUS.has(d.draw.status) || d.steps.some((s) => s.status === "running"));
+  const working = isWorking(d);
   usePoll(
     () => {
       if (current && !isForm) loadDetail(current);
@@ -343,7 +342,7 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
                   <Mark state={markFor(d.draw.status)} />
                   <span className={working ? "sweep" : ""}>
                     {label(d.draw.status)}
-                    {working && d.steps.some((s) => s.status === "running") ? ` · ${stageNames(d.steps.filter((s) => s.status === "running"))}` : ""}
+                    {working ? inFlight(d) : ""}
                   </span>
                 </span>
                 {!step && (
@@ -469,6 +468,13 @@ const STAGE: Record<string, { name: string; does: string }> = {
 export const stageName = (stage: string) => STAGE[stage]?.name ?? stage;
 /** The distinct stage names of some steps, in the order they first appear. */
 export const stageNames = (steps: { stage: string }[]) => [...new Set(steps.map((s) => stageName(s.stage)))].join(", ");
+/** Whether the pipeline is working on a draw: its status says so, or a call is in flight. */
+export const isWorking = (d: Detail | undefined | null) => !!d && (RUNNING_STATUS.has(d.draw.status) || d.steps.some((s) => s.status === "running"));
+/** " · " and the stages of the calls in flight, or nothing when none is. */
+export const inFlight = (d: Detail) => {
+  const running = d.steps.filter((s) => s.status === "running");
+  return running.length ? ` · ${stageNames(running)}` : "";
+};
 
 /**
  * The step log as a time table: step, started, seconds. Each row names its step in words, says which one of a
