@@ -68,9 +68,7 @@ export function findingArtifacts(p: Pipeline, drawId: string): (FindingMeta & { 
 
 /** The latest check pass id on a draw, or null when none has run. Pass ids sort as strings in time order. */
 export function latestCheckPass(p: Pipeline, drawId: string): string | null {
-  const passes = p.artifacts(drawId).filter((a) => a.kind === "pass" || a.kind === "ledger" || (a.kind === "finding" && JSON.parse(a.meta).source === "check") || a.kind === "profile" && JSON.parse(a.meta).source === "check")
-    .map((a) => JSON.parse(a.meta).pass as string).filter(Boolean);
-  return passes.length ? passes.sort().at(-1)! : null;
+  return checkPasses(p, drawId).at(-1) ?? null;
 }
 
 /** The distinct check pass ids on a draw, oldest first. */
@@ -194,11 +192,7 @@ export function gateFindings(p: Pipeline, drawId: string, all = false): FindingV
  * over an eight-round chain.
  */
 export function settledConstraints(p: Pipeline, drawId: string): Settled[] {
-  const chain: string[] = [];
-  const seen = new Set<string>();
-  let id: string | null = drawId;
-  while (id && !seen.has(id)) { seen.add(id); chain.push(id); id = p.draw(id).repaired_from; }
-  chain.reverse();
+  const chain = chainIds(p, drawId).reverse();
   const out: Settled[] = [];
   chain.forEach((draw, i) => {
     for (const f of findingArtifacts(p, draw)) {
@@ -225,12 +219,8 @@ export function relitigated(f: { span: string; statement: string }, settled: Set
 /** Findings dismissed on this draw or any brief it repairs; a re-check does not raise them again. */
 export function dismissedFindings(p: Pipeline, drawId: string): { span: string; statement: string }[] {
   const out: { span: string; statement: string }[] = [];
-  const seen = new Set<string>();
-  let id: string | null = drawId;
-  while (id && !seen.has(id)) {
-    seen.add(id);
+  for (const id of chainIds(p, drawId)) {
     for (const f of findingArtifacts(p, id)) if (f.source === "check" && decision(p, f.id).decision === "dismissed") out.push({ span: f.span, statement: f.statement });
-    id = p.draw(id).repaired_from;
   }
   return out;
 }
@@ -269,12 +259,16 @@ export function pinnedOutline(p: Pipeline, drawId: string): string {
   return amended(base, settledConstraints(p, drawId));
 }
 
+/** A draw and every brief it repairs, back to the root: newest first. */
+export function chainIds(p: Pipeline, drawId: string): string[] {
+  const out: string[] = [];
+  for (let id: string | null = drawId; id && !out.includes(id); id = p.draw(id).repaired_from) out.push(id);
+  return out;
+}
+
 /** The first draw of a repair chain. */
 export function chainRoot(p: Pipeline, drawId: string): string {
-  let root = drawId;
-  const seen = new Set<string>();
-  while (!seen.has(root)) { seen.add(root); const up: string | null = p.draw(root).repaired_from; if (!up) break; root = up; }
-  return root;
+  return chainIds(p, drawId).at(-1)!;
 }
 
 const amended = (base: string, amendments: Settled[]) => !amendments.length ? base
@@ -287,25 +281,23 @@ const amended = (base: string, amendments: Settled[]) => !amendments.length ? ba
  * every round was about 5% of a chain's input tokens for an unchanging answer.
  */
 export function chainProfile(p: Pipeline, drawId: string, checker: string): { pass: string; draw: string; meta: any } | null {
-  const seen = new Set<string>();
-  let id: string | null = drawId;
-  while (id && !seen.has(id)) {
-    seen.add(id);
+  for (const id of chainIds(p, drawId)) {
     const hit = p.artifacts(id).filter((a) => a.kind === "profile")
-      .map((a) => ({ draw: id!, meta: JSON.parse(a.meta) as any }))
+      .map((a) => ({ draw: id, meta: JSON.parse(a.meta) as any }))
       .filter((x) => x.meta.source === "check" && x.meta.checker === checker)
       .sort((a, b) => String(a.meta.pass).localeCompare(String(b.meta.pass)));
     if (hit.length) { const last = hit.at(-1)!; return { pass: String(last.meta.pass), draw: last.draw, meta: last.meta }; }
-    id = p.draw(id).repaired_from;
   }
   return null;
 }
 
+/** A draw's ledgers, oldest pass first. */
+const ledgers = (p: Pipeline, drawId: string) => p.artifacts(drawId).filter((a) => a.kind === "ledger")
+  .sort((a, b) => (JSON.parse(a.meta).pass as string).localeCompare(JSON.parse(b.meta).pass));
+
 /** The first ledger extracted on a draw: the contract, before any amendment. */
 export function firstLedger(p: Pipeline, drawId: string): string | null {
-  const ls = p.artifacts(drawId).filter((a) => a.kind === "ledger");
-  if (!ls.length) return null;
-  return ls.sort((a, b) => (JSON.parse(a.meta).pass as string).localeCompare(JSON.parse(b.meta).pass))[0].content;
+  return ledgers(p, drawId)[0]?.content ?? null;
 }
 
 /**
@@ -316,17 +308,13 @@ export function firstLedger(p: Pipeline, drawId: string): string | null {
  */
 export function claimVerdicts(p: Pipeline, drawId: string, authority: string): CachedClaim[] {
   const out: CachedClaim[] = [];
-  const seen = new Set<string>();
-  let id: string | null = drawId;
-  while (id && !seen.has(id)) {
-    seen.add(id);
+  for (const id of chainIds(p, drawId)) {
     for (const a of p.artifacts(id).filter((x) => x.kind === "claim")) {
       const m = JSON.parse(a.meta) as { span?: string; result?: string; evidence?: string; authority?: string; invalidates?: string; replacement?: string; patch?: string };
       if (m.authority !== authority || !m.result) continue;
       if (out.some((o) => normalise(o.statement) === normalise(a.content))) continue;
       out.push({ statement: a.content, span: m.span ?? "", result: m.result, evidence: m.evidence ?? "none", invalidates: m.invalidates ?? "none", replacement: m.replacement ?? "", patch: m.patch ?? "", draw: id });
     }
-    id = p.draw(id).repaired_from;
   }
   return out;
 }
@@ -335,9 +323,7 @@ export type CachedClaim = { statement: string; span: string; result: string; evi
 
 /** The ledger the latest check extracted, or null. */
 export function latestLedger(p: Pipeline, drawId: string): string | null {
-  const ls = p.artifacts(drawId).filter((a) => a.kind === "ledger");
-  if (!ls.length) return null;
-  return ls.sort((a, b) => (JSON.parse(a.meta).pass as string).localeCompare(JSON.parse(b.meta).pass))[ls.length - 1].content;
+  return ledgers(p, drawId).at(-1)?.content ?? null;
 }
 
 /** The model family of a model id: the second token of claude-<family>-... */

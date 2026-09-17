@@ -8,6 +8,7 @@ import type { Pipeline } from "./draw.ts";
 import { BRIEFS, DRAFTS } from "./paths.ts";
 import { checkFindings, decision, findingArtifacts, judgeNote, type FindingView } from "./briefparts.ts";
 import { score } from "./recur.ts";
+import { words } from "./model.ts";
 import { toToml, type Resolved } from "./draftconfig.ts";
 import { currentScenes, type Beat, type Profile, type Scene } from "./write.ts";
 import type { Answer } from "./check.ts";
@@ -44,8 +45,7 @@ export function draftView(p: Pipeline, drawId: string): DraftView {
   };
 }
 
-export function renderStory(p: Pipeline, drawId: string, withFlags = true): string {
-  const v = draftView(p, drawId);
+export function renderStory(v: DraftView, withFlags = true): string {
   const out: string[] = [];
   v.scenes.forEach((s, i) => {
     if (i) out.push("", "* * *", "");
@@ -69,8 +69,7 @@ export function renderSchedule(v: DraftView): string {
   return out.join("\n");
 }
 
-export function renderFindings(p: Pipeline, drawId: string): string {
-  const v = draftView(p, drawId);
+export function renderFindings(p: Pipeline, drawId: string, v: DraftView): string {
   const checks = checkFindings(p, drawId);
   const out = ["# Findings", ""];
   out.push("## Check", "");
@@ -101,9 +100,9 @@ export function exportDraft(p: Pipeline, drawId: string, resolved: Resolved, gat
   const dir = join(base, drawId);
   mkdirSync(dir, { recursive: true });
   const w = (name: string, body: string) => writeFileSync(join(dir, name), body.trimEnd() + "\n");
-  w("story.md", renderStory(p, drawId, false));
+  w("story.md", renderStory(v, false));
   w("schedule.md", renderSchedule(v));
-  w("findings.md", renderFindings(p, drawId));
+  w("findings.md", renderFindings(p, drawId, v));
   w("config.toml", toToml(resolved));
   const briefTrail = join(briefs, drawId, "trail.md");
   const steps = p.steps(drawId);
@@ -114,7 +113,7 @@ export function exportDraft(p: Pipeline, drawId: string, resolved: Resolved, gat
     "## draft", "",
     `config: ${resolved.profile ? `profile ${resolved.profile}` : "defaults"}${resolved.overridden.length ? ` · overridden ${resolved.overridden.join(", ")}` : ""}`, "",
     "### models", "", ...[...models].filter(([s]) => /^(check|repair|schedule|scene|screen)/.test(s)).map(([s, m]) => `- ${s}: ${m}`), "",
-    "### scenes", "", ...v.scenes.map((s) => `- beat ${s.beat}: ${s.text.split(/\s+/).filter(Boolean).length} words`), "",
+    "### scenes", "", ...v.scenes.map((s) => `- beat ${s.beat}: ${words(s.text)} words`), "",
     `screen flags: ${v.screenFindings.length} ledger, ${v.profiles.reduce((a, x) => a + x.flags.length, 0)} structure`, "",
     "### gate 2", "", ...(gate2.length ? gate2.map((g) => `- ${g}`) : ["- keep"]), "",
     ...(v.judge ? [v.judge, ""] : []),

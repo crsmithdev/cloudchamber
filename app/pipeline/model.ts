@@ -79,6 +79,13 @@ export function tag(text: string, name: string): string | null {
   return m ? m[1].trim() : null;
 }
 
+/** A tag the parse cannot go without: its content, or a throw naming it. */
+export function need(text: string, name: string): string {
+  const v = tag(text, name);
+  if (!v) throw new Error(`no <${name}> tag`);
+  return v;
+}
+
 export function tags(text: string, name: string): string[] {
   const out: string[] = [];
   const re = new RegExp(`<${name}(?:\\s[^>]*)?>([\\s\\S]*?)</${name}>`, "gi");

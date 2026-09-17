@@ -6,7 +6,8 @@
 import Fastify, { type FastifyInstance } from "fastify";
 import type { Db } from "../pipeline/store/db.ts";
 import { Pipeline, type DrawOpts, type SeedChoice } from "../pipeline/draw.ts";
-import { KINDS, latest, passedStories, record, type Kind, type Method } from "../pipeline/verdicts.ts";
+import { KINDS, latest, latestAll, passedStories, record, type Kind, type Method } from "../pipeline/verdicts.ts";
+import { renderStory } from "../pipeline/drafts.ts";
 import { status } from "../pipeline/status.ts";
 import { originOf, stageOf } from "../pipeline/stage.ts";
 import { BANDS, DARKNESS, GENRES, SAMPLING } from "../pipeline/config.ts";
@@ -14,7 +15,8 @@ import { exportBank, sourceLabel } from "../pipeline/bank.ts";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { BRIEFS } from "../pipeline/paths.ts";
-import { Drafting } from "../pipeline/drafting.ts";
+import { CHECKABLE, Drafting } from "../pipeline/drafting.ts";
+import { loadSetting } from "../pipeline/settings.ts";
 import { loadDraftConfig, profileNames, type Overrides } from "../pipeline/draftconfig.ts";
 
 export type ItemOrder = "source" | "suspects" | "shuffle";
@@ -35,12 +37,13 @@ export function listItems(db: Db, f: ItemFilter) {
                 FROM passages p JOIN stories s ON s.id = p.story_id ORDER BY s.source_id, s.ord, p.position`).all() as any[])
         .filter((r) => !passed.has(r.story_id)).map((r) => ({ ...r, suspect: r.suspect ? JSON.parse(r.suspect) : [] }))
     : f.kind === "story"
-      ? db.query(`SELECT s.id, s.title AS text, s.title, s.author, s.genre, s.words, s.source_id AS source, count(p.id) AS passages
+      ? db.query(`SELECT s.id, s.title AS text, s.title, s.author, s.genre, s.words, s.source_id AS source, count(p.story_id) AS passages
                   FROM stories s LEFT JOIN passages p ON p.story_id = s.id GROUP BY s.id ORDER BY s.source_id, s.ord`).all() as any[]
     : f.kind === "theme"
       ? db.query(`SELECT id, text, attestation, stories, drafted_at, duplicate_of FROM themes WHERE duplicate_of IS NULL ORDER BY drafted_at`).all() as any[]
       : db.query(`SELECT id, seed_text AS text, setting, genre, status, created_at FROM draws WHERE status = 'done' AND archived_at IS NULL ORDER BY created_at DESC, rowid DESC`).all() as any[];
-  const withVerdict = rows.map((r) => ({ ...r, latest: latest(db, f.kind, r.id) }));
+  const verdicts = latestAll(db, f.kind);
+  const withVerdict = rows.map((r) => ({ ...r, latest: verdicts.get(r.id) ?? null }));
   const out = withVerdict.filter((r) => {
     if (f.source && r.source !== f.source) return false;
     if (f.author && (r.author ?? "").toLowerCase() !== f.author.toLowerCase()) return false;
@@ -96,7 +99,8 @@ export function drawExamples(db: Db, exampleIds: string) {
 
 export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; drafting?: Drafting } = {}): FastifyInstance {
   const app = Fastify({ logger: opts.logger ?? false });
-  const running = new Map<string, Promise<unknown>>();
+  // long work continues after the reply; its failure is on the draw row, so the rejection is dropped here
+  const background = (work: Promise<unknown>) => { work.catch(() => undefined); };
   const drafting = opts.drafting ?? new Drafting(pipeline);
 
   app.get("/api/status", async () => status(db));
@@ -128,10 +132,9 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     authors: db.query("SELECT DISTINCT author FROM stories WHERE author <> '' ORDER BY author").all().map((r: any) => r.author),
     cells: db.query("SELECT voice || '/' || mode AS cell, count(*) AS n FROM passages GROUP BY cell").all(),
     // each setting by its front matter name: "setting-b", not setting-b
-    settings: readdirSync(join(BRIEFS, "..", "sources", "settings")).filter((f) => f.endsWith(".md")).map((f) => {
+    settings: readdirSync(pipeline.settingsDir).filter((f) => f.endsWith(".md")).map((f) => {
       const id = f.replace(/\.md$/, "");
-      const name = /^name:\s*(.+)$/m.exec(readFileSync(join(BRIEFS, "..", "sources", "settings", f), "utf8"))?.[1]?.trim();
-      return { id, name: name ?? id };
+      return { id, name: loadSetting(id, pipeline.settingsDir).name };
     }),
     genres: GENRES,
     sampling: SAMPLING.map((mode) => ({ mode, ...BANDS[mode] })),
@@ -184,7 +187,7 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
   app.get<{ Querystring: { archived?: string } }>("/api/draws", async (req) => {
     const verdicts = findingVerdicts();
     return pipeline.draws(req.query.archived === "true").map((r) => {
-      const stage = stageOf(db, r);
+      const stage = stageOf(r);
       // the candidate is what tells two briefs of one batch apart, so the list needs it too
       return { ...r, stage, origin: stage === "ideate" ? null : originOf(pipeline, r.id), check: checkSummary(r, stage, verdicts) ?? null };
     });
@@ -202,7 +205,7 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
       // The draw and validation are synchronous-ish and fail fast; the model steps continue after we reply.
       const started = pipeline.start(opts);
       const drawId = await Promise.race([started.then((r) => r.id), new Promise<string>((res) => setTimeout(() => res(pipeline.draws()[0]?.id ?? ""), 300))]);
-      running.set(drawId, started.catch(() => undefined));
+      background(started);
       return reply.code(202).send({ id: drawId });
     } catch (e: any) {
       return reply.code(400).send({ error: e.message });
@@ -221,7 +224,7 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
   app.get<{ Params: { id: string } }>("/api/draws/:id", async (req, reply) => {
     try {
       const row = pipeline.draw(req.params.id);
-      const draw = { ...row, stage: stageOf(db, row) };
+      const draw = { ...row, stage: stageOf(row) };
       // the pane polls this every few seconds; a step's prompt and response are read from /api/steps/:id when one is opened
       const steps = pipeline.steps(draw.id).map(({ prompt, raw_response, parsed, ...s }) =>
         ({ ...s, prompt_chars: prompt.length, raw_chars: raw_response?.length ?? 0, parsed_chars: parsed?.length ?? 0 }));
@@ -247,23 +250,23 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
       if (action === "accept") {
         if (!findings?.length) return reply.code(400).send({ error: "findings required" });
         const p = drafting.accept(id, findings, { note });
-        running.set(id, p.catch(() => undefined));
+        background(p);
         return reply.code(202).send({ id, status: "repairing" });
       }
       if (action === "auto") {
         const p2 = drafting.autoRounds(id, { note: note || undefined });
-        running.set(id, p2.then(() => undefined).catch(() => undefined));
+        background(p2);
         return reply.code(202).send({ id, status: "repairing" });
       }
       if (action === "dismiss") { if (!finding) return reply.code(400).send({ error: "finding required" }); return drafting.dismiss(id, finding, note); }
       if (action === "hold") return drafting.hold(id);
       if (action === "keep") return drafting.keep(id, note);
-      // a patch is a text substitution, so it answers on this request rather than through running
+      // a patch is a text substitution, so it answers on this request rather than in the background
       if (action === "patch") return drafting.patch(id, findings ?? (finding ? [finding] : undefined), note);
       if (action === "rewrite") {
         if (!beat) return reply.code(400).send({ error: "beat required" });
         const p = drafting.rewrite(id, Number(beat), finding);
-        running.set(id, p.catch(() => undefined));
+        background(p);
         return reply.code(202).send({ id, status: "drafting" });
       }
       if (action === "choose") {
@@ -272,7 +275,7 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
         if (draw.status !== "awaiting_gate") return reply.code(400).send({ error: `draw ${id} is ${draw.status}, not awaiting_gate` });
         if (!pipeline.candidates(id).some((c) => c.step_id === step_id)) return reply.code(400).send({ error: `no execute step ${step_id} on draw ${id}` });
         const p = pipeline.choose(id, step_id);
-        running.set(id, p.catch(() => undefined));
+        background(p);
         return reply.code(202).send({ id, status: "running" });
       }
       if (action === "fork") {
@@ -280,7 +283,7 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
         // the fork row exists before its first model call, so the id is readable well inside the race
         const started = pipeline.fork(id, step_id);
         const forkId = await Promise.race([started.then((r) => r.id), new Promise<string>((res) => setTimeout(() => res(pipeline.forks(id).find((f) => f.step_id === step_id)?.id ?? ""), 300))]);
-        running.set(forkId, started.catch(() => undefined));
+        background(started);
         return reply.code(202).send({ id: forkId, forked_from: id });
       }
       return reply.code(400).send({ error: "action must be choose | fork | flag | archive | unarchive | accept | auto | dismiss | hold | keep | patch | rewrite" });
@@ -292,7 +295,7 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     try {
       pipeline.draw(id);
       const p = drafting.check(id, { checks: req.body?.checks, samples: req.body?.samples });
-      running.set(id, p.catch(() => undefined));
+      background(p);
       return reply.code(202).send({ id, status: "checking" });
     } catch (e: any) { return reply.code(400).send({ error: e.message }); }
   });
@@ -301,9 +304,9 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     const id = req.params.id;
     try {
       const d = pipeline.draw(id);
-      if (!["done", "awaiting_check_gate"].includes(d.status)) return reply.code(400).send({ error: `draw ${id} is ${d.status}, not done | awaiting_check_gate` });
+      if (!CHECKABLE.has(d.status)) return reply.code(400).send({ error: `draw ${id} is ${d.status}, not done | awaiting_check_gate` });
       const p = drafting.draft(id, { auto: !!req.body?.auto, profile: req.body?.profile, overrides: req.body?.overrides });
-      running.set(id, p.catch(() => undefined));
+      background(p);
       return reply.code(202).send({ id, status: "drafting" });
     } catch (e: any) { return reply.code(400).send({ error: e.message }); }
   });
@@ -317,7 +320,7 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
   });
 
   app.get<{ Params: { id: string } }>("/api/draws/:id/story", async (req, reply) => {
-    try { return { ...drafting.view(req.params.id), text: drafting.story(req.params.id) }; } catch (e: any) { return reply.code(404).send({ error: e.message }); }
+    try { const v = drafting.view(req.params.id); return { ...v, text: renderStory(v) }; } catch (e: any) { return reply.code(404).send({ error: e.message }); }
   });
 
   app.get<{ Params: { id: string } }>("/api/briefs/:id", async (req, reply) => {
@@ -336,6 +339,5 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
 
   app.post("/api/export", async () => exportBank(db));
 
-  (app as any).running = running;
   return app;
 }

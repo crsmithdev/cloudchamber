@@ -45,7 +45,7 @@ import { KINDS, inherit, record, replay, type Kind } from "../pipeline/verdicts.
 import { Pipeline, type DrawOpts, type SeedChoice } from "../pipeline/draw.ts";
 import type { Darkness, Sampling } from "../pipeline/config.ts";
 import { ClaudeCli } from "../pipeline/model.ts";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { BRIEFS, SETTINGS, now } from "../pipeline/paths.ts";
 import { draftAll, failures, histogram, replayThemes } from "../pipeline/themes.ts";

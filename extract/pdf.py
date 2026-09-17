@@ -224,8 +224,6 @@ def _is_matter(chunk: str) -> bool:
 
 # --- story splitting ------------------------------------------------------
 
-_TITLE_LINE = re.compile(r"^\s{0,20}([A-Z][A-Za-z' ,:!?-]{2,60})\s*$")
-_BYLINE = re.compile(r"^\s*(?:by\s+)?([A-Z][a-z]+(?:\s+[A-Z][a-zA-Z.'-]+){1,3})\s*$")
 
 # --- splitting ------------------------------------------------------------
 

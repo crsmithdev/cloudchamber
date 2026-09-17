@@ -8,7 +8,7 @@
 import { mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { BANK } from "./paths.ts";
-import type { Db, PassageRow, StoryRow, ThemeRow } from "./store/db.ts";
+import type { Db, PassageRow, ThemeRow } from "./store/db.ts";
 import { INELIGIBLE_SQL, eligibleIds } from "./verdicts.ts";
 
 export type Segment = { source?: string | string[]; author?: string; genre?: string };

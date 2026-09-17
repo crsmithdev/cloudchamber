@@ -7,7 +7,6 @@
  * belongs to: check from the moment a candidate is chosen, write from the
  * moment it has a schedule.
  */
-import type { Db } from "./store/db.ts";
 import type { DrawRow, Pipeline } from "./draw.ts";
 
 export type Stage = "ideate" | "check" | "write";
@@ -15,7 +14,7 @@ export type Stage = "ideate" | "check" | "write";
 const CHECK = new Set(["done", "checking", "awaiting_check_gate", "repairing", "repaired"]);
 const WRITE = new Set(["drafting", "awaiting_draft_gate", "drafted"]);
 
-export function stageOf(db: Db, draw: Pick<DrawRow, "id" | "status" | "chosen_step" | "repaired_from">): Stage {
+export function stageOf(draw: Pick<DrawRow, "id" | "status" | "chosen_step" | "repaired_from">): Stage {
   if (WRITE.has(draw.status)) return "write";
   if (CHECK.has(draw.status) || draw.chosen_step || draw.repaired_from) return "check";
   return "ideate";

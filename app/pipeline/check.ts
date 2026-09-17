@@ -16,7 +16,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { Pipeline, StepRow } from "./draw.ts";
 import { fill, type TemplateName } from "./prompts.ts";
-import { tag, tags } from "./model.ts";
+import { need, tag, tags } from "./model.ts";
 import { distillate, type ClaimsAuthority } from "./settings.ts";
 import { samplesFor, type DraftConfig } from "./draftconfig.ts";
 import { cluster, excludeDismissed, findingId, merge, normalise, parseFindings, quoted, same, type Cluster, type Finding } from "./recur.ts";
@@ -56,6 +56,13 @@ export function loadPremiseList(path: string = PREMISES_PATH): string {
 const findingShape = (settingJobs: string[]) => fill("findingShape", { sections: [...RUN.coreJobs, ...settingJobs].join(" | ") });
 
 /** Run every enabled checker over the brief. The draw must hold a brief; status is the caller's. */
+/** Extract a brief's ledger in one call and store it under `meta`. */
+export async function extractLedger(p: Pipeline, drawId: string, parts: BriefParts, brief: string, meta: Record<string, unknown>): Promise<string> {
+  const { step, value } = await p.invoke(drawId, parts.outlineStepId, "ledger-extract", fill("ledgerExtract", { brief }), (t) => need(t, "ledger"));
+  p.artifact(step, "ledger", String(value), meta);
+  return String(value);
+}
+
 export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, opts: { checks?: string[]; samples?: number; premisesPath?: string } = {}): Promise<CheckResult> {
   const parts = briefParts(p, drawId);
   // the prose is held to the author's outline and the fixes accepted since, not to what a repair wrote into the outline
@@ -69,22 +76,16 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
 
   const runs: Promise<unknown>[] = [];
   if (enabled.includes("derivation")) runs.push(sampled(p, drawId, parts, "check-derivation", fill("checkDerivation", { brief, findingShape: shape }), S("derivation"), "derivation", (t) => {
-    if (!tag(t, "examined")) throw new Error("no <examined> tag");
+    need(t, "examined");
     return { impossibility: tag(t, "impossibility"), findings: parseFindings(t, "derivation", 0), examined: tag(t, "examined") };
   }).then((r) => { perChecker.push(r); }));
   if (enabled.includes("ledger")) {
     // the ledger is extracted once for the chain and pinned; every round is checked against it
     let ledger = pinnedLedger(p, drawId);
-    if (!ledger) {
-      const r = await p.invoke(drawId, parts.outlineStepId, "ledger-extract", fill("ledgerExtract", { brief }), (t) => {
-        const l = tag(t, "ledger"); if (!l) throw new Error("no <ledger> tag"); return l;
-      });
-      p.artifact(r.step, "ledger", String(r.value), { pass, sample: 1, pinned: true });
-      ledger = String(r.value);
-    }
-    const block = fill("pinnedLedger", { ledger: ledger! });
+    if (!ledger) ledger = await extractLedger(p, drawId, parts, brief, { pass, sample: 1, pinned: true });
+    const block = fill("pinnedLedger", { ledger });
     runs.push(sampled(p, drawId, parts, "check-ledger", fill("checkLedger", { brief, ledger: block, findingShape: shape }), S("ledger"), "ledger", (t) => {
-      if (!tag(t, "examined")) throw new Error("no <examined> tag");
+      need(t, "examined");
       return { findings: parseFindings(t, "ledger", 0), examined: tag(t, "examined") };
     }).then((r) => { perChecker.push(r); }));
   }

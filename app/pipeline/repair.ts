@@ -8,16 +8,14 @@
  * Every regenerated word is a new surface for the next check to find a
  * contradiction in, so a repair rewrites as little as the findings allow.
  */
-import { randomBytes } from "node:crypto";
 import { CONTEXT_STAGES, RUN } from "./config.ts";
-import type { DrawRow, Pipeline } from "./draw.ts";
+import { newDrawId, outlineJobs, parseJobs, parseOutline, renderOutline, type DrawRow, type Pipeline } from "./draw.ts";
 import { compose, fill } from "./prompts.ts";
-import { sections, tag, tags, words } from "./model.ts";
+import { need, words } from "./model.ts";
 import { now } from "./paths.ts";
 import { writeBrief } from "./brief.ts";
 import { briefParts, pinnedLedger, settledConstraints, type Settled } from "./briefparts.ts";
 import { normalise, quoted } from "./recur.ts";
-import { nextName } from "./names.ts";
 import type { FindingView } from "./briefparts.ts";
 
 export type Accepted = Pick<FindingView, "id" | "span" | "invalidates" | "replacement"> & { patch?: string; result?: string };
@@ -100,8 +98,8 @@ export const settledBlock = (settled: Settled[]) =>
 export async function repair(p: Pipeline, drawId: string, accepted: Accepted[]): Promise<DrawRow> {
   const parts = briefParts(p, drawId);
   const src = parts.draw;
-  const newId = `${now().replace(/[-:TZ]/g, "").slice(0, 15)}-${randomBytes(2).toString("hex")}`;
-  const name = nextName((p.db.query("SELECT name FROM draws WHERE name IS NOT NULL").all() as { name: string }[]).map((r) => r.name), src.seed_text);
+  const newId = newDrawId();
+  const name = p.nameFor(src.seed_text);
   p.db.query(`INSERT INTO draws (id, name, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, sampling, darkness, status, gate_method, repaired_from, created_at)
               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?, ?, ?)`)
     .run(newId, name, src.setting, src.genre, src.mode, src.segment, src.seed_mode, src.seed_text, src.seed_theme_id, src.example_ids, src.sampling, src.darkness, src.gate_method, drawId, now());
@@ -155,7 +153,6 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
   const patchedVignette = applyPatches(parts.vignette, accepted);
   const patchedEnding = applyPatches(parts.ending, accepted);
   const patchedContexts = srcContexts.map((c) => applyPatches(c.content, accepted));
-  const landed = [patchedVignette, patchedEnding, ...patchedContexts].flatMap((x) => x.applied.map((f) => f.id));
 
   const plan = repairPlan(accepted, parts.vignette, parts.ending, carryable ? srcContexts.map((c) => c.content) : []);
   if (!carryable) plan.context = Array.from({ length: RUN.contextVignettes }, () => true);
@@ -184,9 +181,7 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
   let vignette = patchedVignette.text;
   let vStep;
   if (plan.vignette) {
-    const r = await p.invoke(newId, null, "repair-vignette", rewriteAsk("execute", fill("repairVignette", { ledger, settled, vignette: patchedVignette.text, constraints: within(parts.vignette) })), (t) => {
-      const v = tag(t, "vignette"); if (!v) throw new Error("no <vignette> tag"); return v;
-    });
+    const r = await p.invoke(newId, null, "repair-vignette", rewriteAsk("execute", fill("repairVignette", { ledger, settled, vignette: patchedVignette.text, constraints: within(parts.vignette) })), (t) => need(t, "vignette"));
     vignette = r.value; vStep = r.step;
     p.artifact(vStep, "vignette", vignette, { ...chosenMeta, rewritten_from: parts.chosenStepId, warnings: words(vignette) < 300 || words(vignette) > 500 ? ["length"] : [] });
   } else {
@@ -196,17 +191,12 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
   p.db.query("UPDATE draws SET chosen_step = ? WHERE id = ?").run(vStep.id, newId);
 
   // the outline, re-derived under the constraints
-  const settingJobs = (setting?.jobs ?? []).map((j) => fill("settingJob", { name: j.name, description: j.description })).join("");
-  const jobNames = [...RUN.coreJobs, ...(setting?.jobs ?? []).map((j) => j.name.toLowerCase())];
+  const { settingJobs, jobNames } = outlineJobs(setting);
   // the structure as it stands goes in: re-deriving it from the vignette each round gave every round new numbers and names to find
   const outlineHead = fill("repairOutlineHead", { ledger, settled, seed: parts.seed, premise: parts.premise, vignette, outline: `<outline>\n${parts.outline}\n</outline>`, constraints });
-  const { step: outlineStep, value: outline } = await p.invoke(newId, vStep.id, "repair-outline", compose(outlineHead, fill("outlineAsk", { settingJobs }), p.settingFor("outline", setting)), (text) => {
-    const secs = sections(text);
-    for (const j of jobNames) if (!secs[j]) throw new Error(`missing <section name="${j}">`);
-    return secs;
-  });
-  const outlineText = Object.entries(outline).map(([n, body]) => `## ${n}\n\n${body}`).join("\n\n");
-  p.artifact(outlineStep, "outline", outlineText, { jobs: jobNames, constraints: accepted.map((f) => f.replacement), accepted: accepted.map((f) => f.id), words: Object.fromEntries(Object.entries(outline).map(([n, b]) => [n, words(b)])) });
+  const { step: outlineStep, value: outline } = await p.invoke(newId, vStep.id, "repair-outline", compose(outlineHead, fill("outlineAsk", { settingJobs }), p.settingFor("outline", setting)), parseOutline(jobNames));
+  const { text: outlineText, words: outlineWords } = renderOutline(outline);
+  p.artifact(outlineStep, "outline", outlineText, { jobs: jobNames, constraints: accepted.map((f) => f.replacement), accepted: accepted.map((f) => f.id), words: outlineWords });
 
   // the context vignettes: each rewritten from itself when a finding lands in it, carried over otherwise;
   // only a brief whose contexts came without their jobs is written afresh under new jobs
@@ -215,12 +205,7 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
   let fresh: string[] = [];
   let jobsStep;
   if (!carryable) {
-    const r = await p.invoke(newId, outlineStep.id, "jobs", after("jobs", fill("jobs", {})), (text) => {
-      const js = tags(text, "job");
-      if (js.length !== RUN.contextVignettes) throw new Error(`expected ${RUN.contextVignettes} jobs, got ${js.length}`);
-      if (new Set(js.map((j) => j.toLowerCase())).size !== js.length) throw new Error("identical jobs");
-      return js;
-    });
+    const r = await p.invoke(newId, outlineStep.id, "jobs", after("jobs", fill("jobs", {})), parseJobs);
     fresh = r.value; jobsStep = r.step;
   } else {
     jobsStep = p.recordStep(newId, outlineStep.id, "jobs", "copied");
@@ -228,25 +213,19 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
   const jobs = plan.context.map((_, i) => (carryable ? srcContexts[i].meta.job! : fresh[i]));
   jobs.forEach((j, i) => p.artifact(jobsStep, "job", j, { index: i + 1, copied: carryable }));
   const contextRuns = jobs.map((job, i) => !carryable
-    ? p.invoke(newId, outlineStep.id, "context", after("context", fill("context", { job })), (text) => {
-        const v = tag(text, "vignette"); if (!v) throw new Error("no <vignette> tag"); return v;
-      }).then((r) => p.artifact(r.step, "vignette", r.value, { index: i + 1, job, warnings: words(r.value) > 500 ? ["length"] : [] }))
+    ? p.invoke(newId, outlineStep.id, "context", after("context", fill("context", { job })), (text) => need(text, "vignette")).then((r) => p.artifact(r.step, "vignette", r.value, { index: i + 1, job, warnings: words(r.value) > 500 ? ["length"] : [] }))
     : plan.context[i]
-    ? p.invoke(newId, outlineStep.id, "repair-context", rewriteAsk("execute", fill("repairVignette", { ledger, settled, vignette: patchedContexts[i].text, constraints: within(srcContexts[i].content) })), (text) => {
-        const v = tag(text, "vignette"); if (!v) throw new Error("no <vignette> tag"); return v;
-      }).then((r) => p.artifact(r.step, "vignette", r.value, { index: i + 1, job, rewritten_from: parts.draw.id, warnings: words(r.value) > 500 ? ["length"] : [] }))
+    ? p.invoke(newId, outlineStep.id, "repair-context", rewriteAsk("execute", fill("repairVignette", { ledger, settled, vignette: patchedContexts[i].text, constraints: within(srcContexts[i].content) })), (text) => need(text, "vignette")).then((r) => p.artifact(r.step, "vignette", r.value, { index: i + 1, job, rewritten_from: parts.draw.id, warnings: words(r.value) > 500 ? ["length"] : [] }))
     : Promise.resolve(p.artifact(p.recordStep(newId, outlineStep.id, "context", patchedContexts[i].applied.length ? "patched" : "copied"), "vignette", patchedContexts[i].text, { index: i + 1, job, copied_from: parts.draw.id, ...(patchedContexts[i].applied.length ? { patched: patchedContexts[i].applied.map((f) => f.id) } : {}) })));
 
   // the ending: rewritten from itself under the constraints, or carried over
   const endingRun = plan.ending
-    ? p.invoke(newId, outlineStep.id, "repair-ending", rewriteAsk("ending", fill("repairEnding", { ledger, settled, outline: outlineText, ending: patchedEnding.text, constraints: within(parts.ending, endingExtra) })), (t) => {
-        const e = tag(t, "ending"); if (!e) throw new Error("no <ending> tag"); return e;
-      }).then((r) => p.artifact(r.step, "ending", r.value, { previous: parts.ending, warnings: words(r.value) > 650 ? ["length"] : [] }))
+    ? p.invoke(newId, outlineStep.id, "repair-ending", rewriteAsk("ending", fill("repairEnding", { ledger, settled, outline: outlineText, ending: patchedEnding.text, constraints: within(parts.ending, endingExtra) })), (t) => need(t, "ending")).then((r) => p.artifact(r.step, "ending", r.value, { previous: parts.ending, warnings: words(r.value) > 650 ? ["length"] : [] }))
     : Promise.resolve(p.artifact(p.recordStep(newId, outlineStep.id, "repair-ending", patchedEnding.applied.length ? "patched" : "copied"), "ending", patchedEnding.text,
         patchedEnding.applied.length ? { previous: parts.ending, patched: patchedEnding.applied.map((f) => f.id) } : { copied: true }));
   await Promise.all([...contextRuns, endingRun]);
 
   // this round's accepted findings are already listed under ## repaired_from
-  const dir = writeBrief(p.db, newId, p.stages, p.briefsDir, p.settingsDir, settledLines);
+  const dir = writeBrief(p.db, newId, p.briefsDir, settledLines);
   p.artifact(outlineStep, "brief", dir, { repaired_from: parts.draw.id });
 }

@@ -25,6 +25,23 @@ export function Chip({ pressed, className = "", type = "button", ...rest }: Reac
   return <button type={type} className={"chip " + className} aria-pressed={pressed ? "true" : "false"} {...rest} />;
 }
 
+/** The statuses that mean a model call is in flight, so the views refresh while they hold. */
+export const RUNNING_STATUS = new Set(["running", "checking", "repairing", "drafting"]);
+
+/** " · show N archived", or nothing when none are. */
+export function ArchivedToggle({ archived, shown, onToggle }: { archived: number; shown: boolean; onToggle: () => void }) {
+  if (archived <= 0) return null;
+  return (
+    <>
+      {" "}
+      ·{" "}
+      <button className="link" onClick={onToggle}>
+        {shown ? "hide" : "show"} {archived} archived
+      </button>
+    </>
+  );
+}
+
 export type MarkState = "" | "held" | "wait" | "run" | "fail" | "todo" | "rep" | "art" | "gold";
 /** State is a mark in a fixed cell: filled holds, hollow does not. */
 export function Mark({ state = "", small, title }: { state?: MarkState; small?: boolean; title?: string }) {
@@ -32,7 +49,7 @@ export function Mark({ state = "", small, title }: { state?: MarkState; small?: 
 }
 /** The mark for a draw or step status. */
 export const markFor = (status: string): MarkState =>
-  status === "running" || status === "checking" || status === "repairing" || status === "drafting"
+  RUNNING_STATUS.has(status)
     ? "run"
     : status.startsWith("awaiting")
       ? "wait"

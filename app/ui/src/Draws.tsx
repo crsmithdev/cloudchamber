@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { marked } from "marked";
 import { api, when, type Artifact, type Candidate, type Example, type Facets, type Draw, type Fork, type FullStep, type Origin, type Source, type Status, type Step } from "./api.ts";
-import { Bar, Btn, Caret, Chip, Facts, Field, Head, Icon, LinkBtn, Mark, Seg, hhmm, lastSelected, markFor, secs, usePoll, useRememberSelected, useTick, type MarkState } from "./ui.tsx";
+import { ArchivedToggle, Bar, Btn, Caret, Chip, Field, RUNNING_STATUS, Head, Icon, LinkBtn, Mark, Seg, hhmm, lastSelected, markFor, secs, usePoll, useRememberSelected, useTick, type MarkState } from "./ui.tsx";
 
 export type Detail = { draw: Draw; origin: Origin | null; steps: Step[]; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] };
 const STAGES = ["premises", "execute", "gate", "outline", "context", "ending", "brief"];
@@ -20,8 +20,6 @@ export const LABEL: Record<string, string> = {
   running: "running",
 };
 export const label = (status: string) => LABEL[status] ?? status;
-/** The statuses that mean a model call is in flight, so the views refresh while they hold. */
-export const RUNNING_STATUS = new Set(["running", "checking", "repairing", "drafting"]);
 const choose = (index: number) => `Continue with premise ${index}: outline, two context vignettes, the ending, then the brief.`;
 const SAMPLING_HELP: Record<string, string> = {
   tail: "The strangest readings of the seed: premises nobody else would file.",
@@ -281,15 +279,7 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
           </LinkBtn>
           <span className="head">
             {openCount} to choose
-            {archived > 0 && (
-              <>
-                {" "}
-                ·{" "}
-                <button className="link" onClick={() => setShowArchived((v) => !v)}>
-                  {showArchived ? "hide" : "show"} {archived} archived
-                </button>
-              </>
-            )}
+            <ArchivedToggle archived={archived} shown={showArchived} onToggle={() => setShowArchived((v) => !v)} />
           </span>
         </div>
         {shown.length === 0 && <div className="empty">No draws yet.</div>}
@@ -353,7 +343,7 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
                   <Mark state={markFor(d.draw.status)} />
                   <span className={working ? "sweep" : ""}>
                     {label(d.draw.status)}
-                    {working && d.steps.some((s) => s.status === "running") ? ` · ${[...new Set(d.steps.filter((s) => s.status === "running").map((s) => stageName(s.stage)))].join(", ")}` : ""}
+                    {working && d.steps.some((s) => s.status === "running") ? ` · ${stageNames(d.steps.filter((s) => s.status === "running"))}` : ""}
                   </span>
                 </span>
                 {!step && (
@@ -440,7 +430,7 @@ function drawSummary(d: Detail) {
   const running = d.steps.filter((s) => s.status === "running" && IDEATION.has(s.stage));
   const chosen = d.candidates.find((c) => c.step_id === d.draw.chosen_step);
   const failed = d.steps.filter((s) => s.status === "failed" && IDEATION.has(s.stage)).length;
-  if (running.length) return `running · ${[...new Set(running.map((s) => stageName(s.stage)))].join(", ")}`;
+  if (running.length) return `running · ${stageNames(running)}`;
   if (d.draw.status === "awaiting_gate") return `choose a premise · ${d.candidates.length} written`;
   if (d.draw.status === "failed") return `failed · ${failed} step${failed === 1 ? "" : "s"}`;
   if (chosen) return `brief · #${chosen.index} chosen · in ${d.draw.stage}`;
@@ -477,6 +467,8 @@ const STAGE: Record<string, { name: string; does: string }> = {
   "screen-slop": { name: "count slop", does: "Counts overused words, not-X-but-Y turns, repeated trigrams and paragraph shape against the passage pool. No model call." },
 };
 export const stageName = (stage: string) => STAGE[stage]?.name ?? stage;
+/** The distinct stage names of some steps, in the order they first appear. */
+export const stageNames = (steps: { stage: string }[]) => [...new Set(steps.map((s) => stageName(s.stage)))].join(", ");
 
 /**
  * The step log as a time table: step, started, seconds. Each row names its step in words, says which one of a

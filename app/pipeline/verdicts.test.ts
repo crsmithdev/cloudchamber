@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { Database } from "bun:sqlite";
 import { SCHEMA_VERSION, openDb, type Db } from "./store/db.ts";
-import { eligibleIds, inherit, latest, passedStories, readLog, record, replay, tokenOverlap, validateLine } from "./verdicts.ts";
+import { eligibleIds, inherit, latest, passedStories, record, replay, tokenOverlap, validateLine } from "./verdicts.ts";
 import { eligiblePassages, exportBank } from "./bank.ts";
 import { readFileSync, writeFileSync } from "node:fs";
 

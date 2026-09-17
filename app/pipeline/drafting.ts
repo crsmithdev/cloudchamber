@@ -15,18 +15,18 @@ import type { DrawRow, Pipeline } from "./draw.ts";
 import { record } from "./verdicts.ts";
 import { now } from "./paths.ts";
 import { loadDraftConfig, type DraftConfig, type Overrides, type Resolved } from "./draftconfig.ts";
-import { runCheck, type CheckResult } from "./check.ts";
+import { extractLedger, runCheck, type CheckResult } from "./check.ts";
 import { applyPatches, constraintsBlock, repair, type Accepted } from "./repair.ts";
-import { briefBlock, briefParts, chainProfile, checkFindings, gateFindings, judgeNote, latestCheckPass, passId, pinnedLedger, type FindingView } from "./briefparts.ts";
+import { briefBlock, briefParts, chainIds, chainProfile, checkFindings, gateFindings, judgeNote, latestCheckPass, passId, pinnedLedger, type FindingView } from "./briefparts.ts";
 import { currentScenes, runScenes, runSchedule, runScreens, writeScene, type Schedule } from "./write.ts";
 import { draftView, exportDraft, renderStory, type DraftView } from "./drafts.ts";
-import { tag, tags } from "./model.ts";
+import { tag, words } from "./model.ts";
 import { fill } from "./prompts.ts";
 
 export const CHECKABLE = new Set(["done", "awaiting_check_gate"]);
 export type AutoRound = { round: number; id: string; open: number; total: number; accepted: number; calls: number };
 export type AutoResult = { id: string; rounds: AutoRound[]; best: AutoRound; stopped: "floor" | "cap" | "patience" | "budget"; floor: number; calls: number; left_open: number };
-export type DraftOpts = { profile?: string; overrides?: Overrides; auto?: boolean; lexiconPath?: string; premisesPath?: string };
+export type DraftOpts = { profile?: string; overrides?: Overrides; auto?: boolean };
 
 /**
  * An unattended repair needs a quote to work from, and only the three
@@ -159,10 +159,10 @@ export class Drafting {
     this.status(drawId, "drafting");
     try {
       const parts = briefParts(this.p, drawId);
-      const ledger = await this.ensureLedger(drawId, resolved.config);
+      const ledger = await this.ensureLedger(drawId);
       const { step, schedule } = await runSchedule(this.p, drawId, parts, briefBlock(parts), resolved.config);
       const scenes = await runScenes(this.p, drawId, step, parts, ledger, schedule, resolved.config);
-      await runScreens(this.p, drawId, parts, ledger, schedule, scenes, resolved.config, undefined, { lexiconPath: this.opts.lexiconPath });
+      await runScreens(this.p, drawId, ledger, schedule, scenes, resolved.config, undefined, { lexiconPath: this.opts.lexiconPath });
     } catch (e) {
       this.p.fail(drawId, e);
       throw e;
@@ -172,16 +172,11 @@ export class Drafting {
   }
 
   /** A draft started without a check has no ledger; one extraction supplies it. */
-  private async ensureLedger(drawId: string, cfg: DraftConfig): Promise<string> {
+  private async ensureLedger(drawId: string): Promise<string> {
     const have = pinnedLedger(this.p, drawId);
     if (have) return have;
     const parts = briefParts(this.p, drawId);
-    const { step, value } = await this.p.invoke(drawId, parts.outlineStepId, "ledger-extract", fill("ledgerExtract", { brief: briefBlock(parts) }), (t) => {
-      const l = tag(t, "ledger"); if (!l) throw new Error("no <ledger> tag"); return l;
-    });
-    this.p.artifact(step, "ledger", String(value), { pass: passId(), sample: 1, ledger_only: true });
-    void cfg;
-    return String(value);
+    return extractLedger(this.p, drawId, parts, briefBlock(parts), { pass: passId(), sample: 1, ledger_only: true });
   }
 
   /**
@@ -218,7 +213,7 @@ export class Drafting {
     const draw = this.must(drawId, ...CHECKABLE);
     const cfg = opts.cfg ?? this.resolved(draw).config;
     let id = drawId;
-    if (!latestCheckPass(this.p, id)) { this.status(id, "checking"); await runCheck(this.p, id, cfg, { premisesPath: this.opts.premisesPath }).catch((e) => { this.p.fail(id, e); throw e; }); this.status(id, "awaiting_check_gate"); }
+    if (!latestCheckPass(this.p, id)) await this.recheck(id, cfg);
     const rounds: AutoRound[] = [];
     let stopped: AutoResult["stopped"] = "cap";
     let clean = 0;
@@ -301,14 +296,7 @@ export class Drafting {
 
   /** Model calls spent on this repair chain, so a run cannot cost more than it is worth. */
   private chainCalls(drawId: string): number {
-    let n = 0, id: string | null = drawId;
-    const seen = new Set<string>();
-    while (id && !seen.has(id)) {
-      seen.add(id);
-      n += this.p.steps(id).filter((s) => !["copied", "deterministic", "patched"].includes(s.model)).length;
-      id = this.p.draw(id).repaired_from;
-    }
-    return n;
+    return chainIds(this.p, drawId).reduce((n, id) => n + this.p.steps(id).filter((s) => !["copied", "deterministic", "patched"].includes(s.model)).length, 0);
   }
 
   /** `draft --auto` works gate 1 by the same rule and drafts from where it stops. */
@@ -358,7 +346,7 @@ export class Drafting {
       if (!out.applied.length) continue;
       const meta = JSON.parse(this.p.artifacts(drawId).find((a) => a.id === scene.artifact_id)!.meta);
       const step = this.p.recordStep(drawId, scene.step_id, "scene", "patched");
-      this.p.artifact(step, "scene", out.text, { ...meta, words: out.text.split(/\s+/).filter(Boolean).length, patched: out.applied.map((f) => f.id) });
+      this.p.artifact(step, "scene", out.text, { ...meta, words: words(out.text), patched: out.applied.map((f) => f.id) });
       for (const f of out.applied) applied.push(f as unknown as FindingView);
     }
 
@@ -382,12 +370,12 @@ export class Drafting {
       const parts = briefParts(this.p, drawId);
       // the pinned one: a repaired draw carries no ledger of its own, the chain root holds it
       const ledger = pinnedLedger(this.p, drawId) ?? "";
-      const schedule: Schedule = { form: v.schedule.form as Schedule["form"], formLines: [], beats: v.schedule.beats, raw: v.schedule.raw };
+      const schedule: Schedule = { form: v.schedule.form as Schedule["form"], beats: v.schedule.beats, raw: v.schedule.raw };
       const scheduleStep = this.p.steps(drawId).find((s) => s.stage === "schedule" && s.status === "done")!;
       const before = v.scenes.filter((s) => s.beat < k).map((s) => s.text);
       await writeScene(this.p, drawId, scheduleStep.id, parts, ledger, schedule, schedule.beats[k - 1], cfg.scenes.order === "sequential" ? before : [], constraints);
       const scenes = currentScenes(this.p, drawId);
-      await runScreens(this.p, drawId, parts, ledger, schedule, scenes, cfg, k < M ? [k, k + 1] : [k], { lexiconPath: this.opts.lexiconPath });
+      await runScreens(this.p, drawId, ledger, schedule, scenes, cfg, k < M ? [k, k + 1] : [k], { lexiconPath: this.opts.lexiconPath });
     } catch (e) {
       this.p.fail(drawId, e);
       throw e;
@@ -409,6 +397,6 @@ export class Drafting {
 
   // --- reads -----------------------------------------------------------------
 
-  story(drawId: string): string { return renderStory(this.p, drawId); }
+  story(drawId: string): string { return renderStory(draftView(this.p, drawId)); }
   view(drawId: string): DraftView { return draftView(this.p, drawId); }
 }

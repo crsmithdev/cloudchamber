@@ -16,6 +16,8 @@ export function openDb(path: string = DEFAULT_DB, log?: string): Db {
   const db = new Database(path);
   db.exec("PRAGMA journal_mode=WAL");
   db.exec("PRAGMA foreign_keys=ON");
+  // the store is over 100 MB on a slow mount; the default 2 MB cache re-reads pages on every scan
+  db.exec("PRAGMA cache_size=-131072");
   const fresh = !hasTable(db, "verdicts");
   if (!fresh) renameBeforeSchema(db);
   const schema = readFileSync(SCHEMA, "utf8");
@@ -36,6 +38,7 @@ function indexes(db: Db) {
   db.exec("CREATE INDEX IF NOT EXISTS passages_suspect ON passages(id) WHERE suspect IS NOT NULL");
   db.exec("CREATE INDEX IF NOT EXISTS themes_live ON themes(id) WHERE duplicate_of IS NULL");
   db.exec("CREATE INDEX IF NOT EXISTS passages_cell ON passages(voice, mode)");   // the browse facets count by cell
+  db.exec("CREATE INDEX IF NOT EXISTS artifacts_step ON artifacts(step_id)");     // a draw's artifacts join through its steps
 }
 
 function userVersion(db: Db): number {

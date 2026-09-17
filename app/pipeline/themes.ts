@@ -130,7 +130,8 @@ export type DraftReport = { story: string; drafted: number; banked: number; atte
 export function fewshotLines(db: Db): string[] {
   const kept = (db.query("SELECT id, text FROM themes WHERE duplicate_of IS NULL").all() as { id: string; text: string }[]);
   const ok = eligibleIds(db, "theme", kept.map((k) => k.id));
-  const withKeep = kept.filter((k) => ok.has(k.id) && db.query("SELECT 1 FROM verdicts WHERE kind = 'theme' AND target_id = ? AND verdict = 'keep'").get(k.id));
+  const keeps = new Set((db.query("SELECT DISTINCT target_id FROM verdicts WHERE kind = 'theme' AND verdict = 'keep'").all() as { target_id: string }[]).map((r) => r.target_id));
+  const withKeep = kept.filter((k) => ok.has(k.id) && keeps.has(k.id));
   if (withKeep.length < FEWSHOT_MIN) return [];
   return withKeep.sort(() => Math.random() - 0.5).slice(0, FEWSHOT_N).map((k) => k.text);
 }

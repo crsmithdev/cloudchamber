@@ -37,7 +37,7 @@ const pipe = (db: any, dir: string, sdir: string, script: any) =>
 
 describe("distill", () => {
   test("referenceFiles walks the tree and skips INDEX", () => {
-    const { dir, sdir } = fixture();
+    const { sdir } = fixture();
     writeFileSync(join(sdir, "basin", "reference", "INDEX.md"), "# index\n");
     expect(referenceFiles("basin", sdir)).toEqual(["death.md", "events.md", "labour.md", "land.md"]);
   });

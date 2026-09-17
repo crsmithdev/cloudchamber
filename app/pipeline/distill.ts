@@ -25,7 +25,7 @@ import { StepFailure } from "./draw.ts";
 import { tags, tag, words } from "./model.ts";
 import { fill, TEMPLATES } from "./prompts.ts";
 import {
-  LISTS, entryName, isEmpty, lintSetting, formatFinding, parseSetting, replaceList, settingPath, referenceDir,
+  LISTS, entryName, isEmpty, lintSetting, formatFinding, parseFrontMatter, parseSetting, replaceList, settingPath, referenceDir,
   type ListName, type Setting,
 } from "./settings.ts";
 
@@ -74,9 +74,8 @@ export function referenceFiles(id: string, dir: string): string[] {
 /** A reference file's front matter topic, its prose with the front matter stripped, and a hash of the whole file. */
 function readReference(path: string): { topic: string; text: string; hash: string } {
   const raw = readFileSync(path, "utf8");
-  const m = /^---\n([\s\S]*?)\n---\n?/.exec(raw);
-  const topic = m ? (/^topic:\s*(.+)$/m.exec(m[1])?.[1]?.trim() ?? "") : "";
-  return { topic, text: (m ? raw.slice(m[0].length) : raw).trim(), hash: createHash("sha256").update(raw).digest("hex").slice(0, 16) };
+  const { meta, body } = parseFrontMatter(raw);
+  return { topic: meta.topic ?? "", text: body.trim(), hash: createHash("sha256").update(raw).digest("hex").slice(0, 16) };
 }
 
 export function readCandidates(id: string, dir: string): Candidate[] {

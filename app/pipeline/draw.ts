@@ -11,7 +11,7 @@
 import { randomBytes } from "node:crypto";
 import { BANDS, DEFAULT_SAMPLING, RUN, isDarkness, isSampling, type Darkness, loadStages, type Sampling, type StageConfig, type StageName } from "./config.ts";
 import { TEMPLATES, compose, fill } from "./prompts.ts";
-import { sections, tag, tags, words, type ModelAdapter } from "./model.ts";
+import { need, sections, tag, tags, words, type ModelAdapter } from "./model.ts";
 import { eligiblePassages, eligibleThemes, type Segment } from "./bank.ts";
 import { loadChecked, slice, type GenStage, type Setting } from "./settings.ts";
 import { SETTINGS } from "./paths.ts";
@@ -52,6 +52,39 @@ export class StepFailure extends Error {
 }
 
 const id = (n = 6) => randomBytes(n).toString("hex");
+/** A draw id: the UTC second it was made, and four hex digits. */
+export const newDrawId = () => `${now().replace(/[-:TZ]/g, "").slice(0, 15)}-${id(2)}`;
+
+/** The outline's sections: the core jobs, then the setting's, and the ask line for the setting's. */
+export function outlineJobs(setting?: Setting): { settingJobs: string; jobNames: string[] } {
+  return {
+    settingJobs: (setting?.jobs ?? []).map((j) => fill("settingJob", { name: j.name, description: j.description })).join(""),
+    jobNames: [...RUN.coreJobs, ...(setting?.jobs ?? []).map((j) => j.name.toLowerCase())],
+  };
+}
+
+/** Parse an outline response, requiring every job's section. */
+export const parseOutline = (jobNames: string[]) => (text: string) => {
+  const secs = sections(text);
+  for (const j of jobNames) if (!secs[j]) throw new Error(`missing <section name="${j}">`);
+  return secs;
+};
+
+/** An outline as stored: its text, and the words of each section. */
+export function renderOutline(secs: Record<string, string>): { text: string; words: Record<string, number> } {
+  return {
+    text: Object.entries(secs).map(([n, body]) => `## ${n}\n\n${body}`).join("\n\n"),
+    words: Object.fromEntries(Object.entries(secs).map(([n, b]) => [n, words(b)])),
+  };
+}
+
+/** Parse a jobs response: exactly the context vignette count, all distinct. */
+export function parseJobs(text: string): string[] {
+  const js = tags(text, "job");
+  if (js.length !== RUN.contextVignettes) throw new Error(`expected ${RUN.contextVignettes} jobs, got ${js.length}`);
+  if (new Set(js.map((j) => j.toLowerCase())).size !== js.length) throw new Error("identical jobs");
+  return js;
+}
 /** The darkness sentence as a template slot: empty when unset, so the prompt reads as it did before the knob. */
 const darknessLine = (d?: Darkness) => (d ? ` ${TEMPLATES.darknessAsk[d]}` : "");
 
@@ -186,7 +219,7 @@ export class Pipeline {
   }
 
   /** The name a new draw takes, free of every name already written. */
-  private nameFor(seed: string): string {
+  nameFor(seed: string): string {
     const rows = this.db.query("SELECT name FROM draws WHERE name IS NOT NULL").all() as { name: string }[];
     return nextName(rows.map((r) => r.name), seed);
   }
@@ -213,7 +246,7 @@ export class Pipeline {
     const examples = this.drawExamples(opts.segment);
     const seed = this.drawSeed(opts.seed, setting);
     const genre = this.inferGenre(opts, examples);
-    const drawId = `${now().replace(/[-:TZ]/g, "").slice(0, 15)}-${id(2)}`;
+    const drawId = newDrawId();
     this.db.query(`INSERT INTO draws (id, name, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, sampling, darkness, status, created_at)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?)`)
       .run(drawId, this.nameFor(seed.text), setting?.id ?? null, genre, opts.mode, opts.segment ? JSON.stringify(opts.segment) : null,
@@ -253,11 +286,7 @@ export class Pipeline {
     premises.forEach((p, i) => this.artifact(step, "premise", p.text, { index: i + 1, probability: p.probability, warnings: words(p.text) > 120 ? ["length"] : [] }));
     await Promise.all(premises.map((p, i) => {
       const ask = fill("executeAsk", { seed, premise: p.text, darkness: dark });
-      return this.invoke(drawId, step.id, "execute", compose(head, ask, this.settingFor("execute", setting)), (text) => {
-        const v = tag(text, "vignette");
-        if (!v) throw new Error("no <vignette> tag");
-        return v;
-      }).then((r) => this.artifact(r.step, "vignette", r.value, {
+      return this.invoke(drawId, step.id, "execute", compose(head, ask, this.settingFor("execute", setting)), (text) => need(text, "vignette")).then((r) => this.artifact(r.step, "vignette", r.value, {
         index: i + 1, probability: p.probability, premise: p.text,
         warnings: words(r.value) < 300 || words(r.value) > 500 ? ["length"] : [],
       }));
@@ -346,7 +375,7 @@ export class Pipeline {
     if (!c) throw new Error(`draw ${drawId}: no execute step ${executeStepId}`);
     const already = this.forks(drawId).find((f) => f.step_id === executeStepId);
     if (already) throw new Error(`draw ${drawId}: candidate #${c.index} is already developed as ${already.id}`);
-    const newId = `${now().replace(/[-:TZ]/g, "").slice(0, 15)}-${id(2)}`;
+    const newId = newDrawId();
     this.db.query(`INSERT INTO draws (id, name, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, sampling, darkness, status, gate_method, forked_from, created_at)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', 'manual', ?, ?)`)
       .run(newId, this.nameFor(src.seed_text), src.setting, src.genre, src.mode, src.segment, src.seed_mode, src.seed_text, src.seed_theme_id, src.example_ids, src.sampling, src.darkness, drawId, now());
@@ -388,36 +417,22 @@ export class Pipeline {
   private async develop(drawId: string, c: { step_id: string; premise: string; vignette: string }) {
     const draw = this.draw(drawId);
     const { setting } = this.loadDrawSetting(draw);
-    const settingJobs = (setting?.jobs ?? []).map((j) => fill("settingJob", { name: j.name, description: j.description })).join("");
-    const jobNames = [...RUN.coreJobs, ...(setting?.jobs ?? []).map((j) => j.name.toLowerCase())];
+    const { settingJobs, jobNames } = outlineJobs(setting);
     const outlineHead = fill("outlineHead", { seed: draw.seed_text, premise: c.premise, vignette: c.vignette });
     const outlineSetting = this.settingFor("outline", setting);   // the Jobs section reaches the outline as its <section> asks
     const { step: outlineStep, value: outline } = await this.invoke(drawId, c.step_id, "outline",
-      compose(outlineHead, fill("outlineAsk", { settingJobs }), outlineSetting), (text) => {
-        const secs = sections(text);
-        for (const j of jobNames) if (!secs[j]) throw new Error(`missing <section name="${j}">`);
-        return secs;
-      });
-    const outlineText = Object.entries(outline).map(([n, body]) => `## ${n}\n\n${body}`).join("\n\n");
-    this.artifact(outlineStep, "outline", outlineText, { jobs: jobNames, words: Object.fromEntries(Object.entries(outline).map(([n, b]) => [n, words(b)])) });
+      compose(outlineHead, fill("outlineAsk", { settingJobs }), outlineSetting), parseOutline(jobNames));
+    const { text: outlineText, words: outlineWords } = renderOutline(outline);
+    this.artifact(outlineStep, "outline", outlineText, { jobs: jobNames, words: outlineWords });
     const head = fill("head", { outline: outlineText, vignette: c.vignette });
     const after = (stage: GenStage, ask: string) => compose(head, ask, this.settingFor(stage, setting), "");
-    const { step: jobsStep, value: jobs } = await this.invoke(drawId, outlineStep.id, "jobs", after("jobs", fill("jobs", {})), (text) => {
-      const js = tags(text, "job");
-      if (js.length !== RUN.contextVignettes) throw new Error(`expected ${RUN.contextVignettes} jobs, got ${js.length}`);
-      if (new Set(js.map((j) => j.toLowerCase())).size !== js.length) throw new Error("identical jobs");
-      return js;
-    });
+    const { step: jobsStep, value: jobs } = await this.invoke(drawId, outlineStep.id, "jobs", after("jobs", fill("jobs", {})), parseJobs);
     jobs.forEach((j, i) => this.artifact(jobsStep, "job", j, { index: i + 1 }));
     await Promise.all([
-      ...jobs.map((job, i) => this.invoke(drawId, outlineStep.id, "context", after("context", fill("context", { job })), (text) => {
-        const v = tag(text, "vignette"); if (!v) throw new Error("no <vignette> tag"); return v;
-      }).then((r) => this.artifact(r.step, "vignette", r.value, { index: i + 1, job, warnings: words(r.value) > 500 ? ["length"] : [] }))),
-      this.invoke(drawId, outlineStep.id, "ending", after("ending", fill("ending", { darkness: darknessLine((draw.darkness ?? undefined) as Darkness | undefined) })), (text) => {
-        const e = tag(text, "ending"); if (!e) throw new Error("no <ending> tag"); return e;
-      }).then((r) => this.artifact(r.step, "ending", r.value, { warnings: words(r.value) > 650 ? ["length"] : [] })),
+      ...jobs.map((job, i) => this.invoke(drawId, outlineStep.id, "context", after("context", fill("context", { job })), (text) => need(text, "vignette")).then((r) => this.artifact(r.step, "vignette", r.value, { index: i + 1, job, warnings: words(r.value) > 500 ? ["length"] : [] }))),
+      this.invoke(drawId, outlineStep.id, "ending", after("ending", fill("ending", { darkness: darknessLine((draw.darkness ?? undefined) as Darkness | undefined) })), (text) => need(text, "ending")).then((r) => this.artifact(r.step, "ending", r.value, { warnings: words(r.value) > 650 ? ["length"] : [] })),
     ]);
-    const dir = writeBrief(this.db, drawId, this.stages, this.briefsDir, this.settingsDir);
+    const dir = writeBrief(this.db, drawId, this.briefsDir);
     this.db.query("UPDATE draws SET status = 'done', ended_at = ? WHERE id = ?").run(now(), drawId);
     this.artifact(outlineStep, "brief", dir, {});
   }

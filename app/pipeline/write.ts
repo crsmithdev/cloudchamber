@@ -6,7 +6,7 @@
  */
 import type { Pipeline, StepRow } from "./draw.ts";
 import { fill } from "./prompts.ts";
-import { tag, words } from "./model.ts";
+import { need, tag, words } from "./model.ts";
 import { RUN } from "./config.ts";
 import { eligiblePassages } from "./bank.ts";
 import { FORM_VALUES, samplesFor, type DraftConfig, type FormAxis } from "./draftconfig.ts";
@@ -17,7 +17,7 @@ import { passId, type BriefParts } from "./briefparts.ts";
 
 export type Withheld = { item: string; until: number };
 export type Beat = { n: number; words: number; job: string; known: string; withheld: Withheld[]; stakes: string; absorbs: string };
-export type Schedule = { form: Record<FormAxis, string>; formLines: string[]; beats: Beat[]; raw: string };
+export type Schedule = { form: Record<FormAxis, string>; beats: Beat[]; raw: string };
 export type Scene = { beat: number; text: string; artifact_id: string; step_id: string };
 
 export const ABSORBABLE = ["chosen", "context-1", "context-2", "ending"];
@@ -62,7 +62,7 @@ export function parseSchedule(text: string, cfg: DraftConfig): Schedule {
   if (sum > target * (1 + tolerance) || sum < target * (1 - tolerance)) throw new Error(`caps sum to ${sum}, target ${target} ±${Math.round(tolerance * 100)}%`);
   const seen = new Map<string, number>();
   for (const b of beats) if (ABSORBABLE.includes(b.absorbs)) { if (seen.has(b.absorbs)) throw new Error(`${b.absorbs} absorbed by beats ${seen.get(b.absorbs)} and ${b.n}`); seen.set(b.absorbs, b.n); }
-  return { form, formLines, beats, raw: text.trim() };
+  return { form, beats, raw: text.trim() };
 }
 
 export function schedulePrompt(brief: string, cfg: DraftConfig): string {
@@ -105,9 +105,7 @@ export function scenePrompt(parts: BriefParts, ledger: string, s: Schedule, b: B
 }
 
 export async function writeScene(p: Pipeline, drawId: string, parent: string, parts: BriefParts, ledger: string, s: Schedule, b: Beat, soFar: string[], constraints?: string): Promise<Scene> {
-  const { step, value } = await p.invoke(drawId, parent, "scene", scenePrompt(parts, ledger, s, b, soFar, constraints), (t) => {
-    const v = tag(t, "scene"); if (!v) throw new Error("no <scene> tag"); return v;
-  });
+  const { step, value } = await p.invoke(drawId, parent, "scene", scenePrompt(parts, ledger, s, b, soFar, constraints), (t) => need(t, "scene"));
   const n = words(value);
   const artifact_id = p.artifact(step, "scene", value, { beat: b.n, words: n, cap: b.words, warnings: n > b.words * (1 + RUN.sceneCapSlack) ? ["over_cap"] : [], ...(constraints ? { rewrite: true } : {}) });
   return { beat: b.n, text: value, artifact_id, step_id: step.id };
@@ -131,7 +129,7 @@ export function currentScenes(p: Pipeline, drawId: string): Scene[] {
 
 export type Profile = { beat: number; pass: string; answers: Record<string, Answer>; flags: string[] };
 
-export function structurePrompt(s: Schedule, b: Beat, scene: string, last: boolean): string {
+export function structurePrompt(b: Beat, scene: string, last: boolean): string {
   const later = b.withheld.filter((w) => w.until > b.n);
   return fill("screenStructure", {
     n: String(b.n), job: b.job, withheld: later.length ? later.map((w) => `${w.item} — beat ${w.until}`).join("\n") : "none", scene,
@@ -142,7 +140,7 @@ export function structurePrompt(s: Schedule, b: Beat, scene: string, last: boole
 export const flagsOf = (answers: Record<string, Answer>) =>
   Object.entries(answers).filter(([q, a]) => (FLAG_PRESENT.has(q) && a.answer === "present") || (q === "bodily-emotion" && a.answer === "absent")).map(([q]) => q);
 
-export async function runScreens(p: Pipeline, drawId: string, parts: BriefParts, ledger: string, s: Schedule, scenes: Scene[], cfg: DraftConfig, beats: number[] = scenes.map((x) => x.beat), opts: { lexiconPath?: string } = {}): Promise<{ pass: string; findings: Cluster[]; profiles: Profile[] }> {
+export async function runScreens(p: Pipeline, drawId: string, ledger: string, s: Schedule, scenes: Scene[], cfg: DraftConfig, beats: number[] = scenes.map((x) => x.beat), opts: { lexiconPath?: string } = {}): Promise<{ pass: string; findings: Cluster[]; profiles: Profile[] }> {
   const pass = passId();
   const enabled = cfg.screens.enabled;
   const M = s.beats.length;
@@ -155,7 +153,7 @@ export async function runScreens(p: Pipeline, drawId: string, parts: BriefParts,
       const { samples, keep_if } = samplesFor(cfg.screens, "ledger");
       const prompt = fill("screenLedger", { ledger, previous: prev ? `<previous-scene>\n${prev.text}\n</previous-scene>\n\n` : "", n: String(k), scene: scene.text });
       runs.push(Promise.all(Array.from({ length: samples }, (_, i) => p.invoke(drawId, scene.step_id, "screen-ledger", prompt, (t) => {
-        if (!tag(t, "examined")) throw new Error("no <examined> tag");
+        need(t, "examined");
         return { findings: parseFindings(t, "ledger", i + 1), examined: tag(t, "examined") };
       }).then((r) => ({ ...r, sample: i + 1 })))).then((rs) => {
         const all: Finding[] = rs.flatMap((r) => r.value.findings.map((f: Finding) => ({ ...f, sample: r.sample })));
@@ -169,7 +167,7 @@ export async function runScreens(p: Pipeline, drawId: string, parts: BriefParts,
     if (enabled.includes("structure")) {
       const { samples, keep_if } = samplesFor(cfg.screens, "structure");
       const names = [...STRUCTURE_SCREEN, k === M ? "resolves-everything" : "resolved"];
-      const prompt = structurePrompt(s, b, scene.text, k === M);
+      const prompt = structurePrompt(b, scene.text, k === M);
       runs.push(Promise.all(Array.from({ length: samples }, () => p.invoke(drawId, scene.step_id, "screen-structure", prompt, (t) => parseQuestions(t, names)))).then((rs) => {
         // an answer is present when it recurs in keep_if samples; the quote is the first sample's
         const answers: Record<string, Answer> = {};

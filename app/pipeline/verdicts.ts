@@ -118,8 +118,14 @@ export function latest(db: Db, kind: Kind, target: string): Latest {
   return r ? { ...r, artifact: !!r.artifact } : null;
 }
 
-export function isEligible(l: Latest): boolean {
-  return l === null || (l.verdict === "keep" && !l.artifact);
+/** `latest` for every target of `kind` in one query: rows in log order, so the last one written wins. */
+export function latestAll(db: Db, kind: Kind): Map<string, Latest> {
+  const out = new Map<string, Latest>();
+  for (const r of db.query("SELECT target_id, verdict, artifact, note, at, inherited_from FROM verdicts WHERE kind = ? ORDER BY at, rowid").all(kind) as any[]) {
+    const { target_id, ...v } = r;
+    out.set(target_id, { ...v, artifact: !!v.artifact });
+  }
+  return out;
 }
 
 /** SQL fragment selecting target ids of `kind` that are NOT eligible. Ties on `at` (same second) break on rowid, as `latest` does. */

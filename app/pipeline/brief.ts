@@ -3,16 +3,13 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { BRIEFS } from "./paths.ts";
 import type { Db } from "./store/db.ts";
-import type { StageConfig, StageName } from "./config.ts";
 import { pipelineVersion } from "./version.ts";
-import { loadSetting } from "./settings.ts";
-import { SETTINGS } from "./paths.ts";
 import { CONTEXT_STAGES } from "./config.ts";
 
 /** Artifacts in the order their stage produced them, which their meta records and their row order does not. */
 const byIndex = <T extends { meta: string }>(as: T[]): T[] => [...as].sort((x, y) => (JSON.parse(x.meta).index ?? 0) - (JSON.parse(y.meta).index ?? 0));
 
-export function writeBrief(db: Db, drawId: string, stages: Record<StageName, StageConfig>, base: string = BRIEFS, settingsDir: string = SETTINGS, settledLines: { round: number; replacement: string }[] = []): string {
+export function writeBrief(db: Db, drawId: string, base: string = BRIEFS, settledLines: { round: number; replacement: string }[] = []): string {
   const draw = db.query("SELECT * FROM draws WHERE id = ?").get(drawId) as any;
   const steps = db.query("SELECT * FROM steps WHERE draw_id = ? ORDER BY started_at, rowid").all(drawId) as any[];
   const arts = db.query("SELECT a.*, s.stage FROM artifacts a JOIN steps s ON s.id = a.step_id WHERE s.draw_id = ? ORDER BY s.started_at, a.rowid").all(drawId) as any[];

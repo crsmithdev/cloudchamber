@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { api, when, type AutoResult, type Draw, type DraftConfig, type Finding, type Findings, type Story, type Step } from "./api.ts";
-import { BriefFiles, DrawAside, Md, RUNNING_STATUS, RowHead, SeedNote, StepView, boldLabels, firstParagraph, label, stageName, useBrief, type Detail } from "./Draws.tsx";
-import { Bar, Btn, Caret as Chevron, Facts, Field, Head, Icon, Mark, Seg, lastSelected, markFor, secs, usePoll, useRememberSelected } from "./ui.tsx";
+import { api, type AutoResult, type Draw, type DraftConfig, type Finding, type Findings, type Story, type Step } from "./api.ts";
+import { BriefFiles, DrawAside, Md, RowHead, SeedNote, StepView, boldLabels, firstParagraph, label, stageName, stageNames, type Detail } from "./Draws.tsx";
+import { ArchivedToggle, Bar, Btn, Caret as Chevron, Facts, RUNNING_STATUS, Field, Head, Icon, Mark, Seg, lastSelected, markFor, secs, usePoll, useRememberSelected } from "./ui.tsx";
 
 /**
  * Develop a brief: the stages after a brief (docs/specs/2026-09-05-drafting-pipeline.md).
@@ -35,7 +35,6 @@ function chainsOf(draws: Draw[]): Chain[] {
     })
     .sort((a, b) => (a.head.created_at < b.head.created_at ? 1 : -1));
 }
-const INVALIDATES = ["debt audit", "arithmetic", "custody"];
 /** A quoted span is shown between the row's own quotation marks; a span the model already quoted would show two. */
 const unquote = (s: string) => s.trim().replace(/^["“”'‘’]+|["“”'‘’]+$/g, "");
 
@@ -112,7 +111,6 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
     if (r.check && OPEN.has(r.status)) return `${statusLine(r)}${round} · ${r.check.reported} findings · total score ${r.check.total}`;
     return `${statusLine(r)}${round}`;
   };
-  const atGate = draws.filter((r) => OPEN.has(r.status)).length;
   const chain = chainOf(current);
   const aside = d && (
     <DrawAside
@@ -152,15 +150,7 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
               ? `${heads.filter((r) => OPEN.has(r.status)).length} to review · ${heads.filter((r) => r.status === "done").length} unchecked`
               : `${heads.filter((r) => OPEN.has(r.status)).length} to review · ${heads.filter((r) => r.status === "drafted").length} kept`}
             {chains.some((c) => c.rounds.length > 1) && <span className="note"> · {chains.filter((c) => c.rounds.length > 1).length} repair chains</span>}
-            {archived > 0 && (
-              <>
-                {" "}
-                ·{" "}
-                <button className="link" onClick={() => setShowArchived((v) => !v)}>
-                  {showArchived ? "hide" : "show"} {archived} archived
-                </button>
-              </>
-            )}
+            <ArchivedToggle archived={archived} shown={showArchived} onToggle={() => setShowArchived((v) => !v)} />
           </span>
         </div>
         {chains.length === 0 && <div className="empty">{stage === "check" ? "No briefs yet. Choose a premise in ideate to make one." : "Nothing drafted yet. Draft a brief from check."}</div>}
@@ -245,7 +235,7 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
                 <Mark state={markFor(d.draw.status)} />
                 <span className={working ? "sweep" : ""}>
                   {d.draw.status === "done" ? "unchecked" : label(d.draw.status)}
-                  {working && d.steps.some((s) => s.status === "running") ? ` · ${[...new Set(d.steps.filter((s) => s.status === "running").map((s) => stageName(s.stage)))].join(", ")}` : ""}
+                  {working && d.steps.some((s) => s.status === "running") ? ` · ${stageNames(d.steps.filter((s) => s.status === "running"))}` : ""}
                 </span>
               </span>
             </div>
@@ -483,7 +473,7 @@ function Building({ d, aside }: { d: Detail; aside: React.ReactNode }) {
             </>
           }
         >
-          {running.length ? `${running.length} call${running.length > 1 ? "s" : ""} in flight: ${[...new Set(running.map((s) => stageName(s.stage)))].join(", ")}` : "waiting for the next step"}
+          {running.length ? `${running.length} call${running.length > 1 ? "s" : ""} in flight: ${stageNames(running)}` : "waiting for the next step"}
         </Head>
         <Head className="mt-6">the brief, as it lands</Head>
         <table className="mt-1">
@@ -528,7 +518,7 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
   const outline = [...d.artifacts].reverse().find((a) => a.kind === "outline");
   const meta = outline ? JSON.parse(outline.meta) : {};
   const constraints: string[] = meta.constraints ?? [];
-  const jobs: string[] = (meta.jobs ?? []).filter((j: string) => !INVALIDATES.includes(j) || true);
+  const jobs: string[] = meta.jobs ?? [];
   const toggle = (fid: string) =>
     setSel((s) => {
       const n = new Set(s);
@@ -790,7 +780,7 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
                       <Chevron open={examined} />
                     </td>
                     <td className="num">{f.examined.length} lists</td>
-                    <td className="text-dim">{[...new Set(f.examined.map((e) => stageName(e.stage)))].join(", ")}</td>
+                    <td className="text-dim">{stageNames(f.examined)}</td>
                   </tr>
                   {examined &&
                     f.examined.map((e, i) => (
