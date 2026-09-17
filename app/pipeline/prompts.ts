@@ -188,7 +188,7 @@ Candidates:
 
   findingShape: `Each finding goes in a <finding> tag containing: <span> (a verbatim quote from the brief, under ${RUN.spanWords} words), <statement> (what the span asserts, one sentence), <result> (one of: supported | contradicted | unverifiable | contradicts:<a second verbatim quote> | underived), <evidence> (the second quote, the sum written out, a URL and quoted line, or none), <invalidates> (which outline section would have to change if the finding stands: {sections} | none), <replacement> (one factual sentence in the outline's register that would hold in its place; not dialogue, not a scene), <patch> (the span rewritten so the finding no longer holds, in the voice and register of the text it came from and no longer than the span, ready to stand in its place word for word; or none when the fix needs more than that span).
 
-Quote every span from a vignette or the ending, never from the outline: the reader of the story sees only those. When the conflicting fact is also stated in a vignette or the ending, quote it from there. A result of contradicted or contradicts needs the span to assert the conflicting fact itself. A count, a duration or a detail the span does not state is not a contradiction: the span may be one of several, and what it leaves out is unverifiable. The replacement and the patch keep every event the span reports and change only the quantity, the timing or the mechanism that conflicts. Never turn an event into its absence.`,
+Quote every span from a vignette or the ending, never from the outline: the reader of the story sees only those. Report only a conflict that reader would see by comparing two quotes, or a line that breaks a rule the outline states in words. A conflict you find only by arithmetic beyond comparing two stated values, by counting weekdays, or by working out how liquid, light, an instrument or a body behaves is not a finding, and neither is a stated rule beside an exception the text marks. When the conflicting fact is also stated in a vignette or the ending, quote it from there. A result of contradicted or contradicts needs the span to assert the conflicting fact itself. A count, a duration or a detail the span does not state is not a contradiction: the span may be one of several, and what it leaves out is unverifiable. The replacement and the patch keep every event the span reports and change only the quantity, the timing or the mechanism that conflicts. Never turn an event into its absence.`,
 
   checkDerivation: `Below is a story brief: a seed, a premise, an outline in three sections, three vignettes and an ending. The debt audit section claims to derive everything from one impossibility.
 
@@ -295,7 +295,9 @@ Drop it when any of these is true:
 - the span does not state the fact, or what it leaves out is stated elsewhere or left open;
 - the two quotes can both hold, and that includes a stated rule and an exception the text marks or explains;
 - the span is a character's loose, everyday wording of a fact the brief states exactly elsewhere;
-- seeing the conflict needs a sum of more than two figures, a count of weekdays, a unit conversion, or a physical inference about how liquid, blood, light, an instrument or a body behaves that the brief does not state in words;
+- seeing the conflict needs any arithmetic beyond comparing two stated values or counting a day or two from a dated entry: a sum, a product, a division, a rate, a count of weekdays or a unit conversion;
+- seeing the conflict needs a physical inference about how liquid, blood, light, an instrument or a body behaves that the brief does not state in words;
+- the span hedges the fact it states, with words such as "on a good day", "about", "nearly" or "if";
 - the evidence is not in the brief.
 
 Output one <verdict n="..."> tag per finding, containing <answer>keep|drop</answer> and <why> (one sentence). Under {cap} words.`,

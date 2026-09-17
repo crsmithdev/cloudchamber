@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { cluster, excludeDismissed, findingId, merge, overlap, parseFindings, score, type Finding } from "./recur.ts";
+import { parseVerdicts } from "./check.ts";
 
 const f = (checker: string, sample: number, span: string, statement: string, over: Partial<Finding> = {}): Finding =>
   ({ checker, sample, span, statement, result: "contradicts:x", evidence: "a second quote", invalidates: "none", replacement: "It holds.", patch: "", ...over });
@@ -55,6 +56,13 @@ describe("recurrence", () => {
     expect(cluster([withPatch(1, "the Bruges clavicle"), withPatch(2, "the Ghent clavicle")], 2)[0].patch).toBe("");
     expect(cluster([withPatch(1, "the Bruges clavicle"), withPatch(2, "")], 2)[0].patch).toBe("");
     expect(cluster([withPatch(1, "The   Bruges clavicle"), withPatch(2, "the bruges clavicle")], 2)[0].patch).toBe("The   Bruges clavicle");
+  });
+
+  test("parseVerdicts reads the first keep or drop word, and refuses an answer with neither", () => {
+    const ok = `<verdict n="1"><answer>Keep.</answer><why>a</why></verdict><verdict n="2"><answer>drop (loose wording)</answer><why>b</why></verdict>`;
+    expect(parseVerdicts(ok, 2).map((v) => v.answer)).toEqual(["keep", "drop"]);
+    expect(() => parseVerdicts(`<verdict n="1"><answer>unsure</answer></verdict>`, 1)).toThrow(/keep or drop/);
+    expect(() => parseVerdicts(ok, 3)).toThrow(/missing <verdict n="3">/);
   });
 
   test("parseFindings reads a patch and treats none as absent", () => {

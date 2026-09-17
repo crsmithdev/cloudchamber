@@ -152,7 +152,8 @@ async function verifyFindings(p: Pipeline, drawId: string, parts: BriefParts, br
 export function parseVerdicts(text: string, n: number): { answer: "keep" | "drop"; why: string }[] {
   const byN = new Map<number, { answer: "keep" | "drop"; why: string }>();
   for (const m of text.matchAll(/<verdict\s+n="(\d+)"\s*>([\s\S]*?)<\/verdict>/gi)) {
-    const a = (tag(m[2], "answer") ?? "").toLowerCase();
+    // the first keep or drop word is the answer: a model that writes "Keep." or "drop (loose wording)" has still answered
+    const a = /\b(keep|drop)\b/i.exec(tag(m[2], "answer") ?? "")?.[1].toLowerCase();
     if (a !== "keep" && a !== "drop") throw new Error(`verdict ${m[1]}: answer must be keep or drop`);
     byN.set(Number(m[1]), { answer: a, why: tag(m[2], "why") ?? "" });
   }
