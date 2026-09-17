@@ -867,6 +867,21 @@ describe("finding ids are scoped by draw", () => {
 });
 
 describe("auto acts on reported findings only, and reads its accepted set against itself", () => {
+  test("one clean pass with the budget spent stops on budget, not on the floor", async () => {
+    const script = draftScript({
+      "check-ledger": [1, 2].flatMap(() => [`<ledger>${LEDGER}</ledger><examined>x</examined>`, `<ledger>${LEDGER}</ledger><examined>x</examined>`]),
+      "check-derivation": Array.from({ length: 4 }, () => `<impossibility>One.</impossibility><examined>x</examined>`),
+    });
+    const { db, d, draw, model } = await drawn(script);
+    const cfg = loadDraftConfig(undefined, { "checks.samples": 2 });
+    db.query("UPDATE draws SET draft_config = ? WHERE id = ?").run(JSON.stringify(cfg), draw.id);
+    await d.check(draw.id);
+    const checks = stagesOf(model, /^check-/).length;
+    const r = await d.autoRounds(draw.id, { cfg: { ...cfg.config, repair: { ...cfg.config.repair, max_calls: 1 } } });
+    expect([r.stopped, r.rounds.length, r.left_open]).toEqual(["budget", 1, 0]);
+    expect(stagesOf(model, /^check-/)).toHaveLength(checks);                  // no second pass was paid for
+  });
+
   test("a lone finding over the floor is left open, neither accepted nor dismissed", async () => {
     // two samples: A in one of them scores 2 + 3 + 2 = 7, over the floor, but under keep_if
     const script = draftScript({

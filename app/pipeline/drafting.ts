@@ -233,8 +233,10 @@ export class Drafting {
         this.dismiss(id, f.id, why, "draw");
       }
       if (!accept.length) {
-        if (++clean < CLEAN_PASSES && calls < cfg.repair.max_calls) { await this.recheck(id, cfg); continue; }
-        stopped = "floor"; break;
+        if (++clean >= CLEAN_PASSES) { stopped = "floor"; break; }
+        // one clean pass is not convergence: out of calls before the second, the budget stopped it
+        if (calls >= cfg.repair.max_calls) { stopped = "budget"; break; }
+        await this.recheck(id, cfg); continue;
       }
       clean = 0;
       const best = Math.min(...rounds.map((r) => r.total));
