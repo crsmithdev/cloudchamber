@@ -119,6 +119,15 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
   const app = Fastify({ logger: opts.logger ?? false });
   const jobs = opts.jobs ?? new Jobs();
   const background = (work: Promise<unknown>) => jobs.run(work);
+  /**
+   * Start long work in the background, and return the error when it fails
+   * before its first model call. A status or id check throws inside the async
+   * method, so without this the reply was a 202 for work that never ran.
+   */
+  const launch = (work: Promise<unknown>): Promise<Error | null> => {
+    background(work);
+    return Promise.race([work.then(() => null, (e: Error) => e), new Promise<null>((r) => setImmediate(() => r(null)))]);
+  };
   const drafting = opts.drafting ?? new Drafting(pipeline);
 
   app.get("/api/status", async () => status(db));
@@ -267,13 +276,13 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
       // gate 1 and gate 2 (docs/specs/2026-09-05-drafting-pipeline.md); the long ones continue after the reply
       if (action === "accept") {
         if (!findings?.length) return reply.code(400).send({ error: "findings required" });
-        const p = drafting.accept(id, findings, { note });
-        background(p);
+        const failed = await launch(drafting.accept(id, findings, { note }));
+        if (failed) return reply.code(400).send({ error: failed.message });
         return reply.code(202).send({ id, status: "repairing" });
       }
       if (action === "auto") {
-        const p2 = drafting.autoRounds(id, { note: note || undefined });
-        background(p2);
+        const failed = await launch(drafting.autoRounds(id, { note: note || undefined }));
+        if (failed) return reply.code(400).send({ error: failed.message });
         return reply.code(202).send({ id, status: "repairing" });
       }
       if (action === "dismiss") { if (!finding) return reply.code(400).send({ error: "finding required" }); return drafting.dismiss(id, finding, note); }
@@ -283,8 +292,8 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
       if (action === "patch") return drafting.patch(id, findings ?? (finding ? [finding] : undefined), note);
       if (action === "rewrite") {
         if (!beat) return reply.code(400).send({ error: "beat required" });
-        const p = drafting.rewrite(id, Number(beat), finding);
-        background(p);
+        const failed = await launch(drafting.rewrite(id, Number(beat), finding));
+        if (failed) return reply.code(400).send({ error: failed.message });
         return reply.code(202).send({ id, status: "drafting" });
       }
       if (action === "choose") {
@@ -292,8 +301,8 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
         const draw = pipeline.draw(id);
         if (draw.status !== "awaiting_gate") return reply.code(400).send({ error: `draw ${id} is ${draw.status}, not awaiting_gate` });
         if (!pipeline.candidates(id).some((c) => c.step_id === step_id)) return reply.code(400).send({ error: `no execute step ${step_id} on draw ${id}` });
-        const p = pipeline.choose(id, step_id);
-        background(p);
+        const failed = await launch(pipeline.choose(id, step_id));
+        if (failed) return reply.code(400).send({ error: failed.message });
         return reply.code(202).send({ id, status: "running" });
       }
       if (action === "fork") {
@@ -312,8 +321,8 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     const id = req.params.id;
     try {
       pipeline.draw(id);
-      const p = drafting.check(id, { checks: req.body?.checks, samples: req.body?.samples });
-      background(p);
+      const failed = await launch(drafting.check(id, { checks: req.body?.checks, samples: req.body?.samples }));
+      if (failed) return reply.code(400).send({ error: failed.message });
       return reply.code(202).send({ id, status: "checking" });
     } catch (e: any) { return reply.code(400).send({ error: e.message }); }
   });
@@ -323,8 +332,8 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     try {
       const d = pipeline.draw(id);
       if (!CHECKABLE.has(d.status)) return reply.code(400).send({ error: `draw ${id} is ${d.status}, not done | awaiting_check_gate` });
-      const p = drafting.draft(id, { auto: !!req.body?.auto, profile: req.body?.profile, overrides: req.body?.overrides });
-      background(p);
+      const failed = await launch(drafting.draft(id, { auto: !!req.body?.auto, profile: req.body?.profile, overrides: req.body?.overrides }));
+      if (failed) return reply.code(400).send({ error: failed.message });
       return reply.code(202).send({ id, status: "drafting" });
     } catch (e: any) { return reply.code(400).send({ error: e.message }); }
   });

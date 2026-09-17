@@ -235,6 +235,9 @@ describe("api: check, gate 1, draft, gate 2", () => {
     expect(dis.code).toBe(200);
     expect(dis.body.decision).toBe("dismissed");
     expect((await j2("POST", `/api/draws/${d2.id}/gate`, { action: "accept" })).code).toBe(400);
+    // a status or id the method rejects comes back as a 400 at once, not a 202 for work that never runs
+    const stale = await j2("POST", `/api/draws/${d2.id}/gate`, { action: "accept", findings: ["f-nosuch"] });
+    expect([stale.code, stale.body.error]).toEqual([400, `draw ${d2.id}: no reported finding f-nosuch`]);
     expect((await j2("POST", `/api/draws/${d2.id}/gate`, { action: "hold" })).body.status).toBe("awaiting_check_gate");
     expect((await j2("POST", `/api/draws/${d2.id}/draft`, { overrides: { "scenes.order": "parallel" } })).code).toBe(202);
     for (let i = 0; i < 200 && p2.draw(d2.id).status !== "awaiting_draft_gate"; i++) await Bun.sleep(10);
@@ -244,6 +247,9 @@ describe("api: check, gate 1, draft, gate 2", () => {
     expect(story.body.text).toContain("Scene 1 opens.");
     expect(story.body.scenes).toHaveLength(8);
     expect(story.body.profiles.find((x: any) => x.beat === 5).flags).toEqual(["theme-stated"]);
+    expect((await j2("POST", `/api/draws/${d2.id}/gate`, { action: "auto" })).body.error).toBe(`draw ${d2.id} is awaiting_draft_gate, not done | awaiting_check_gate`);
+    expect((await j2("POST", `/api/draws/${d2.id}/check`, {})).code).toBe(400);
+    expect((await j2("POST", `/api/draws/${d2.id}/gate`, { action: "rewrite", beat: 99 })).body.error).toBe("beat 99 is not in 1..8");
     const rw = await j2("POST", `/api/draws/${d2.id}/gate`, { action: "rewrite", beat: 3 });
     expect(rw.code).toBe(202);
     for (let i = 0; i < 200 && p2.draw(d2.id).status !== "awaiting_draft_gate"; i++) await Bun.sleep(10);
