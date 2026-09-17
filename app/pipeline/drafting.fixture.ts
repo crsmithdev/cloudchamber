@@ -95,6 +95,7 @@ export function draftScript(over: Record<string, any> = {}) {
     "ledger-extract": () => `<ledger>${LEDGER}</ledger>`,
     "check-ledger": ledgerSamples(),
     "check-derivation": derivationSamples(),
+    "check-verify": (p: string) => Array.from({ length: (p.match(/^\d+\. span:/gm) ?? []).length }, (_, i) => `<verdict n="${i + 1}"><answer>keep</answer><why>holds</why></verdict>`).join(""),
     "check-structure": () => structure(),
     "check-resemblance": () => resemblance(),
     "check-claims-extract": () => claimsExtract(),

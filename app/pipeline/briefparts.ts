@@ -66,7 +66,7 @@ export function findingArtifacts(p: Pipeline, drawId: string): (FindingMeta & { 
 
 /** The latest check pass id on a draw, or null when none has run. Pass ids sort as strings in time order. */
 export function latestCheckPass(p: Pipeline, drawId: string): string | null {
-  const passes = p.artifacts(drawId).filter((a) => a.kind === "ledger" || (a.kind === "finding" && JSON.parse(a.meta).source === "check") || a.kind === "profile" && JSON.parse(a.meta).source === "check")
+  const passes = p.artifacts(drawId).filter((a) => a.kind === "pass" || a.kind === "ledger" || (a.kind === "finding" && JSON.parse(a.meta).source === "check") || a.kind === "profile" && JSON.parse(a.meta).source === "check")
     .map((a) => JSON.parse(a.meta).pass as string).filter(Boolean);
   return passes.length ? passes.sort().at(-1)! : null;
 }
@@ -74,7 +74,7 @@ export function latestCheckPass(p: Pipeline, drawId: string): string | null {
 /** The distinct check pass ids on a draw, oldest first. */
 export function checkPasses(p: Pipeline, drawId: string): string[] {
   const passes = p.artifacts(drawId)
-    .filter((a) => a.kind === "ledger" || ((a.kind === "finding" || a.kind === "profile") && JSON.parse(a.meta).source === "check"))
+    .filter((a) => a.kind === "pass" || a.kind === "ledger" || ((a.kind === "finding" || a.kind === "profile") && JSON.parse(a.meta).source === "check"))
     .map((a) => JSON.parse(a.meta).pass as string).filter(Boolean);
   return [...new Set(passes)].sort();
 }
@@ -90,7 +90,7 @@ export function samplesPerChecker(p: Pipeline, drawId: string): Record<string, n
   const done = p.steps(drawId).filter((s) => s.status === "done" && /^check-/.test(s.stage));
   for (const s of done) {
     const checker = s.stage.replace(/^check-/, "");
-    if (checker.startsWith("claims")) continue;
+    if (checker.startsWith("claims") || checker === "verify") continue;
     out[checker] = (out[checker] ?? 0) + 1;
   }
   for (const k of Object.keys(out)) if (k !== "claims") out[k] = Math.max(1, Math.round(out[k] / passes));

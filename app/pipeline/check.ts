@@ -4,6 +4,12 @@
  * merged across checkers; dismissed findings excluded. Structure and
  * resemblance produce profiles, never findings, and run once for the whole
  * repair chain. Claims run only when the setting declares an authority.
+ *
+ * The reported findings then go back to the model once, with the brief, and
+ * only those whose span asserts the fact and whose evidence conflicts with it
+ * stay reported; the rest are stored under the bar with the reason. The
+ * checkers over-flag: on the pit chain they read an unstated count as a
+ * contradiction and a stated rule as its own violation.
  */
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -101,12 +107,41 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
 
   const reported = perChecker.flatMap((c) => c.clusters.filter((x) => x.reported));
   const merged = excludeDismissed(merge(reported, parts.settingJobs), dismissed);
+  // a clean pass leaves no finding or profile behind, so the pass is marked on its own: the gate reads the latest pass, not the latest with findings
+  if (perChecker.length) p.artifact(perChecker[0].firstStep, "pass", pass, { pass });
+  const dropped = await verifyFindings(p, drawId, parts, brief, merged);
   for (const c of merged) {
     const owner = perChecker.find((x) => x.checker === c.checkers[0])!;
     const { reported: _r, ...meta } = c;
-    p.artifact(owner.firstStep, "finding", c.statement, { ...meta, pass, source: "check" });
+    const why = dropped.get(c.id);
+    p.artifact(owner.firstStep, "finding", c.statement, { ...meta, pass, source: "check", ...(why ? { sub_threshold: true, dropped: why } : {}) });
   }
-  return { pass, findings: merged, claims };
+  return { pass, findings: merged.filter((c) => !dropped.has(c.id)), claims };
+}
+
+/**
+ * The pairing step: one call reads every reported finding back against the
+ * brief. Returns the ids to drop, each with the reason. Claims have their own
+ * verifier and are not read again.
+ */
+async function verifyFindings(p: Pipeline, drawId: string, parts: BriefParts, brief: string, merged: Cluster[]): Promise<Map<string, string>> {
+  const subject = merged.filter((c) => !(c.checkers.length === 1 && c.checkers[0] === "claims"));
+  const out = new Map<string, string>();
+  if (!subject.length) return out;
+  const findings = subject.map((c, i) => `${i + 1}. span: "${c.span}"\n   statement: ${c.statement}\n   result: ${c.result}\n   evidence: ${c.evidence}`).join("\n");
+  const { value } = await p.invoke(drawId, parts.outlineStepId, "check-verify", fill("checkVerify", { brief, findings }), (t) => parseVerdicts(t, subject.length));
+  value.forEach((v, i) => { if (v.answer === "drop") out.set(subject[i].id, v.why); });
+  return out;
+}
+
+export function parseVerdicts(text: string, n: number): { answer: "keep" | "drop"; why: string }[] {
+  const byN = new Map<number, { answer: "keep" | "drop"; why: string }>();
+  for (const m of text.matchAll(/<verdict\s+n="(\d+)"\s*>([\s\S]*?)<\/verdict>/gi)) {
+    const a = (tag(m[2], "answer") ?? "").toLowerCase();
+    if (a !== "keep" && a !== "drop") throw new Error(`verdict ${m[1]}: answer must be keep or drop`);
+    byN.set(Number(m[1]), { answer: a, why: tag(m[2], "why") ?? "" });
+  }
+  return Array.from({ length: n }, (_, i) => { const v = byN.get(i + 1); if (!v) throw new Error(`missing <verdict n="${i + 1}">`); return v; });
 }
 
 /** S concurrent samples of one checker; the parsed value goes on each step, the findings are clustered. */

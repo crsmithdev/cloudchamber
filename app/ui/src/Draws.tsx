@@ -463,6 +463,8 @@ const STAGE: Record<string, { name: string; does: string }> = {
   "ledger-extract": { name: "extract ledger", does: "Lists every settled fact in the outline: times, details, who knows what, who holds what, the world's rules." },
   "check-derivation": { name: "check derivation", does: "Checks that every assertion in the vignettes and the ending follows from the outline's one impossibility, and does every sum." },
   "check-ledger": { name: "check ledger", does: "Checks the vignettes and the ending against the ledger of settled facts, and against each other." },
+  "check-verify": { name: "verify findings", does: "Reads every reported finding back against the brief and keeps only those whose span asserts the fact and whose evidence conflicts with it." },
+  reconcile: { name: "reconcile fixes", does: "Reads the fixes an auto round is about to apply against each other and drops the lower-scoring side of each pair that cannot both hold." },
   "check-structure": { name: "check structure", does: "Seven present-or-absent questions about the brief, each answered with a quote." },
   "check-resemblance": { name: "check resemblance", does: "Matches the brief against the list of overused premises and names the nearest published work." },
   "check-claims-extract": { name: "find claims", does: "Lists the brief's factual claims that the setting's authority can confirm or deny." },

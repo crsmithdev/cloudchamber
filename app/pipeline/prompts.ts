@@ -281,6 +281,16 @@ As a checkable sentence: {statement}
 
 Find the line in the setting above that confirms or denies it. The setting is the whole authority: a claim it does not settle is unverifiable, not wrong. Output a <finding> tag containing <span> (the quote above, verbatim), <statement> (the sentence above), <result> (supported | contradicted | unverifiable), <evidence> (the heading it sits under and one quoted line from it, or none), <invalidates> (none), <replacement> (if contradicted, one positive sentence that would hold, keeping what the span reports and changing only the figure or the rule that conflicts; otherwise none). Under 120 words.`,
 
+  checkVerify: `Below is a story brief, then the findings its checkers reported against it, numbered.
+
+{brief}
+
+<findings>
+{findings}
+</findings>
+
+Read each finding back against the whole brief. Keep it when the span asserts the fact the statement gives it and the evidence conflicts with that fact on a careful reading of the brief. Drop it when the span does not state the fact, when what the span leaves out is stated elsewhere or left open, when the two quotes can both hold, or when the evidence is not in the brief. Output one <verdict n="..."> tag per finding, containing <answer>keep|drop</answer> and <why> (one sentence). Under 400 words.`,
+
   reconcile: `Below are the fixes one repair round is about to apply to a story brief together, numbered.
 
 <fixes>

@@ -35,6 +35,8 @@ export type DraftOpts = { profile?: string; overrides?: Overrides; auto?: boolea
  * it scores.
  */
 const AUTO_CHECKERS = ["derivation", "ledger", "claims"];
+/** A floor stop needs this many clean passes in a row on one brief: one sample set can miss what the next one finds. */
+const CLEAN_PASSES = 2;
 const autoEligible = (f: FindingView) =>
   f.checkers.some((c) => AUTO_CHECKERS.includes(c)) && !!f.evidence.trim() && f.evidence.trim().toLowerCase() !== "none"
   && !f.relitigates;
@@ -188,6 +190,11 @@ export class Drafting {
    * call reads them against each other and the lower-scoring side of every
    * conflicting pair is dismissed before the repair.
    *
+   * A clean pass is one sample set. The floor stop waits for `CLEAN_PASSES`
+   * clean passes in a row on the same brief, each a fresh check, so a pass
+   * that missed a defect does not end the chain. The re-check is its own row
+   * with the same id.
+   *
    * The round with the lowest total score is reported but not restored: an
    * earlier round is superseded, and reviving it would leave the chain in two
    * places at once. When `best` is not `last`, read the brief it names.
@@ -204,6 +211,7 @@ export class Drafting {
     if (!latestCheckPass(this.p, id)) { this.status(id, "checking"); await runCheck(this.p, id, cfg, { premisesPath: this.opts.premisesPath }).catch((e) => { this.p.fail(id, e); throw e; }); this.status(id, "awaiting_check_gate"); }
     const rounds: AutoRound[] = [];
     let stopped: AutoResult["stopped"] = "cap";
+    let clean = 0;
     for (let round = 1; ; round++) {
       const open = gateFindings(this.p, id).filter((f) => f.decision === "open");
       let accept = open.filter((f) => f.score >= cfg.repair.stop_score && autoEligible(f));
@@ -218,7 +226,11 @@ export class Drafting {
           : "auto: no evidence to read it against";
         this.dismiss(id, f.id, why, "draw");
       }
-      if (!accept.length) { stopped = "floor"; break; }
+      if (!accept.length) {
+        if (++clean < CLEAN_PASSES && calls < cfg.repair.max_calls) { await this.recheck(id, cfg); continue; }
+        stopped = "floor"; break;
+      }
+      clean = 0;
       const best = Math.min(...rounds.map((r) => r.total));
       const since = rounds.length - 1 - rounds.findIndex((r) => r.total === best);
       // patience, the cap and the budget all stop before this round's accepted set is applied.
@@ -239,6 +251,13 @@ export class Drafting {
     const last = this.p.steps(id).filter((s) => s.status === "done").at(-1);
     if (last) this.p.artifact(last, "auto", JSON.stringify(result), { rounds: rounds.length, stopped, best: best.id });
     return result;
+  }
+
+  /** A fresh check pass on a brief that already has one. */
+  private async recheck(drawId: string, cfg: DraftConfig): Promise<void> {
+    this.status(drawId, "checking");
+    await runCheck(this.p, drawId, cfg, { premisesPath: this.opts.premisesPath }).catch((e) => { this.p.fail(drawId, e); throw e; });
+    this.status(drawId, "awaiting_check_gate");
   }
 
   /**

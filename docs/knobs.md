@@ -140,6 +140,7 @@ stages.toml: the model each stage calls, and the one it falls back to on a refus
 | `ledger-extract` | claude-opus-5 → claude-sonnet-5 |
 | `check-derivation` | claude-opus-5 → claude-sonnet-5 |
 | `check-ledger` | claude-opus-5 → claude-sonnet-5 |
+| `check-verify` | claude-opus-5 → claude-sonnet-5 |
 | `check-structure` | claude-opus-5 → claude-sonnet-5 |
 | `check-resemblance` | claude-opus-5 → claude-sonnet-5 |
 | `check-claims-extract` | claude-opus-5 → claude-sonnet-5 |

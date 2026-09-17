@@ -75,6 +75,12 @@ model = "claude-opus-5"
 fallback = "claude-sonnet-5"
 system = "You check prose against a ledger of settled facts. Output only the tags asked for."
 
+# One call a pass over the reported findings, the pairing step: a finding is kept only when its span asserts the fact and the evidence conflicts with it.
+[check-verify]
+model = "claude-opus-5"
+fallback = "claude-sonnet-5"
+system = "You read findings against a story brief and keep only the ones that hold. Output only the tags asked for."
+
 [check-structure]
 model = "claude-opus-5"
 fallback = "claude-sonnet-5"

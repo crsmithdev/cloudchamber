@@ -56,7 +56,7 @@ describe("check and gate 1", () => {
     const { model, p, d, draw } = await drawn();
     const r = await d.check(draw.id);
     expect(p.draw(draw.id).status).toBe("awaiting_check_gate");
-    expect(stagesOf(model, /^check-/).sort()).toEqual(["check-derivation", "check-derivation", "check-derivation", "check-ledger", "check-ledger", "check-ledger", "check-resemblance", "check-structure"]);
+    expect(stagesOf(model, /^check-/).sort()).toEqual(["check-derivation", "check-derivation", "check-derivation", "check-ledger", "check-ledger", "check-ledger", "check-resemblance", "check-structure", "check-verify"]);
     expect(r.claims).toBe("off");
     // A recurs 3/3 in both checkers and merges; B recurs 2/3; C (1/3) is not stored
     const f = d.findings(draw.id);
@@ -273,12 +273,12 @@ describe("check and gate 1", () => {
   });
 
   test("a fix accepted in an earlier round is carried into every later repair and is not re-argued", async () => {
-    // A is accepted in round 1 and reported again by the re-check
+    // A is accepted in round 1 and reported again by every re-check; auto's floor stop re-checks once more
     const script = draftScript({
-      "check-ledger": [...ledgerSamples(), ...ledgerSamples(), ...ledgerSamples()],
-      "check-derivation": [...derivationSamples(), ...derivationSamples(), ...derivationSamples()],
+      "check-ledger": [...ledgerSamples(), ...ledgerSamples(), ...ledgerSamples(), ...ledgerSamples()],
+      "check-derivation": [...derivationSamples(), ...derivationSamples(), ...derivationSamples(), ...derivationSamples()],
     });
-    const { p, d, draw, model, dir } = await drawn(script);
+    const { p, d, draw, dir } = await drawn(script);
     await d.check(draw.id);
     const [a] = d.findings(draw.id).findings;
     const next = await d.accept(draw.id, [a.id]);
@@ -289,19 +289,19 @@ describe("check and gate 1", () => {
     expect(same.relitigates).toMatchObject({ round: 1, draw: draw.id });
     expect(same.relitigates!.replacement).toBe("Only the assembler can fire the reliquary.");
 
-    // auto will not act on it, and says why (B sits at 6, so the floor is held at 7 to leave it for the hand-driven round below)
-    const r = await d.autoRounds(next.id, { cfg: { ...loadDraftConfig().config, repair: { ...loadDraftConfig().config.repair, stop_score: 7 } } });
-    expect(r.rounds[0].accepted).toBe(0);
-    expect(r.stopped).toBe("floor");
-    expect(d.findings(next.id, { all: true }).findings.find((f) => f.span === SPAN_A)!.note).toBe("auto: re-opens the fix accepted in round 1");
-
     // a third repair, driven by hand, carries the round-1 fix as settled rather than as a constraint
     const third = await d.accept(next.id, [again.find((f) => f.span === SPAN_B)!.id]);
     const prompt = p.steps(third.id).find((s) => s.stage === "repair-outline")!.prompt;
     expect(prompt).toContain("<settled>\n- Only the assembler can fire the reliquary.\n</settled>");
     expect(prompt).toContain("The twelfth relic is the Verona clavicle in every account.");   // this round's constraint
     expect(readFileSync(join(dir, "briefs", third.id, "trail.md"), "utf8")).toContain("## settled in earlier rounds\n\n- round 1: Only the assembler can fire the reliquary.");
-    void model;
+
+    // auto will not act on A, and says why; the floor is held at 7 so nothing else is accepted
+    const aId = d.findings(third.id, { all: true }).findings.find((f) => f.span === SPAN_A)!.id;
+    const r = await d.autoRounds(third.id, { cfg: { ...loadDraftConfig().config, repair: { ...loadDraftConfig().config.repair, stop_score: 7 } } });
+    expect(r.rounds[0].accepted).toBe(0);
+    expect(r.stopped).toBe("floor");
+    expect(latest(p.db, "finding", aId)?.note).toBe("auto: re-opens the fix accepted in round 1");
   });
 
   test("the ledger is extracted once for the chain and every later round is checked against it", async () => {
@@ -665,7 +665,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
   });
 
   test("--auto: accepts findings at or above the score floor, dismisses the rest, repairs, re-checks, drafts, stops at gate 2", async () => {
-    const script = draftScript({ "check-ledger": [...ledgerSamples(), ...cleanSamples()], "check-derivation": [...derivationSamples(), ...cleanSamples()] });
+    const script = draftScript({ "check-ledger": [...ledgerSamples(), ...cleanSamples(), ...cleanSamples()], "check-derivation": [...derivationSamples(), ...cleanSamples(), ...cleanSamples()] });
     const { p, d, draw, model } = await drawn(script);
     const out = await d.draft(draw.id, { auto: true });
     expect(out.id).not.toBe(draw.id);
@@ -680,20 +680,21 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(stagesOf(model, /^reconcile$/)).toHaveLength(1);
     expect(model.calls.find((c) => c.stage === "reconcile")!.prompt).toContain("1. Only the assembler can fire the reliquary.\n2. The twelfth relic is the Verona clavicle in every account.");
     expect((p.db.query("SELECT DISTINCT method FROM verdicts WHERE kind = 'finding'").all() as any[]).map((v) => v.method)).toEqual(["draw"]);
-    expect(stagesOf(model, /^check-ledger$/)).toHaveLength(6);                // one round of repair, then a clean re-check ends it
+    expect(stagesOf(model, /^check-ledger$/)).toHaveLength(9);                // one round of repair, then two clean passes end it
     expect(stagesOf(model, /^scene$/)).toHaveLength(8);
     expect(out.draft_config).toBeTruthy();
     expect(JSON.parse(out.draft_config!).config.length.words).toBe(5000);
   });
 
   test("auto stops on the floor and reports every round and the lowest-scoring one", async () => {
-    const script = draftScript({ "check-ledger": [...ledgerSamples(), ...cleanSamples()], "check-derivation": [...derivationSamples(), ...cleanSamples()] });
+    const script = draftScript({ "check-ledger": [...ledgerSamples(), ...cleanSamples(), ...cleanSamples()], "check-derivation": [...derivationSamples(), ...cleanSamples(), ...cleanSamples()] });
     const { p, d, draw } = await drawn(script);
     await d.check(draw.id);
     const r = await d.autoRounds(draw.id);
     expect(r.stopped).toBe("floor");
     expect(r.floor).toBe(6);
-    expect(r.rounds.map((x) => [x.round, x.open, x.total, x.accepted])).toEqual([[1, 2, 16, 2], [2, 0, 0, 0]]);   // C is under keep_if: not open to auto
+    expect(r.rounds.map((x) => [x.round, x.open, x.total, x.accepted])).toEqual([[1, 2, 16, 2], [2, 0, 0, 0], [3, 0, 0, 0]]);   // C is under keep_if: not open to auto; two clean passes end it
+    expect(r.rounds[2].id).toBe(r.rounds[1].id);                               // the second clean pass is a re-check of the same brief
     expect(r.left_open).toBe(0);                                               // a floor stop leaves nothing to rule on
     expect(r.best.round).toBe(2);
     expect(r.id).toBe(r.rounds[1].id);
@@ -701,7 +702,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     // the round table is stored on the brief auto stopped on, so the gate can render it
     const art = p.artifacts(r.id).find((a) => a.kind === "auto")!;
     expect(JSON.parse(art.content)).toMatchObject({ stopped: "floor", floor: 6 });
-    expect(JSON.parse(art.meta)).toMatchObject({ rounds: 2, best: r.best.id });
+    expect(JSON.parse(art.meta)).toMatchObject({ rounds: 3, best: r.best.id });
   });
 
   test("auto stops on patience when the total score stops falling, and names the best round", async () => {
@@ -781,21 +782,24 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
   test("--auto never accepts structure or resemblance, and evidence-less findings are dismissed however they score", async () => {
     const strip = (f: string) => f.replace("<evidence>a second quote from the outline</evidence>", "<evidence>none</evidence>");
     const noEv = strip(A());
-    const script = draftScript({ "check-ledger": ledgerSamples(noEv, strip(B())), "check-derivation": derivationSamples(noEv) });
+    const script = draftScript({ "check-ledger": [...ledgerSamples(noEv, strip(B())), ...cleanSamples()], "check-derivation": [...derivationSamples(noEv), ...cleanSamples()] });
     const { p, d, draw } = await drawn(script);
+    await d.check(draw.id);
+    const fs = d.findings(draw.id).findings;
+    expect(fs.map((f) => f.score)).toEqual([8, 4]);                            // C recurred once: under the bar, and no longer auto's to decide
     const out = await d.draft(draw.id, { auto: true });
     expect(out.id).toBe(draw.id);                                             // nothing accepted, no repair
-    const fs = d.findings(draw.id).findings;
-    expect(fs.map((f) => f.decision)).toEqual(["dismissed", "dismissed", "dismissed"]);
-    expect(fs.map((f) => f.score)).toEqual([8, 5, 4]);
-    expect(fs[0].note).toBe("auto: no evidence to read it against");          // 8 is over the floor; a person still has to read it
+    // the first pass's findings keep their verdicts; the second clean pass is what the gate now shows
+    expect(fs.map((f) => latest(p.db, "finding", f.id)?.verdict)).toEqual(["pass", "pass"]);
+    expect(latest(p.db, "finding", fs[0].id)?.note).toBe("auto: no evidence to read it against");   // 8 is over the floor; a person still has to read it
+    expect(d.findings(draw.id).findings).toHaveLength(0);
     expect(p.steps(draw.id).filter((s) => /^repair/.test(s.stage))).toHaveLength(0);
   });
 });
 
 describe("templates and store", () => {
   test("every check and drafting template states a word cap and passes the vocabulary rule", () => {
-    const names = ["checkDerivation", "checkLedger", "checkStructure", "checkResemblance", "claimsExtract", "claimsVerifyWorld", "claimsVerifyReference", "reconcile", "repairVignette", "repairEnding", "schedule", "sceneAsk", "screenLedger", "screenStructure"] as const;
+    const names = ["checkDerivation", "checkLedger", "checkStructure", "checkResemblance", "claimsExtract", "claimsVerifyWorld", "claimsVerifyReference", "checkVerify", "reconcile", "repairVignette", "repairEnding", "schedule", "sceneAsk", "screenLedger", "screenStructure"] as const;
     for (const n of names) {
       const t = (TEMPLATES as any)[n] as string;
       expect(t).toMatch(/Under \{?\w*\}? ?words|Under \d+ words|Under \{cap\} words/);
@@ -860,15 +864,15 @@ describe("auto acts on reported findings only, and reads its accepted set agains
   test("a lone finding over the floor is left open, neither accepted nor dismissed", async () => {
     // two samples: A in one of them scores 2 + 3 + 2 = 7, over the floor, but under keep_if
     const script = draftScript({
-      "check-ledger": [`<ledger>${LEDGER}</ledger>${A()}<examined>x</examined>`, `<ledger>${LEDGER}</ledger><examined>x</examined>`],
-      "check-derivation": [`<impossibility>One.</impossibility><examined>x</examined>`, `<impossibility>One.</impossibility><examined>x</examined>`],
+      "check-ledger": [1, 2].flatMap(() => [`<ledger>${LEDGER}</ledger>${A()}<examined>x</examined>`, `<ledger>${LEDGER}</ledger><examined>x</examined>`]),
+      "check-derivation": Array.from({ length: 4 }, () => `<impossibility>One.</impossibility><examined>x</examined>`),
     });
     const { db, p, d, draw } = await drawn(script);
     db.query("UPDATE draws SET draft_config = ? WHERE id = ?").run(JSON.stringify(loadDraftConfig(undefined, { "checks.samples": 2 })), draw.id);
     await d.check(draw.id);
     const r = await d.autoRounds(draw.id);
     expect(r.stopped).toBe("floor");
-    expect(r.rounds.map((x) => [x.round, x.open, x.total, x.accepted])).toEqual([[1, 0, 0, 0]]);
+    expect(r.rounds.map((x) => [x.round, x.open, x.total, x.accepted])).toEqual([[1, 0, 0, 0], [2, 0, 0, 0]]);
     expect(r.left_open).toBe(0);
     expect(p.steps(draw.id).filter((s) => /^repair/.test(s.stage))).toHaveLength(0);
     const [a] = d.findings(draw.id, { all: true }).findings;
@@ -881,6 +885,7 @@ describe("auto acts on reported findings only, and reads its accepted set agains
       "check-derivation": [...derivationSamples(), ...cleanSamples()],
       reconcile: ["<conflicts><conflict><a>1</a><b>2</b><why>one relic cannot be fired by two rules</why></conflict></conflicts>"],
     });
+    script["check-ledger"].push(...cleanSamples()); script["check-derivation"].push(...cleanSamples());
     const { p, d, draw, model } = await drawn(script);
     await d.check(draw.id);
     const [a, b] = d.findings(draw.id).findings;
@@ -895,5 +900,22 @@ describe("auto acts on reported findings only, and reads its accepted set agains
     const prompt = p.steps(r.id).find((s) => s.stage === "repair-outline")!.prompt;
     expect(prompt).toContain("Only the assembler can fire the reliquary.");
     expect(prompt).not.toContain("The twelfth relic is the Verona clavicle in every account.");
+  });
+});
+
+describe("the verify pass", () => {
+  test("a reported finding the verify pass drops goes under the bar with the reason, and the gate does not see it", async () => {
+    const script = draftScript({
+      "check-verify": [`<verdict n="1"><answer>keep</answer><why>holds</why></verdict><verdict n="2"><answer>drop</answer><why>the span does not name the relic</why></verdict>`],
+    });
+    const { d, draw, model } = await drawn(script);
+    const r = await d.check(draw.id);
+    expect(r.findings.map((f) => f.span)).toEqual([SPAN_A]);                  // B is dropped from the result
+    expect(d.findings(draw.id).findings.filter((f) => f.reported).map((f) => f.span)).toEqual([SPAN_A]);
+    const all = d.findings(draw.id, { all: true }).findings;
+    const b = all.find((f) => f.span === SPAN_B)!;
+    expect([b.reported, (b as any).dropped]).toEqual([false, "the span does not name the relic"]);
+    expect(model.calls.find((c) => c.stage === "check-verify")!.prompt).toContain(`1. span: "${SPAN_A}"`);
+    expect(model.calls.find((c) => c.stage === "check-verify")!.prompt).toContain(`2. span: "${SPAN_B}"`);
   });
 });
