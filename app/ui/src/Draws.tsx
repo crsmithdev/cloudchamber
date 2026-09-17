@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { marked } from "marked";
-import { api, when, type Artifact, type Candidate, type Example, type Facets, type Draw, type Fork, type FullStep, type Origin, type Source, type Status, type Step } from "./api.ts";
+import { api, when, type Artifact, type Candidate, type Example, type Facets, type Draw, type Fork, type FullStep, type Origin, type Parts, type Source, type Status, type Step } from "./api.ts";
 import { ArchivedToggle, Bar, Btn, Caret, Chip, Field, Head, Icon, LinkBtn, Mark, Seg, hhmm, lastSelected, markFor, secs, usePoll, useRememberSelected, useTick, type MarkState } from "./ui.tsx";
 
-export type Detail = { draw: Draw; origin: Origin | null; steps: Step[]; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] };
+export type Detail = { draw: Draw; origin: Origin | null; steps: Step[]; parts: Parts; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] };
 const STAGES = ["premises", "execute", "gate", "outline", "context", "ending", "brief"];
 /** The stages a draw runs before its brief; checks, repairs and drafting belong to the check and write tabs. */
 export const IDEATION = new Set(["premises", "execute", "outline", "jobs", "context", "ending"]);

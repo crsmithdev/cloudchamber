@@ -430,16 +430,9 @@ const BUILD = ["outline", "jobs", "context", "ending"];
  * are written last and all at once.
  */
 function Building({ d, aside }: { d: Detail; aside: React.ReactNode }) {
-  const stageOfStep = new Map(d.steps.map((s) => [s.id, s.stage]));
   const running = d.steps.filter((s) => s.status === "running");
   const done = new Set(d.steps.filter((s) => s.status === "done").map((s) => s.stage));
-  const chosen = d.artifacts.find((a) => a.kind === "vignette" && a.step_id === d.draw.chosen_step);
-  const outline = [...d.artifacts].reverse().find((a) => a.kind === "outline");
-  // a repair that rewrites a context records it on repair-context
-  const contexts = d.artifacts
-    .filter((a) => a.kind === "vignette" && ["context", "repair-context"].includes(stageOfStep.get(a.step_id) ?? ""))
-    .sort((a, b) => (JSON.parse(a.meta).index ?? 0) - (JSON.parse(b.meta).index ?? 0));
-  const ending = [...d.artifacts].reverse().find((a) => a.kind === "ending");
+  const { vignette, outline, contexts, ending } = d.parts;
   const [openPart, setOpenPart] = useState<string | null>("outline.md");
   const part = (name: string, body: string | undefined) => (
     <React.Fragment key={name}>
@@ -479,10 +472,10 @@ function Building({ d, aside }: { d: Detail; aside: React.ReactNode }) {
         <Head className="mt-6">the brief, as it lands</Head>
         <table className="mt-1">
           <tbody>
-            {part("premise and vignette", chosen?.content)}
-            {part("outline.md", outline?.content)}
-            {contexts.length ? contexts.map((a, i) => part(`context-${i + 1}.md`, a.content)) : part("context-1.md", undefined)}
-            {part("ending.md", ending?.content)}
+            {part("premise and vignette", vignette?.text)}
+            {part("outline.md", outline?.text)}
+            {contexts.length ? contexts.map((c, i) => part(`context-${i + 1}.md`, c.text)) : part("context-1.md", undefined)}
+            {part("ending.md", ending?.text)}
           </tbody>
         </table>
       </div>
@@ -516,8 +509,7 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
   const open = f?.findings.filter((x) => x.decision === "open") ?? [];
   const accepted = f?.findings.filter((x) => x.decision === "accepted") ?? [];
   const repaired = d.draw.status === "repaired";
-  const outline = [...d.artifacts].reverse().find((a) => a.kind === "outline");
-  const meta = outline ? JSON.parse(outline.meta) : {};
+  const meta = d.parts.outline?.meta ?? {};
   const constraints: string[] = meta.constraints ?? [];
   const jobs: string[] = meta.jobs ?? [];
   const toggle = (fid: string) =>

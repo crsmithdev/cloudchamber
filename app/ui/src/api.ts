@@ -139,6 +139,10 @@ export type Step = {
 };
 export type FullStep = Step & { prompt: string; raw_response: string | null; parsed: string | null };
 export type Artifact = { id: string; step_id: string; kind: string; content: string; meta: string };
+/** One part of a brief, as the server reads it: its role, its text and the meta of the step that wrote it. */
+export type Part = { role: string; stage: string; stepId: string; text: string; meta: any; index: number };
+/** The part standing in each role of a brief now. The server decides which; the page only shows them. */
+export type Parts = { vignette: Part | null; outline: Part | null; contexts: Part[]; ending: Part | null };
 export type Candidate = { step_id: string; index: number; probability: number; premise: string; vignette: string; warnings: string[] };
 /** A draw forked off this one, and the candidate's execute step it develops. */
 export type Fork = { id: string; status: string; step_id: string; index: number };
@@ -157,7 +161,7 @@ export const api = {
   verdict: (b: { kind: string; target_id: string; verdict: "keep" | "pass"; artifact: boolean; note: string; method: string }) => j("/api/verdicts", { method: "POST", body: JSON.stringify(b) }),
   items: (q: Record<string, string>) => j<{ total: number; items: Item[] }>(`/api/items?${new URLSearchParams(q)}`),
   draws: (archived = false) => j<Draw[]>(`/api/draws${archived ? "?archived=true" : ""}`),
-  draw: (id: string) => j<{ draw: Draw; origin: Origin | null; steps: Step[]; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] }>(`/api/draws/${id}`),
+  draw: (id: string) => j<{ draw: Draw; origin: Origin | null; steps: Step[]; parts: Parts; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] }>(`/api/draws/${id}`),
   like: (id: string) => j<Like>(`/api/draws/${id}/like`),
   deleteDraw: (id: string) => j<{ deleted: string }>(`/api/draws/${id}`, { method: "DELETE", body: "{}" }),
   startDraw: (b: Record<string, string | undefined>) => j<{ id: string }>("/api/draws", { method: "POST", body: JSON.stringify(b) }),

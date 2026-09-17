@@ -81,6 +81,17 @@ export function lengthWarnings(role: PartRole, text: string): string[] {
   return (band.min !== undefined && n < band.min) || (band.max !== undefined && n > band.max) ? ["length"] : [];
 }
 
+/** The part standing in each role of a draw's brief now, contexts in job order. What a reader shows or drafts from. */
+export function partsView(p: Pipeline, drawId: string): { vignette: Part | null; outline: Part | null; contexts: Part[]; ending: Part | null } {
+  const parts = partsOf(p, drawId);
+  return {
+    vignette: partOf(parts, "vignette") ?? null,
+    outline: partOf(parts, "outline") ?? null,
+    contexts: partsIn(parts, "context"),
+    ending: partOf(parts, "ending") ?? null,
+  };
+}
+
 export type BriefParts = {
   draw: DrawRow;
   seed: string;

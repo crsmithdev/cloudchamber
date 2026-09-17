@@ -10,6 +10,7 @@ import { KINDS, latest, latestAll, passedStories, record, type Kind, type Method
 import { renderStory } from "../pipeline/drafts.ts";
 import { status } from "../pipeline/status.ts";
 import { originOf } from "../pipeline/stage.ts";
+import { partsView } from "../pipeline/briefparts.ts";
 import { lifecycleView, type DrawFacts } from "../pipeline/lifecycle.ts";
 import { BANDS, DARKNESS, GENRES, SAMPLING } from "../pipeline/config.ts";
 import { exportBank, sourceLabel } from "../pipeline/bank.ts";
@@ -210,7 +211,7 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
       // the pane polls this every few seconds; a step's prompt and response are read from /api/steps/:id when one is opened
       const steps = pipeline.steps(draw.id).map(({ prompt, raw_response, parsed, ...s }) =>
         ({ ...s, prompt_chars: prompt.length, raw_chars: raw_response?.length ?? 0, parsed_chars: parsed?.length ?? 0 }));
-      return { draw, origin: originOf(pipeline, row.id), steps, artifacts: pipeline.artifacts(draw.id), candidates: pipeline.candidates(draw.id), examples: drawExamples(db, draw.example_ids), forks: pipeline.forks(draw.id) };
+      return { draw, origin: originOf(pipeline, row.id), steps, parts: partsView(pipeline, draw.id), artifacts: pipeline.artifacts(draw.id), candidates: pipeline.candidates(draw.id), examples: drawExamples(db, draw.example_ids), forks: pipeline.forks(draw.id) };
     } catch (e: any) { return reply.code(404).send({ error: e.message }); }
   });
 
