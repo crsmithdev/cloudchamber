@@ -64,7 +64,7 @@ describe("check and gate 1", () => {
     expect(() => d.dismiss(draw.id, "f-nothere")).toThrow(/no reported finding f-nothere/);
   });
 
-  test("accept repairs into a linked draw: the ending holding the span is rewritten, the vignette copied, the outline re-derived under constraints, then re-checked", async () => {
+  test("accept repairs into a linked draw: the ending holding the span is rewritten, the vignette and the outline carried, then re-checked", async () => {
     const { p, d, draw, model, dir } = await drawn(draftScript({ "check-ledger": [...ledgerSamples(), ...cleanSamples()], "check-derivation": [...derivationSamples(), ...cleanSamples()] }));
     await d.check(draw.id);
     const [a] = d.findings(draw.id).findings;
@@ -81,8 +81,7 @@ describe("check and gate 1", () => {
     expect(by("repair-vignette").map((s) => s.model)).toEqual(["copied"]);            // the span is not in the vignette
     expect(by("repair-ending")).toHaveLength(1);
     expect(by("repair-ending")[0].model).not.toBe("copied");                       // the span is in the ending
-    expect(by("repair-outline")[0].prompt).toContain("<constraints>\n- Only the assembler can fire the reliquary.\n</constraints>");
-    expect(by("repair-outline")[0].prompt).not.toContain("Reason");
+    expect(by("repair-outline").map((s) => s.model)).toEqual(["copied"]);       // the outline is the chain's contract, carried, never re-derived
     // no accepted finding lands in a context vignette, so both are carried over and no jobs call runs
     expect(by("jobs").map((s) => s.model)).toEqual(["copied"]);
     expect(by("context").map((s) => s.model)).toEqual(["copied", "copied"]);
@@ -97,7 +96,9 @@ describe("check and gate 1", () => {
     expect(readFileSync(join(bdir, "ending.previous.md"), "utf8")).toContain(SPAN_A);
     expect(readFileSync(join(bdir, "ending.md"), "utf8")).toContain("Only the assembler");
     expect(readFileSync(join(bdir, "vignette.md"), "utf8")).toContain("w2_0");
-    expect(readFileSync(join(bdir, "outline.md"), "utf8")).toContain("Repaired debt audit body.");
+    const outlineMd = readFileSync(join(bdir, "outline.md"), "utf8");
+    expect(outlineMd).toContain("Section debt audit body.");                   // the author's outline
+    expect(outlineMd).toContain("- Only the assembler can fire the reliquary.");   // with the fix appended, as the check reads it
     const trail = readFileSync(join(bdir, "trail.md"), "utf8");
     expect(trail).toContain("# Trail (repaired)");
     expect(trail).toContain(`## repaired_from\n\n${draw.id}\n\n- Only the assembler can fire the reliquary.`);
@@ -180,7 +181,7 @@ describe("check and gate 1", () => {
     expect(sub.length).toBeGreaterThan(0);
     const next = await d.accept(draw.id, [sub[0].id]);
     expect(next.repaired_from).toBe(draw.id);
-    expect(p.steps(next.id).find((s) => s.stage === "repair-outline")!.prompt).toContain("The silk is dry.");
+    expect(p.artifacts(next.id).find((a) => a.kind === "outline")!.content).toContain("- The silk is dry.");   // its fix amends the carried outline
     expect(JSON.parse(p.artifacts(draw.id).find((a) => a.kind === "finding" && a.content.includes("tears"))!.meta).sub_threshold).toBe(true);
   });
 
@@ -200,12 +201,13 @@ describe("check and gate 1", () => {
     const before = model.calls.length;
     const next = await d.accept(draw.id, [f.id]);
 
-    // the vignette holding the span is patched, not rewritten; only the outline is re-derived
+    // the vignette holding the span is patched, not rewritten; everything else is carried, so the round makes no call at all
     const by = (stage: string) => p.steps(next.id).filter((s) => s.stage === stage);
     expect(by("repair-vignette").map((s) => s.model)).toEqual(["patched"]);
+    expect(by("repair-outline").map((s) => s.model)).toEqual(["copied"]);
     expect(by("repair-ending").map((s) => s.model)).toEqual(["copied"]);
     expect(by("context").map((s) => s.model)).toEqual(["copied", "copied"]);
-    expect(model.calls.slice(before).map((c) => c.stage).filter((x) => /^repair|^context$|^jobs$/.test(x))).toEqual(["repair-outline"]);
+    expect(model.calls.slice(before).map((c) => c.stage).filter((x) => /^repair|^context$|^jobs$/.test(x))).toEqual([]);
 
     const out = readFileSync(join(dir, "briefs", next.id, "vignette.md"), "utf8");
     expect(out).toContain(patched);
@@ -264,19 +266,20 @@ describe("check and gate 1", () => {
     expect(same.relitigates).toMatchObject({ round: 1, draw: draw.id });
     expect(same.relitigates!.replacement).toBe("Only the assembler can fire the reliquary.");
 
-    // a third repair, driven by hand, carries the round-1 fix as settled rather than as a constraint
+    // a third repair, driven by hand, carries the round-1 fix as settled rather than as a constraint: B lands in the vignette, which is rewritten
     const third = await d.accept(next.id, [again.find((f) => f.span === SPAN_B)!.id]);
-    const prompt = p.steps(third.id).find((s) => s.stage === "repair-outline")!.prompt;
+    const prompt = p.steps(third.id).find((s) => s.stage === "repair-vignette")!.prompt;
     expect(prompt).toContain("<settled>\n- Only the assembler can fire the reliquary.\n</settled>");
     expect(prompt).toContain("The twelfth relic is the Verona clavicle in every account.");   // this round's constraint
     expect(readFileSync(join(dir, "briefs", third.id, "trail.md"), "utf8")).toContain("## settled in earlier rounds\n\n- round 1: Only the assembler can fire the reliquary.");
 
-    // auto will not act on A, and says why; the floor is held at 7 so nothing else is accepted
+    // auto will not act on A and leaves it open for a person; the floor is held at 7 so nothing else is accepted
     const aId = d.findings(third.id, { all: true }).findings.find((f) => f.span === SPAN_A)!.id;
     const r = await d.autoRounds(third.id, { cfg: { ...loadDraftConfig().config, repair: { ...loadDraftConfig().config.repair, stop_score: 7 } } });
     expect(r.rounds[0].accepted).toBe(0);
     expect(r.stopped).toBe("floor");
-    expect(latest(p.db, "finding", aId)?.note).toBe("auto: re-opens the fix accepted in round 1");
+    expect(latest(p.db, "finding", aId)).toBeNull();
+    expect(d.findings(r.id).findings.find((f) => f.id === aId)).toMatchObject({ decision: "open", relitigates: { round: 1 } });
   });
 
   test("the ledger is extracted once for the chain and every later round is checked against it", async () => {
@@ -300,8 +303,8 @@ describe("check and gate 1", () => {
     expect(later).not.toContain("a different ledger entirely");
     expect(later).toContain("amended by the findings accepted since; where an amendment and a line above disagree, the amendment holds and the line above is void:");        // the accepted fix amends it, and overrides
     expect(later).toContain("Only the assembler can fire the reliquary.");
-    // and the repair itself writes against the same contract
-    expect(p.steps(next.id).find((s) => s.stage === "repair-outline")!.prompt).toContain(LEDGER);
+    // and the repair itself writes against the same contract: the ending holds the span, so it is the passage rewritten
+    expect(p.steps(next.id).find((s) => s.stage === "repair-ending")!.prompt).toContain(LEDGER);
     expect(p.artifacts(next.id).filter((x) => x.kind === "ledger")).toHaveLength(0);   // one ledger, on the root
   });
 
@@ -645,7 +648,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(() => d.keep(draw.id)).toThrow(/is drafted, not awaiting_draft_gate/);
   });
 
-  test("--auto: accepts findings at or above the score floor, dismisses the rest, repairs, re-checks, drafts, stops at gate 2", async () => {
+  test("--auto: accepts findings at or above the score floor, leaves the rest open, repairs, re-checks, drafts, stops at gate 2", async () => {
     const script = draftScript({ "check-ledger": [...ledgerSamples(), ...cleanSamples(), ...cleanSamples()], "check-derivation": [...derivationSamples(), ...cleanSamples(), ...cleanSamples()] });
     const { p, d, draw, model } = await drawn(script);
     const out = await d.draft(draw.id, { auto: true });
@@ -653,10 +656,9 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(out.repaired_from).toBe(draw.id);
     expect(out.status).toBe("awaiting_draft_gate");
     expect(p.draw(draw.id).status).toBe("repaired");
-    // A and B reach the floor; C recurred once of three, under keep_if, so auto leaves it open for a person
+    // A reaches the floor; B is under it and C recurred once of three, under keep_if: both stay open for a person, undecided
     const first = d.findings(draw.id, { all: true }).findings;
-    expect(first.map((f) => [f.score, f.decision])).toEqual([[10, "accepted"], [6, "dismissed"], [5, "open"]]);
-    expect(first[1].note).toBe("auto: scored 6, under 7");
+    expect(first.map((f) => [f.score, f.decision, f.note])).toEqual([[10, "accepted", "auto"], [6, "open", ""], [5, "open", ""]]);
     expect(first[2].reported).toBe(false);
     expect(stagesOf(model, /^reconcile$/)).toHaveLength(0);                    // one fix: nothing to read against itself
     expect((p.db.query("SELECT DISTINCT method FROM verdicts WHERE kind = 'finding'").all() as any[]).map((v) => v.method)).toEqual(["draw"]);
@@ -673,16 +675,15 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     const r = await d.autoRounds(draw.id);
     expect(r.stopped).toBe("floor");
     expect(r.floor).toBe(7);
-    expect(r.rounds.map((x) => [x.round, x.open, x.total, x.accepted])).toEqual([[1, 2, 16, 1], [2, 0, 0, 0], [3, 0, 0, 0]]);   // C is under keep_if: not open to auto; two clean passes end it
-    expect(r.rounds[2].id).toBe(r.rounds[1].id);                               // the second clean pass is a re-check of the same brief
+    expect(r.rounds.map((x) => [x.round, x.open, x.total, x.accepted, x.passes])).toEqual([[1, 2, 16, 1, 1], [2, 0, 0, 0, 2]]);   // C is under keep_if: not open to auto; two clean passes end it
     expect(r.left_open).toBe(0);                                               // a floor stop leaves nothing to rule on
-    expect(r.best.round).toBe(2);
+    expect(r.best.round).toBe(2);                                              // one row per brief: the second clean pass overwrote round 2's row
     expect(r.id).toBe(r.rounds[1].id);
     expect(r.id).not.toBe(draw.id);
     // the round table is stored on the brief auto stopped on, so the gate can render it
     const art = p.artifacts(r.id).find((a) => a.kind === "auto")!;
     expect(JSON.parse(art.content)).toMatchObject({ stopped: "floor", floor: 7 });
-    expect(JSON.parse(art.meta)).toMatchObject({ rounds: 3, best: r.best.id });
+    expect(JSON.parse(art.meta)).toMatchObject({ rounds: 2, best: r.best.id });
   });
 
   test("auto stops on patience when the total score stops falling, and names the best round", async () => {
@@ -759,7 +760,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(r.rounds).toHaveLength(3);                                          // rounds 1 and 2 repair, the third is where it stops
   });
 
-  test("--auto never accepts structure or resemblance, and evidence-less findings are dismissed however they score", async () => {
+  test("--auto never accepts structure or resemblance, and an evidence-less finding is left open however it scores", async () => {
     const strip = (f: string) => f.replace(/<evidence>[^<]*<\/evidence>/, "<evidence>none</evidence>");
     const noEv = strip(A());
     const script = draftScript({ "check-ledger": [...ledgerSamples(noEv, strip(B())), ...cleanSamples()], "check-derivation": [...derivationSamples(noEv), ...cleanSamples()] });
@@ -769,10 +770,9 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(fs.map((f) => f.score)).toEqual([7, 3]);                            // C recurred once: under the bar, and no longer auto's to decide
     const out = await d.draft(draw.id, { auto: true });
     expect(out.id).toBe(draw.id);                                             // nothing accepted, no repair
-    // the first pass's findings keep their verdicts; the second clean pass is what the gate now shows
-    expect(fs.map((f) => latest(p.db, "finding", f.id)?.verdict)).toEqual(["pass", "pass"]);
-    expect(latest(p.db, "finding", fs[0].id)?.note).toBe("auto: no evidence to read it against");   // 8 is over the floor; a person still has to read it
-    expect(d.findings(draw.id).findings).toHaveLength(0);
+    // auto ruled on nothing: 7 is over the floor with no quote to read it against, so a person still has to
+    expect(fs.map((f) => latest(p.db, "finding", f.id))).toEqual([null, null]);
+    expect(d.findings(draw.id).findings).toHaveLength(0);                     // the second, clean pass is what the gate now shows
     expect(p.steps(draw.id).filter((s) => /^repair/.test(s.stage))).toHaveLength(0);
   });
 });
@@ -856,7 +856,7 @@ describe("auto acts on reported findings only, and reads its accepted set agains
     await d.check(draw.id);
     const r = await d.autoRounds(draw.id);
     expect(r.stopped).toBe("floor");
-    expect(r.rounds.map((x) => [x.round, x.open, x.total, x.accepted])).toEqual([[1, 0, 0, 0], [2, 0, 0, 0]]);
+    expect(r.rounds.map((x) => [x.round, x.open, x.total, x.accepted, x.passes])).toEqual([[1, 0, 0, 0, 2]]);   // two clean passes, one brief, one row
     expect(r.left_open).toBe(0);
     expect(p.steps(draw.id).filter((s) => /^repair/.test(s.stage))).toHaveLength(0);
     const [a] = d.findings(draw.id, { all: true }).findings;
@@ -885,7 +885,7 @@ describe("auto acts on reported findings only, and reads its accepted set agains
     const after = d.findings(draw.id, { all: true }).findings;
     expect(after.find((f) => f.id === a.id)!.decision).toBe("accepted");
     expect(after.find((f) => f.id === b.id)).toMatchObject({ decision: "dismissed", note: `auto: conflicts with ${a.id}` });
-    const prompt = p.steps(r.id).find((s) => s.stage === "repair-outline")!.prompt;
+    const prompt = p.steps(r.id).find((s) => s.stage === "repair-ending")!.prompt;   // A's span is in the ending
     expect(prompt).toContain("Only the assembler can fire the reliquary.");
     expect(prompt).not.toContain("The twelfth relic is the Verona clavicle in every account.");
   });
@@ -1011,8 +1011,11 @@ describe("what a reader sees", () => {
     expect(constraints("repair-ending")).toContain("Only the assembler can fire the reliquary.");
     // B is arithmetic with no patch, so it moves the mechanism and the ending takes it too
     expect(constraints("repair-ending")).toContain("The twelfth relic is the Verona clavicle in every account.");
-    expect(constraints("repair-outline")).toContain("Only the assembler can fire the reliquary.");
-    expect(constraints("repair-outline")).toContain("The twelfth relic is the Verona clavicle in every account.");
+    // the outline carries every fix as an amendment, with no call
+    const outline = p.artifacts(next.id).find((a) => a.kind === "outline")!.content;
+    expect(outline).toContain("- Only the assembler can fire the reliquary.");
+    expect(outline).toContain("- The twelfth relic is the Verona clavicle in every account.");
+    expect(p.steps(next.id).find((s) => s.stage === "repair-outline")!.model).toBe("copied");
   });
 });
 
@@ -1104,17 +1107,19 @@ describe("a patch that renames one mention", () => {
 });
 
 describe("the outline a check reads", () => {
-  test("is the chain root's with the accepted fixes appended, never what a repair wrote into the outline", async () => {
+  test("is the chain root's with the accepted fixes appended, and the repaired draw carries that same text", async () => {
     const script = draftScript({ "check-ledger": [...ledgerSamples(), ...cleanSamples()], "check-derivation": [...derivationSamples(), ...cleanSamples()] });
     const { p, d, draw } = await drawn(script);
     await d.check(draw.id);
     const [a] = d.findings(draw.id).findings.filter((f) => f.reported);
     const next = await d.accept(draw.id, [a.id]);
-    // the repair's outline is "Repaired ... body."; the recheck must read the author's "Section ... body." instead
-    expect(p.artifacts(next.id).find((x) => x.kind === "outline")!.content).toContain("Repaired debt audit body.");
+    // one outline: the repaired draw's part is the root's with the amendment, and the check reads that part
+    const carried = p.artifacts(next.id).find((x) => x.kind === "outline")!.content;
+    expect(carried).toContain("Section debt audit body.");
+    expect(carried).not.toContain("Repaired debt audit body.");
+    expect(carried).toBe(chainOf(p, next.id).outline());
     const prompt = p.steps(next.id).find((s) => s.stage === "check-derivation")!.prompt;
-    expect(prompt).toContain("Section debt audit body.");
-    expect(prompt).not.toContain("Repaired debt audit body.");
+    expect(prompt).toContain(carried);
     expect(prompt).toContain("where an amendment and a line above disagree, the amendment holds and the line above is void:\n- Only the assembler can fire the reliquary.");
   });
 });

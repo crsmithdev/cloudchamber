@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { ACTIONS, STATUSES, lifecycleView, stageTab, tabOf, waitsIn, whyNot, type Action } from "./lifecycle.ts";
+import { ACTIONS, STATUSES, lifecycleView, recoverInterrupted, stageTab, tabOf, waitsIn, whyNot, type Action } from "./lifecycle.ts";
 import { STAGES } from "./config.ts";
 import { FakeModel } from "./model.ts";
 import { Pipeline } from "./draw.ts";
@@ -111,5 +111,39 @@ describe("a failed action puts the draw back where it stood", () => {
     await expect(p.start({ mode: "manual", genre: "horror" })).rejects.toThrow(/premises failed/);
     expect(p.draws()[0]).toMatchObject({ status: "failed", flagged: 0, error: expect.stringMatching(/^premises failed/) });
     expect(p.draws()[0].ended_at).toBeTruthy();
+  });
+});
+
+describe("recovery on start", () => {
+  test("an interrupted step fails with the reason and its draw goes back where it stood", async () => {
+    const { p, d, draw } = await drawn(draftScript({ "check-ledger": [...ledgerSamples(), ...cleanSamples()], "check-derivation": [...derivationSamples(), ...cleanSamples()] }));
+    await d.check(draw.id);
+    // the process died mid-recheck: one step is left running and the draw at checking, with a pass behind it
+    const step = p.steps(draw.id).find((s) => s.stage === "check-ledger")!;
+    p.db.query("UPDATE steps SET status = 'running', ended_at = NULL WHERE id = ?").run(step.id);
+    p.db.query("UPDATE draws SET status = 'checking' WHERE id = ?").run(draw.id);
+    expect(recoverInterrupted(p.db, "restart")).toEqual({ steps: 1, draws: [draw.id] });
+    expect(p.steps(draw.id).find((s) => s.id === step.id)).toMatchObject({ status: "failed", fail_reason: "error", error: "restart" });
+    expect(p.draw(draw.id)).toMatchObject({ status: "awaiting_check_gate", error: "restart" });
+    // a second start finds nothing to do
+    expect(recoverInterrupted(p.db, "restart")).toEqual({ steps: 0, draws: [] });
+  });
+
+  test("where each working status goes back to", async () => {
+    const { p, draw } = await drawn(draftScript({}));
+    const set = (status: string, over: Record<string, unknown> = {}) => {
+      p.db.query("UPDATE draws SET status = ?, chosen_step = ?, repaired_from = ?, forked_from = ? WHERE id = ?")
+        .run(status, "chosen_step" in over ? (over.chosen_step as string | null) : draw.chosen_step, (over.repaired_from as string) ?? null, (over.forked_from as string) ?? null, draw.id);
+    };
+    const back = () => { recoverInterrupted(p.db, "restart"); return p.draw(draw.id).status; };
+    set("checking"); expect(back()).toBe("done");                                     // a brief nobody had checked
+    set("repairing"); expect(back()).toBe("awaiting_check_gate");
+    set("drafting"); expect(back()).toBe("done");                                     // the schedule never landed
+    p.artifact(p.steps(draw.id)[0], "schedule", "x", {});
+    set("drafting"); expect(back()).toBe("awaiting_draft_gate");                      // a rewrite at gate 2
+    set("running"); expect(back()).toBe("awaiting_gate");                             // developing its chosen candidate
+    set("running", { chosen_step: null }); expect(back()).toBe("failed");             // a first run
+    set("running", { repaired_from: draw.id }); expect(back()).toBe("failed");        // a repair's new round
+    expect(p.draw(draw.id).ended_at).toBeTruthy();
   });
 });

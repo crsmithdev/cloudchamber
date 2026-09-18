@@ -10,11 +10,10 @@
  * view of an eight-round chain loads what it needs once instead of a hundred
  * times.
  */
-import { RUN } from "./config.ts";
 import type { DrawRow, Pipeline, StepRow } from "./draw.ts";
 import { latestAll, type Latest } from "./verdicts.ts";
 import { cluster, excludeDismissed, merge, normalise, same, score, type Cluster, type Finding, type ScoreContext } from "./recur.ts";
-import { briefParts, type Artifact } from "./briefparts.ts";
+import { briefParts, prose, settingJobsOf, type Artifact } from "./briefparts.ts";
 
 /** `dropped` is the verify pass's reason for taking a finding off the reported list; it rides on the artifact's meta. */
 export type FindingMeta = Omit<Cluster, "reported"> & { pass: string; source: "check" | "screen"; screen?: string; beat?: number; sub_threshold?: boolean; dropped?: string };
@@ -34,9 +33,6 @@ const amended = (base: string, amendments: Settled[]) => !amendments.length ? ba
 export class Chain {
   /** The draw and every brief it repairs, back to the root: newest first. */
   readonly ids: string[];
-  private rows = new Map<string, DrawRow>();
-  private arts = new Map<string, Artifact[]>();
-  private stepRows = new Map<string, StepRow[]>();
   private verdicts: Map<string, Latest> | null = null;
   private memo = new Map<string, unknown>();
 
@@ -50,18 +46,9 @@ export class Chain {
     if (!this.memo.has(key)) this.memo.set(key, f());
     return this.memo.get(key) as T;
   }
-  row(id: string): DrawRow {
-    if (!this.rows.has(id)) this.rows.set(id, this.p.draw(id));
-    return this.rows.get(id)!;
-  }
-  artifacts(id: string = this.drawId): Artifact[] {
-    if (!this.arts.has(id)) this.arts.set(id, this.p.artifacts(id));
-    return this.arts.get(id)!;
-  }
-  steps(id: string = this.drawId): StepRow[] {
-    if (!this.stepRows.has(id)) this.stepRows.set(id, this.p.steps(id));
-    return this.stepRows.get(id)!;
-  }
+  row(id: string): DrawRow { return this.once(`row:${id}`, () => this.p.draw(id)); }
+  artifacts(id: string = this.drawId): Artifact[] { return this.once(`artifacts:${id}`, () => this.p.artifacts(id)); }
+  steps(id: string = this.drawId): StepRow[] { return this.once(`steps:${id}`, () => this.p.steps(id)); }
   /** The gate decision on a finding: every finding verdict is read in one query. */
   decision(findingId: string): { decision: "accepted" | "dismissed" | "open"; note: string } {
     this.verdicts ??= latestAll(this.p.db, "finding");
@@ -82,7 +69,8 @@ export class Chain {
   passes(): string[] {
     return this.once("passes", () => {
       const ids = this.artifacts()
-        .filter((a) => a.kind === "pass" || a.kind === "ledger" || ((a.kind === "finding" || a.kind === "profile") && JSON.parse(a.meta).source === "check"))
+        // a draft started without a check extracts a ledger of its own; that is not a pass
+        .filter((a) => a.kind === "pass" || (a.kind === "ledger" && !JSON.parse(a.meta).ledger_only) || ((a.kind === "finding" || a.kind === "profile") && JSON.parse(a.meta).source === "check"))
         .map((a) => JSON.parse(a.meta).pass as string).filter(Boolean);
       return [...new Set(ids)].sort();
     });
@@ -151,10 +139,6 @@ export class Chain {
   private ledgers(id: string): Artifact[] {
     return this.artifacts(id).filter((a) => a.kind === "ledger").sort((a, b) => (JSON.parse(a.meta).pass as string).localeCompare(JSON.parse(b.meta).pass));
   }
-  /** The first ledger extracted on a draw: the contract, before any amendment. */
-  firstLedger(id: string = this.drawId): string | null { return this.ledgers(id)[0]?.content ?? null; }
-  /** The ledger the latest check extracted on a draw, or null. */
-  latestLedger(id: string = this.drawId): string | null { return this.ledgers(id).at(-1)?.content ?? null; }
 
   /**
    * The ledger this brief is held to: the one extracted at the root of the
@@ -173,7 +157,8 @@ export class Chain {
    */
   ledger(): string | null {
     return this.once("ledger", () => {
-      const base = this.firstLedger(this.root) ?? this.latestLedger();
+      // the oldest brief of the chain that has one, and its first: the contract before any amendment
+      const base = [...this.ids].reverse().map((id) => this.ledgers(id)[0]?.content).find(Boolean) ?? null;
       return base === null ? null : amended(base, this.settled());
     });
   }
@@ -234,8 +219,7 @@ export class Chain {
   settingJobs(): string[] {
     return this.once("settingJobs", () => {
       const outline = [...this.artifacts()].reverse().find((a) => a.kind === "outline");
-      const jobs = (outline ? (JSON.parse(outline.meta).jobs as string[] | undefined) : undefined) ?? [];
-      return jobs.filter((j) => !(RUN.coreJobs as readonly string[]).includes(j));
+      return settingJobsOf((outline ? (JSON.parse(outline.meta).jobs as string[] | undefined) : undefined) ?? []);
     });
   }
 
@@ -244,7 +228,7 @@ export class Chain {
     return this.once("scoreContext", () => {
       try {
         const b = briefParts(this.p, this.drawId);
-        return { prose: [b.vignette, ...b.contexts, b.ending].join("\n\n"), outline: this.outline(), ledger: this.ledger() ?? "" };
+        return { prose: prose(b), outline: this.outline(), ledger: this.ledger() ?? "" };
       } catch { return undefined; }
     });
   }
@@ -269,7 +253,7 @@ export class Chain {
   withScore(f: FindingMeta & { artifact_id: string }, reported: boolean): FindingView {
     const samples_run = this.samplesAgainst(f);
     const re = this.relitigated(f);
-    return { ...f, ...this.decision(f.id), score: score(f, samples_run, this.settingJobs(), this.scoreContext()), samples_run, reported, ...(re ? { relitigates: re } : {}) };
+    return { ...f, ...this.decision(f.id), score: score(f, samples_run, this.settingJobs(), this.scoreContext()), samples_run, reported, relitigates: re };
   }
 
   /** The reported check findings of the latest pass, with their gate decisions and scores, highest score first. */
@@ -340,10 +324,10 @@ export class Chain {
       const judges = steps.filter((s) => /^(check|screen)-/.test(s.stage)).map((s) => family(s.model));
       if (!judges.length) return null;
       let genFamilies = gen;
-      if (!genFamilies.size) {
-        // a repaired draw's generation may be copied; look at the brief it repairs
-        const from = this.draw.repaired_from;
-        if (from) genFamilies = new Set(this.steps(from).filter((s) => s.status === "done" && !/^(check|screen)-/.test(s.stage) && s.model !== "copied").map((s) => family(s.model)));
+      // a fully patched round makes no generation call of its own: the nearest brief up the chain that did sets the family
+      for (const id of this.ids.slice(1)) {
+        if (genFamilies.size) break;
+        genFamilies = new Set(this.steps(id).filter((s) => s.status === "done" && !/^(check|screen)-/.test(s.stage) && !NO_CALL.includes(s.model)).map((s) => family(s.model)));
       }
       return judges.every((j) => genFamilies.has(j)) ? `checked on ${[...new Set(judges)].join(", ")}; judge and generator share a family` : null;
     });

@@ -103,7 +103,7 @@ Write one vignette in a <vignette> tag, under ${RUN.vignetteWords + 50} words. I
 It is an execution, not discovery: the structure above has already settled the story. Output only the tag.`,
 
   ending: `
-Write the ending, in an <ending> tag: the last beat, derived from the arithmetic and custody sections above. Under ${RUN.endingWords} words. Prose or document form as the structure implies.{darkness} Output only the tag.`,
+Write the ending, in an <ending> tag: the last beat, derived from the ${RUN.endingJobs.join(" and ")} sections above. Under ${RUN.endingWords} words. Prose or document form as the structure implies.{darkness} Output only the tag.`,
 
   /** The five lists, defined once and shared by both distill passes and by nothing else. */
   listDefinitions: `<bodies>: organisations, offices, orders, departments and courts. What it issues or decides, whom it answers to, and what it cannot do.
@@ -338,26 +338,6 @@ satisfy a constraint above.`,
 {settled}
 
 Rewrite it in a <vignette> tag so that every line of the constraints holds, keeping its people, place, form and length. Change only the sentences that state a fact a constraint corrects, and within such a sentence change only the words that state that fact; every other word, name, number, date, time and place stays as written, even where a constraint mentions it. Add no name, number, date or time that is not already in it or in a constraint, and add a sentence only when a constraint cannot hold without one. Under ${RUN.vignetteWords + 50} words. Output only the tag.`,
-
-  repairOutlineHead: `Below is a seed, a premise, a ${RUN.vignetteWords}-word execution of it, the story's underlying structure as it stands, and a set of constraints that hold. Nothing here is prose for the page.
-
-Seed: {seed}
-
-Premise: {premise}
-
-<vignette>
-{vignette}
-</vignette>
-
-{outline}
-
-{constraints}
-
-{ledger}
-
-{settled}
-
-Rewrite the structure so that every line of the constraints holds. Change only the sentences a constraint touches; every other name, number, date, time, rule and table row stays word for word. Do not re-derive what no constraint touches. Add no name, number, date or time that is not already in the structure, the vignette or a constraint; where a constraint leaves a name open, leave it unnamed. Add no fact, claim or explanation that no constraint states.`,
 
   repairEnding: `Below is a story's derived structure, the ending written from it, and a set of constraints that hold.
 

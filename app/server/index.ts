@@ -3,6 +3,7 @@ import fastifyStatic from "@fastify/static";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { openDb } from "../pipeline/store/db.ts";
+import { recoverInterrupted } from "../pipeline/lifecycle.ts";
 import { Pipeline } from "../pipeline/draw.ts";
 import { ClaudeCli } from "../pipeline/model.ts";
 import { ROOT } from "../pipeline/paths.ts";
@@ -15,6 +16,9 @@ import { buildApi, Jobs } from "./api.ts";
  */
 export async function serve(port: number, opts: { db?: string; uiDir?: string; host?: string } = {}) {
   const db = openDb(opts.db);
+  // a step still running from before this process began has no call behind it
+  const r = recoverInterrupted(db, "interrupted: the server was not running to finish the call");
+  if (r.draws.length) console.log(`recovered ${r.steps} interrupted step(s) on ${r.draws.join(", ")}`);
   const pipeline = new Pipeline(db, new ClaudeCli());
   const jobs = new Jobs();
   const app = buildApi(db, pipeline, { logger: false, jobs });

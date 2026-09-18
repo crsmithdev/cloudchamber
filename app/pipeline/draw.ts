@@ -363,6 +363,14 @@ export class Pipeline {
    * the candidate's premise and vignette across as a copied step, so every
    * later stage reads it the way it reads any other draw.
    */
+  /** A draw made from another, `running`: the same seed, examples and options, linked to its source by one of the two columns. */
+  copyDraw(src: DrawRow, newId: string, link: { repaired_from: string } | { forked_from: string }, gateMethod: string | null): void {
+    const [col, from] = Object.entries(link)[0] as [string, string];
+    this.db.query(`INSERT INTO draws (id, name, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, sampling, darkness, status, gate_method, ${col}, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?, ?, ?)`)
+      .run(newId, this.nameFor(src.seed_text), src.setting, src.genre, src.mode, src.segment, src.seed_mode, src.seed_text, src.seed_theme_id, src.example_ids, src.sampling, src.darkness, gateMethod, from, now());
+  }
+
   async fork(drawId: string, executeStepId: string, newId: string = newDrawId()): Promise<DrawRow> {
     const src = this.draw(drawId);
     must(src, "fork");
@@ -371,9 +379,7 @@ export class Pipeline {
     if (!c) throw new Error(`draw ${drawId}: no execute step ${executeStepId}`);
     const already = this.forks(drawId).find((f) => f.step_id === executeStepId);
     if (already) throw new Error(`draw ${drawId}: candidate #${c.index} is already developed as ${already.id}`);
-    this.db.query(`INSERT INTO draws (id, name, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, sampling, darkness, status, gate_method, forked_from, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', 'manual', ?, ?)`)
-      .run(newId, this.nameFor(src.seed_text), src.setting, src.genre, src.mode, src.segment, src.seed_mode, src.seed_text, src.seed_theme_id, src.example_ids, src.sampling, src.darkness, drawId, now());
+    this.copyDraw(src, newId, { forked_from: drawId }, "manual");
     const step = this.recordStep(newId, null, "execute", "copied", c.premise);
     this.artifact(step, "vignette", c.vignette, { index: c.index, probability: c.probability, premise: c.premise, warnings: c.warnings, forked_from: executeStepId });
     this.db.query("UPDATE draws SET chosen_step = ? WHERE id = ?").run(step.id, newId);

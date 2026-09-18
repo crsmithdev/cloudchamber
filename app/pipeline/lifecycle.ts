@@ -131,3 +131,35 @@ export async function under<T>(db: Db, drawId: string, during: Status, back: Sta
     throw e;
   }
 }
+
+// --- recovery on start ------------------------------------------------------------
+
+/**
+ * A process that dies mid-work leaves steps `running` and draws at a working
+ * status with no call behind them, and nothing revisits them: the SIGHUP path
+ * waits for its jobs, a reboot does not. On start, every such step fails with
+ * the reason and its draw goes back where `under()` would have put it, read
+ * off what the draw has: a schedule, a check pass, a brief, a chosen candidate.
+ */
+export function recoverInterrupted(db: Db, reason: string): { steps: number; draws: string[] } {
+  const stamp = now();
+  const steps = db.query("UPDATE steps SET status = 'failed', fail_reason = 'error', ended_at = ?, error = ? WHERE status = 'running'").run(stamp, reason).changes;
+  const draws: string[] = [];
+  for (const d of db.query("SELECT id, status, chosen_step, repaired_from, forked_from FROM draws WHERE status IN ('running', 'checking', 'repairing', 'drafting')").all() as Interrupted[]) {
+    const back = interruptedBack(db, d);
+    db.query(`UPDATE draws SET status = ?, error = ?${back === "failed" ? ", ended_at = ?" : ""} WHERE id = ?`)
+      .run(...(back === "failed" ? [back, reason, stamp, d.id] : [back, reason, d.id]));
+    draws.push(d.id);
+  }
+  return { steps, draws };
+}
+type Interrupted = { id: string; status: string; chosen_step: string | null; repaired_from: string | null; forked_from: string | null };
+/** The status an interrupted draw stood at before the work began. */
+function interruptedBack(db: Db, d: Interrupted): Status {
+  const has = (kind: string) => !!db.query("SELECT 1 FROM artifacts a JOIN steps s ON s.id = a.step_id WHERE s.draw_id = ? AND a.kind = ? LIMIT 1").get(d.id, kind);
+  // a first run, a fork or a repair's new round was making the draw; a draw developing its chosen candidate was at the gate
+  if (d.status === "running") return d.repaired_from || d.forked_from || !d.chosen_step ? "failed" : "awaiting_gate";
+  if (d.status === "repairing") return "awaiting_check_gate";
+  if (d.status === "drafting" && has("schedule")) return "awaiting_draft_gate";
+  return has("pass") ? "awaiting_check_gate" : "done";
+}

@@ -20,8 +20,8 @@ import { need, samples, tag, tags } from "./model.ts";
 import { distillate, type ClaimsAuthority } from "./settings.ts";
 import { samplesFor, type DraftConfig } from "./draftconfig.ts";
 import { cluster, excludeDismissed, findingId, merge, normalise, parseFindings, quoted, same, type Cluster, type Finding } from "./recur.ts";
-import { briefBlock, briefParts, passId, type BriefParts } from "./briefparts.ts";
-import { chainOf } from "./chain.ts";
+import { briefBlock, briefParts, passId, prose, type BriefParts } from "./briefparts.ts";
+import { chainOf, type Chain } from "./chain.ts";
 import { RUN } from "./config.ts";
 
 export const PREMISES_PATH = resolve(import.meta.dir, "premises.md");
@@ -38,8 +38,7 @@ export type CheckResult = { pass: string; findings: Cluster[]; claims: "off" | C
  * names an authority to check against. The page reads this rather than naming
  * the five itself.
  */
-export function checkersNext(p: Pipeline, drawId: string, enabled: readonly string[]): Checker[] {
-  const chain = chainOf(p, drawId);
+export function checkersNext(p: Pipeline, drawId: string, enabled: readonly string[], chain: Chain = chainOf(p, drawId)): Checker[] {
   const setting = p.loadDrawSetting(p.draw(drawId)).setting;
   return (CHECKERS as readonly Checker[]).filter((c) => {
     if (!enabled.includes(c)) return false;
@@ -74,7 +73,6 @@ export function loadPremiseList(path: string = PREMISES_PATH): string {
 
 const findingShape = (settingJobs: string[]) => fill("findingShape", { sections: [...RUN.coreJobs, ...settingJobs].join(" | ") });
 
-/** Run every enabled checker over the brief. The draw must hold a brief; status is the caller's. */
 /** Extract a brief's ledger in one call and store it under `meta`. */
 export async function extractLedger(p: Pipeline, drawId: string, parts: BriefParts, brief: string, meta: Record<string, unknown>): Promise<string> {
   const { step, value } = await p.invoke(drawId, parts.outlineStepId, "ledger-extract", fill("ledgerExtract", { brief }), (t) => need(t, "ledger"));
@@ -82,33 +80,29 @@ export async function extractLedger(p: Pipeline, drawId: string, parts: BriefPar
   return String(value);
 }
 
+/** Run every enabled checker over the brief. The draw must hold a brief; status is the caller's. */
 export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, opts: { checks?: string[]; samples?: number; premisesPath?: string } = {}): Promise<CheckResult> {
   const parts = briefParts(p, drawId);
   const chain = chainOf(p, drawId);
-  // the prose is held to the author's outline and the fixes accepted since, not to what a repair wrote into the outline
-  const brief = briefBlock({ ...parts, outline: chain.outline() });
+  const brief = briefBlock(parts);
   const pass = passId();
-  const enabled = checkersNext(p, drawId, opts.checks ?? cfg.checks.enabled);
+  const enabled = checkersNext(p, drawId, opts.checks ?? cfg.checks.enabled, chain);
   const dismissed = chain.dismissed();
   const shape = findingShape(parts.settingJobs);
   const S = (name: string) => opts.samples ? { samples: opts.samples, keep_if: Math.min(cfg.checks.keep_if, opts.samples) } : samplesFor(cfg.checks, name);
   const perChecker: { checker: string; clusters: Cluster[]; firstStep: StepRow; samples?: number }[] = [];
+  const findingsOf = (checker: "derivation" | "ledger") => (t: string) => { need(t, "examined"); return { findings: parseFindings(t, checker, 0), examined: tag(t, "examined") }; };
+  // the ledger is extracted once for the chain and pinned; every round is checked against it. It is read here once
+  // and the verify pass gets the same one: asked again, the chain would answer with the null it cached before the extraction
+  const ledger: Promise<string | null> = chain.ledger() ? Promise.resolve(chain.ledger())
+    : enabled.includes("ledger") ? extractLedger(p, drawId, parts, brief, { pass, sample: 1, pinned: true }) : Promise.resolve(null);
 
   const runs: Promise<unknown>[] = [];
-  if (enabled.includes("derivation")) runs.push(sampled(p, drawId, parts, "check-derivation", fill("checkDerivation", { brief, findingShape: shape }), S("derivation"), "derivation", (t) => {
-    need(t, "examined");
-    return { impossibility: tag(t, "impossibility"), findings: parseFindings(t, "derivation", 0), examined: tag(t, "examined") };
-  }).then((r) => { perChecker.push(r); }));
-  if (enabled.includes("ledger")) {
-    // the ledger is extracted once for the chain and pinned; every round is checked against it
-    let ledger = chain.ledger();
-    if (!ledger) ledger = await extractLedger(p, drawId, parts, brief, { pass, sample: 1, pinned: true });
-    const block = fill("pinnedLedger", { ledger });
-    runs.push(sampled(p, drawId, parts, "check-ledger", fill("checkLedger", { brief, ledger: block, findingShape: shape }), S("ledger"), "ledger", (t) => {
-      need(t, "examined");
-      return { findings: parseFindings(t, "ledger", 0), examined: tag(t, "examined") };
-    }).then((r) => { perChecker.push(r); }));
-  }
+  if (enabled.includes("derivation")) runs.push(sampled(p, drawId, parts, "check-derivation", fill("checkDerivation", { brief, findingShape: shape }), S("derivation"), "derivation",
+    (t) => ({ impossibility: tag(t, "impossibility"), ...findingsOf("derivation")(t) })).then((r) => { perChecker.push(r); }));
+  // the extraction runs beside the other checkers; only the ledger checker waits for it
+  if (enabled.includes("ledger")) runs.push(ledger.then((l) => sampled(p, drawId, parts, "check-ledger", fill("checkLedger", { brief, ledger: fill("pinnedLedger", { ledger: l! }), findingShape: shape }), S("ledger"), "ledger", findingsOf("ledger")))
+    .then((r) => { perChecker.push(r); }));
   // structure and resemblance profile the premise, which a repair never changes: once per chain
   if (enabled.includes("structure")) runs.push(sampled(p, drawId, parts, "check-structure", fill("checkStructure", { brief }), S("structure"), "structure", (t) => ({ answers: parseQuestions(t, STRUCTURE_QUESTIONS) }),
     (step, value, sample) => p.artifact(step, "profile", JSON.stringify(value.answers), { pass, sample, source: "check", checker: "structure", answers: value.answers })));
@@ -125,7 +119,7 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
   if (enabled.includes("claims") && setting?.claims) {
     claims = setting.claims;
     const reference = claims === "setting" ? distillate(setting) : "";
-    runs.push(runClaims(p, drawId, parts, brief, claims, reference, pass).then((r) => { perChecker.push(r); }));
+    runs.push(runClaims(p, drawId, parts, brief, claims, reference, pass, chain).then((r) => { perChecker.push(r); }));
   }
   await Promise.all(runs);
 
@@ -134,11 +128,12 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
   // the clusters under keep_if, merged as the gate reads them back, so one verify call grades the whole list
   const under = excludeDismissed(merge(perChecker.flatMap((c) => c.clusters.filter((x) => !x.reported)), parts.settingJobs), dismissed)
     .filter((c) => !merged.some((m) => same(m, c)));
+  const dropped = await verifyFindings(p, drawId, parts, brief, await ledger, [...merged, ...under]);
   // a clean pass leaves no finding or profile behind, so the pass is marked on its own: the gate reads the latest pass, not the latest with findings
-  // with the samples each checker ran in this pass, which the score reads: an earlier pass may have run a different count
+  // with the samples each checker ran in this pass, which the score reads: an earlier pass may have run a different count.
+  // Marked only once the verify reading is in: a pass whose verify failed would otherwise read as clean
   const samples = Object.fromEntries(perChecker.filter((c) => c.samples).map((c) => [c.checker, c.samples]));
   if (perChecker.length) p.artifact(perChecker[0].firstStep, "pass", pass, { pass, samples });
-  const dropped = await verifyFindings(p, drawId, parts, brief, chain.ledger() ?? "", [...merged, ...under]);
   const store = (c: Cluster, extra: Record<string, unknown>) => {
     const owner = perChecker.find((x) => x.checker === c.checkers[0])!;
     const { reported: _r, ...meta } = c;
@@ -168,13 +163,13 @@ export const NOT_IN_PROSE = "the span is not in a vignette or the ending, which 
  * Returns the ids to drop, each with the reason. Claims have their own
  * verifier and are not read again.
  */
-async function verifyFindings(p: Pipeline, drawId: string, parts: BriefParts, brief: string, ledger: string, all: Cluster[]): Promise<Map<string, string>> {
+async function verifyFindings(p: Pipeline, drawId: string, parts: BriefParts, brief: string, ledger: string | null, all: Cluster[]): Promise<Map<string, string>> {
   const out = new Map<string, string>();
-  const prose = [parts.vignette, ...parts.contexts, parts.ending].join("\n\n");
+  const seen = prose(parts);
   const subject: Cluster[] = [];
   for (const c of all) {
     if (c.checkers.length === 1 && c.checkers[0] === "claims") continue;
-    if (!quoted(prose, c.span, 1)) out.set(c.id, NOT_IN_PROSE); else subject.push(c);
+    if (!quoted(seen, c.span, 1)) out.set(c.id, NOT_IN_PROSE); else subject.push(c);
   }
   if (!subject.length) return out;
   const findings = subject.map((c, i) => `${i + 1}. span: "${c.span}"\n   statement: ${c.statement}\n   result: ${c.result}\n   evidence: ${c.evidence}`).join("\n");
@@ -212,13 +207,17 @@ async function sampled(p: Pipeline, drawId: string, parts: BriefParts, stage: an
 
 const RESULTS = new Set(["supported", "contradicted", "unverifiable"]);
 
-async function runClaims(p: Pipeline, drawId: string, parts: BriefParts, brief: string, authority: ClaimsAuthority, reference: string, pass: string) {
+/** What a verified claim's artifact carries, written the same way for a fresh verdict and a cached one. */
+const claimMeta = (v: { span: string; result: string; evidence: string; invalidates: string; replacement: string; patch: string }, pass: string, authority: ClaimsAuthority, extra: Record<string, unknown> = {}) =>
+  ({ pass, span: v.span, result: v.result, evidence: v.evidence, invalidates: v.invalidates, replacement: v.replacement, patch: v.patch, authority, ...extra });
+
+async function runClaims(p: Pipeline, drawId: string, parts: BriefParts, brief: string, authority: ClaimsAuthority, reference: string, pass: string, chain: Chain) {
   const tpl = CLAIMS_PROMPTS[authority];
   const { step, value: claims } = await p.invoke(drawId, parts.outlineStepId, "check-claims-extract", fill(tpl.extract, { brief }), (t) =>
     tags(t, "claim").map((c) => ({ span: tag(c, "span") ?? "", statement: tag(c, "statement") ?? "" })).filter((c) => c.span && c.statement));
   // a claim already verified anywhere in this chain against the same authority is not re-verified:
   // the distillate does not change, so the verdict cannot. This was 12 calls a round, every round.
-  const priorClaims = chainOf(p, drawId).claims(authority);
+  const priorClaims = chain.claims(authority);
   const verified = await Promise.all(claims.map((c) => {
     const known = priorClaims.find((v) => normalise(v.statement) === normalise(c.statement));
     if (known) return Promise.resolve({ ...known, cached: true });
@@ -230,12 +229,12 @@ async function runClaims(p: Pipeline, drawId: string, parts: BriefParts, brief: 
       if (!RESULTS.has(result)) throw new Error(`result must be supported | contradicted | unverifiable, got ${f.result}`);
       return { ...f, result, span: f.span || c.span, statement: f.statement || c.statement };
     }, null, authority === "world" ? undefined : "").then((r) => {
-      p.artifact(r.step, "claim", r.value.statement, { pass, span: r.value.span, result: r.value.result, evidence: r.value.evidence, invalidates: r.value.invalidates, replacement: r.value.replacement, patch: r.value.patch, authority });
+      p.artifact(r.step, "claim", r.value.statement, claimMeta(r.value, pass, authority));
       return r.value;
     });
   }));
   // the cached ones still belong to this pass, so the pane and the export show the whole set
-  for (const v of verified as any[]) if (v.cached) p.artifact(step, "claim", v.statement, { pass, span: v.span, result: v.result, evidence: v.evidence, invalidates: v.invalidates, replacement: v.replacement, patch: v.patch, authority, cached_from: v.draw });
+  for (const v of verified as any[]) if (v.cached) p.artifact(step, "claim", v.statement, claimMeta(v, pass, authority, { cached_from: v.draw }));
   const contradicted = verified.filter((f) => f.result === "contradicted");
   const clusters: Cluster[] = contradicted.map((f) => ({
     id: findingId("claims", f.span, drawId), checkers: ["claims"], samples: [1], n: 1, span: f.span, statement: f.statement, result: f.result,

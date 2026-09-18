@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { applyPatches, repairPlan } from "./repair.ts";
 
-const f = (span: string, patch = "", invalidates = "none", id = span.slice(0, 6)) => ({ id, span, patch, invalidates, replacement: `${span} holds.` });
+const f = (span: string, patch = "", invalidates = "none", id = span.slice(0, 6)) => ({ id, span, statement: `${span} is wrong.`, result: "", patch, invalidates, replacement: `${span} holds.` });
 
 describe("patching a brief in place", () => {
   const text = "The director fires the reliquary at dawn.\nThe twelfth relic, the Verona clavicle, is dry.";

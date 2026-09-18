@@ -331,10 +331,10 @@ function autoOf(d: Detail): AutoResult | null {
 }
 
 /**
- * The auto repair run that ended at this brief, one row per round. It counts the
- * rounds of one run: a round that accepts nothing re-checks the same brief, so two
- * rows can name one brief. The rounds table under it counts the briefs of the whole
- * chain, repairs before the run included, so the two totals rarely agree.
+ * The auto repair run that ended at this brief, one row per brief of the run. A
+ * round that accepts nothing re-checks the same brief, which counts as a pass on
+ * its row rather than a row of its own. The rounds table under it counts the briefs
+ * of the whole chain, repairs before the run included, so the two totals can differ.
  */
 function AutoRuns({ auto, id }: { auto: AutoResult; id: string }) {
   return (
@@ -356,10 +356,13 @@ function AutoRuns({ auto, id }: { auto: AutoResult; id: string }) {
       <table className="ledger">
         <thead>
           <tr>
-            <th className="head" title="One row per round of this auto run. A round that accepts nothing re-checks the same brief instead of repairing it, so two rounds can name one brief.">
+            <th className="head" title="One row per brief of this auto run.">
               round
             </th>
             <th className="head">brief</th>
+            <th className="head text-right" title="Check passes the run made on this brief. A pass that accepts nothing is followed by another on the same brief; the row shows the last one.">
+              passes
+            </th>
             <th className="head text-right" title="Findings open when the round began.">
               open
             </th>
@@ -386,6 +389,7 @@ function AutoRuns({ auto, id }: { auto: AutoResult; id: string }) {
             >
               <td className="num w-4">{r.round}</td>
               <td className={"num" + (r.id === id ? " text-dim" : "")}>{r.id}</td>
+              <td className="num text-right text-dim">{r.passes ?? 1}</td>
               <td className="num text-right">{r.open}</td>
               <td className={"num text-right" + (r.round === auto.best.round ? " text-keep" : "")}>{r.total}</td>
               <td className="num text-right text-dim">{r.accepted}</td>

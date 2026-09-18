@@ -89,8 +89,9 @@ export type Profile = {
   beat?: number;
   flags?: string[];
 };
-export type AutoRound = { round: number; id: string; open: number; total: number; accepted: number; calls: number };
-export type AutoResult = { id: string; rounds: AutoRound[]; best: AutoRound; stopped: "floor" | "cap" | "patience" | "budget"; floor: number; calls: number; left_open?: number };
+/** One brief of an auto run. `passes` is how many check passes the run made on it; a run stored before it was counted has one row per pass. */
+export type AutoRound = { round: number; id: string; open: number; total: number; accepted: number; calls: number; passes?: number };
+export type AutoResult = { id: string; rounds: AutoRound[]; best: AutoRound; stopped: "floor" | "cap" | "patience" | "budget"; floor: number; calls: number; left_open: number };
 /** `dropped`: the verify pass took it off the list. `rare`: seen in too few samples, counted only when the rare ones were asked for. */
 export type OffList = { dropped: number; rare: number | null };
 export type Findings = { pass: string | null; findings: Finding[]; off_list: OffList; claims: Claim[]; profiles: Profile[]; examined: { stage: string; sample: number; examined: string }[]; judge: string | null; score_max: number; structure: string[] };

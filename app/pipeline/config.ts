@@ -69,6 +69,7 @@ export const RUN = {
   outlineSectionWords: 400,
   endingWords: 600,
   coreJobs: ["debt audit", "arithmetic", "custody"] as const,
+  endingJobs: ["arithmetic", "custody"] as const,   // the sections the ending is derived from; a fix that moves one moves the ending
   listCaps: { entries: 40, words: 45 },   // per setting list; the reduce pass cuts to this and lint holds it
   mapCandidates: 5,     // candidate entries a map call may return per list, per reference file
   mapConcurrency: 8,    // reference files the map pass sends at once

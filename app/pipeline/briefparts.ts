@@ -106,6 +106,9 @@ export type BriefParts = {
   settingJobs: string[];   // outline sections beyond the three core jobs
 };
 
+/** The outline sections a setting adds beyond the three core jobs. */
+export const settingJobsOf = (jobs: string[]): string[] => jobs.filter((j) => !(RUN.coreJobs as readonly string[]).includes(j));
+
 export function briefParts(p: Pipeline, drawId: string): BriefParts {
   const draw = p.draw(drawId);
   const parts = partsOf(p, drawId);
@@ -118,9 +121,12 @@ export function briefParts(p: Pipeline, drawId: string): BriefParts {
   return {
     draw, seed: draw.seed_text, premise: chosen.meta.premise ?? "", outline: outline.text, outlineStepId: outline.stepId,
     vignette: chosen.text, chosenStepId: chosen.stepId, contexts: partsIn(parts, "context").map((c) => c.text), ending: ending.text, examples,
-    settingJobs: jobs.filter((j) => !(RUN.coreJobs as readonly string[]).includes(j)),
+    settingJobs: settingJobsOf(jobs),
   };
 }
+
+/** The prose a reader of the story sees, in reading order: what a finding's span must be in, and what a score reads. */
+export const prose = (b: Pick<BriefParts, "vignette" | "contexts" | "ending">): string => [b.vignette, ...b.contexts, b.ending].join("\n\n");
 
 export function briefBlock(b: BriefParts): string {
   return fill("briefBlock", { seed: b.seed, premise: b.premise, outline: b.outline, vignette: b.vignette, context1: b.contexts[0] ?? "", context2: b.contexts[1] ?? "", ending: b.ending });
