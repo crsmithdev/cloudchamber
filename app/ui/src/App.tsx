@@ -47,11 +47,12 @@ export function App() {
   }, [hash]);
   const [view, arg, arg2] = hash.split("/");
   const drawsView = view === "draws" || view === "draw";
-  // `develop` was check and write in one tab; an old link lands wherever its draw is now
+  // `#go/<draw>` names a draw without its stage; `develop` was check and write in one tab
   useEffect(() => {
-    if (view !== "develop") return;
+    if (view !== "go" && view !== "develop") return;
+    const fallback = view === "go" ? "#draws" : "#check";
     if (!arg) {
-      location.hash = "#check";
+      location.hash = fallback;
       return;
     }
     api
@@ -60,7 +61,7 @@ export function App() {
         location.hash = `#${d.draw.stage === "ideate" ? "draw" : d.draw.stage}/${arg}`;
       })
       .catch(() => {
-        location.hash = "#check";
+        location.hash = fallback;
       });
   }, [view, arg]);
   const [folded, setFolded] = useState(() => {
@@ -122,9 +123,11 @@ export function App() {
         </button>
       </aside>
       {sourcesView && <Browser status={status} onVerdict={refresh} />}
-      {drawsView && <Draws status={status} selected={view === "draw" ? arg : arg === "new" ? "new" : undefined} like={arg === "new" ? arg2 : undefined} />}
-      {view === "check" && <Develop stage="check" selected={arg} />}
-      {view === "write" && <Develop stage="write" selected={arg} />}
+      {drawsView && (
+        <Draws status={status} selected={view === "draw" ? arg : arg === "new" ? "new" : undefined} like={arg === "new" ? arg2 : undefined} step={view === "draw" ? arg2 : undefined} />
+      )}
+      {view === "check" && <Develop stage="check" selected={arg} step={arg2} />}
+      {view === "write" && <Develop stage="write" selected={arg} step={arg2} />}
     </div>
   );
 }

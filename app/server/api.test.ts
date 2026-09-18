@@ -290,6 +290,9 @@ describe("api: draft config", () => {
     expect(r.body.defaults.length.words).toBe(5000);
     expect(r.body.defaults.beats).toMatchObject({ count: "auto", min: 5, max: 10 });
     expect(r.body.profiles).toEqual(["flash", "novelette"]);
+    // the form fills itself from the profile, so each one arrives resolved
+    expect(r.body.byProfile.flash).toMatchObject({ length: { words: 1500 }, beats: { count: 3 } });
+    expect(r.body.byProfile.novelette.length.words).toBe(12000);
   });
 });
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { marked } from "marked";
 import { api, when, type Artifact, type Candidate, type Example, type Facets, type Draw, type Fork, type FullStep, type Origin, type Parts, type Repair, type Source, type Status, type Step } from "./api.ts";
-import { ArchivedToggle, Bar, Btn, Caret, Chip, Field, Head, Icon, LinkBtn, Mark, Seg, hhmm, lastSelected, markFor, secs, usePoll, useRememberSelected, useTick, type MarkState } from "./ui.tsx";
+import { ArchivedToggle, Bar, Btn, Caret, Chip, Field, Head, Icon, LinkBtn, Mark, Seg, hhmm, lastSelected, markFor, secs, usePoll, useRememberSelected, useTick, useAddressBar, type MarkState } from "./ui.tsx";
 
 export type Detail = { draw: Draw; origin: Origin | null; steps: Step[]; parts: Parts; checks_next: string[]; repair: Repair; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] };
 const STAGES = ["premises", "execute", "gate", "outline", "context", "ending", "brief"];
@@ -142,12 +142,11 @@ export function RowHead({
 }
 
 /** Draws in the list pane, each opening into its facts and step log; the selected draw, a step, or the start form fills the rest. */
-export function Draws({ status, selected, like }: { status: Status | null; selected: string | undefined; like?: string }) {
+export function Draws({ status, selected, like, step: stepId }: { status: Status | null; selected: string | undefined; like?: string; step?: string }) {
   const [draws, setDraws] = useState<Draw[]>([]);
   const [details, setDetails] = useState<Record<string, Detail>>({});
   // the current draw is the only row that can be open; this folds it
   const [folded, setFolded] = useState(false);
-  const [stepId, setStepId] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [showArchived, setShowArchived] = useState(false);
   const [err, setErr] = useState("");
@@ -181,9 +180,13 @@ export function Draws({ status, selected, like }: { status: Status | null; selec
       .draw(id)
       .then((d) => setDetails((m) => ({ ...m, [id]: d })))
       .catch((e) => setErr(e.message));
+  // the open step is the third part of the hash, so a step has a link of its own
+  const setStepId = (id: string | null) => {
+    if (current) location.hash = id ? `#draw/${current}/${id}` : `#draw/${current}`;
+  };
+  useAddressBar(isForm ? (like ? `draws/new/${like}` : "draws/new") : current ? (stepId ? `draw/${current}/${stepId}` : `draw/${current}`) : undefined);
   useEffect(() => {
     if (!current || isForm) return;
-    setStepId(null);
     setErr("");
     setFolded(false);
   }, [current]);

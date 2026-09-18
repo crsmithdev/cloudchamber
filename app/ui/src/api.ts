@@ -178,7 +178,7 @@ export const api = {
   step: (id: string) => j<{ step: FullStep; artifacts: Artifact[] }>(`/api/steps/${id}`),
   findings: (id: string, all = false) => j<Findings>(`/api/draws/${id}/findings${all ? "?all=true" : ""}`),
   story: (id: string) => j<Story>(`/api/draws/${id}/story`),
-  draftConfig: () => j<{ defaults: DraftConfig; profiles: string[] }>("/api/draft-config"),
+  draftConfig: () => j<{ defaults: DraftConfig; profiles: string[]; byProfile: Record<string, DraftConfig> }>("/api/draft-config"),
   brief: (id: string) => j<Record<string, string>>(`/api/briefs/${id}`),
   briefFile: (id: string, file: string) => `/api/briefs/${id}/${file}`,
 };

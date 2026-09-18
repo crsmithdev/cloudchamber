@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api, type AutoResult, type Draw, type DraftConfig, type Finding, type Findings, type Story, type Step } from "./api.ts";
 import { BriefFiles, DrawAside, Md, RowHead, SeedNote, StepView, boldLabels, firstParagraph, DrawNotes, inFlight, isWorking, label, stageName, stageNames, type Detail } from "./Draws.tsx";
-import { ArchivedToggle, Bar, Btn, Caret as Chevron, Facts, Field, Head, Icon, Mark, Seg, lastSelected, markFor, secs, usePoll, useRememberSelected } from "./ui.tsx";
+import { ArchivedToggle, Bar, Btn, Caret as Chevron, Facts, Field, Head, Icon, Mark, Seg, lastSelected, markFor, secs, usePoll, useRememberSelected, useAddressBar } from "./ui.tsx";
 
 /**
  * Develop a brief: the stages after a brief (docs/specs/2026-09-05-drafting-pipeline.md).
@@ -30,10 +30,9 @@ function chainsOf(draws: Draw[]): Chain[] {
 /** A quoted span is shown between the row's own quotation marks; a span the model already quoted would show two. */
 const unquote = (s: string) => s.trim().replace(/^["“”'‘’]+|["“”'‘’]+$/g, "");
 
-export function Develop({ stage, selected }: { stage: "check" | "write"; selected: string | undefined }) {
+export function Develop({ stage, selected, step: stepId }: { stage: "check" | "write"; selected: string | undefined; step?: string }) {
   const [draws, setDraws] = useState<Draw[]>([]);
   const [d, setD] = useState<Detail | null>(null);
-  const [stepId, setStepId] = useState<string | null>(null);
   const [err, setErr] = useState("");
   const [settings, setSettings] = useState(false);
   const [folded, setFolded] = useState(false);
@@ -65,10 +64,14 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
       .draw(id)
       .then(setD)
       .catch((e) => setErr(e.message));
+  // the open step is the third part of the hash, so a step has a link of its own
+  const setStepId = (id: string | null) => {
+    if (current) location.hash = id ? `#${stage}/${current}/${id}` : `#${stage}/${current}`;
+  };
+  useAddressBar(current ? (stepId ? `${stage}/${current}/${stepId}` : `${stage}/${current}`) : undefined);
   useEffect(() => {
     if (!current) return;
     setD(null);
-    setStepId(null);
     setErr("");
     setSettings(false);
     setFolded(false);
@@ -1037,7 +1040,7 @@ function Profiles({ f }: { f: Findings }) {
 const AXES: Record<string, string[]> = { tense: ["past", "present"], person: ["first", "second", "third"], chronology: ["linear", "nonlinear"], container: ["prose", "document", "interleaved"] };
 
 function DraftSettings({ d, onClose, onDraft }: { d: Detail; onClose: () => void; onDraft: (b: { auto?: boolean; profile?: string; overrides?: Record<string, string | number> }) => void }) {
-  const [cfg, setCfg] = useState<{ defaults: DraftConfig; profiles: string[] } | null>(null);
+  const [cfg, setCfg] = useState<{ defaults: DraftConfig; profiles: string[]; byProfile: Record<string, DraftConfig> } | null>(null);
   const [profile, setProfile] = useState<string>("");
   const [v, setV] = useState<Record<string, string>>({});
   const [auto, setAuto] = useState(false);
@@ -1045,7 +1048,12 @@ function DraftSettings({ d, onClose, onDraft }: { d: Detail; onClose: () => void
     api.draftConfig().then(setCfg);
   }, []);
   if (!cfg) return <span className="text-dim">loading the draft defaults…</span>;
-  const def = cfg.defaults;
+  // the profile fills the fields; a field you change after that is the override sent with it
+  const def = cfg.byProfile[profile] ?? cfg.defaults;
+  const pick = (p: string) => {
+    setProfile(p === "default" ? "" : p);
+    setV({});
+  };
   const base: Record<string, string> = {
     "length.words": String(def.length.words),
     "beats.count": String(def.beats.count),
@@ -1072,54 +1080,56 @@ function DraftSettings({ d, onClose, onDraft }: { d: Detail; onClose: () => void
         <Icon name="arrow_back" /> back
       </button>
       <h1 className="mt-3">Draft</h1>
-      <p className="lede">
-        Defaults from <span className="num">app/pipeline/draft.toml</span>. Whatever you change here is written to the trail and to <span className="num">config.toml</span> on keep.
-      </p>
-      <Field label="Profile" help="A profile bundles overrides; the flags below override it again.">
-        <Seg label="Profile" value={profile || "default"} options={["default", ...cfg.profiles]} onChange={(p) => setProfile(p === "default" ? "" : p)} />
+      <Field label="Profile" help="A profile fills the fields below. Change one after that and it goes as an override.">
+        <Seg label="Profile" value={profile || "default"} options={["default", ...cfg.profiles]} onChange={pick} />
       </Field>
       <Field label="Length" htmlFor="words">
-        <div className="inline">
-          <input id="words" type="text" className="num" style={{ width: "6rem" }} value={val("length.words")} onChange={(e) => set("length.words")(e.target.value)} />
-          <span className="text-dim">words · ±{Math.round(def.length.tolerance * 100)}%</span>
+        <div className="ctls">
+          <input id="words" type="text" className="num" style={{ width: "5rem" }} value={val("length.words")} onChange={(e) => set("length.words")(e.target.value)} />
+          <span className="text-dim">
+            words · <span className="num">±{Math.round(def.length.tolerance * 100)}%</span>
+          </span>
         </div>
       </Field>
       <Field label="Beats" help="The schedule chooses the count within the range and assigns each beat its cap.">
-        <div className="inline">
+        <div className="ctls">
           <Seg label="Beat count" value={val("beats.count") === "auto" ? "auto" : "fixed"} options={["auto", "fixed"]} onChange={(m) => set("beats.count")(m === "auto" ? "auto" : val("beats.min"))} />
           {val("beats.count") === "auto" ? (
             <>
               <span className="text-dim">between</span>
-              {num("beats.min", "Minimum beats", "3.5rem")}
-              <span className="text-dim">and</span>
-              {num("beats.max", "Maximum beats", "3.5rem")}
+              {num("beats.min", "Minimum beats", "3.25rem")}
+              <span className="text-dim tie">and</span>
+              {num("beats.max", "Maximum beats", "3.25rem")}
             </>
           ) : (
             <>
               <span className="text-dim">exactly</span>
-              {num("beats.count", "Beat count", "3.5rem")}
+              {num("beats.count", "Beat count", "3.25rem")}
             </>
           )}
           <span className="text-dim">· each</span>
-          {num("beats.words_min", "Minimum words per beat")}
-          <span className="text-dim">–</span>
-          {num("beats.words_max", "Maximum words per beat")}
+          {num("beats.words_min", "Minimum words per beat", "4.25rem")}
+          <span className="text-dim tie">–</span>
+          {num("beats.words_max", "Maximum words per beat", "4.25rem")}
           <span className="text-dim">words</span>
         </div>
       </Field>
       <Field label="Form" help="auto: the schedule derives the axis from the brief and states it. A fixed axis is checked on the schedule and fails shape when contradicted.">
-        <div className="grid gap-2">
+        <div className="axes">
           {Object.entries(AXES).map(([axis, opts]) => (
-            <div key={axis} className="inline">
-              <span className="w-24 text-dim">{axis}</span>
-              <Seg label={axis} value={val(`form.${axis}`)} options={["auto", ...opts]} onChange={set(`form.${axis}`)} />
-              {overrides[`form.${axis}`] !== undefined && <span className="text-art">overridden</span>}
-            </div>
+            <React.Fragment key={axis}>
+              <span className="axis">{axis}</span>
+              <span className="ctls">
+                <Seg label={axis} value={val(`form.${axis}`)} options={["auto", ...opts]} onChange={set(`form.${axis}`)} />
+                {overrides[`form.${axis}`] !== undefined && <span className="text-art">overridden</span>}
+              </span>
+            </React.Fragment>
           ))}
-          <div className="inline">
-            <span className="w-24 text-dim">ending</span>
+          <span className="axis">ending</span>
+          <span className="ctls">
             <Seg label="ending" value={val("form.ending")} options={["brief", "open"]} onChange={set("form.ending")} />
-          </div>
+            {overrides["form.ending"] !== undefined && <span className="text-art">overridden</span>}
+          </span>
         </div>
       </Field>
       <Field label="Scenes" help="Sequential carries the text so far into each scene call. Parallel writes all beats at once from the schedule alone.">
@@ -1137,7 +1147,6 @@ function DraftSettings({ d, onClose, onDraft }: { d: Detail; onClose: () => void
         <Btn variant="primary" pad onClick={() => onDraft({ auto, profile: profile || undefined, overrides: Object.keys(overrides).length ? overrides : undefined })}>
           draft
         </Btn>
-        <span className="text-dim">One schedule call, then the scene calls in sequence, then the screens. About eight minutes at the defaults.</span>
       </div>
     </div>
   );

@@ -158,3 +158,15 @@ export function useRememberSelected(tab: string, id: string | undefined) {
   }, [tab, id]);
 }
 export const hhmm = (iso: string) => new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(iso));
+
+/**
+ * Name in the address bar what the page already shows, without a new history entry.
+ * A tab that opens on a default draw then has a link you can copy or send.
+ */
+export function useAddressBar(hash: string | undefined) {
+  useEffect(() => {
+    if (!hash || location.hash === `#${hash}`) return;
+    history.replaceState(null, "", `#${hash}`);
+    dispatchEvent(new HashChangeEvent("hashchange"));
+  }, [hash]);
+}

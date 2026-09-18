@@ -262,8 +262,12 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     } catch (e: any) { return reply.code(400).send({ error: e.message }); }
   });
 
-  /** The drafting defaults and profile names, for the draft settings form. */
-  app.get("/api/draft-config", async () => ({ defaults: loadDraftConfig().config, profiles: profileNames() }));
+  /** The drafting defaults and what each profile resolves to, so the settings form can show a profile's own values. */
+  app.get("/api/draft-config", async () => ({
+    defaults: loadDraftConfig().config,
+    profiles: profileNames(),
+    byProfile: Object.fromEntries(profileNames().map((p) => [p, loadDraftConfig(p).config])),
+  }));
 
   app.get<{ Params: { id: string }; Querystring: { all?: string } }>("/api/draws/:id/findings", async (req, reply) => {
     const all = req.query.all === "true" || req.query.all === "1";
