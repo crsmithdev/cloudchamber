@@ -76,7 +76,7 @@ export class Drafting {
     return r;
   }
 
-  findings(drawId: string, opts: { all?: boolean } = {}): { pass: string | null; findings: FindingView[]; claims: unknown[]; profiles: unknown[]; examined: { stage: string; sample: number; examined: string }[]; judge: string | null; score_max: number; structure: string[] } {
+  findings(drawId: string, opts: { all?: boolean } = {}): { pass: string | null; findings: FindingView[]; off_list: { dropped: number; rare: number | null }; claims: unknown[]; profiles: unknown[]; examined: { stage: string; sample: number; examined: string }[]; judge: string | null; score_max: number; structure: string[] } {
     this.p.draw(drawId);
     const chain = chainOf(this.p, drawId);
     const pass = chain.pass();
@@ -84,8 +84,17 @@ export class Drafting {
     const meta = (a: { meta: string }) => JSON.parse(a.meta);
     const steps = this.p.steps(drawId).filter((s) => /^check-/.test(s.stage) && s.status === "done");
     const examined = steps.map((s, i) => ({ stage: s.stage, sample: i + 1, examined: String((JSON.parse(s.parsed ?? "{}") as any).examined ?? "") })).filter((x) => x.examined);
+    // the gate lists what it will act on: a finding the verify pass dropped is withheld
+    // until it is asked for, and stays in the list once it has been ruled on
+    const all = chain.findings(opts.all);
+    const offList = (f: FindingView) => !f.reported && f.decision === "open";
+    const shown = opts.all ? all : all.filter((f) => !offList(f));
+    const off = all.filter(offList);
     return {
-      pass, findings: chain.findings(opts.all),
+      pass, findings: shown,
+      // dropped: the verify pass took it off the list and said why. rare: seen in too few samples,
+      // which only the reconstruction behind `all` can count, so it is null without it.
+      off_list: { dropped: off.filter((f) => !!f.dropped).length, rare: opts.all ? off.filter((f) => !f.dropped).length : null },
       claims: arts.filter((a) => a.kind === "claim" && meta(a).pass === pass).map((a) => ({ statement: a.content, ...meta(a) })),
       // a repair round runs neither profile checker, so the chain's own profile stands in
       profiles: ["structure", "resemblance"].flatMap((c) => {

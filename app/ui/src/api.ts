@@ -91,7 +91,9 @@ export type Profile = {
 };
 export type AutoRound = { round: number; id: string; open: number; total: number; accepted: number; calls: number };
 export type AutoResult = { id: string; rounds: AutoRound[]; best: AutoRound; stopped: "floor" | "cap" | "patience" | "budget"; floor: number; calls: number; left_open?: number };
-export type Findings = { pass: string | null; findings: Finding[]; claims: Claim[]; profiles: Profile[]; examined: { stage: string; sample: number; examined: string }[]; judge: string | null; score_max: number; structure: string[] };
+/** `dropped`: the verify pass took it off the list. `rare`: seen in too few samples, counted only when the rare ones were asked for. */
+export type OffList = { dropped: number; rare: number | null };
+export type Findings = { pass: string | null; findings: Finding[]; off_list: OffList; claims: Claim[]; profiles: Profile[]; examined: { stage: string; sample: number; examined: string }[]; judge: string | null; score_max: number; structure: string[] };
 export type Beat = { n: number; words: number; job: string; known: string; withheld: { item: string; until: number }[]; stakes: string; absorbs: string };
 export type Scene = { beat: number; text: string; artifact_id: string; step_id: string };
 export type Slop = {

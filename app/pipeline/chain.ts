@@ -16,7 +16,8 @@ import { latestAll, type Latest } from "./verdicts.ts";
 import { cluster, excludeDismissed, merge, normalise, same, score, type Cluster, type Finding, type ScoreContext } from "./recur.ts";
 import { briefParts, type Artifact } from "./briefparts.ts";
 
-export type FindingMeta = Omit<Cluster, "reported"> & { pass: string; source: "check" | "screen"; screen?: string; beat?: number };
+/** `dropped` is the verify pass's reason for taking a finding off the reported list; it rides on the artifact's meta. */
+export type FindingMeta = Omit<Cluster, "reported"> & { pass: string; source: "check" | "screen"; screen?: string; beat?: number; sub_threshold?: boolean; dropped?: string };
 export type FindingView = FindingMeta & { artifact_id: string; decision: "accepted" | "dismissed" | "open"; note: string; score: number; samples_run: number; reported: boolean; relitigates?: Settled };
 /** A finding accepted somewhere in this repair chain, and where. */
 export type Settled = { finding: string; draw: string; round: number; replacement: string; span: string; statement: string };
@@ -277,7 +278,7 @@ export class Chain {
       const pass = this.pass();
       if (!pass) return [];
       return this.findingArtifacts().filter((f) => f.source === "check" && f.pass === pass)
-        .map((f) => this.withScore(f, !(f as { sub_threshold?: boolean }).sub_threshold))
+        .map((f) => this.withScore(f, !f.sub_threshold))
         .sort((a, b) => b.score - a.score);
     });
   }

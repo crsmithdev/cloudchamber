@@ -608,8 +608,14 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
       n.has(fid) ? n.delete(fid) : n.add(fid);
       return n;
     });
-  const atFloor = open.filter((x) => x.score >= floor && !x.relitigates);
+  // a bulk selector offers only what the gate acts on: auto skips a dropped finding, and so does "all"
+  const selectable = open.filter((x) => x.reported && !x.relitigates);
+  const atFloor = selectable.filter((x) => x.score >= floor);
   const reopened = f?.findings.filter((x) => x.relitigates) ?? [];
+  // the gate's own list: reported, or already ruled on. What the verify pass or the sample bar took
+  // off it is shown only when asked for, under its own head, and never by a bulk selector.
+  const listed = f?.findings.filter((x) => !x.relitigates && (x.reported || x.decision !== "open")) ?? [];
+  const left = f?.findings.filter((x) => !x.relitigates && !x.reported && x.decision === "open") ?? [];
   const checkSteps = d.steps.filter((s) => s.stage.startsWith("check-") && s.status === "done");
   const checkSecs = checkSteps.reduce((n, s) => n + Number(secs(s.started_at, s.ended_at)), 0);
   const reported = f?.findings.filter((x) => x.reported) ?? [];
@@ -629,7 +635,7 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
           onDraft={onDraft}
           onFlag={() => gate("flag")}
           onHold={() => gate("hold")}
-          openFindings={open.length}
+          openFindings={selectable.length}
           pendingRepair={accepted.length}
         />
       )}
@@ -646,13 +652,13 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
           <span className="group">
             <Btn
               variant="keep"
-              disabled={!open.some((x) => !x.relitigates)}
-              onClick={() => setSel(new Set(open.filter((x) => !x.relitigates).map((x) => x.id)))}
-              title="Select every open finding that does not undo a fix accepted in an earlier round."
+              disabled={!selectable.length}
+              onClick={() => setSel(new Set(selectable.map((x) => x.id)))}
+              title="Select every open finding that was reported and does not undo a fix accepted in an earlier round."
             >
-              all ({open.filter((x) => !x.relitigates).length})
+              all ({selectable.length})
             </Btn>
-            <Btn variant="keep" disabled={!atFloor.length} onClick={() => setSel(new Set(atFloor.map((x) => x.id)))} title={`Select every open finding scoring ${floor} or more.`}>
+            <Btn variant="keep" disabled={!atFloor.length} onClick={() => setSel(new Set(atFloor.map((x) => x.id)))} title={`Select every reported finding scoring ${floor} or more.`}>
               ≥ {floor} ({atFloor.length})
             </Btn>
             <input type="range" min={1} max={f?.score_max ?? floor} step={1} value={floor} aria-label="Score floor" onChange={(e) => setFloor(Number(e.target.value))} />
@@ -676,26 +682,32 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
           <Head
             note={
               <>
-                {f ? `${reported.length} reported${f.findings.some((x) => !x.reported) ? ` · ${f.findings.filter((x) => !x.reported).length} too rare to report` : ""}` : "…"}
+                {f ? `${reported.length} reported${f.off_list.dropped ? ` · ${f.off_list.dropped} the verify pass dropped` : ""}${f.off_list.rare ? ` · ${f.off_list.rare} too rare to report` : ""}` : "…"}
                 {f?.pass ? ` · checked ${f.pass.slice(0, 16).replace("T", " ")}` : ""}
                 {checkSteps.length ? ` · ${checkSteps.length} checker calls · ${checkSecs} s` : ""} · highest score first · duplicates merged across checkers ·{" "}
                 <button
                   className="link"
                   aria-pressed={showAll}
                   onClick={() => setShowAll((v) => !v)}
-                  title="A finding seen in too few samples is not reported, but it is still a reading. Nothing runs again to show these."
+                  title="The verify pass reads every finding back against the brief and keeps only what a reader of the vignettes and the ending would notice; a finding seen in too few samples is not reported either. Both stay open for you, and nothing runs again to show them."
                 >
-                  {showAll ? "hide" : "show"} rare findings
+                  {showAll ? "hide" : "show"} what left the list
                 </button>
               </>
             }
           >
             findings
           </Head>
-          {f && f.findings.length === 0 && <div className="mt-2 text-mute">Nothing recurred in enough samples to report. What each checker examined is listed beside.</div>}
-          {f && f.findings.length > 0 && (
+          {f && listed.length === 0 && (
+            <div className="mt-2 text-mute">
+              {f.off_list.dropped
+                ? `Nothing to rule on: the verify pass dropped ${f.off_list.dropped} finding${f.off_list.dropped > 1 ? "s" : ""} as invisible to a reader of the vignettes and the ending. Show them to read why.`
+                : "Nothing recurred in enough samples to report. What each checker examined is listed beside."}
+            </div>
+          )}
+          {f && (listed.length > 0 || reopened.length > 0) && (
             <div className="findings mt-1">
-              {f.findings.filter((x) => !x.relitigates).map(row)}
+              {listed.map(row)}
               {reopened.length > 0 && (
                 <>
                   <Head as="div" className="mt-5" note={`${reopened.length} finding${reopened.length > 1 ? "s" : ""} that would undo a fix you accepted · auto repair skips ${reopened.length > 1 ? "them" : "it"}`}>
@@ -709,6 +721,18 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
                 </>
               )}
             </div>
+          )}
+          {f && left.length > 0 && (
+            <>
+              <Head as="div" className="mt-5" note={`${f.off_list.dropped} the verify pass dropped${f.off_list.rare ? ` · ${f.off_list.rare} seen in too few samples` : ""} · auto repair skips them`}>
+                taken off the list
+              </Head>
+              <div className="mt-1 mb-2 max-w-[66ch] text-mute">
+                The verify pass keeps only what a reader of the vignettes and the ending would notice, and a finding seen in too few samples is not reported. Each of these is still open: accept one from its own
+                row if you disagree.
+              </div>
+              <div className="findings">{left.map(row)}</div>
+            </>
           )}
           {f && (
             <>

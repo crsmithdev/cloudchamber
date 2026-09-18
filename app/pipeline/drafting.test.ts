@@ -914,6 +914,34 @@ describe("the verify pass", () => {
     expect(model.calls.find((c) => c.stage === "check-verify")!.prompt).toContain(`2. span: "${SPAN_B}"`);
   });
 
+  test("the gate's list withholds a dropped finding until it is asked for, and says how many left the list", async () => {
+    // the same pass as above: A holds, B is dropped, C is under the bar and dropped
+    const script = draftScript({
+      "check-verify": [
+        `<verdict n="1"><answer>keep</answer><why>holds</why></verdict><verdict n="2"><answer>drop</answer><why>the span does not name the relic</why></verdict><verdict n="3"><answer>keep</answer><why>holds</why></verdict>`,
+        `<verdict n="1"><answer>keep</answer><why>holds</why></verdict><verdict n="2"><answer>keep</answer><why>holds</why></verdict><verdict n="3"><answer>drop</answer><why>the silk is never wet</why></verdict>`,
+      ],
+    });
+    const { d, draw } = await drawn(script);
+    await d.check(draw.id);
+
+    const gate = d.findings(draw.id);
+    expect(gate.findings.map((f) => f.span)).toEqual([SPAN_A]);              // a dropped finding is not the gate's work
+    expect(gate.off_list).toEqual({ dropped: 2, rare: null });               // the view says how many left the list, and why
+
+    const all = d.findings(draw.id, { all: true });
+    expect(all.findings.some((f) => f.span === SPAN_B)).toBe(true);          // asked for, it comes back
+    expect(all.off_list.dropped).toBe(2);
+    expect(all.off_list.rare).not.toBeNull();                               // the rare ones can only be counted here
+
+    // ruled on, it is the gate's business again: it stays in the list and leaves the count
+    const b = all.findings.find((f) => f.span === SPAN_B)!;
+    d.dismiss(draw.id, b.id, "read it and disagreed", "draw");
+    const after = d.findings(draw.id);
+    expect(after.findings.find((f) => f.span === SPAN_B)).toMatchObject({ decision: "dismissed" });
+    expect(after.off_list.dropped).toBe(1);
+  });
+
   test("auto does not accept a dropped finding, whatever it scores", async () => {
     // A scores 10 and is dropped; B scores 6 and is kept, so the round accepts B alone
     const script = draftScript({

@@ -71,9 +71,10 @@ async function main() {
     const f = drafting().findings(drawId, { all });
     if (!f.pass) { console.log("no check has run"); return; }
     const sub = f.findings.filter((x) => !x.reported).length;
-    console.log(`check pass ${f.pass} · ${f.findings.length - sub} reported${sub ? ` · ${sub} below the bar` : ""} · by score`);
+    const off = `${f.off_list.dropped ? ` · ${f.off_list.dropped} the verify pass dropped` : ""}${f.off_list.rare ? ` · ${f.off_list.rare} too rare to report` : ""}`;
+    console.log(`check pass ${f.pass} · ${f.findings.length - sub} reported${off}${all ? "" : " · --all lists what left the list"} · by score`);
     for (const x of f.findings) {
-      console.log(`\n${x.id}  score ${x.score}/10  ${x.checkers.join("+")} ×${x.n}/${x.samples_run}  [${x.invalidates}]  ${x.decision}${x.reported ? "" : " · below the bar"}${x.note ? `: ${x.note}` : ""}`);
+      console.log(`\n${x.id}  score ${x.score}/10  ${x.checkers.join("+")} ×${x.n}/${x.samples_run}  [${x.invalidates}]  ${x.decision}${x.reported ? "" : x.dropped ? " · dropped by verify" : " · below the bar"}${x.note ? `: ${x.note}` : ""}`);
       console.log(`  span: ${x.span}`); console.log(`  ${x.statement}`); console.log(`  result: ${x.result} · evidence: ${x.evidence}`); console.log(`  replacement: ${x.replacement}`);
     }
     const claims = f.claims as any[];

@@ -177,6 +177,8 @@ stages are the next landing, not this one.
 2. WHEN a check pass completes THE system SHALL store one `finding` artifact per reported cluster carrying `checker`, `span`, `statement`, `result`, `evidence`, `invalidates`, `replacement`, the sample numbers it recurred in, and `n`; `cloudchamber findings <draw>` SHALL print them ordered by `n` descending then by `invalidates` rank (debt audit, arithmetic, custody, setting jobs, none).
 3. WHEN a checker's S samples produce findings THE system SHALL cluster them by the overlap rule (Implementation Decisions, Recurrence) and report a cluster only when it recurs in at least `keep_if` distinct samples; a finding seen in fewer samples SHALL be stored on the step's `parsed` and not as a `finding` artifact.
 4. WHEN two reported clusters from different checkers overlap by the same rule THE system SHALL store one `finding` artifact whose `checkers` field lists both and whose `n` is the greater.
+4a. WHEN a check pass has clustered its findings THE system SHALL run one `check-verify` step that reads every finding of the pass, reported and under the bar alike, back against the brief and answers `keep` or `drop` with a reason; a finding whose span is in no vignette and not in the ending SHALL be dropped before that call, with no model call. A dropped finding SHALL be stored with `sub_threshold` and the reason in `dropped`, and SHALL stay `open`, so a person can still act on it. A claims finding SHALL be exempt from the pass.
+4b. WHEN the findings of a draw are read THE system SHALL list the findings the gate acts on: those reported, and those already accepted or dismissed. A finding that is open and not reported SHALL be listed only when the reader asks for it (`--all`, `?all=true`), and the view SHALL carry the counts of what it withheld, by reason: dropped by the verify pass, or seen in too few samples. Auto repair SHALL act on reported findings only.
 5. WHEN a checker step completes THE system SHALL store its `<examined>` content on the step's `parsed`, and `cloudchamber findings <draw> --examined` SHALL print it per sample.
 6. WHEN the draw's setting declares `claims: world` THE system SHALL run `check-claims-extract` once, then one `check-claims-verify` step per extracted claim with `--tools "WebSearch,WebFetch" --allowedTools "WebSearch,WebFetch"`, and a `finding` artifact for each claim whose result is `contradicted`; WHEN the setting declares `claims: reference` THE system SHALL run the verify steps with `--tools ""` and the resolved reference files of the draw's pinned domains in the prompt; WHEN the setting declares `claims: setting` THE system SHALL extract claims about the setting rather than about the actual world, and run the verify steps with `--tools ""` and the setting's whole distillate in the prompt, independent of the domains the draw took. A `supported` or `unverifiable` claim SHALL be stored on the step's `parsed` and not as a `finding`.
 7. IF the draw is unrestricted or the setting has no `claims` key THEN THE system SHALL run no `check-claims-*` step and `cloudchamber findings` SHALL print `claims: off (no authority declared)`.
@@ -352,6 +354,15 @@ first and listing both checkers. Dismissed findings are excluded from a
 later check by the same test against the dismissed finding's span and
 statement. Order: `n` descending, then `invalidates` in the order debt
 audit, arithmetic, custody, any setting job, none.
+
+The verify pass runs after clustering and before anything is shown. It reads
+`VERIFY_READINGS` readings of one call and drops a finding when any reading
+drops it, keeping that reading's reason: one reading alone kept a borderline
+finding about one time in five. What a reader sees is the vignettes and the
+ending, so a span found only in the outline is dropped without a call. The
+reason stays on the artifact, which is why an under-bar finding is stored at
+all; an under-bar finding the pass keeps is not stored and is rebuilt on
+demand when `--all` asks for it.
 
 Finding id: `f-` plus the first eight hex characters of the SHA-1 of
 `draw id + "|" + checker + "|" + normalised span` (screen findings scope by
