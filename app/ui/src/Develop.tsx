@@ -114,7 +114,12 @@ export function Develop({ stage, selected }: { stage: "check" | "write"; selecte
     <DrawAside
       d={d}
       onStep={setStepId}
-      top={chain && chain.rounds.length > 1 && <Rounds chain={chain} current={d.draw.id} statusLine={statusLine} />}
+      top={
+        <>
+          {stage === "check" && autoOf(d) && <AutoRuns auto={autoOf(d)!} id={d.draw.id} />}
+          {chain && chain.rounds.length > 1 && <Rounds chain={chain} current={d.draw.id} statusLine={statusLine} />}
+        </>
+      }
       rows={[
         ...(d.draw.repaired_from
           ? [
@@ -280,7 +285,9 @@ function Rounds({ chain, current, statusLine }: { chain: Chain; current: string;
       <table className="ledger">
         <thead>
           <tr>
-            <th className="head">round</th>
+            <th className="head" title="One row per brief in the whole repair chain: every repair that reached this brief, including any before the last auto run.">
+              round
+            </th>
             <th className="head"></th>
             <th className="head text-right" title="The findings' scores added up. Lower is better.">
               score
@@ -310,6 +317,86 @@ function Rounds({ chain, current, statusLine }: { chain: Chain; current: string;
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+/** The auto repair run recorded on a brief, if one reached it: the newest artifact wins. */
+function autoOf(d: Detail): AutoResult | null {
+  const art = [...d.artifacts].reverse().find((a) => a.kind === "auto");
+  return art ? JSON.parse(art.content) : null;
+}
+
+/**
+ * The auto repair run that ended at this brief, one row per round. It counts the
+ * rounds of one run: a round that accepts nothing re-checks the same brief, so two
+ * rows can name one brief. The rounds table under it counts the briefs of the whole
+ * chain, repairs before the run included, so the two totals rarely agree.
+ */
+function AutoRuns({ auto, id }: { auto: AutoResult; id: string }) {
+  return (
+    <div className="mb-6">
+      <Head
+        as="div"
+        note={
+          auto.stopped === "floor"
+            ? `stopped: nothing scored ${auto.floor} or more`
+            : auto.stopped === "patience"
+              ? "stopped: the total score stopped falling"
+              : auto.stopped === "budget"
+                ? `stopped: reached the call budget at ${auto.calls} calls`
+                : "stopped: reached the round limit"
+        }
+      >
+        auto repair · {auto.rounds.length} round{auto.rounds.length > 1 ? "s" : ""}
+      </Head>
+      <table className="ledger">
+        <thead>
+          <tr>
+            <th className="head" title="One row per round of this auto run. A round that accepts nothing re-checks the same brief instead of repairing it, so two rounds can name one brief.">
+              round
+            </th>
+            <th className="head">brief</th>
+            <th className="head text-right" title="Findings open when the round began.">
+              open
+            </th>
+            <th className="head text-right" title="Those findings' scores added up. Lower is better.">
+              score
+            </th>
+            <th className="head text-right" title="Findings the round accepted for repair.">
+              accepted
+            </th>
+            <th className="head text-right" title="Model calls the chain had made when the round began.">
+              calls
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {auto.rounds.map((r) => (
+            <tr
+              key={r.round}
+              className={r.id === id ? "sel" : ""}
+              onClick={() => {
+                if (r.id !== id) location.hash = `#check/${r.id}`;
+              }}
+              title={`round ${r.round} · brief ${r.id}${r.round === auto.best.round ? " · lowest score" : ""}`}
+            >
+              <td className="num w-4">{r.round}</td>
+              <td className={"num" + (r.id === id ? " text-dim" : "")}>{r.id}</td>
+              <td className="num text-right">{r.open}</td>
+              <td className={"num text-right" + (r.round === auto.best.round ? " text-keep" : "")}>{r.total}</td>
+              <td className="num text-right text-dim">{r.accepted}</td>
+              <td className="num text-right text-dim">{r.calls}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {auto.best.id !== auto.id && <div className="mt-2 text-dim">Round {auto.best.round} scored lowest, but a later round replaced it. Open it if this round reads worse.</div>}
+      {!!auto.left_open && (
+        <div className="mt-2 text-mute">
+          {auto.left_open} finding{auto.left_open > 1 ? "s" : ""} at or above the floor {auto.left_open > 1 ? "are" : "is"} still open here: auto stopped before repairing {auto.left_open > 1 ? "them" : "it"}.
+        </div>
+      )}
     </div>
   );
 }
@@ -523,8 +610,6 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
     });
   const atFloor = open.filter((x) => x.score >= floor && !x.relitigates);
   const reopened = f?.findings.filter((x) => x.relitigates) ?? [];
-  const autoArt = [...d.artifacts].reverse().find((a) => a.kind === "auto");
-  const auto: AutoResult | null = autoArt ? JSON.parse(autoArt.content) : null;
   const checkSteps = d.steps.filter((s) => s.stage.startsWith("check-") && s.status === "done");
   const checkSecs = checkSteps.reduce((n, s) => n + Number(secs(s.started_at, s.ended_at)), 0);
   const reported = f?.findings.filter((x) => x.reported) ?? [];
@@ -585,64 +670,6 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
           </a>
           ; its findings and their decisions are kept here for the record.
         </p>
-      )}
-      {auto && (
-        <div className="mt-4 max-w-[46rem]">
-          <Head
-            note={
-              auto.stopped === "floor"
-                ? `stopped: nothing scored ${auto.floor} or more`
-                : auto.stopped === "patience"
-                  ? "stopped: the total score stopped falling"
-                  : auto.stopped === "budget"
-                    ? `stopped: reached the call budget at ${auto.calls} calls`
-                    : "stopped: reached the round limit"
-            }
-          >
-            auto repair · {auto.rounds.length} round{auto.rounds.length > 1 ? "s" : ""}
-          </Head>
-          <table className="mt-1">
-            <thead>
-              <tr>
-                <th className="head">round</th>
-                <th className="head">brief</th>
-                <th className="head text-right">open</th>
-                <th className="head text-right">total score</th>
-                <th className="head text-right">accepted</th>
-                <th className="head text-right">calls</th>
-              </tr>
-            </thead>
-            <tbody>
-              {auto.rounds.map((r) => (
-                <tr key={r.id} className={r.round === auto.best.round ? "text-keep" : ""}>
-                  <td className="num">
-                    {r.round}
-                    {r.round === auto.best.round ? <span className="text-dim"> · lowest</span> : ""}
-                  </td>
-                  <td>
-                    {r.id === id ? (
-                      <span className="num text-dim">{r.id}</span>
-                    ) : (
-                      <a className="num" href={`#check/${r.id}`}>
-                        {r.id}
-                      </a>
-                    )}
-                  </td>
-                  <td className="num text-right">{r.open}</td>
-                  <td className="num text-right">{r.total}</td>
-                  <td className="num text-right">{r.accepted}</td>
-                  <td className="num text-right text-dim">{r.calls}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {auto.best.id !== auto.id && <div className="mt-2 text-dim">Round {auto.best.round} scored lowest, but a later round replaced it. Open it if this round reads worse.</div>}
-          {!!auto.left_open && (
-            <div className="mt-2 text-mute">
-              {auto.left_open} finding{auto.left_open > 1 ? "s" : ""} at or above the floor {auto.left_open > 1 ? "are" : "is"} still open here: auto stopped before repairing {auto.left_open > 1 ? "them" : "it"}.
-            </div>
-          )}
-        </div>
       )}
       <div className="drawbody wide">
         <div className="min-w-0">
