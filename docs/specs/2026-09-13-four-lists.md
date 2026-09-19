@@ -3,6 +3,15 @@
 > Events became the fifth list on 2026-09-14. Where the text below counts four
 > lists, the count is now five.
 
+> Amendments, 2026-09-19 (078b6b7). Matrix and Jobs left the setting shape:
+> a setting is its front matter and five lists, and lint reports `## Matrix`
+> and `## Jobs` as retired headings beside the others in AC 2. No setting
+> carried either; both were the last playbook prose a setting could hold.
+> AC 1 returns the five lists alone; nothing in AC 6 changes. US 7's
+> "custody" and "arithmetic" are the outline sections now named `knowledge`
+> and `particulars` (see the 2026-09-19 amendments to
+> `2026-09-05-drafting-pipeline.md`).
+
 Supersedes `2026-09-05-typed-settings.md` in full, and the *Settings*
 subsection of `2026-09-05-drafting-pipeline.md`. Decided 2026-09-13 over a
 long pass on what a domain was actually buying.

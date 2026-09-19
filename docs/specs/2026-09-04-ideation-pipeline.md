@@ -101,6 +101,19 @@ Open Questions. The research it rests on is `research/generation.md`,
 `research/themes.md` and `research/tagging.md`; section references below are
 to those files.
 
+> Amendments, 2026-09-19 (078b6b7). The outline's three core jobs (US 25, REQ
+> 25, the stage graph) are `departure`, `particulars` and `knowledge`, not
+> `debt audit`, `arithmetic` and `custody`: what is not true of the actual
+> world and what follows from it; every name, place, date, count and
+> quantity the prose must not drift from; who knows what, from when, and why
+> no one compares. The old three were The Interval's reverse outline made a
+> rule for every story. A setting declares no jobs (Matrix and Jobs left the
+> setting shape; see `2026-09-13-four-lists.md`), so the outline has three
+> sections and the `jobs` step of the graph names the two context vignettes'
+> jobs only, as it always did. The ending is derived from `particulars` and
+> `knowledge`. The prompts say *vignette* where the text below says
+> *execution*.
+
 ## Problem Statement
 
 Chris has a corpus of horror and science fiction (29 PDFs, 110 SCP articles)

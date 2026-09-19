@@ -91,6 +91,50 @@ differ, this file wins.
 >   stopped on, and is not restored: an earlier round is superseded, and
 >   reviving it would put the chain in two places at once.
 
+> Amendments, 2026-09-19. The text below keeps the words it was written
+> with; where it and this list disagree, this list is the code.
+>
+> - **The outline's sections (REQ 2, REQ 9, Findings order, the asks),
+>   078b6b7.** The three sections are `departure` (the one thing in the story
+>   that is not true of the actual world, and everything derived from it),
+>   `particulars` (every name, place, date, duration, count and quantity the
+>   prose must not drift from) and `knowledge` (who knows what, from when,
+>   what each cannot know, and why the people who could compare do not).
+>   `debt audit`, `arithmetic` and `custody` were one story's reverse outline
+>   (`stories/25-the-interval.md`, lines 5 and 24) made a rule for every
+>   story, and every draw was being asked to be that story. `invalidates` is
+>   one of the three or `none`; the findings order is departure, particulars,
+>   knowledge, none; the ending is derived from `particulars` and
+>   `knowledge`, and a finding without a patch that invalidates either
+>   rewrites the ending wherever its span sits. Setting jobs are gone with
+>   Matrix and Jobs (see `2026-09-13-four-lists.md`), so the outline has
+>   three sections and no more. The ledger's `custody` category is
+>   `possession` (who holds what), with no document presumed. The ending
+>   ask no longer offers "prose or document form". The scene ask says "The
+>   schedule above has settled the story: write within it and add nothing it
+>   does not hold", and the material line says "the brief's own vignette for
+>   this beat"; "execution" and "a layer below the one that gets told" are
+>   gone from every prompt.
+> - **One outline (REQ 9, AC 9), 48ab076.** The outline is never re-derived.
+>   A repaired draw carries the chain's outline — the root's with every
+>   accepted fix appended — as its `repair-outline` step, always `copied`;
+>   that is the text the check holds the prose to. Re-deriving it each round
+>   wrote lines no author wrote and no checker read.
+> - **The ledger binds where the scene is written (REQ 18, 21a, 22),
+>   535d934.** `screen-ledger` runs on each scene as it is written, against
+>   the ledger and the scene before it, and every flag's own `<patch>` is put
+>   into the scene word for word before the next beat reads it, on a
+>   `patched` step, with verdict `finding` `keep` by method `draw` and note
+>   `patched as written`. On two drafts of one seed the scenes contradicted
+>   the ledger they were given about three times a beat, and a later beat
+>   inherited the contradiction through the story so far. `gate patch` (REQ
+>   21a) is gone: nothing is left for it. Gate 2 is keep | rewrite k, and
+>   `rewrite k` binds the new scene, re-binds k+1 against it, then re-runs
+>   the structure screen on both. The ledger screen drops what the verify
+>   pass drops: a figurative line read as literal fact, loose everyday
+>   wording, a hedged line, a detail the scene leaves out. The structure and
+>   slop screens still run once all scenes exist.
+
 ## Problem Statement
 
 A draw ends in a brief: a chosen vignette, an outline in three sections plus
