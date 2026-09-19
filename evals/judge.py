@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Blind pairwise judge for a narrated listen (evals/README: the parity rule).
+"""Blind pairwise judge for a narrated listen; the parity rule is in the run write-ups under evals/.
 
   judge.py --ours <draw-id | file> --source <transcript.json | file> [--passes 3] [--judge claude|gemini] [--model M]
 
