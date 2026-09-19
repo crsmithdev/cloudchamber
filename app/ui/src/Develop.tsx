@@ -12,18 +12,16 @@ import { ArchivedToggle, Bar, Btn, Caret as Chevron, Facts, Field, Head, Icon, M
 /** A repair chain: the root draw, its rounds oldest first, and the head. A draw with no repairs is a chain of one. */
 type Chain = { root: Draw; rounds: Draw[]; head: Draw };
 /**
- * One chain per draw that nothing repairs: its rounds are its ancestry, as the repair itself reads them.
- * A draw repaired more than once starts several chains, and each of them holds it.
+ * One chain per draw that nothing repairs, its rounds as the server read them. A draw repaired more than
+ * once is in several chains, and each of them holds it.
  */
 function chainsOf(draws: Draw[]): Chain[] {
   const by = new Map(draws.map((r) => [r.id, r]));
-  const repaired = new Set(draws.map((r) => r.repaired_from));
   return draws
-    .filter((head) => !repaired.has(head.id))
+    .filter((r) => r.head)
     .map((head) => {
-      const rounds = [head];
-      for (let r = head; r.repaired_from && by.has(r.repaired_from) && !rounds.includes(by.get(r.repaired_from)!); ) rounds.unshift((r = by.get(r.repaired_from)!));
-      return { root: rounds[0], rounds, head };
+      const rounds = head.rounds.map((id) => by.get(id)).filter((r): r is Draw => !!r);
+      return { root: rounds[0] ?? head, rounds, head };
     })
     .sort((a, b) => (a.head.created_at < b.head.created_at ? 1 : -1));
 }
@@ -96,11 +94,8 @@ export function Develop({ stage, selected, step: stepId }: { stage: "check" | "w
       setErr(e.message);
     }
   };
-  // a round another chain also holds stays as it is
-  const archiveChain = (c: Chain) => {
-    const own = c.rounds.filter((x) => !all.some((o) => o !== c && o.rounds.includes(x)));
-    return act(() => Promise.all(own.map((x) => api.gate(x.id, { action: c.head.archived_at ? "unarchive" : "archive" }))));
-  };
+  // archive acts on the whole chain behind its head; a round another chain also holds stays as it is
+  const archiveChain = (c: Chain) => act(() => api.gate(c.head.id, { action: c.head.archived_at ? "unarchive" : "archive" }));
   const shown = all.filter((c) => showArchived || !c.head.archived_at || c === chainOf(current));
   const step = d && stepId ? d.steps.find((s) => s.id === stepId) : undefined;
   const statusLine = (r: Draw) => (r.status === "done" ? "unchecked" : label(r.status));

@@ -20,6 +20,9 @@ export type Example = { id: string; text: string | null; words?: number; cell?: 
 export type Draw = {
   id: string;
   name: string | null;
+  /** The repair chain behind this draw, oldest first, this draw last; `head` says nothing repairs it. Read by chain.ts on the server. */
+  rounds: string[];
+  head: boolean;
   stage: "ideate" | "check" | "write";
   origin?: Origin | null;
   archived_at: string | null;

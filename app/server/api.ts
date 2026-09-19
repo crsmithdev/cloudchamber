@@ -169,11 +169,14 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     const all = pipeline.draws(true);
     const refs = new Map<string, string[]>();
     for (const r of all) for (const to of [r.superseded_by, r.repaired_from, r.forked_from]) if (to) refs.set(to, [...(refs.get(to) ?? []), r.id]);
+    // the chain each draw stands in, read by chain.ts from the rows already here: a draw nothing repairs heads its chain
+    const rows = new Map(all.map((r) => [r.id, r]));
+    const repaired = new Set(all.map((r) => r.repaired_from));
     return all.filter((r) => req.query.archived === "true" || !r.archived_at).map((r) => {
       const view = lifecycleView({ ...r, referenced_by: refs.get(r.id) ?? [] } as DrawFacts);
       const stage = view.stage;
       // the candidate is what tells two briefs of one batch apart, so the list needs it too
-      return { ...r, ...view, origin: stage === "ideate" ? null : originOf(pipeline, r.id), check: checkSummary(r, stage, verdicts) };
+      return { ...r, ...view, origin: stage === "ideate" ? null : originOf(pipeline, r.id), check: checkSummary(r, stage, verdicts), rounds: chainOf(pipeline, r.id, rows).rounds, head: !repaired.has(r.id) };
     });
   });
 

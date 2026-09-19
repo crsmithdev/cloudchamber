@@ -127,6 +127,18 @@ describe("check and gate 1", () => {
     await expect(d.accept(draw.id, [a.id])).rejects.toThrow(/is repaired, not awaiting_check_gate/);
   });
 
+  test("archive acts on the whole repair chain, and unarchive brings it back", async () => {
+    const { p, d, draw } = await drawn(draftScript({ "check-ledger": [...ledgerSamples(), ...cleanSamples()], "check-derivation": [...derivationSamples(), ...cleanSamples()] }));
+    await d.check(draw.id);
+    const [a] = d.findings(draw.id).findings;
+    const next = await d.accept(draw.id, [a.id]);
+    expect(chainOf(p, next.id).rounds).toEqual([draw.id, next.id]);
+    p.archive(next.id);
+    expect([p.draw(draw.id).archived_at, p.draw(next.id).archived_at].map(Boolean)).toEqual([true, true]);
+    p.archive(next.id, false);
+    expect([p.draw(draw.id).archived_at, p.draw(next.id).archived_at]).toEqual([null, null]);
+  });
+
   test("a finding whose span is inside the chosen vignette rewrites the vignette and copies the ending", async () => {
     const span = "the twelfth relic, the Verona clavicle";
     const script = draftScript({

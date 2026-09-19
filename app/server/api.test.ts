@@ -150,6 +150,10 @@ describe("api", () => {
     pipeline.db.query("INSERT INTO draws (id, genre, mode, seed_mode, seed_text, example_ids, status, repaired_from, created_at) VALUES ('failed-round', 'horror', 'manual', 'typed', 's', '[]', 'failed', ?, '2099-01-01T00:00:00Z')").run(id);
     const round = (await j("GET", "/api/draws")).body.find((r: any) => r.id === "failed-round");
     expect(round.check).toBeNull();
+    // the list carries each draw's chain: the round heads it, the source no longer does
+    expect([round.rounds, round.head]).toEqual([[id, "failed-round"], true]);
+    const source = (await j("GET", "/api/draws")).body.find((r: any) => r.id === id);
+    expect([source.rounds, source.head]).toEqual([[id], false]);
     expect((await j("GET", "/api/draws/nope")).code).toBe(404);
   });
 

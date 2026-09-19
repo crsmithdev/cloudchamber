@@ -22,6 +22,7 @@ import type { Db } from "./store/db.ts";
 import { writeBrief } from "./brief.ts";
 import { must, settle, under } from "./lifecycle.ts";
 import { parseMeta, type Artifact } from "./artifacts.ts";
+import { chainOf } from "./chain.ts";
 
 export type SeedChoice = { mode: "drawn" } | { mode: "picked"; themeId: string } | { mode: "typed"; text: string };
 /** The seed and the segment a request names in flat fields, as the CLI and the API take them; unnamed, the draw draws them. */
@@ -391,9 +392,19 @@ export class Pipeline {
   }
 
   /** Hide a draw from the lists, or put it back. Nothing else about it changes, and it stays reachable by id. */
+  /**
+   * Archive a draw and every round of the repair chain behind it, so the list
+   * never shows part of a chain; a draw with no repairs is a chain of one. A
+   * round that was also repaired into a draw outside this chain belongs to that
+   * chain too, and stays as it is. Unarchive is the same walk back.
+   */
   archive(drawId: string, archived = true): DrawRow {
-    this.draw(drawId);
-    this.db.query("UPDATE draws SET archived_at = ? WHERE id = ?").run(archived ? now() : null, drawId);
+    const ids = chainOf(this, drawId).ids;
+    const shared = (id: string) => (this.db.query("SELECT id FROM draws WHERE repaired_from = ?").all(id) as { id: string }[]).some((r) => !ids.includes(r.id));
+    for (const id of ids) {
+      if (id !== drawId && shared(id)) continue;
+      this.db.query("UPDATE draws SET archived_at = ? WHERE id = ?").run(archived ? now() : null, id);
+    }
     return this.draw(drawId);
   }
 

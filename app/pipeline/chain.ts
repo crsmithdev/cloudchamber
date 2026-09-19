@@ -39,7 +39,9 @@ export class Chain {
   private verdicts: Map<string, Latest> | null = null;
   private memo = new Map<string, unknown>();
 
-  constructor(private p: Pipeline, readonly drawId: string) {
+  /** `rows` seeds the chain with draw rows already loaded, so a list of every draw walks no query per row. */
+  constructor(private p: Pipeline, readonly drawId: string, rows?: Map<string, DrawRow>) {
+    if (rows) for (const [id, r] of rows) this.memo.set(`row:${id}`, r);
     const ids: string[] = [];
     for (let id: string | null = drawId; id && !ids.includes(id); id = this.row(id).repaired_from) ids.push(id);
     this.ids = ids;
@@ -61,6 +63,8 @@ export class Chain {
 
   /** The first draw of the chain. */
   get root(): string { return this.ids.at(-1)!; }
+  /** The chain as the list shows it: every round oldest first, this draw last. */
+  get rounds(): string[] { return [...this.ids].reverse(); }
 
   /** The newest artifact of one kind on this draw, or undefined. */
   latest<K extends string>(kind: K): Artifact<K> | undefined { return latestOf(this.artifacts(), kind); }
@@ -394,4 +398,4 @@ export class Chain {
 }
 
 /** Read a repair chain from one of its draws. Each answer is computed once. */
-export const chainOf = (p: Pipeline, drawId: string) => new Chain(p, drawId);
+export const chainOf = (p: Pipeline, drawId: string, rows?: Map<string, DrawRow>) => new Chain(p, drawId, rows);
