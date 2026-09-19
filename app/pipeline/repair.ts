@@ -10,12 +10,12 @@
  * Every regenerated word is a new surface for the next check to find a
  * contradiction in, so a repair rewrites as little as the findings allow.
  */
-import { RUN } from "./config.ts";
+import { RUN, type PartRole, type StageName } from "./config.ts";
 import { newDrawId, type DrawRow, type Pipeline } from "./draw.ts";
 import { fill } from "./prompts.ts";
 import { writeBrief } from "./brief.ts";
 import { settle, under } from "./lifecycle.ts";
-import { briefParts, partOf, partsIn, partsOf, revisePart } from "./briefparts.ts";
+import { briefParts, partOf, partsIn, partsOf, revisePart, type Part } from "./briefparts.ts";
 import { chainOf, type FindingView, type Settled } from "./chain.ts";
 import { quoted, quotesOf, same } from "./recur.ts";
 
@@ -97,38 +97,35 @@ export function localPatch(f: Accepted, passages: string[]): boolean {
   return ![...before].some((n) => !after.has(n) && rest.has(n));
 }
 
-/** One passage of a repair, as the accepted findings place themselves in it. */
-export type Placed = { text: string; applied: Accepted[]; constraints: Accepted[]; rewrite: boolean };
+/** A passage a repair may rewrite: its role and its text, with whatever else the caller carries (a Part, in the repair). */
+export type Passage = { role: PartRole; text: string };
+/** The passage as the accepted findings place themselves in it: the text with its patches in, what landed, what constrains a rewrite, and whether one runs. */
+export type Placed<P extends Passage = Passage> = P & { applied: Accepted[]; constraints: Accepted[]; rewrite: boolean };
 
 /**
- * Where each accepted finding goes, decided once: patched into the passage
- * that holds its span, a constraint on every passage it lands in, and a
- * rewrite of any passage a patch could not settle. A finding that invalidates
- * one of the sections the ending is derived from moves the mechanism, so the
- * ending is rewritten under it wherever its span sits.
+ * Where each accepted finding goes, decided once for every passage: patched
+ * into the passage that holds its span, a constraint on every passage it lands
+ * in, and a rewrite of any passage a patch could not settle. A finding that
+ * invalidates one of the sections the ending is derived from moves the
+ * mechanism, so the ending is rewritten under it wherever its span sits. The
+ * passages come back in the order given, each with its placement.
  */
-export function place(accepted: Accepted[], parts: { vignette: string; ending: string; contexts: string[] }): { vignette: Placed; ending: Placed; contexts: Placed[] } {
-  const passages = [parts.vignette, parts.ending, ...parts.contexts];
+export function place<P extends Passage>(accepted: Accepted[], passages: P[]): Placed<P>[] {
+  const texts = passages.map((x) => x.text);
   // a patch that would leave its passage with two names for one thing repairs the passage instead
-  const usable = accepted.map((f) => (hasPatch(f) && !localPatch(f, passages) ? { ...f, patch: "" } : f));
-  const patched = passages.map((t) => applyPatches(t, usable));
+  const usable = accepted.map((f) => (hasPatch(f) && !localPatch(f, texts) ? { ...f, patch: "" } : f));
+  const patched = texts.map((t) => applyPatches(t, usable));
   const landed = new Set(patched.flatMap((x) => x.applied.map((f) => f.id)));
   // a patch whose span matches no text is a rewrite: the checker's quote matching is looser than the substitution
   const unpatchable = usable.filter((f) => !landed.has(f.id));
   const movesEnding = unpatchable.filter((f) => (RUN.endingJobs as readonly string[]).includes(f.invalidates.toLowerCase()));
   // a passage takes only the constraints that land in it: on the pit chain a vignette rewrite given a registry
   // row's constraint ("every haul, including number 219's") made Ruth number 219
-  const at = (i: number, extra: Accepted[] = []): Placed => {
-    const own = usable.filter((f) => landsIn(f, passages[i]));
-    return { text: patched[i].text, applied: patched[i].applied, constraints: [...own, ...extra.filter((f) => !own.includes(f))], rewrite: unpatchable.some((f) => landsIn(f, passages[i])) || extra.length > 0 };
-  };
-  return { vignette: at(0), ending: at(1, movesEnding), contexts: parts.contexts.map((_, i) => at(i + 2)) };
-}
-
-/** Which passages a repair regenerates; the rest are carried. */
-export function repairPlan(accepted: Accepted[], vignette: string, ending: string, contexts: string[] = []): { vignette: boolean; ending: boolean; context: boolean[] } {
-  const p = place(accepted, { vignette, ending, contexts });
-  return { vignette: p.vignette.rewrite, ending: p.ending.rewrite, context: p.contexts.map((c) => c.rewrite) };
+  return passages.map((x, i) => {
+    const extra = x.role === "ending" ? movesEnding : [];
+    const own = usable.filter((f) => landsIn(f, texts[i]));
+    return { ...x, text: patched[i].text, applied: patched[i].applied, constraints: [...own, ...extra.filter((f) => !own.includes(f))], rewrite: unpatchable.some((f) => landsIn(f, texts[i])) || extra.length > 0 };
+  });
 }
 
 export const constraintsBlock = (accepted: Pick<Accepted, "replacement">[]) => fill("constraints", { constraints: accepted.map((f) => `- ${f.replacement}`).join("\n") });
@@ -156,9 +153,8 @@ export async function repair(p: Pipeline, drawId: string, accepted: Accepted[]):
 
 async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof briefParts>, accepted: Accepted[]) {
   const src = partsOf(p, parts.draw.id);
-  const srcContexts = partsIn(src, "context");
-  const placed = place(accepted, { vignette: parts.vignette, ending: parts.ending, contexts: srcContexts.map((c) => c.text) });
-  const ids = (x: Placed) => x.applied.map((f) => f.id);
+  const contexts = partsIn(src, "context");
+  const [vignette, ending, ...placedContexts] = place(accepted, [partOf(src, "vignette")!, partOf(src, "ending")!, ...contexts]);
   const chain = chainOf(p, parts.draw.id);
   // the accepted set of this round is not the whole record: every earlier round's fix still holds.
   // A fix this round re-opens is this round's constraint, not also a settled line the repair must keep
@@ -175,14 +171,15 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
     return slice ? `${slice}\n\n${ask}` : ask;
   };
   const passageAsk = (x: Placed) => rewriteAsk("execute", fill("repairVignette", { ledger, settled, vignette: x.text, constraints: constraintsBlock(x.constraints) }));
+  // one part of the repaired brief: rewritten from itself under its constraints when a finding lands in it, carried otherwise
+  const revise = (x: Placed<Part>, o: { parent: string | null; rewrite: StageName; carry: StageName; prompt: (x: Placed) => string; meta?: Record<string, unknown>; previous?: string }) =>
+    revisePart(p, {
+      drawId: newId, parent: o.parent, role: x.role, from: x.stepId, text: x.text, applied: x.applied.map((f) => f.id), meta: o.meta ?? x.meta, previous: o.previous,
+      rewrite: x.rewrite ? { stage: o.rewrite, prompt: o.prompt(x) } : undefined, carry: { stage: o.carry },
+    });
 
-  // the chosen vignette: rewritten from itself, or carried over
-  const { step: vStep } = await revisePart(p, {
-    drawId: newId, parent: null, role: "vignette", from: parts.chosenStepId,
-    text: placed.vignette.text, applied: ids(placed.vignette), meta: partOf(src, "vignette")!.meta,
-    rewrite: placed.vignette.rewrite ? { stage: "repair-vignette", prompt: passageAsk(placed.vignette) } : undefined,
-    carry: { stage: "repair-vignette" },
-  });
+  // the chosen vignette first: the outline hangs from it
+  const { step: vStep } = await revise(vignette, { parent: null, rewrite: "repair-vignette", carry: "repair-vignette", prompt: passageAsk });
   p.db.query("UPDATE draws SET chosen_step = ? WHERE id = ?").run(vStep.id, newId);
 
   // the outline is the chain's contract, carried: the root's with every accepted fix appended, the text the check
@@ -196,25 +193,14 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
 
   // the context vignettes keep their jobs: each is rewritten from itself when a finding lands in it, carried otherwise
   const jobsStep = p.recordStep(newId, outlineStep.id, "jobs", "copied");
-  const jobs = srcContexts.map((c) => c.meta.job as string);
-  jobs.forEach((j, i) => p.artifact(jobsStep, "job", j, { index: i + 1, copied: true }));
-  const contextRuns = srcContexts.map((c, i) => revisePart(p, {
-    drawId: newId, parent: outlineStep.id, role: "context", meta: { index: i + 1, job: jobs[i] }, from: c.stepId,
-    text: placed.contexts[i].text, applied: ids(placed.contexts[i]),
-    rewrite: placed.contexts[i].rewrite ? { stage: "repair-context", prompt: passageAsk(placed.contexts[i]) } : undefined,
-    carry: { stage: "context" },
-  }));
-
-  // the ending: rewritten from itself under the constraints, or carried over
-  const endingRun = revisePart(p, {
-    drawId: newId, parent: outlineStep.id, role: "ending", from: partOf(src, "ending")!.stepId,
-    text: placed.ending.text, applied: ids(placed.ending), previous: parts.ending,
-    rewrite: placed.ending.rewrite
-      ? { stage: "repair-ending", prompt: rewriteAsk("ending", fill("repairEnding", { ledger, settled, outline, ending: placed.ending.text, constraints: constraintsBlock(placed.ending.constraints) })) }
-      : undefined,
-    carry: { stage: "repair-ending" },
-  });
-  await Promise.all([...contextRuns, endingRun]);
+  contexts.forEach((c, i) => p.artifact(jobsStep, "job", c.meta.job as string, { index: i + 1, copied: true }));
+  await Promise.all([
+    ...placedContexts.map((x, i) => revise(x, { parent: outlineStep.id, rewrite: "repair-context", carry: "context", prompt: passageAsk, meta: { index: i + 1, job: x.meta.job } })),
+    revise(ending, {
+      parent: outlineStep.id, rewrite: "repair-ending", carry: "repair-ending", previous: parts.ending,
+      prompt: (x) => rewriteAsk("ending", fill("repairEnding", { ledger, settled, outline, ending: x.text, constraints: constraintsBlock(x.constraints) })),
+    }),
+  ]);
 
   // this round's accepted findings are already listed under ## repaired_from
   const dir = writeBrief(p.db, newId, p.briefsDir, settledLines);
