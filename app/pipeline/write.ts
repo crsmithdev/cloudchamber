@@ -94,8 +94,9 @@ export function schedulePrompt(brief: string, cfg: DraftConfig): string {
     ...fixed.map((a) => `${a}: ${cfg.form[a]}`),
   ].join("\n");
   const endingLine = cfg.form.ending === "brief" ? "the brief's ending is the last beat, in place" : "the schedule may derive the ending";
-  // the told template asks for the narrated shape: a cold open, set pieces, an arrival, a cost, an aftermath
-  return fill("schedule", { brief, words: String(cfg.length.words), beatsLine, formLines, endingLine, shape: cfg.structure.template === "told" ? fill("scheduleTold", {}) : "" });
+  // the told template asks for the narrated shape: a cold open, set pieces, an arrival, a cost, an aftermath; signal for the mission shape
+  const shape = cfg.structure.template === "told" ? fill("scheduleTold", {}) : cfg.structure.template === "signal" ? fill("scheduleSignal", {}) : "";
+  return fill("schedule", { brief, words: String(cfg.length.words), beatsLine, formLines, endingLine, shape });
 }
 
 export async function runSchedule(p: Pipeline, drawId: string, parts: BriefParts, brief: string, cfg: DraftConfig): Promise<{ step: StepRow; schedule: Schedule }> {
@@ -107,11 +108,12 @@ export async function runSchedule(p: Pipeline, drawId: string, parts: BriefParts
 // --- scenes -----------------------------------------------------------------------
 
 const formLine = (s: Schedule) => (Object.keys(FORM_VALUES) as FormAxis[]).map((a) => `${a} ${s.form[a]}`).join("; ");
-/** A schedule whose container is told carries the narrated register into every scene. */
+/** A schedule whose container is told carries the narrated register into every scene; the signal template carries its own. */
 const told = (s: Schedule) => /\btold\b/i.test(s.form.container);
+const register = (s: Schedule, template: string) => template === "signal" ? [fill("sceneSignal", {})] : told(s) ? [fill("sceneTold", {})] : [];
 const withheldLine = (b: Beat, M: number) => b.withheld.length ? b.withheld.map((w) => `${w.item} (${w.until > M ? "never revealed" : `beat ${w.until}`})`).join("; ") : "nothing";
 
-export function scenePrompt(parts: BriefParts, ledger: string, s: Schedule, b: Beat, soFar: string[], constraints?: string): string {
+export function scenePrompt(parts: BriefParts, ledger: string, s: Schedule, b: Beat, soFar: string[], constraints?: string, template = "auto"): string {
   const material: Record<string, string> = { chosen: parts.vignette, "context-1": parts.contexts[0] ?? "", "context-2": parts.contexts[1] ?? "", ending: parts.ending };
   const blocks = [
     parts.examples.join("\n\n"),
@@ -120,7 +122,7 @@ export function scenePrompt(parts: BriefParts, ledger: string, s: Schedule, b: B
     `<schedule>\n${s.raw}\n</schedule>`,
     ...(soFar.length ? [`<story-so-far>\n${soFar.join("\n\n")}\n</story-so-far>`] : []),
     ...(material[b.absorbs] ? [fill("sceneMaterial", { material: material[b.absorbs] })] : []),
-    ...(told(s) ? [fill("sceneTold", {})] : []),
+    ...register(s, template),
     ...(constraints ? [constraints] : []),
     fill("sceneAsk", { n: String(b.n), job: b.job, known: b.known, withheld: withheldLine(b, s.beats.length), form: formLine(s), cap: String(b.words), constraintLine: constraints ? " Every line of the constraints holds." : "" }),
   ];
@@ -128,8 +130,8 @@ export function scenePrompt(parts: BriefParts, ledger: string, s: Schedule, b: B
 }
 
 /** `rewrite` marks a gate-2 rewrite of the beat, with the flag it answers when there is one. */
-export async function writeScene(p: Pipeline, drawId: string, parent: string, parts: BriefParts, ledger: string, s: Schedule, b: Beat, soFar: string[], constraints?: string, rewrite?: { finding?: string }): Promise<Scene> {
-  const { step, value } = await p.invoke(drawId, parent, "scene", scenePrompt(parts, ledger, s, b, soFar, constraints), (t) => need(t, "scene"));
+export async function writeScene(p: Pipeline, drawId: string, parent: string, parts: BriefParts, ledger: string, s: Schedule, b: Beat, soFar: string[], constraints?: string, rewrite?: { finding?: string }, template = "auto"): Promise<Scene> {
+  const { step, value } = await p.invoke(drawId, parent, "scene", scenePrompt(parts, ledger, s, b, soFar, constraints, template), (t) => need(t, "scene"));
   const n = words(value);
   const artifact_id = p.artifact(step, "scene", value, { beat: b.n, words: n, cap: b.words, warnings: n > b.words * (1 + RUN.sceneCapSlack) ? ["over_cap"] : [], ...(rewrite ? { rewrite: true, ...(rewrite.finding ? { rewrite_finding: rewrite.finding } : {}) } : {}) });
   return { beat: b.n, text: value, artifact_id, step_id: step.id };
@@ -137,7 +139,7 @@ export async function writeScene(p: Pipeline, drawId: string, parent: string, pa
 
 /** Every beat written and bound to the ledger; a sequential beat reads the corrected text of the beats before it. */
 export async function runScenes(p: Pipeline, drawId: string, scheduleStep: StepRow, parts: BriefParts, ledger: string, s: Schedule, cfg: DraftConfig, pass: string): Promise<Scene[]> {
-  const write = (b: Beat, soFar: string[]) => writeScene(p, drawId, scheduleStep.id, parts, ledger, s, b, soFar);
+  const write = (b: Beat, soFar: string[]) => writeScene(p, drawId, scheduleStep.id, parts, ledger, s, b, soFar, undefined, undefined, cfg.structure.template);
   if (cfg.scenes.order === "parallel") {
     const raw = await Promise.all(s.beats.map((b) => write(b, [])));
     return Promise.all(raw.map((sc, i) => bindScene(p, drawId, ledger, sc, raw[i - 1], cfg, pass)));

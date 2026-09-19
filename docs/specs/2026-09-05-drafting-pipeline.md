@@ -762,3 +762,21 @@ edit, from inside the worktree, and the turn reports what ran.
   `withheld-revealed` definition above says stated, not implied.
 - The proposal's Revisit table is the list of things decided against here
   and the trigger for looking again at each.
+
+### Amendment 2026-09-19 (evening): the signal template
+
+A second shaped template, `signal`, for the long narrated channels whose
+stories follow one specialist close, in the third person, with an
+ensemble, a mission and a return (Void Signal). `[profiles.signal]` in
+`draft.toml`: 10,000 words, 10 to 14 beats of at most 1,100, third past,
+linear, prose, open ending, `structure.template = "signal"`. The schedule
+ask carries `scheduleSignal`: the noticing at an odd hour, the ensemble
+named by role with one habit each, the one who says go today, a contact
+in the flesh that does not answer, a split decision with every side
+defensible, the cost paid by a named person in the beat before last, and
+a return where an official asks for a clean ending and does not get one.
+Every scene carries the `sceneSignal` register: the feeling named as it is
+felt, quoted plain speech, the exact number and hour, one thing per
+sentence. The register rewrites run under any shaped template, not only
+`told`; the scene prompt takes the template as a parameter, since a prose
+container carries no register of its own.

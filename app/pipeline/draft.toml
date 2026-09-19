@@ -21,7 +21,7 @@ container = "auto"      # prose | document | interleaved
 ending = "brief"        # brief | open
 
 [structure]
-template = "auto"       # auto | told: told is the narrated shape, a cold open, set pieces, an arrival, a cost, an aftermath
+template = "auto"       # auto | told | signal: told is the narrated shape, a cold open, set pieces, an arrival, a cost, an aftermath; signal is the mission shape, one specialist close, an ensemble, a contact, a split, a cost, a return
 
 [scenes]
 order = "sequential"    # sequential | parallel
@@ -70,3 +70,18 @@ form.tense = "past"
 form.container = "told"
 form.ending = "open"
 structure.template = "told"
+
+# the mission shape of the long narrated channels: third person past, close on the one person who read the
+# anomaly first, an ensemble named by role, a contact in the flesh, a split decision, a paid cost, a return;
+# people speak in quoted lines and the feeling is named as it is felt
+[profiles.signal]
+length.words = 10000
+beats.min = 10
+beats.max = 14
+beats.words_max = 1100
+form.person = "third"
+form.tense = "past"
+form.chronology = "linear"
+form.container = "prose"
+form.ending = "open"
+structure.template = "signal"

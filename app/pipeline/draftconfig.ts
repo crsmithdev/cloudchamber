@@ -86,7 +86,7 @@ export function validate(c: DraftConfig): void {
     if (v !== "auto" && !FORM_VALUES[axis].includes(v)) bad(`form.${axis} must be auto or one of ${FORM_VALUES[axis].join(" | ")}, got ${v}`);
   }
   if (!["brief", "open"].includes(c.form.ending)) bad(`form.ending must be brief or open, got ${c.form.ending}`);
-  if (!["auto", "told"].includes(c.structure.template)) bad(`structure.template must be auto or told, got ${c.structure.template}`);
+  if (!["auto", "told", "signal"].includes(c.structure.template)) bad(`structure.template must be auto, told or signal, got ${c.structure.template}`);
   if (!["sequential", "parallel"].includes(c.scenes.order)) bad(`scenes.order must be sequential or parallel, got ${c.scenes.order}`);
   if (!(c.checks.samples >= 1 && c.checks.keep_if >= 1)) bad("checks.samples and checks.keep_if must be at least 1");
   if (!(c.screens.samples >= 1 && c.screens.keep_if >= 1)) bad("screens.samples and screens.keep_if must be at least 1");

@@ -209,8 +209,8 @@ export class Drafting {
       const { step, schedule } = await runSchedule(this.p, id, parts, briefBlock(parts), resolved.config);
       const scenes = await runScenes(this.p, id, step, parts, ledger, schedule, resolved.config, pass);
       await runScreens(this.p, id, schedule, scenes, resolved.config, pass, undefined, { lexiconPath: this.opts.lexiconPath, narrationDir: this.opts.narrationDir });
-      // the told template pays for its register: one rewrite of each beat the screens flag for it
-      if (resolved.config.structure.template === "told") await this.registerRewrites(id, resolved.config);
+      // a shaped template pays for its register: one rewrite of each beat the screens flag for it
+      if (resolved.config.structure.template !== "auto") await this.registerRewrites(id, resolved.config);
     });
     settle(this.p.db, drawId, "awaiting_draft_gate");
     return this.p.draw(drawId);
@@ -378,7 +378,7 @@ export class Drafting {
     const before = scenes.filter((s) => s.beat < k).map((s) => s.text);
     const pass = passId();
     // the scene carries the gate-2 record: which beat was rewritten, and under which flag
-    const written = await writeScene(this.p, drawId, scheduleStep.id, parts, ledger, schedule, schedule.beats[k - 1], cfg.scenes.order === "sequential" ? before : [], constraints, { finding: findingId });
+    const written = await writeScene(this.p, drawId, scheduleStep.id, parts, ledger, schedule, schedule.beats[k - 1], cfg.scenes.order === "sequential" ? before : [], constraints, { finding: findingId }, cfg.structure.template);
     const bound = await bindScene(this.p, drawId, ledger, written, scenes[k - 2], cfg, pass);
     // the beat after it read the old text: it is held to the new one, as it was when first written
     if (k < M) await bindScene(this.p, drawId, ledger, scenes[k], bound, cfg, pass);
@@ -386,7 +386,7 @@ export class Drafting {
   }
 
   /**
-   * Under the told template the register is part of the draft, not a gate
+   * Under a shaped template the register is part of the draft, not a gate
    * decision: each beat the screens flag for it gets one rewrite with the flag
    * as its constraint, a body not named or a sentence an earlier beat said.
    * One pass, in beat order; a beat the rewrite flags again waits for a person.

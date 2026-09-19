@@ -374,6 +374,14 @@ ending: {endingLine}
 The narrator tells this afterward to a listener who cannot see it. When a thing happens, say what the body did before saying what it meant. Report what people said rather than quoting it; quote only a sentence the listener has to hear word for word. One thing per sentence. The narrator may speak to the listener, and may say what they made of it at the time and what they make of it now.
 </register>`,
 
+  scheduleSignal: `The story follows one specialist, close, from the hour they notice the thing to the months after. Beat 1 is the noticing, at an odd hour, in the middle of routine work; by its end the thing has a shape that cannot be drift. The people around the specialist are named, given one habit each, and one of them says go today. Something is sent, and the specialist goes with it. The thing is met in the flesh, in the same place as the crew, and it does not answer. A decision splits the crew and every side of it is defensible. The cost is paid in the beat before the last, by a named person, and it cannot be got back. The last beat is the return: someone official asks for a clean ending and does not get one, and the specialist says in plain words what they now believe. Every beat has a set piece a listener will retell, and in every beat people speak to each other. The brief's ending is material for the beat before the last, not for the last.
+
+`,
+
+  sceneSignal: `<register>
+One narrator reads this aloud to listeners who cannot see it. Name the feeling as it is felt, and the body with it. People speak in quoted lines, plainly, the way they speak at work; let the argument happen in the room. Give the exact number and the exact hour when there is one. One thing per sentence, short enough to say in one breath.
+</register>`,
+
   sceneMaterial: `<material>
 {material}
 </material>
