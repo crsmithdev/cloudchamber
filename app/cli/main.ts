@@ -40,7 +40,7 @@ import { exportBank } from "../pipeline/bank.ts";
 import { extractAll } from "../pipeline/extract.ts";
 import { status } from "../pipeline/status.ts";
 import { KINDS, inherit, record, replay, type Kind } from "../pipeline/verdicts.ts";
-import { Pipeline, seedAndSegment, type DrawOpts } from "../pipeline/draw.ts";
+import { Pipeline, seedAndSegment, type DrawOpts, type DrawRow } from "../pipeline/draw.ts";
 import type { Darkness, Sampling } from "../pipeline/config.ts";
 import { ClaudeCli } from "../pipeline/model.ts";
 import { existsSync, readFileSync } from "node:fs";
@@ -51,6 +51,7 @@ import { formatFinding, lintFile, loadSetting, LISTS } from "../pipeline/setting
 import { distill, readKept } from "../pipeline/distill.ts";
 import { Drafting } from "../pipeline/drafting.ts";
 import { gateCommand, isGateAction, type GateArgs } from "../pipeline/gate.ts";
+import type { CheckResult } from "../pipeline/check.ts";
 import type { Overrides } from "../pipeline/draftconfig.ts";
 
 const [cmd, ...rest] = process.argv.slice(2);
@@ -174,7 +175,7 @@ async function main() {
       const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, options: { checks: { type: "string" }, samples: { type: "string" } } });
       const [drawId] = positionals;
       if (!drawId) usage();
-      const r = await drafting().check(drawId!, { checks: values.checks?.split(",").map((x) => x.trim()).filter(Boolean), samples: values.samples ? Number(values.samples) : undefined });
+      const r = await gateCommand(pipeline(), drafting(), drawId!, "check", { checks: values.checks?.split(",").map((x) => x.trim()).filter(Boolean), samples: values.samples ? Number(values.samples) : undefined }).done as CheckResult;
       printFindings(drawId!);
       console.log(`\ncloudchamber gate ${drawId} accept <finding>... | auto | dismiss <finding> --note "..." | hold | flag  ·  cloudchamber draft ${drawId}  (${r.findings.length} reported)`);
       break;
@@ -195,7 +196,7 @@ async function main() {
       const map: Record<string, string> = { words: "length.words", beats: "beats.count", tense: "form.tense", person: "form.person", chronology: "form.chronology", container: "form.container", order: "scenes.order" };
       const overrides: Overrides = {};
       for (const [flag, key] of Object.entries(map)) if ((values as any)[flag] !== undefined) overrides[key] = (values as any)[flag];
-      const draw = await drafting().draft(drawId!, { auto: values.auto, profile: values.profile, overrides: Object.keys(overrides).length ? overrides : undefined });
+      const draw = await gateCommand(pipeline(), drafting(), drawId!, "draft", { auto: values.auto, profile: values.profile, overrides: Object.keys(overrides).length ? overrides : undefined }).done as DrawRow;
       console.log(JSON.stringify(draw, null, 2));
       console.log(`\ncloudchamber story ${draw.id}  ·  cloudchamber gate ${draw.id} keep | rewrite <k> [--finding ID]`);
       break;
@@ -259,7 +260,7 @@ async function main() {
     case "delete": {
       const [drawId] = rest;
       if (!drawId) usage();
-      pipeline().delete(drawId!);
+      await gateCommand(pipeline(), drafting(), drawId!, "delete").done;
       console.log(`deleted ${drawId}`);
       break;
     }

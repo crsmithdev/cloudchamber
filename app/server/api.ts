@@ -3,7 +3,7 @@
  * the CLI does. Draws started here continue in-process; the gate blocks a
  * manual draw until POST /api/draws/:id/gate.
  */
-import Fastify, { type FastifyInstance } from "fastify";
+import Fastify, { type FastifyInstance, type FastifyReply } from "fastify";
 import type { Db } from "../pipeline/store/db.ts";
 import { newDrawId, Pipeline, seedAndSegment, type DrawOpts } from "../pipeline/draw.ts";
 import { KINDS, latest, latestAll, passedStories, record, type Kind, type Method } from "../pipeline/verdicts.ts";
@@ -22,7 +22,7 @@ import { join, resolve, sep } from "node:path";
 import { BRIEFS } from "../pipeline/paths.ts";
 import { Drafting, type FindingsSummary } from "../pipeline/drafting.ts";
 import { loadSetting } from "../pipeline/settings.ts";
-import { loadDraftConfig, profileNames, type DraftConfig, type Overrides } from "../pipeline/draftconfig.ts";
+import { loadDraftConfig, profileNames, type DraftConfig } from "../pipeline/draftconfig.ts";
 
 export type ItemOrder = "source" | "suspects" | "shuffle";
 export type ItemFilter = { kind: Kind; source?: string; author?: string; genre?: string; cell?: string; verdict?: "unreviewed" | "keep" | "pass"; artifact?: boolean; suspect?: boolean; order?: ItemOrder; seed?: number; limit?: number; offset?: number };
@@ -199,10 +199,6 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     try { return { ...pipeline.like(req.params.id), seed_text: pipeline.draw(req.params.id).seed_text }; } catch (e: any) { return reply.code(404).send({ error: e.message }); }
   });
 
-  app.delete<{ Params: { id: string } }>("/api/draws/:id", async (req, reply) => {
-    try { pipeline.delete(req.params.id); return { deleted: req.params.id }; } catch (e: any) { return reply.code(400).send({ error: e.message }); }
-  });
-
   app.get<{ Params: { id: string } }>("/api/draws/:id", async (req, reply) => {
     try {
       const row = pipeline.draw(req.params.id);
@@ -228,38 +224,24 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     return { step, artifacts };
   });
 
-  // gate 1 and gate 2 (docs/specs/2026-09-05-drafting-pipeline.md); the commands are pipeline/gate.ts
-  app.post<{ Params: { id: string }; Body: GateArgs & { action: string } }>("/api/draws/:id/gate", async (req, reply) => {
-    const { action, ...args } = req.body ?? ({} as any);
+  // every decision on a draw is one command (pipeline/gate.ts); the routes differ only in which action they name.
+  // A running command answers 202 now and finishes in the background; only a failure it reaches at once is an error
+  const decide = async (id: string, action: string, args: GateArgs, reply: FastifyReply) => {
     try {
-      const c = gateCommand(pipeline, drafting, req.params.id, action, args);
-      // a running command answers now and finishes in the background; only a failure it reaches at once is an error
+      const c = gateCommand(pipeline, drafting, id, action, args);
       if (!c.running) return { draw: c.draw, running: false, payload: await c.done } satisfies GateResult;
       const failed = await launch(c.done);
       if (failed) return reply.code(400).send({ error: failed.message });
       return reply.code(202).send({ draw: c.draw, running: true, payload: null } satisfies GateResult);
     } catch (e: any) { return reply.code(400).send({ error: e.message }); }
+  };
+  app.post<{ Params: { id: string }; Body: GateArgs & { action: string } }>("/api/draws/:id/gate", async (req, reply) => {
+    const { action, ...args } = req.body ?? ({} as any);
+    return decide(req.params.id, action, args, reply);
   });
-
-  app.post<{ Params: { id: string }; Body: { checks?: string[]; samples?: number } }>("/api/draws/:id/check", async (req, reply) => {
-    const id = req.params.id;
-    try {
-      pipeline.draw(id);
-      const failed = await launch(drafting.check(id, { checks: req.body?.checks, samples: req.body?.samples }));
-      if (failed) return reply.code(400).send({ error: failed.message });
-      return reply.code(202).send({ id, status: "checking" });
-    } catch (e: any) { return reply.code(400).send({ error: e.message }); }
-  });
-
-  app.post<{ Params: { id: string }; Body: { auto?: boolean; profile?: string; overrides?: Overrides } }>("/api/draws/:id/draft", async (req, reply) => {
-    const id = req.params.id;
-    try {
-      pipeline.draw(id);
-      const failed = await launch(drafting.draft(id, { auto: !!req.body?.auto, profile: req.body?.profile, overrides: req.body?.overrides }));
-      if (failed) return reply.code(400).send({ error: failed.message });
-      return reply.code(202).send({ id, status: "drafting" });
-    } catch (e: any) { return reply.code(400).send({ error: e.message }); }
-  });
+  app.post<{ Params: { id: string }; Body: GateArgs }>("/api/draws/:id/check", (req, reply) => decide(req.params.id, "check", req.body ?? {}, reply));
+  app.post<{ Params: { id: string }; Body: GateArgs }>("/api/draws/:id/draft", (req, reply) => decide(req.params.id, "draft", req.body ?? {}, reply));
+  app.delete<{ Params: { id: string } }>("/api/draws/:id", (req, reply) => decide(req.params.id, "delete", {}, reply));
 
   /** The drafting defaults and what each profile resolves to, so the settings form can show a profile's own values. */
   app.get("/api/draft-config", async () => ({

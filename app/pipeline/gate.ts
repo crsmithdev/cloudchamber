@@ -1,6 +1,6 @@
 /**
- * The gate commands: the eleven decisions a person makes on a draw, as one
- * interface the HTTP API and the CLI both drive. A command validates its own
+ * The gate commands: every decision a person makes on a draw, as one
+ * interface the HTTP API and the CLI both drive; the list is lifecycle.ts's. A command validates its own
  * arguments, names the draw to show next, says whether its work continues after
  * the answer, and resolves to a payload of its own.
  *
@@ -11,13 +11,19 @@
  */
 import { newDrawId, type Pipeline } from "./draw.ts";
 import type { Drafting } from "./drafting.ts";
+import type { Overrides } from "./draftconfig.ts";
+import { ACTIONS, type Action } from "./lifecycle.ts";
 
-export const GATE_ACTIONS = ["choose", "fork", "flag", "archive", "unarchive", "accept", "auto", "dismiss", "hold", "keep", "rewrite"] as const;
-export type GateAction = (typeof GATE_ACTIONS)[number];
+export const GATE_ACTIONS = ACTIONS;
+export type GateAction = Action;
 export const isGateAction = (s: string): s is GateAction => (GATE_ACTIONS as readonly string[]).includes(s);
 
 /** What the commands take between them. Each one asks for what it needs and refuses what it lacks. */
-export type GateArgs = { step_id?: string; note?: string; findings?: string[]; finding?: string; beat?: number };
+export type GateArgs = {
+  step_id?: string; note?: string; findings?: string[]; finding?: string; beat?: number;
+  checks?: string[]; samples?: number;                                  // check
+  auto?: boolean; profile?: string; overrides?: Overrides;              // draft
+};
 
 /**
  * One command, already started. `draw` is the draw to show next, `running` says
@@ -62,6 +68,10 @@ export function gateCommand(p: Pipeline, d: Drafting, id: string, action: string
     case "hold": return cmd(false, id, d.hold(id));
     case "keep": return cmd(false, id, d.keep(id, note));
     case "rewrite": return cmd(true, id, d.rewrite(id, Number(need(a.beat, "beat")), a.finding));
+    case "check": return cmd(true, id, d.check(id, { checks: a.checks, samples: a.samples }));
+    case "draft": return cmd(true, id, d.draft(id, { auto: !!a.auto, profile: a.profile, overrides: a.overrides }));
+    // a deleted draw is nothing to show next
+    case "delete": p.delete(id); return cmd(false, null, { deleted: id });
   }
   throw new Error(`action must be ${GATE_ACTIONS.join(" | ")}`);
 }

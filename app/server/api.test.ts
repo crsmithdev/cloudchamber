@@ -163,7 +163,7 @@ describe("api", () => {
     expect((await j("GET", "/api/draws/nope/like")).code).toBe(404);
     expect((await j("POST", `/api/draws/${id}/gate`, { action: "keep-seed" })).code).toBe(400);
     const del = await j("DELETE", `/api/draws/${id}`);
-    expect(del.body.deleted).toBe(id);
+    expect(del.body.payload.deleted).toBe(id);
     expect((await j("GET", "/api/draws")).body).toHaveLength(0);
     expect((await j("DELETE", `/api/draws/${id}`)).code).toBe(400);
   });
