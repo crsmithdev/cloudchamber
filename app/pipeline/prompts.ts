@@ -368,7 +368,7 @@ Derive the story's schedule, which settles what the reader knows at each point a
 {material}
 </material>
 
-The material above is the brief's own execution of this beat; use it as far as it serves the schedule, rewritten to sit in the story.`,
+The material above is the brief's own vignette for this beat; use it as far as it serves the schedule, rewritten to sit in the story.`,
 
   sceneAsk: `Write beat {n} of the story, in a <scene> tag. Its job: {job} By its end the reader knows: {known} Still withheld after it: {withheld} Form: {form}. Under {cap} words. The schedule above has settled the story: write within it and add nothing it does not hold.{constraintLine} Output only the tag.`,
 
