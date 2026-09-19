@@ -30,6 +30,22 @@ import { SCORE_MAX } from "./recur.ts";
 export type AutoRound = { round: number; id: string; open: number; total: number; accepted: number; calls: number; passes: number };
 export type AutoResult = { id: string; rounds: AutoRound[]; best: AutoRound; stopped: "floor" | "cap" | "patience" | "budget"; floor: number; calls: number; left_open: number };
 export type DraftOpts = { profile?: string; overrides?: Overrides; auto?: boolean };
+/** A finding as the gate reads it: `auto_eligible` says whether the auto rule would consider it, whatever it scores. */
+export type GateFinding = FindingView & { auto_eligible: boolean };
+/** The latest pass in four numbers, for a list row. */
+export type FindingsSummary = { pass: string | null; reported: number; accepted: number; open: number; total: number };
+/**
+ * The gate's reading of a brief's findings, partitioned once. `findings` is
+ * every finding the gate can act on; `listed` is the gate's own list (reported,
+ * or already ruled on, and not re-opening a settled fix); `reopened` would undo
+ * a fix accepted in an earlier round; `left` is what the verify pass or the
+ * sample bar took off the list and is still open, present only when asked for.
+ */
+export type FindingsView = {
+  pass: string | null; findings: GateFinding[]; listed: GateFinding[]; reopened: GateFinding[]; left: GateFinding[]; summary: FindingsSummary | null;
+  off_list: { dropped: number; rare: number | null }; claims: unknown[]; profiles: unknown[]; examined: { stage: string; sample: number; examined: string }[];
+  judge: string | null; score_max: number; structure: string[];
+};
 
 /**
  * An unattended repair needs a quote to work from, and only the three
@@ -90,7 +106,7 @@ export class Drafting {
     return f;
   }
 
-  findings(drawId: string, opts: { all?: boolean } = {}): { pass: string | null; findings: FindingView[]; off_list: { dropped: number; rare: number | null }; claims: unknown[]; profiles: unknown[]; examined: { stage: string; sample: number; examined: string }[]; judge: string | null; score_max: number; structure: string[] } {
+  findings(drawId: string, opts: { all?: boolean } = {}): FindingsView {
     this.p.draw(drawId);
     const chain = chainOf(this.p, drawId);
     const pass = chain.pass();
@@ -99,12 +115,16 @@ export class Drafting {
     const examined = steps.map((s, i) => ({ stage: s.stage, sample: i + 1, examined: String((JSON.parse(s.parsed ?? "{}") as any).examined ?? "") })).filter((x) => x.examined);
     // the gate lists what it will act on: a finding the verify pass dropped is withheld
     // until it is asked for, and stays in the list once it has been ruled on
-    const all = chain.findings(opts.all);
+    const all: GateFinding[] = chain.findings(opts.all).map((f) => ({ ...f, auto_eligible: autoEligible(f) }));
     const offList = (f: FindingView) => !f.reported && f.decision === "open";
     const shown = opts.all ? all : all.filter((f) => !offList(f));
     const off = all.filter(offList);
+    const rep = all.filter((f) => f.reported);
+    const summary: FindingsSummary | null = !pass && !rep.length ? null
+      : { pass, reported: rep.length, accepted: rep.filter((f) => f.decision === "accepted").length, open: rep.filter((f) => f.decision === "open").length, total: rep.reduce((n, f) => n + f.score, 0) };
     return {
       pass, findings: shown,
+      listed: shown.filter((f) => !f.relitigates && !offList(f)), reopened: shown.filter((f) => !!f.relitigates), left: shown.filter((f) => !f.relitigates && offList(f)), summary,
       // dropped: the verify pass took it off the list and said why. rare: seen in too few samples,
       // which only the reconstruction behind `all` can count, so it is null without it.
       off_list: { dropped: off.filter((f) => !!f.dropped).length, rare: opts.all ? off.filter((f) => !f.dropped).length : null },
@@ -244,13 +264,12 @@ export class Drafting {
     const rounds: AutoRound[] = [];
     let stopped: AutoResult["stopped"];
     let clean = 0;
-    let accept: FindingView[] = [];
+    let accept: GateFinding[] = [];
     for (;;) {
-      const chain = chainOf(this.p, id);
       // a finding the verify pass dropped is stored under the bar and open: not auto's either
-      const open = chain.findings().filter((f) => f.decision === "open" && f.reported);
-      accept = open.filter((f) => f.score >= floor && autoEligible(f));
-      const calls = chain.calls();
+      const open = this.findings(id).findings.filter((f) => f.decision === "open" && f.reported);
+      accept = open.filter((f) => f.score >= floor && f.auto_eligible);
+      const calls = chainOf(this.p, id).calls();
       let row = rounds.find((r) => r.id === id);
       if (!row) rounds.push((row = { round: rounds.length + 1, id, open: 0, total: 0, accepted: 0, calls, passes: 0 }));
       Object.assign(row, { open: open.length, total: open.reduce((a, f) => a + f.score, 0), calls, passes: row.passes + 1 });
@@ -286,7 +305,7 @@ export class Drafting {
    * side. One call, only when there are two or more fixes; `accept` is sorted
    * by score, so on a tie the earlier one is kept.
    */
-  private async reconcile(drawId: string, accept: FindingView[]): Promise<FindingView[]> {
+  private async reconcile<F extends FindingView>(drawId: string, accept: F[]): Promise<F[]> {
     if (accept.length < 2) return accept;
     const parent = chainOf(this.p, drawId).lastStep()?.id ?? null;
     // the patch goes in too: on the pit chain a fix moved Ruth off the block and another patched the table for her being on it,

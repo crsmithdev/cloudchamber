@@ -597,7 +597,6 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
       () => api.gate(id, { action, note, ...extra }).then((r) => { setRuled((n) => n + 1); return r; }),
       (r) => r?.draw ?? undefined,
     );
-  const open = f?.findings.filter((x) => x.decision === "open") ?? [];
   const accepted = f?.findings.filter((x) => x.decision === "accepted") ?? [];
   const repaired = d.draw.status === "repaired";
   const meta = d.parts.outline?.meta ?? {};
@@ -609,17 +608,12 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
       n.has(fid) ? n.delete(fid) : n.add(fid);
       return n;
     });
-  // a bulk selector offers only what the gate acts on: auto skips a dropped finding, and so does "all"
-  const selectable = open.filter((x) => x.reported && !x.relitigates);
+  // the partition is the server's; a bulk selector offers what the auto rule would consider, so "all" and auto agree
+  const listed = f?.listed ?? [], reopened = f?.reopened ?? [], left = f?.left ?? [];
+  const selectable = listed.filter((x) => x.decision === "open" && x.auto_eligible);
   const atFloor = selectable.filter((x) => x.score >= floor);
-  const reopened = f?.findings.filter((x) => x.relitigates) ?? [];
-  // the gate's own list: reported, or already ruled on. What the verify pass or the sample bar took
-  // off it is shown only when asked for, under its own head, and never by a bulk selector.
-  const listed = f?.findings.filter((x) => !x.relitigates && (x.reported || x.decision !== "open")) ?? [];
-  const left = f?.findings.filter((x) => !x.relitigates && !x.reported && x.decision === "open") ?? [];
   const checkSteps = d.steps.filter((s) => s.stage.startsWith("check-") && s.status === "done");
   const checkSecs = checkSteps.reduce((n, s) => n + Number(secs(s.started_at, s.ended_at)), 0);
-  const reported = f?.findings.filter((x) => x.reported) ?? [];
   // the open list and the list that undoes an earlier fix are the same row
   const row = (x: Finding) => (
     <FindingRow key={x.id} f={x} S={x.samples_run ?? S} scoreMax={f!.score_max} selected={sel.has(x.id)} onToggle={() => toggle(x.id)} onDismiss={() => gate("dismiss", { finding: x.id })} readOnly={repaired} />
@@ -655,7 +649,7 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
               variant="keep"
               disabled={!selectable.length}
               onClick={() => setSel(new Set(selectable.map((x) => x.id)))}
-              title="Select every open finding that was reported and does not undo a fix accepted in an earlier round."
+              title="Select every open finding the auto rule would consider: reported, from a checker that quotes, with evidence, and not undoing a fix accepted in an earlier round."
             >
               all ({selectable.length})
             </Btn>
@@ -683,7 +677,7 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
           <Head
             note={
               <>
-                {f ? `${reported.length} reported${f.off_list.dropped ? ` · ${f.off_list.dropped} the verify pass dropped` : ""}${f.off_list.rare ? ` · ${f.off_list.rare} too rare to report` : ""}` : "…"}
+                {f ? `${f.summary?.reported ?? 0} reported${f.off_list.dropped ? ` · ${f.off_list.dropped} the verify pass dropped` : ""}${f.off_list.rare ? ` · ${f.off_list.rare} too rare to report` : ""}` : "…"}
                 {f?.pass ? ` · checked ${f.pass.slice(0, 16).replace("T", " ")}` : ""}
                 {checkSteps.length ? ` · ${checkSteps.length} checker calls · ${checkSecs} s` : ""} · highest score first · duplicates merged across checkers ·{" "}
                 <button

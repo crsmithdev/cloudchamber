@@ -49,6 +49,24 @@ describe("check and gate 1", () => {
     expect((status(p.db).draws as any[]).find((x) => x.status === "awaiting_check_gate").n).toBe(1);
   });
 
+  test("the gate reads one partition: listed, reopened, left, the summary, and what the auto rule would consider", async () => {
+    const { d, draw } = await drawn();
+    await d.check(draw.id);
+    const f = d.findings(draw.id);
+    const [a, b] = f.findings;
+    expect(f.listed.map((x) => x.id)).toEqual([a.id, b.id]);
+    expect([f.reopened, f.left]).toEqual([[], []]);
+    expect(f.findings.every((x) => x.auto_eligible)).toBe(true);
+    expect(f.summary).toEqual({ pass: f.pass, reported: 2, accepted: 0, open: 2, total: a.score + b.score });
+    // a dismissed finding stays on the list, ruled on; the summary counts it out of open
+    d.dismiss(draw.id, b.id, "deliberate");
+    const g = d.findings(draw.id);
+    expect(g.listed.map((x) => [x.id, x.decision])).toEqual([[a.id, "open"], [b.id, "dismissed"]]);
+    expect(g.summary).toMatchObject({ reported: 2, accepted: 0, open: 1 });
+    // what left the list is there only when asked for, under its own head, and the auto rule does not consider it
+    expect(d.findings(draw.id, { all: true }).left.map((x) => [x.reported, x.decision])).toEqual([[false, "open"]]);
+  });
+
   test("dismiss is a finding verdict; a re-check does not raise the finding again; hold changes nothing", async () => {
     const { p, d, draw, model } = await drawn(draftScript({ "check-ledger": [...ledgerSamples(), ...ledgerSamples()], "check-derivation": [...derivationSamples(), ...derivationSamples()] }));
     await d.check(draw.id);

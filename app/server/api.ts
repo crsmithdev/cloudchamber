@@ -20,7 +20,7 @@ import { exportBank, sourceLabel } from "../pipeline/bank.ts";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, resolve, sep } from "node:path";
 import { BRIEFS } from "../pipeline/paths.ts";
-import { Drafting } from "../pipeline/drafting.ts";
+import { Drafting, type FindingsSummary } from "../pipeline/drafting.ts";
 import { loadSetting } from "../pipeline/settings.ts";
 import { loadDraftConfig, profileNames, type DraftConfig, type Overrides } from "../pipeline/draftconfig.ts";
 
@@ -151,17 +151,13 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
    * with the store on the Linux filesystem and 45 ms on the Windows mount, and a
    * list holds every round of every chain.
    */
-  type CheckSummary = { pass: string | null; reported: number; accepted: number; open: number; total: number };
-  const summaries = new Map<string, CheckSummary | null>();
+  const summaries = new Map<string, FindingsSummary | null>();
   const findingVerdicts = () => (db.query("SELECT count(*) AS n FROM verdicts WHERE kind = 'finding'").get() as { n: number }).n;
-  const checkSummary = (r: { id: string; status: string }, stage: string, verdicts: number): CheckSummary | null => {
+  const checkSummary = (r: { id: string; status: string }, stage: string, verdicts: number): FindingsSummary | null => {
     if (stage === "ideate" || r.status === "done") return null;
     const key = `${r.id}|${r.status}|${verdicts}`;
     if (summaries.has(key)) return summaries.get(key)!;
-    const f = drafting.findings(r.id);
-    const rep = f.findings.filter((x) => x.reported);
-    const out = !f.pass && rep.length === 0 ? null
-      : { pass: f.pass, reported: rep.length, accepted: rep.filter((x) => x.decision === "accepted").length, open: rep.filter((x) => x.decision === "open").length, total: rep.reduce((n, x) => n + x.score, 0) };
+    const out = drafting.findings(r.id).summary;
     // one entry per draw: the key carries what invalidates it, so the old ones are dead
     for (const k of summaries.keys()) if (k.startsWith(`${r.id}|`)) summaries.delete(k);
     summaries.set(key, out);
