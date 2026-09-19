@@ -969,7 +969,7 @@ export function StepView({ step, chosen, onBack }: { step: Step; chosen: boolean
         </>
       )}
       {(full?.artifacts ?? []).map((a) => {
-        const m = JSON.parse(a.meta);
+        const m = a.meta;
         return (
           <div key={a.id}>
             <Head

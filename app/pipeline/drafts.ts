@@ -14,6 +14,7 @@ import { currentScenes, type Beat, type Profile, type Scene } from "./write.ts";
 import type { Answer } from "./check.ts";
 import type { SlopReport } from "./slop.ts";
 import { pipelineVersion } from "./version.ts";
+import { latestOf, ofKind } from "./artifacts.ts";
 
 export type DraftView = {
   schedule: { form: Record<string, string>; beats: Beat[]; raw: string } | null;
@@ -27,9 +28,9 @@ export type DraftView = {
 /** The latest schedule, the current scenes, and each beat's latest screen pass. */
 export function draftView(p: Pipeline, drawId: string): DraftView {
   const arts = p.artifacts(drawId);
-  const sched = [...arts].reverse().find((a) => a.kind === "schedule");
+  const sched = latestOf(arts, "schedule");
   const scenes = currentScenes(p, drawId);
-  const profileArts = arts.filter((a) => a.kind === "profile" && JSON.parse(a.meta).source === "screen").map((a) => JSON.parse(a.meta) as Profile & { answers: Record<string, Answer> });
+  const profileArts = ofKind(arts, "profile").filter((a) => a.meta.source === "screen").map((a) => a.meta as Profile & { answers: Record<string, Answer> });
   const latestPass = new Map<number, string>();
   for (const pr of profileArts) if (!latestPass.has(pr.beat) || latestPass.get(pr.beat)! < pr.pass) latestPass.set(pr.beat, pr.pass);
   const profiles = profileArts.filter((pr) => latestPass.get(pr.beat) === pr.pass).sort((a, b) => a.beat - b.beat);
@@ -39,9 +40,9 @@ export function draftView(p: Pipeline, drawId: string): DraftView {
   const screenFindings = chain.findingArtifacts().filter((f) => f.source === "screen" && (latestPass.get(f.beat!) ?? f.pass) === f.pass)
     .map((f) => { const samples_run = Math.max(f.n, ...f.samples); return { ...f, ...chain.decision(f.id), samples_run, score: score(f, samples_run), reported: true }; })
     .sort((a, b) => a.beat! - b.beat! || b.score - a.score);
-  const slopArt = [...arts].reverse().find((a) => a.kind === "slop");
+  const slopArt = latestOf(arts, "slop");
   return {
-    schedule: sched ? { ...(JSON.parse(sched.meta) as { form: Record<string, string>; beats: Beat[] }), raw: sched.content } : null,
+    schedule: sched ? { form: sched.meta.form, beats: sched.meta.beats, raw: sched.content } : null,
     scenes, profiles, screenFindings, slop: slopArt ? (JSON.parse(slopArt.content) as SlopReport) : null, judge: chain.judge(),
   };
 }

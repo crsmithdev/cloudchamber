@@ -142,7 +142,8 @@ export type Step = {
   raw_chars: number;
 };
 export type FullStep = Step & { prompt: string; raw_response: string | null; parsed: string | null };
-export type Artifact = { id: string; step_id: string; kind: string; content: string; meta: string };
+/** The meta is parsed by the server; its keys are app/pipeline/artifacts.ts. */
+export type Artifact = { id: string; step_id: string; kind: string; content: string; meta: Record<string, any> };
 /** The repair settings a draw would run under: its own, or the defaults until it has its own. */
 export type Repair = { rounds: number; stop_score: number; patience: number; max_calls: number };
 /** What every gate action answers: the draw to show next, whether the work goes on, and the action's own payload. */

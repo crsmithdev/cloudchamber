@@ -5,11 +5,13 @@ import { BRIEFS } from "./paths.ts";
 import type { Db } from "./store/db.ts";
 import { pipelineVersion } from "./version.ts";
 import { partOf, partsFrom, partsIn } from "./briefparts.ts";
+import { parseMeta, type Artifact } from "./artifacts.ts";
 
 export function writeBrief(db: Db, drawId: string, base: string = BRIEFS, settledLines: { round: number; replacement: string }[] = []): string {
   const draw = db.query("SELECT * FROM draws WHERE id = ?").get(drawId) as any;
   const steps = db.query("SELECT * FROM steps WHERE draw_id = ? ORDER BY started_at, rowid").all(drawId) as any[];
-  const arts = db.query("SELECT a.*, s.stage FROM artifacts a JOIN steps s ON s.id = a.step_id WHERE s.draw_id = ? ORDER BY s.started_at, a.rowid").all(drawId) as any[];
+  const rows = db.query("SELECT a.*, s.stage FROM artifacts a JOIN steps s ON s.id = a.step_id WHERE s.draw_id = ? ORDER BY s.started_at, a.rowid").all(drawId) as { id: string; step_id: string; kind: string; content: string; meta: string; stage: string }[];
+  const arts: (Artifact & { stage: string })[] = rows.map((r) => ({ ...r, meta: parseMeta(r.meta) }));
   const parts = partsFrom(arts, draw.chosen_step);
   const chosen = partOf(parts, "vignette"), outline = partOf(parts, "outline"), ending = partOf(parts, "ending");
   const dir = join(base, drawId);
@@ -26,7 +28,7 @@ export function writeBrief(db: Db, drawId: string, base: string = BRIEFS, settle
     const p = db.query("SELECT p.id, p.voice, p.mode, p.words, s.title, s.author, s.source_id FROM passages p JOIN stories s ON s.id = p.story_id WHERE p.id = ?").get(pid) as any;
     return p ? `- \`${p.voice}/${p.mode}\` ${p.source_id} · ${p.title} — ${p.author} · ${p.words}w · ${p.id}` : `- ${pid} (no longer in the pool)`;
   });
-  const cands = arts.filter((a) => a.kind === "vignette" && a.stage === "execute").map((a) => ({ a, m: JSON.parse(a.meta) })).sort((x, y) => x.m.probability - y.m.probability);
+  const cands = arts.filter((a) => a.kind === "vignette" && a.stage === "execute").map((a) => ({ a, m: a.meta })).sort((x, y) => x.m.probability - y.m.probability);
   const modelByStage = new Map<string, string>();
   for (const s of steps) if (s.status === "done") modelByStage.set(s.stage, s.model);
   const refusals = steps.filter((s) => s.fail_reason === "refusal").map((s) => `${s.stage} on ${s.model}`);

@@ -13,10 +13,8 @@
 import type { DrawRow, Pipeline, StepRow } from "./draw.ts";
 import { latestAll, type Latest } from "./verdicts.ts";
 import { cluster, excludeDismissed, merge, normalise, same, score, type Cluster, type Finding, type ScoreContext } from "./recur.ts";
-import { briefParts, prose, type Artifact } from "./briefparts.ts";
-
-/** `dropped` is the verify pass's reason for taking a finding off the reported list; it rides on the artifact's meta. */
-export type FindingMeta = Omit<Cluster, "reported"> & { pass: string; source: "check" | "screen"; screen?: string; beat?: number; sub_threshold?: boolean; dropped?: string };
+import { briefParts, prose } from "./briefparts.ts";
+import { ofKind, type Artifact, type FindingMeta } from "./artifacts.ts";
 export type FindingView = FindingMeta & { artifact_id: string; decision: "accepted" | "dismissed" | "open"; note: string; score: number; samples_run: number; reported: boolean; relitigates?: Settled };
 /** A finding accepted somewhere in this repair chain, and where. */
 export type Settled = { finding: string; draw: string; round: number; replacement: string; span: string; statement: string };
@@ -62,7 +60,7 @@ export class Chain {
   get draw(): DrawRow { return this.row(this.drawId); }
 
   findingArtifacts(id: string = this.drawId): (FindingMeta & { artifact_id: string })[] {
-    return this.artifacts(id).filter((a) => a.kind === "finding").map((a) => ({ ...(JSON.parse(a.meta) as FindingMeta), artifact_id: a.id }));
+    return ofKind(this.artifacts(id), "finding").map((a) => ({ ...a.meta, artifact_id: a.id }));
   }
 
   /** The distinct check pass ids on the draw, oldest first. */
@@ -70,8 +68,8 @@ export class Chain {
     return this.once("passes", () => {
       const ids = this.artifacts()
         // a draft started without a check extracts a ledger of its own; that is not a pass
-        .filter((a) => a.kind === "pass" || (a.kind === "ledger" && !JSON.parse(a.meta).ledger_only) || ((a.kind === "finding" || a.kind === "profile") && JSON.parse(a.meta).source === "check"))
-        .map((a) => JSON.parse(a.meta).pass as string).filter(Boolean);
+        .filter((a) => a.kind === "pass" || (a.kind === "ledger" && !a.meta.ledger_only) || ((a.kind === "finding" || a.kind === "profile") && a.meta.source === "check"))
+        .map((a) => a.meta.pass as string).filter(Boolean);
       return [...new Set(ids)].sort();
     });
   }
@@ -87,8 +85,8 @@ export class Chain {
   samples(): Record<string, number> {
     return this.once("samples", () => {
       const pass = this.pass();
-      const recorded = this.artifacts().find((a) => a.kind === "pass" && a.content === pass && JSON.parse(a.meta).samples);
-      if (recorded) return { claims: 1, ...(JSON.parse(recorded.meta).samples as Record<string, number>) };
+      const recorded = ofKind(this.artifacts(), "pass").find((a) => a.content === pass && a.meta.samples);
+      if (recorded) return { claims: 1, ...recorded.meta.samples };
       // a pass stored before the counts were recorded: the steps averaged over every pass
       const passes = Math.max(1, this.passes().length);
       const out: Record<string, number> = { claims: 1 };
@@ -137,7 +135,7 @@ export class Chain {
 
   /** A draw's ledgers, oldest pass first. */
   private ledgers(id: string): Artifact[] {
-    return this.artifacts(id).filter((a) => a.kind === "ledger").sort((a, b) => (JSON.parse(a.meta).pass as string).localeCompare(JSON.parse(b.meta).pass));
+    return ofKind(this.artifacts(id), "ledger").sort((a, b) => a.meta.pass.localeCompare(b.meta.pass));
   }
 
   /**
@@ -184,8 +182,8 @@ export class Chain {
   profile(checker: string): { pass: string; draw: string; meta: any } | null {
     return this.once(`profile:${checker}`, () => {
       for (const id of this.ids) {
-        const hit = this.artifacts(id).filter((a) => a.kind === "profile")
-          .map((a) => ({ draw: id, meta: JSON.parse(a.meta) as any }))
+        const hit = ofKind(this.artifacts(id), "profile")
+          .map((a) => ({ draw: id, meta: a.meta as any }))
           .filter((x) => x.meta.source === "check" && x.meta.checker === checker)
           .sort((a, b) => String(a.meta.pass).localeCompare(String(b.meta.pass)));
         if (hit.length) { const last = hit.at(-1)!; return { pass: String(last.meta.pass), draw: last.draw, meta: last.meta }; }
@@ -204,8 +202,8 @@ export class Chain {
     return this.once(`claims:${authority}`, () => {
       const out: CachedClaim[] = [];
       for (const id of this.ids) {
-        for (const a of this.artifacts(id).filter((x) => x.kind === "claim")) {
-          const m = JSON.parse(a.meta) as { span?: string; result?: string; evidence?: string; authority?: string; invalidates?: string; replacement?: string; patch?: string };
+        for (const a of ofKind(this.artifacts(id), "claim")) {
+          const m = a.meta;
           if (m.authority !== authority || !m.result) continue;
           if (out.some((o) => normalise(o.statement) === normalise(a.content))) continue;
           out.push({ statement: a.content, span: m.span ?? "", result: m.result, evidence: m.evidence ?? "none", invalidates: m.invalidates ?? "none", replacement: m.replacement ?? "", patch: m.patch ?? "", draw: id });

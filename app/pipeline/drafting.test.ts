@@ -37,7 +37,7 @@ describe("check and gate 1", () => {
     expect(p.artifacts(draw.id).filter((a) => a.kind === "finding")).toHaveLength(2);
     expect(p.artifacts(draw.id).some((a) => a.kind === "finding" && a.content.includes("tears"))).toBe(false);
     expect(p.artifacts(draw.id).filter((a) => a.kind === "ledger")).toHaveLength(1);
-    expect(p.artifacts(draw.id).filter((a) => a.kind === "profile").map((a) => JSON.parse(a.meta).checker).sort()).toEqual(["resemblance", "structure"]);
+    expect(p.artifacts(draw.id).filter((a) => a.kind === "profile").map((a) => a.meta.checker).sort()).toEqual(["resemblance", "structure"]);
     expect(f.examined.filter((e) => e.stage === "check-ledger")).toHaveLength(3);
     expect(f.examined.find((e) => e.stage === "check-ledger")!.examined).toContain("ledger×chosen");
     expect(f.judge).toBe("checked on opus; judge and generator share a family");
@@ -182,7 +182,7 @@ describe("check and gate 1", () => {
     const next = await d.accept(draw.id, [sub[0].id]);
     expect(next.repaired_from).toBe(draw.id);
     expect(p.artifacts(next.id).find((a) => a.kind === "outline")!.content).toContain("- The silk is dry.");   // its fix amends the carried outline
-    expect(JSON.parse(p.artifacts(draw.id).find((a) => a.kind === "finding" && a.content.includes("tears"))!.meta).sub_threshold).toBe(true);
+    expect(p.artifacts(draw.id).find((a) => a.kind === "finding" && a.content.includes("tears"))!.meta.sub_threshold).toBe(true);
   });
 
   test("a finding carrying a patch is applied in place and regenerates nothing", async () => {
@@ -212,7 +212,7 @@ describe("check and gate 1", () => {
     const out = readFileSync(join(dir, "briefs", next.id, "vignette.md"), "utf8");
     expect(out).toContain(patched);
     expect(out).not.toContain(span);
-    expect(JSON.parse(p.artifacts(next.id).find((a) => a.kind === "vignette" && a.step_id === next.chosen_step)!.meta).patched).toEqual([f.id]);
+    expect(p.artifacts(next.id).find((a) => a.kind === "vignette" && a.step_id === next.chosen_step)!.meta.patched).toEqual([f.id]);
   });
 
   test("a finding inside one context vignette rewrites that one and carries the other over with its job", async () => {
@@ -236,14 +236,14 @@ describe("check and gate 1", () => {
     expect(by("jobs").map((s) => s.model)).toEqual(["copied"]);                  // both jobs travel with their vignettes
     expect(by("repair-context")).toHaveLength(1);                               // the one with the finding is rewritten from itself
     expect(by("context").map((s) => s.model)).toEqual(["copied"]);              // the other is carried over
-    const jobs = p.artifacts(next.id).filter((a) => a.kind === "job").sort((a, b) => JSON.parse(a.meta).index - JSON.parse(b.meta).index);
-    expect(jobs.map((a) => [a.content, JSON.parse(a.meta).copied])).toEqual([["Test the first thing: scene one.", true], ["Test a second thing: scene two.", true]]);
+    const jobs = p.artifacts(next.id).filter((a) => a.kind === "job").sort((a, b) => a.meta.index - b.meta.index);
+    expect(jobs.map((a) => [a.content, a.meta.copied])).toEqual([["Test the first thing: scene one.", true], ["Test a second thing: scene two.", true]]);
     const ctx = p.artifacts(next.id).filter((a) => a.kind === "vignette" && [...by("context"), ...by("repair-context")].some((s) => s.id === a.step_id))
-      .sort((a, b) => JSON.parse(a.meta).index - JSON.parse(b.meta).index);
+      .sort((a, b) => a.meta.index - b.meta.index);
     expect(ctx[0].content).toContain("rewritten context");
     // the part names the step it was rewritten from, which is the context of the draw being repaired
     const srcContext1 = partsIn(partsOf(p, draw.id), "context")[0];
-    expect(JSON.parse(ctx[0].meta)).toMatchObject({ index: 1, job: "Test the first thing: scene one.", rewritten_from: srcContext1.stepId });
+    expect(ctx[0].meta).toMatchObject({ index: 1, job: "Test the first thing: scene one.", rewritten_from: srcContext1.stepId });
     expect(ctx[1].content).toBe("context for Test a second thing: scene two.");
     expect(model.calls.filter((c) => c.stage === "context")).toHaveLength(2);    // two on the draw, none on the repair
     expect(model.calls.find((c) => c.stage === "repair-context")!.prompt).toContain("The first context holds.");
@@ -439,7 +439,7 @@ describe("claims", () => {
     // the pane and the export still see the whole set, marked with where each verdict came from
     const claims = p.artifacts(next.id).filter((x) => x.kind === "claim");
     expect(claims).toHaveLength(2);
-    expect(claims.map((x) => JSON.parse(x.meta).cached_from)).toEqual([draw.id, draw.id]);
+    expect(claims.map((x) => x.meta.cached_from)).toEqual([draw.id, draw.id]);
     expect(d.findings(next.id).claims).toHaveLength(2);
   });
 
@@ -459,9 +459,9 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(sched.prompt).toContain("form: derive person, chronology, container from the brief and state them");
     expect(sched.prompt).toContain("ending: the brief's ending is the last beat, in place");
     const sa = p.artifacts(draw.id).find((a) => a.kind === "schedule")!;
-    expect(JSON.parse(sa.meta).beats).toHaveLength(8);
-    expect(JSON.parse(sa.meta).form).toEqual({ tense: "past", person: "third", chronology: "linear", container: "prose" });
-    expect(JSON.parse(sa.meta).beats[0].withheld).toEqual([{ item: "the instrument's wording", until: 7 }, { item: "why she answers only Lauro", until: 6 }]);
+    expect(sa.meta.beats).toHaveLength(8);
+    expect(sa.meta.form).toEqual({ tense: "past", person: "third", chronology: "linear", container: "prose" });
+    expect(sa.meta.beats[0].withheld).toEqual([{ item: "the instrument's wording", until: 7 }, { item: "why she answers only Lauro", until: 6 }]);
     // scenes, in sequence, each carrying the text so far and its beat's material
     const scenes = model.calls.filter((c) => c.stage === "scene");
     expect(scenes).toHaveLength(8);
@@ -477,9 +477,9 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(scenes[7].prompt).toContain(`<material>\n${SPAN_A}`);             // beat 8 absorbs the ending
     expect(scenes[1].prompt).not.toContain("<material>");
     expect(scenes.every((c) => !/theme/i.test(c.prompt.slice(c.prompt.indexOf("Write beat"))))).toBe(true);   // nothing about theme in the ask
-    const sceneArts = p.artifacts(draw.id).filter((a) => a.kind === "scene").map((a) => JSON.parse(a.meta));
-    expect(sceneArts.find((m) => m.beat === 2).warnings).toEqual(["over_cap"]);
-    expect(sceneArts.find((m) => m.beat === 1).warnings).toEqual([]);
+    const sceneArts = p.artifacts(draw.id).filter((a) => a.kind === "scene").map((a) => a.meta);
+    expect(sceneArts.find((m) => m.beat === 2)!.warnings).toEqual(["over_cap"]);
+    expect(sceneArts.find((m) => m.beat === 1)!.warnings).toEqual([]);
     // screens: ledger ×3 and structure ×1 per scene, slop once
     expect(stagesOf(model, /^screen-ledger$/)).toHaveLength(24);
     expect(stagesOf(model, /^screen-structure$/)).toHaveLength(8);
@@ -548,7 +548,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(out.status).toBe("awaiting_draft_gate");
     expect(stagesOf(model, /^check-|^ledger-/)).toEqual(["ledger-extract"]);   // the extract alone, no checking
     expect(p.artifacts(draw.id).filter((a) => a.kind === "ledger")).toHaveLength(1);
-    expect(p.artifacts(draw.id).filter((a) => a.kind === "finding" && JSON.parse(a.meta).source === "check")).toHaveLength(0);
+    expect(p.artifacts(draw.id).filter((a) => a.kind === "finding" && a.meta.source === "check")).toHaveLength(0);
   });
 
   test("rewrite k regenerates one scene under the flag's replacement, binds k and k+1 to the ledger, re-screens both", async () => {
@@ -575,7 +575,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(v.scenes[3].text).toContain("Scene 4 opens. REWRITTEN");
     expect(v.scenes).toHaveLength(8);
     expect(after.find((c) => c.stage === "screen-ledger" && /<scene n="5">/.test(c.prompt))!.prompt).toContain("REWRITTEN");   // scene 5 is screened against the new scene 4
-    const rewrites = p.artifacts(draw.id).filter((a) => a.kind === "scene" && JSON.parse(a.meta).rewrite).map((a) => JSON.parse(a.meta));
+    const rewrites = p.artifacts(draw.id).filter((a) => a.kind === "scene" && a.meta.rewrite).map((a) => a.meta);
     expect(rewrites.map((m) => [m.beat, m.rewrite_finding])).toEqual([[4, flag.id]]);   // the gate-2 record is on the scene
     expect(p.draw(draw.id).flag_note).toBe("");
     await expect(d.rewrite(draw.id, 9)).rejects.toThrow(/beat 9 is not in 1\.\.8/);
@@ -670,7 +670,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     // the round table is stored on the brief auto stopped on, so the gate can render it
     const art = p.artifacts(r.id).find((a) => a.kind === "auto")!;
     expect(JSON.parse(art.content)).toMatchObject({ stopped: "floor", floor: 7 });
-    expect(JSON.parse(art.meta)).toMatchObject({ rounds: 2, best: r.best.id });
+    expect(art.meta).toMatchObject({ rounds: 2, best: r.best.id });
   });
 
   test("auto stops on patience when the total score stops falling, and names the best round", async () => {

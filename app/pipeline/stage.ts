@@ -3,6 +3,7 @@
  * lifecycle.ts.
  */
 import type { Pipeline } from "./draw.ts";
+import { ofKind } from "./artifacts.ts";
 
 export type Origin = { id: string; name: string | null; index: number | null; probability: number | null };
 
@@ -16,8 +17,8 @@ export function originOf(p: Pipeline, drawId: string): Origin | null {
   let probability: number | null = null;
   for (let hop = 0; hop < 10; hop++) {
     if (cur.forked_from && index === null) {
-      const copied = p.artifacts(cur.id).find((a) => a.kind === "vignette" && JSON.parse(a.meta).forked_from);
-      if (copied) { const m = JSON.parse(copied.meta); index = m.index ?? null; probability = m.probability ?? null; }
+      const copied = ofKind(p.artifacts(cur.id), "vignette").find((a) => a.meta.forked_from);
+      if (copied) { index = copied.meta.index ?? null; probability = copied.meta.probability ?? null; }
     }
     const from = cur.repaired_from ?? cur.forked_from;
     if (!from) break;

@@ -9,8 +9,7 @@ import { RUN, STAGE_ROLE, type PartRole, type StageName } from "./config.ts";
 import type { DrawRow, Pipeline, StepRow } from "./draw.ts";
 import { fill } from "./prompts.ts";
 import { need, words } from "./model.ts";
-
-export type Artifact = { id: string; step_id: string; kind: string; content: string; meta: string };
+import type { Artifact } from "./artifacts.ts";
 
 let passCounter = 0;
 /** A check or screen pass id: millisecond time plus a counter, so two passes never share one and sort in order. */
@@ -53,8 +52,7 @@ export function partsFrom(rows: (Artifact & { stage: string })[], chosenStep: st
     const role = roleOf(a.stage);
     if (!role || a.kind !== ROLE_KIND[role]) continue;
     if (a.stage === "execute" && a.step_id !== chosenStep) continue;
-    const meta = JSON.parse(a.meta);
-    out.push({ role, stage: a.stage, stepId: a.step_id, text: a.content, meta, index: meta.index ?? 0 });
+    out.push({ role, stage: a.stage, stepId: a.step_id, text: a.content, meta: a.meta, index: a.meta.index ?? 0 });
   }
   return out;
 }

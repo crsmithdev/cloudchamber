@@ -21,6 +21,7 @@ import { nextName } from "./names.ts";
 import type { Db } from "./store/db.ts";
 import { writeBrief } from "./brief.ts";
 import { must, settle, under } from "./lifecycle.ts";
+import { parseMeta, type Artifact } from "./artifacts.ts";
 
 export type SeedChoice = { mode: "drawn" } | { mode: "picked"; themeId: string } | { mode: "typed"; text: string };
 /** The seed and the segment a request names in flat fields, as the CLI and the API take them; unnamed, the draw draws them. */
@@ -294,7 +295,7 @@ export class Pipeline {
     const rows = this.db.query(`SELECT a.step_id, a.content, a.meta FROM artifacts a JOIN steps s ON s.id = a.step_id
                                 WHERE s.draw_id = ? AND a.kind = 'vignette' AND s.stage = 'execute'`).all(drawId) as any[];
     // Numbered from the tail on read too, so draws recorded before this numbering read the same way.
-    return rows.map((r) => { const m = JSON.parse(r.meta); return { step_id: r.step_id, index: m.index as number, probability: m.probability, premise: m.premise, vignette: r.content, warnings: m.warnings ?? [] }; })
+    return rows.map((r) => { const m = parseMeta(r.meta); return { step_id: r.step_id, index: m.index as number, probability: m.probability, premise: m.premise, vignette: r.content, warnings: m.warnings ?? [] }; })
       .sort((a, b) => a.probability - b.probability || a.index - b.index)
       .map((c, i) => ({ ...c, index: i + 1 }));
   }
@@ -386,7 +387,7 @@ export class Pipeline {
                                 JOIN steps s ON s.draw_id = d.id AND s.stage = 'execute'
                                 JOIN artifacts a ON a.step_id = s.id AND a.kind = 'vignette'
                                 WHERE d.forked_from = ? ORDER BY d.created_at`).all(drawId) as any[];
-    return rows.map((r) => { const m = JSON.parse(r.meta); return { id: r.id, status: r.status, step_id: m.forked_from as string, index: m.index as number }; });
+    return rows.map((r) => { const m = parseMeta(r.meta); return { id: r.id, status: r.status, step_id: m.forked_from as string, index: m.index as number }; });
   }
 
   /** Hide a draw from the lists, or put it back. Nothing else about it changes, and it stays reachable by id. */
@@ -440,8 +441,10 @@ export class Pipeline {
     return this.db.query(`SELECT * FROM draws ${archived ? "" : "WHERE archived_at IS NULL "}ORDER BY created_at DESC, rowid DESC`).all() as DrawRow[];
   }
   steps(drawId: string): StepRow[] { return this.db.query("SELECT * FROM steps WHERE draw_id = ? ORDER BY started_at, rowid").all(drawId) as StepRow[]; }
-  artifacts(drawId: string) {
-    return this.db.query("SELECT a.* FROM artifacts a JOIN steps s ON s.id = a.step_id WHERE s.draw_id = ? ORDER BY s.started_at, a.rowid").all(drawId) as { id: string; step_id: string; kind: string; content: string; meta: string }[];
+  /** Every artifact of a draw, oldest first, its meta parsed once here. */
+  artifacts(drawId: string): Artifact[] {
+    const rows = this.db.query("SELECT a.* FROM artifacts a JOIN steps s ON s.id = a.step_id WHERE s.draw_id = ? ORDER BY s.started_at, a.rowid").all(drawId) as { id: string; step_id: string; kind: string; content: string; meta: string }[];
+    return rows.map((r) => ({ ...r, meta: parseMeta(r.meta) }));
   }
 }
 

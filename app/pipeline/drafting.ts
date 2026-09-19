@@ -19,6 +19,7 @@ import { extractLedger, runCheck, STRUCTURE_QUESTIONS, type CheckResult } from "
 import { constraintsBlock, repair } from "./repair.ts";
 import { briefBlock, briefParts, passId } from "./briefparts.ts";
 import { chainOf, type Chain, type FindingView } from "./chain.ts";
+import { ofKind } from "./artifacts.ts";
 import { bindScene, currentScenes, runScenes, runSchedule, runScreens, writeScene, type Schedule } from "./write.ts";
 import { draftView, exportDraft, renderStory, type DraftView } from "./drafts.ts";
 import { tag } from "./model.ts";
@@ -94,7 +95,6 @@ export class Drafting {
     const chain = chainOf(this.p, drawId);
     const pass = chain.pass();
     const arts = chain.artifacts();
-    const meta = (a: { meta: string }) => JSON.parse(a.meta);
     const steps = chain.steps().filter((s) => /^check-/.test(s.stage) && s.status === "done");
     const examined = steps.map((s, i) => ({ stage: s.stage, sample: i + 1, examined: String((JSON.parse(s.parsed ?? "{}") as any).examined ?? "") })).filter((x) => x.examined);
     // the gate lists what it will act on: a finding the verify pass dropped is withheld
@@ -108,10 +108,10 @@ export class Drafting {
       // dropped: the verify pass took it off the list and said why. rare: seen in too few samples,
       // which only the reconstruction behind `all` can count, so it is null without it.
       off_list: { dropped: off.filter((f) => !!f.dropped).length, rare: opts.all ? off.filter((f) => !f.dropped).length : null },
-      claims: arts.filter((a) => a.kind === "claim" && meta(a).pass === pass).map((a) => ({ statement: a.content, ...meta(a) })),
+      claims: arts.filter((a) => a.kind === "claim" && a.meta.pass === pass).map((a) => ({ statement: a.content, ...a.meta })),
       // a repair round runs neither profile checker, so the chain's own profile stands in
       profiles: ["structure", "resemblance"].flatMap((c) => {
-        const here = arts.filter((a) => a.kind === "profile" && meta(a).source === "check" && meta(a).checker === c && meta(a).pass === pass).map((a) => meta(a));
+        const here = arts.filter((a) => a.kind === "profile" && a.meta.source === "check" && a.meta.checker === c && a.meta.pass === pass).map((a) => a.meta);
         if (here.length) return here;
         const up = chain.profile(c);
         return up ? [{ ...up.meta, from_draw: up.draw }] : [];
@@ -353,8 +353,8 @@ export class Drafting {
     const draw = this.must(drawId, "keep");
     record(this.p.db, { kind: "draft", target_id: drawId, verdict: "keep", method: "gate", note });
     const resolved = this.resolved(draw);
-    const gate2 = this.p.artifacts(drawId).filter((a) => a.kind === "scene" && JSON.parse(a.meta).rewrite)
-      .map((a) => { const m = JSON.parse(a.meta); return `rewrite ${m.beat}${m.rewrite_finding ? ` ${m.rewrite_finding}` : ""}`; });
+    const gate2 = ofKind(this.p.artifacts(drawId), "scene").filter((a) => a.meta.rewrite)
+      .map((a) => `rewrite ${a.meta.beat}${a.meta.rewrite_finding ? ` ${a.meta.rewrite_finding}` : ""}`);
     const dir = exportDraft(this.p, drawId, resolved, gate2, this.opts.draftsDir, this.p.briefsDir);
     settle(this.p.db, drawId, "drafted", { ended: true });
     return { draw: this.p.draw(drawId), dir };
