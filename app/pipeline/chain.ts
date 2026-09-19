@@ -1,9 +1,11 @@
 /**
- * A repair chain read once. Every question the gate, the checkers and the
- * repair ask about a chain — the latest check pass, the samples it ran, the
- * fixes settled in earlier rounds, the pinned ledger and outline, the profiles,
- * the claims, the findings and their scores — is answered from one load of that
- * chain's draws, steps, artifacts and finding verdicts.
+ * A repair chain read once. Every question the gate, the checkers, the
+ * repair and the draft ask about a chain — the latest check pass, the samples
+ * it ran, the fixes settled in earlier rounds, the pinned ledger and outline,
+ * the profiles, the claims, the findings and their scores, the schedule, the
+ * scenes as they stand, each beat's latest screen pass, the auto run — is
+ * answered from one load of that chain's draws, steps, artifacts and finding
+ * verdicts. "Which one is current" is decided here and nowhere else.
  *
  * Read it through `chainOf(p, drawId)` and ask the chain, rather than calling a
  * function per question: each answer is computed once per chain, so a findings
@@ -14,7 +16,10 @@ import type { DrawRow, Pipeline, StepRow } from "./draw.ts";
 import { latestAll, type Latest } from "./verdicts.ts";
 import { cluster, excludeDismissed, merge, normalise, same, score, type Cluster, type Finding, type ScoreContext } from "./recur.ts";
 import { briefParts, prose } from "./briefparts.ts";
-import { ofKind, type Artifact, type FindingMeta } from "./artifacts.ts";
+import { latestOf, ofKind, type Artifact, type FindingMeta } from "./artifacts.ts";
+import type { Profile, Scene, Schedule } from "./write.ts";
+import type { AutoResult } from "./drafting.ts";
+import type { SlopReport } from "./slop.ts";
 export type FindingView = FindingMeta & { artifact_id: string; decision: "accepted" | "dismissed" | "open"; note: string; score: number; samples_run: number; reported: boolean; relitigates?: Settled };
 /** A finding accepted somewhere in this repair chain, and where. */
 export type Settled = { finding: string; draw: string; round: number; replacement: string; span: string; statement: string };
@@ -56,6 +61,71 @@ export class Chain {
 
   /** The first draw of the chain. */
   get root(): string { return this.ids.at(-1)!; }
+
+  /** The newest artifact of one kind on this draw, or undefined. */
+  latest<K extends string>(kind: K): Artifact<K> | undefined { return latestOf(this.artifacts(), kind); }
+  /** One artifact of this draw by id. */
+  artifact(id: string): Artifact | undefined { return this.artifacts().find((a) => a.id === id); }
+  /** The latest done step of this draw: what a gate-time step hangs from. */
+  lastStep(): StepRow | undefined { return this.steps().filter((s) => s.status === "done").at(-1); }
+
+  // --- the write half -------------------------------------------------------
+
+  /** The latest schedule, or null before one is derived. */
+  schedule(): Schedule | null {
+    const a = this.latest("schedule");
+    return a ? { form: a.meta.form as Schedule["form"], beats: a.meta.beats, raw: a.content } : null;
+  }
+
+  /** The latest scene artifact per beat, in beat order: the story as it stands, patches and rewrites included. */
+  scenes(): Scene[] {
+    return this.once("scenes", () => {
+      const byBeat = new Map<number, Scene>();
+      for (const a of ofKind(this.artifacts(), "scene")) byBeat.set(a.meta.beat, { beat: a.meta.beat, text: a.content, artifact_id: a.id, step_id: a.step_id });
+      return [...byBeat.values()].sort((a, b) => a.beat - b.beat);
+    });
+  }
+
+  /** The latest screen pass on each beat, read off its structure profile; a beat never profiled has none. */
+  private screenPasses(): Map<number, string> {
+    return this.once("screenPasses", () => {
+      const out = new Map<number, string>();
+      for (const a of ofKind(this.artifacts(), "profile")) {
+        const { beat, pass, source } = a.meta;
+        if (source !== "screen" || beat === undefined) continue;
+        if (!out.has(beat) || out.get(beat)! < pass) out.set(beat, pass);
+      }
+      return out;
+    });
+  }
+  screenPass(beat: number): string | undefined { return this.screenPasses().get(beat); }
+
+  /** Each beat's structure profile from its latest screen pass, in beat order. */
+  screenProfiles(): Profile[] {
+    return ofKind(this.artifacts(), "profile")
+      .filter((a) => a.meta.source === "screen" && this.screenPass(a.meta.beat!) === a.meta.pass)
+      .map((a) => a.meta as unknown as Profile)
+      .sort((a, b) => a.beat - b.beat);
+  }
+
+  /**
+   * The screen flags of each beat's latest pass, with their gate decisions and
+   * scores, by beat then score. A screen's denominator is the highest sample
+   * number it recurred in, the same figure the panes print; a flag carries a
+   * verdict like a check finding does, and its patch settles it.
+   */
+  screenFindings(): FindingView[] {
+    return this.once("screenFindings", () => this.findingArtifacts()
+      .filter((f) => f.source === "screen" && (this.screenPass(f.beat!) ?? f.pass) === f.pass)
+      .map((f) => { const samples_run = Math.max(f.n, ...f.samples); return { ...f, ...this.decision(f.id), samples_run, score: score(f, samples_run), reported: true }; })
+      .sort((a, b) => a.beat! - b.beat! || b.score - a.score));
+  }
+
+  /** The latest slop report, or null. */
+  slop(): SlopReport | null { const a = this.latest("slop"); return a ? (JSON.parse(a.content) as SlopReport) : null; }
+
+  /** The auto repair run recorded on this brief, or null. */
+  auto(): AutoResult | null { const a = this.latest("auto"); return a ? (JSON.parse(a.content) as AutoResult) : null; }
   /** The draw this chain was read from. */
   get draw(): DrawRow { return this.row(this.drawId); }
 

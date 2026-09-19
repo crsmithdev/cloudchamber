@@ -119,7 +119,7 @@ export function Develop({ stage, selected, step: stepId }: { stage: "check" | "w
       onStep={setStepId}
       top={
         <>
-          {stage === "check" && autoOf(d) && <AutoRuns auto={autoOf(d)!} id={d.draw.id} />}
+          {stage === "check" && d.auto && <AutoRuns auto={d.auto} id={d.draw.id} />}
           {chain && chain.rounds.length > 1 && <Rounds chain={chain} current={d.draw.id} statusLine={statusLine} />}
         </>
       }
@@ -322,12 +322,6 @@ function Rounds({ chain, current, statusLine }: { chain: Chain; current: string;
       </table>
     </div>
   );
-}
-
-/** The auto repair run recorded on a brief, if one reached it: the newest artifact wins. */
-function autoOf(d: Detail): AutoResult | null {
-  const art = [...d.artifacts].reverse().find((a) => a.kind === "auto");
-  return art ? JSON.parse(art.content) : null;
 }
 
 /**
@@ -1076,7 +1070,7 @@ function DraftSettings({ d, onClose, onDraft }: { d: Detail; onClose: () => void
   const set = (k: string) => (x: string) => setV({ ...v, [k]: x });
   const overrides: Record<string, string | number> = {};
   for (const [k, x] of Object.entries(v)) if (x !== base[k] && x !== "") overrides[k] = x;
-  const checked = d.artifacts.some((a) => a.kind === "ledger");
+  const checked = d.checked;
   const num = (k: string, label: string, w = "4rem") => <input type="text" className="num" style={{ width: w }} aria-label={label} value={val(k)} onChange={(e) => set(k)(e.target.value)} />;
   return (
     <div className="form mt-4">

@@ -7,14 +7,11 @@ import { join } from "node:path";
 import type { Pipeline } from "./draw.ts";
 import { BRIEFS, DRAFTS } from "./paths.ts";
 import { chainOf, type FindingView } from "./chain.ts";
-import { score } from "./recur.ts";
 import { words } from "./model.ts";
 import { toToml, type Resolved } from "./draftconfig.ts";
-import { currentScenes, type Beat, type Profile, type Scene } from "./write.ts";
-import type { Answer } from "./check.ts";
+import type { Beat, Profile, Scene } from "./write.ts";
 import type { SlopReport } from "./slop.ts";
 import { pipelineVersion } from "./version.ts";
-import { latestOf, ofKind } from "./artifacts.ts";
 
 export type DraftView = {
   schedule: { form: Record<string, string>; beats: Beat[]; raw: string } | null;
@@ -25,26 +22,10 @@ export type DraftView = {
   judge: string | null;
 };
 
-/** The latest schedule, the current scenes, and each beat's latest screen pass. */
+/** The draft as the chain reads it: the latest schedule, the scenes as they stand, each beat's latest screen pass. */
 export function draftView(p: Pipeline, drawId: string): DraftView {
-  const arts = p.artifacts(drawId);
-  const sched = latestOf(arts, "schedule");
-  const scenes = currentScenes(p, drawId);
-  const profileArts = ofKind(arts, "profile").filter((a) => a.meta.source === "screen").map((a) => a.meta as Profile & { answers: Record<string, Answer> });
-  const latestPass = new Map<number, string>();
-  for (const pr of profileArts) if (!latestPass.has(pr.beat) || latestPass.get(pr.beat)! < pr.pass) latestPass.set(pr.beat, pr.pass);
-  const profiles = profileArts.filter((pr) => latestPass.get(pr.beat) === pr.pass).sort((a, b) => a.beat - b.beat);
-  // a screen's denominator is the highest sample number it recurred in, the same figure the panes print
-  // a flag carries a verdict like a check finding does: applying its patch settles it
   const chain = chainOf(p, drawId);
-  const screenFindings = chain.findingArtifacts().filter((f) => f.source === "screen" && (latestPass.get(f.beat!) ?? f.pass) === f.pass)
-    .map((f) => { const samples_run = Math.max(f.n, ...f.samples); return { ...f, ...chain.decision(f.id), samples_run, score: score(f, samples_run), reported: true }; })
-    .sort((a, b) => a.beat! - b.beat! || b.score - a.score);
-  const slopArt = latestOf(arts, "slop");
-  return {
-    schedule: sched ? { form: sched.meta.form, beats: sched.meta.beats, raw: sched.content } : null,
-    scenes, profiles, screenFindings, slop: slopArt ? (JSON.parse(slopArt.content) as SlopReport) : null, judge: chain.judge(),
-  };
+  return { schedule: chain.schedule(), scenes: chain.scenes(), profiles: chain.screenProfiles(), screenFindings: chain.screenFindings(), slop: chain.slop(), judge: chain.judge() };
 }
 
 export function renderStory(v: DraftView, withFlags = true): string {

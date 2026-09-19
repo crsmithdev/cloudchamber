@@ -170,7 +170,7 @@ export const api = {
   verdict: (b: { kind: string; target_id: string; verdict: "keep" | "pass"; artifact: boolean; note: string; method: string }) => j("/api/verdicts", { method: "POST", body: JSON.stringify(b) }),
   items: (q: Record<string, string>) => j<{ total: number; items: Item[] }>(`/api/items?${new URLSearchParams(q)}`),
   draws: (archived = false) => j<Draw[]>(`/api/draws${archived ? "?archived=true" : ""}`),
-  draw: (id: string) => j<{ draw: Draw; origin: Origin | null; steps: Step[]; parts: Parts; checks_next: string[]; repair: Repair; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] }>(`/api/draws/${id}`),
+  draw: (id: string) => j<{ draw: Draw; origin: Origin | null; steps: Step[]; parts: Parts; checks_next: string[]; repair: Repair; checked: boolean; auto: AutoResult | null; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] }>(`/api/draws/${id}`),
   like: (id: string) => j<Like>(`/api/draws/${id}/like`),
   deleteDraw: (id: string) => j<{ deleted: string }>(`/api/draws/${id}`, { method: "DELETE", body: "{}" }),
   startDraw: (b: Record<string, string | undefined>) => j<{ id: string }>("/api/draws", { method: "POST", body: JSON.stringify(b) }),

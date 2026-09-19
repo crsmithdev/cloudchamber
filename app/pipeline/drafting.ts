@@ -20,7 +20,7 @@ import { constraintsBlock, repair } from "./repair.ts";
 import { briefBlock, briefParts, passId } from "./briefparts.ts";
 import { chainOf, type Chain, type FindingView } from "./chain.ts";
 import { ofKind } from "./artifacts.ts";
-import { bindScene, currentScenes, runScenes, runSchedule, runScreens, writeScene, type Schedule } from "./write.ts";
+import { bindScene, runScenes, runSchedule, runScreens, writeScene, type Schedule } from "./write.ts";
 import { draftView, exportDraft, renderStory, type DraftView } from "./drafts.ts";
 import { tag } from "./model.ts";
 import { fill } from "./prompts.ts";
@@ -276,7 +276,7 @@ export class Drafting {
     // what the last round would have repaired had the loop gone on: the gate's work, not auto's
     const result: AutoResult = { id, rounds, best, stopped, floor, calls: rounds.at(-1)!.calls, left_open: accept.length };
     // the round table belongs to the brief auto stopped on, so the gate can show how it got there
-    const last = this.p.steps(id).filter((s) => s.status === "done").at(-1);
+    const last = chainOf(this.p, id).lastStep();
     if (last) this.p.artifact(last, "auto", JSON.stringify(result), { rounds: rounds.length, stopped, best: best.id });
     return result;
   }
@@ -288,7 +288,7 @@ export class Drafting {
    */
   private async reconcile(drawId: string, accept: FindingView[]): Promise<FindingView[]> {
     if (accept.length < 2) return accept;
-    const parent = this.p.steps(drawId).filter((s) => s.status === "done").at(-1)?.id ?? null;
+    const parent = chainOf(this.p, drawId).lastStep()?.id ?? null;
     // the patch goes in too: on the pit chain a fix moved Ruth off the block and another patched the table for her being on it,
     // and read as sentences the second was conditional on the first, so nothing conflicted
     const fixes = accept.map((f, i) => `${i + 1}. ${f.replacement}${f.patch?.trim() ? `\n   patch: "${f.patch.trim()}"` : ""}`).join("\n");
@@ -343,7 +343,7 @@ export class Drafting {
       const bound = await bindScene(this.p, drawId, ledger, written, v.scenes[k - 2], cfg, pass);
       // the beat after it read the old text: it is held to the new one, as it was when first written
       if (k < M) await bindScene(this.p, drawId, ledger, v.scenes[k], bound, cfg, pass);
-      await runScreens(this.p, drawId, schedule, currentScenes(this.p, drawId), cfg, pass, k < M ? [k, k + 1] : [k], { lexiconPath: this.opts.lexiconPath });
+      await runScreens(this.p, drawId, schedule, chainOf(this.p, drawId).scenes(), cfg, pass, k < M ? [k, k + 1] : [k], { lexiconPath: this.opts.lexiconPath });
     });
     settle(this.p.db, drawId, "awaiting_draft_gate");
     return this.p.draw(drawId);

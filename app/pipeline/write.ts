@@ -17,7 +17,7 @@ import { parseQuestions, type Answer } from "./check.ts";
 import type { BriefParts } from "./briefparts.ts";
 import { applyPatches } from "./repair.ts";
 import { record } from "./verdicts.ts";
-import { ofKind } from "./artifacts.ts";
+import { chainOf } from "./chain.ts";
 
 export type Withheld = { item: string; until: number };
 export type Beat = { n: number; words: number; job: string; known: string; withheld: Withheld[]; stakes: string; absorbs: string };
@@ -156,18 +156,11 @@ export async function bindScene(p: Pipeline, drawId: string, ledger: string, sce
   const out = applyPatches(scene.text, flags);
   if (!out.applied.length) return scene;
   // the scene keeps its beat and cap, not the gate-2 record of the scene it patches: a patch is not a rewrite
-  const { rewrite: _rw, rewrite_finding: _rf, ...meta } = p.artifacts(drawId).find((a) => a.id === scene.artifact_id)!.meta;
+  const { rewrite: _rw, rewrite_finding: _rf, ...meta } = chainOf(p, drawId).artifact(scene.artifact_id)!.meta;
   const step = p.recordStep(drawId, scene.step_id, "scene", "patched");
   const artifact_id = p.artifact(step, "scene", out.text, { ...meta, words: words(out.text), patched: out.applied.map((f) => f.id) });
   for (const f of out.applied) record(p.db, { kind: "finding", target_id: f.id, verdict: "keep", method: "draw", note: "patched as written" });
   return { beat: k, text: out.text, artifact_id, step_id: step.id };
-}
-
-/** The latest scene artifact per beat, in beat order. */
-export function currentScenes(p: Pipeline, drawId: string): Scene[] {
-  const byBeat = new Map<number, Scene>();
-  for (const a of ofKind(p.artifacts(drawId), "scene")) byBeat.set(a.meta.beat, { beat: a.meta.beat, text: a.content, artifact_id: a.id, step_id: a.step_id });
-  return [...byBeat.values()].sort((a, b) => a.beat - b.beat);
 }
 
 // --- screens ----------------------------------------------------------------------

@@ -11,6 +11,7 @@ import { renderStory } from "../pipeline/drafts.ts";
 import { status } from "../pipeline/status.ts";
 import { originOf } from "../pipeline/stage.ts";
 import { gateCommand, type GateArgs, type GateResult } from "../pipeline/gate.ts";
+import { chainOf } from "../pipeline/chain.ts";
 import { checkersNext } from "../pipeline/check.ts";
 import { partsView } from "../pipeline/briefparts.ts";
 import { lifecycleView, stageTab, type DrawFacts } from "../pipeline/lifecycle.ts";
@@ -216,7 +217,9 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
       // what a check would run on this draw now, and the repair settings it would run under: the page states neither itself
       const cfg = row.draft_config ? (JSON.parse(row.draft_config).config as DraftConfig) : loadDraftConfig().config;
       const checks_next = row.chosen_step ? checkersNext(pipeline, row.id, cfg.checks.enabled) : [];
-      return { draw, origin: originOf(pipeline, row.id), steps, parts: partsView(pipeline, draw.id), checks_next, repair: cfg.repair,
+      // what the pane used to read off the artifact list itself: whether a check pass exists, and the auto run that ended here
+      const chain = chainOf(pipeline, row.id);
+      return { draw, origin: originOf(pipeline, row.id), steps, parts: partsView(pipeline, draw.id), checks_next, repair: cfg.repair, checked: !!chain.pass(), auto: chain.auto(),
                artifacts: pipeline.artifacts(draw.id), candidates: pipeline.candidates(draw.id), examples: drawExamples(db, draw.example_ids), forks: pipeline.forks(draw.id) };
     } catch (e: any) { return reply.code(404).send({ error: e.message }); }
   });

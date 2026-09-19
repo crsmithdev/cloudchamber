@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { marked } from "marked";
-import { api, when, type Artifact, type Candidate, type Example, type Facets, type Draw, type Fork, type FullStep, type Origin, type Parts, type Repair, type Source, type Status, type Step } from "./api.ts";
+import { api, when, type Artifact, type AutoResult, type Candidate, type Example, type Facets, type Draw, type Fork, type FullStep, type Origin, type Parts, type Repair, type Source, type Status, type Step } from "./api.ts";
 import { ArchivedToggle, Bar, Btn, Caret, Chip, Field, Head, Icon, LinkBtn, Mark, Seg, hhmm, lastSelected, markFor, secs, usePoll, useRememberSelected, useTick, useAddressBar, type MarkState } from "./ui.tsx";
 
-export type Detail = { draw: Draw; origin: Origin | null; steps: Step[]; parts: Parts; checks_next: string[]; repair: Repair; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] };
+/** `checked` and `auto` are the chain's answers; the pane does not read them off the artifact list. */
+export type Detail = { draw: Draw; origin: Origin | null; steps: Step[]; parts: Parts; checks_next: string[]; repair: Repair; checked: boolean; auto: AutoResult | null; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] };
 const STAGES = ["premises", "execute", "gate", "outline", "context", "ending", "brief"];
 export const LABEL: Record<string, string> = {
   awaiting_gate: "choose a premise",
