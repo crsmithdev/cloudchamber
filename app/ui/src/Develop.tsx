@@ -335,6 +335,8 @@ function AutoRuns({ auto, id }: { auto: AutoResult; id: string }) {
             ? `stopped: nothing scored ${auto.floor} or more`
             : auto.stopped === "patience"
               ? "stopped: the total score stopped falling"
+              : auto.stopped === "stalled"
+                ? "stopped: the last repair left the same findings open"
               : auto.stopped === "budget"
                 ? `stopped: reached the call budget at ${auto.calls} calls`
                 : "stopped: reached the round limit"

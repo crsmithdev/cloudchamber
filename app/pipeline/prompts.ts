@@ -299,7 +299,7 @@ Drop it when any of these is true:
 - the span hedges the fact it states, with words such as "on a good day", "about", "nearly" or "if";
 - the evidence is not in the brief or the ledger.
 
-Output one <verdict n="..."> tag per finding, containing <answer>keep|drop</answer> and <why> (one sentence). Under {cap} words.`,
+Output one <verdict n="..."> tag per finding, containing <answer>keep|drop</answer> (one of those two words and nothing else) and <why> (one sentence). Under {cap} words.`,
 
   reconcile: `Below are the fixes one repair round is about to apply to a story brief together, numbered.
 

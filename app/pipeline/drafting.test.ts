@@ -3,7 +3,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { FakeModel } from "./model.ts";
 import { parseConflicts } from "./drafting.ts";
-import { checkersNext, NOT_IN_PROSE } from "./check.ts";
+import { checkersNext, NOT_IN_PROSE, parseVerdicts } from "./check.ts";
 import { settingsFixture } from "./settings.fixture.ts";
 import { LISTS, loadSetting } from "./settings.ts";
 import { latest, readLog } from "./verdicts.ts";
@@ -703,6 +703,18 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(art.meta).toMatchObject({ rounds: 2, best: r.best.id });
   });
 
+  test("auto stops as stalled when a repair leaves the same findings open on the new brief", async () => {
+    // every pass reports A and B; round 1 accepts A, and round 2 raises A again as a re-opening of that fix
+    const { d, draw } = await drawn(draftScript({ "check-ledger": [...ledgerSamples(), ...ledgerSamples(), ...ledgerSamples()], "check-derivation": [...derivationSamples(), ...derivationSamples(), ...derivationSamples()] }));
+    await d.check(draw.id);
+    const r = await d.autoRounds(draw.id, { cfg: { ...loadDraftConfig().config, repair: { rounds: 9, stop_score: 7, patience: 9, max_calls: 9999 } } });
+    expect(r.stopped).toBe("stalled");
+    expect(r.rounds).toHaveLength(2);
+    expect(r.rounds[0].accepted).toBeGreaterThan(0);
+    expect(r.rounds[1].accepted).toBe(0);                                     // the stall breaks before anything is applied
+    expect(r.rounds[1].open).toBe(r.rounds[0].open);
+  });
+
   test("auto stops on patience when the total score stops falling, and names the best round", async () => {
     // each pass reports a different defect of the same weight, so no round improves and none is a re-litigation
     // deliberately unrelated wording each round: a shared phrasing would cluster as one defect
@@ -909,6 +921,13 @@ describe("auto acts on reported findings only, and reads its accepted set agains
 });
 
 describe("the verify pass", () => {
+  test("a verdict drops only on the word drop; any other answer keeps, and a missing answer is a shape failure", () => {
+    const v = (a: string) => parseVerdicts(`<verdict n="1"><answer>${a}</answer><why>w</why></verdict>`, 1)[0].answer;
+    expect([v("keep"), v("Keep."), v("drop (loose wording)"), v("Drop"), v("underived"), v("Placeholder")]).toEqual(["keep", "keep", "drop", "drop", "keep", "keep"]);
+    expect(() => parseVerdicts(`<verdict n="1"><why>w</why></verdict>`, 1)).toThrow(/no <answer>/);
+    expect(() => parseVerdicts(`<verdict n="2"><answer>keep</answer></verdict>`, 2)).toThrow(/missing <verdict n="1">/);
+  });
+
   test("a reported finding the verify pass drops goes under the bar with the reason, and the gate does not see it", async () => {
     const script = draftScript({
       // A and B are reported, C is under the bar; each of two readings reads all three, and one drop is enough

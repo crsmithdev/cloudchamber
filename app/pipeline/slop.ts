@@ -6,6 +6,7 @@
  */
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { overlap, normalise } from "./recur.ts";
 
 export const LEXICON_PATH = resolve(import.meta.dir, "slop.txt");
 
@@ -45,6 +46,34 @@ function trigrams(ws: string[]): Map<string, number> {
   const m = new Map<string, number>();
   for (let i = 0; i + 2 < ws.length; i++) { const t = `${ws[i]} ${ws[i + 1]} ${ws[i + 2]}`; m.set(t, (m.get(t) ?? 0) + 1); }
   return m;
+}
+
+/** A sentence of beat k that an earlier beat already said, word for word or nearly. */
+export type Restated = { beat: number; span: string; earlier_beat: number; earlier: string };
+
+const sentencesOf = (t: string) => t.split(/(?<=[.!?]["”’']?)\s+|\n+/).map((x) => x.trim()).filter(Boolean);
+const tokens = (s: string) => wordsOf(s).length;
+
+/**
+ * The sentences of beat k that a beat before it already said: the same sentence
+ * after whitespace and case, or a sentence of six words or more whose words
+ * overlap an earlier one by four in five. A sequential draft reads the whole
+ * story so far and restates it; on the Mission Control draft beats 5 to 8 said
+ * one realisation four times in near-identical lines and nothing flagged it.
+ * Short sentences are held to the exact match, so "She sat." is not a repeat.
+ */
+export function restated(scenes: { beat: number; text: string }[], k: number): Restated[] {
+  const scene = scenes.find((s) => s.beat === k);
+  if (!scene) return [];
+  const earlier = scenes.filter((s) => s.beat < k).flatMap((s) => sentencesOf(s.text).map((x) => ({ beat: s.beat, text: x })));
+  const out: Restated[] = [];
+  for (const sentence of sentencesOf(scene.text)) {
+    const n = tokens(sentence);
+    if (n < 4) continue;
+    const hit = earlier.find((e) => normalise(e.text) === normalise(sentence) || (n >= 6 && tokens(e.text) >= 6 && overlap(sentence, e.text) >= 0.8));
+    if (hit) out.push({ beat: k, span: sentence, earlier_beat: hit.beat, earlier: hit.text });
+  }
+  return out;
 }
 
 export function slopScreen(scenes: { beat: number; text: string }[], pool: string, lexicon: string[]): SlopReport {

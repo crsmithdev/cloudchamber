@@ -85,7 +85,7 @@ const STAGE_TAB: Readonly<Record<string, Tab | null>> = {
   "ledger-extract": "check", "check-derivation": "check", "check-ledger": "check", "check-verify": "check",
   "check-structure": "check", "check-resemblance": "check", "check-claims-extract": "check", "check-claims-verify": "check",
   reconcile: "check", "repair-vignette": "check", "repair-context": "check", "repair-outline": "check", "repair-ending": "check",
-  schedule: "write", scene: "write", "screen-ledger": "write", "screen-structure": "write", "screen-slop": "write",
+  schedule: "write", scene: "write", "screen-ledger": "write", "screen-structure": "write", "screen-slop": "write", "screen-restated": "write",
 };
 export const stageTab = (stage: string): Tab | null => STAGE_TAB[stage] ?? null;
 

@@ -58,10 +58,11 @@ describe("recurrence", () => {
     expect(cluster([withPatch(1, "The   Bruges clavicle"), withPatch(2, "the bruges clavicle")], 2)[0].patch).toBe("The   Bruges clavicle");
   });
 
-  test("parseVerdicts reads the first keep or drop word, and refuses an answer with neither", () => {
+  test("parseVerdicts drops on the word drop and keeps on any other answer; only a missing answer is a shape failure", () => {
     const ok = `<verdict n="1"><answer>Keep.</answer><why>a</why></verdict><verdict n="2"><answer>drop (loose wording)</answer><why>b</why></verdict>`;
     expect(parseVerdicts(ok, 2).map((v) => v.answer)).toEqual(["keep", "drop"]);
-    expect(() => parseVerdicts(`<verdict n="1"><answer>unsure</answer></verdict>`, 1)).toThrow(/keep or drop/);
+    expect(parseVerdicts(`<verdict n="1"><answer>unsure</answer></verdict>`, 1)[0].answer).toBe("keep");
+    expect(() => parseVerdicts(`<verdict n="1"><why>a</why></verdict>`, 1)).toThrow(/no <answer>/);
     expect(() => parseVerdicts(ok, 3)).toThrow(/missing <verdict n="3">/);
   });
 

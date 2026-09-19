@@ -130,7 +130,7 @@ export class Pipeline {
    * A step that made no model call: a brief piece carried over by a repair, or
    * a deterministic screen. `model` names what stood in for the call.
    */
-  recordStep(draw: string, parent: string | null, stage: StageName | "screen-slop", model: "copied" | "deterministic" | "patched", parsed: unknown = null): StepRow {
+  recordStep(draw: string, parent: string | null, stage: StageName | "screen-slop" | "screen-restated", model: "copied" | "deterministic" | "patched", parsed: unknown = null): StepRow {
     const row = this.insertStep(draw, parent, stage, model, "", "", 1);
     this.finishStep(row, { status: "done", parsed: parsed === null ? null : JSON.stringify(parsed) });
     return row;

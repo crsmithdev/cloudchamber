@@ -3,7 +3,8 @@
  * one fresh call writes each beat; each scene is screened against the ledger
  * as it is written and the screen's own patches go in before the next beat
  * reads it; every scene is then screened for a fixed list of structural tells,
- * and the joined draft is run through the deterministic slop screen.
+ * each is screened for a sentence an earlier beat already said, and the joined
+ * draft is run through the deterministic slop screen.
  */
 import type { Pipeline, StepRow } from "./draw.ts";
 import { fill } from "./prompts.ts";
@@ -11,8 +12,8 @@ import { need, samples, tag, words } from "./model.ts";
 import { RUN } from "./config.ts";
 import { eligiblePassages } from "./bank.ts";
 import { FORM_VALUES, samplesFor, type DraftConfig, type FormAxis } from "./draftconfig.ts";
-import { cluster, parseFindings, type Finding } from "./recur.ts";
-import { loadLexicon, slopScreen } from "./slop.ts";
+import { cluster, findingId, parseFindings, type Finding } from "./recur.ts";
+import { loadLexicon, restated, slopScreen } from "./slop.ts";
 import { parseQuestions, type Answer } from "./check.ts";
 import type { BriefParts } from "./briefparts.ts";
 import { applyPatches } from "./repair.ts";
@@ -197,6 +198,18 @@ export async function runScreens(p: Pipeline, drawId: string, s: Schedule, scene
     const flags = flagsOf(answers);
     p.artifact(rs[0].step, "profile", JSON.stringify(answers), { pass, source: "screen", screen: "structure", beat: k, answers, flags, samples: n });
   }));
+  // a sentence the beat says again is a flag with a location and no patch: rewrite k takes it as a constraint
+  for (const k of beats) {
+    const scene = scenes.find((x) => x.beat === k)!;
+    const hits = restated(scenes, k);
+    if (!hits.length) continue;
+    const step = p.recordStep(drawId, scene.step_id, "screen-restated", "deterministic", hits);
+    for (const h of hits) {
+      const meta = { id: findingId("restated", h.span, `${drawId}/${k}`), checkers: ["restated"], samples: [1], n: 1, span: h.span, statement: `beat ${k} says again what beat ${h.earlier_beat} said`,
+        result: `restates:${h.earlier}`, evidence: h.earlier, invalidates: String(k), replacement: `Beat ${k} does not repeat what beat ${h.earlier_beat} already says: "${h.earlier}"`, patch: "" };
+      p.artifact(step, "finding", meta.statement, { ...meta, pass, source: "screen", screen: "restated", beat: k });
+    }
+  }
   if (enabled.includes("slop") && beats.length === scenes.length) {
     const pool = cfg.screens.slop_baseline === "pool" ? eligiblePassages(p.db).map((x) => x.text).join("\n\n") : "";
     const report = slopScreen(scenes.map((x) => ({ beat: x.beat, text: x.text })), pool, loadLexicon(opts.lexiconPath));

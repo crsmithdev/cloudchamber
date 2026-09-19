@@ -24,11 +24,11 @@ import { bindScene, runScenes, runSchedule, runScreens, writeScene, type Schedul
 import { draftView, exportDraft, renderStory, type DraftView } from "./drafts.ts";
 import { tag } from "./model.ts";
 import { fill } from "./prompts.ts";
-import { SCORE_MAX } from "./recur.ts";
+import { SCORE_MAX, same } from "./recur.ts";
 
 /** One brief of an auto run: its last check pass's open findings and their total, what auto accepted on it, and how many passes it had. */
 export type AutoRound = { round: number; id: string; open: number; total: number; accepted: number; calls: number; passes: number };
-export type AutoResult = { id: string; rounds: AutoRound[]; best: AutoRound; stopped: "floor" | "cap" | "patience" | "budget"; floor: number; calls: number; left_open: number };
+export type AutoResult = { id: string; rounds: AutoRound[]; best: AutoRound; stopped: "floor" | "cap" | "patience" | "stalled" | "budget"; floor: number; calls: number; left_open: number };
 export type DraftOpts = { profile?: string; overrides?: Overrides; auto?: boolean };
 /** A finding as the gate reads it: `auto_eligible` says whether the auto rule would consider it, whatever it scores. */
 export type GateFinding = FindingView & { auto_eligible: boolean };
@@ -240,6 +240,12 @@ export class Drafting {
    * call reads them against each other and the lower-scoring side of every
    * conflicting pair is dismissed before the repair.
    *
+   * A repair that leaves the open set as it was, finding for finding by the
+   * cluster rule, has changed nothing the loop can act on: what is open now
+   * re-opens a settled fix or sits under the floor, and the next round would
+   * see the same. The Mission Control chain spent twenty calls on two such
+   * rounds before patience fired. That stop is `stalled`.
+   *
    * A clean pass is one sample set. The floor stop waits for `CLEAN_PASSES`
    * clean passes in a row on the same brief, each a fresh check, so a pass
    * that missed a defect does not end the chain. One row per brief: a re-check
@@ -265,6 +271,7 @@ export class Drafting {
     let stopped: AutoResult["stopped"];
     let clean = 0;
     let accept: GateFinding[] = [];
+    let before: { id: string; open: GateFinding[] } | null = null;
     for (;;) {
       // a finding the verify pass dropped is stored under the bar and open: not auto's either
       const open = this.findings(id).findings.filter((f) => f.decision === "open" && f.reported);
@@ -273,6 +280,9 @@ export class Drafting {
       let row = rounds.find((r) => r.id === id);
       if (!row) rounds.push((row = { round: rounds.length + 1, id, open: 0, total: 0, accepted: 0, calls, passes: 0 }));
       Object.assign(row, { open: open.length, total: open.reduce((a, f) => a + f.score, 0), calls, passes: row.passes + 1 });
+      // the previous brief's repair changed nothing: the same findings, on a new brief
+      if (before && before.id !== id && open.length === before.open.length && open.every((f) => before!.open.some((o) => same(o, f)))) { stopped = "stalled"; break; }
+      before = { id, open };
       if (!accept.length) {
         if (++clean >= CLEAN_PASSES) { stopped = "floor"; break; }
         // one clean pass is not convergence: out of calls before the second, the budget stopped it
