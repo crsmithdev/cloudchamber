@@ -21,6 +21,7 @@ import { applyPatches } from "./repair.ts";
 import { record } from "./verdicts.ts";
 import { chainOf } from "./chain.ts";
 
+/** `until` is the beat that reveals the item; one past the last beat means the story never does. */
 export type Withheld = { item: string; until: number };
 export type Beat = { n: number; words: number; job: string; known: string; withheld: Withheld[]; stakes: string; set_piece: string; absorbs: string };
 export type Schedule = { form: Record<FormAxis, string>; beats: Beat[]; raw: string };
@@ -36,6 +37,8 @@ export const FLAG_PRESENT = new Set(["theme-stated", "withheld-revealed", "prota
 export const FLAG_ABSENT = new Set(["bodily-emotion", ...LAST_BEAT_SCREEN]);
 
 // --- schedule -------------------------------------------------------------------
+
+const NEVER = Number.MAX_SAFE_INTEGER;
 
 export function parseSchedule(text: string, cfg: DraftConfig): Schedule {
   const formText = tag(text, "form");
@@ -55,15 +58,20 @@ export function parseSchedule(text: string, cfg: DraftConfig): Schedule {
     const withheld: Withheld[] = [];
     for (const raw of (tag(b, "withheld") ?? "").split("\n").map((l) => l.replace(/^\s*[-*]\s+/, "").trim()).filter(Boolean)) {
       if (/^none\.?$/i.test(raw)) continue;
-      const w = /^(.*?)\s*[—–-]+\s*beat\s*(\d+)\.?$/i.exec(raw) ?? /^(.*?)\s*\(\s*beat\s*(\d+)\s*\)\.?$/i.exec(raw);
-      if (!w) throw new Error(`beat ${m[1]}: withheld line without a beat number: ${raw.slice(0, 60)}`);
-      withheld.push({ item: w[1].trim(), until: Number(w[2]) });
+      // "item — beat N", "item (beat N)", with anything after the number; or "item — never", "item —", "item": never revealed
+      const w = /^(.*?)\s*[—–-]+\s*beat\s*(\d+)\b.*$/i.exec(raw) ?? /^(.*?)\s*\(\s*beat\s*(\d+)\b[^)]*\)\.?$/i.exec(raw);
+      const never = w ? null : /^(.*?)\s*(?:[—–-]+\s*(?:never|not revealed|unresolved)?\.?)?$/i.exec(raw);
+      if (w) { withheld.push({ item: w[1].trim(), until: Number(w[2]) }); continue; }
+      if (!never?.[1].trim()) throw new Error(`beat ${m[1]}: withheld line without an item: ${raw.slice(0, 60)}`);
+      withheld.push({ item: never[1].trim(), until: NEVER });
     }
     const setPiece = (tag(b, "set_piece") ?? "").trim();
     beats.push({ n: Number(m[1]), words: Number(m[2]), job: tag(b, "job") ?? "", known: tag(b, "known") ?? "", withheld, stakes: tag(b, "stakes") ?? "", set_piece: /^none\.?$/i.test(setPiece) ? "" : setPiece, absorbs: (tag(b, "absorbs") ?? "none").toLowerCase().trim() });
   }
   if (!beats.length) throw new Error("no <beat> tags");
   beats.sort((a, b) => a.n - b.n);
+  // an item the story never reveals stays withheld past the last beat
+  for (const b of beats) for (const w of b.withheld) if (w.until === NEVER) w.until = beats.length + 1;
   beats.forEach((b, i) => { if (b.n !== i + 1) throw new Error(`beats are not numbered 1..M: found ${b.n} at position ${i + 1}`); if (!b.job) throw new Error(`beat ${b.n}: no <job>`); });
   const { count, min, max, words_min, words_max } = cfg.beats;
   if (count === "auto" ? beats.length < min || beats.length > max : beats.length !== count) throw new Error(`${beats.length} beats; config asks ${count === "auto" ? `${min}..${max}` : count}`);
@@ -101,7 +109,7 @@ export async function runSchedule(p: Pipeline, drawId: string, parts: BriefParts
 const formLine = (s: Schedule) => (Object.keys(FORM_VALUES) as FormAxis[]).map((a) => `${a} ${s.form[a]}`).join("; ");
 /** A schedule whose container is told carries the narrated register into every scene. */
 const told = (s: Schedule) => /\btold\b/i.test(s.form.container);
-const withheldLine = (b: Beat) => b.withheld.length ? b.withheld.map((w) => `${w.item} (beat ${w.until})`).join("; ") : "nothing";
+const withheldLine = (b: Beat, M: number) => b.withheld.length ? b.withheld.map((w) => `${w.item} (${w.until > M ? "never revealed" : `beat ${w.until}`})`).join("; ") : "nothing";
 
 export function scenePrompt(parts: BriefParts, ledger: string, s: Schedule, b: Beat, soFar: string[], constraints?: string): string {
   const material: Record<string, string> = { chosen: parts.vignette, "context-1": parts.contexts[0] ?? "", "context-2": parts.contexts[1] ?? "", ending: parts.ending };
@@ -114,7 +122,7 @@ export function scenePrompt(parts: BriefParts, ledger: string, s: Schedule, b: B
     ...(material[b.absorbs] ? [fill("sceneMaterial", { material: material[b.absorbs] })] : []),
     ...(told(s) ? [fill("sceneTold", {})] : []),
     ...(constraints ? [constraints] : []),
-    fill("sceneAsk", { n: String(b.n), job: b.job, known: b.known, withheld: withheldLine(b), form: formLine(s), cap: String(b.words), constraintLine: constraints ? " Every line of the constraints holds." : "" }),
+    fill("sceneAsk", { n: String(b.n), job: b.job, known: b.known, withheld: withheldLine(b, s.beats.length), form: formLine(s), cap: String(b.words), constraintLine: constraints ? " Every line of the constraints holds." : "" }),
   ];
   return blocks.filter(Boolean).join("\n\n");
 }
@@ -178,10 +186,10 @@ export async function bindScene(p: Pipeline, drawId: string, ledger: string, sce
 
 export type Profile = { beat: number; pass: string; answers: Record<string, Answer>; flags: string[] };
 
-export function structurePrompt(b: Beat, scene: string, last: boolean): string {
+export function structurePrompt(b: Beat, scene: string, last: boolean, M = Number.MAX_SAFE_INTEGER): string {
   const later = b.withheld.filter((w) => w.until > b.n);
   return fill("screenStructure", {
-    n: String(b.n), job: b.job, withheld: later.length ? later.map((w) => `${w.item} — beat ${w.until}`).join("\n") : "none", scene,
+    n: String(b.n), job: b.job, withheld: later.length ? later.map((w) => `${w.item} — ${w.until > M ? "never revealed" : `beat ${w.until}`}`).join("\n") : "none", scene,
     fifth: fill(last ? "screenResolvesEverything" : "screenResolved", {}), last: last ? fill("screenLastBeat", {}) : "",
   });
 }
@@ -200,7 +208,7 @@ export async function runScreens(p: Pipeline, drawId: string, s: Schedule, scene
     const scene = scenes.find((x) => x.beat === k)!, b = s.beats[k - 1];
     const { samples: n, keep_if } = samplesFor(cfg.screens, "structure");
     const names = structureQuestions(k === M);
-    const prompt = structurePrompt(b, scene.text, k === M);
+    const prompt = structurePrompt(b, scene.text, k === M, M);
     const rs = await samples(n, () => p.invoke(drawId, scene.step_id, "screen-structure", prompt, (t) => parseQuestions(t, names)));
     // an answer is present when it recurs in keep_if samples; the quote is the first sample's
     const answers: Record<string, Answer> = {};

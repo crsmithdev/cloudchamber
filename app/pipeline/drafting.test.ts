@@ -3,6 +3,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { FakeModel } from "./model.ts";
 import { parseConflicts } from "./drafting.ts";
+import { parseSchedule, structurePrompt } from "./write.ts";
 import { checkersNext, NOT_IN_PROSE, parseVerdicts } from "./check.ts";
 import { settingsFixture } from "./settings.fixture.ts";
 import { LISTS, loadSetting } from "./settings.ts";
@@ -591,6 +592,25 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(scenes).toHaveLength(8);
     expect(scenes.every((c) => !c.prompt.includes("<story-so-far>"))).toBe(true);
     expect(d.view(draw.id).scenes.map((s) => s.beat)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+  });
+
+  test("a withheld item with no reveal beat is never revealed: it stays withheld past the last beat, and the screens say so", () => {
+    const cfg = loadDraftConfig().config;
+    const text = `<form>tense: past\nperson: first\nchronology: linear\ncontainer: prose</form>` + Array.from({ length: 8 }, (_, i) => {
+      const n = i + 1;
+      const withheld = n === 1 ? "whether the reductions have a floor — beat 7 (unresolved until then)\nwhat brought them across —\nwho sent the second pass — never\nthe name on the band" : "none";
+      return `<beat n="${n}" words="625"><job>Beat ${n}.</job><known>Thing ${n}.</known><withheld>${withheld}</withheld><stakes>x</stakes><absorbs>none</absorbs></beat>`;
+    }).join("");
+    const s = parseSchedule(text, cfg);
+    expect(s.beats[0].withheld).toEqual([
+      { item: "whether the reductions have a floor", until: 7 },
+      { item: "what brought them across", until: 9 },
+      { item: "who sent the second pass", until: 9 },
+      { item: "the name on the band", until: 9 },
+    ]);
+    expect(structurePrompt(s.beats[0], "scene", false, 8)).toContain("what brought them across — never revealed");
+    expect(structurePrompt(s.beats[0], "scene", false, 8)).toContain("whether the reductions have a floor — beat 7");
+    expect(() => parseSchedule(text.replace("the name on the band", " — "), cfg)).toThrow(/withheld line without an item/);
   });
 
   test("a schedule contradicting a fixed axis, or outside the beat bounds, fails shape", async () => {
