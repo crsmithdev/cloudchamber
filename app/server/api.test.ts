@@ -11,7 +11,7 @@ import { settingsFixture } from "../pipeline/settings.fixture.ts";
 
 const CELLS = ["informational", "mixed", "involved"].flatMap((v) => ["non-narrative", "mixed", "narrative"].map((m) => [v, m]));
 const premises = `<premise><text>P1</text><probability>0.05</probability></premise><premise><text>P2</text><probability>0.02</probability></premise><premise><text>P3</text><probability>0.08</probability></premise><premise><text>P4</text><probability>0.03</probability></premise><premise><text>P5</text><probability>0.06</probability></premise>`;
-const outline = `<section name="departure">a</section><section name="particulars">b</section><section name="knowledge">c</section>`;
+const outline = `<section name="departure">a</section><section name="particulars">b</section><section name="knowledge">c</section><section name="arrival">d</section>`;
 
 async function setup() {
   const dir = mkdtempSync(join(tmpdir(), "cloudchamber-api-"));
@@ -293,7 +293,7 @@ describe("api: draft config", () => {
     expect(r.code).toBe(200);
     expect(r.body.defaults.length.words).toBe(5000);
     expect(r.body.defaults.beats).toMatchObject({ count: "auto", min: 5, max: 10 });
-    expect(r.body.profiles).toEqual(["flash", "novelette"]);
+    expect(r.body.profiles).toEqual(["flash", "novelette", "narrated"]);
     // the form fills itself from the profile, so each one arrives resolved
     expect(r.body.byProfile.flash).toMatchObject({ length: { words: 1500 }, beats: { count: 3 } });
     expect(r.body.byProfile.novelette.length.words).toBe(12000);

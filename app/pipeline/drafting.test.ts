@@ -394,7 +394,7 @@ describe("claims", () => {
   test("claims: world runs extract then one search-enabled verify per claim on sonnet; contradicted becomes a finding", async () => {
     const { dir } = fixture();
     const sdir = settingsFixture(dir);
-    const { p, d, draw, model } = await drawn(draftScript({ outline: () => ["departure", "particulars", "knowledge"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n") }), { id: "basin", dir: sdir, claims: "world" });
+    const { p, d, draw, model } = await drawn(draftScript({ outline: () => ["departure", "particulars", "knowledge", "arrival"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n") }), { id: "basin", dir: sdir, claims: "world" });
     const r = await d.check(draw.id);
     expect(r.claims).toBe("world");
     expect(stagesOf(model, /claims/)).toEqual(["check-claims-extract", "check-claims-verify", "check-claims-verify"]);
@@ -415,7 +415,7 @@ describe("claims", () => {
   test("claims: setting verifies against the whole distillate, every list, and asks for claims about the setting", async () => {
     const { dir } = fixture();
     const sdir = settingsFixture(dir);
-    const { p, d, draw, model } = await drawn(draftScript({ outline: () => ["departure", "particulars", "knowledge"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n") }), { id: "basin", dir: sdir, claims: "setting" });
+    const { p, d, draw, model } = await drawn(draftScript({ outline: () => ["departure", "particulars", "knowledge", "arrival"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n") }), { id: "basin", dir: sdir, claims: "setting" });
     const r = await d.check(draw.id);
     expect(r.claims).toBe("setting");
     expect(model.calls.find((c) => c.stage === "check-claims-extract")!.prompt).toContain("claims about the setting the story is set in");
@@ -432,7 +432,7 @@ describe("claims", () => {
   test("no claims key: the checker does not run", async () => {
     const { dir } = fixture();
     const sdir = settingsFixture(dir);
-    const { d, draw, model } = await drawn(draftScript({ outline: () => ["departure", "particulars", "knowledge"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n") }), { id: "basin", dir: sdir });
+    const { d, draw, model } = await drawn(draftScript({ outline: () => ["departure", "particulars", "knowledge", "arrival"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n") }), { id: "basin", dir: sdir });
     const r = await d.check(draw.id);
     expect(r.claims).toBe("off");
     expect(stagesOf(model, /claims/)).toEqual([]);
@@ -451,8 +451,8 @@ describe("claims", () => {
     const { dir } = fixture();
     const sdir = settingsFixture(dir);
     const script = draftScript({
-      outline: () => ["departure", "particulars", "knowledge"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n"),
-      "repair-outline": () => ["departure", "particulars", "knowledge"].map((n) => `<section name="${n}">Repaired ${n} body.</section>`).join("\n"),
+      outline: () => ["departure", "particulars", "knowledge", "arrival"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n"),
+      "repair-outline": () => ["departure", "particulars", "knowledge", "arrival"].map((n) => `<section name="${n}">Repaired ${n} body.</section>`).join("\n"),
       "check-ledger": [...ledgerSamples(), ...cleanSamples()],
       "check-derivation": [...derivationSamples(), ...cleanSamples()],
     });
@@ -543,10 +543,45 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(existsSync(join(dir, "drafts", draw.id))).toBe(false);          // nothing exported before keep
   });
 
+  test("the narrated profile: the schedule is asked for the told shape, every scene carries the register, the last beat is asked what it paid, and a beat that names no body is rewritten once", async () => {
+    const toldForm = "tense: past\nperson: first\nchronology: linear\ncontainer: told";
+    const { p, d, draw, model } = await drawn(draftScript({ schedule: () => schedule({ form: toldForm, cap: 875 }) }));
+    await d.check(draw.id);
+    await d.draft(draw.id, { profile: "narrated", overrides: { "screens.samples": 3, "screens.keep_if": 2 } });
+    const sched = model.calls.find((c) => c.stage === "schedule")!;
+    expect(sched.prompt).toContain("told afterward, by its narrator, to a listener");
+    expect(sched.prompt).toContain("<set_piece>");
+    expect(sched.prompt).toContain("container: told");
+    expect(sched.prompt).toContain("target length: 7000 words");
+    const scenes = model.calls.filter((c) => c.stage === "scene");
+    expect(scenes.every((c) => c.prompt.includes("<register>"))).toBe(true);
+    // eight beats, and beat 2 again: the fixture names no body in beat 2, and the told template pays for its register
+    expect(scenes.map((c) => /Write beat (\d+)/.exec(c.prompt)![1])).toEqual(["1", "2", "3", "4", "5", "6", "7", "8", "2"]);
+    expect(scenes[8].prompt).toContain("the narrator says what the body did before saying what it meant");
+    // the last beat is asked whether a presence arrived and a cost was paid; an earlier beat is not
+    const st8 = model.calls.find((c) => c.stage === "screen-structure" && /<scene n="8">/.test(c.prompt))!;
+    expect(st8.prompt).toContain("presence-arrives:");
+    const st4 = model.calls.find((c) => c.stage === "screen-structure" && /<scene n="4">/.test(c.prompt))!;
+    expect(st4.prompt).not.toContain("presence-arrives:");
+    const v = d.view(draw.id);
+    expect(v.profiles.find((x) => x.beat === 8)!.answers["cost-paid"]).toBeDefined();
+    expect(v.listen).not.toBeNull();
+    expect(v.listen!.beats).toHaveLength(8);
+    expect(p.draw(draw.id).status).toBe("awaiting_draft_gate");
+    expect(JSON.parse(p.draw(draw.id).draft_config!).config.structure.template).toBe("told");
+  });
+
+  test("the outline has four sections and the ending is derived from three of them", async () => {
+    const { model } = await drawn();
+    const outline = model.calls.find((c) => c.stage === "outline")!;
+    expect(outline.prompt).toContain('<section name="arrival">');
+    expect(model.calls.find((c) => c.stage === "ending")!.prompt).toContain("derived from the particulars, knowledge and arrival sections");
+  });
+
   test("parallel order carries no text so far; a bad schedule fails shape and retries; fixed form is checked; template mode refused", async () => {
     const { p, d, draw, model } = await drawn(draftScript({ schedule: [schedule({ absorbsTwice: true }), schedule()] }));
     await d.check(draw.id);
-    await expect(d.draft(draw.id, { overrides: { "structure.template": "frame" } })).rejects.toThrow(/structure mode not built: frame/);
+    await expect(d.draft(draw.id, { overrides: { "structure.template": "frame" } })).rejects.toThrow(/structure.template must be auto or told, got frame/);
     expect(p.draw(draw.id).status).toBe("awaiting_check_gate");
     const out = await d.draft(draw.id, { overrides: { "scenes.order": "parallel" } });
     expect(out.status).toBe("awaiting_draft_gate");

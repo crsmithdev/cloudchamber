@@ -109,7 +109,7 @@ export function invalidatesRank(inv: string): number {
  * and the contradictions a reader sees did not. What a reader sees now carries
  * its own term below, and the section weights only break ties.
  */
-export const INVALIDATES_WEIGHT: Record<string, number> = { departure: 2, knowledge: 1, particulars: 1 };
+export const INVALIDATES_WEIGHT: Record<string, number> = { departure: 2, knowledge: 1, particulars: 1, arrival: 2 };
 export const SCORE_MAX = 10;
 
 /**

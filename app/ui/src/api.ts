@@ -102,7 +102,7 @@ export type OffList = { dropped: number; rare: number | null };
 export type FindingsSummary = { pass: string | null; reported: number; accepted: number; open: number; total: number };
 /** `listed` is the gate's list; `reopened` would undo an earlier fix; `left` is what left the list and is still open, present when asked for. */
 export type Findings = { pass: string | null; findings: Finding[]; listed: Finding[]; reopened: Finding[]; left: Finding[]; summary: FindingsSummary | null; off_list: OffList; claims: Claim[]; profiles: Profile[]; examined: { stage: string; sample: number; examined: string }[]; judge: string | null; score_max: number; structure: string[] };
-export type Beat = { n: number; words: number; job: string; known: string; withheld: { item: string; until: number }[]; stakes: string; absorbs: string };
+export type Beat = { n: number; words: number; job: string; known: string; withheld: { item: string; until: number }[]; stakes: string; set_piece?: string; absorbs: string };
 export type Scene = { beat: number; text: string; artifact_id: string; step_id: string };
 export type Slop = {
   words: number;
@@ -112,12 +112,16 @@ export type Slop = {
   trigrams: { trigram: string; count: number }[];
   paragraphs: { beat: number; words: number; paragraphs: number; mean_words: number; single_sentence_share: number }[];
 };
+export type ListenProfile = { words: number; sentence_mean: number; long_sentence_share: number; numerals_per_1k: number; quotes_per_1k: number; body_per_1k: number; you_per_1k: number; first_person_per_1k: number };
+/** The listenability report: the draft and the narration pool on the same measures, and the draft's minutes at the pool's pace. */
+export type Listen = { story: ListenProfile; pool: ListenProfile; pool_wpm: number; minutes: number; beats: { beat: number; words: number; minutes: number }[] };
 export type Story = {
   schedule: { form: Record<string, string>; beats: Beat[]; raw: string } | null;
   scenes: Scene[];
   profiles: (Profile & { beat: number; flags: string[]; answers: Record<string, { answer: string; quote: string }> })[];
   screenFindings: Finding[];
   slop: Slop | null;
+  listen: Listen | null;
   judge: string | null;
   text: string;
 };

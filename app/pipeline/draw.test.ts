@@ -30,7 +30,7 @@ function fixture(): { db: Db; dir: string } {
 const premises = (probs = [0.05, 0.03, 0.08, 0.03, 0.06]) =>
   probs.map((p, i) => `<premise><text>Premise ${i + 1} text.</text><probability>${p}</probability></premise>`).join("\n");
 const vignette = (n: number) => `<vignette>${Array.from({ length: 400 }, (_, i) => `w${n}_${i}`).join(" ")}</vignette>`;
-const outline = (extra: string[] = []) => ["departure", "particulars", "knowledge", ...extra].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n");
+const outline = (extra: string[] = []) => ["departure", "particulars", "knowledge", "arrival", ...extra].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n");
 const script = (over: Record<string, any> = {}) => ({
   premises: [premises()],
   execute: (p: string) => vignette(Number(/Premise (\d)/.exec(p)?.[1] ?? 0)),
@@ -268,7 +268,7 @@ describe("draw graph", () => {
     expect(ol.indexOf("Seed:")).toBeLessThan(ol.indexOf("## Bodies"));
     expect(ol.indexOf("## Bodies")).toBeLessThan(ol.indexOf("Write one section per name"));
     whole(ol, "Bodies"); whole(ol, "Instruments");
-    has(ol, ['<section name="departure">', '<section name="particulars">', '<section name="knowledge">']);
+    has(ol, ['<section name="departure">', '<section name="particulars">', '<section name="knowledge">', '<section name="arrival">']);
     hasNot(ol, ["## Places", "## Terms", "## Jobs", "## Matrix", '<section name="matrix">']);
     // jobs, context, ending after the head
     for (const [stage, want, gone] of [

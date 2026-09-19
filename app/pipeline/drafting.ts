@@ -56,6 +56,8 @@ export type FindingsView = {
 const AUTO_CHECKERS = ["derivation", "ledger", "claims"];
 /** A floor stop needs this many clean passes in a row on one brief: one sample set can miss what the next one finds. */
 const CLEAN_PASSES = 2;
+/** The constraint a beat flagged bodily-emotion is rewritten under. */
+export const BODY_LINE = "When a thing happens in this beat, the narrator says what the body did before saying what it meant: the chest, the hands, the breath, the stomach.";
 const autoEligible = (f: FindingView) =>
   f.checkers.some((c) => AUTO_CHECKERS.includes(c)) && !!f.evidence.trim() && f.evidence.trim().toLowerCase() !== "none"
   && !f.relitigates;
@@ -71,7 +73,7 @@ export function parseConflicts(block: string): { a: number; b: number; why: stri
 }
 
 export class Drafting {
-  constructor(public p: Pipeline, public opts: { draftsDir?: string; lexiconPath?: string; premisesPath?: string } = {}) {}
+  constructor(public p: Pipeline, public opts: { draftsDir?: string; lexiconPath?: string; premisesPath?: string; narrationDir?: string } = {}) {}
 
   /** The draw, when `action` is allowed on it now; otherwise the reason is thrown. */
   private must(drawId: string, action: Action): DrawRow {
@@ -193,7 +195,6 @@ export class Drafting {
   async draft(drawId: string, opts: DraftOpts = {}): Promise<DrawRow> {
     let draw = this.must(drawId, "draft");
     const resolved = this.resolved(draw, opts);
-    if (resolved.config.structure.template !== "auto") throw new Error(`structure mode not built: ${resolved.config.structure.template}`);
     this.p.db.query("UPDATE draws SET draft_config = ? WHERE id = ?").run(JSON.stringify(resolved), drawId);
     if (opts.auto) {
       const next = await this.autoGate(drawId, resolved.config);
@@ -207,7 +208,9 @@ export class Drafting {
       const pass = passId();
       const { step, schedule } = await runSchedule(this.p, id, parts, briefBlock(parts), resolved.config);
       const scenes = await runScenes(this.p, id, step, parts, ledger, schedule, resolved.config, pass);
-      await runScreens(this.p, id, schedule, scenes, resolved.config, pass, undefined, { lexiconPath: this.opts.lexiconPath });
+      await runScreens(this.p, id, schedule, scenes, resolved.config, pass, undefined, { lexiconPath: this.opts.lexiconPath, narrationDir: this.opts.narrationDir });
+      // the told template pays for its register: one rewrite of each beat the screens flag for it
+      if (resolved.config.structure.template === "told") await this.registerRewrites(id, resolved.config);
     });
     settle(this.p.db, drawId, "awaiting_draft_gate");
     return this.p.draw(drawId);
@@ -359,23 +362,42 @@ export class Drafting {
     const chosen = findingId ? flags.filter((f) => f.id === findingId) : flags;
     if (findingId && !chosen.length) throw new Error(`beat ${k}: no screen finding ${findingId} that is open`);
     const constraints = chosen.length ? constraintsBlock(chosen) : undefined;
-    const schedule: Schedule = { form: v.schedule.form as Schedule["form"], beats: v.schedule.beats, raw: v.schedule.raw };
-    await under(this.p.db, drawId, "drafting", "awaiting_draft_gate", async () => {
-      const parts = briefParts(this.p, drawId);
-      // the pinned one: a repaired draw carries no ledger of its own, the chain root holds it
-      const ledger = chainOf(this.p, drawId).ledger() ?? "";
-      const scheduleStep = this.p.steps(drawId).find((s) => s.stage === "schedule" && s.status === "done")!;
-      const before = v.scenes.filter((s) => s.beat < k).map((s) => s.text);
-      const pass = passId();
-      // the scene carries the gate-2 record: which beat was rewritten, and under which flag
-      const written = await writeScene(this.p, drawId, scheduleStep.id, parts, ledger, schedule, schedule.beats[k - 1], cfg.scenes.order === "sequential" ? before : [], constraints, { finding: findingId });
-      const bound = await bindScene(this.p, drawId, ledger, written, v.scenes[k - 2], cfg, pass);
-      // the beat after it read the old text: it is held to the new one, as it was when first written
-      if (k < M) await bindScene(this.p, drawId, ledger, v.scenes[k], bound, cfg, pass);
-      await runScreens(this.p, drawId, schedule, chainOf(this.p, drawId).scenes(), cfg, pass, k < M ? [k, k + 1] : [k], { lexiconPath: this.opts.lexiconPath });
-    });
+    await under(this.p.db, drawId, "drafting", "awaiting_draft_gate", () => this.regenerate(drawId, k, cfg, constraints, findingId));
     settle(this.p.db, drawId, "awaiting_draft_gate");
     return this.p.draw(drawId);
+  }
+
+  /** Write beat k again under the constraints, bind it and the beat after it to the ledger, and re-screen both. The caller holds the status. */
+  private async regenerate(drawId: string, k: number, cfg: DraftConfig, constraints?: string, findingId?: string): Promise<void> {
+    const chain = chainOf(this.p, drawId);
+    const schedule = chain.schedule()!, scenes = chain.scenes(), M = schedule.beats.length;
+    const parts = briefParts(this.p, drawId);
+    // the pinned one: a repaired draw carries no ledger of its own, the chain root holds it
+    const ledger = chain.ledger() ?? "";
+    const scheduleStep = this.p.steps(drawId).find((s) => s.stage === "schedule" && s.status === "done")!;
+    const before = scenes.filter((s) => s.beat < k).map((s) => s.text);
+    const pass = passId();
+    // the scene carries the gate-2 record: which beat was rewritten, and under which flag
+    const written = await writeScene(this.p, drawId, scheduleStep.id, parts, ledger, schedule, schedule.beats[k - 1], cfg.scenes.order === "sequential" ? before : [], constraints, { finding: findingId });
+    const bound = await bindScene(this.p, drawId, ledger, written, scenes[k - 2], cfg, pass);
+    // the beat after it read the old text: it is held to the new one, as it was when first written
+    if (k < M) await bindScene(this.p, drawId, ledger, scenes[k], bound, cfg, pass);
+    await runScreens(this.p, drawId, schedule, chainOf(this.p, drawId).scenes(), cfg, pass, k < M ? [k, k + 1] : [k], { lexiconPath: this.opts.lexiconPath, narrationDir: this.opts.narrationDir });
+  }
+
+  /**
+   * Under the told template the register is part of the draft, not a gate
+   * decision: each beat the screens flag for it gets one rewrite with the flag
+   * as its constraint, a body not named or a sentence an earlier beat said.
+   * One pass, in beat order; a beat the rewrite flags again waits for a person.
+   */
+  private async registerRewrites(drawId: string, cfg: DraftConfig): Promise<void> {
+    const chain = chainOf(this.p, drawId);
+    const lines = new Map<number, string[]>();
+    const add = (k: number, line: string) => lines.set(k, [...(lines.get(k) ?? []), line]);
+    for (const pr of chain.screenProfiles()) if (pr.flags.includes("bodily-emotion")) add(pr.beat, BODY_LINE);
+    for (const f of chain.screenFindings()) if (f.screen === "restated" && f.decision === "open") add(f.beat!, f.replacement);
+    for (const k of [...lines.keys()].sort((a, b) => a - b)) await this.regenerate(drawId, k, cfg, constraintsBlock(lines.get(k)!.map((replacement) => ({ replacement }))));
   }
 
   keep(drawId: string, note = ""): { draw: DrawRow; dir: string } {

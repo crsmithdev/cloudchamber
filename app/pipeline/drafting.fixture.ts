@@ -83,9 +83,10 @@ export const screenLedger = (prompt: string) => {
 
 export const screenStructure = (prompt: string) => {
   const n = Number(/<scene n="(\d+)">/.exec(prompt)?.[1] ?? 0);
-  const fifth = /resolves-everything:/.test(prompt) ? "resolves-everything" : "resolved";
-  const names = ["theme-stated", "bodily-emotion", "withheld-revealed", "protagonist-never-wrong", fifth];
-  const present = new Set([n === 5 ? "theme-stated" : "", "bodily-emotion"]);
+  const last = /resolves-everything:/.test(prompt);
+  const names = ["theme-stated", "bodily-emotion", "withheld-revealed", "protagonist-never-wrong", last ? "resolves-everything" : "resolved", ...(last ? ["presence-arrives", "cost-paid"] : [])];
+  // beat 5 states the theme; beat 2 names no body; the last beat pays what a listener needs paid
+  const present = new Set([n === 5 ? "theme-stated" : "", n === 2 ? "" : "bodily-emotion", "presence-arrives", "cost-paid"]);
   return names.map((q) => `<question name="${q}"><answer>${present.has(q) ? "present" : "absent"}</answer><quote>quote ${q} ${n}</quote></question>`).join("");
 };
 
@@ -98,7 +99,7 @@ export function draftScript(over: Record<string, any> = {}) {
     premises: () => [0.05, 0.03, 0.08, 0.03, 0.06].map((p, i) => `<premise><text>Premise ${i + 1} text.</text><probability>${p}</probability></premise>`).join("\n"),
     // the chosen vignette carries B and C, so every fixture span is in the prose a reader sees
     execute: (p: string) => vignette(Number(/Premise (\d)/.exec(p)?.[1] ?? 0)).replace("</vignette>", ` ${SPAN_B}, ${SPAN_C}.</vignette>`),
-    outline: () => ["departure", "particulars", "knowledge"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n"),
+    outline: () => ["departure", "particulars", "knowledge", "arrival"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n"),
     jobs: () => "<job>Test the first thing: scene one.</job><job>Test a second thing: scene two.</job>",
     context: (p: string) => `<vignette>context for ${/Its job: (.*)/.exec(p)?.[1]}</vignette>`,
     ending: () => ending(),
@@ -114,7 +115,7 @@ export function draftScript(over: Record<string, any> = {}) {
     // repairs edit in place: the rewrite keeps the passage it was given
     "repair-context": (p: string) => `<vignette>rewritten context ${tag(p, "constraints")?.split("\n")[0] ?? ""} ${tag(p, "vignette") ?? ""}</vignette>`,
     "repair-vignette": (p: string) => `<vignette>rewritten vignette ${tag(p, "constraints")?.split("\n")[0] ?? ""} ${tag(p, "vignette") ?? ""}</vignette>`,
-    "repair-outline": () => ["departure", "particulars", "knowledge"].map((n) => `<section name="${n}">Repaired ${n} body.</section>`).join("\n"),
+    "repair-outline": () => ["departure", "particulars", "knowledge", "arrival"].map((n) => `<section name="${n}">Repaired ${n} body.</section>`).join("\n"),
     "repair-ending": (p: string) => `<ending>${tag(p, "ending") ?? ""} Only the assembler fires the reliquary.</ending>`,
     schedule: () => schedule(),
     scene: (p: string) => sceneFor(p),

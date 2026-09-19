@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { api, type AutoResult, type Draw, type DraftConfig, type Finding, type Findings, type Story, type Step } from "./api.ts";
+import { api, type AutoResult, type Draw, type DraftConfig, type Finding, type Findings, type Listen, type Story, type Step } from "./api.ts";
 import { BriefFiles, DrawAside, Md, RowHead, SeedNote, StepView, boldLabels, firstParagraph, DrawNotes, inFlight, isWorking, label, stageName, stageNames, type Detail } from "./Draws.tsx";
 import { ArchivedToggle, Bar, Btn, Caret as Chevron, Facts, Field, Head, Icon, Keys, Mark, Seg, lastSelected, markFor, onEnter, rowKeys, secs, usePoll, useRememberSelected, useRowsFromPage, useAddressBar } from "./ui.tsx";
 
@@ -1525,6 +1525,32 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
                     </div>,
                   ],
                 ]}
+              />
+            </>
+          )}
+          {s.listen && (
+            <>
+              <Head className="mt-6" note={`deterministic · against the narrated pool · about ${s.listen.minutes} min at ${s.listen.pool_wpm} wpm`}>
+                listen
+              </Head>
+              <Facts
+                className="mt-1"
+                rows={(
+                  [
+                    ["words per sentence", "sentence_mean"],
+                    ["sentences over 30 words", "long_sentence_share"],
+                    ["numerals per 1k", "numerals_per_1k"],
+                    ["quote marks per 1k", "quotes_per_1k"],
+                    ["the body named per 1k", "body_per_1k"],
+                    ["the listener addressed per 1k", "you_per_1k"],
+                    ["first person per 1k", "first_person_per_1k"],
+                  ] as [string, keyof Listen["story"]][]
+                ).map(([label, k]) => [
+                  label,
+                  <span className="num">
+                    {s.listen!.story[k]} <span className="text-dim">· pool {s.listen!.pool[k]}</span>
+                  </span>,
+                ] as [React.ReactNode, React.ReactNode])}
               />
             </>
           )}

@@ -68,8 +68,8 @@ export const RUN = {
   vignetteWords: 400,   // asked; cap 450 in the ask, warning outside 300-500
   outlineSectionWords: 400,
   endingWords: 600,
-  coreJobs: ["departure", "particulars", "knowledge"] as const,   // the outline's three sections, renamed from the pilot's jobs on 2026-09-19
-  endingJobs: ["particulars", "knowledge"] as const,   // the sections the ending is derived from; a fix that moves one moves the ending
+  coreJobs: ["departure", "particulars", "knowledge", "arrival"] as const,   // the outline's four sections; arrival (what arrives, what it costs) added 2026-09-19 for listenability
+  endingJobs: ["particulars", "knowledge", "arrival"] as const,   // the sections the ending is derived from; a fix that moves one moves the ending
   listCaps: { entries: 40, words: 45 },   // per setting list; the reduce pass cuts to this and lint holds it
   mapCandidates: 5,     // candidate entries a map call may return per list, per reference file
   mapConcurrency: 8,    // reference files the map pass sends at once

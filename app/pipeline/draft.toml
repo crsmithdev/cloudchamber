@@ -21,7 +21,7 @@ container = "auto"      # prose | document | interleaved
 ending = "brief"        # brief | open
 
 [structure]
-template = "auto"       # only auto is built; the key is parsed
+template = "auto"       # auto | told: told is the narrated shape, a cold open, set pieces, an arrival, a cost, an aftermath
 
 [scenes]
 order = "sequential"    # sequential | parallel
@@ -36,7 +36,7 @@ samples = 1
 samples = 1
 
 [screens]
-enabled = ["ledger", "structure", "slop"]
+enabled = ["ledger", "structure", "slop", "listen"]
 samples = 1              # four calls a scene was most of gate 2; the flags are read, not counted
 keep_if = 1
 slop_baseline = "pool"
@@ -57,3 +57,16 @@ beats.count = 3
 length.words = 12000
 beats.min = 10
 beats.max = 18
+
+# told afterward to a listener, the way the narrated channels tell theirs: first person past, a cold open,
+# an arrival and a cost, an aftermath; the register asks for the body before the meaning
+[profiles.narrated]
+length.words = 7000
+beats.min = 8
+beats.max = 10
+beats.words_max = 1000
+form.person = "first"
+form.tense = "past"
+form.container = "told"
+form.ending = "open"
+structure.template = "told"

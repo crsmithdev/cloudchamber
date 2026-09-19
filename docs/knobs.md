@@ -99,14 +99,14 @@ cloudchamber draft; every key of draft.toml is overridable per draw, and a profi
 
 | | |
 |---|---|
-| `--profile` | flash, novelette |
+| `--profile` | flash, novelette, narrated |
 | `--words` | 5000 (tolerance 0.2) |
 | `--beats` | auto, between 5 and 10 of 400-800 words |
 | `--tense / --person` | past \| present · first \| second \| third |
 | `--chronology / --container` | linear \| nonlinear · prose \| document \| interleaved |
 | `--order` | sequential |
 | `checks` | claims, derivation, ledger, structure, resemblance · 2 samples, kept at 2 |
-| `screens` | ledger, structure, slop · 1 samples, kept at 1 |
+| `screens` | ledger, structure, slop, listen · 1 samples, kept at 1 |
 | `repair` | auto: up to 4 rounds, accepting findings scoring 7+, patience 2, budget 120 calls |
 
 ## fixed in code
@@ -119,7 +119,7 @@ config.ts. Changing one of these is an edit and a test run, not a flag.
 | `examples per draw` | 6 |
 | `context vignettes` | 2 |
 | `word targets` | premise 100 · vignette 400 · outline section 400 · ending 600 |
-| `core jobs` | departure, particulars, knowledge |
+| `core jobs` | departure, particulars, knowledge, arrival |
 
 ## models
 

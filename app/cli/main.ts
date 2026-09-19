@@ -31,6 +31,7 @@ const DOC = `cloudchamber — the one command the skill and the UI drive.
        until nothing reaches the floor, the rounds run out, or the total stops falling
    cloudchamber draft <draw> [--auto] [--profile P] [--words N] [--beats N] [--tense T] [--person P] [--chronology C] [--container C] [--order O]
    cloudchamber story <draw>                   the draft with its screen flags inline
+   cloudchamber listen <draw> [--beat K] [--voice V] [--out PATH]   render the draft, or one beat, to a wav with the local kokoro voice
    cloudchamber serve [--port N] [--host H]    API and UI (default 127.0.0.1:3002)
    cloudchamber help [--md]                    this, then every tunable value, live\n`;
 
@@ -44,6 +45,8 @@ import { Pipeline, seedAndSegment, type DrawOpts, type DrawRow } from "../pipeli
 import type { Darkness, Sampling } from "../pipeline/config.ts";
 import { ClaudeCli } from "../pipeline/model.ts";
 import { existsSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { speak } from "../pipeline/speak.ts";
 import { join } from "node:path";
 import { BRIEFS, SETTINGS, now } from "../pipeline/paths.ts";
 import { draftAll, failures, histogram, replayThemes } from "../pipeline/themes.ts";
@@ -57,7 +60,7 @@ import type { Overrides } from "../pipeline/draftconfig.ts";
 const [cmd, ...rest] = process.argv.slice(2);
 
 function usage(code = 1): never {
-  console.error("usage: cloudchamber <extract|status|export|verdict|replay|replay-themes|draw|delete|gate|draws|candidates|draw-show|brief|check|findings|draft|story|themes|setting|distill|serve|help>");
+  console.error("usage: cloudchamber <extract|status|export|verdict|replay|replay-themes|draw|delete|gate|draws|candidates|draw-show|brief|check|findings|draft|story|listen|themes|setting|distill|serve|help>");
   console.error("run `cloudchamber help` for the full grammar and the tunable values");
   process.exit(code);
 }
@@ -205,6 +208,19 @@ async function main() {
       const [drawId] = rest;
       if (!drawId) usage();
       console.log(drafting().story(drawId!));
+      break;
+    }
+    case "listen": {
+      const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, options: { beat: { type: "string" }, voice: { type: "string", default: "am_michael" }, out: { type: "string" } } });
+      const [drawId] = positionals;
+      if (!drawId) usage();
+      const v = drafting().view(drawId!);
+      const beat = values.beat ? Number(values.beat) : undefined;
+      const scenes = beat ? v.scenes.filter((s) => s.beat === beat) : v.scenes;
+      if (!scenes.length) { console.error(`no scene${beat ? ` for beat ${beat}` : ""} on ${drawId}`); process.exit(1); }
+      const out = values.out ?? join(tmpdir(), `cloudchamber-${drawId}${beat ? `-beat${beat}` : ""}.wav`);
+      const r = await speak(scenes.map((s) => s.text).join("\n\n"), out, values.voice);
+      console.log(`${out}  ·  ${r.seconds} s of audio, ${r.words} words, ${r.wpm} wpm  ·  voice ${values.voice}`);
       break;
     }
     case "themes": {

@@ -79,6 +79,8 @@ Premise: {premise}
 
 <section name="knowledge">: Who knows what, and from when; what each of them cannot know; and why the people who could compare what they know do not.
 
+<section name="arrival">: What arrives, and what it costs one person: the thing the departure sends against someone, the place and the moment they first meet it in the flesh, and what they lose to it that they cannot get back. Name the person, the place, the moment and the price.
+
 Output only the tags.`,
 
   head: `Below is a story's derived structure and the ${RUN.vignetteWords}-word vignette it came from.
@@ -99,7 +101,7 @@ Write one vignette in a <vignette> tag, under ${RUN.vignetteWords + 50} words. I
 The structure above has settled the story: write within it and add nothing it does not hold. Output only the tag.`,
 
   ending: `
-Write the ending, in an <ending> tag: the last beat, derived from the ${RUN.endingJobs.join(" and ")} sections above. Under ${RUN.endingWords} words.{darkness} Output only the tag.`,
+Write the ending, in an <ending> tag: the last beat, derived from the ${RUN.endingJobs.slice(0, -1).join(", ")} and ${RUN.endingJobs.at(-1)} sections above. Under ${RUN.endingWords} words.{darkness} Output only the tag.`,
 
   /** The five lists, defined once and shared by both distill passes and by nothing else. */
   listDefinitions: `<bodies>: organisations, offices, orders, departments and courts. What it issues or decides, whom it answers to, and what it cannot do.
@@ -186,7 +188,7 @@ Candidates:
 
 Quote every span from a vignette or the ending, never from the outline: the reader of the story sees only those. Report only a conflict that reader would see by comparing two quotes, or a line that breaks a rule the outline states in words. A conflict you find only by arithmetic beyond comparing two stated values, by counting weekdays, or by working out how liquid, light, an instrument or a body behaves is not a finding, and neither is a stated rule beside an exception the text marks, nor a figurative line read as literal fact. When the conflicting fact is also stated in a vignette or the ending, quote it from there. A result of contradicted or contradicts needs the span to assert the conflicting fact itself. A count, a duration or a detail the span does not state is not a contradiction: the span may be one of several, and what it leaves out is unverifiable. The replacement and the patch keep every event the span reports and change only the quantity, the timing or the mechanism that conflicts. Never turn an event into its absence. When the two quotes give one person, place, company or thing two names, or one quantity two values, the replacement names the one of the two that the rest of the brief supports, and never a third. The replacement states the corrected fact and nothing else: no place, count, cause or detail that neither quote states.`,
 
-  checkDerivation: `Below is a story brief: a seed, a premise, an outline in three sections, three vignettes and an ending. The departure section states the one thing in the story that is not true of the actual world and derives everything from it.
+  checkDerivation: `Below is a story brief: a seed, a premise, an outline in four sections, three vignettes and an ending. The departure section states the one thing in the story that is not true of the actual world and derives everything from it.
 
 {brief}
 
@@ -196,13 +198,13 @@ State that departure, in an <impossibility> tag, one sentence. Then check every 
 
 After the findings, an <examined> tag listing each assertion and each sum checked, one per line, whether or not it produced a finding. At most 8 findings. Under 1000 words in total.`,
 
-  ledgerExtract: `Below is a story brief: a seed, a premise, an outline in three sections, three vignettes and an ending.
+  ledgerExtract: `Below is a story brief: a seed, a premise, an outline in four sections, three vignettes and an ending.
 
 {brief}
 
 Extract from the outline every settled fact into a <ledger> tag, one per line, each line opening with its category: time (dates, durations, order), detail (names, quantities, appearance), knowledge (who knows what, and from when), possession (who holds what), world (rules), perspective. These lines are the contract the brief is held to for the rest of its life, so state each one so it can be read against prose by someone who has not seen this outline. Under 600 words. Output only the tag.`,
 
-  checkLedger: `Below is a ledger of a story's settled facts, then the brief itself: a seed, a premise, an outline in three sections, three vignettes and an ending.
+  checkLedger: `Below is a ledger of a story's settled facts, then the brief itself: a seed, a premise, an outline in four sections, three vignettes and an ending.
 
 {ledger}
 
@@ -218,7 +220,7 @@ After the findings, an <examined> tag naming each pair compared (ledger×chosen,
 {ledger}
 </ledger>`,
 
-  checkStructure: `Below is a story brief: a seed, a premise, an outline in three sections, three vignettes and an ending.
+  checkStructure: `Below is a story brief: a seed, a premise, an outline in four sections, three vignettes and an ending.
 
 {brief}
 
@@ -244,13 +246,13 @@ Output only the seven tags. Under 350 words.`,
 
 Match the brief against the list. For each list entry the brief matches, output a <match> tag containing <entry> (the list line, verbatim) and <span> (the quote from the brief that matches it, under ${RUN.spanWords} words). Then output one <nearest> tag naming the nearest published story, novel or film: <title>, <author>, and <shared> (one sentence stating what the brief shares with it). At most 4 matches. Under 300 words.`,
 
-  claimsExtract: `Below is a story brief: a seed, a premise, an outline in three sections, three vignettes and an ending.
+  claimsExtract: `Below is a story brief: a seed, a premise, an outline in four sections, three vignettes and an ending.
 
 {brief}
 
 Extract only claims about the actual world that carry a quantity or a rule a published source could confirm or deny: a price, a rate, a count, a date, a duration, a distance, a procedure, a statute, a relation between two named places. That a place, institution, product or person exists is not a claim. Skip everything the story invents. Each claim goes in a <claim> tag containing <span> (verbatim quote, under ${RUN.spanWords} words) and <statement> (the claim as one checkable sentence). At most 12 claims. Under 500 words.`,
 
-  claimsExtractSetting: `Below is a story brief: a seed, a premise, an outline in three sections, three vignettes and an ending.
+  claimsExtractSetting: `Below is a story brief: a seed, a premise, an outline in four sections, three vignettes and an ending.
 
 {brief}
 
@@ -351,7 +353,7 @@ Rewrite it in a <vignette> tag so that every line of the constraints holds, keep
 
 Rewrite the ending in an <ending> tag so that every line of the constraints holds, keeping its people, place, form and length. Change only the sentences that state a fact a constraint corrects, and within such a sentence change only the words that state that fact; every other word, name, number, date, time and place stays as written, even where a constraint mentions it. Add no name, number, date or time that is not already in it or in a constraint, and add a sentence only when a constraint cannot hold without one. Under ${RUN.endingWords} words. Output only the tag.`,
 
-  schedule: `Below is a story brief: a seed, a premise, an outline in three sections, three vignettes and an ending. Below that, the story's configuration.
+  schedule: `Below is a story brief: a seed, a premise, an outline in four sections, three vignettes and an ending. Below that, the story's configuration.
 
 {brief}
 
@@ -362,7 +364,15 @@ beats: {beatsLine}
 ending: {endingLine}
 </config>
 
-Derive the story's schedule, which settles what the reader knows at each point and what is still withheld. Output a <form> tag with four lines: tense, person, chronology, container. Then one <beat n="K" words="N"> tag per beat containing <job> (one sentence, what the beat does and where it is set), <known> (what the reader knows by its end, one or two sentences), <withheld> (each thing still withheld after this beat, with the beat number that reveals it, one per line as \`item — beat N\`; the line \`none\` when nothing is), <stakes> (one sentence), <absorbs> (chosen | context-1 | context-2 | ending | none: the brief vignette this beat takes its material from, if any; each may be named by at most one beat). Output only the tags. Under 1000 words.`,
+{shape}Derive the story's schedule, which settles what the reader knows at each point and what is still withheld. Output a <form> tag with four lines: tense, person, chronology, container. Then one <beat n="K" words="N"> tag per beat containing <job> (one sentence, what the beat does and where it is set), <known> (what the reader knows by its end, one or two sentences), <withheld> (each thing still withheld after this beat, with the beat number that reveals it, one per line as \`item — beat N\`; the line \`none\` when nothing is), <stakes> (one sentence), <set_piece> (the one moment or image of this beat a listener would retell, one sentence; or none), <absorbs> (chosen | context-1 | context-2 | ending | none: the brief vignette this beat takes its material from, if any; each may be named by at most one beat). Output only the tags. Under 1100 words.`,
+
+  scheduleTold: `The story is told afterward, by its narrator, to a listener. Beat 1 is the worst moment of the story, shown before anything is explained, and beat 2 backs up to the beginning; from there the beats run in order. Every beat has a set piece a listener will retell. Something arrives, in the flesh, in the same place as the narrator, and it costs the narrator or someone beside them; the beat before the last is where the cost is paid. The last beat is the aftermath, back at the ordinary, with one thing that has not gone away. The brief's ending is material for the beat before the last, not for the last.
+
+`,
+
+  sceneTold: `<register>
+The narrator tells this afterward to a listener who cannot see it. When a thing happens, say what the body did before saying what it meant. Report what people said rather than quoting it; quote only a sentence the listener has to hear word for word. One thing per sentence. The narrator may speak to the listener, and may say what they made of it at the time and what they make of it now.
+</register>`,
 
   sceneMaterial: `<material>
 {material}
@@ -391,15 +401,19 @@ withheld after this beat: {withheld}
 {scene}
 </scene>
 
-Answer five questions about the scene, each as present or absent, each with one verbatim quote that settles it. Output one <question name="..."> tag per question containing <answer>present|absent</answer> and <quote>...</quote>.
+Answer the questions below about the scene, each as present or absent, each with one verbatim quote that settles it. Output one <question name="..."> tag per question containing <answer>present|absent</answer> and <quote>...</quote>.
 
 theme-stated: the narrator or a character states what the story means or what its lesson is.
 bodily-emotion: an emotion is conveyed as a bodily sensation (a tightening chest, a cold stomach, breath catching).
 withheld-revealed: an item listed as withheld after this beat is stated in the scene as a fact the reader now knows. Implication and foreshadowing are not reveals; the quote must contain the statement.
 protagonist-never-wrong: the point-of-view character is not allowed to be mistaken, unfair or at fault anywhere in the scene.
-{fifth}
+{fifth}{last}
 
-Output only the five tags. Under 250 words.`,
+Output only the tags. Under 300 words.`,
+
+  screenLastBeat: `
+presence-arrives: by the end of this scene the thing the story has been withholding has arrived in the flesh, in the same place as a character, and not only been inferred.
+cost-paid: by the end of this scene someone has lost something they cannot get back.`,
 
   screenResolved: `resolved: the scene settles a question the schedule keeps open for a later beat.`,
   screenResolvesEverything: `resolves-everything: no question the story raised is left open at the end of the scene.`,

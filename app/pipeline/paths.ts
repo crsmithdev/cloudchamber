@@ -9,6 +9,8 @@ export const BRIEFS = process.env.CLOUDCHAMBER_BRIEFS ?? resolve(ROOT, "briefs")
 export const DRAFTS = process.env.CLOUDCHAMBER_DRAFTS ?? resolve(ROOT, "drafts");
 /** CLOUDCHAMBER_SETTINGS relocates sources/settings; tests point it at a fixture directory. */
 export const SETTINGS = process.env.CLOUDCHAMBER_SETTINGS ?? resolve(ROOT, "sources", "settings");
+/** The narrated stories a draft is measured against for listenability: one transcript JSON per video, by channel. */
+export const NARRATION = process.env.CLOUDCHAMBER_NARRATION ?? resolve(ROOT, "evals", "reference");
 export const VERDICT_LOG = resolve(BANK, "verdicts.jsonl");
 export const THEME_LOG = resolve(BANK, "themes.jsonl");
 export const SCHEMA = resolve(ROOT, "app", "pipeline", "store", "schema.sql");

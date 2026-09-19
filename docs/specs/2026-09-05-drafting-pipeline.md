@@ -134,6 +134,26 @@ differ, this file wins.
 >   pass drops: a figurative line read as literal fact, loose everyday
 >   wording, a hedged line, a detail the scene leaves out. The structure and
 >   slop screens still run once all scenes exist.
+> - **Listenability, 2026-09-19.** The outline has a fourth section,
+>   `arrival`: what arrives, and what it costs one person; the ending is derived
+>   from `particulars`, `knowledge` and `arrival`. The `narrated` profile
+>   (`structure.template = told`, first person, past, container `told`, 7,000
+>   words, `form.ending = open`) asks the schedule for the narrated shape: a
+>   cold open on the worst moment, a set piece per beat (`<set_piece>`), an
+>   arrival in the flesh, a cost paid in the beat before the last, an
+>   aftermath last. Under it every scene carries a `<register>` block (the body
+>   before the meaning, speech reported, one thing per sentence, the listener
+>   addressed) and each beat the screens flag for register, a body not named
+>   or a sentence said before, is rewritten once with the flag as its
+>   constraint. The structure screen asks the last beat two more questions,
+>   `presence-arrives` and `cost-paid`, flagged when absent, and no longer
+>   flags a theme stated on the last beat. `screen-restated` (a695114,
+>   2a275c0) flags a sentence an earlier beat already said, deterministic, no
+>   patch. `screen-listen` (deterministic) gives the draft and the narrated
+>   pool in `evals/reference/` the same measures, sentence length, long
+>   sentences, numerals, quotes, the body named, the listener addressed, and
+>   the draft's minutes at the pool's pace. `cloudchamber listen <draw>
+>   [--beat K]` renders a beat to a wav with the voice bridge's kokoro voice.
 
 ## Problem Statement
 

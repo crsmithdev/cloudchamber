@@ -20,6 +20,7 @@ import { latestOf, ofKind, type Artifact, type FindingMeta } from "./artifacts.t
 import type { Profile, Scene, Schedule } from "./write.ts";
 import type { AutoResult } from "./drafting.ts";
 import type { SlopReport } from "./slop.ts";
+import type { ListenReport } from "./listen.ts";
 export type FindingView = FindingMeta & { artifact_id: string; decision: "accepted" | "dismissed" | "open"; note: string; score: number; samples_run: number; reported: boolean; relitigates?: Settled };
 /** A finding accepted somewhere in this repair chain, and where. */
 export type Settled = { finding: string; draw: string; round: number; replacement: string; span: string; statement: string };
@@ -127,6 +128,8 @@ export class Chain {
 
   /** The latest slop report, or null. */
   slop(): SlopReport | null { const a = this.latest("slop"); return a ? (JSON.parse(a.content) as SlopReport) : null; }
+  /** The latest listenability report, or null. */
+  listen(): ListenReport | null { const a = this.latest("listen"); return a ? (JSON.parse(a.content) as ListenReport) : null; }
 
   /** The auto repair run recorded on this brief, or null. */
   auto(): AutoResult | null { const a = this.latest("auto"); return a ? (JSON.parse(a.content) as AutoResult) : null; }

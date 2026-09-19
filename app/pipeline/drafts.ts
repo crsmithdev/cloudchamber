@@ -11,6 +11,7 @@ import { words } from "./model.ts";
 import { toToml, type Resolved } from "./draftconfig.ts";
 import type { Beat, Profile, Scene } from "./write.ts";
 import type { SlopReport } from "./slop.ts";
+import type { ListenReport } from "./listen.ts";
 import { pipelineVersion } from "./version.ts";
 
 export type DraftView = {
@@ -19,13 +20,14 @@ export type DraftView = {
   profiles: Profile[];
   screenFindings: FindingView[];
   slop: SlopReport | null;
+  listen: ListenReport | null;
   judge: string | null;
 };
 
 /** The draft as the chain reads it: the latest schedule, the scenes as they stand, each beat's latest screen pass. */
 export function draftView(p: Pipeline, drawId: string): DraftView {
   const chain = chainOf(p, drawId);
-  return { schedule: chain.schedule(), scenes: chain.scenes(), profiles: chain.screenProfiles(), screenFindings: chain.screenFindings(), slop: chain.slop(), judge: chain.judge() };
+  return { schedule: chain.schedule(), scenes: chain.scenes(), profiles: chain.screenProfiles(), screenFindings: chain.screenFindings(), slop: chain.slop(), listen: chain.listen(), judge: chain.judge() };
 }
 
 export function renderStory(v: DraftView, withFlags = true): string {
@@ -73,6 +75,11 @@ export function renderFindings(p: Pipeline, drawId: string, v: DraftView): strin
       `- repeated trigrams absent from the pool: ${v.slop.trigrams.map((t) => `"${t.trigram}" ×${t.count}`).join(", ") || "none"}`,
       `- paragraphs: ${v.slop.paragraphs.map((x) => `beat ${x.beat} ${x.paragraphs}p mean ${x.mean_words}w single ${Math.round(x.single_sentence_share * 100)}%`).join("; ")}`, "");
   }
+  if (v.listen) {
+    const row = (k: keyof typeof v.listen.story) => `${v.listen!.story[k]} (pool ${v.listen!.pool[k]})`;
+    out.push("## Listen", "", `- ${v.listen.minutes} min at the pool's ${v.listen.pool_wpm} wpm`, `- words per sentence: ${row("sentence_mean")}`, `- sentences over 30 words: ${row("long_sentence_share")}`,
+      `- numerals per 1k: ${row("numerals_per_1k")}`, `- quote marks per 1k: ${row("quotes_per_1k")}`, `- the body named per 1k: ${row("body_per_1k")}`, `- the listener addressed per 1k: ${row("you_per_1k")}`, `- first person per 1k: ${row("first_person_per_1k")}`, "");
+  }
   if (v.judge) out.push(v.judge, "");
   return out.join("\n");
 }
@@ -98,6 +105,7 @@ export function exportDraft(p: Pipeline, drawId: string, resolved: Resolved, gat
     "### models", "", ...[...models].filter(([s]) => /^(check|repair|schedule|scene|screen)/.test(s)).map(([s, m]) => `- ${s}: ${m}`), "",
     "### scenes", "", ...v.scenes.map((s) => `- beat ${s.beat}: ${words(s.text)} words`), "",
     `screen flags: ${v.screenFindings.length} ledger, ${v.profiles.reduce((a, x) => a + x.flags.length, 0)} structure`, "",
+    ...(v.listen ? [`narration: about ${v.listen.minutes} min at ${v.listen.pool_wpm} wpm`, ""] : []),
     "### gate 2", "", ...(gate2.length ? gate2.map((g) => `- ${g}`) : ["- keep"]), "",
     ...(v.judge ? [v.judge, ""] : []),
     `steps: ${steps.length} · pipeline ${pipelineVersion()}`,

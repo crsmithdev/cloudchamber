@@ -14,6 +14,7 @@ import { eligiblePassages } from "./bank.ts";
 import { FORM_VALUES, samplesFor, type DraftConfig, type FormAxis } from "./draftconfig.ts";
 import { cluster, findingId, parseFindings, type Finding } from "./recur.ts";
 import { loadLexicon, restated, slopScreen } from "./slop.ts";
+import { listenScreen, loadNarrationPool } from "./listen.ts";
 import { parseQuestions, type Answer } from "./check.ts";
 import type { BriefParts } from "./briefparts.ts";
 import { applyPatches } from "./repair.ts";
@@ -21,14 +22,18 @@ import { record } from "./verdicts.ts";
 import { chainOf } from "./chain.ts";
 
 export type Withheld = { item: string; until: number };
-export type Beat = { n: number; words: number; job: string; known: string; withheld: Withheld[]; stakes: string; absorbs: string };
+export type Beat = { n: number; words: number; job: string; known: string; withheld: Withheld[]; stakes: string; set_piece: string; absorbs: string };
 export type Schedule = { form: Record<FormAxis, string>; beats: Beat[]; raw: string };
 export type Scene = { beat: number; text: string; artifact_id: string; step_id: string };
 
 export const ABSORBABLE = ["chosen", "context-1", "context-2", "ending"];
 export const STRUCTURE_SCREEN = ["theme-stated", "bodily-emotion", "withheld-revealed", "protagonist-never-wrong"];
-/** A present answer on these, or an absent one on bodily-emotion, is a flag. */
+/** Asked on the last beat only: what a listener needs the story to have paid by its end. */
+export const LAST_BEAT_SCREEN = ["presence-arrives", "cost-paid"];
+/** A present answer on these is a flag; theme-stated is allowed once, on the last beat. */
 export const FLAG_PRESENT = new Set(["theme-stated", "withheld-revealed", "protagonist-never-wrong", "resolved", "resolves-everything"]);
+/** An absent answer on these is a flag. */
+export const FLAG_ABSENT = new Set(["bodily-emotion", ...LAST_BEAT_SCREEN]);
 
 // --- schedule -------------------------------------------------------------------
 
@@ -54,7 +59,8 @@ export function parseSchedule(text: string, cfg: DraftConfig): Schedule {
       if (!w) throw new Error(`beat ${m[1]}: withheld line without a beat number: ${raw.slice(0, 60)}`);
       withheld.push({ item: w[1].trim(), until: Number(w[2]) });
     }
-    beats.push({ n: Number(m[1]), words: Number(m[2]), job: tag(b, "job") ?? "", known: tag(b, "known") ?? "", withheld, stakes: tag(b, "stakes") ?? "", absorbs: (tag(b, "absorbs") ?? "none").toLowerCase().trim() });
+    const setPiece = (tag(b, "set_piece") ?? "").trim();
+    beats.push({ n: Number(m[1]), words: Number(m[2]), job: tag(b, "job") ?? "", known: tag(b, "known") ?? "", withheld, stakes: tag(b, "stakes") ?? "", set_piece: /^none\.?$/i.test(setPiece) ? "" : setPiece, absorbs: (tag(b, "absorbs") ?? "none").toLowerCase().trim() });
   }
   if (!beats.length) throw new Error("no <beat> tags");
   beats.sort((a, b) => a.n - b.n);
@@ -80,7 +86,8 @@ export function schedulePrompt(brief: string, cfg: DraftConfig): string {
     ...fixed.map((a) => `${a}: ${cfg.form[a]}`),
   ].join("\n");
   const endingLine = cfg.form.ending === "brief" ? "the brief's ending is the last beat, in place" : "the schedule may derive the ending";
-  return fill("schedule", { brief, words: String(cfg.length.words), beatsLine, formLines, endingLine });
+  // the told template asks for the narrated shape: a cold open, set pieces, an arrival, a cost, an aftermath
+  return fill("schedule", { brief, words: String(cfg.length.words), beatsLine, formLines, endingLine, shape: cfg.structure.template === "told" ? fill("scheduleTold", {}) : "" });
 }
 
 export async function runSchedule(p: Pipeline, drawId: string, parts: BriefParts, brief: string, cfg: DraftConfig): Promise<{ step: StepRow; schedule: Schedule }> {
@@ -92,6 +99,8 @@ export async function runSchedule(p: Pipeline, drawId: string, parts: BriefParts
 // --- scenes -----------------------------------------------------------------------
 
 const formLine = (s: Schedule) => (Object.keys(FORM_VALUES) as FormAxis[]).map((a) => `${a} ${s.form[a]}`).join("; ");
+/** A schedule whose container is told carries the narrated register into every scene. */
+const told = (s: Schedule) => /\btold\b/i.test(s.form.container);
 const withheldLine = (b: Beat) => b.withheld.length ? b.withheld.map((w) => `${w.item} (beat ${w.until})`).join("; ") : "nothing";
 
 export function scenePrompt(parts: BriefParts, ledger: string, s: Schedule, b: Beat, soFar: string[], constraints?: string): string {
@@ -103,6 +112,7 @@ export function scenePrompt(parts: BriefParts, ledger: string, s: Schedule, b: B
     `<schedule>\n${s.raw}\n</schedule>`,
     ...(soFar.length ? [`<story-so-far>\n${soFar.join("\n\n")}\n</story-so-far>`] : []),
     ...(material[b.absorbs] ? [fill("sceneMaterial", { material: material[b.absorbs] })] : []),
+    ...(told(s) ? [fill("sceneTold", {})] : []),
     ...(constraints ? [constraints] : []),
     fill("sceneAsk", { n: String(b.n), job: b.job, known: b.known, withheld: withheldLine(b), form: formLine(s), cap: String(b.words), constraintLine: constraints ? " Every line of the constraints holds." : "" }),
   ];
@@ -172,20 +182,24 @@ export function structurePrompt(b: Beat, scene: string, last: boolean): string {
   const later = b.withheld.filter((w) => w.until > b.n);
   return fill("screenStructure", {
     n: String(b.n), job: b.job, withheld: later.length ? later.map((w) => `${w.item} — beat ${w.until}`).join("\n") : "none", scene,
-    fifth: fill(last ? "screenResolvesEverything" : "screenResolved", {}),
+    fifth: fill(last ? "screenResolvesEverything" : "screenResolved", {}), last: last ? fill("screenLastBeat", {}) : "",
   });
 }
 
-export const flagsOf = (answers: Record<string, Answer>) =>
-  Object.entries(answers).filter(([q, a]) => (FLAG_PRESENT.has(q) && a.answer === "present") || (q === "bodily-emotion" && a.answer === "absent")).map(([q]) => q);
+/** The questions the structure screen asks of beat k. */
+export const structureQuestions = (last: boolean) => [...STRUCTURE_SCREEN, last ? "resolves-everything" : "resolved", ...(last ? LAST_BEAT_SCREEN : [])];
 
-export async function runScreens(p: Pipeline, drawId: string, s: Schedule, scenes: Scene[], cfg: DraftConfig, pass: string, beats: number[] = scenes.map((x) => x.beat), opts: { lexiconPath?: string } = {}): Promise<void> {
+/** The flags an answer set raises. The theme may be stated once, on the last beat, the way a narrated story closes. */
+export const flagsOf = (answers: Record<string, Answer>, last = false) =>
+  Object.entries(answers).filter(([q, a]) => (FLAG_PRESENT.has(q) && a.answer === "present" && !(last && q === "theme-stated")) || (FLAG_ABSENT.has(q) && a.answer === "absent")).map(([q]) => q);
+
+export async function runScreens(p: Pipeline, drawId: string, s: Schedule, scenes: Scene[], cfg: DraftConfig, pass: string, beats: number[] = scenes.map((x) => x.beat), opts: { lexiconPath?: string; narrationDir?: string } = {}): Promise<void> {
   const enabled = cfg.screens.enabled;
   const M = s.beats.length;
   if (enabled.includes("structure")) await Promise.all(beats.map(async (k) => {
     const scene = scenes.find((x) => x.beat === k)!, b = s.beats[k - 1];
     const { samples: n, keep_if } = samplesFor(cfg.screens, "structure");
-    const names = [...STRUCTURE_SCREEN, k === M ? "resolves-everything" : "resolved"];
+    const names = structureQuestions(k === M);
     const prompt = structurePrompt(b, scene.text, k === M);
     const rs = await samples(n, () => p.invoke(drawId, scene.step_id, "screen-structure", prompt, (t) => parseQuestions(t, names)));
     // an answer is present when it recurs in keep_if samples; the quote is the first sample's
@@ -195,7 +209,7 @@ export async function runScreens(p: Pipeline, drawId: string, s: Schedule, scene
       const pick = present.length >= keep_if ? present[0] : rs.find((r) => r.value[q].answer === "absent") ?? rs[0];
       answers[q] = { answer: present.length >= keep_if ? "present" : "absent", quote: pick.value[q].quote };
     }
-    const flags = flagsOf(answers);
+    const flags = flagsOf(answers, k === M);
     p.artifact(rs[0].step, "profile", JSON.stringify(answers), { pass, source: "screen", screen: "structure", beat: k, answers, flags, samples: n });
   }));
   // a sentence the beat says again is a flag with a location and no patch: rewrite k takes it as a constraint
@@ -215,5 +229,10 @@ export async function runScreens(p: Pipeline, drawId: string, s: Schedule, scene
     const report = slopScreen(scenes.map((x) => ({ beat: x.beat, text: x.text })), pool, loadLexicon(opts.lexiconPath));
     const step = p.recordStep(drawId, scenes[0]?.step_id ?? null, "screen-slop", "deterministic", report);
     p.artifact(step, "slop", JSON.stringify(report), { pass, source: "screen", screen: "slop" });
+  }
+  if (enabled.includes("listen") && beats.length === scenes.length) {
+    const report = listenScreen(scenes.map((x) => ({ beat: x.beat, text: x.text })), loadNarrationPool(opts.narrationDir));
+    const step = p.recordStep(drawId, scenes[0]?.step_id ?? null, "screen-listen", "deterministic", report);
+    p.artifact(step, "listen", JSON.stringify(report), { pass, source: "screen", screen: "listen" });
   }
 }
