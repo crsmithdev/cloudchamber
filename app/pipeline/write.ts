@@ -188,16 +188,17 @@ export async function bindScene(p: Pipeline, drawId: string, ledger: string, sce
 
 export type Profile = { beat: number; pass: string; answers: Record<string, Answer>; flags: string[] };
 
-export function structurePrompt(b: Beat, scene: string, last: boolean, M = Number.MAX_SAFE_INTEGER): string {
+/** `paid` is the beat asked whether a presence arrived and a cost was paid: the last beat, or under a shaped template the one before it. */
+export function structurePrompt(b: Beat, scene: string, last: boolean, M = Number.MAX_SAFE_INTEGER, paid = last): string {
   const later = b.withheld.filter((w) => w.until > b.n);
   return fill("screenStructure", {
     n: String(b.n), job: b.job, withheld: later.length ? later.map((w) => `${w.item} — ${w.until > M ? "never revealed" : `beat ${w.until}`}`).join("\n") : "none", scene,
-    fifth: fill(last ? "screenResolvesEverything" : "screenResolved", {}), last: last ? fill("screenLastBeat", {}) : "",
+    fifth: fill(last ? "screenResolvesEverything" : "screenResolved", {}), last: paid ? fill("screenLastBeat", {}) : "",
   });
 }
 
 /** The questions the structure screen asks of beat k. */
-export const structureQuestions = (last: boolean) => [...STRUCTURE_SCREEN, last ? "resolves-everything" : "resolved", ...(last ? LAST_BEAT_SCREEN : [])];
+export const structureQuestions = (last: boolean, paid = last) => [...STRUCTURE_SCREEN, last ? "resolves-everything" : "resolved", ...(paid ? LAST_BEAT_SCREEN : [])];
 
 /** The flags an answer set raises. The theme may be stated once, on the last beat, the way a narrated story closes. */
 export const flagsOf = (answers: Record<string, Answer>, last = false) =>
@@ -206,11 +207,13 @@ export const flagsOf = (answers: Record<string, Answer>, last = false) =>
 export async function runScreens(p: Pipeline, drawId: string, s: Schedule, scenes: Scene[], cfg: DraftConfig, pass: string, beats: number[] = scenes.map((x) => x.beat), opts: { lexiconPath?: string; narrationDir?: string } = {}): Promise<void> {
   const enabled = cfg.screens.enabled;
   const M = s.beats.length;
+  // a shaped template pays its cost in the beat before the last, and the last is the aftermath: that is the beat asked
+  const paidBeat = cfg.structure.template === "auto" || M < 2 ? M : M - 1;
   if (enabled.includes("structure")) await Promise.all(beats.map(async (k) => {
     const scene = scenes.find((x) => x.beat === k)!, b = s.beats[k - 1];
     const { samples: n, keep_if } = samplesFor(cfg.screens, "structure");
-    const names = structureQuestions(k === M);
-    const prompt = structurePrompt(b, scene.text, k === M, M);
+    const names = structureQuestions(k === M, k === paidBeat);
+    const prompt = structurePrompt(b, scene.text, k === M, M, k === paidBeat);
     const rs = await samples(n, () => p.invoke(drawId, scene.step_id, "screen-structure", prompt, (t) => parseQuestions(t, names)));
     // an answer is present when it recurs in keep_if samples; the quote is the first sample's
     const answers: Record<string, Answer> = {};
@@ -225,7 +228,8 @@ export async function runScreens(p: Pipeline, drawId: string, s: Schedule, scene
   // a sentence the beat says again is a flag with a location and no patch: rewrite k takes it as a constraint
   for (const k of beats) {
     const scene = scenes.find((x) => x.beat === k)!;
-    const hits = restated(scenes, k);
+    // the told shape replays its cold open whole in the arrival beat: a sentence beat 1 said is meant to be said again
+    const hits = restated(scenes, k).filter((h) => !(cfg.structure.template === "told" && h.earlier_beat === 1));
     if (!hits.length) continue;
     const step = p.recordStep(drawId, scene.step_id, "screen-restated", "deterministic", hits);
     for (const h of hits) {

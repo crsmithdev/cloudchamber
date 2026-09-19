@@ -18,7 +18,8 @@ export async function speak(text: string, out: string, voice = "am_michael"): Pr
     let stdout = "";
     child.stdout.on("data", (d) => { stdout += d; });
     child.on("error", rej);
-    child.on("close", (code) => (code === 0 ? res(Number(stdout.trim())) : rej(new Error(`kokoro exited ${code}`))));
+    // onnxruntime writes its provider notices to stdout before the script prints the seconds: the last line is the number
+    child.on("close", (code) => (code === 0 ? res(Number(stdout.trim().split("\n").pop())) : rej(new Error(`kokoro exited ${code}`))));
     child.stdin.end(text);
   });
   const words = (text.match(/[A-Za-z][A-Za-z'’-]*/g) ?? []).length;

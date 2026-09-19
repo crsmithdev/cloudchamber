@@ -83,8 +83,8 @@ export const screenLedger = (prompt: string) => {
 
 export const screenStructure = (prompt: string) => {
   const n = Number(/<scene n="(\d+)">/.exec(prompt)?.[1] ?? 0);
-  const last = /resolves-everything:/.test(prompt);
-  const names = ["theme-stated", "bodily-emotion", "withheld-revealed", "protagonist-never-wrong", last ? "resolves-everything" : "resolved", ...(last ? ["presence-arrives", "cost-paid"] : [])];
+  const last = /resolves-everything:/.test(prompt), paid = /presence-arrives:/.test(prompt);
+  const names = ["theme-stated", "bodily-emotion", "withheld-revealed", "protagonist-never-wrong", last ? "resolves-everything" : "resolved", ...(paid ? ["presence-arrives", "cost-paid"] : [])];
   // beat 5 states the theme; beat 2 names no body; the last beat pays what a listener needs paid
   const present = new Set([n === 5 ? "theme-stated" : "", n === 2 ? "" : "bodily-emotion", "presence-arrives", "cost-paid"]);
   return names.map((q) => `<question name="${q}"><answer>${present.has(q) ? "present" : "absent"}</answer><quote>quote ${q} ${n}</quote></question>`).join("");

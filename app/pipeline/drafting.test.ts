@@ -559,13 +559,18 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     // eight beats, and beat 2 again: the fixture names no body in beat 2, and the told template pays for its register
     expect(scenes.map((c) => /Write beat (\d+)/.exec(c.prompt)![1])).toEqual(["1", "2", "3", "4", "5", "6", "7", "8", "2"]);
     expect(scenes[8].prompt).toContain("the narrator says what the body did before saying what it meant");
-    // the last beat is asked whether a presence arrived and a cost was paid; an earlier beat is not
+    // under the told shape the beat before the last is asked whether a presence arrived and a cost was paid; the aftermath and an earlier beat are not
+    const st7 = model.calls.find((c) => c.stage === "screen-structure" && /<scene n="7">/.test(c.prompt))!;
+    expect(st7.prompt).toContain("presence-arrives:");
+    expect(st7.prompt).toContain("resolved:");
     const st8 = model.calls.find((c) => c.stage === "screen-structure" && /<scene n="8">/.test(c.prompt))!;
-    expect(st8.prompt).toContain("presence-arrives:");
+    expect(st8.prompt).not.toContain("presence-arrives:");
+    expect(st8.prompt).toContain("resolves-everything:");
     const st4 = model.calls.find((c) => c.stage === "screen-structure" && /<scene n="4">/.test(c.prompt))!;
     expect(st4.prompt).not.toContain("presence-arrives:");
     const v = d.view(draw.id);
-    expect(v.profiles.find((x) => x.beat === 8)!.answers["cost-paid"]).toBeDefined();
+    expect(v.profiles.find((x) => x.beat === 7)!.answers["cost-paid"]).toBeDefined();
+    expect(v.profiles.find((x) => x.beat === 8)!.answers["cost-paid"]).toBeUndefined();
     expect(v.listen).not.toBeNull();
     expect(v.listen!.beats).toHaveLength(8);
     expect(p.draw(draw.id).status).toBe("awaiting_draft_gate");
