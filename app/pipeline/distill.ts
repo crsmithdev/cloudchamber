@@ -86,9 +86,6 @@ export function readCandidates(id: string, dir: string): Candidate[] {
 
 const shape = () => fill("entryShape", { words: String(RUN.listCaps.words) });
 
-/** The setting's matrix as a prompt block, or nothing: a setting need not have one. */
-const matrixBlock = (s: Setting) => (isEmpty(s.sections.Matrix) ? "" : `\n## Matrix\n\n${s.sections.Matrix}\n`);
-
 const parseEntries = (raw: string, list: ListName): string[] =>
   tags(tag(raw, list.toLowerCase()) ?? "", "entry").map((e) => e.trim()).filter(Boolean);
 
@@ -119,7 +116,7 @@ export async function distillMap(p: Pipeline, id: string, setting: Setting): Pro
     const f = files[i];
     const { topic, text, hash } = refs.get(f)!;
     const prompt = fill("distillMap", {
-      matrix: matrixBlock(setting), topic: topic || f, n: String(RUN.mapCandidates),
+      topic: topic || f, n: String(RUN.mapCandidates),
       listDefinitions: TEMPLATES.listDefinitions, entryShape: shape(), reference: text,
     });
     try {
@@ -195,7 +192,7 @@ export async function distillReduce(p: Pipeline, id: string, setting: Setting): 
     const mine = all.filter((c) => c.list === list);
     if (!mine.length) { out.push(`${list}: no candidates`); continue; }
     const prompt = fill("distillReduce", {
-      matrix: matrixBlock(setting), list, listl: list.toLowerCase(),
+      list, listl: list.toLowerCase(),
       cap: String(RUN.listCaps.entries), words: String(RUN.listCaps.words), entryShape: shape(),
       candidates: mine.map((c) => `- ${c.entry}   [${c.source}]`).join("\n"),
       kept: taken.length ? fill("keptElsewhere", { names: taken.map((n) => `- ${n}`).join("\n") }) : "",

@@ -59,9 +59,9 @@ Each premise goes in a <premise> tag containing a <text> (one paragraph, under $
 
 Premise: {premise}
 
-Write ${RUN.vignetteWords} words of this story, in a <vignette> tag. Not a synopsis and not the opening unless the opening is where the story is: one execution, in the form the premise implies, that shows whether it can be written.{darkness} Under ${RUN.vignetteWords + 50} words. Output only the tag.`,
+Write ${RUN.vignetteWords} words of this story, in a <vignette> tag. Not a synopsis and not the opening unless the opening is where the story is: one passage, in the form the premise implies, that shows whether it can be written.{darkness} Under ${RUN.vignetteWords + 50} words. Output only the tag.`,
 
-  outlineHead: `Below is a seed, a premise, and a ${RUN.vignetteWords}-word execution of it. Derive from them the story's underlying structure: the layer below the one that gets told. Nothing here is prose for the page.
+  outlineHead: `Below is a seed, a premise, and a ${RUN.vignetteWords}-word execution of it. Derive from them the story's underlying structure. Nothing here is prose for the page.
 
 Seed: {seed}
 
@@ -71,21 +71,17 @@ Premise: {premise}
 {vignette}
 </vignette>`,
 
-  outlineAsk: `Write one section per job below, each in a <section name="..."> tag and each under ${RUN.outlineSectionWords} words.
+  outlineAsk: `Write one section per name below, each in a <section name="..."> tag and each under ${RUN.outlineSectionWords} words.
 
-<section name="debt audit">: State the single impossibility the story buys, in one sentence. Then re-derive everything the premise and vignette assert from that one purchase. Anything that cannot be derived is a second impossibility wearing a metaphor: name it, cut it, and replace it with something derivable, at no extra cost.
+<section name="departure">: State, in one sentence, the one thing in this story that is not true of the actual world. Then derive everything the premise and vignette assert from it. Anything that does not follow is a second departure: name it, cut it, and replace it with something that follows from the first.
 
-<section name="arithmetic">: Settle every number and every sum the reader will be asked to do, and settle what the unit is. Dates, durations, counts, rates. Where the premise is vague, decide.
+<section name="particulars">: Settle everything the prose must not drift from: every name, place, date, duration, count and quantity the story turns on, and any sum a reader could do. Where the premise is vague, decide.
 
-<section name="custody">: Who holds which half of the evidence, why neither half is evidence alone, and why nobody connects them. Not characters: custody.
-{settingJobs}
+<section name="knowledge">: Who knows what, and from when; what each of them cannot know; and why the people who could compare what they know do not.
+
 Output only the tags.`,
 
-  settingJob: `
-<section name="{name}">: {description}
-`,
-
-  head: `Below is a story's derived structure and the ${RUN.vignetteWords}-word execution it came from.
+  head: `Below is a story's derived structure and the ${RUN.vignetteWords}-word vignette it came from.
 
 {outline}
 
@@ -100,10 +96,10 @@ Name two vignettes to write next, each defined by its job: the one thing about t
   context: `
 Write one vignette in a <vignette> tag, under ${RUN.vignetteWords + 50} words. Its job: {job}
 
-It is an execution, not discovery: the structure above has already settled the story. Output only the tag.`,
+The structure above has settled the story: write within it and add nothing it does not hold. Output only the tag.`,
 
   ending: `
-Write the ending, in an <ending> tag: the last beat, derived from the ${RUN.endingJobs.join(" and ")} sections above. Under ${RUN.endingWords} words. Prose or document form as the structure implies.{darkness} Output only the tag.`,
+Write the ending, in an <ending> tag: the last beat, derived from the ${RUN.endingJobs.join(" and ")} sections above. Under ${RUN.endingWords} words.{darkness} Output only the tag.`,
 
   /** The five lists, defined once and shared by both distill passes and by nothing else. */
   listDefinitions: `<bodies>: organisations, offices, orders, departments and courts. What it issues or decides, whom it answers to, and what it cannot do.
@@ -119,7 +115,7 @@ Where the thing reaches somebody, the second clause says who, and what they lose
 Every entry names something this setting names: a body, an instrument, a place, a rite, a term, a date or a figure that appears in the material below. An entry that would be true of any city, any empire or any war is not written, and fewer entries is the right answer when the material runs out. No citations, no URLs, no bracketed marks.`,
 
   distillMap: `A setting file for a story pipeline holds five lists of named things. Below is one of its reference files. Take from the file every entry it can support, and nothing it cannot.
-{matrix}
+
 The file's subject: {topic}
 
 Output one tag per list, each holding <entry> tags, at most {n} entries per list. A list the file says nothing about gets an empty tag.
@@ -147,7 +143,7 @@ Output one <{listl}> tag holding one <entry> tag per entry below, in the same or
 {entries}`,
 
   distillReduce: `A setting file for a story pipeline holds five lists of named things. Below is every candidate entry gathered for its {list} list, each with the reference file it came from in brackets. Choose the ones that stay.
-{matrix}
+
 Keep at most {cap}. Drop a candidate that repeats another's thing, and where two cover the same ground keep the one that is more specific about what it does or what follows from it. Prefer entries that carry a number, a name or a consequence. Spread the keep across subjects rather than taking every entry from one file. Rewrite an entry only to fix its shape or to cut it under {words} words; do not invent, merge facts from two candidates, or add anything the candidates do not say.
 
 Output one <{listl}> tag holding the kept <entry> tags, in the order you would have someone read them. Keep the bracketed source on the end of every entry, exactly as it appears above, so the entry can be traced back to the file it came from. Count the words of every entry before you output it: each is under {words} words, the bracket aside.
@@ -190,11 +186,11 @@ Candidates:
 
 Quote every span from a vignette or the ending, never from the outline: the reader of the story sees only those. Report only a conflict that reader would see by comparing two quotes, or a line that breaks a rule the outline states in words. A conflict you find only by arithmetic beyond comparing two stated values, by counting weekdays, or by working out how liquid, light, an instrument or a body behaves is not a finding, and neither is a stated rule beside an exception the text marks, nor a figurative line read as literal fact. When the conflicting fact is also stated in a vignette or the ending, quote it from there. A result of contradicted or contradicts needs the span to assert the conflicting fact itself. A count, a duration or a detail the span does not state is not a contradiction: the span may be one of several, and what it leaves out is unverifiable. The replacement and the patch keep every event the span reports and change only the quantity, the timing or the mechanism that conflicts. Never turn an event into its absence. When the two quotes give one person, place, company or thing two names, or one quantity two values, the replacement names the one of the two that the rest of the brief supports, and never a third. The replacement states the corrected fact and nothing else: no place, count, cause or detail that neither quote states.`,
 
-  checkDerivation: `Below is a story brief: a seed, a premise, an outline in three sections, three vignettes and an ending. The debt audit section claims to derive everything from one impossibility.
+  checkDerivation: `Below is a story brief: a seed, a premise, an outline in three sections, three vignettes and an ending. The departure section states the one thing in the story that is not true of the actual world and derives everything from it.
 
 {brief}
 
-State the single impossibility the debt audit buys, in an <impossibility> tag, one sentence. Then check every assertion in the vignettes and ending against that derivation, and do each sum whose figures a vignette or the ending states. Report each assertion that does not follow from the one impossibility, and each sum that does not add up. Report an assertion only when the outline states the rule it breaks, and a sum only when the brief states both figures: a consequence you work out yourself from physics, geometry or a unit is not a finding.
+State that departure, in an <impossibility> tag, one sentence. Then check every assertion in the vignettes and ending against that derivation, and do each sum whose figures a vignette or the ending states. Report each assertion that does not follow from the one impossibility, and each sum that does not add up. Report an assertion only when the outline states the rule it breaks, and a sum only when the brief states both figures: a consequence you work out yourself from physics, geometry or a unit is not a finding.
 
 {findingShape}
 
@@ -204,7 +200,7 @@ After the findings, an <examined> tag listing each assertion and each sum checke
 
 {brief}
 
-Extract from the outline every settled fact into a <ledger> tag, one per line, each line opening with its category: time (dates, durations, order), detail (names, quantities, appearance), knowledge (who knows what), custody (who holds which document or object), world (rules), perspective. These lines are the contract the brief is held to for the rest of its life, so state each one so it can be read against prose by someone who has not seen this outline. Under 600 words. Output only the tag.`,
+Extract from the outline every settled fact into a <ledger> tag, one per line, each line opening with its category: time (dates, durations, order), detail (names, quantities, appearance), knowledge (who knows what, and from when), possession (who holds what), world (rules), perspective. These lines are the contract the brief is held to for the rest of its life, so state each one so it can be read against prose by someone who has not seen this outline. Under 600 words. Output only the tag.`,
 
   checkLedger: `Below is a ledger of a story's settled facts, then the brief itself: a seed, a premise, an outline in three sections, three vignettes and an ending.
 
@@ -325,7 +321,7 @@ The settled lines were accepted in earlier rounds of this brief and still
 hold. Keep every one of them true. Do not restate them and do not undo them to
 satisfy a constraint above.`,
 
-  repairVignette: `Below is a ${RUN.vignetteWords}-word execution of a story and a set of constraints that hold.
+  repairVignette: `Below is a ${RUN.vignetteWords}-word vignette from a story and a set of constraints that hold.
 
 <vignette>
 {vignette}
@@ -366,7 +362,7 @@ beats: {beatsLine}
 ending: {endingLine}
 </config>
 
-Derive the story's schedule: the layer between the outline and the prose, which settles what the reader knows at each point and what is still withheld. Output a <form> tag with four lines: tense, person, chronology, container. Then one <beat n="K" words="N"> tag per beat containing <job> (one sentence, what the beat does and where it is set), <known> (what the reader knows by its end, one or two sentences), <withheld> (each thing still withheld after this beat, with the beat number that reveals it, one per line as \`item — beat N\`; the line \`none\` when nothing is), <stakes> (one sentence), <absorbs> (chosen | context-1 | context-2 | ending | none: the brief vignette this beat takes its material from, if any; each may be named by at most one beat). Output only the tags. Under 1000 words.`,
+Derive the story's schedule, which settles what the reader knows at each point and what is still withheld. Output a <form> tag with four lines: tense, person, chronology, container. Then one <beat n="K" words="N"> tag per beat containing <job> (one sentence, what the beat does and where it is set), <known> (what the reader knows by its end, one or two sentences), <withheld> (each thing still withheld after this beat, with the beat number that reveals it, one per line as \`item — beat N\`; the line \`none\` when nothing is), <stakes> (one sentence), <absorbs> (chosen | context-1 | context-2 | ending | none: the brief vignette this beat takes its material from, if any; each may be named by at most one beat). Output only the tags. Under 1000 words.`,
 
   sceneMaterial: `<material>
 {material}
@@ -374,7 +370,7 @@ Derive the story's schedule: the layer between the outline and the prose, which 
 
 The material above is the brief's own execution of this beat; use it as far as it serves the schedule, rewritten to sit in the story.`,
 
-  sceneAsk: `Write beat {n} of the story, in a <scene> tag. Its job: {job} By its end the reader knows: {known} Still withheld after it: {withheld} Form: {form}. Under {cap} words. It is an execution, not discovery: the schedule above has settled the story.{constraintLine} Output only the tag.`,
+  sceneAsk: `Write beat {n} of the story, in a <scene> tag. Its job: {job} By its end the reader knows: {known} Still withheld after it: {withheld} Form: {form}. Under {cap} words. The schedule above has settled the story: write within it and add nothing it does not hold.{constraintLine} Output only the tag.`,
 
   screenLedger: `<ledger>
 {ledger}

@@ -103,11 +103,7 @@ export type BriefParts = {
   contexts: string[];
   ending: string;
   examples: string[];
-  settingJobs: string[];   // outline sections beyond the three core jobs
 };
-
-/** The outline sections a setting adds beyond the three core jobs. */
-export const settingJobsOf = (jobs: string[]): string[] => jobs.filter((j) => !(RUN.coreJobs as readonly string[]).includes(j));
 
 export function briefParts(p: Pipeline, drawId: string): BriefParts {
   const draw = p.draw(drawId);
@@ -116,12 +112,10 @@ export function briefParts(p: Pipeline, drawId: string): BriefParts {
   if (!chosen) throw new Error(`draw ${drawId}: no chosen vignette; the draw has not produced a brief`);
   const outline = partOf(parts, "outline"), ending = partOf(parts, "ending");
   if (!outline || !ending) throw new Error(`draw ${drawId}: brief incomplete (outline or ending missing)`);
-  const jobs = (outline.meta.jobs as string[] | undefined) ?? [];
   const examples = (JSON.parse(draw.example_ids) as string[]).map((pid) => (p.db.query("SELECT text FROM passages WHERE id = ?").get(pid) as any)?.text).filter(Boolean);
   return {
     draw, seed: draw.seed_text, premise: chosen.meta.premise ?? "", outline: outline.text, outlineStepId: outline.stepId,
     vignette: chosen.text, chosenStepId: chosen.stepId, contexts: partsIn(parts, "context").map((c) => c.text), ending: ending.text, examples,
-    settingJobs: settingJobsOf(jobs),
   };
 }
 

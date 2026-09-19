@@ -9,14 +9,6 @@ claims: setting
 seed_segments: []
 ---
 
-## Matrix
-
-Take the regional element out and a mechanism goes with it.
-
-## Jobs
-
-- matrix: Close the regional element. Name the body, instrument or place the story is built out of, and show that removing it removes a mechanism.
-
 ## Bodies
 
 - The Basin Recorder — indexes a deed by grantor and grantee within 5 days; amends the book only by appending; cannot correct an entry already indexed

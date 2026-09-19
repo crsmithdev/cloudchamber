@@ -1,14 +1,13 @@
 /**
  * A setting is one file under sources/settings/<id>.md: metadata-only front
- * matter, the Matrix, the outline Jobs, and five flat lists of named things.
- * Every stage of a draw loads whole lists, never part of one. The setting's
- * reference/ directory never enters a prompt; it is what `distill` reads.
+ * matter and five flat lists of named things. Every stage of a draw loads
+ * whole lists, never part of one. The setting's reference/ directory never
+ * enters a prompt; it is what `distill` reads.
  *
  * A setting is reference, not a rulebook. It states what is in the world and
  * never how to write it: the craft rules it used to carry came down from the
- * retired playbook and left on 2026-09-14. Matrix and Jobs are what remains of
- * that voice and are optional for the same reason — setting-a carries neither,
- * and a setting that carries one owns every word of it.
+ * retired playbook and left on 2026-09-14, and the Matrix and Jobs prose that
+ * remained of that voice left on 2026-09-19. No setting carried either.
  *
  *   ---
  *   id: setting-a
@@ -16,9 +15,6 @@
  *   claims: setting
  *   seed_segments: []
  *   ---
- *   ## Matrix
- *   ## Jobs
- *   - matrix: <description>
  *   ## Bodies   ## Events   ## Instruments   ## Places   ## Terms
  *   - name — what it does; what it cannot do, or what follows from it
  *
@@ -32,10 +28,7 @@ import { join } from "node:path";
 import { SETTINGS } from "./paths.ts";
 import { RUN } from "./config.ts";
 
-/** Optional, and both are prose a person wrote: a setting may be its five lists alone. */
-export const SETTING_SECTIONS = ["Matrix", "Jobs"] as const;
 export const LISTS = ["Bodies", "Events", "Instruments", "Places", "Terms"] as const;
-export type SettingSection = (typeof SETTING_SECTIONS)[number];
 export type ListName = (typeof LISTS)[number];
 export const FRONT_MATTER_KEYS = ["id", "name", "seed_segments", "claims"];
 /** Where the claims checker verifies: the web, or the setting's own distillate. Absent: the checker does not run. */
@@ -51,8 +44,6 @@ export type Setting = {
   name: string;
   seedSegments: string[];
   claims: ClaimsAuthority | null;
-  sections: Record<SettingSection, string>;
-  jobs: { name: string; description: string }[];
   lists: Record<ListName, string[]>;
   spans: Record<ListName, Span>;
   meta: Record<string, string>;
@@ -61,18 +52,18 @@ export type Setting = {
 
 export type GenStage = "premises" | "execute" | "outline" | "jobs" | "context" | "ending";
 /**
- * Which sections and lists each stage loads. A loaded list is loaded whole:
+ * Which lists each stage loads. A loaded list is loaded whole:
  * premises chooses the story's subject and so reads every Body and every Event
  * there is. The other four lists are synchronic — they say what is in the
  * world — so Events is what the stages that settle dates settle them against.
  */
-export const LOADING: Record<GenStage, { setting: SettingSection[]; lists: ListName[] }> = {
-  premises: { setting: ["Matrix"], lists: ["Bodies", "Events"] },
-  execute: { setting: ["Matrix"], lists: ["Instruments", "Places", "Terms"] },
-  outline: { setting: ["Matrix"], lists: ["Bodies", "Events", "Instruments"] },
-  jobs: { setting: ["Matrix"], lists: ["Bodies", "Instruments"] },
-  context: { setting: ["Matrix"], lists: ["Instruments", "Places", "Terms"] },
-  ending: { setting: ["Matrix"], lists: ["Bodies", "Events", "Instruments", "Terms"] },
+export const LOADING: Record<GenStage, { lists: ListName[] }> = {
+  premises: { lists: ["Bodies", "Events"] },
+  execute: { lists: ["Instruments", "Places", "Terms"] },
+  outline: { lists: ["Bodies", "Events", "Instruments"] },
+  jobs: { lists: ["Bodies", "Instruments"] },
+  context: { lists: ["Instruments", "Places", "Terms"] },
+  ending: { lists: ["Bodies", "Events", "Instruments", "Terms"] },
 };
 
 // --- parsing ---------------------------------------------------------------
@@ -127,11 +118,6 @@ export function parseSetting(text: string, id: string, dir: string = SETTINGS): 
   const { meta, bodyStart } = parseFrontMatter(text);
   const hs = headings(text, bodyStart);
   const top = spansUnder(hs, 0, 2, text.length);
-  const sections = {} as Record<SettingSection, string>;
-  for (const name of SETTING_SECTIONS) {
-    const s = top.find((t) => t.title === name);
-    sections[name] = s ? body(text, s.span) : "";
-  }
   const lists = {} as Record<ListName, string[]>;
   const spans = {} as Record<ListName, Span>;
   for (const name of LISTS) {
@@ -139,13 +125,11 @@ export function parseSetting(text: string, id: string, dir: string = SETTINGS): 
     lists[name] = s ? entries(body(text, s.span)) : [];
     spans[name] = s ? s.span : { start: -1, end: -1 };
   }
-  const jobs = sections.Jobs.split("\n").map((l) => /^-\s+([^:]+):\s*(.+)$/.exec(l)).filter(Boolean)
-    .map((m) => ({ name: m![1].trim(), description: m![2].trim() }));
   return {
     id, name: meta.name ?? id,
     seedSegments: parseList(meta.seed_segments),
     claims: (CLAIMS_VALUES as readonly string[]).includes(meta.claims) ? (meta.claims as ClaimsAuthority) : null,
-    sections, jobs, lists, spans, meta, dir,
+    lists, spans, meta, dir,
   };
 }
 
@@ -164,23 +148,20 @@ export const isEmpty = (bodyText: string) => bodyText.trim() === "none" || bodyT
 
 const listBlock = (name: ListName, rows: string[]) => `## ${name} — ${INTENT}\n\n${rows.map((e) => `- ${e}`).join("\n")}`;
 
-/** The setting text for one stage: the setting-wide sections it loads, then each loaded list whole. */
+/** The setting text for one stage: each loaded list, whole. */
 export function slice(setting: Setting, stage: GenStage): string {
   const load = LOADING[stage];
   const parts: string[] = [];
-  for (const name of load.setting) if (!isEmpty(setting.sections[name])) parts.push(`## ${name}\n\n${setting.sections[name]}`);
   for (const name of load.lists) if (setting.lists[name].length) parts.push(listBlock(name, setting.lists[name]));
   return parts.join("\n\n");
 }
 
 /**
- * The setting as it was written down: the setting-wide sections and all five
- * lists. Only the claims verifier under `claims: setting` reads this; no
- * generation stage does.
+ * The setting as it was written down: all five lists. Only the claims
+ * verifier under `claims: setting` reads this; no generation stage does.
  */
 export function distillate(setting: Setting): string {
   const parts: string[] = [];
-  for (const name of SETTING_SECTIONS) if (!isEmpty(setting.sections[name])) parts.push(`## ${name}\n\n${setting.sections[name]}`);
   for (const name of LISTS) if (setting.lists[name].length) parts.push(listBlock(name, setting.lists[name]));
   return parts.join("\n\n");
 }
@@ -227,8 +208,8 @@ export const mentioned = (text: string, rows: string[]) => rows.filter((e) => me
 export type Finding = { list: string; entry: string; reason: string };
 export const formatFinding = (f: Finding) => `${f.list} › ${f.entry}: ${f.reason}`;
 
-/** Headings a setting no longer carries: the per-domain shape, and the craft rules that came down from the playbook. */
-const RETIRED = ["Domains", "Open ground", "Hard rules", "Do not build", "Frame", "Mechanisms", "Roles", "Institutions", "Clocks", "Vocabulary", "Sensation", "Sources"];
+/** Headings a setting no longer carries: the per-domain shape, the craft rules that came down from the playbook, and the Matrix and Jobs prose that remained of it. */
+const RETIRED = ["Domains", "Open ground", "Hard rules", "Do not build", "Frame", "Mechanisms", "Roles", "Institutions", "Clocks", "Vocabulary", "Sensation", "Sources", "Matrix", "Jobs"];
 
 export function lintSetting(text: string, id: string): Finding[] {
   const caps = RUN.listCaps;
@@ -242,7 +223,6 @@ export function lintSetting(text: string, id: string): Finding[] {
   const hs = headings(text, bodyStart);
   const top = new Set(hs.filter((h) => h.level === 2).map((h) => h.title));
   for (const name of LISTS) if (!top.has(name)) out.push({ list: "setting", entry: name, reason: "missing" });
-  for (const name of SETTING_SECTIONS) if (top.has(name) && s.sections[name].trim() === "") out.push({ list: "setting", entry: name, reason: "a section that is present holds something" });
   for (const h of hs) {
     if (h.level > 2) out.push({ list: "setting", entry: h.title, reason: `no heading below ## ; a list is flat` });
     else if (RETIRED.includes(h.title)) out.push({ list: "setting", entry: h.title, reason: "retired by the four-list shape" });

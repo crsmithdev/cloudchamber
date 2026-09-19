@@ -8,14 +8,12 @@ import { LISTS, distillate, entryName, formatFinding, lintSetting, loadSetting, 
 const lint = (text: string) => lintSetting(text, "basin").map(formatFinding);
 
 describe("setting lint", () => {
-  test("the fixture is clean and parses into the matrix, one job and five lists", () => {
+  test("the fixture is clean and parses into five lists", () => {
     expect(lint(FIXTURE_SETTING)).toEqual([]);
     const s = parseSetting(FIXTURE_SETTING, "basin");
     expect(s.claims).toBe("setting");
-    expect(s.jobs).toEqual([{ name: "matrix", description: "Close the regional element. Name the body, instrument or place the story is built out of, and show that removing it removes a mechanism." }]);
     expect(LISTS.map((n) => s.lists[n].length)).toEqual([3, 3, 3, 3, 3]);
     expect(s.lists.Terms[1]).toBe("Ellis — to withdraw every unit on a parcel from rent; used as a verb");
-    expect(s.sections.Matrix).toBe("Take the regional element out and a mechanism goes with it.");
   });
 
   test("front matter: unknown keys and a bad claims value", () => {
@@ -24,18 +22,14 @@ describe("setting lint", () => {
     expect(lint(FIXTURE_SETTING.replace("claims: setting\n", ""))).toEqual([]);   // absent is off, not a finding
   });
 
-  test("setting-wide sections and lists: missing and empty", () => {
+  test("lists: missing and empty; the prose sections are retired", () => {
     expect(lint(FIXTURE_SETTING.slice(0, FIXTURE_SETTING.indexOf("## Places")))).toEqual(["setting › Places: missing", "setting › Terms: missing"]);
-    expect(lint(FIXTURE_SETTING.replace("## Jobs", "## Hard rules\n\n- One impossibility.\n\n## Jobs")))
+    expect(lint(FIXTURE_SETTING.replace("## Bodies", "## Hard rules\n\n- One impossibility.\n\n## Bodies")))
       .toEqual(["setting › Hard rules: retired by the four-list shape"]);   // a setting is reference, not a rulebook
-    expect(lint(FIXTURE_SETTING.replace("Take the regional element out and a mechanism goes with it.\n", ""))).toEqual(["setting › Matrix: a section that is present holds something"]);
-    // Matrix and Jobs are prose a person wrote, so a setting may carry neither: setting-a is its five lists alone
-    const bare = FIXTURE_SETTING.replace(/## Matrix\n\n[\s\S]*?(?=## Bodies)/, "");
-    expect(lint(bare)).toEqual([]);
-    const s = parseSetting(bare, "basin");
-    expect(s.sections.Matrix).toBe("");
-    expect(s.jobs).toEqual([]);
-    expect(slice(s, "premises")).toStartWith("## Bodies");
+    // the Matrix and Jobs prose that came down from the playbook is retired with the rules: a setting is its five lists alone
+    expect(lint(FIXTURE_SETTING.replace("## Bodies", "## Matrix\n\nTake the regional element out.\n\n## Jobs\n\n- matrix: close it\n\n## Bodies")))
+      .toEqual(["setting › Matrix: retired by the four-list shape", "setting › Jobs: retired by the four-list shape"]);
+    expect(slice(parseSetting(FIXTURE_SETTING, "basin"), "premises")).toStartWith("## Bodies");
     const empty = FIXTURE_SETTING.replace(/## Terms\n\n[\s\S]*$/, "## Terms\n\nnone\n");
     expect(lint(empty)).toEqual([]);                                    // a list may legitimately hold none
     expect(parseSetting(empty, "basin").lists.Terms).toEqual([]);
@@ -88,10 +82,9 @@ describe("slicing", () => {
     expect(premises).not.toMatch(/^### /m);
   });
 
-  test("distillate is every section and every list, whatever a stage would have loaded", () => {
+  test("distillate is every list, whatever a stage would have loaded", () => {
     const d = distillate(s);
     for (const name of LISTS) for (const e of s.lists[name]) expect(d).toContain(e);
-    expect(d).toContain("## Matrix");
     expect(d).not.toContain("## Hard rules");
   });
 });

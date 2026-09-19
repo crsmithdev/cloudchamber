@@ -14,7 +14,7 @@ import { tag, tags } from "./model.ts";
 
 export const SPAN_OVERLAP = 0.5;
 export const STATEMENT_OVERLAP = 0.6;
-export const INVALIDATES_ORDER = ["debt audit", "arithmetic", "custody"];
+export const INVALIDATES_ORDER = ["departure", "particulars", "knowledge"];
 
 export type Finding = {
   checker: string;
@@ -78,10 +78,9 @@ export function parseFindings(text: string, checker: string, sample: number): Fi
   })).filter((f) => f.span);
 }
 
-export function invalidatesRank(inv: string, settingJobs: string[] = []): number {
-  const order = [...INVALIDATES_ORDER, ...settingJobs.map((j) => j.toLowerCase())];
-  const i = order.indexOf(inv.toLowerCase());
-  return i >= 0 ? i : inv === "none" || !inv ? order.length + 1 : order.length;
+export function invalidatesRank(inv: string): number {
+  const i = INVALIDATES_ORDER.indexOf(inv.toLowerCase());
+  return i >= 0 ? i : inv === "none" || !inv ? INVALIDATES_ORDER.length + 1 : INVALIDATES_ORDER.length;
 }
 
 /**
@@ -110,7 +109,7 @@ export function invalidatesRank(inv: string, settingJobs: string[] = []): number
  * and the contradictions a reader sees did not. What a reader sees now carries
  * its own term below, and the section weights only break ties.
  */
-export const INVALIDATES_WEIGHT: Record<string, number> = { "debt audit": 2, custody: 1, arithmetic: 1 };
+export const INVALIDATES_WEIGHT: Record<string, number> = { departure: 2, knowledge: 1, particulars: 1 };
 export const SCORE_MAX = 10;
 
 /**
@@ -179,13 +178,13 @@ export function visibility(f: Scorable, ctx: ScoreContext): number {
   return -2;
 }
 
-export function score(f: Scorable, samples: number, settingJobs: string[] = [], ctx?: ScoreContext): number {
+export function score(f: Scorable, samples: number, ctx?: ScoreContext): number {
   const recurrence = f.n >= samples ? 3 : f.n === samples - 1 ? 2 : 1;
   const crossChecker = f.checkers.length > 1 ? 2 : 0;
   const inv = f.invalidates.toLowerCase();
-  const weight = INVALIDATES_WEIGHT[inv] ?? (settingJobs.some((j) => j.toLowerCase() === inv) ? 2 : 0);
+  const weight = INVALIDATES_WEIGHT[inv] ?? 0;
   const inOutline = !!f.span && !!ctx?.outline && normalise(ctx.outline).includes(normalise(f.span));
-  const severity = inv === "arithmetic" && !inOutline && HEDGED.test(f.span ?? "") ? 0 : weight;
+  const severity = inv === "particulars" && !inOutline && HEDGED.test(f.span ?? "") ? 0 : weight;
   const r = f.result.toLowerCase().trim();
   const kind = r.startsWith("contradict") ? 2 : r.includes("underived") ? 1 : 0;
   const unevidenced = !f.evidence.trim() || f.evidence.trim().toLowerCase() === "none" ? -2 : 0;
@@ -194,7 +193,7 @@ export function score(f: Scorable, samples: number, settingJobs: string[] = [], 
 }
 
 /** Cluster one checker's findings across its samples. Sorted by n descending, then by what the finding invalidates. */
-export function cluster(findings: Finding[], keepIf: number, settingJobs: string[] = [], scope = ""): Cluster[] {
+export function cluster(findings: Finding[], keepIf: number, scope = ""): Cluster[] {
   const groups: Finding[][] = [];
   for (const f of findings) {
     const g = groups.find((c) => same(c[0], f));
@@ -211,24 +210,24 @@ export function cluster(findings: Finding[], keepIf: number, settingJobs: string
       reported: samples.length >= keepIf,
     };
   });
-  return order(out, settingJobs);
+  return order(out);
 }
 
-export function order(cs: Cluster[], settingJobs: string[] = []): Cluster[] {
-  return [...cs].sort((a, b) => b.n - a.n || invalidatesRank(a.invalidates, settingJobs) - invalidatesRank(b.invalidates, settingJobs));
+export function order(cs: Cluster[]): Cluster[] {
+  return [...cs].sort((a, b) => b.n - a.n || invalidatesRank(a.invalidates) - invalidatesRank(b.invalidates));
 }
 
 /** Merge reported clusters from several checkers: the first kept, both checkers listed, n the greater. */
-export function merge(all: Cluster[], settingJobs: string[] = []): Cluster[] {
+export function merge(all: Cluster[]): Cluster[] {
   const out: Cluster[] = [];
-  for (const c of order(all, settingJobs)) {
+  for (const c of order(all)) {
     const hit = out.find((o) => same(o, c));
     if (!hit) { out.push({ ...c, checkers: [...c.checkers] }); continue; }
     for (const k of c.checkers) if (!hit.checkers.includes(k)) hit.checkers.push(k);
     hit.n = Math.max(hit.n, c.n);
     if (hit.evidence === "none" && c.evidence !== "none") hit.evidence = c.evidence;
   }
-  return order(out, settingJobs);
+  return order(out);
 }
 
 /** Drop clusters that overlap a dismissed finding by the same rule. */

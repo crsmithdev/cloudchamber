@@ -11,7 +11,7 @@ import { settingsFixture } from "../pipeline/settings.fixture.ts";
 
 const CELLS = ["informational", "mixed", "involved"].flatMap((v) => ["non-narrative", "mixed", "narrative"].map((m) => [v, m]));
 const premises = `<premise><text>P1</text><probability>0.05</probability></premise><premise><text>P2</text><probability>0.02</probability></premise><premise><text>P3</text><probability>0.08</probability></premise><premise><text>P4</text><probability>0.03</probability></premise><premise><text>P5</text><probability>0.06</probability></premise>`;
-const outline = `<section name="debt audit">a</section><section name="arithmetic">b</section><section name="custody">c</section>`;
+const outline = `<section name="departure">a</section><section name="particulars">b</section><section name="knowledge">c</section>`;
 
 async function setup() {
   const dir = mkdtempSync(join(tmpdir(), "cloudchamber-api-"));
@@ -138,7 +138,7 @@ describe("api", () => {
     // the parts of the brief come by role, so the page never tells a context vignette from the chosen one itself
     const parts = done.body.parts;
     expect(parts.vignette.stepId).toBe(done.body.draw.chosen_step);
-    expect(parts.outline.text).toContain("debt audit");
+    expect(parts.outline.text).toContain("departure");
     expect(parts.contexts.map((c: any) => c.index)).toEqual([1, 2]);
     expect(parts.ending.text).toBe("end");
     const gateAgain = await j("POST", `/api/draws/${id}/gate`, { action: "choose", step_id: r.body.candidates[0].step_id });

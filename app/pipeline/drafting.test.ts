@@ -16,7 +16,7 @@ import { A, B, LEDGER, SCENE_3_PATCH, SPAN_A, SPAN_B, SPAN_C, cleanSamples, deri
 import { briefParts, partsIn, partsOf } from "./briefparts.ts";
 import { chainOf } from "./chain.ts";
 
-/** The default floor is 7; B, an arithmetic finding at two of three samples, sits at 6, so a test that needs two fixes at once lowers it. */
+/** The default floor is 7; B, an particulars finding at two of three samples, sits at 6, so a test that needs two fixes at once lowers it. */
 const floor6 = () => ({ ...loadDraftConfig().config, repair: { ...loadDraftConfig().config.repair, stop_score: 6 } });
 /** A chosen vignette that carries the given spans, so a finding quoting one is in the prose a reader sees. */
 const withWords = (words: string[]) => (p: string) => vignette(Number(/Premise (\d)/.exec(p)?.[1] ?? 0)).replace("</vignette>", ` ${words.join(". ")}.</vignette>`);
@@ -31,7 +31,7 @@ describe("check and gate 1", () => {
     expect(r.claims).toBe("off");
     // A recurs 3/3 in both checkers and merges; B recurs 2/3; C (1/3) is not stored
     const f = d.findings(draw.id);
-    expect(f.findings.map((x) => [x.checkers, x.n, x.invalidates, x.decision])).toEqual([[["derivation", "ledger"], 3, "debt audit", "open"], [["ledger"], 2, "arithmetic", "open"]]);
+    expect(f.findings.map((x) => [x.checkers, x.n, x.invalidates, x.decision])).toEqual([[["derivation", "ledger"], 3, "departure", "open"], [["ledger"], 2, "particulars", "open"]]);
     expect(f.findings[0].replacement).toBe("Only the assembler can fire the reliquary.");
     expect(f.findings[1].samples).toEqual([1, 3]);
     expect(p.artifacts(draw.id).filter((a) => a.kind === "finding")).toHaveLength(2);
@@ -97,7 +97,7 @@ describe("check and gate 1", () => {
     expect(readFileSync(join(bdir, "ending.md"), "utf8")).toContain("Only the assembler");
     expect(readFileSync(join(bdir, "vignette.md"), "utf8")).toContain("w2_0");
     const outlineMd = readFileSync(join(bdir, "outline.md"), "utf8");
-    expect(outlineMd).toContain("Section debt audit body.");                   // the author's outline
+    expect(outlineMd).toContain("Section departure body.");                   // the author's outline
     expect(outlineMd).toContain("- Only the assembler can fire the reliquary.");   // with the fix appended, as the check reads it
     const trail = readFileSync(join(bdir, "trail.md"), "utf8");
     expect(trail).toContain("# Trail (repaired)");
@@ -120,12 +120,12 @@ describe("check and gate 1", () => {
     await d.check(draw.id);
     const f = d.findings(draw.id).findings.filter((x) => x.reported);           // C's span is not in this vignette, so it is dropped under the bar
     expect(f).toHaveLength(1);
-    expect(f[0].invalidates).toBe("arithmetic");
+    expect(f[0].invalidates).toBe("particulars");
     const next = await d.accept(draw.id, [f[0].id]);
     const by = (stage: string) => p.steps(next.id).filter((s) => s.stage === stage);
     expect(by("repair-vignette")[0].model).not.toBe("copied");
     expect(by("repair-vignette")[0].prompt).toContain(span);
-    // arithmetic invalidated: the ending is rewritten even though the span is not in it
+    // particulars invalidated: the ending is rewritten even though the span is not in it
     expect(by("repair-ending")[0].model).not.toBe("copied");
     expect(p.artifacts(next.id).find((a) => a.kind === "vignette" && a.step_id === next.chosen_step)!.content).toContain("rewritten vignette");
   });
@@ -140,8 +140,8 @@ describe("check and gate 1", () => {
     expect(model.calls).toHaveLength(calls);                                    // reconstructed from the steps, nothing re-run
     // C recurred in one sample of three: below the bar, still a reading
     const sub = all.filter((x) => !x.reported);
-    expect(sub.map((x) => [x.span, x.n, x.samples_run, x.invalidates])).toEqual([[SPAN_C, 1, 3, "custody"]]);
-    expect(all.map((x) => x.score)).toEqual([10, 6, 5]);                        // sorted; B is arithmetic at 2 of 3, so it is under the floor
+    expect(sub.map((x) => [x.span, x.n, x.samples_run, x.invalidates])).toEqual([[SPAN_C, 1, 3, "knowledge"]]);
+    expect(all.map((x) => x.score)).toEqual([10, 6, 5]);                        // sorted; B is particulars at 2 of 3, so it is under the floor
     expect(sub[0].artifact_id).toBe("");                                        // no artifact until it is decided on
     expect(p.artifacts(draw.id).filter((a) => a.kind === "finding")).toHaveLength(2);
     // dismissing one promotes it to an artifact, so a re-check does not raise it again
@@ -217,7 +217,7 @@ describe("check and gate 1", () => {
 
   test("a finding inside one context vignette rewrites that one and carries the other over with its job", async () => {
     const span = "context for Test the first thing: scene one.";
-    const inContext = () => finding(span, "context-1 contradicts the ledger", "custody", "The first context holds.", "a second quote from the outline");
+    const inContext = () => finding(span, "context-1 contradicts the ledger", "knowledge", "The first context holds.", "a second quote from the outline");
     const script = draftScript({
       "check-ledger": [
         `<ledger>${LEDGER}</ledger>${inContext()}<examined>ledger×context-1</examined>`,
@@ -364,7 +364,7 @@ describe("claims", () => {
   test("claims: world runs extract then one search-enabled verify per claim on sonnet; contradicted becomes a finding", async () => {
     const { dir } = fixture();
     const sdir = settingsFixture(dir);
-    const { p, d, draw, model } = await drawn(draftScript({ outline: () => ["debt audit", "arithmetic", "custody", "matrix"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n") }), { id: "basin", dir: sdir, claims: "world" });
+    const { p, d, draw, model } = await drawn(draftScript({ outline: () => ["departure", "particulars", "knowledge"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n") }), { id: "basin", dir: sdir, claims: "world" });
     const r = await d.check(draw.id);
     expect(r.claims).toBe("world");
     expect(stagesOf(model, /claims/)).toEqual(["check-claims-extract", "check-claims-verify", "check-claims-verify"]);
@@ -385,7 +385,7 @@ describe("claims", () => {
   test("claims: setting verifies against the whole distillate, every list, and asks for claims about the setting", async () => {
     const { dir } = fixture();
     const sdir = settingsFixture(dir);
-    const { p, d, draw, model } = await drawn(draftScript({ outline: () => ["debt audit", "arithmetic", "custody", "matrix"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n") }), { id: "basin", dir: sdir, claims: "setting" });
+    const { p, d, draw, model } = await drawn(draftScript({ outline: () => ["departure", "particulars", "knowledge"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n") }), { id: "basin", dir: sdir, claims: "setting" });
     const r = await d.check(draw.id);
     expect(r.claims).toBe("setting");
     expect(model.calls.find((c) => c.stage === "check-claims-extract")!.prompt).toContain("claims about the setting the story is set in");
@@ -402,7 +402,7 @@ describe("claims", () => {
   test("no claims key: the checker does not run", async () => {
     const { dir } = fixture();
     const sdir = settingsFixture(dir);
-    const { d, draw, model } = await drawn(draftScript({ outline: () => ["debt audit", "arithmetic", "custody", "matrix"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n") }), { id: "basin", dir: sdir });
+    const { d, draw, model } = await drawn(draftScript({ outline: () => ["departure", "particulars", "knowledge"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n") }), { id: "basin", dir: sdir });
     const r = await d.check(draw.id);
     expect(r.claims).toBe("off");
     expect(stagesOf(model, /claims/)).toEqual([]);
@@ -421,8 +421,8 @@ describe("claims", () => {
     const { dir } = fixture();
     const sdir = settingsFixture(dir);
     const script = draftScript({
-      outline: () => ["debt audit", "arithmetic", "custody", "matrix"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n"),
-      "repair-outline": () => ["debt audit", "arithmetic", "custody", "matrix"].map((n) => `<section name="${n}">Repaired ${n} body.</section>`).join("\n"),
+      outline: () => ["departure", "particulars", "knowledge"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n"),
+      "repair-outline": () => ["departure", "particulars", "knowledge"].map((n) => `<section name="${n}">Repaired ${n} body.</section>`).join("\n"),
       "check-ledger": [...ledgerSamples(), ...cleanSamples()],
       "check-derivation": [...derivationSamples(), ...cleanSamples()],
     });
@@ -635,7 +635,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(story).not.toContain("[screen-");
     expect(readFileSync(join(out, "schedule.md"), "utf8")).toContain("## Beat 3 · 625 words · absorbs chosen");
     const findings = readFileSync(join(out, "findings.md"), "utf8");
-    expect(findings).toContain(`**${a.id}** derivation+ledger ×3 [debt audit] dismissed: she can fire it`);
+    expect(findings).toContain(`**${a.id}** derivation+ledger ×3 [departure] dismissed: she can fire it`);
     expect(findings).toContain("### Beat 5\n\n- structure theme-stated: quote theme-stated 5");
     expect(findings).toContain("## Slop");
     expect(readFileSync(join(out, "config.toml"), "utf8")).toContain("[length]\nwords = 5000");
@@ -692,7 +692,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     const WORDS = ["reliquary silk director", "clavicle Verona relic", "assembler forge tally", "director ledger hour", "silk tears cut",
       "relic bones sold", "forge iron count", "hour glass turned", "tally marks burned", "bones washed clean", "iron gate sealed", "glass eye watched"];
     let k = 0;
-    const fresh = () => { const w = WORDS[k++ % WORDS.length]; return finding(w, `the ${w} does not hold`, "debt audit", `The ${w} holds.`); };
+    const fresh = () => { const w = WORDS[k++ % WORDS.length]; return finding(w, `the ${w} does not hold`, "departure", `The ${w} holds.`); };
     const passes = Array.from({ length: 12 }, () => { const a = fresh(); return [`<ledger>${LEDGER}</ledger>${a}<examined>x</examined>`, `<ledger>${LEDGER}</ledger>${a}<examined>x</examined>`, `<ledger>${LEDGER}</ledger>${a}<examined>x</examined>`]; }).flat();
     const derivations = Array.from({ length: 12 }, () => Array.from({ length: 3 }, () => `<impossibility>One.</impossibility><examined>x</examined>`)).flat();
     const { d, draw } = await drawn(draftScript({ "check-ledger": passes, "check-derivation": derivations, execute: withWords(WORDS) }));
@@ -735,7 +735,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
   test("auto stops on the call budget", async () => {
     const WORDS = ["reliquary silk director", "clavicle Verona relic", "assembler forge tally", "director ledger hour", "silk tears cut", "relic bones sold"];
     let k = 0;
-    const fresh = () => { const w = WORDS[k++ % WORDS.length]; return finding(w, `the ${w} does not hold`, "debt audit", `The ${w} holds.`); };
+    const fresh = () => { const w = WORDS[k++ % WORDS.length]; return finding(w, `the ${w} does not hold`, "departure", `The ${w} holds.`); };
     const passes = Array.from({ length: 6 }, () => { const a = fresh(); return [1, 2, 3].map(() => `<ledger>${LEDGER}</ledger>${a}<examined>x</examined>`); }).flat();
     const derivations = Array.from({ length: 6 }, () => [1, 2, 3].map(() => `<impossibility>One.</impossibility><examined>x</examined>`)).flat();
     const { d, draw } = await drawn(draftScript({ "check-ledger": passes, "check-derivation": derivations, execute: withWords(WORDS) }));
@@ -750,7 +750,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
   test("auto stops on the round cap", async () => {
     const WORDS = ["reliquary silk director", "clavicle Verona relic", "assembler forge tally", "director ledger hour", "silk tears cut", "relic bones sold", "forge iron count", "hour glass turned"];
     let k = 0;
-    const fresh = () => { const w = WORDS[k++ % WORDS.length]; return finding(w, `the ${w} does not hold`, "debt audit", `The ${w} holds.`); };
+    const fresh = () => { const w = WORDS[k++ % WORDS.length]; return finding(w, `the ${w} does not hold`, "departure", `The ${w} holds.`); };
     const passes = Array.from({ length: 8 }, () => { const a = fresh(); return [1, 2, 3].map(() => `<ledger>${LEDGER}</ledger>${a}<examined>x</examined>`); }).flat();
     const derivations = Array.from({ length: 8 }, () => [1, 2, 3].map(() => `<impossibility>One.</impossibility><examined>x</examined>`)).flat();
     const { d, draw } = await drawn(draftScript({ "check-ledger": passes, "check-derivation": derivations, execute: withWords(WORDS) }));
@@ -964,7 +964,7 @@ describe("the verify pass", () => {
 
   test("the reconcile prompt carries each fix's patch, and a conflict is read in either tag form", async () => {
     const script = draftScript({
-      "check-ledger": [...ledgerSamples(A(), finding(SPAN_B, "the twelfth relic is named differently in the two vignettes", "arithmetic", "The twelfth relic is the Verona clavicle in every account.", undefined, undefined, "the twelfth relic, the Bruges clavicle")), ...cleanSamples(), ...cleanSamples()],
+      "check-ledger": [...ledgerSamples(A(), finding(SPAN_B, "the twelfth relic is named differently in the two vignettes", "particulars", "The twelfth relic is the Verona clavicle in every account.", undefined, undefined, "the twelfth relic, the Bruges clavicle")), ...cleanSamples(), ...cleanSamples()],
       "check-derivation": [...derivationSamples(), ...cleanSamples(), ...cleanSamples()],
       reconcile: ['<conflicts><conflict a="1" b="2"><why>one relic, two names</why></conflict></conflicts>'],
     });
@@ -981,7 +981,7 @@ describe("the verify pass", () => {
 
 describe("what a reader sees", () => {
   test("a finding whose span is only in the outline is dropped with no model call", async () => {
-    const outlineOnly = finding("Section arithmetic body", "the outline's sum is off", "arithmetic", "The sum holds.", "the fire was on the 3rd");
+    const outlineOnly = finding("Section particulars body", "the outline's sum is off", "particulars", "The sum holds.", "the fire was on the 3rd");
     const script = draftScript({
       "check-ledger": [...ledgerSamples(A(), outlineOnly)],
       "check-derivation": [...derivationSamples()],
@@ -990,9 +990,9 @@ describe("what a reader sees", () => {
     const r = await d.check(draw.id);
     expect(r.findings.map((f) => f.span)).toEqual([SPAN_A]);
     const all = d.findings(draw.id, { all: true }).findings;
-    expect(all.find((f) => f.span === "Section arithmetic body")).toMatchObject({ reported: false, dropped: NOT_IN_PROSE });
+    expect(all.find((f) => f.span === "Section particulars body")).toMatchObject({ reported: false, dropped: NOT_IN_PROSE });
     const prompt = model.calls.find((c) => c.stage === "check-verify")!.prompt;
-    expect(prompt).not.toContain("Section arithmetic body\"");
+    expect(prompt).not.toContain("Section particulars body\"");
     expect(prompt).toContain(`1. span: "${SPAN_A}"`);
   });
 
@@ -1009,7 +1009,7 @@ describe("what a reader sees", () => {
     expect(constraints("repair-vignette")).toContain("The twelfth relic is the Verona clavicle in every account.");
     expect(constraints("repair-vignette")).not.toContain("Only the assembler can fire the reliquary.");
     expect(constraints("repair-ending")).toContain("Only the assembler can fire the reliquary.");
-    // B is arithmetic with no patch, so it moves the mechanism and the ending takes it too
+    // B is particulars with no patch, so it moves the mechanism and the ending takes it too
     expect(constraints("repair-ending")).toContain("The twelfth relic is the Verona clavicle in every account.");
     // the outline carries every fix as an amendment, with no call
     const outline = p.artifacts(next.id).find((a) => a.kind === "outline")!.content;
@@ -1115,8 +1115,8 @@ describe("the outline a check reads", () => {
     const next = await d.accept(draw.id, [a.id]);
     // one outline: the repaired draw's part is the root's with the amendment, and the check reads that part
     const carried = p.artifacts(next.id).find((x) => x.kind === "outline")!.content;
-    expect(carried).toContain("Section debt audit body.");
-    expect(carried).not.toContain("Repaired debt audit body.");
+    expect(carried).toContain("Section departure body.");
+    expect(carried).not.toContain("Repaired departure body.");
     expect(carried).toBe(chainOf(p, next.id).outline());
     const prompt = p.steps(next.id).find((s) => s.stage === "check-derivation")!.prompt;
     expect(prompt).toContain(carried);

@@ -49,9 +49,9 @@ describe("patching a brief in place", () => {
       .toEqual({ vignette: true, ending: false, context: [false, false] });
     expect(repairPlan([f("holds the silk")], vignette, ending, contexts))
       .toEqual({ vignette: false, ending: false, context: [true, false] });
-    // arithmetic moves the mechanism, so an unpatched one re-derives the ending wherever it sits
-    expect(repairPlan([f("holds the silk", "", "arithmetic")], vignette, ending, contexts).ending).toBe(true);
-    expect(repairPlan([f("holds the silk", "holds the linen", "arithmetic")], vignette, ending, contexts).ending).toBe(false);
+    // particulars moves the mechanism, so an unpatched one re-derives the ending wherever it sits
+    expect(repairPlan([f("holds the silk", "", "particulars")], vignette, ending, contexts).ending).toBe(true);
+    expect(repairPlan([f("holds the silk", "holds the linen", "particulars")], vignette, ending, contexts).ending).toBe(false);
   });
 
   test("a patch whose span the text does not hold word for word is rewritten, not dropped", () => {
@@ -60,6 +60,6 @@ describe("patching a brief in place", () => {
     const miss = f(`said, "Hold the reliquary"`, `said, "Burn the reliquary"`);
     expect(applyPatches(vignette, [miss]).applied).toEqual([]);
     expect(repairPlan([miss], vignette, "The count closes.", []).vignette).toBe(true);
-    expect(repairPlan([f(`said, "Hold the reliquary"`, "x", "arithmetic")], vignette, "The count closes.", []).ending).toBe(true);
+    expect(repairPlan([f(`said, "Hold the reliquary"`, "x", "particulars")], vignette, "The count closes.", []).ending).toBe(true);
   });
 });

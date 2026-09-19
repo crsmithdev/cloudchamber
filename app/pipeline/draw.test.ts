@@ -30,7 +30,7 @@ function fixture(): { db: Db; dir: string } {
 const premises = (probs = [0.05, 0.03, 0.08, 0.03, 0.06]) =>
   probs.map((p, i) => `<premise><text>Premise ${i + 1} text.</text><probability>${p}</probability></premise>`).join("\n");
 const vignette = (n: number) => `<vignette>${Array.from({ length: 400 }, (_, i) => `w${n}_${i}`).join(" ")}</vignette>`;
-const outline = (extra: string[] = []) => ["debt audit", "arithmetic", "custody", ...extra].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n");
+const outline = (extra: string[] = []) => ["departure", "particulars", "knowledge", ...extra].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n");
 const script = (over: Record<string, any> = {}) => ({
   premises: [premises()],
   execute: (p: string) => vignette(Number(/Premise (\d)/.exec(p)?.[1] ?? 0)),
@@ -79,7 +79,7 @@ describe("draw graph", () => {
     expect(chosen.probability).toBe(0.03);
     // siblings see the outline and the chosen vignette, not each other
     const ctx = model.calls.filter((c) => c.stage === "context");
-    expect(ctx[0].prompt).toContain("Section debt audit body.");
+    expect(ctx[0].prompt).toContain("Section departure body.");
     expect(ctx[0].prompt).toContain("Its job: Test the first thing");
     expect(ctx[1].prompt).not.toContain("context for");
     const end = model.calls.find((c) => c.stage === "ending")!;
@@ -239,10 +239,10 @@ describe("draw graph", () => {
     expect(p.draws()[0].status).toBe("failed");
   });
 
-  test("a setting is sliced by stage: whole lists, the loaded ones only, no rules, jobs on the outline", async () => {
+  test("a setting is sliced by stage: whole lists, the loaded ones only, no rules, no prose", async () => {
     const { db, dir } = fixture();
     const sdir = settingsFixture(dir);
-    const { p, model } = pipe(db, dir, script({ outline: [outline(["matrix"])] }), () => 0.001, sdir);
+    const { p, model } = pipe(db, dir, script(), () => 0.001, sdir);
     const draw = await p.start({ mode: "auto", genre: "horror", setting: "basin" });
     expect(draw.status).toBe("done");
     const s = loadSetting("basin", sdir);
@@ -253,24 +253,23 @@ describe("draw graph", () => {
       expect(pr).toContain(`## ${name} — the setting records these`);
       for (const e of s.lists[name]) expect(pr).toContain(e);     // whole, never a subset
     };
-    // premises: examples, Matrix, Do not build, every Body, ask, Hard rules last
+    // premises: examples, every Body, ask; no prose section of any kind
     const pr = call("premises");
-    expect(pr.indexOf("horror passage")).toBeLessThan(pr.indexOf("## Matrix"));
-    expect(pr.indexOf("## Matrix")).toBeLessThan(pr.indexOf("Generate five premises"));
+    expect(pr.indexOf("horror passage")).toBeLessThan(pr.indexOf("## Bodies"));
     whole(pr, "Bodies");
-    hasNot(pr, ["## Instruments", "## Places", "## Terms", "## Jobs", "## Hard rules", "## Do not build"]);
+    hasNot(pr, ["## Instruments", "## Places", "## Terms", "## Jobs", "## Matrix", "## Hard rules", "## Do not build"]);
     expect(pr.indexOf("## Bodies")).toBeLessThan(pr.indexOf("Generate five premises"));   // the ask is last; nothing follows it
     // execute: the nouns a page is made of, and no bodies
     const ex = call("execute");
     for (const n of ["Instruments", "Places", "Terms"] as const) whole(ex, n);
-    hasNot(ex, ["## Bodies", "## Jobs", "## Hard rules"]);
-    // outline: bodies and instruments, the setting job as a section ask, head first
+    hasNot(ex, ["## Bodies", "## Jobs", "## Matrix", "## Hard rules"]);
+    // outline: head first, then bodies and instruments, then the three section asks and nothing a setting adds
     const ol = call("outline");
-    expect(ol.indexOf("Seed:")).toBeLessThan(ol.indexOf("## Matrix"));
-    expect(ol.indexOf("## Matrix")).toBeLessThan(ol.indexOf("Write one section per job"));
+    expect(ol.indexOf("Seed:")).toBeLessThan(ol.indexOf("## Bodies"));
+    expect(ol.indexOf("## Bodies")).toBeLessThan(ol.indexOf("Write one section per name"));
     whole(ol, "Bodies"); whole(ol, "Instruments");
-    has(ol, ['<section name="matrix">']);
-    hasNot(ol, ["## Places", "## Terms", "## Jobs"]);
+    has(ol, ['<section name="departure">', '<section name="particulars">', '<section name="knowledge">']);
+    hasNot(ol, ["## Places", "## Terms", "## Jobs", "## Matrix", '<section name="matrix">']);
     // jobs, context, ending after the head
     for (const [stage, want, gone] of [
       ["jobs", ["Bodies", "Instruments"], ["## Places", "## Terms"]],
@@ -278,13 +277,13 @@ describe("draw graph", () => {
       ["ending", ["Bodies", "Instruments", "Terms"], ["## Places"]],
     ] as const) {
       const c = call(stage);
-      expect(c.indexOf("Section debt audit body.")).toBeLessThan(c.indexOf("## Matrix"));
+      expect(c.indexOf("Section departure body.")).toBeLessThan(c.indexOf(`## ${want[0]}`));   // the head, then the setting
       for (const n of want) whole(c, n);
       hasNot(c, [...gone, "## Hard rules"]);
     }
     // no heading below ##: nothing in a prompt a draw could have selected on
     for (const stage of ["premises", "execute", "outline", "jobs", "context", "ending"]) expect(call(stage)).not.toMatch(/^### /m);
-    expect(readFileSync(join(dir, "briefs", draw.id, "outline.md"), "utf8")).toContain("## matrix");
+    expect(readFileSync(join(dir, "briefs", draw.id, "outline.md"), "utf8")).toContain("## departure");
     expect(readFileSync(join(dir, "briefs", draw.id, "trail.md"), "utf8")).not.toContain("## domains");
     expect(words(pr)).toBeLessThan(5000);
   });
@@ -292,12 +291,12 @@ describe("draw graph", () => {
   test("two draws under one setting carry the same setting text: the seed is what differs", async () => {
     const { db, dir } = fixture();
     const sdir = settingsFixture(dir);
-    const twice = { premises: [premises(), premises()], outline: [outline(["matrix"]), outline(["matrix"])], jobs: [script().jobs[0], script().jobs[0]], ending: [script().ending[0], script().ending[0]] };
+    const twice = { premises: [premises(), premises()], outline: [outline(), outline()], jobs: [script().jobs[0], script().jobs[0]], ending: [script().ending[0], script().ending[0]] };
     const { p, model } = pipe(db, dir, script(twice), () => 0.001, sdir);
     await p.start({ mode: "auto", genre: "horror", setting: "basin", seed: { mode: "typed", text: "one seed" } });
     await p.start({ mode: "auto", genre: "horror", setting: "basin", seed: { mode: "typed", text: "another seed" } });
     const [a, b] = model.calls.filter((c) => c.stage === "premises").map((c) => c.prompt);
-    const setting = (pr: string) => pr.slice(pr.indexOf("## Matrix"), pr.indexOf("Generate five premises"));
+    const setting = (pr: string) => pr.slice(pr.indexOf("## Bodies"), pr.indexOf("Generate five premises"));
     expect(setting(a)).toBe(setting(b));
     expect(a).not.toBe(b);
   });

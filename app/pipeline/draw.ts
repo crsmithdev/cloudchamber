@@ -64,14 +64,6 @@ const id = (n = 6) => randomBytes(n).toString("hex");
 /** A draw id: the UTC second it was made, and four hex digits. */
 export const newDrawId = () => `${now().replace(/[-:TZ]/g, "").slice(0, 15)}-${id(2)}`;
 
-/** The outline's sections: the core jobs, then the setting's, and the ask line for the setting's. */
-export function outlineJobs(setting?: Setting): { settingJobs: string; jobNames: string[] } {
-  return {
-    settingJobs: (setting?.jobs ?? []).map((j) => fill("settingJob", { name: j.name, description: j.description })).join(""),
-    jobNames: [...RUN.coreJobs, ...(setting?.jobs ?? []).map((j) => j.name.toLowerCase())],
-  };
-}
-
 /** Parse an outline response, requiring every job's section. */
 export const parseOutline = (jobNames: string[]) => (text: string) => {
   const secs = sections(text);
@@ -414,11 +406,10 @@ export class Pipeline {
   private async develop(drawId: string, c: { step_id: string; premise: string; vignette: string }) {
     const draw = this.draw(drawId);
     const { setting } = this.loadDrawSetting(draw);
-    const { settingJobs, jobNames } = outlineJobs(setting);
+    const jobNames = [...RUN.coreJobs];
     const outlineHead = fill("outlineHead", { seed: draw.seed_text, premise: c.premise, vignette: c.vignette });
-    const outlineSetting = this.settingFor("outline", setting);   // the Jobs section reaches the outline as its <section> asks
     const { step: outlineStep, value: outline } = await this.invoke(drawId, c.step_id, "outline",
-      compose(outlineHead, fill("outlineAsk", { settingJobs }), outlineSetting), parseOutline(jobNames));
+      compose(outlineHead, fill("outlineAsk", {}), this.settingFor("outline", setting)), parseOutline(jobNames));
     const { text: outlineText, words: outlineWords } = renderOutline(outline);
     this.artifact(outlineStep, "outline", outlineText, { jobs: jobNames, words: outlineWords });
     const head = fill("head", { outline: outlineText, vignette: c.vignette });

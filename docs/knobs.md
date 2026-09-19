@@ -9,7 +9,7 @@ cloudchamber draw and POST /api/draws take the same knobs.
 | | |
 |---|---|
 | `--auto` | skip the gate by taking the lowest stated probability; otherwise the draw waits for you |
-| `--setting` | one of setting-a, setting-b, setting-c, or omitted for an unrestricted draw |
+| `--setting` | one of setting-c, setting-b, setting-a, or omitted for an unrestricted draw |
 | `--genre` | free text, dropped into one line of the premises ask; omitted, it follows the examples drawn |
 | `--sampling` | tail \| off-centre \| standard; where in the stated distribution the five premises are asked for |
 | `--darkness` | light \| grey \| dark \| black; how much the story takes, asked of the premises, the vignettes and the ending; omitted, nothing is asked |
@@ -23,9 +23,9 @@ Every draw under a setting carries its lists whole. Caps: 40 entries a list, 45 
 
 | | |
 |---|---|
-| `setting-a` | 40 bodies · 40 events · 40 instruments · 40 places · 40 terms |
-| `setting-b` | 40 bodies · 40 events · 40 instruments · 40 places · 40 terms |
 | `setting-c` | 0 bodies · 0 events · 0 instruments · 0 places · 0 terms |
+| `setting-b` | 40 bodies · 40 events · 40 instruments · 40 places · 40 terms |
+| `setting-a` | 40 bodies · 40 events · 40 instruments · 40 places · 40 terms |
 
 ## genre shortcuts
 
@@ -119,7 +119,7 @@ config.ts. Changing one of these is an edit and a test run, not a flag.
 | `examples per draw` | 6 |
 | `context vignettes` | 2 |
 | `word targets` | premise 100 · vignette 400 · outline section 400 · ending 600 |
-| `core jobs` | debt audit, arithmetic, custody |
+| `core jobs` | departure, particulars, knowledge |
 
 ## models
 

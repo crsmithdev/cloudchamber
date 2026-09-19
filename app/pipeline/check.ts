@@ -71,7 +71,7 @@ export function loadPremiseList(path: string = PREMISES_PATH): string {
   return readFileSync(path, "utf8").split("\n").filter((l) => /^\d+\.\s/.test(l)).join("\n");
 }
 
-const findingShape = (settingJobs: string[]) => fill("findingShape", { sections: [...RUN.coreJobs, ...settingJobs].join(" | ") });
+const findingShape = () => fill("findingShape", { sections: RUN.coreJobs.join(" | ") });
 
 /** Extract a brief's ledger in one call and store it under `meta`. */
 export async function extractLedger(p: Pipeline, drawId: string, parts: BriefParts, brief: string, meta: Record<string, unknown>): Promise<string> {
@@ -88,7 +88,7 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
   const pass = passId();
   const enabled = checkersNext(p, drawId, opts.checks ?? cfg.checks.enabled, chain);
   const dismissed = chain.dismissed();
-  const shape = findingShape(parts.settingJobs);
+  const shape = findingShape();
   const S = (name: string) => opts.samples ? { samples: opts.samples, keep_if: Math.min(cfg.checks.keep_if, opts.samples) } : samplesFor(cfg.checks, name);
   const perChecker: { checker: string; clusters: Cluster[]; firstStep: StepRow; samples?: number }[] = [];
   const findingsOf = (checker: "derivation" | "ledger") => (t: string) => { need(t, "examined"); return { findings: parseFindings(t, checker, 0), examined: tag(t, "examined") }; };
@@ -124,9 +124,9 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
   await Promise.all(runs);
 
   const reported = perChecker.flatMap((c) => c.clusters.filter((x) => x.reported));
-  const merged = excludeDismissed(merge(reported, parts.settingJobs), dismissed);
+  const merged = excludeDismissed(merge(reported), dismissed);
   // the clusters under keep_if, merged as the gate reads them back, so one verify call grades the whole list
-  const under = excludeDismissed(merge(perChecker.flatMap((c) => c.clusters.filter((x) => !x.reported)), parts.settingJobs), dismissed)
+  const under = excludeDismissed(merge(perChecker.flatMap((c) => c.clusters.filter((x) => !x.reported))), dismissed)
     .filter((c) => !merged.some((m) => same(m, c)));
   const dropped = await verifyFindings(p, drawId, parts, brief, await ledger, [...merged, ...under]);
   // a clean pass leaves no finding or profile behind, so the pass is marked on its own: the gate reads the latest pass, not the latest with findings
@@ -202,7 +202,7 @@ async function sampled(p: Pipeline, drawId: string, parts: BriefParts, stage: an
     store?.(r.step, r.value, r.sample);
     for (const f of (r.value.findings ?? []) as Finding[]) findings.push({ ...f, sample: r.sample });
   }
-  return { checker, clusters: cluster(findings, s.keep_if, parts.settingJobs, drawId), firstStep: results[0].step, samples: results.length };
+  return { checker, clusters: cluster(findings, s.keep_if, drawId), firstStep: results[0].step, samples: results.length };
 }
 
 const RESULTS = new Set(["supported", "contradicted", "unverifiable"]);

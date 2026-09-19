@@ -13,7 +13,7 @@
 import type { DrawRow, Pipeline, StepRow } from "./draw.ts";
 import { latestAll, type Latest } from "./verdicts.ts";
 import { cluster, excludeDismissed, merge, normalise, same, score, type Cluster, type Finding, type ScoreContext } from "./recur.ts";
-import { briefParts, prose, settingJobsOf, type Artifact } from "./briefparts.ts";
+import { briefParts, prose, type Artifact } from "./briefparts.ts";
 
 /** `dropped` is the verify pass's reason for taking a finding off the reported list; it rides on the artifact's meta. */
 export type FindingMeta = Omit<Cluster, "reported"> & { pass: string; source: "check" | "screen"; screen?: string; beat?: number; sub_threshold?: boolean; dropped?: string };
@@ -215,14 +215,6 @@ export class Chain {
     });
   }
 
-  /** The setting jobs of the draw's outline, for the score's severity term. Empty when the draw has no brief yet. */
-  settingJobs(): string[] {
-    return this.once("settingJobs", () => {
-      const outline = [...this.artifacts()].reverse().find((a) => a.kind === "outline");
-      return settingJobsOf((outline ? (JSON.parse(outline.meta).jobs as string[] | undefined) : undefined) ?? []);
-    });
-  }
-
   /** The texts a finding's quotes are scored against. Undefined when the draw has no brief yet. */
   scoreContext(): ScoreContext | undefined {
     return this.once("scoreContext", () => {
@@ -253,7 +245,7 @@ export class Chain {
   withScore(f: FindingMeta & { artifact_id: string }, reported: boolean): FindingView {
     const samples_run = this.samplesAgainst(f);
     const re = this.relitigated(f);
-    return { ...f, ...this.decision(f.id), score: score(f, samples_run, this.settingJobs(), this.scoreContext()), samples_run, reported, relitigates: re };
+    return { ...f, ...this.decision(f.id), score: score(f, samples_run, this.scoreContext()), samples_run, reported, relitigates: re };
   }
 
   /** The reported check findings of the latest pass, with their gate decisions and scores, highest score first. */
@@ -278,7 +270,6 @@ export class Chain {
       const pass = this.pass();
       if (!pass) return [];
       const per = this.samples();
-      const jobs = this.settingJobs();
       const reported = this.reported();
       const perChecker: Cluster[] = [];
       const stages = [...new Set(this.steps().filter((s) => /^check-/.test(s.stage)).map((s) => s.stage))];
@@ -292,10 +283,10 @@ export class Chain {
           const parsed = JSON.parse(step.parsed!) as { findings?: Finding[] };
           for (const f of parsed.findings ?? []) if (f?.span) findings.push({ ...f, checker, sample: i + 1 });
         });
-        if (findings.length) perChecker.push(...cluster(findings, 1, jobs, this.drawId));
+        if (findings.length) perChecker.push(...cluster(findings, 1, this.drawId));
       }
       // the same span from two checkers is one finding, as it is above the bar
-      const hidden = excludeDismissed(merge(perChecker, jobs).filter((c) => !reported.some((r) => same(r, c))), this.dismissed());
+      const hidden = excludeDismissed(merge(perChecker).filter((c) => !reported.some((r) => same(r, c))), this.dismissed());
       return hidden.map((c) => {
         const { reported: _r, ...meta } = c;
         return this.withScore({ ...meta, pass, source: "check", artifact_id: "" }, false);
