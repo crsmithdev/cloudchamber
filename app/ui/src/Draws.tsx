@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { marked } from "marked";
 import { api, when, type Artifact, type AutoResult, type Candidate, type Example, type Facets, type Draw, type Fork, type FullStep, type Origin, type Parts, type Repair, type Source, type Status, type Step } from "./api.ts";
-import { ArchivedToggle, Bar, Btn, Caret, Chip, Field, Head, Icon, LinkBtn, Mark, Seg, hhmm, lastSelected, markFor, secs, usePoll, useRememberSelected, useTick, useAddressBar, type MarkState } from "./ui.tsx";
+import { ArchivedToggle, Bar, Btn, Caret, Chip, Field, Head, Icon, Keys, LinkBtn, Mark, Seg, hhmm, lastSelected, markFor, onEnter, rowKeys, secs, usePoll, useRememberSelected, useRowsFromPage, useTick, useAddressBar, type MarkState } from "./ui.tsx";
 
 /** `checked` and `auto` are the chain's answers; the pane does not read them off the artifact list. */
 export type Detail = { draw: Draw; origin: Origin | null; steps: Step[]; parts: Parts; checks_next: string[]; repair: Repair; checked: boolean; auto: AutoResult | null; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] };
@@ -152,6 +152,8 @@ export function Draws({ status, selected, like, step: stepId }: { status: Status
   const [showArchived, setShowArchived] = useState(false);
   const [err, setErr] = useState("");
   const [loaded, setLoaded] = useState(false);
+  // the strip's delete asks under the strip before it acts, like the row's
+  const [asking, setAsking] = useState(false);
 
   const loadDraws = () =>
     api
@@ -190,6 +192,7 @@ export function Draws({ status, selected, like, step: stepId }: { status: Status
     if (!current || isForm) return;
     setErr("");
     setFolded(false);
+    setAsking(false);
   }, [current]);
   const d = current && !isForm ? details[current] : undefined;
   // the pane refreshes itself while the pipeline is working on this draw, and rarely once it stops
@@ -249,7 +252,8 @@ export function Draws({ status, selected, like, step: stepId }: { status: Status
     }
   };
   const remove = async () => {
-    if (!d || !confirm(`Delete ${d.draw.name ?? d.draw.id} and every step under it? There is no undo.`)) return;
+    if (!d) return;
+    setAsking(false);
     try {
       await api.deleteDraw(d.draw.id);
       location.hash = "#draws";
@@ -284,7 +288,10 @@ export function Draws({ status, selected, like, step: stepId }: { status: Status
             <div
               key={r.id}
               className={"row" + (r.id === current ? " on" : "") + (isOpen ? " open" : "") + (r.running ? " running" : "") + (redrawn(r) || r.archived_at ? " old" : "")}
+              tabIndex={0}
+              aria-current={r.id === current ? "true" : undefined}
               onClick={() => select(r.id)}
+              onKeyDown={onEnter(() => select(r.id))}
             >
               <RowHead
                 name={r.name ?? r.id}
@@ -334,7 +341,7 @@ export function Draws({ status, selected, like, step: stepId }: { status: Status
             <>
               <div className={"strip" + (working ? " running" : "")}>
                 <h1>{d.draw.name ?? d.draw.id}</h1>
-                <span className={"state " + (working ? "text-running" : d.draw.status === "awaiting_gate" ? "text-art" : d.draw.status === "failed" ? "text-pass" : "text-mute")}>
+                <span className={"state " + (working ? "text-running" : d.draw.status === "awaiting_gate" ? "text-art" : d.draw.status === "failed" ? "text-pass" : "text-mute")} aria-live="polite">
                   <Mark state={markFor(d.draw)} />
                   <span className={working ? "sweep" : ""}>
                     {label(d.draw.status)}
@@ -363,13 +370,25 @@ export function Draws({ status, selected, like, step: stepId }: { status: Status
                       variant="quiet"
                       title={d.draw.actions.delete ?? "Remove this draw and every step under it. There is no undo."}
                       disabled={!!d.draw.actions.delete}
-                      onClick={remove}
+                      pressed={asking}
+                      onClick={() => setAsking((v) => !v)}
                     >
                       delete
                     </Btn>
                   </span>
                 )}
               </div>
+              {asking && !step && (
+                <div className="confirm mt-2">
+                  <span>Delete {d.draw.name ?? d.draw.id} and every step under it? There is no undo.</span>
+                  <Btn variant="pass" onClick={remove}>
+                    delete
+                  </Btn>
+                  <Btn variant="quiet" onClick={() => setAsking(false)}>
+                    keep
+                  </Btn>
+                </div>
+              )}
               {err && <div className="err mt-2">{err}</div>}
               {step ? (
                 <StepView step={step} chosen={step.id === d.draw.chosen_step} onBack={() => setStepId(null)} />
@@ -557,7 +576,9 @@ export function Log({ d, onStep, ideation }: { d: Detail; onStep: (id: string) =
               <tr
                 key={s.id}
                 className={"pick" + (running ? " sweep" : "")}
+                tabIndex={0}
                 onClick={() => onStep(s.id)}
+                onKeyDown={onEnter(() => onStep(s.id))}
                 title={`${STAGE[s.stage]?.does ?? s.stage} Open the step to read its prompt and response.`}
               >
                 <td>
@@ -601,7 +622,7 @@ export function Log({ d, onStep, ideation }: { d: Detail; onStep: (id: string) =
             </tr>
           )}
           {developed && (
-            <tr className="pick" title={`The brief is in the ${d.draw.stage} tab now. Open it there.`} onClick={() => (location.hash = `#${d.draw.stage}/${d.draw.id}`)}>
+            <tr className="pick" tabIndex={0} title={`The brief is in the ${d.draw.stage} tab now. Open it there.`} onClick={() => (location.hash = `#${d.draw.stage}/${d.draw.id}`)} onKeyDown={onEnter(() => (location.hash = `#${d.draw.stage}/${d.draw.id}`))}>
               <td>
                 <Mark state={markFor(d.draw)} />
               </td>
@@ -645,6 +666,20 @@ function DrawBody({
   const gating = d.draw.actions.choose === null;
   const running = d.steps.filter((s) => s.status === "running");
   const runningExec = new Set(running.filter((s) => s.stage === "execute").map((s) => s.id));
+  // the keys act on the focused premise row: choose is the gate's choose, or a fork once one is chosen
+  const forkable = !gating && !!d.draw.chosen_step;
+  const premises = React.useRef<HTMLTableElement>(null);
+  useRowsFromPage(premises);
+  const keys = rowKeys({
+    Enter: (id) => setOpenVig(openVig === id ? null : id),
+    c: (id) => {
+      const c = cands.find((x) => x.step_id === id);
+      if (!c || runningExec.has(id)) return;
+      if (gating) onChoose(id);
+      else if (forkable && id !== d.draw.chosen_step && !d.forks.some((f) => f.step_id === id)) onFork(id);
+    },
+    n: () => document.querySelector<HTMLInputElement>("input[name=gate-note]")?.focus(),
+  });
   return (
     <div className="drawbody">
       <div className="min-w-0">
@@ -653,10 +688,24 @@ function DrawBody({
         <DrawNotes draw={d.draw} />
         {cands.length > 0 && (
           <>
-            <Head className="mt-5" note="lowest probability first">
+            <Head
+              className="mt-5"
+              note={
+                <>
+                  lowest probability first
+                  {gating && " · choose runs the outline, the context plan, two contexts and the ending: 5 model calls"}
+                  {(gating || forkable) && (
+                    <>
+                      {" · "}
+                      <Keys keys={[["↓", "move"], ["⏎", "read"], ["c", gating ? "choose" : "develop"], ["n", "note"]]} />
+                    </>
+                  )}
+                </>
+              }
+            >
               premises
             </Head>
-            <table className="mt-1">
+            <table className="mt-1" ref={premises} onKeyDown={keys}>
               <thead>
                 <tr>
                   <th className="head w-7">#</th>
@@ -677,7 +726,7 @@ function DrawBody({
                   const writing = runningExec.has(c.step_id);
                   return (
                     <React.Fragment key={c.step_id}>
-                      <tr className={isOpen || chosen ? "sel" : openVig ? "faded" : ""}>
+                      <tr className={isOpen || chosen ? "sel" : openVig ? "faded" : ""} data-row={c.step_id} tabIndex={0} aria-expanded={isOpen}>
                         <td className="num">{c.index}</td>
                         <td className="num">
                           <b className="font-semibold">{c.probability.toFixed(2)}</b>
@@ -771,7 +820,7 @@ function DrawBody({
                       </td>
                     </tr>
                   ) : (
-                    <tr className={isOpen ? "sel" : ""}>
+                    <tr className={"pick" + (isOpen ? " sel" : "")} tabIndex={0} onClick={() => setOpenEx(isOpen ? null : e.id)} onKeyDown={onEnter(() => setOpenEx(isOpen ? null : e.id))}>
                       <td className="serif-cell">{e.title}</td>
                       <td className="text-mute">{e.author || "unknown"}</td>
                       <td className="num text-dim">{e.cell}</td>
@@ -780,7 +829,14 @@ function DrawBody({
                         {e.latest?.artifact ? <Mark state="art" title="marked as an artifact" /> : e.latest?.verdict === "pass" ? <Mark state="fail" title="passed: out of the pool" /> : null}
                       </td>
                       <td className="text-right">
-                        <button className="link" aria-expanded={isOpen} onClick={() => setOpenEx(isOpen ? null : e.id)}>
+                        <button
+                          className="link"
+                          aria-expanded={isOpen}
+                          onClick={(ev) => {
+                            ev.stopPropagation();
+                            setOpenEx(isOpen ? null : e.id);
+                          }}
+                        >
                           {isOpen ? "close" : "read"}
                         </button>
                       </td>
@@ -788,7 +844,7 @@ function DrawBody({
                   )}
                   {isOpen && e.text !== null && (
                     <tr className="spans">
-                      <td colSpan={5}>
+                      <td colSpan={5} onClick={(ev) => ev.stopPropagation()}>
                         <p className="prose passage m-0">{e.text}</p>
                         <div className="mt-3 flex flex-wrap items-center gap-2">
                           {e.latest?.verdict === "pass" ? (
@@ -1228,7 +1284,7 @@ export function BriefFiles({ id, open = "outline.md" }: { id: string; open?: str
       <tbody>
         {BRIEF_FILES.filter((f) => brief[f]).map((f) => (
           <React.Fragment key={f}>
-            <tr className="pick" onClick={() => setOpenFile(openFile === f ? null : f)}>
+            <tr className="pick" tabIndex={0} aria-expanded={openFile === f} onClick={() => setOpenFile(openFile === f ? null : f)} onKeyDown={onEnter(() => setOpenFile(openFile === f ? null : f))}>
               <td className="w-4">
                 <Caret open={openFile === f} />
               </td>

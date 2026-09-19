@@ -9,7 +9,7 @@ colors:
   rule: "#5a6970"
   ink: "#d6dde0"
   mute: "#8a98a0"
-  dim: "#6a7981"
+  dim: "#778790"
   gold: "#e3b463"
   keep: "#8bd1a0"
   pass: "#ee8f8b"
@@ -216,7 +216,7 @@ hand, a verdict triad and one running blue.
 - **Mute** (`mute`, #8a98a0): column heads, section heads, field labels, the
   chip and quiet control at rest, the empty mark's ring, the bar's fill, the
   status line of a row.
-- **Dim** (`dim`, #6a7981): notes after a head, help text, ids and times,
+- **Dim** (`dim`, #778790): notes after a head, help text, ids and times,
   the faded rows beside an open one, key labels in a facts list, placeholders.
 
 ### Named Rules
@@ -406,7 +406,7 @@ mark; selection is a fill and a bar.
 - **Faded rows:** while one row is open the others drop to dim text
 - **Span row:** the opened prose, indented 4.75rem to the premise column,
   padded 1rem above and 1.25rem below, closed by a 2px rule
-- **Old rows:** opacity 0.55
+- **Old rows:** opacity 0.65
 - **Fixed layout:** every column but the text takes its head's width, the
   text takes the rest and wraps anywhere
 
@@ -416,12 +416,12 @@ mark; selection is a fill and a bar.
   two-line clamped italic serif seed at cell size (14.5px); the id in mono at head size
 - **State:** hover is the raised fill at 60%; `on` is the raised fill and the
   gold inset bar; a running row's bar is running blue; `old` rows fade to
-  0.55
+  0.65
 
 ### Step Log
 - **Style:** a mono time table, stage · started · seconds, cells padded
   0.2rem 0.4rem with a hairline under; the open row takes a 14% gold wash;
-  rows still to come sit at 0.5 opacity
+  rows still to come sit at 0.65 opacity
 - **Running:** the row sweeps and its seconds cell ticks
 
 ### Head Strip and Controls

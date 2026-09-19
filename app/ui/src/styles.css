@@ -12,7 +12,7 @@
   --color-rule: #5a6970;
   --color-ink: #d6dde0;
   --color-mute: #8a98a0;
-  --color-dim: #6a7981;
+  --color-dim: #778790;
   --color-gold: #e3b463;
   --color-keep: #8bd1a0;
   --color-pass: #ee8f8b;
@@ -320,6 +320,12 @@
   .tt tr.pick {
     cursor: pointer;
   }
+  .tt tr:focus-visible,
+  .finding:focus-visible,
+  .row:focus-visible,
+  table.ledger tr:focus-visible {
+    outline-offset: -2px;
+  }
   .tt tr.pick:hover td {
     background: color-mix(in srgb, var(--color-raised) 60%, transparent);
   }
@@ -339,7 +345,7 @@
     background: var(--color-gold);
   }
   .tt tr.old td {
-    opacity: 0.55;
+    opacity: 0.65;
   }
   .tt tr.spans td {
     padding: 1rem 0.5rem 1.25rem 4.75rem;
@@ -382,7 +388,7 @@
     box-shadow: inset 2px 0 0 var(--color-gold);
   }
   .finding.old > * {
-    opacity: 0.55;
+    opacity: 0.65;
   }
   /* every number and identifier is the mono, in any pane */
   .num {
@@ -591,7 +597,7 @@
     font-variant-caps: all-small-caps;
     letter-spacing: 0.08em;
     font-weight: 600;
-    padding: 0.15rem 0.7rem 0.25rem;
+    padding: 0.2rem 0.7rem 0.3rem;
     cursor: pointer;
   }
   .seg button + button {
@@ -924,7 +930,7 @@
     box-shadow: inset 2px 0 0 var(--color-running);
   }
   .row.old > * {
-    opacity: 0.55;
+    opacity: 0.65;
   }
   .row .l1 {
     display: flex;
@@ -960,7 +966,7 @@
     place-items: center;
     width: 1.5rem;
     height: 1.5rem;
-    color: color-mix(in srgb, var(--color-dim) 55%, transparent);
+    color: color-mix(in srgb, var(--color-dim) 70%, transparent);
   }
   .row:is(:hover, :focus-within, .on) .ico {
     color: var(--color-dim);
@@ -973,19 +979,21 @@
     color: var(--color-pass);
   }
   .row .ico:disabled {
-    opacity: 0.35;
+    opacity: 0.5;
     cursor: not-allowed;
     background: none;
     color: var(--color-dim);
   }
-  .row .confirm {
+  .confirm {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.25rem 0.375rem 0.25rem 0;
     color: var(--color-pass);
     cursor: default;
+  }
+  .row .confirm {
+    padding: 0.25rem 0.375rem 0.25rem 0;
   }
   .row .l1 .when {
     color: var(--color-dim);
@@ -1084,7 +1092,7 @@
     background: color-mix(in srgb, var(--color-gold) 14%, transparent);
   }
   .log tr.todo td {
-    opacity: 0.5;
+    opacity: 0.65;
   }
   .log a {
     text-decoration: none;
@@ -1336,10 +1344,14 @@
     gap: 0.5rem;
     align-items: center;
   }
-  .tblhead .keys {
-    display: flex;
+  .keys {
+    display: inline-flex;
     gap: 0.6rem;
     white-space: nowrap;
+  }
+  .head .keys {
+    font-variant-caps: normal;
+    letter-spacing: 0;
   }
 
   /* the withholding chart on the schedule: a beat per column, shaded while held, marked where revealed */

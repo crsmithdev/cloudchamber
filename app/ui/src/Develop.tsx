@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api, type AutoResult, type Draw, type DraftConfig, type Finding, type Findings, type Story, type Step } from "./api.ts";
 import { BriefFiles, DrawAside, Md, RowHead, SeedNote, StepView, boldLabels, firstParagraph, DrawNotes, inFlight, isWorking, label, stageName, stageNames, type Detail } from "./Draws.tsx";
-import { ArchivedToggle, Bar, Btn, Caret as Chevron, Facts, Field, Head, Icon, Mark, Seg, lastSelected, markFor, secs, usePoll, useRememberSelected, useAddressBar } from "./ui.tsx";
+import { ArchivedToggle, Bar, Btn, Caret as Chevron, Facts, Field, Head, Icon, Keys, Mark, Seg, lastSelected, markFor, onEnter, rowKeys, secs, usePoll, useRememberSelected, useRowsFromPage, useAddressBar } from "./ui.tsx";
 
 /**
  * Develop a brief: the stages after a brief (docs/specs/2026-09-05-drafting-pipeline.md).
@@ -98,15 +98,19 @@ export function Develop({ stage, selected, step: stepId }: { stage: "check" | "w
   const archiveChain = (c: Chain) => act(() => api.gate(c.head.id, { action: c.head.archived_at ? "unarchive" : "archive" }));
   const shown = all.filter((c) => showArchived || !c.head.archived_at || c === chainOf(current));
   const step = d && stepId ? d.steps.find((s) => s.id === stepId) : undefined;
-  const statusLine = (r: Draw) => (r.status === "done" ? "unchecked" : label(r.status));
+  // a gate with no open finding and no repair pending has nothing to rule on: the next step is the draft
+  const clean = (r: Draw) => !!r.check && r.at_gate && r.check.open === 0 && r.check.accepted === 0;
+  const statusLine = (r: Draw) => (r.status === "done" ? "unchecked" : clean(r) ? "checked · nothing to fix" : label(r.status));
   // the open row's one summary line; the step log is in the reading pane
   const summary = (r: Draw, detail: Detail | null) => {
     const running = detail?.steps.filter((s) => s.status === "running") ?? [];
     if (running.length) return `${label(r.status)} · ${running.length} call${running.length > 1 ? "s" : ""} in flight`;
     const round = chainOf(r.id)!.rounds.length > 1 ? ` · round ${chainOf(r.id)!.rounds.length}` : "";
-    if (r.check && r.at_gate) return `${statusLine(r)}${round} · ${r.check.reported} findings · total score ${r.check.total}`;
+    if (r.check && r.at_gate) return clean(r) ? `${statusLine(r)}${round} · ready to draft` : `${statusLine(r)}${round} · ${r.check.reported} findings · total score ${r.check.total}`;
     return `${statusLine(r)}${round}`;
   };
+  // the strip's draw as the list knows it, with its check summary; the detail carries none
+  const listed = (id: string) => draws.find((x) => x.id === id);
   const chain = chainOf(current);
   const aside = d && (
     <DrawAside
@@ -163,11 +167,18 @@ export function Develop({ stage, selected, step: stepId }: { stage: "check" | "w
             <div
               key={c.head.id}
               className={"row" + (on ? " on" : "") + (isOpen ? " open" : "") + (r.running ? " running" : "") + (r.archived_at ? " old" : "")}
+              tabIndex={0}
+              aria-current={on ? "true" : undefined}
               onClick={() => {
                 if (!on) location.hash = `#${stage}/${r.id}`;
                 else if (stepId) setStepId(null);
                 else setFolded((f) => !f);
               }}
+              onKeyDown={onEnter(() => {
+                if (!on) location.hash = `#${stage}/${r.id}`;
+                else if (stepId) setStepId(null);
+                else setFolded((f) => !f);
+              })}
             >
               <RowHead
                 name={c.root.name ?? c.root.id}
@@ -231,10 +242,10 @@ export function Develop({ stage, selected, step: stepId }: { stage: "check" | "w
           <>
             <div className={"strip" + (working ? " running" : "")}>
               <h1>{d.draw.name ?? d.draw.id}</h1>
-              <span className={"state " + (working ? "text-running" : d.draw.at_gate ? "text-art" : d.draw.status === "failed" ? "text-pass" : "text-mute")}>
+              <span className={"state " + (working ? "text-running" : d.draw.at_gate ? "text-art" : d.draw.status === "failed" ? "text-pass" : "text-mute")} aria-live="polite">
                 <Mark state={markFor(d.draw)} />
                 <span className={working ? "sweep" : ""}>
-                  {d.draw.status === "done" ? "unchecked" : label(d.draw.status)}
+                  {statusLine(listed(d.draw.id) ?? d.draw)}
                   {working ? inFlight(d) : ""}
                 </span>
               </span>
@@ -257,7 +268,7 @@ export function Develop({ stage, selected, step: stepId }: { stage: "check" | "w
             ) : stage === "write" ? (
               <StoryPane d={d} onAct={act} aside={aside} />
             ) : d.draw.status === "awaiting_check_gate" || d.draw.status === "repaired" ? (
-              <GateOne d={d} onAct={act} onDraft={() => setSettings(true)} aside={aside} />
+              <GateOne d={d} clean={clean(listed(d.draw.id) ?? d.draw)} onAct={act} onDraft={() => setSettings(true)} aside={aside} />
             ) : d.draw.status === "done" ? (
               <BriefReady d={d} onCheck={() => act(() => api.check(d.draw.id))} onAuto={() => act(() => api.gate(d.draw.id, { action: "auto" }))} onFlag={(note) => act(() => api.gate(d.draw.id, { action: "flag", note }))} onDraft={() => setSettings(true)} aside={aside} />
             ) : (
@@ -300,9 +311,12 @@ function Rounds({ chain, current, statusLine }: { chain: Chain; current: string;
             <tr
               key={x.id}
               className={x.id === current ? "sel" : ""}
+              tabIndex={0}
+              aria-current={x.id === current ? "true" : undefined}
               onClick={() => {
                 location.hash = `#${x.stage}/${x.id}`;
               }}
+              onKeyDown={onEnter(() => (location.hash = `#${x.stage}/${x.id}`))}
               title={x.check ? `round ${i + 1} · ${x.check.reported} reported · ${x.check.accepted} accepted · score ${x.check.total}` : `round ${i + 1} · ${statusLine(x)}`}
             >
               <td className="num w-4">{i + 1}</td>
@@ -373,9 +387,13 @@ function AutoRuns({ auto, id }: { auto: AutoResult; id: string }) {
             <tr
               key={r.round}
               className={r.id === id ? "sel" : ""}
+              tabIndex={0}
               onClick={() => {
                 if (r.id !== id) location.hash = `#check/${r.id}`;
               }}
+              onKeyDown={onEnter(() => {
+                if (r.id !== id) location.hash = `#check/${r.id}`;
+              })}
               title={`round ${r.round} · brief ${r.id}${r.round === auto.best.round ? " · lowest score" : ""}`}
             >
               <td className="num w-4">{r.round}</td>
@@ -415,6 +433,7 @@ function CheckControls({
   onHold,
   openFindings = 0,
   pendingRepair = 0,
+  clean = false,
 }: {
   d: Detail;
   note: string;
@@ -426,6 +445,8 @@ function CheckControls({
   onHold?: () => void;
   openFindings?: number;
   pendingRepair?: number;
+  /** checked, with nothing to rule on: the draft is the one primary control */
+  clean?: boolean;
 }) {
   const unchecked = d.draw.status === "done";
   const atGate = d.draw.status === "awaiting_check_gate";
@@ -440,7 +461,7 @@ function CheckControls({
   return (
     <div className="controls" role="group" aria-label="Brief">
       <Btn
-        variant="primary"
+        variant={clean ? undefined : "primary"}
         disabled={!!a.auto || (atGate && openFindings === 0)}
         onClick={onAuto}
         title={
@@ -451,6 +472,11 @@ function CheckControls({
       >
         check – auto repair
       </Btn>
+      {!a.auto && !(atGate && openFindings === 0) && (
+        <span className="num text-dim" title="What auto repair can spend before it stops on its own.">
+          up to {repair.rounds} rounds · {repair.max_calls} calls
+        </span>
+      )}
       <Btn
         disabled={!!a.check || atGate}
         onClick={onCheck}
@@ -459,6 +485,7 @@ function CheckControls({
         check
       </Btn>
       <Btn
+        variant={clean ? "primary" : undefined}
         disabled={!!a.draft || pendingRepair > 0}
         onClick={onDraft}
         title={
@@ -510,19 +537,25 @@ function BriefReady({ d, onCheck, onAuto, onFlag, onDraft, aside }: { d: Detail;
 const BUILD = ["outline", "jobs", "context", "ending"];
 
 /**
- * A brief under construction. The premise and the vignette exist from the
+ * A brief under construction, or under check. The premise and the vignette exist from the
  * gate; the outline, the two context vignettes and the ending land one at a
- * time. Each part is read from its artifact, because the files under briefs/
- * are written last and all at once.
+ * time, and a repair round writes them again under `repair-` names. Each part
+ * is read from its artifact, because the files under briefs/ are written last
+ * and all at once. Once the checkers run, the note counts their calls instead.
  */
 function Building({ d, aside }: { d: Detail; aside: React.ReactNode }) {
   const running = d.steps.filter((s) => s.status === "running");
-  const done = new Set(d.steps.filter((s) => s.status === "done").map((s) => s.stage));
+  const isCheck = (s: Step) => /^(check-|ledger-extract|reconcile)/.test(s.stage);
+  // a repair round's stages tick the same build steps: repair-outline is the outline written again
+  const done = new Set(d.steps.filter((s) => s.status === "done").map((s) => s.stage.replace(/^repair-/, "")));
+  const checking = d.draw.status === "checking" || d.steps.some(isCheck);
+  const checkSteps = d.steps.filter((s) => isCheck(s) && s.status === "done");
+  const checkSecs = checkSteps.reduce((n, s) => n + Number(secs(s.started_at, s.ended_at)), 0);
   const { vignette, outline, contexts, ending } = d.parts;
   const [openPart, setOpenPart] = useState<string | null>("outline.md");
   const part = (name: string, body: string | undefined) => (
     <React.Fragment key={name}>
-      <tr className={body ? "pick" : "faded"} onClick={() => body && setOpenPart(openPart === name ? null : name)}>
+      <tr className={body ? "pick" : "faded"} tabIndex={body ? 0 : undefined} onClick={() => body && setOpenPart(openPart === name ? null : name)} onKeyDown={onEnter(() => body && setOpenPart(openPart === name ? null : name))}>
         <td className="w-4">{body ? <Chevron open={openPart === name} /> : <Mark state={running.length ? "run" : "todo"} />}</td>
         <td className="num whitespace-nowrap text-dim">{name}</td>
         <td className="text-mute">{body ? <span className="line-clamp-1">{firstParagraph(body).slice(0, 90)}</span> : <span className={running.length ? "sweep inline-block text-running" : ""}>waiting</span>}</td>
@@ -542,20 +575,26 @@ function Building({ d, aside }: { d: Detail; aside: React.ReactNode }) {
         <Head
           note={
             <>
-              {BUILD.map((s, i) => (
-                <React.Fragment key={s}>
-                  {i > 0 && " · "}
-                  {stageName(s)}
-                  {done.has(s) && <Icon name="check" />}
-                </React.Fragment>
-              ))}
+              {checking ? (
+                <>
+                  checking · <span className="num">{checkSteps.length}</span> checker calls done · <span className="num">{checkSecs}</span> s
+                </>
+              ) : (
+                BUILD.map((s, i) => (
+                  <React.Fragment key={s}>
+                    {i > 0 && " · "}
+                    {stageName(s)}
+                    {done.has(s) && <Icon name="check" />}
+                  </React.Fragment>
+                ))
+              )}
               {" · the page refreshes itself"}
             </>
           }
         >
           {running.length ? `${running.length} call${running.length > 1 ? "s" : ""} in flight: ${stageNames(running)}` : "waiting for the next step"}
         </Head>
-        <Head className="mt-6">the brief, as it lands</Head>
+        <Head className="mt-6">{checking ? "the brief under check" : "the brief, as it lands"}</Head>
         <table className="mt-1">
           <tbody>
             {part("premise and vignette", vignette?.text)}
@@ -572,7 +611,7 @@ function Building({ d, aside }: { d: Detail; aside: React.ReactNode }) {
 
 // --- gate 1 ------------------------------------------------------------------
 
-function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Promise<any>, go?: (r: any) => string | undefined) => void; onDraft: () => void; aside: React.ReactNode }) {
+function GateOne({ d, clean, onAct, onDraft, aside }: { d: Detail; clean: boolean; onAct: (fn: () => Promise<any>, go?: (r: any) => string | undefined) => void; onDraft: () => void; aside: React.ReactNode }) {
   const [f, setF] = useState<Findings | null>(null);
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [note, setNote] = useState("");
@@ -611,6 +650,24 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
   const atFloor = selectable.filter((x) => x.score >= floor);
   const checkSteps = d.steps.filter((s) => s.stage.startsWith("check-") && s.status === "done");
   const checkSecs = checkSteps.reduce((n, s) => n + Number(secs(s.started_at, s.ended_at)), 0);
+  // nothing open on the list, nothing that would undo a fix, nothing accepted: the repair strip has no work
+  const nothingToRule = !!f && !listed.some((x) => x.decision === "open") && !reopened.some((x) => x.decision === "open") && !accepted.length;
+  // the keys act on the focused finding: accept toggles its selection, dismiss rules on it
+  const findingsEl = React.useRef<HTMLDivElement>(null);
+  useRowsFromPage(findingsEl);
+  const byId = (fid: string) => f?.findings.find((x) => x.id === fid);
+  const keys = rowKeys({
+    a: (fid) => {
+      if (!repaired && byId(fid)?.decision === "open") toggle(fid);
+    },
+    Enter: (fid) => {
+      if (!repaired && byId(fid)?.decision === "open") toggle(fid);
+    },
+    d: (fid) => {
+      if (!repaired && byId(fid)?.decision === "open") gate("dismiss", { finding: fid });
+    },
+    n: () => document.querySelector<HTMLInputElement>(".controls input[type=text]")?.focus(),
+  });
   // the open list and the list that undoes an earlier fix are the same row
   const row = (x: Finding) => (
     <FindingRow key={x.id} f={x} S={x.samples_run ?? S} scoreMax={f!.score_max} selected={sel.has(x.id)} onToggle={() => toggle(x.id)} onDismiss={() => gate("dismiss", { finding: x.id })} readOnly={repaired} />
@@ -629,9 +686,10 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
           onHold={() => gate("hold")}
           openFindings={selectable.length}
           pendingRepair={accepted.length}
+          clean={clean || nothingToRule}
         />
       )}
-      {!repaired && (
+      {!repaired && !nothingToRule && (
         <div className="controls" role="group" aria-label="Repair">
           <Btn
             variant="keep"
@@ -685,6 +743,12 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
                 >
                   {showAll ? "hide" : "show"} what left the list
                 </button>
+                {!repaired && !nothingToRule && (
+                  <>
+                    {" · "}
+                    <Keys keys={[["↓", "move"], ["a", "accept"], ["d", "dismiss"], ["n", "note"]]} />
+                  </>
+                )}
               </>
             }
           >
@@ -693,12 +757,12 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
           {f && listed.length === 0 && (
             <div className="mt-2 text-mute">
               {f.off_list.dropped
-                ? `Nothing to rule on: the verify pass dropped ${f.off_list.dropped} finding${f.off_list.dropped > 1 ? "s" : ""} as invisible to a reader of the vignettes and the ending. Show them to read why.`
-                : "Nothing recurred in enough samples to report. What each checker examined is listed beside."}
+                ? `Nothing to fix: the verify pass dropped ${f.off_list.dropped} finding${f.off_list.dropped > 1 ? "s" : ""} as invisible to a reader of the vignettes and the ending. Show them to read why, or draft the brief.`
+                : "Nothing to fix: nothing recurred in enough samples to report. What each checker examined is listed beside. Draft the brief."}
             </div>
           )}
           {f && (listed.length > 0 || reopened.length > 0) && (
-            <div className="findings mt-1">
+            <div className="findings mt-1" ref={findingsEl} onKeyDown={keys}>
               {listed.map(row)}
               {reopened.length > 0 && (
                 <>
@@ -811,7 +875,7 @@ function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Pr
               </Head>
               <table className="mt-1">
                 <tbody>
-                  <tr className="pick" onClick={() => setExamined((e) => !e)}>
+                  <tr className="pick" tabIndex={0} aria-expanded={examined} onClick={() => setExamined((e) => !e)} onKeyDown={onEnter(() => setExamined((e) => !e))}>
                     <td className="w-4">
                       <Chevron open={examined} />
                     </td>
@@ -859,7 +923,7 @@ function FindingRow({ f, S, scoreMax, selected, onToggle, onDismiss, readOnly }:
   const acc = f.decision === "accepted" || selected;
   const cls = "finding" + (acc ? " sel" : "") + (f.decision === "dismissed" ? " old" : "");
   return (
-    <div className={cls}>
+    <div className={cls} data-row={f.id} tabIndex={0} aria-selected={selected}>
       <div className="line">
         <span className="num w-6 font-semibold" title={`score ${f.score} of ${scoreMax}: recurrence, a second checker, what it invalidates, the kind of result, and whether it quotes evidence`}>
           {f.score}
@@ -1155,6 +1219,18 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
       .then(setS)
       .catch(() => {});
   }, [id, d.steps.length]);
+  // the keys act on the focused scene row: Enter opens its beat in the story
+  const goBeat = (beat: number) => {
+    setView("story");
+    setK(beat);
+    document.getElementById(`beat-${beat}`)?.scrollIntoView({ block: "start" });
+  };
+  const scenesEl = React.useRef<HTMLTableElement>(null);
+  useRowsFromPage(scenesEl);
+  const keys = rowKeys({
+    Enter: (b) => goBeat(Number(b)),
+    n: () => document.querySelector<HTMLInputElement>(".controls input[type=text]")?.focus(),
+  });
   if (!s) return <span className="text-dim">loading the story…</span>;
   const gating = d.draw.actions.keep === null;
   const gate = (action: string, extra: Record<string, unknown> = {}) => onAct(() => api.gate(id, { action, note, ...extra }));
@@ -1318,8 +1394,16 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
         </div>
         <div className="aside min-w-0">
           <div className="mb-6">{aside}</div>
-          <Head note={`${words.toLocaleString()} words · ${s.screenFindings.length} ledger flags · ${nStructure} structure flags`}>scenes</Head>
-          <table className="mt-1">
+          <Head
+            note={
+              <>
+                {words.toLocaleString()} words · {s.screenFindings.length} ledger flags · {nStructure} structure flags · <Keys keys={[["↓", "move"], ["⏎", "open"], ...(gating ? ([["n", "note"]] as [string, string][]) : [])]} />
+              </>
+            }
+          >
+            scenes
+          </Head>
+          <table className="mt-1" ref={scenesEl} onKeyDown={keys}>
             <thead>
               <tr>
                 <th className="head w-8">beat</th>
@@ -1334,15 +1418,7 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
                   beat = s.schedule?.beats[sc.beat - 1];
                 const n = wordsOf(sc.text);
                 return (
-                  <tr
-                    key={sc.beat}
-                    className={"pick" + (k === sc.beat ? " sel" : "")}
-                    onClick={() => {
-                      setView("story");
-                      setK(sc.beat);
-                      document.getElementById(`beat-${sc.beat}`)?.scrollIntoView({ block: "start" });
-                    }}
-                  >
+                  <tr key={sc.beat} className={"pick" + (k === sc.beat ? " sel" : "")} data-row={String(sc.beat)} tabIndex={0} aria-current={k === sc.beat ? "true" : undefined} onClick={() => goBeat(sc.beat)}>
                     <td className="num">{sc.beat}</td>
                     <td className="serif-cell">
                       <span className="line-clamp-2">{beat?.job ?? firstParagraph(sc.text)}</span>

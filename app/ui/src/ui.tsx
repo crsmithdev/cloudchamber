@@ -41,9 +41,67 @@ export function ArchivedToggle({ archived, shown, onToggle }: { archived: number
 }
 
 export type MarkState = "" | "held" | "wait" | "run" | "fail" | "todo" | "rep" | "art" | "gold";
-/** State is a mark in a fixed cell: filled holds, hollow does not. */
+/** State is a mark in a fixed cell: filled holds, hollow does not. Its title is also its name for a reader; a mark with no title is decoration. */
 export function Mark({ state = "", small, title }: { state?: MarkState; small?: boolean; title?: string }) {
-  return <span className={["mark", state, small ? "small" : ""].filter(Boolean).join(" ")} title={title} />;
+  return <span className={["mark", state, small ? "small" : ""].filter(Boolean).join(" ")} title={title} role={title ? "img" : undefined} aria-label={title} aria-hidden={title ? undefined : "true"} />;
+}
+
+/**
+ * Keys on a list of rows, each a `[data-row=<id>]` with tabindex 0: ↑↓ and j move the focus between them, Enter
+ * and each letter in `keys` act on the focused row. A key from an input or a control inside the row is left alone.
+ */
+export function rowKeys(keys: Record<string, (id: string) => void>): React.KeyboardEventHandler<HTMLElement> {
+  return (e) => {
+    const t = e.target as HTMLElement;
+    if (/^(INPUT|TEXTAREA|SELECT|BUTTON|A)$/.test(t.tagName)) return;
+    const row = t.closest<HTMLElement>("[data-row]");
+    if (!row) return;
+    const rows = [...e.currentTarget.querySelectorAll<HTMLElement>("[data-row]")];
+    const move = e.key === "ArrowDown" || e.key === "j" ? 1 : e.key === "ArrowUp" ? -1 : 0;
+    if (move) {
+      e.preventDefault();
+      rows[rows.indexOf(row) + move]?.focus();
+      return;
+    }
+    const act = keys[e.key];
+    if (!act) return;
+    e.preventDefault();
+    act(row.dataset.row!);
+  };
+}
+/** With nothing focused, ↓ or j lands on the first row of `ref`, so a list answers the keys from the page. */
+export function useRowsFromPage(ref: React.RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (e.target !== document.body || (e.key !== "ArrowDown" && e.key !== "j")) return;
+      const first = ref.current?.querySelector<HTMLElement>("[data-row]");
+      if (!first) return;
+      e.preventDefault();
+      first.focus();
+    };
+    addEventListener("keydown", h);
+    return () => removeEventListener("keydown", h);
+  }, [ref]);
+}
+/** Enter or Space on a row that is clicked: the row itself, not a control inside it. */
+export const onEnter =
+  (fn: () => void): React.KeyboardEventHandler<HTMLElement> =>
+  (e) => {
+    if ((e.key !== "Enter" && e.key !== " ") || e.target !== e.currentTarget) return;
+    e.preventDefault();
+    fn();
+  };
+/** The keys a list answers, as a head note: `[["↓", "move"], ["⏎", "read"]]`. */
+export function Keys({ keys }: { keys: [string, string][] }) {
+  return (
+    <span className="keys">
+      {keys.map(([k, what]) => (
+        <span key={k}>
+          <kbd>{k}</kbd> {what}
+        </span>
+      ))}
+    </span>
+  );
 }
 /** The mark for a draw: running and waiting come from the server, the rest from the status it names. */
 export const markFor = ({ status, running, at_gate }: { status: string; running: boolean; at_gate: boolean }): MarkState =>
