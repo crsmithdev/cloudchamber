@@ -6,7 +6,7 @@
  */
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { overlap, normalise } from "./recur.ts";
+import { normalise } from "./recur.ts";
 
 export const LEXICON_PATH = resolve(import.meta.dir, "slop.txt");
 
@@ -53,24 +53,33 @@ export type Restated = { beat: number; span: string; earlier_beat: number; earli
 
 const sentencesOf = (t: string) => t.split(/(?<=[.!?]["”’']?)\s+|\n+/).map((x) => x.trim()).filter(Boolean);
 const tokens = (s: string) => wordsOf(s).length;
+/** Words that carry no content of their own; a repeat is measured on the rest. */
+const STOP = new Set("the a an and or but of to in on at by for with it its is was were be been that this these those he she they him her his their them i you we our not no as from had has have do did so than then there here what which who when where into out up down over off all one two said".split(" "));
+const content = (s: string) => new Set(wordsOf(s).filter((w) => !STOP.has(w)));
 
 /**
  * The sentences of beat k that a beat before it already said: the same sentence
- * after whitespace and case, or a sentence of six words or more whose words
- * overlap an earlier one by four in five. A sequential draft reads the whole
- * story so far and restates it; on the Mission Control draft beats 5 to 8 said
- * one realisation four times in near-identical lines and nothing flagged it.
- * Short sentences are held to the exact match, so "She sat." is not a repeat.
+ * after whitespace and case, or one whose content words are mostly an earlier
+ * sentence's — four or more shared, seven in ten of the shorter's. A sequential
+ * draft reads the whole story so far and restates it; on the Mission Control
+ * draft beats 5 to 8 said one realisation four times and nothing flagged it.
+ * Stop words do not count: measured on all words, "That was the whole of it"
+ * sat inside nine later sentences on the plane-crash draft and flagged each.
  */
 export function restated(scenes: { beat: number; text: string }[], k: number): Restated[] {
   const scene = scenes.find((s) => s.beat === k);
   if (!scene) return [];
-  const earlier = scenes.filter((s) => s.beat < k).flatMap((s) => sentencesOf(s.text).map((x) => ({ beat: s.beat, text: x })));
+  const earlier = scenes.filter((s) => s.beat < k).flatMap((s) => sentencesOf(s.text).map((x) => ({ beat: s.beat, text: x, words: content(x) })));
   const out: Restated[] = [];
   for (const sentence of sentencesOf(scene.text)) {
-    const n = tokens(sentence);
-    if (n < 4) continue;
-    const hit = earlier.find((e) => normalise(e.text) === normalise(sentence) || (n >= 6 && tokens(e.text) >= 6 && overlap(sentence, e.text) >= 0.8));
+    if (tokens(sentence) < 4) continue;
+    const words = content(sentence);
+    const near = (e: Set<string>) => {
+      let shared = 0;
+      for (const w of words) if (e.has(w)) shared++;
+      return shared >= 4 && shared >= 0.7 * Math.min(words.size, e.size);
+    };
+    const hit = earlier.find((e) => normalise(e.text) === normalise(sentence) || near(e.words));
     if (hit) out.push({ beat: k, span: sentence, earlier_beat: hit.beat, earlier: hit.text });
   }
   return out;

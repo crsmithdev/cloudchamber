@@ -20,20 +20,21 @@ describe("slop screen", () => {
     expect(r.pool_words).toBe(pool.toLowerCase().match(/[a-z][a-z'’-]*/g)!.length);
   });
 
-  test("restated: a sentence a beat says again, word for word or four words in five, and never a short one loosely", () => {
+  test("restated: a sentence a beat says again, word for word or by its content words; stop words alone never match", () => {
     const scenes = [
-      { beat: 1, text: "It is not an object. It is a practice. She sat. The count of them is the count of us, she thinks." },
-      { beat: 2, text: "Eleven is how many of us there are. She sat. It is a practice." },
-      { beat: 3, text: "It is not an object, it is a practice. The count of them is the count of us, she decides. Eleven is how many of us there are. Something new." },
+      { beat: 1, text: "It is not an object. It is a practice. She sat. Kovach wrote the fuel numbers into the notebook with his left hand, the letters going downhill, and said the sweep cycle was holding. That was the whole of it." },
+      { beat: 2, text: "Eleven is how many of us there are. She sat. It is a practice. That was the whole of it, and the ingot cooled in the dirt by noon with a dirty crust on the bottom." },
+      { beat: 3, text: "Kovach wrote something with his left hand, the letters going downhill. Eleven is how many of us there are. She checked the scale ring twice and the gain and the tilt, and all of it was where she had left it. Something new." },
     ];
     expect(restated(scenes, 1)).toEqual([]);
     // "She sat." is three words: never a repeat. "It is a practice." is four, exact
     expect(restated(scenes, 2).map((r) => [r.span, r.earlier_beat])).toEqual([["It is a practice.", 1]]);
-    // two short sentences spliced into one long one are not a repeat of either: a short sentence is held to the exact match
+    // the long sentence holding "that was the whole of it" shares only stop words with it, so it is not a repeat
+    expect(restated(scenes, 2).some((r) => r.span.startsWith("That was the whole"))).toBe(false);
     const r3 = restated(scenes, 3);
-    expect(r3.map((r) => [r.span, r.earlier_beat, r.earlier])).toEqual([
-      ["The count of them is the count of us, she decides.", 1, "The count of them is the count of us, she thinks."],
-      ["Eleven is how many of us there are.", 2, "Eleven is how many of us there are."],
+    expect(r3.map((r) => [r.span, r.earlier_beat])).toEqual([
+      ["Kovach wrote something with his left hand, the letters going downhill.", 1],   // six content words shared of eight
+      ["Eleven is how many of us there are.", 2],
     ]);
   });
 
