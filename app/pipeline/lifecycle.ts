@@ -21,7 +21,7 @@ export const STATUSES = ["running", "awaiting_gate", "done", "checking", "awaiti
 export type Status = (typeof STATUSES)[number];
 export type Tab = "ideate" | "check" | "write";
 
-export const ACTIONS = ["choose", "fork", "flag", "archive", "unarchive", "delete", "check", "auto", "accept", "dismiss", "hold", "draft", "patch", "rewrite", "keep"] as const;
+export const ACTIONS = ["choose", "fork", "flag", "archive", "unarchive", "delete", "check", "auto", "accept", "dismiss", "hold", "draft", "rewrite", "keep"] as const;
 export type Action = (typeof ACTIONS)[number];
 
 const RUNNING = new Set<string>(["running", "checking", "repairing", "drafting"]);
@@ -35,7 +35,7 @@ const WHEN: Partial<Record<Action, string[]>> = {
   choose: ["awaiting_gate"],
   check: AT_BRIEF, auto: AT_BRIEF, draft: AT_BRIEF,
   accept: ["awaiting_check_gate"], dismiss: ["awaiting_check_gate"], hold: ["awaiting_check_gate"],
-  patch: ["awaiting_draft_gate"], rewrite: ["awaiting_draft_gate"], keep: ["awaiting_draft_gate"],
+  rewrite: ["awaiting_draft_gate"], keep: ["awaiting_draft_gate"],
 };
 
 /** What the rules read off a draw. `referenced_by` is every draw pointing at it, which only delete reads. */

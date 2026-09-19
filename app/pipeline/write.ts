@@ -1,8 +1,9 @@
 /**
  * Stages 3 to 5: schedule, scenes, screens. One call derives the beat sheet;
  * one fresh call writes each beat; each scene is screened against the ledger
- * and a fixed list of structural tells, and the joined draft is run through
- * the deterministic slop screen.
+ * as it is written and the screen's own patches go in before the next beat
+ * reads it; every scene is then screened for a fixed list of structural tells,
+ * and the joined draft is run through the deterministic slop screen.
  */
 import type { Pipeline, StepRow } from "./draw.ts";
 import { fill } from "./prompts.ts";
@@ -10,10 +11,12 @@ import { need, samples, tag, words } from "./model.ts";
 import { RUN } from "./config.ts";
 import { eligiblePassages } from "./bank.ts";
 import { FORM_VALUES, samplesFor, type DraftConfig, type FormAxis } from "./draftconfig.ts";
-import { cluster, parseFindings, type Cluster, type Finding } from "./recur.ts";
+import { cluster, parseFindings, type Finding } from "./recur.ts";
 import { loadLexicon, slopScreen } from "./slop.ts";
 import { parseQuestions, type Answer } from "./check.ts";
-import { passId, type BriefParts } from "./briefparts.ts";
+import type { BriefParts } from "./briefparts.ts";
+import { applyPatches } from "./repair.ts";
+import { record } from "./verdicts.ts";
 
 export type Withheld = { item: string; until: number };
 export type Beat = { n: number; words: number; job: string; known: string; withheld: Withheld[]; stakes: string; absorbs: string };
@@ -112,11 +115,51 @@ export async function writeScene(p: Pipeline, drawId: string, parent: string, pa
   return { beat: b.n, text: value, artifact_id, step_id: step.id };
 }
 
-export async function runScenes(p: Pipeline, drawId: string, scheduleStep: StepRow, parts: BriefParts, ledger: string, s: Schedule, cfg: DraftConfig): Promise<Scene[]> {
-  if (cfg.scenes.order === "parallel") return Promise.all(s.beats.map((b) => writeScene(p, drawId, scheduleStep.id, parts, ledger, s, b, [])));
+/** Every beat written and bound to the ledger; a sequential beat reads the corrected text of the beats before it. */
+export async function runScenes(p: Pipeline, drawId: string, scheduleStep: StepRow, parts: BriefParts, ledger: string, s: Schedule, cfg: DraftConfig, pass: string): Promise<Scene[]> {
+  const write = (b: Beat, soFar: string[]) => writeScene(p, drawId, scheduleStep.id, parts, ledger, s, b, soFar);
+  if (cfg.scenes.order === "parallel") {
+    const raw = await Promise.all(s.beats.map((b) => write(b, [])));
+    return Promise.all(raw.map((sc, i) => bindScene(p, drawId, ledger, sc, raw[i - 1], cfg, pass)));
+  }
   const out: Scene[] = [];
-  for (const b of s.beats) out.push(await writeScene(p, drawId, scheduleStep.id, parts, ledger, s, b, out.map((x) => x.text)));
+  for (const b of s.beats) out.push(await bindScene(p, drawId, ledger, await write(b, out.map((x) => x.text)), out.at(-1), cfg, pass));
   return out;
+}
+
+/**
+ * Hold one scene to the ledger: screen it against the ledger and the scene
+ * before it, store each flag, and put every flag's own patch into the scene
+ * word for word. The scene that comes back is the one the next beat reads and
+ * the one gate 2 shows. On two drafts of one seed the scenes contradicted the
+ * ledger they were given about three times a beat, and a beat written after a
+ * contradiction inherited it through the story so far; a patch costs no call,
+ * so the ledger binds where the scene is written rather than at the gate. A
+ * flag whose fix needs more than its span stays open for `rewrite k`.
+ */
+export async function bindScene(p: Pipeline, drawId: string, ledger: string, scene: Scene, prev: Scene | undefined, cfg: DraftConfig, pass: string): Promise<Scene> {
+  if (!cfg.screens.enabled.includes("ledger")) return scene;
+  const k = scene.beat;
+  const { samples: n, keep_if } = samplesFor(cfg.screens, "ledger");
+  const prompt = fill("screenLedger", { ledger, previous: prev ? `<previous-scene>\n${prev.text}\n</previous-scene>\n\n` : "", n: String(k), scene: scene.text });
+  const rs = await samples(n, (sample) => p.invoke(drawId, scene.step_id, "screen-ledger", prompt, (t) => {
+    need(t, "examined");
+    return { findings: parseFindings(t, "ledger", sample), examined: tag(t, "examined") };
+  }));
+  const all: Finding[] = rs.flatMap((r) => r.value.findings.map((f: Finding) => ({ ...f, sample: r.sample })));
+  const flags = cluster(all, keep_if, `${drawId}/${k}`).filter((c) => c.reported);
+  for (const c of flags) {
+    const { reported: _r, ...meta } = c;
+    p.artifact(rs[0].step, "finding", c.statement, { ...meta, invalidates: String(k), pass, source: "screen", screen: "ledger", beat: k });
+  }
+  const out = applyPatches(scene.text, flags);
+  if (!out.applied.length) return scene;
+  // the scene keeps its beat and cap, not the gate-2 record of the scene it patches: a patch is not a rewrite
+  const { rewrite: _rw, rewrite_finding: _rf, ...meta } = JSON.parse(p.artifacts(drawId).find((a) => a.id === scene.artifact_id)!.meta);
+  const step = p.recordStep(drawId, scene.step_id, "scene", "patched");
+  const artifact_id = p.artifact(step, "scene", out.text, { ...meta, words: words(out.text), patched: out.applied.map((f) => f.id) });
+  for (const f of out.applied) record(p.db, { kind: "finding", target_id: f.id, verdict: "keep", method: "draw", note: "patched as written" });
+  return { beat: k, text: out.text, artifact_id, step_id: step.id };
 }
 
 /** The latest scene artifact per beat, in beat order. */
@@ -141,48 +184,24 @@ export function structurePrompt(b: Beat, scene: string, last: boolean): string {
 export const flagsOf = (answers: Record<string, Answer>) =>
   Object.entries(answers).filter(([q, a]) => (FLAG_PRESENT.has(q) && a.answer === "present") || (q === "bodily-emotion" && a.answer === "absent")).map(([q]) => q);
 
-export async function runScreens(p: Pipeline, drawId: string, ledger: string, s: Schedule, scenes: Scene[], cfg: DraftConfig, beats: number[] = scenes.map((x) => x.beat), opts: { lexiconPath?: string } = {}): Promise<{ pass: string; findings: Cluster[]; profiles: Profile[] }> {
-  const pass = passId();
+export async function runScreens(p: Pipeline, drawId: string, s: Schedule, scenes: Scene[], cfg: DraftConfig, pass: string, beats: number[] = scenes.map((x) => x.beat), opts: { lexiconPath?: string } = {}): Promise<void> {
   const enabled = cfg.screens.enabled;
   const M = s.beats.length;
-  const findings: Cluster[] = [], profiles: Profile[] = [];
-  await Promise.all(beats.flatMap((k) => {
+  if (enabled.includes("structure")) await Promise.all(beats.map(async (k) => {
     const scene = scenes.find((x) => x.beat === k)!, b = s.beats[k - 1];
-    const prev = scenes.find((x) => x.beat === k - 1);
-    const runs: Promise<unknown>[] = [];
-    if (enabled.includes("ledger")) {
-      const { samples: n, keep_if } = samplesFor(cfg.screens, "ledger");
-      const prompt = fill("screenLedger", { ledger, previous: prev ? `<previous-scene>\n${prev.text}\n</previous-scene>\n\n` : "", n: String(k), scene: scene.text });
-      runs.push(samples(n, (sample) => p.invoke(drawId, scene.step_id, "screen-ledger", prompt, (t) => {
-        need(t, "examined");
-        return { findings: parseFindings(t, "ledger", sample), examined: tag(t, "examined") };
-      })).then((rs) => {
-        const all: Finding[] = rs.flatMap((r) => r.value.findings.map((f: Finding) => ({ ...f, sample: r.sample })));
-        for (const c of cluster(all, keep_if, `${drawId}/${k}`).filter((c) => c.reported)) {
-          const { reported: _r, ...meta } = c;
-          p.artifact(rs[0].step, "finding", c.statement, { ...meta, invalidates: String(k), pass, source: "screen", screen: "ledger", beat: k });
-          findings.push({ ...c, invalidates: String(k) });
-        }
-      }));
+    const { samples: n, keep_if } = samplesFor(cfg.screens, "structure");
+    const names = [...STRUCTURE_SCREEN, k === M ? "resolves-everything" : "resolved"];
+    const prompt = structurePrompt(b, scene.text, k === M);
+    const rs = await samples(n, () => p.invoke(drawId, scene.step_id, "screen-structure", prompt, (t) => parseQuestions(t, names)));
+    // an answer is present when it recurs in keep_if samples; the quote is the first sample's
+    const answers: Record<string, Answer> = {};
+    for (const q of names) {
+      const present = rs.filter((r) => r.value[q].answer === "present");
+      const pick = present.length >= keep_if ? present[0] : rs.find((r) => r.value[q].answer === "absent") ?? rs[0];
+      answers[q] = { answer: present.length >= keep_if ? "present" : "absent", quote: pick.value[q].quote };
     }
-    if (enabled.includes("structure")) {
-      const { samples: n, keep_if } = samplesFor(cfg.screens, "structure");
-      const names = [...STRUCTURE_SCREEN, k === M ? "resolves-everything" : "resolved"];
-      const prompt = structurePrompt(b, scene.text, k === M);
-      runs.push(samples(n, () => p.invoke(drawId, scene.step_id, "screen-structure", prompt, (t) => parseQuestions(t, names))).then((rs) => {
-        // an answer is present when it recurs in keep_if samples; the quote is the first sample's
-        const answers: Record<string, Answer> = {};
-        for (const q of names) {
-          const present = rs.filter((r) => r.value[q].answer === "present");
-          const pick = present.length >= keep_if ? present[0] : rs.find((r) => r.value[q].answer === "absent") ?? rs[0];
-          answers[q] = { answer: present.length >= keep_if ? "present" : "absent", quote: pick.value[q].quote };
-        }
-        const flags = flagsOf(answers);
-        p.artifact(rs[0].step, "profile", JSON.stringify(answers), { pass, source: "screen", screen: "structure", beat: k, answers, flags, samples: n });
-        profiles.push({ beat: k, pass, answers, flags });
-      }));
-    }
-    return runs;
+    const flags = flagsOf(answers);
+    p.artifact(rs[0].step, "profile", JSON.stringify(answers), { pass, source: "screen", screen: "structure", beat: k, answers, flags, samples: n });
   }));
   if (enabled.includes("slop") && beats.length === scenes.length) {
     const pool = cfg.screens.slop_baseline === "pool" ? eligiblePassages(p.db).map((x) => x.text).join("\n\n") : "";
@@ -190,5 +209,4 @@ export async function runScreens(p: Pipeline, drawId: string, ledger: string, s:
     const step = p.recordStep(drawId, scenes[0]?.step_id ?? null, "screen-slop", "deterministic", report);
     p.artifact(step, "slop", JSON.stringify(report), { pass, source: "screen", screen: "slop" });
   }
-  return { pass, findings, profiles: profiles.sort((a, b) => a.beat - b.beat) };
 }

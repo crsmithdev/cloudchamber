@@ -39,7 +39,7 @@ may read directly is `bank/examples/*.md` (verbatim passages by source) and
 ./cloudchamber gate <draw> accept <finding>... | auto | dismiss <finding> | hold [--note "..."]
 ./cloudchamber draft <draw> [--auto] [--profile P] [--words N] [--beats N] [--tense T] [--person P] [--chronology C] [--container C] [--order sequential|parallel]
 ./cloudchamber story <draw>                the draft with its screen flags inline
-./cloudchamber gate <draw> keep | patch [<flag>...] | rewrite <k> [--finding ID] [--note "..."]
+./cloudchamber gate <draw> keep | rewrite <k> [--finding ID] [--note "..."]
 ./cloudchamber verdict <example|theme|brief|story> <id> <keep|pass> [--artifact] [--note "..."]
                                            a passed story hides every passage of it
 ./cloudchamber serve [--port 3002]         the UI: browse, ideate, check, write
@@ -85,13 +85,14 @@ the pipeline already retried once on the fallback model.
    remembered; a re-check does not raise the finding. `auto` repairs round
    after round under `draft.toml` `[repair]` and prints the round table.
 3. `./cloudchamber draft <draw>` derives the schedule under `app/pipeline/draft.toml`
-   and the ledger, writes one scene per beat, screens every scene, and waits at
-   gate 2. `--auto` runs `gate auto` first, dismisses what is still open, and
+   and the ledger, writes one scene per beat, screens each against the ledger
+   as it is written and puts the flags' own patches in before the next beat
+   reads it, screens every scene for structure, and waits at gate 2. `--auto` runs `gate auto` first, dismisses what is still open, and
    stops at gate 2.
 4. `./cloudchamber story <draw>` prints the draft with its flags. `gate keep`
-   exports `drafts/<draw>/`; `gate patch` applies a flag's own rewrite of its
-   span with no model call; `gate rewrite <k>` regenerates one scene under the
-   flag's replacement and re-screens it and the next.
+   exports `drafts/<draw>/`; `gate rewrite <k>` regenerates one scene under the
+   flag's replacement and re-screens it and the next. A flag with a patch was
+   already applied when the scene was written; what is left needs a rewrite.
 
 `gate archive` takes a draw off the board; there is no pass at either gate.
 No model decides anything: every finding carries a quote, every flag a
@@ -103,4 +104,4 @@ location. The session does not accept or dismiss findings on Chris's behalf.
 - Do not read a candidate to the user before the draw has produced all five.
 - Do not put anything from `stories/` into a prompt or a filter.
 - Report what a command printed. If it failed, show the error.
-- Do not accept, dismiss, keep, patch or archive at either gate unless Chris said to.
+- Do not accept, dismiss, keep, rewrite or archive at either gate unless Chris said to.

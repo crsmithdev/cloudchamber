@@ -21,7 +21,7 @@ describe("the rules", () => {
       repairing: ["fork", "flag", "archive", "unarchive"],
       repaired: ["fork", "flag", "archive", "unarchive"],
       drafting: ["fork", "flag", "archive", "unarchive"],
-      awaiting_draft_gate: ["fork", "flag", "archive", "unarchive", "patch", "rewrite", "keep"],
+      awaiting_draft_gate: ["fork", "flag", "archive", "unarchive", "rewrite", "keep"],
       drafted: ["fork", "flag", "archive", "unarchive"],
       failed: ["fork", "flag", "archive", "unarchive"],
     };

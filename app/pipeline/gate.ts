@@ -1,5 +1,5 @@
 /**
- * The gate commands: the twelve decisions a person makes on a draw, as one
+ * The gate commands: the eleven decisions a person makes on a draw, as one
  * interface the HTTP API and the CLI both drive. A command validates its own
  * arguments, names the draw to show next, says whether its work continues after
  * the answer, and resolves to a payload of its own.
@@ -12,7 +12,7 @@
 import { newDrawId, type Pipeline } from "./draw.ts";
 import type { Drafting } from "./drafting.ts";
 
-export const GATE_ACTIONS = ["choose", "fork", "flag", "archive", "unarchive", "accept", "auto", "dismiss", "hold", "keep", "patch", "rewrite"] as const;
+export const GATE_ACTIONS = ["choose", "fork", "flag", "archive", "unarchive", "accept", "auto", "dismiss", "hold", "keep", "rewrite"] as const;
 export type GateAction = (typeof GATE_ACTIONS)[number];
 export const isGateAction = (s: string): s is GateAction => (GATE_ACTIONS as readonly string[]).includes(s);
 
@@ -61,8 +61,6 @@ export function gateCommand(p: Pipeline, d: Drafting, id: string, action: string
     case "dismiss": return cmd(false, null, d.dismiss(id, need(a.finding, "finding"), note));
     case "hold": return cmd(false, id, d.hold(id));
     case "keep": return cmd(false, id, d.keep(id, note));
-    // a patch is a text substitution, so it costs no model call and answers on the spot
-    case "patch": return cmd(false, id, d.patch(id, a.findings ?? (a.finding ? [a.finding] : undefined), note));
     case "rewrite": return cmd(true, id, d.rewrite(id, Number(need(a.beat, "beat")), a.finding));
   }
   throw new Error(`action must be ${GATE_ACTIONS.join(" | ")}`);

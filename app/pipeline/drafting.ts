@@ -3,7 +3,7 @@
  *
  *   brief → check → GATE 1 (accept | dismiss | hold | flag | draft)
  *         → repair → check again → GATE 1
- *         → schedule → scene ×M → screen ×M → GATE 2 (keep | patch | rewrite k)
+ *         → schedule → scene ×M, each bound to the ledger as written → screen ×M → GATE 2 (keep | rewrite k)
  *         → drafts/<draw>/
  *
  * Statuses on the draw: done → awaiting_check_gate → repairing | drafting →
@@ -16,12 +16,12 @@ import { record } from "./verdicts.ts";
 import { must, settle, under, type Action, type Status } from "./lifecycle.ts";
 import { loadDraftConfig, type DraftConfig, type Overrides, type Resolved } from "./draftconfig.ts";
 import { extractLedger, runCheck, STRUCTURE_QUESTIONS, type CheckResult } from "./check.ts";
-import { applyPatches, constraintsBlock, repair } from "./repair.ts";
+import { constraintsBlock, repair } from "./repair.ts";
 import { briefBlock, briefParts, passId } from "./briefparts.ts";
 import { chainOf, type Chain, type FindingView } from "./chain.ts";
-import { currentScenes, runScenes, runSchedule, runScreens, writeScene, type Schedule } from "./write.ts";
+import { bindScene, currentScenes, runScenes, runSchedule, runScreens, writeScene, type Schedule } from "./write.ts";
 import { draftView, exportDraft, renderStory, type DraftView } from "./drafts.ts";
-import { tag, words } from "./model.ts";
+import { tag } from "./model.ts";
 import { fill } from "./prompts.ts";
 import { SCORE_MAX } from "./recur.ts";
 
@@ -184,9 +184,10 @@ export class Drafting {
     await under(this.p.db, id, "drafting", this.p.draw(id).status as Status, async () => {
       const parts = briefParts(this.p, id);
       const ledger = await this.ensureLedger(id);
+      const pass = passId();
       const { step, schedule } = await runSchedule(this.p, id, parts, briefBlock(parts), resolved.config);
-      const scenes = await runScenes(this.p, id, step, parts, ledger, schedule, resolved.config);
-      await runScreens(this.p, id, ledger, schedule, scenes, resolved.config, undefined, { lexiconPath: this.opts.lexiconPath });
+      const scenes = await runScenes(this.p, id, step, parts, ledger, schedule, resolved.config, pass);
+      await runScreens(this.p, id, schedule, scenes, resolved.config, pass, undefined, { lexiconPath: this.opts.lexiconPath });
     });
     settle(this.p.db, drawId, "awaiting_draft_gate");
     return this.p.draw(drawId);
@@ -317,52 +318,6 @@ export class Drafting {
 
   // --- gate 2 ----------------------------------------------------------------
 
-  /**
-   * Apply screen flags to the scenes they sit in, word for word, with no model
-   * call. A ledger screen emits a `<patch>`: the span rewritten so the
-   * contradiction is gone. Before this, the only way to act on a flag was
-   * `rewrite k`, which regenerates a whole scene and re-screens two — so a
-   * one-number correction cost more than it was worth and nobody paid it.
-   *
-   * A flag whose patch is empty, or whose span has moved, is reported back
-   * untouched: those are what `rewrite k` is still for.
-   */
-  patch(drawId: string, ids?: string[], note = ""): { applied: FindingView[]; skipped: { finding: FindingView; why: string }[] } {
-    this.must(drawId, "patch");
-    const flags = draftView(this.p, drawId).screenFindings.filter((f) => f.decision === "open");
-    const wanted = ids?.length ? ids.map((id) => {
-      const f = flags.find((x) => x.id === id);
-      if (!f) throw new Error(`no open screen finding ${id} on ${drawId}`);
-      return f;
-    }) : flags;
-
-    const applied: FindingView[] = [];
-    const skipped: { finding: FindingView; why: string }[] = [];
-    const scenes = new Map(currentScenes(this.p, drawId).map((s) => [s.beat, s]));
-    const byBeat = new Map<number, FindingView[]>();
-    for (const f of wanted) {
-      const scene = scenes.get(f.beat!);
-      if (!f.patch?.trim()) { skipped.push({ finding: f, why: "no patch: the fix needs more than the span" }); continue; }
-      if (!scene) { skipped.push({ finding: f, why: `no scene for beat ${f.beat}` }); continue; }
-      byBeat.set(f.beat!, [...(byBeat.get(f.beat!) ?? []), f]);
-    }
-
-    for (const [beat, fs] of [...byBeat].sort((a, b) => a[0] - b[0])) {
-      const scene = scenes.get(beat)!;
-      const out = applyPatches(scene.text, fs);
-      for (const f of fs) if (!out.applied.some((a) => a.id === f.id)) skipped.push({ finding: f, why: "the span is no longer in the scene" });
-      if (!out.applied.length) continue;
-      // the scene keeps its beat and cap, not the gate-2 record of the scene it patches: a patch is not a rewrite
-      const { rewrite: _rw, rewrite_finding: _rf, ...meta } = JSON.parse(this.p.artifacts(drawId).find((a) => a.id === scene.artifact_id)!.meta);
-      const step = this.p.recordStep(drawId, scene.step_id, "scene", "patched");
-      this.p.artifact(step, "scene", out.text, { ...meta, words: words(out.text), patched: out.applied.map((f) => f.id) });
-      applied.push(...out.applied);
-    }
-
-    for (const f of applied) record(this.p.db, { kind: "finding", target_id: f.id, verdict: "keep", method: "gate", note: note || "patched in place" });
-    return { applied, skipped };
-  }
-
   async rewrite(drawId: string, k: number, findingId?: string): Promise<DrawRow> {
     const draw = this.must(drawId, "rewrite");
     const cfg = this.resolved(draw).config;
@@ -382,10 +337,13 @@ export class Drafting {
       const ledger = chainOf(this.p, drawId).ledger() ?? "";
       const scheduleStep = this.p.steps(drawId).find((s) => s.stage === "schedule" && s.status === "done")!;
       const before = v.scenes.filter((s) => s.beat < k).map((s) => s.text);
+      const pass = passId();
       // the scene carries the gate-2 record: which beat was rewritten, and under which flag
-      await writeScene(this.p, drawId, scheduleStep.id, parts, ledger, schedule, schedule.beats[k - 1], cfg.scenes.order === "sequential" ? before : [], constraints, { finding: findingId });
-      const scenes = currentScenes(this.p, drawId);
-      await runScreens(this.p, drawId, ledger, schedule, scenes, cfg, k < M ? [k, k + 1] : [k], { lexiconPath: this.opts.lexiconPath });
+      const written = await writeScene(this.p, drawId, scheduleStep.id, parts, ledger, schedule, schedule.beats[k - 1], cfg.scenes.order === "sequential" ? before : [], constraints, { finding: findingId });
+      const bound = await bindScene(this.p, drawId, ledger, written, v.scenes[k - 2], cfg, pass);
+      // the beat after it read the old text: it is held to the new one, as it was when first written
+      if (k < M) await bindScene(this.p, drawId, ledger, v.scenes[k], bound, cfg, pass);
+      await runScreens(this.p, drawId, schedule, currentScenes(this.p, drawId), cfg, pass, k < M ? [k, k + 1] : [k], { lexiconPath: this.opts.lexiconPath });
     });
     settle(this.p.db, drawId, "awaiting_draft_gate");
     return this.p.draw(drawId);

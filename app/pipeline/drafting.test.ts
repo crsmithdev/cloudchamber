@@ -551,30 +551,32 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(p.artifacts(draw.id).filter((a) => a.kind === "finding" && JSON.parse(a.meta).source === "check")).toHaveLength(0);
   });
 
-  test("rewrite k regenerates one scene under the flag's replacement, re-screens k and k+1 only", async () => {
+  test("rewrite k regenerates one scene under the flag's replacement, binds k and k+1 to the ledger, re-screens both", async () => {
     const { p, d, draw, model } = await drawn();
     await d.check(draw.id);
     await d.draft(draw.id);
     const before = model.calls.length;
-    const flag = d.view(draw.id).screenFindings[0];
-    expect(flag.beat).toBe(3);
-    const out = await d.rewrite(draw.id, 3, flag.id);
+    // beat 3's flag carried a patch and was settled as the scene was written; beat 4's needs a rewrite
+    const flag = d.view(draw.id).screenFindings.find((f) => f.decision === "open")!;
+    expect(flag.beat).toBe(4);
+    const out = await d.rewrite(draw.id, 4, flag.id);
     expect(out.status).toBe("awaiting_draft_gate");
     const after = model.calls.slice(before);
     expect(after.map((c) => c.stage).sort()).toEqual(["scene", ...Array(6).fill("screen-ledger"), "screen-structure", "screen-structure"]);
     const sc = after.find((c) => c.stage === "scene")!;
-    expect(sc.prompt).toContain("<constraints>\n- The fire was on the 3rd.\n</constraints>");
+    expect(sc.prompt).toContain("<constraints>\n- 1,106 died.\n</constraints>");
     expect(sc.prompt).toContain("Every line of the constraints holds.");
-    expect(sc.prompt).toContain("Write beat 3 of the story");
+    expect(sc.prompt).toContain("Write beat 4 of the story");
     expect(sc.prompt).toContain("<story-so-far>\nScene 1 opens.");
-    expect(sc.prompt).not.toContain("Scene 4 opens");
-    expect(new Set(after.filter((c) => /^screen/.test(c.stage)).map((c) => /<scene n="(\d+)">/.exec(c.prompt)![1]))).toEqual(new Set(["3", "4"]));
+    expect(sc.prompt).toContain(SCENE_3_PATCH);                              // the story so far is the patched text
+    expect(sc.prompt).not.toContain("Scene 5 opens");
+    expect(new Set(after.filter((c) => /^screen/.test(c.stage)).map((c) => /<scene n="(\d+)">/.exec(c.prompt)![1]))).toEqual(new Set(["4", "5"]));
     const v = d.view(draw.id);
-    expect(v.scenes[2].text).toContain("Scene 3 opens. REWRITTEN");
+    expect(v.scenes[3].text).toContain("Scene 4 opens. REWRITTEN");
     expect(v.scenes).toHaveLength(8);
-    expect(after.find((c) => c.stage === "screen-ledger" && /<scene n="4">/.test(c.prompt))!.prompt).toContain("REWRITTEN");   // scene 4 is screened against the new scene 3
+    expect(after.find((c) => c.stage === "screen-ledger" && /<scene n="5">/.test(c.prompt))!.prompt).toContain("REWRITTEN");   // scene 5 is screened against the new scene 4
     const rewrites = p.artifacts(draw.id).filter((a) => a.kind === "scene" && JSON.parse(a.meta).rewrite).map((a) => JSON.parse(a.meta));
-    expect(rewrites.map((m) => [m.beat, m.rewrite_finding])).toEqual([[3, flag.id]]);   // the gate-2 record is on the scene
+    expect(rewrites.map((m) => [m.beat, m.rewrite_finding])).toEqual([[4, flag.id]]);   // the gate-2 record is on the scene
     expect(p.draw(draw.id).flag_note).toBe("");
     await expect(d.rewrite(draw.id, 9)).rejects.toThrow(/beat 9 is not in 1\.\.8/);
     await expect(d.rewrite(draw.id, 2, "f-nope")).rejects.toThrow(/no screen finding f-nope/);
@@ -584,38 +586,22 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(model.calls.slice(b2).map((c) => c.stage).sort()).toEqual(["scene", "screen-ledger", "screen-ledger", "screen-ledger", "screen-structure"]);
   });
 
-  test("patch applies a flag's own rewrite in place, costs no model call, and skips what it cannot reach", async () => {
+  test("a flag's own patch lands as the scene is written, costs no model call, and settles the flag", async () => {
     const { p, d, draw, model } = await drawn();
     await d.draft(draw.id);
-    const before = model.calls.length;
-    const flags = d.view(draw.id).screenFindings;
-    expect(flags.map((f) => f.beat)).toEqual([3, 4]);
-    expect(d.story(draw.id)).toContain("Scene 3 opens.");
-
-    const r = d.patch(draw.id);
-    expect(model.calls).toHaveLength(before);                                  // no model call at all
-    expect(r.applied.map((f) => f.beat)).toEqual([3]);
-    expect(r.skipped.map((x) => [x.finding.beat, x.why])).toEqual([[4, "no patch: the fix needs more than the span"]]);
-
-    // the scene carries the patch, the beat is untouched otherwise, and nothing was regenerated
+    expect(model.calls.filter((c) => c.stage === "scene")).toHaveLength(8);   // no call beyond the scenes and the screens
+    expect(stagesOf(model, /^screen-ledger$/)).toHaveLength(24);
     const scene3 = d.view(draw.id).scenes.find((s) => s.beat === 3)!;
     expect(scene3.text).toContain(SCENE_3_PATCH);
     expect(scene3.text).not.toContain("Scene 3 opens.");
     expect(d.story(draw.id)).toContain(SCENE_3_PATCH);
     expect(p.steps(draw.id).filter((s) => s.stage === "scene" && s.model === "patched")).toHaveLength(1);
     expect(p.draw(draw.id).status).toBe("awaiting_draft_gate");
-
-    // the flag is settled, so a second patch is a no-op and the gate shows it applied
-    const after = d.view(draw.id).screenFindings.find((f) => f.beat === 3)!;
-    expect([after.decision, after.note]).toEqual(["accepted", "patched in place"]);
-    expect(d.patch(draw.id).applied).toEqual([]);
-    expect(() => d.patch(draw.id, [after.id])).toThrow(/no open screen finding/);
-  });
-
-  test("patch refuses a draw that is not at gate 2", async () => {
-    const { d, draw } = await drawn();
-    await d.check(draw.id);
-    expect(() => d.patch(draw.id)).toThrow();
+    // the patched flag is settled with a draw verdict; the one whose fix needs more than its span stays open for a rewrite
+    const [f3, f4] = d.view(draw.id).screenFindings;
+    expect([f3.beat, f3.decision, f3.note]).toEqual([3, "accepted", "patched as written"]);
+    expect(latest(p.db, "finding", f3.id)).toMatchObject({ verdict: "keep", note: "patched as written" });
+    expect([f4.beat, f4.decision, f4.patch]).toEqual([4, "open", ""]);
   });
 
   test("keep exports drafts/<draw>/ with story, schedule, findings, config and trail; pass records a draft verdict", async () => {
@@ -625,13 +611,14 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     d.dismiss(draw.id, a.id, "she can fire it");
     d.dismiss(draw.id, b.id, "deliberate seam");
     await d.draft(draw.id);
-    await d.rewrite(draw.id, 3);
+    await d.rewrite(draw.id, 4);
     const { draw: kept, dir: out } = d.keep(draw.id, "good enough");
     expect(kept.status).toBe("drafted");
     expect(out).toBe(join(dir, "drafts", draw.id));
     for (const f of ["story.md", "schedule.md", "findings.md", "config.toml", "trail.md"]) expect(existsSync(join(out, f))).toBe(true);
     const story = readFileSync(join(out, "story.md"), "utf8");
-    expect(story).toContain("Scene 3 opens. REWRITTEN");
+    expect(story).toContain("Scene 4 opens. REWRITTEN");
+    expect(story).toContain(SCENE_3_PATCH);
     expect(story).not.toContain("[screen-");
     expect(readFileSync(join(out, "schedule.md"), "utf8")).toContain("## Beat 3 · 625 words · absorbs chosen");
     const findings = readFileSync(join(out, "findings.md"), "utf8");
@@ -642,7 +629,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     const trail = readFileSync(join(out, "trail.md"), "utf8");
     expect(trail).toContain("a typed seed");
     expect(trail).toContain("## draft");
-    expect(trail).toContain("- rewrite 3");
+    expect(trail).toContain("- rewrite 4");
     expect(trail).toContain("- scene: claude-opus-5");
     expect(latest(p.db, "draft", draw.id)).toMatchObject({ verdict: "keep", note: "good enough" });
     expect(() => d.keep(draw.id)).toThrow(/is drafted, not awaiting_draft_gate/);

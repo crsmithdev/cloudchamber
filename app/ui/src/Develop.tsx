@@ -1301,20 +1301,11 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
                             </td>
                             <td className="text-right whitespace-nowrap">
                               {gating && f.decision === "open" && (
-                                <>
-                                  {f.patch && (
-                                    <Btn onClick={() => gate("patch", { finding: f.id })} title="Put this flag's own rewrite of the span into the scene, word for word. No model call.">
-                                      apply patch
-                                    </Btn>
-                                  )}
-                                  <div className="mt-1">
-                                    <Btn variant="art" onClick={() => gate("rewrite", { beat: sc.beat, finding: f.id })}>
-                                      rewrite with this
-                                    </Btn>
-                                  </div>
-                                </>
+                                <Btn variant="art" onClick={() => gate("rewrite", { beat: sc.beat, finding: f.id })}>
+                                  rewrite with this
+                                </Btn>
                               )}
-                              {f.decision === "accepted" && <span className="num text-keep">applied</span>}
+                              {f.decision === "accepted" && <span className="num text-keep">patched</span>}
                             </td>
                           </tr>
                         ))}

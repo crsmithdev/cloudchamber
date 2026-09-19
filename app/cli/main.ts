@@ -26,9 +26,7 @@ const DOC = `cloudchamber — the one command the skill and the UI drive.
    cloudchamber brief <draw>                   print the brief
    cloudchamber check <draw> [--checks a,b] [--samples N]   run the checkers over a brief; stops at gate 1
    cloudchamber findings <draw> [--examined] [--all]   the findings of the latest check, by score
-   cloudchamber gate <draw> accept <finding>... | auto | dismiss <finding> | hold | keep | patch [<flag>...] | rewrite <k> [--finding ID]  [--note "..."]
-       patch applies a screen flag's own rewrite of its span in place, with no model call;
-       named flags only, or every open flag that carries one
+   cloudchamber gate <draw> accept <finding>... | auto | dismiss <finding> | hold | keep | rewrite <k> [--finding ID]  [--note "..."]
        auto repairs round after round, accepting what scores repair.stop_score or more,
        until nothing reaches the floor, the rounds run out, or the total stops falling
    cloudchamber draft <draw> [--auto] [--profile P] [--words N] [--beats N] [--tense T] [--person P] [--chronology C] [--container C] [--order O]
@@ -160,14 +158,6 @@ async function main() {
       };
       // the CLI waits for the work whether or not it runs on: there is nothing else to go back to
       const out = await gateCommand(p, d, drawId!, action!, gateArgs).done;
-      if (action === "patch") {
-        const r = out as { applied: any[]; skipped: { finding: any; why: string }[] };
-        console.log(`${r.applied.length} applied, ${r.skipped.length} left for a rewrite · no model calls`);
-        for (const f of r.applied) console.log(`  ${f.id}  beat ${f.beat}  “${f.span}”\n      → ${f.patch}`);
-        for (const x of r.skipped) console.log(`  ${x.finding.id}  beat ${x.finding.beat}  skipped: ${x.why}`);
-        if (r.applied.length) console.log(`\ncloudchamber story ${drawId}  ·  cloudchamber gate ${drawId} keep | rewrite <k>`);
-        break;
-      }
       console.log(JSON.stringify(out, null, 2));
       if (action === "accept") { console.log(`\nrepaired brief ${(out as any).id}; re-check findings:`); printFindings((out as any).id); }
       if (action === "auto") {
@@ -207,7 +197,7 @@ async function main() {
       for (const [flag, key] of Object.entries(map)) if ((values as any)[flag] !== undefined) overrides[key] = (values as any)[flag];
       const draw = await drafting().draft(drawId!, { auto: values.auto, profile: values.profile, overrides: Object.keys(overrides).length ? overrides : undefined });
       console.log(JSON.stringify(draw, null, 2));
-      console.log(`\ncloudchamber story ${draw.id}  ·  cloudchamber gate ${draw.id} keep | patch [<flag>...] | rewrite <k> [--finding ID]`);
+      console.log(`\ncloudchamber story ${draw.id}  ·  cloudchamber gate ${draw.id} keep | rewrite <k> [--finding ID]`);
       break;
     }
     case "story": {
