@@ -95,8 +95,8 @@ export function schedulePrompt(brief: string, cfg: DraftConfig): string {
   ].join("\n");
   const endingLine = cfg.form.ending === "brief" ? "the brief's ending is the last beat, in place" : "the schedule may derive the ending";
   // the told template asks for the narrated shape: a cold open, set pieces, an arrival, a cost, an aftermath; signal for the mission shape
-  const shape = cfg.structure.template === "told" ? fill("scheduleTold", {}) : cfg.structure.template === "signal" ? fill("scheduleSignal", {}) : "";
-  return fill("schedule", { brief, words: String(cfg.length.words), beatsLine, formLines, endingLine, shape });
+  const shape = { told: "scheduleTold", signal: "scheduleSignal", listen: "scheduleListen" }[cfg.structure.template];
+  return fill("schedule", { brief, words: String(cfg.length.words), beatsLine, formLines, endingLine, shape: shape ? fill(shape, {}) : "" });
 }
 
 export async function runSchedule(p: Pipeline, drawId: string, parts: BriefParts, brief: string, cfg: DraftConfig): Promise<{ step: StepRow; schedule: Schedule }> {

@@ -99,7 +99,7 @@ cloudchamber draft; every key of draft.toml is overridable per draw, and a profi
 
 | | |
 |---|---|
-| `--profile` | flash, novelette, narrated, signal |
+| `--profile` | flash, novelette, narrated, signal, listen |
 | `--words` | 5000 (tolerance 0.2) |
 | `--beats` | auto, between 5 and 10 of 400-800 words |
 | `--tense / --person` | past \| present · first \| second \| third |

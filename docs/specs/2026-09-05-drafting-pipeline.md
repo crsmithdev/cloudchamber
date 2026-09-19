@@ -790,3 +790,19 @@ of each draft back for a rewrite that kept the motifs. The register
 rewrite now fires only on `bodily-emotion` absent. A restated flag stays
 open at gate 2 for `rewrite k`, and under the told template a repeat of
 beat 1 is not flagged at all.
+
+### Amendment 2026-09-19 (night): the listen template
+
+A third shaped template, `listen`, states what a listener needs as
+requirements and not as a plot, and leaves the form to the brief: a
+first beat a listener cannot stop inside, a beat where the withheld
+thing arrives in the flesh and does not answer, a beat where a named
+person pays a cost before the last, a last beat back at the ordinary
+with one thing not gone away, a set piece per beat. Chronology, person,
+container and the number of timelines are the brief's; the ask says not
+to add a crew, a mission or a return the brief does not have.
+`[profiles.listen]` fixes only the length, the beat range and the open
+ending. The told and signal templates stay as shortcuts for the
+channels' forms. Motive: the plain Dyson brief, a four-century elegy,
+drafted under `signal` got a crew it never had and nine open ledger
+flags.

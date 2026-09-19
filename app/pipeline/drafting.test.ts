@@ -593,6 +593,21 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(JSON.parse(p.draw(draw.id).draft_config!).config.structure.template).toBe("signal");
   });
 
+  test("the listen profile states the requirements, fixes no form axis, and pays for its register", async () => {
+    const { p, d, draw, model } = await drawn(draftScript({ schedule: () => schedule({ cap: 1100 }) }));
+    await d.check(draw.id);
+    await d.draft(draw.id, { profile: "listen", overrides: { "beats.min": 8 } });
+    const sched = model.calls.find((c) => c.stage === "schedule")!;
+    expect(sched.prompt).toContain("Derive the shape from the brief");
+    expect(sched.prompt).toContain("form: derive tense, person, chronology, container");
+    expect(sched.prompt).not.toContain("<register>");
+    // the fixture's schedule is not told, so no register goes into the scenes; the body rewrite of beat 2 still runs
+    const scenes = model.calls.filter((c) => c.stage === "scene");
+    expect(scenes.every((c) => !c.prompt.includes("<register>"))).toBe(true);
+    expect(scenes.map((c) => /Write beat (\d+)/.exec(c.prompt)![1])).toEqual(["1", "2", "3", "4", "5", "6", "7", "8", "2"]);
+    expect(JSON.parse(p.draw(draw.id).draft_config!).config.structure.template).toBe("listen");
+  });
+
   test("the outline has four sections and the ending is derived from three of them", async () => {
     const { model } = await drawn();
     const outline = model.calls.find((c) => c.stage === "outline")!;
@@ -603,7 +618,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
   test("parallel order carries no text so far; a bad schedule fails shape and retries; fixed form is checked; template mode refused", async () => {
     const { p, d, draw, model } = await drawn(draftScript({ schedule: [schedule({ absorbsTwice: true }), schedule()] }));
     await d.check(draw.id);
-    await expect(d.draft(draw.id, { overrides: { "structure.template": "frame" } })).rejects.toThrow(/structure.template must be auto, told or signal, got frame/);
+    await expect(d.draft(draw.id, { overrides: { "structure.template": "frame" } })).rejects.toThrow(/structure.template must be auto, listen, told or signal, got frame/);
     expect(p.draw(draw.id).status).toBe("awaiting_check_gate");
     const out = await d.draft(draw.id, { overrides: { "scenes.order": "parallel" } });
     expect(out.status).toBe("awaiting_draft_gate");
