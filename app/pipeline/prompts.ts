@@ -61,7 +61,7 @@ Premise: {premise}
 
 Write ${RUN.vignetteWords} words of this story, in a <vignette> tag. Not a synopsis and not the opening unless the opening is where the story is: one passage, in the form the premise implies, that shows whether it can be written.{darkness} Under ${RUN.vignetteWords + 50} words. Output only the tag.`,
 
-  outlineHead: `Below is a seed, a premise, and a ${RUN.vignetteWords}-word execution of it. Derive from them the story's underlying structure. Nothing here is prose for the page.
+  outlineHead: `Below is a seed, a premise, and a ${RUN.vignetteWords}-word vignette written from it. Derive from them the story's underlying structure. Nothing here is prose for the page.
 
 Seed: {seed}
 
