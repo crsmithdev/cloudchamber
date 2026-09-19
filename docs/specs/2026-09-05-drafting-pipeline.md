@@ -780,3 +780,13 @@ felt, quoted plain speech, the exact number and hour, one thing per
 sentence. The register rewrites run under any shaped template, not only
 `told`; the scene prompt takes the template as a parameter, since a prose
 container carries no register of its own.
+
+### Amendment 2026-09-19 (night): a restated flag does not trigger a register rewrite
+
+On the first two signal drafts (twelve beats each) the restated screen
+flagged twenty sentences a draft, nearly all motifs and callbacks a
+listener is meant to hear again, and `registerRewrites` sent nine beats
+of each draft back for a rewrite that kept the motifs. The register
+rewrite now fires only on `bodily-emotion` absent. A restated flag stays
+open at gate 2 for `rewrite k`, and under the told template a repeat of
+beat 1 is not flagged at all.

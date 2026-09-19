@@ -387,16 +387,18 @@ export class Drafting {
 
   /**
    * Under a shaped template the register is part of the draft, not a gate
-   * decision: each beat the screens flag for it gets one rewrite with the flag
-   * as its constraint, a body not named or a sentence an earlier beat said.
-   * One pass, in beat order; a beat the rewrite flags again waits for a person.
+   * decision: each beat the structure screen flags for it gets one rewrite
+   * with the flag as its constraint, a body not named. One pass, in beat
+   * order; a beat the rewrite flags again waits for a person. A restated flag
+   * is not a trigger: on two twelve-beat signal drafts it fired twenty times
+   * a draft on motifs and callbacks, sent nine beats each back for a rewrite,
+   * and the rewrites kept the motifs. It stays a gate-2 flag for `rewrite k`.
    */
   private async registerRewrites(drawId: string, cfg: DraftConfig): Promise<void> {
     const chain = chainOf(this.p, drawId);
     const lines = new Map<number, string[]>();
     const add = (k: number, line: string) => lines.set(k, [...(lines.get(k) ?? []), line]);
     for (const pr of chain.screenProfiles()) if (pr.flags.includes("bodily-emotion")) add(pr.beat, BODY_LINE);
-    for (const f of chain.screenFindings()) if (f.screen === "restated" && f.decision === "open") add(f.beat!, f.replacement);
     for (const k of [...lines.keys()].sort((a, b) => a - b)) await this.regenerate(drawId, k, cfg, constraintsBlock(lines.get(k)!.map((replacement) => ({ replacement }))));
   }
 
