@@ -16,6 +16,7 @@ import { VERDICT_LOG } from "./paths.ts";
 import { A, B, LEDGER, SCENE_3_PATCH, SPAN_A, SPAN_B, SPAN_C, cleanSamples, derivationSamples, draftScript, drawn, finding, fixture, ledgerSamples, schedule, screenStructure, vignette } from "./drafting.fixture.ts";
 import { briefParts, partsIn, partsOf } from "./briefparts.ts";
 import { chainOf } from "./chain.ts";
+import { renderStory } from "./drafts.ts";
 
 /** The default floor is 7; B, an particulars finding at two of three samples, sits at 6, so a test that needs two fixes at once lowers it. */
 const floor6 = () => ({ ...loadDraftConfig().config, repair: { ...loadDraftConfig().config.repair, stop_score: 6 } });
@@ -541,6 +542,12 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(story).toContain("[screen-ledger beat 3] Scene 3 opens → The fire was on the 3rd.");
     expect(story).toContain("[screen-structure beat 5] theme-stated: quote theme-stated 5");
     expect(story.trimEnd().endsWith("checked on opus; judge and generator share a family")).toBe(true);
+    // the flag-free render is the draft as a listener hears it: scenes and breaks, no screen note, no judge
+    const clean = renderStory(d.view(draw.id), false);
+    expect(clean).toContain("Scene 1 opens.");
+    expect(clean).toContain("* * *");
+    expect(clean).not.toContain("[screen-");
+    expect(clean).not.toContain("judge and generator share a family");
     expect(existsSync(join(dir, "drafts", draw.id))).toBe(false);          // nothing exported before keep
   });
 

@@ -258,8 +258,10 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     try { return drafting.findings(req.params.id, { all }); } catch (e: any) { return reply.code(404).send({ error: e.message }); }
   });
 
-  app.get<{ Params: { id: string } }>("/api/draws/:id/story", async (req, reply) => {
-    try { const v = drafting.view(req.params.id); return { ...v, text: renderStory(v) }; } catch (e: any) { return reply.code(404).send({ error: e.message }); }
+  // ?flags=0 renders the scenes alone: a judge reads the draft as a listener would, without the screen notes the gate-2 reader wants
+  app.get<{ Params: { id: string }; Querystring: { flags?: string } }>("/api/draws/:id/story", async (req, reply) => {
+    const withFlags = !(req.query.flags === "0" || req.query.flags === "false");
+    try { const v = drafting.view(req.params.id); return { ...v, text: renderStory(v, withFlags) }; } catch (e: any) { return reply.code(404).send({ error: e.message }); }
   });
 
   // a route parameter is decoded, so `..%2F` arrives as `../`: a path must resolve inside briefs/

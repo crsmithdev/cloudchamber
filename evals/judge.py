@@ -23,7 +23,9 @@ RUBRIC = [
 
 def load(src):
     if re.fullmatch(r"\d{14}-[0-9a-f]{4}", src):
-        return json.load(urllib.request.urlopen(f"http://127.0.0.1:80/api/draws/{src}/story"))["text"]
+        # flags=0: the scenes alone. With flags on, the text carries every screen note after its beat,
+        # about a sixth of the words on a twelve-beat draft, and the judges read them as part of the story.
+        return json.load(urllib.request.urlopen(f"http://127.0.0.1:80/api/draws/{src}/story?flags=0"))["text"]
     if src.endswith(".json"):
         t = json.load(open(src)); text = " ".join(x["text"] for x in t["snippets"])
         i = text.find("Let's dive into today's story")
