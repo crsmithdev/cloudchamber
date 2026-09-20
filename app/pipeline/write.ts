@@ -23,13 +23,13 @@ import { chainOf } from "./chain.ts";
 
 /** `until` is the beat that reveals the item; one past the last beat means the story never does. */
 export type Withheld = { item: string; until: number };
-export type Beat = { n: number; words: number; job: string; known: string; withheld: Withheld[]; stakes: string; set_piece: string; absorbs: string };
+export type Beat = { n: number; words: number; job: string; known: string; withheld: Withheld[]; stakes: string; set_piece: string; absorbs: string; pays: boolean };
 export type Schedule = { form: Record<FormAxis, string>; beats: Beat[]; raw: string };
 export type Scene = { beat: number; text: string; artifact_id: string; step_id: string };
 
 export const ABSORBABLE = ["chosen", "context-1", "context-2", "ending"];
 export const STRUCTURE_SCREEN = ["theme-stated", "bodily-emotion", "withheld-revealed", "protagonist-never-wrong"];
-/** Asked on the last beat only: what a listener needs the story to have paid by its end. */
+/** Asked of the beat that pays: what a listener needs the story to have paid by its end. */
 export const LAST_BEAT_SCREEN = ["presence-arrives", "cost-paid"];
 /** A present answer on these is a flag; theme-stated is allowed once, on the last beat. */
 export const FLAG_PRESENT = new Set(["theme-stated", "withheld-revealed", "protagonist-never-wrong", "resolved", "resolves-everything"]);
@@ -66,7 +66,9 @@ export function parseSchedule(text: string, cfg: DraftConfig): Schedule {
       withheld.push({ item: never[1].trim(), until: NEVER });
     }
     const setPiece = (tag(b, "set_piece") ?? "").trim();
-    beats.push({ n: Number(m[1]), words: Number(m[2]), job: tag(b, "job") ?? "", known: tag(b, "known") ?? "", withheld, stakes: tag(b, "stakes") ?? "", set_piece: /^none\.?$/i.test(setPiece) ? "" : setPiece, absorbs: (tag(b, "absorbs") ?? "none").toLowerCase().trim() });
+    // a shaped schedule marks the beat where the withheld thing arrives and the cost is paid; the screen asks that beat
+    const pays = /<pays\s*\/?>/i.test(b) || /^(yes|true)\b/i.test((tag(b, "pays") ?? "").trim());
+    beats.push({ n: Number(m[1]), words: Number(m[2]), job: tag(b, "job") ?? "", known: tag(b, "known") ?? "", withheld, stakes: tag(b, "stakes") ?? "", set_piece: /^none\.?$/i.test(setPiece) ? "" : setPiece, absorbs: (tag(b, "absorbs") ?? "none").toLowerCase().trim(), pays });
   }
   if (!beats.length) throw new Error("no <beat> tags");
   beats.sort((a, b) => a.n - b.n);
@@ -207,8 +209,9 @@ export const flagsOf = (answers: Record<string, Answer>, last = false) =>
 export async function runScreens(p: Pipeline, drawId: string, s: Schedule, scenes: Scene[], cfg: DraftConfig, pass: string, beats: number[] = scenes.map((x) => x.beat), opts: { lexiconPath?: string; narrationDir?: string } = {}): Promise<void> {
   const enabled = cfg.screens.enabled;
   const M = s.beats.length;
-  // a shaped template pays its cost in the beat before the last, and the last is the aftermath: that is the beat asked
-  const paidBeat = cfg.structure.template === "auto" || M < 2 ? M : M - 1;
+  // the beat the schedule marked as paying, else the shaped default: the cost lands before the last beat, which is the aftermath
+  const marked = s.beats.find((b) => b.pays)?.n;
+  const paidBeat = cfg.structure.template === "auto" || M < 2 ? M : marked ?? M - 1;
   if (enabled.includes("structure")) await Promise.all(beats.map(async (k) => {
     const scene = scenes.find((x) => x.beat === k)!, b = s.beats[k - 1];
     const { samples: n, keep_if } = samplesFor(cfg.screens, "structure");

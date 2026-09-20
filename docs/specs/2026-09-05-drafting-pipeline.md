@@ -806,3 +806,16 @@ ending. The told and signal templates stay as shortcuts for the
 channels' forms. Motive: the plain Dyson brief, a four-century elegy,
 drafted under `signal` got a crew it never had and nine open ledger
 flags.
+
+### Amendment 2026-09-19 (night): the schedule marks the beat that pays
+
+A shaped schedule marks with `<pays>yes</pays>` the one beat where the
+withheld thing arrives in the flesh and a named person pays a cost that
+cannot be got back, and the structure screen asks `presence-arrives` and
+`cost-paid` of that beat. Where no beat is marked the shaped default
+holds, the beat before the last. The told and signal templates put the
+cost there by construction, so the default was right for them; `listen`
+leaves the chronology to the brief, and the first listen draft put its
+arrival in beat 9 of 14 while the screen asked beat 13 and reported the
+presence absent. The arrival was there, and the screen was looking at
+the aftermath.

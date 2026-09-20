@@ -559,7 +559,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     // eight beats, and beat 2 again: the fixture names no body in beat 2, and the told template pays for its register
     expect(scenes.map((c) => /Write beat (\d+)/.exec(c.prompt)![1])).toEqual(["1", "2", "3", "4", "5", "6", "7", "8", "2"]);
     expect(scenes[8].prompt).toContain("the narrator says what the body did before saying what it meant");
-    // under the told shape the beat before the last is asked whether a presence arrived and a cost was paid; the aftermath and an earlier beat are not
+    // the fixture marks no beat, so the shaped default holds: the beat before the last is asked whether a presence arrived and a cost was paid
     const st7 = model.calls.find((c) => c.stage === "screen-structure" && /<scene n="7">/.test(c.prompt))!;
     expect(st7.prompt).toContain("presence-arrives:");
     expect(st7.prompt).toContain("resolved:");
@@ -606,6 +606,18 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(scenes.every((c) => !c.prompt.includes("<register>"))).toBe(true);
     expect(scenes.map((c) => /Write beat (\d+)/.exec(c.prompt)![1])).toEqual(["1", "2", "3", "4", "5", "6", "7", "8", "2"]);
     expect(JSON.parse(p.draw(draw.id).draft_config!).config.structure.template).toBe("listen");
+  });
+
+  test("a schedule that marks a beat <pays> moves the arrival screen to that beat", async () => {
+    const withPays = schedule({ cap: 1100 }).replace(/(<beat n="5"[^>]*>)/, "$1<pays>yes</pays>");
+    const { p, d, draw, model } = await drawn(draftScript({ schedule: () => withPays }));
+    await d.check(draw.id);
+    await d.draft(draw.id, { profile: "listen", overrides: { "beats.min": 8 } });
+    const st5 = model.calls.find((c) => c.stage === "screen-structure" && /<scene n="5">/.test(c.prompt))!;
+    expect(st5.prompt).toContain("presence-arrives:");
+    const st7 = model.calls.find((c) => c.stage === "screen-structure" && /<scene n="7">/.test(c.prompt))!;
+    expect(st7.prompt).not.toContain("presence-arrives:");
+    expect(d.view(draw.id).profiles.find((x) => x.beat === 5)!.answers["cost-paid"]).toBeDefined();
   });
 
   test("the outline has four sections and the ending is derived from three of them", async () => {
