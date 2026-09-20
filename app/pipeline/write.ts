@@ -38,6 +38,10 @@ export const WITHHELD_LINE = "What the schedule lists as withheld after this bea
 export const WRONG_LINE = "The point-of-view character is allowed to be mistaken, unfair or at fault somewhere in this beat, and the beat lets it stand.";
 export const RESOLVED_LINE = "This beat settles nothing the story still withholds: the questions it has raised are open at the end of the beat.";
 export const OPEN_LINE = "The last beat leaves at least one question the story raised open; it does not close every one.";
+/** Three outside judges gave the source people, momentum and the hook on the clean text (evals/20260920-clean-judge.md): a cast told apart by ear, one visible event a beat, and what is wrong said first. */
+export const VOICES_LINE = "The people in this beat speak in quoted lines and are told apart by how they talk, as the schedule's cast says; no two sound alike, and no line could be moved from one mouth to another.";
+export const EVENT_LINE = "Something happens in this beat that a second person present could see or hear: an act, an arrival, a breakage, a refusal said aloud. It is not thought, recollection or measurement alone.";
+export const HOOK_LINE = "The first 150 words of this beat say what is wrong: the thing the story is about, or its first effect, named or shown before any routine, setting or history.";
 
 /**
  * A screen rule is one row: the question, which answer is the flag, which
@@ -45,12 +49,15 @@ export const OPEN_LINE = "The last beat leaves at least one question the story r
  * rewrite on its own, and the line a rewrite carries. The prompt text is in
  * prompts.ts under the same names.
  */
-export type ScreenRule = { name: string; flag: "present" | "absent"; asked: "every" | "not-last" | "last" | "paying"; register?: boolean; line: string };
+export type ScreenRule = { name: string; flag: "present" | "absent"; asked: "every" | "first" | "not-last" | "last" | "paying"; register?: boolean; line: string };
 export const STRUCTURE_RULES: ScreenRule[] = [
   { name: "theme-stated", flag: "present", asked: "every", line: THEME_LINE },
   { name: "bodily-emotion", flag: "absent", asked: "every", register: true, line: BODY_LINE },
   { name: "withheld-revealed", flag: "present", asked: "every", line: WITHHELD_LINE },
   { name: "protagonist-never-wrong", flag: "present", asked: "every", line: WRONG_LINE },
+  { name: "one-voice", flag: "present", asked: "every", register: true, line: VOICES_LINE },
+  { name: "nothing-happens", flag: "present", asked: "every", register: true, line: EVENT_LINE },
+  { name: "hook-late", flag: "present", asked: "first", register: true, line: HOOK_LINE },
   { name: "resolved", flag: "present", asked: "not-last", line: RESOLVED_LINE },
   { name: "resolves-everything", flag: "present", asked: "last", line: OPEN_LINE },
   // asked of the beat that pays: what a listener needs the story to have paid by its end
@@ -224,17 +231,17 @@ export async function bindScene(p: Pipeline, drawId: string, ledger: string, sce
 export type Profile = { beat: number; pass: string; answers: Record<string, Answer>; flags: string[] };
 
 /** `paid` is the beat asked whether a presence arrived and a cost was paid: the last beat, or under a shaped template the one before it. */
-export function structurePrompt(b: Beat, scene: string, last: boolean, M = Number.MAX_SAFE_INTEGER, paid = last): string {
+export function structurePrompt(b: Beat, scene: string, last: boolean, M = Number.MAX_SAFE_INTEGER, paid = last, first = b.n === 1): string {
   const later = b.withheld.filter((w) => w.until > b.n);
   return fill("screenStructure", {
     n: String(b.n), job: b.job, withheld: later.length ? later.map((w) => `${w.item} — ${w.until > M ? "never revealed" : `beat ${w.until}`}`).join("\n") : "none", scene,
-    fifth: fill(last ? "screenResolvesEverything" : "screenResolved", {}), last: paid ? fill("screenLastBeat", {}) : "",
+    fifth: fill(last ? "screenResolvesEverything" : "screenResolved", {}), first: first ? fill("screenFirstBeat", {}) : "", last: paid ? fill("screenLastBeat", {}) : "",
   });
 }
 
 /** The questions the structure screen asks of beat k. */
-export const structureQuestions = (last: boolean, paid = last) =>
-  STRUCTURE_RULES.filter((r) => r.asked === "every" || (r.asked === "last" && last) || (r.asked === "not-last" && !last) || (r.asked === "paying" && paid)).map((r) => r.name);
+export const structureQuestions = (last: boolean, paid = last, first = false) =>
+  STRUCTURE_RULES.filter((r) => r.asked === "every" || (r.asked === "first" && first) || (r.asked === "last" && last) || (r.asked === "not-last" && !last) || (r.asked === "paying" && paid)).map((r) => r.name);
 
 /** The flags an answer set raises. The theme may be stated once, on the last beat, the way a narrated story closes. */
 export const flagsOf = (answers: Record<string, Answer>, last = false) =>
@@ -249,8 +256,8 @@ export async function runScreens(p: Pipeline, drawId: string, s: Schedule, scene
   if (enabled.includes("structure")) await Promise.all(beats.map(async (k) => {
     const scene = scenes.find((x) => x.beat === k)!, b = s.beats[k - 1];
     const { samples: n, keep_if } = samplesFor(cfg.screens, "structure");
-    const names = structureQuestions(k === M, k === paidBeat);
-    const prompt = structurePrompt(b, scene.text, k === M, M, k === paidBeat);
+    const names = structureQuestions(k === M, k === paidBeat, k === 1);
+    const prompt = structurePrompt(b, scene.text, k === M, M, k === paidBeat, k === 1);
     const rs = await samples(n, () => p.invoke(drawId, scene.step_id, "screen-structure", prompt, (t) => parseQuestions(t, names)));
     // an answer is present when it recurs in keep_if samples; the quote is the first sample's
     const answers: Record<string, Answer> = {};

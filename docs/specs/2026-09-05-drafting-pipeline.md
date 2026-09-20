@@ -892,3 +892,34 @@ it. Two consequences:
 2. The draft pane's structure block lists every question the screen
    asked, the paying beat's four included; it had six names hard-coded and
    the four paying questions were invisible there.
+
+### Amendment 2026-09-20: what the source still wins is asked for upstream
+
+Re-judged on the scenes alone (`evals/20260920-clean-judge.md`), the
+seven drafts reach parity on 58 of 63 passes and the source keeps three
+axes: presence (27 of 63), people (18) and the hook (11). Run 7 showed
+where each is lost: the premise chose a blight with no body; the schedule
+gave the cast one register; beat 1 opened on a soil audit. Each is asked
+for where it is decided.
+
+1. `premisesShape` (`--shape listen`): the thing has a body or works
+   through one, so that it can touch, move, break or take; a blight, a
+   signal or a number that is only measured is not it; it is met early
+   and more than once, with a second named person in the room.
+2. `scheduleListen`: the thing is in the same place as a person in at
+   least two more beats, the first no later than a third of the way
+   through; beat 1 says what is wrong inside its first 150 words; by the
+   midpoint the person who knows has told someone who answers; every beat
+   has a set piece a second person could see; the last beat ends on an
+   image or an act; and a `<cast>` tag before the beats names three or
+   four speakers, one line each, with one habit of speech nobody else has.
+   `scheduleSignal` asks for the cast too. The cast travels to every scene
+   in the schedule block, and the `signal` register asks each person to
+   speak as the cast says and no two alike, and the first sentence to say
+   so when the time or the place changes.
+3. Three structure questions, each a `STRUCTURE_RULES` row with a
+   register rewrite: `one-voice` (two or more speak and sound the same),
+   `nothing-happens` (nothing a second person could see or hear), both
+   asked of every beat, and `hook-late` (the first 150 words do not say
+   what is wrong), asked of beat 1 alone. The lines are `VOICES_LINE`,
+   `EVENT_LINE` and `HOOK_LINE`.

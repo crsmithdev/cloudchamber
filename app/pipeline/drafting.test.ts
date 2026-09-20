@@ -3,7 +3,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { FakeModel } from "./model.ts";
 import { BODY_LINE, COST_LINE, LENGTH_LINE, NUMERAL_LINE, PRESENCE_LINE, parseConflicts, rewritePlan } from "./drafting.ts";
-import { THEME_LINE } from "./write.ts";
+import { EVENT_LINE, HOOK_LINE, THEME_LINE, VOICES_LINE } from "./write.ts";
 import { parseSchedule, structurePrompt } from "./write.ts";
 import { checkersNext, NOT_IN_PROSE, parseVerdicts } from "./check.ts";
 import { settingsFixture } from "./settings.fixture.ts";
@@ -670,13 +670,50 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(st5.prompt).toContain("A thing that is seen, stands, or gestures and does nothing more is absent");
   });
 
+  test("a late hook, one voice and a beat where nothing happens each send the beat back once, under their lines", async () => {
+    const signalForm = "tense: past\nperson: third\nchronology: linear\ncontainer: prose";
+    const seen = new Set<string>();
+    const answer = (prompt: string) => {
+      const n = Number(/<scene n="(\d+)">/.exec(prompt)?.[1] ?? 0);
+      let out = screenStructure(prompt);
+      if (seen.has(String(n))) return out;
+      seen.add(String(n));
+      if (n === 1) out = out.replace(/(<question name="hook-late"><answer>)absent/, "$1present");
+      if (n === 3) out = out.replace(/(<question name="one-voice"><answer>)absent/, "$1present");
+      if (n === 4) out = out.replace(/(<question name="nothing-happens"><answer>)absent/, "$1present");
+      return out;
+    };
+    const { d, draw, model } = await drawn(draftScript({ schedule: () => schedule({ form: signalForm, cap: 1100 }), "screen-structure": answer }));
+    await d.check(draw.id);
+    await d.draft(draw.id, { profile: "listen", overrides: { "beats.min": 8, "screens.listen.long_share_max": 1 } });
+    const rewrites = model.calls.filter((c) => c.stage === "scene" && c.prompt.includes("<constraints>"));
+    expect(rewrites.map((c) => /Write beat (\d+)/.exec(c.prompt)![1])).toEqual(["1", "2", "3", "4"]);
+    expect(rewrites[0].prompt).toContain(HOOK_LINE);
+    expect(rewrites[2].prompt).toContain(VOICES_LINE);
+    expect(rewrites[3].prompt).toContain(EVENT_LINE);
+    // the register carries the cast's voices and the signpost rule into every scene
+    expect(model.calls.filter((c) => c.stage === "scene").every((c) => c.prompt.includes("Each person speaks the way the schedule's cast says they do"))).toBe(true);
+  });
+
   test("the listen schedule asks the thing back for a second beat, and every shape asks it to do harm", async () => {
     const { d, draw, model } = await drawn(draftScript({ schedule: () => schedule({ cap: 1100 }) }));
     await d.check(draw.id);
     await d.draft(draw.id, { profile: "listen", overrides: { "beats.min": 8, "screens.listen.long_share_max": 1 } });
     const sched = model.calls.find((c) => c.stage === "schedule")!;
     expect(sched.prompt).toContain("does harm to that person or that place, and does not explain itself");
-    expect(sched.prompt).toContain("in at least one more beat, before or after that one");
+    expect(sched.prompt).toContain("in at least two more beats, before or after that one");
+    expect(sched.prompt).toContain("says what is wrong inside its first 150 words");
+    expect(sched.prompt).toContain("By the midpoint the person who knows has told someone");
+    expect(sched.prompt).toContain("a <cast> tag: three or four named people who speak");
+    // beat 1 alone is asked whether its hook came late; every beat is asked about its voices and whether anything happens
+    const st1 = model.calls.find((c) => c.stage === "screen-structure" && /<scene n="1">/.test(c.prompt))!;
+    expect(st1.prompt).toContain("hook-late:");
+    expect(st1.prompt).toContain("one-voice:");
+    expect(st1.prompt).toContain("nothing-happens:");
+    const st2 = model.calls.find((c) => c.stage === "screen-structure" && /<scene n="2">/.test(c.prompt))!;
+    expect(st2.prompt).not.toContain("hook-late:");
+    expect(d.view(draw.id).profiles.find((x) => x.beat === 1)!.answers["hook-late"]).toBeDefined();
+    expect(d.view(draw.id).profiles.find((x) => x.beat === 2)!.answers["hook-late"]).toBeUndefined();
     expect(sched.prompt).not.toContain("does not answer");
   });
 
