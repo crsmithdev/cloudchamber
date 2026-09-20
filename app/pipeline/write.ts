@@ -244,13 +244,14 @@ export async function runScreens(p: Pipeline, drawId: string, s: Schedule, scene
       p.artifact(step, "finding", meta.statement, { ...meta, pass, source: "screen", screen: "restated", beat: k });
     }
   }
-  if (enabled.includes("slop") && beats.length === scenes.length) {
+  // the deterministic reports cover the whole draft as it stands, however few beats were re-screened: a rewrite changes the story-wide figures too
+  if (enabled.includes("slop")) {
     const pool = cfg.screens.slop_baseline === "pool" ? eligiblePassages(p.db).map((x) => x.text).join("\n\n") : "";
     const report = slopScreen(scenes.map((x) => ({ beat: x.beat, text: x.text })), pool, loadLexicon(opts.lexiconPath));
     const step = p.recordStep(drawId, scenes[0]?.step_id ?? null, "screen-slop", "deterministic", report);
     p.artifact(step, "slop", JSON.stringify(report), { pass, source: "screen", screen: "slop" });
   }
-  if (enabled.includes("listen") && beats.length === scenes.length) {
+  if (enabled.includes("listen")) {
     const report = listenScreen(scenes.map((x) => ({ beat: x.beat, text: x.text })), loadNarrationPool(opts.narrationDir));
     const step = p.recordStep(drawId, scenes[0]?.step_id ?? null, "screen-listen", "deterministic", report);
     p.artifact(step, "listen", JSON.stringify(report), { pass, source: "screen", screen: "listen" });

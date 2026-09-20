@@ -853,3 +853,23 @@ fights a shaped template at the ledger (nine open flags on `2f03`). The
 shape is not a column and the store stays at schema 11; the premises
 step stores its prompt, which is where a shaped draw shows it. `like`
 does not carry it, and the UI draw form does not offer it yet.
+
+### Amendment 2026-09-20: the reports follow the draft, and the rewrite plan runs again
+
+Two defects run 7 (`evals/20260920142033-d83e.md`) found by being run:
+
+1. `runScreens` wrote the `slop` and `listen` reports only when given
+   every beat, and a rewrite re-screens two, so the stored report was
+   always the pre-rewrite measurement and the gate-2 reader saw stale
+   figures (the Ark draft's report said 7.8 numerals per 1k where the
+   shipped draft was 5.5). The reports are now recomputed over the whole
+   draft whenever the screens run. Deterministic, no call.
+2. `registerRewrites` computed its whole plan once from the scenes as they
+   stood and then executed it, so a rewrite under one line could break
+   another ceiling with nothing measuring it: a length rewrite put beat
+   3's figures back over 12, a presence rewrite pushed beat 10's long
+   share to 0.16. The plan is now a function, `rewritePlan(profiles,
+   scenes, cfg)`, and it runs again after the pass: a beat that then needs
+   a line it has not had gets one more rewrite under everything that
+   applies. A beat flagged again for a line it already had waits for a
+   person, as before. At most two rounds.

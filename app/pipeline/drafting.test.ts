@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { FakeModel } from "./model.ts";
-import { parseConflicts } from "./drafting.ts";
+import { BODY_LINE, COST_LINE, LENGTH_LINE, NUMERAL_LINE, PRESENCE_LINE, parseConflicts, rewritePlan } from "./drafting.ts";
 import { parseSchedule, structurePrompt } from "./write.ts";
 import { checkersNext, NOT_IN_PROSE, parseVerdicts } from "./check.ts";
 import { settingsFixture } from "./settings.fixture.ts";
@@ -702,6 +702,43 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(two.prompt).not.toContain("A listener cannot hold a figure");
   });
 
+  test("the rewrite plan is a function of the profiles, the scenes and the ceilings", () => {
+    const cfg = loadDraftConfig("signal").config;
+    const figures = Array.from({ length: 30 }, (_, i) => `${1000 + i}.`).join(" ");
+    const short = Array.from({ length: 30 }, () => "one two three four five six seven eight nine.").join(" ");
+    const long = Array.from({ length: 40 }, (_, i) => `w${i}`).join(" ") + ".";
+    const plan = rewritePlan(
+      [{ beat: 2, flags: ["bodily-emotion"] }, { beat: 5, flags: ["theme-stated"] }, { beat: 7, flags: ["presence-in-room", "cost-in-scene", "presence-arrives"] }],
+      [{ beat: 2, text: short }, { beat: 3, text: `${figures} ${short}` }, { beat: 4, text: long }, { beat: 5, text: short }, { beat: 7, text: short }],
+      cfg);
+    expect([...plan]).toEqual([[2, [BODY_LINE]], [7, [PRESENCE_LINE, COST_LINE]], [3, [NUMERAL_LINE]], [4, [LENGTH_LINE]]]);
+    expect(rewritePlan([], [{ beat: 4, text: long }], { ...cfg, screens: { ...cfg.screens, listen: { long_share_max: 1 } } }).size).toBe(0);
+  });
+
+  test("a rewrite that breaks another ceiling gets one more rewrite; a beat flagged again for the same line waits", async () => {
+    const signalForm = "tense: past\nperson: third\nchronology: linear\ncontainer: prose";
+    // every beat is short sentences; beat 3 carries 30 figures, and its numeral rewrite comes back as one long sentence
+    const shortLines = (n: number, k: number) => Array.from({ length: k }, (_, i) => `s${n} w${i} a b c d e f g.`).join(" ");
+    const scene = (prompt: string) => {
+      const n = Number(/Write beat (\d+) of the story/.exec(prompt)?.[1] ?? 0);
+      const rewrite = /<constraints>/.test(prompt);
+      if (n === 3 && rewrite && /cannot hold a figure/.test(prompt) && !/thirty words/.test(prompt)) return `<scene>Scene 3 opens. REWRITTEN ${Array.from({ length: 300 }, (_, i) => `s3w${i}`).join(" ")}</scene>`;
+      const figures = n === 3 && !rewrite ? Array.from({ length: 30 }, (_, i) => `${1000 + i}.`).join(" ") + " " : "";
+      return `<scene>Scene ${n} opens.${rewrite ? " REWRITTEN" : ""} ${figures}${shortLines(n, 30)}</scene>`;
+    };
+    const { d, draw, model } = await drawn(draftScript({ scene, schedule: () => schedule({ form: signalForm, cap: 1100 }) }));
+    await d.check(draw.id);
+    await d.draft(draw.id, { profile: "signal", overrides: { "beats.min": 8 } });
+    const rewrites = model.calls.filter((c) => c.stage === "scene" && c.prompt.includes("<constraints>"));
+    // round one: beat 2 for the body, beat 3 for its figures; round two: beat 3 again, now for its length. Beat 2 still names no body and is not sent back
+    expect(rewrites.map((c) => /Write beat (\d+)/.exec(c.prompt)![1])).toEqual(["2", "3", "3"]);
+    expect(rewrites[1].prompt).toContain("A listener cannot hold a figure");
+    expect(rewrites[1].prompt).not.toContain("no sentence over thirty words");
+    expect(rewrites[2].prompt).toContain("no sentence over thirty words");
+    expect(rewrites[2].prompt).not.toContain("A listener cannot hold a figure");
+    expect(d.view(draw.id).scenes[2].text).toContain("REWRITTEN s3 w0 a b c d e f g.");
+  });
+
   test("the outline has four sections and the ending is derived from three of them", async () => {
     const { model } = await drawn();
     const outline = model.calls.find((c) => c.stage === "outline")!;
@@ -774,8 +811,12 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     // beat 3's flag carried a patch and was settled as the scene was written; beat 4's needs a rewrite
     const flag = d.view(draw.id).screenFindings.find((f) => f.decision === "open")!;
     expect(flag.beat).toBe(4);
+    const slopBefore = d.view(draw.id).slop!.words;
     const out = await d.rewrite(draw.id, 4, flag.id);
     expect(out.status).toBe("awaiting_draft_gate");
+    // the deterministic reports are the draft as it stands, not the pre-rewrite measurement
+    expect(p.steps(draw.id).filter((s) => s.stage === "screen-slop")).toHaveLength(2);
+    expect(d.view(draw.id).slop!.words).toBe(slopBefore + 1);
     const after = model.calls.slice(before);
     expect(after.map((c) => c.stage).sort()).toEqual(["scene", ...Array(6).fill("screen-ledger"), "screen-structure", "screen-structure"]);
     const sc = after.find((c) => c.stage === "scene")!;

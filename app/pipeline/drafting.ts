@@ -69,6 +69,27 @@ export const NUMERAL_LINE = "A listener cannot hold a figure: keep only the numb
 const REWRITE_LINES: Record<string, string> = {
   "bodily-emotion": BODY_LINE, "presence-arrives": PRESENCE_LINE, "presence-in-room": PRESENCE_LINE, "cost-paid": COST_LINE, "cost-in-scene": COST_LINE,
 };
+
+/**
+ * The register rewrites a draft owes, by beat: the lines the structure screen's
+ * flags map to, and the deterministic measures over the ceilings the config
+ * sets (a beat a listener would lose the thread of). Pure: run it on the
+ * scenes as they stand, and again after a rewrite.
+ */
+export function rewritePlan(profiles: { beat: number; flags: string[] }[], scenes: { beat: number; text: string }[], cfg: DraftConfig): Map<number, string[]> {
+  const lines = new Map<number, string[]>();
+  const add = (k: number, line: string) => { if (!lines.get(k)?.includes(line)) lines.set(k, [...(lines.get(k) ?? []), line]); };
+  for (const pr of profiles) for (const f of pr.flags) if (REWRITE_LINES[f]) add(pr.beat, REWRITE_LINES[f]);
+  const listen = (cfg.screens as any).listen ?? {};
+  const longMax = Number(listen.long_share_max ?? 1);
+  const numeralMax = Number(listen.numerals_max ?? Infinity);
+  for (const sc of scenes) {
+    const pr = profile(sc.text);
+    if (pr.long_sentence_share > longMax) add(sc.beat, LENGTH_LINE);
+    if (pr.numerals_per_1k > numeralMax) add(sc.beat, NUMERAL_LINE);
+  }
+  return lines;
+}
 const autoEligible = (f: FindingView) =>
   f.checkers.some((c) => AUTO_CHECKERS.includes(c)) && !!f.evidence.trim() && f.evidence.trim().toLowerCase() !== "none"
   && !f.relitigates;
@@ -399,27 +420,29 @@ export class Drafting {
   /**
    * Under a shaped template the register is part of the draft, not a gate
    * decision: each beat the structure screen flags for it gets one rewrite
-   * with the flag as its constraint, a body not named. One pass, in beat
-   * order; a beat the rewrite flags again waits for a person. A restated flag
-   * is not a trigger: on two twelve-beat signal drafts it fired twenty times
-   * a draft on motifs and callbacks, sent nine beats each back for a rewrite,
-   * and the rewrites kept the motifs. It stays a gate-2 flag for `rewrite k`.
+   * with the flag as its constraint, a body not named. In beat order; a beat
+   * the rewrite flags again for the same line waits for a person. A rewrite
+   * under one line can break another ceiling (run 7: a length rewrite put
+   * the figures back, a presence rewrite pushed the long share over), so the
+   * plan is computed again after the pass, and a beat that now needs a line
+   * it has not had gets one more rewrite under everything that applies. A
+   * restated flag is not a trigger: on two twelve-beat signal drafts it fired
+   * twenty times a draft on motifs and callbacks, sent nine beats each back
+   * for a rewrite, and the rewrites kept the motifs. It stays a gate-2 flag
+   * for `rewrite k`.
    */
   private async registerRewrites(drawId: string, cfg: DraftConfig): Promise<void> {
-    const chain = chainOf(this.p, drawId);
-    const lines = new Map<number, string[]>();
-    const add = (k: number, line: string) => lines.set(k, [...(lines.get(k) ?? []), line]);
-    for (const pr of chain.screenProfiles()) for (const line of new Set(pr.flags.map((f) => REWRITE_LINES[f]).filter(Boolean))) add(pr.beat, line);
-    // a beat a listener would lose the thread of: the deterministic measures, each over the ceiling the config sets
-    const listen = (cfg.screens as any).listen ?? {};
-    const longMax = Number(listen.long_share_max ?? 1);
-    const numeralMax = Number(listen.numerals_max ?? Infinity);
-    for (const sc of chain.scenes()) {
-      const pr = profile(sc.text);
-      if (pr.long_sentence_share > longMax) add(sc.beat, LENGTH_LINE);
-      if (pr.numerals_per_1k > numeralMax) add(sc.beat, NUMERAL_LINE);
+    const done = new Map<number, Set<string>>();
+    for (let round = 0; round < 2; round++) {
+      const chain = chainOf(this.p, drawId);
+      const plan = rewritePlan(chain.screenProfiles(), chain.scenes(), cfg);
+      const due = [...plan].filter(([k, lines]) => lines.some((l) => !done.get(k)?.has(l))).sort((a, b) => a[0] - b[0]);
+      if (!due.length) return;
+      for (const [k, lines] of due) {
+        done.set(k, new Set([...(done.get(k) ?? []), ...lines]));
+        await this.regenerate(drawId, k, cfg, constraintsBlock(lines.map((replacement) => ({ replacement }))));
+      }
     }
-    for (const k of [...lines.keys()].sort((a, b) => a - b)) await this.regenerate(drawId, k, cfg, constraintsBlock(lines.get(k)!.map((replacement) => ({ replacement }))));
   }
 
   keep(drawId: string, note = ""): { draw: DrawRow; dir: string } {
