@@ -548,7 +548,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     const toldForm = "tense: past\nperson: first\nchronology: linear\ncontainer: told";
     const { p, d, draw, model } = await drawn(draftScript({ schedule: () => schedule({ form: toldForm, cap: 875 }) }));
     await d.check(draw.id);
-    await d.draft(draw.id, { profile: "narrated", overrides: { "screens.samples": 3, "screens.keep_if": 2 } });
+    await d.draft(draw.id, { profile: "narrated", overrides: { "screens.samples": 3, "screens.keep_if": 2, "screens.listen.long_share_max": 1 } });
     const sched = model.calls.find((c) => c.stage === "schedule")!;
     expect(sched.prompt).toContain("told afterward, by its narrator, to a listener");
     expect(sched.prompt).toContain("<set_piece>");
@@ -581,7 +581,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     const signalForm = "tense: past\nperson: third\nchronology: linear\ncontainer: prose";
     const { p, d, draw, model } = await drawn(draftScript({ schedule: () => schedule({ form: signalForm, cap: 1100 }) }));
     await d.check(draw.id);
-    await d.draft(draw.id, { profile: "signal", overrides: { "beats.min": 8 } });
+    await d.draft(draw.id, { profile: "signal", overrides: { "beats.min": 8, "screens.listen.long_share_max": 1 } });
     const sched = model.calls.find((c) => c.stage === "schedule")!;
     expect(sched.prompt).toContain("follows one specialist, close");
     expect(sched.prompt).toContain("person: third");
@@ -596,14 +596,14 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
   test("the listen profile states the requirements, fixes no form axis, and pays for its register", async () => {
     const { p, d, draw, model } = await drawn(draftScript({ schedule: () => schedule({ cap: 1100 }) }));
     await d.check(draw.id);
-    await d.draft(draw.id, { profile: "listen", overrides: { "beats.min": 8 } });
+    await d.draft(draw.id, { profile: "listen", overrides: { "beats.min": 8, "screens.listen.long_share_max": 1 } });
     const sched = model.calls.find((c) => c.stage === "schedule")!;
     expect(sched.prompt).toContain("Derive the shape from the brief");
     expect(sched.prompt).toContain("form: derive tense, person, chronology, container");
     expect(sched.prompt).not.toContain("<register>");
-    // the fixture's schedule is not told, so no register goes into the scenes; the body rewrite of beat 2 still runs
+    // the listen profile fixes the signal register whatever container the schedule derives; the body rewrite of beat 2 still runs
     const scenes = model.calls.filter((c) => c.stage === "scene");
-    expect(scenes.every((c) => !c.prompt.includes("<register>"))).toBe(true);
+    expect(scenes.every((c) => c.prompt.includes("Name the feeling as it is felt"))).toBe(true);
     expect(scenes.map((c) => /Write beat (\d+)/.exec(c.prompt)![1])).toEqual(["1", "2", "3", "4", "5", "6", "7", "8", "2"]);
     expect(JSON.parse(p.draw(draw.id).draft_config!).config.structure.template).toBe("listen");
   });
@@ -612,12 +612,27 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     const withPays = schedule({ cap: 1100 }).replace(/(<beat n="5"[^>]*>)/, "$1<pays>yes</pays>");
     const { p, d, draw, model } = await drawn(draftScript({ schedule: () => withPays }));
     await d.check(draw.id);
-    await d.draft(draw.id, { profile: "listen", overrides: { "beats.min": 8 } });
+    await d.draft(draw.id, { profile: "listen", overrides: { "beats.min": 8, "screens.listen.long_share_max": 1 } });
     const st5 = model.calls.find((c) => c.stage === "screen-structure" && /<scene n="5">/.test(c.prompt))!;
     expect(st5.prompt).toContain("presence-arrives:");
     const st7 = model.calls.find((c) => c.stage === "screen-structure" && /<scene n="7">/.test(c.prompt))!;
     expect(st7.prompt).not.toContain("presence-arrives:");
     expect(d.view(draw.id).profiles.find((x) => x.beat === 5)!.answers["cost-paid"]).toBeDefined();
+  });
+
+  test("a beat over the long-sentence ceiling and a paying beat that pays off the page are each rewritten once", async () => {
+    const signalForm = "tense: past\nperson: third\nchronology: linear\ncontainer: prose";
+    // the fixture writes every scene as one long sentence, so at the default ceiling every beat is over it
+    const { p, d, draw, model } = await drawn(draftScript({ schedule: () => schedule({ form: signalForm, cap: 1100 }) }));
+    await d.check(draw.id);
+    await d.draft(draw.id, { profile: "signal", overrides: { "beats.min": 8 } });
+    const rewrites = model.calls.filter((c) => c.stage === "scene" && c.prompt.includes("<constraints>"));
+    expect(rewrites.length).toBe(8);
+    expect(rewrites.every((c) => c.prompt.includes("no sentence over thirty words"))).toBe(true);
+    // beat 2 names no body: its rewrite carries the body line as well, once
+    const two = rewrites.find((c) => /Write beat 2 /.test(c.prompt))!;
+    expect(two.prompt).toContain("says what the body did before saying what it meant");
+    expect(two.prompt.split("no sentence over thirty words").length).toBe(2);
   });
 
   test("the outline has four sections and the ending is derived from three of them", async () => {

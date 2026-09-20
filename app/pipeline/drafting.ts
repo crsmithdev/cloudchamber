@@ -19,6 +19,7 @@ import { extractLedger, runCheck, STRUCTURE_QUESTIONS, type CheckResult } from "
 import { constraintsBlock, repair } from "./repair.ts";
 import { briefBlock, briefParts, passId } from "./briefparts.ts";
 import { chainOf, type Chain, type FindingView } from "./chain.ts";
+import { profile } from "./listen.ts";
 import { ofKind } from "./artifacts.ts";
 import { bindScene, runScenes, runSchedule, runScreens, writeScene, type Schedule } from "./write.ts";
 import { draftView, exportDraft, renderStory, type DraftView } from "./drafts.ts";
@@ -58,6 +59,14 @@ const AUTO_CHECKERS = ["derivation", "ledger", "claims"];
 const CLEAN_PASSES = 2;
 /** The constraint a beat flagged bodily-emotion is rewritten under. */
 export const BODY_LINE = "When a thing happens in this beat, the narrator says what the body did before saying what it meant: the chest, the hands, the breath, the stomach.";
+/** The paying beat: the withheld thing is in the room, and the loss happens on the page. Three outside judges put these two first. */
+export const PRESENCE_LINE = "In this beat the thing the story withholds is in the room: a character sees it or touches it at the time, on the page, not through an instrument, a channel or a memory.";
+export const COST_LINE = "In this beat the loss happens as it happens, on the page, in the moment, with the person who pays it present; the narrator does not report it afterward.";
+/** The listen screen's long-sentence share, over the configured ceiling, sends a beat back for one rewrite under this line. */
+export const LENGTH_LINE = "One thing per sentence, short enough to say aloud in one breath; no sentence over thirty words.";
+const REWRITE_LINES: Record<string, string> = {
+  "bodily-emotion": BODY_LINE, "presence-arrives": PRESENCE_LINE, "presence-in-room": PRESENCE_LINE, "cost-paid": COST_LINE, "cost-in-scene": COST_LINE,
+};
 const autoEligible = (f: FindingView) =>
   f.checkers.some((c) => AUTO_CHECKERS.includes(c)) && !!f.evidence.trim() && f.evidence.trim().toLowerCase() !== "none"
   && !f.relitigates;
@@ -378,7 +387,7 @@ export class Drafting {
     const before = scenes.filter((s) => s.beat < k).map((s) => s.text);
     const pass = passId();
     // the scene carries the gate-2 record: which beat was rewritten, and under which flag
-    const written = await writeScene(this.p, drawId, scheduleStep.id, parts, ledger, schedule, schedule.beats[k - 1], cfg.scenes.order === "sequential" ? before : [], constraints, { finding: findingId }, cfg.structure.template);
+    const written = await writeScene(this.p, drawId, scheduleStep.id, parts, ledger, schedule, schedule.beats[k - 1], cfg.scenes.order === "sequential" ? before : [], constraints, { finding: findingId }, cfg.structure);
     const bound = await bindScene(this.p, drawId, ledger, written, scenes[k - 2], cfg, pass);
     // the beat after it read the old text: it is held to the new one, as it was when first written
     if (k < M) await bindScene(this.p, drawId, ledger, scenes[k], bound, cfg, pass);
@@ -398,7 +407,10 @@ export class Drafting {
     const chain = chainOf(this.p, drawId);
     const lines = new Map<number, string[]>();
     const add = (k: number, line: string) => lines.set(k, [...(lines.get(k) ?? []), line]);
-    for (const pr of chain.screenProfiles()) if (pr.flags.includes("bodily-emotion")) add(pr.beat, BODY_LINE);
+    for (const pr of chain.screenProfiles()) for (const line of new Set(pr.flags.map((f) => REWRITE_LINES[f]).filter(Boolean))) add(pr.beat, line);
+    // a beat a listener would lose the thread of: the deterministic measure, over the ceiling the config sets
+    const ceiling = Number((cfg.screens as any).listen?.long_share_max ?? 1);
+    for (const sc of chain.scenes()) if (profile(sc.text).long_sentence_share > ceiling) add(sc.beat, LENGTH_LINE);
     for (const k of [...lines.keys()].sort((a, b) => a - b)) await this.regenerate(drawId, k, cfg, constraintsBlock(lines.get(k)!.map((replacement) => ({ replacement }))));
   }
 

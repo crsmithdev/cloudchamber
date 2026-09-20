@@ -21,6 +21,7 @@ container = "auto"      # prose | document | interleaved
 ending = "brief"        # brief | open
 
 [structure]
+register = "auto"       # auto | none | told | signal: the block every scene ask carries; auto follows the container (told) or the template (signal)
 template = "auto"       # auto | listen | told | signal: listen states what a listener needs and derives the form from the brief; told is the narrated shape, a cold open, set pieces, an arrival, a cost, an aftermath; signal is the mission shape, one specialist close, an ensemble, a contact, a split, a cost, a return
 
 [scenes]
@@ -42,6 +43,8 @@ keep_if = 1
 slop_baseline = "pool"
 [screens.structure]
 samples = 1
+[screens.listen]
+long_share_max = 0.12    # share of a beat's sentences over 30 words; the narration pool sits at 0.04; over this, one rewrite
 
 [repair]
 rounds = 4              # auto repair rounds at most
@@ -95,3 +98,4 @@ beats.max = 14
 beats.words_max = 1100
 form.ending = "open"
 structure.template = "listen"
+structure.register = "signal"   # quoted plain speech, the feeling named, the exact number: the register three outside judges passed

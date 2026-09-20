@@ -11,7 +11,7 @@ export type DraftConfig = {
   length: { words: number; tolerance: number };
   beats: { count: "auto" | number; min: number; max: number; words_min: number; words_max: number };
   form: { tense: string; person: string; chronology: string; container: string; ending: "brief" | "open" };
-  structure: { template: string };
+  structure: { template: string; register: string };
   scenes: { order: "sequential" | "parallel" };
   checks: { enabled: string[]; samples: number; keep_if: number } & Record<string, unknown>;
   screens: { enabled: string[]; samples: number; keep_if: number; slop_baseline: string } & Record<string, unknown>;
@@ -87,6 +87,7 @@ export function validate(c: DraftConfig): void {
   }
   if (!["brief", "open"].includes(c.form.ending)) bad(`form.ending must be brief or open, got ${c.form.ending}`);
   if (!["auto", "listen", "told", "signal"].includes(c.structure.template)) bad(`structure.template must be auto, listen, told or signal, got ${c.structure.template}`);
+  if (!["auto", "none", "told", "signal"].includes(c.structure.register)) bad(`structure.register must be auto, none, told or signal, got ${c.structure.register}`);
   if (!["sequential", "parallel"].includes(c.scenes.order)) bad(`scenes.order must be sequential or parallel, got ${c.scenes.order}`);
   if (!(c.checks.samples >= 1 && c.checks.keep_if >= 1)) bad("checks.samples and checks.keep_if must be at least 1");
   if (!(c.screens.samples >= 1 && c.screens.keep_if >= 1)) bad("screens.samples and screens.keep_if must be at least 1");

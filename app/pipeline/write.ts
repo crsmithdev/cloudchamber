@@ -30,7 +30,7 @@ export type Scene = { beat: number; text: string; artifact_id: string; step_id: 
 export const ABSORBABLE = ["chosen", "context-1", "context-2", "ending"];
 export const STRUCTURE_SCREEN = ["theme-stated", "bodily-emotion", "withheld-revealed", "protagonist-never-wrong"];
 /** Asked of the beat that pays: what a listener needs the story to have paid by its end. */
-export const LAST_BEAT_SCREEN = ["presence-arrives", "cost-paid"];
+export const LAST_BEAT_SCREEN = ["presence-arrives", "cost-paid", "presence-in-room", "cost-in-scene"];
 /** A present answer on these is a flag; theme-stated is allowed once, on the last beat. */
 export const FLAG_PRESENT = new Set(["theme-stated", "withheld-revealed", "protagonist-never-wrong", "resolved", "resolves-everything"]);
 /** An absent answer on these is a flag. */
@@ -112,10 +112,13 @@ export async function runSchedule(p: Pipeline, drawId: string, parts: BriefParts
 const formLine = (s: Schedule) => (Object.keys(FORM_VALUES) as FormAxis[]).map((a) => `${a} ${s.form[a]}`).join("; ");
 /** A schedule whose container is told carries the narrated register into every scene; the signal template carries its own. */
 const told = (s: Schedule) => /\btold\b/i.test(s.form.container);
-const register = (s: Schedule, template: string) => template === "signal" ? [fill("sceneSignal", {})] : told(s) ? [fill("sceneTold", {})] : [];
+const register = (s: Schedule, structure: { template: string; register: string }) => {
+  const r = structure.register === "auto" ? (structure.template === "signal" ? "signal" : told(s) ? "told" : "none") : structure.register;
+  return r === "signal" ? [fill("sceneSignal", {})] : r === "told" ? [fill("sceneTold", {})] : [];
+};
 const withheldLine = (b: Beat, M: number) => b.withheld.length ? b.withheld.map((w) => `${w.item} (${w.until > M ? "never revealed" : `beat ${w.until}`})`).join("; ") : "nothing";
 
-export function scenePrompt(parts: BriefParts, ledger: string, s: Schedule, b: Beat, soFar: string[], constraints?: string, template = "auto"): string {
+export function scenePrompt(parts: BriefParts, ledger: string, s: Schedule, b: Beat, soFar: string[], constraints?: string, structure = { template: "auto", register: "auto" }): string {
   const material: Record<string, string> = { chosen: parts.vignette, "context-1": parts.contexts[0] ?? "", "context-2": parts.contexts[1] ?? "", ending: parts.ending };
   const blocks = [
     parts.examples.join("\n\n"),
@@ -124,7 +127,7 @@ export function scenePrompt(parts: BriefParts, ledger: string, s: Schedule, b: B
     `<schedule>\n${s.raw}\n</schedule>`,
     ...(soFar.length ? [`<story-so-far>\n${soFar.join("\n\n")}\n</story-so-far>`] : []),
     ...(material[b.absorbs] ? [fill("sceneMaterial", { material: material[b.absorbs] })] : []),
-    ...register(s, template),
+    ...register(s, structure),
     ...(constraints ? [constraints] : []),
     fill("sceneAsk", { n: String(b.n), job: b.job, known: b.known, withheld: withheldLine(b, s.beats.length), form: formLine(s), cap: String(b.words), constraintLine: constraints ? " Every line of the constraints holds." : "" }),
   ];
@@ -132,8 +135,8 @@ export function scenePrompt(parts: BriefParts, ledger: string, s: Schedule, b: B
 }
 
 /** `rewrite` marks a gate-2 rewrite of the beat, with the flag it answers when there is one. */
-export async function writeScene(p: Pipeline, drawId: string, parent: string, parts: BriefParts, ledger: string, s: Schedule, b: Beat, soFar: string[], constraints?: string, rewrite?: { finding?: string }, template = "auto"): Promise<Scene> {
-  const { step, value } = await p.invoke(drawId, parent, "scene", scenePrompt(parts, ledger, s, b, soFar, constraints, template), (t) => need(t, "scene"));
+export async function writeScene(p: Pipeline, drawId: string, parent: string, parts: BriefParts, ledger: string, s: Schedule, b: Beat, soFar: string[], constraints?: string, rewrite?: { finding?: string }, structure = { template: "auto", register: "auto" }): Promise<Scene> {
+  const { step, value } = await p.invoke(drawId, parent, "scene", scenePrompt(parts, ledger, s, b, soFar, constraints, structure), (t) => need(t, "scene"));
   const n = words(value);
   const artifact_id = p.artifact(step, "scene", value, { beat: b.n, words: n, cap: b.words, warnings: n > b.words * (1 + RUN.sceneCapSlack) ? ["over_cap"] : [], ...(rewrite ? { rewrite: true, ...(rewrite.finding ? { rewrite_finding: rewrite.finding } : {}) } : {}) });
   return { beat: b.n, text: value, artifact_id, step_id: step.id };
@@ -141,7 +144,7 @@ export async function writeScene(p: Pipeline, drawId: string, parent: string, pa
 
 /** Every beat written and bound to the ledger; a sequential beat reads the corrected text of the beats before it. */
 export async function runScenes(p: Pipeline, drawId: string, scheduleStep: StepRow, parts: BriefParts, ledger: string, s: Schedule, cfg: DraftConfig, pass: string): Promise<Scene[]> {
-  const write = (b: Beat, soFar: string[]) => writeScene(p, drawId, scheduleStep.id, parts, ledger, s, b, soFar, undefined, undefined, cfg.structure.template);
+  const write = (b: Beat, soFar: string[]) => writeScene(p, drawId, scheduleStep.id, parts, ledger, s, b, soFar, undefined, undefined, cfg.structure);
   if (cfg.scenes.order === "parallel") {
     const raw = await Promise.all(s.beats.map((b) => write(b, [])));
     return Promise.all(raw.map((sc, i) => bindScene(p, drawId, ledger, sc, raw[i - 1], cfg, pass)));

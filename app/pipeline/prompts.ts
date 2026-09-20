@@ -425,7 +425,9 @@ Output only the tags. Under 300 words.`,
 
   screenLastBeat: `
 presence-arrives: by the end of this scene the thing the story has been withholding has arrived in the flesh, in the same place as a character, and not only been inferred.
-cost-paid: by the end of this scene someone has lost something they cannot get back.`,
+cost-paid: by the end of this scene someone has lost something they cannot get back.
+presence-in-room: the thing the story withholds is physically present to a character in this scene, seen or touched at the time, and not inferred from an instrument, heard over a channel, or remembered afterward.
+cost-in-scene: the loss happens inside this scene as it happens, in the moment, and is not reported afterward or summarised by the narrator.`,
 
   screenResolved: `resolved: the scene settles a question the schedule keeps open for a later beat.`,
   screenResolvesEverything: `resolves-everything: no question the story raised is left open at the end of the scene.`,

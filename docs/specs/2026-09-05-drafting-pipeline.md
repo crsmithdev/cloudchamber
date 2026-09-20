@@ -819,3 +819,24 @@ leaves the chronology to the brief, and the first listen draft put its
 arrival in beat 9 of 14 while the screen asked beat 13 and reported the
 presence absent. The arrival was there, and the screen was looking at
 the aftermath.
+
+### Amendment 2026-09-20: the paying beat pays on the page, the register is a setting, and length is a trigger
+
+Three outside judges (Gemini 3.1 Pro, GPT-5.1, Grok 4.3; see
+`evals/20260919-second-family-judge.md`) put cost and presence first
+among the axes the channels keep, and clarity third. Three changes:
+
+1. The paying beat is asked two more questions, `presence-in-room` (the
+   withheld thing is physically present to a character, seen or touched
+   at the time, not inferred, heard or remembered) and `cost-in-scene`
+   (the loss happens inside the scene as it happens, not reported
+   afterward). Each of the four paying-beat questions absent sends the
+   beat back for one rewrite under `PRESENCE_LINE` or `COST_LINE`.
+2. `structure.register` (`auto | none | told | signal`) sets the block
+   every scene ask carries, apart from the template and the container.
+   `auto` is the old inference. The `listen` profile fixes `signal`: the
+   register both signal drafts held parity under, on every outside lab.
+3. `[screens.listen] long_share_max` (default 0.12; the narration pool
+   sits at 0.04): a beat whose share of sentences over thirty words is
+   above it is rewritten once under `LENGTH_LINE`. Deterministic, no
+   call to decide it.
