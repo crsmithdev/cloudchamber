@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { FakeModel } from "./model.ts";
+import { FakeModel, tag } from "./model.ts";
 import { BODY_LINE, COST_LINE, LENGTH_LINE, NUMERAL_LINE, PRESENCE_LINE, parseConflicts, rewritePlan } from "./drafting.ts";
 import { EVENT_LINE, HOOK_LINE, THEME_LINE, VOICES_LINE } from "./write.ts";
 import { parseSchedule, structurePrompt } from "./write.ts";
@@ -475,6 +475,16 @@ describe("claims", () => {
     expect(claims.map((x) => x.meta.cached_from)).toEqual([draw.id, draw.id]);
     expect(d.findings(next.id).claims).toHaveLength(2);
   });
+
+describe("tag reading", () => {
+  test("a tag written as a tool argument is read as the tag", () => {
+    expect(tag('<verdict n="2">\n<parameter name="answer">keep</parameter>\n<why>x</why>\n</verdict>', "answer")).toBe("keep");
+    expect(tag("<answer>drop</answer>", "answer")).toBe("drop");
+    expect(tag("<why>x</why>", "answer")).toBeNull();
+    const vs = parseVerdicts('<verdict n="1"><answer>keep</answer><why>a</why></verdict><verdict n="2"><parameter name="answer">drop</parameter><why>b</why></verdict>', 2);
+    expect(vs.map((v) => v.answer)).toEqual(["keep", "drop"]);
+  });
+});
 
 describe("draft: schedule, scenes, screens, gate 2", () => {
   test("sequential draft: schedule shape, scenes carry the text so far, screens per scene, slop, flags, status", async () => {
