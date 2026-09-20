@@ -30,12 +30,12 @@ function fixture(): { db: Db; dir: string } {
 const premises = (probs = [0.05, 0.03, 0.08, 0.03, 0.06]) =>
   probs.map((p, i) => `<premise><text>Premise ${i + 1} text.</text><probability>${p}</probability></premise>`).join("\n");
 const vignette = (n: number) => `<vignette>${Array.from({ length: 400 }, (_, i) => `w${n}_${i}`).join(" ")}</vignette>`;
-const outline = (extra: string[] = []) => ["departure", "particulars", "knowledge", "arrival", ...extra].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n");
+const outline = (extra: string[] = []) => ["departure", "particulars", "knowledge", "arrival", ...extra].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n")
+  + "\n<job>Test the first thing: scene one.</job><job>Test a second thing: scene two.</job>";
 const script = (over: Record<string, any> = {}) => ({
   premises: [premises()],
   execute: (p: string) => vignette(Number(/Premise (\d)/.exec(p)?.[1] ?? 0)),
   outline: [outline()],
-  jobs: ["<job>Test the first thing: scene one.</job><job>Test a second thing: scene two.</job>"],
   context: (p: string) => `<vignette>context for ${/Its job: (.*)/.exec(p)?.[1]}</vignette>`,
   ending: ["<ending>The last beat.</ending>"],
   ...over,
@@ -123,7 +123,6 @@ describe("draw graph", () => {
     const { db, dir } = fixture();
     const twice = script({                                            // the fork develops a second time
       outline: [outline(), outline()],
-      jobs: Array(2).fill("<job>Test the first thing: scene one.</job><job>Test a second thing: scene two.</job>"),
       ending: Array(2).fill("<ending>The last beat.</ending>"),
     });
     const { p } = pipe(db, dir, twice);
@@ -142,7 +141,7 @@ describe("draw graph", () => {
     const execute = steps.find((s) => s.stage === "execute")!;
     expect(execute.model).toBe("copied");
     expect(fork.chosen_step).toBe(execute.id);
-    expect(steps.map((s) => s.stage).sort()).toEqual(["context", "context", "ending", "execute", "jobs", "outline"]);
+    expect(steps.map((s) => s.stage).sort()).toEqual(["context", "context", "ending", "execute", "outline"]);
     const dirF = join(dir, "briefs", fork.id);
     expect(readFileSync(join(dirF, "vignette.md"), "utf8").trim()).toBe(cs[1].vignette.trim());
     const trail = readFileSync(join(dirF, "trail.md"), "utf8");
@@ -272,7 +271,6 @@ describe("draw graph", () => {
     hasNot(ol, ["## Places", "## Terms", "## Jobs", "## Matrix", '<section name="matrix">']);
     // jobs, context, ending after the head
     for (const [stage, want, gone] of [
-      ["jobs", ["Bodies", "Instruments"], ["## Places", "## Terms"]],
       ["context", ["Instruments", "Places", "Terms"], ["## Bodies"]],
       ["ending", ["Bodies", "Instruments", "Terms"], ["## Places"]],
     ] as const) {
@@ -282,7 +280,7 @@ describe("draw graph", () => {
       hasNot(c, [...gone, "## Hard rules"]);
     }
     // no heading below ##: nothing in a prompt a draw could have selected on
-    for (const stage of ["premises", "execute", "outline", "jobs", "context", "ending"]) expect(call(stage)).not.toMatch(/^### /m);
+    for (const stage of ["premises", "execute", "outline", "context", "ending"]) expect(call(stage)).not.toMatch(/^### /m);
     expect(readFileSync(join(dir, "briefs", draw.id, "outline.md"), "utf8")).toContain("## departure");
     expect(readFileSync(join(dir, "briefs", draw.id, "trail.md"), "utf8")).not.toContain("## domains");
     expect(words(pr)).toBeLessThan(5000);
@@ -291,7 +289,7 @@ describe("draw graph", () => {
   test("two draws under one setting carry the same setting text: the seed is what differs", async () => {
     const { db, dir } = fixture();
     const sdir = settingsFixture(dir);
-    const twice = { premises: [premises(), premises()], outline: [outline(), outline()], jobs: [script().jobs[0], script().jobs[0]], ending: [script().ending[0], script().ending[0]] };
+    const twice = { premises: [premises(), premises()], outline: [outline(), outline()], ending: [script().ending[0], script().ending[0]] };
     const { p, model } = pipe(db, dir, script(twice), () => 0.001, sdir);
     await p.start({ mode: "auto", genre: "horror", setting: "basin", seed: { mode: "typed", text: "one seed" } });
     await p.start({ mode: "auto", genre: "horror", setting: "basin", seed: { mode: "typed", text: "another seed" } });
@@ -350,13 +348,13 @@ describe("draw graph", () => {
   test("darkness adds one sentence to the premises, execute and ending asks, and nothing when unset", async () => {
     const { db, dir } = fixture();
     const sentence = TEMPLATES.darknessAsk.black;
-    const { p, model } = pipe(db, dir, script({ premises: [premises(), premises()], outline: [outline(), outline()], jobs: [script().jobs[0], script().jobs[0]], ending: ["<ending>The last beat.</ending>", "<ending>The last beat.</ending>"] }));
+    const { p, model } = pipe(db, dir, script({ premises: [premises(), premises()], outline: [outline(), outline()], ending: ["<ending>The last beat.</ending>", "<ending>The last beat.</ending>"] }));
     const draw = await p.start({ mode: "auto", genre: "horror", darkness: "black" });
     expect(draw.darkness).toBe("black");
     const withIt = model.calls.filter((c) => c.stage === "premises" || c.stage === "execute" || c.stage === "ending");
     expect(withIt).toHaveLength(7);
     for (const c of withIt) expect(c.prompt).toContain(sentence);
-    for (const c of model.calls.filter((c) => c.stage === "outline" || c.stage === "jobs" || c.stage === "context")) expect(c.prompt).not.toContain(sentence);
+    for (const c of model.calls.filter((c) => c.stage === "outline" || c.stage === "context")) expect(c.prompt).not.toContain(sentence);
     expect(p.like(draw.id).darkness).toBe("black");
     expect(readFileSync(join(dir, "briefs", draw.id, "trail.md"), "utf8")).toContain("darkness: black");
     // unset: no level's sentence anywhere, and the asks keep their old joins
@@ -387,7 +385,6 @@ describe("draw graph", () => {
     const { db, dir } = fixture();
     const twice = script({
       outline: [outline(), outline()],
-      jobs: Array(2).fill("<job>Test the first thing: scene one.</job><job>Test a second thing: scene two.</job>"),
       ending: Array(2).fill("<ending>The last beat.</ending>"),
     });
     const { p } = pipe(db, dir, twice);

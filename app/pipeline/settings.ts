@@ -50,7 +50,7 @@ export type Setting = {
   dir: string;        // the settings directory; reference/ is <dir>/<id>/reference
 };
 
-export type GenStage = "premises" | "execute" | "outline" | "jobs" | "context" | "ending";
+export type GenStage = "premises" | "execute" | "outline" | "context" | "ending";
 /**
  * Which lists each stage loads. A loaded list is loaded whole:
  * premises chooses the story's subject and so reads every Body and every Event
@@ -61,7 +61,6 @@ export const LOADING: Record<GenStage, { lists: ListName[] }> = {
   premises: { lists: ["Bodies", "Events"] },
   execute: { lists: ["Instruments", "Places", "Terms"] },
   outline: { lists: ["Bodies", "Events", "Instruments"] },
-  jobs: { lists: ["Bodies", "Instruments"] },
   context: { lists: ["Instruments", "Places", "Terms"] },
   ending: { lists: ["Bodies", "Events", "Instruments", "Terms"] },
 };

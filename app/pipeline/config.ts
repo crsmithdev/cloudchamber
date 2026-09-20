@@ -1,7 +1,7 @@
 import stagesToml from "./stages.toml";
 import genresToml from "./genres.toml";
 
-export type GenStageName = "themes" | "redundancy" | "distill-map" | "distill" | "premises" | "execute" | "outline" | "jobs" | "context" | "ending";
+export type GenStageName = "themes" | "redundancy" | "distill-map" | "distill" | "premises" | "execute" | "outline" | "context" | "ending";
 export type CheckStageName = "ledger-extract" | "check-derivation" | "check-ledger" | "check-verify" | "check-structure" | "check-resemblance" | "check-claims-extract" | "check-claims-verify";
 export type DraftStageName = "reconcile" | "repair-vignette" | "repair-context" | "repair-outline" | "repair-ending" | "schedule" | "scene" | "screen-ledger" | "screen-structure";
 export type StageName = GenStageName | CheckStageName | DraftStageName;
@@ -30,7 +30,7 @@ export const STAGE_ROLE: Readonly<Record<string, PartRole>> = {
 };
 
 export const STAGES: StageName[] = [
-  "themes", "redundancy", "distill-map", "distill", "premises", "execute", "outline", "jobs", "context", "ending",
+  "themes", "redundancy", "distill-map", "distill", "premises", "execute", "outline", "context", "ending",
   "ledger-extract", "check-derivation", "check-ledger", "check-verify", "check-structure", "check-resemblance", "check-claims-extract", "check-claims-verify",
   "reconcile", "repair-vignette", "repair-context", "repair-outline", "repair-ending", "schedule", "scene", "screen-ledger", "screen-structure",
 ];
@@ -42,7 +42,7 @@ export const STAGES: StageName[] = [
  * names a group; `--models scene=claude-opus-5` names one stage.
  */
 export const MODEL_GROUPS: Readonly<Record<string, StageName[]>> = {
-  prose: ["premises", "execute", "outline", "jobs", "context", "ending", "repair-vignette", "repair-context", "repair-outline", "repair-ending", "schedule", "scene"],
+  prose: ["premises", "execute", "outline", "context", "ending", "repair-vignette", "repair-context", "repair-outline", "repair-ending", "schedule", "scene"],
   judgement: ["ledger-extract", "check-derivation", "check-ledger", "check-verify", "check-structure", "check-resemblance", "check-claims-extract", "check-claims-verify", "reconcile", "screen-ledger", "screen-structure"],
   corpus: ["themes", "redundancy", "distill-map", "distill"],
 };

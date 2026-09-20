@@ -351,8 +351,6 @@ function AutoRuns({ auto, id }: { auto: AutoResult; id: string }) {
               ? "stopped: the total score stopped falling"
               : auto.stopped === "stalled"
                 ? "stopped: the last repair left the same findings open"
-              : auto.stopped === "budget"
-                ? `stopped: reached the call budget at ${auto.calls} calls`
                 : "stopped: reached the round limit"
         }
       >
@@ -466,7 +464,7 @@ function CheckControls({
         onClick={onAuto}
         title={
           !a.auto
-            ? `${unchecked ? `Check the brief (${checks}), then repair` : "Repair"} round after round without asking: accept every finding scoring ${repair.stop_score} or more, dismiss the rest, re-check, repeat. It stops when nothing reaches ${repair.stop_score}, after ${repair.rounds} rounds, after ${repair.max_calls} model calls, or when the total score has not fallen for ${repair.patience} rounds.${atGate && !openFindings ? " No finding is open." : ""}`
+            ? `${unchecked ? `Check the brief (${checks}), then repair` : "Repair"} round after round without asking: accept every finding scoring ${repair.stop_score} or more, dismiss the rest, re-check, repeat. It stops when nothing reaches ${repair.stop_score}, after ${repair.rounds} rounds, or when the total score has not fallen for ${repair.patience} rounds.${atGate && !openFindings ? " No finding is open." : ""}`
             : why(a.auto)
         }
       >
@@ -474,7 +472,7 @@ function CheckControls({
       </Btn>
       {!a.auto && !(atGate && openFindings === 0) && (
         <span className="num text-dim" title="What auto repair can spend before it stops on its own.">
-          up to {repair.rounds} rounds · {repair.max_calls} calls
+          up to {repair.rounds} rounds
         </span>
       )}
       <Btn
@@ -534,7 +532,7 @@ function BriefReady({ d, onCheck, onAuto, onFlag, onDraft, aside }: { d: Detail;
   );
 }
 
-const BUILD = ["outline", "jobs", "context", "ending"];
+const BUILD = ["outline", "context", "ending"];
 
 /**
  * A brief under construction, or under check. The premise and the vignette exist from the

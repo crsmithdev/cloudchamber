@@ -49,8 +49,7 @@ numerals_max = 12        # figures per 1k words in a beat; the pool sits at 3.2 
                          # but the draft three labs could not track ran 9-29 a beat; over this, one rewrite
 
 [repair]
-rounds = 4              # auto repair rounds at most
-max_calls = 120          # stop the loop when the chain has spent this many model calls
+rounds = 4              # auto repair rounds at most, and the loop's only hard bound
 stop_score = 7          # auto accepts reported findings scoring this or more, and stops when none do
 patience = 2            # stop when the total open score has not fallen for this many rounds
 

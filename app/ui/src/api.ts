@@ -97,7 +97,7 @@ export type Profile = {
 };
 /** One brief of an auto run. `passes` is how many check passes the run made on it; a run stored before it was counted has one row per pass. */
 export type AutoRound = { round: number; id: string; open: number; total: number; accepted: number; calls: number; passes?: number };
-export type AutoResult = { id: string; rounds: AutoRound[]; best: AutoRound; stopped: "floor" | "cap" | "patience" | "stalled" | "budget"; floor: number; calls: number; left_open: number };
+export type AutoResult = { id: string; rounds: AutoRound[]; best: AutoRound; stopped: "floor" | "cap" | "patience" | "stalled"; floor: number; calls: number; left_open: number };
 /** `dropped`: the verify pass took it off the list. `rare`: seen in too few samples, counted only when the rare ones were asked for. */
 export type OffList = { dropped: number; rare: number | null };
 export type FindingsSummary = { pass: string | null; reported: number; accepted: number; open: number; total: number };
@@ -161,7 +161,7 @@ export type FullStep = Step & { prompt: string; raw_response: string | null; par
 /** The meta is parsed by the server; its keys are app/pipeline/artifacts.ts. */
 export type Artifact = { id: string; step_id: string; kind: string; content: string; meta: Record<string, any> };
 /** The repair settings a draw would run under: its own, or the defaults until it has its own. */
-export type Repair = { rounds: number; stop_score: number; patience: number; max_calls: number };
+export type Repair = { rounds: number; stop_score: number; patience: number };
 /** What every gate action answers: the draw to show next, whether the work goes on, and the action's own payload. */
 export type GateResult = { draw: string | null; running: boolean; payload: any };
 /** One part of a brief, as the server reads it: its role, its text and the meta of the step that wrote it. */

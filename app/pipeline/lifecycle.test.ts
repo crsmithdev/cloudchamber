@@ -53,7 +53,7 @@ describe("the rules", () => {
     // the page filters a draw's steps by this; a stage nobody placed would vanish from the list
     const placed = Object.fromEntries(STAGES.map((s) => [s, stageTab(s)]));
     expect(Object.entries(placed).filter(([, t]) => t === null).map(([s]) => s)).toEqual(["themes", "redundancy", "distill-map", "distill"]);
-    expect(STAGES.filter((s) => stageTab(s) === "ideate")).toEqual(["premises", "execute", "outline", "jobs", "context", "ending"]);
+    expect(STAGES.filter((s) => stageTab(s) === "ideate")).toEqual(["premises", "execute", "outline", "context", "ending"]);
     expect(stageTab("screen-slop")).toBe("write");   // recorded, but not one of STAGES
     expect(stageTab("nonesuch")).toBeNull();
   });

@@ -82,7 +82,7 @@ export function knobs(db: Db, settingsDir: string = SETTINGS): Section[] {
         ["--order", d.scenes.order],
         ["checks", `${d.checks.enabled.join(", ")} · ${d.checks.samples} samples, kept at ${d.checks.keep_if}`],
         ["screens", `${d.screens.enabled.join(", ")} · ${d.screens.samples} samples, kept at ${d.screens.keep_if}`],
-        ["repair", `auto: up to ${d.repair.rounds} rounds, accepting findings scoring ${d.repair.stop_score}+, patience ${d.repair.patience}, budget ${d.repair.max_calls} calls`],
+        ["repair", `auto: up to ${d.repair.rounds} rounds, accepting findings scoring ${d.repair.stop_score}+, patience ${d.repair.patience}`],
       ],
     },
     {

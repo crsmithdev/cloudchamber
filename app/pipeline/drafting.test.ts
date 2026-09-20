@@ -104,9 +104,8 @@ describe("check and gate 1", () => {
     expect(by("repair-ending")[0].model).not.toBe("copied");                       // the span is in the ending
     expect(by("repair-outline").map((s) => s.model)).toEqual(["copied"]);       // the outline is the chain's contract, carried, never re-derived
     // no accepted finding lands in a context vignette, so both are carried over and no jobs call runs
-    expect(by("jobs").map((s) => s.model)).toEqual(["copied"]);
     expect(by("context").map((s) => s.model)).toEqual(["copied", "copied"]);
-    expect(model.calls.filter((c) => c.stage === "jobs" || c.stage === "context")).toHaveLength(3);   // the draw's own one and two, not the repair's
+    expect(model.calls.filter((c) => c.stage === "context")).toHaveLength(2);   // the draw's own two, not the repair's
     expect(p.artifacts(next.id).filter((a) => a.kind === "job").map((a) => a.content)).toEqual(["Test the first thing: scene one.", "Test a second thing: scene two."]);
     expect(model.calls.find((c) => c.stage === "repair-ending")!.prompt).toContain(SPAN_A);
     expect(model.calls.find((c) => c.stage === "repair-ending")!.prompt).toContain("Rewrite the ending");
@@ -266,7 +265,6 @@ describe("check and gate 1", () => {
     expect(f).toHaveLength(1);
     const next = await d.accept(draw.id, [f[0].id]);
     const by = (stage: string) => p.steps(next.id).filter((s) => s.stage === stage);
-    expect(by("jobs").map((s) => s.model)).toEqual(["copied"]);                  // both jobs travel with their vignettes
     expect(by("repair-context")).toHaveLength(1);                               // the one with the finding is rewritten from itself
     expect(by("context").map((s) => s.model)).toEqual(["copied"]);              // the other is carried over
     const jobs = p.artifacts(next.id).filter((a) => a.kind === "job").sort((a, b) => a.meta.index - b.meta.index);
@@ -397,7 +395,7 @@ describe("claims", () => {
   test("claims: world runs extract then one search-enabled verify per claim on sonnet; contradicted becomes a finding", async () => {
     const { dir } = fixture();
     const sdir = settingsFixture(dir);
-    const { p, d, draw, model } = await drawn(draftScript({ outline: () => ["departure", "particulars", "knowledge", "arrival"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n") }), { id: "basin", dir: sdir, claims: "world" });
+    const { p, d, draw, model } = await drawn(draftScript({ outline: () => ["departure", "particulars", "knowledge", "arrival"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n") + "\n<job>Test the first thing: scene one.</job>\n<job>Test a second thing: scene two.</job>" }), { id: "basin", dir: sdir, claims: "world" });
     const r = await d.check(draw.id);
     expect(r.claims).toBe("world");
     expect(stagesOf(model, /claims/)).toEqual(["check-claims-extract", "check-claims-verify", "check-claims-verify"]);
@@ -418,7 +416,7 @@ describe("claims", () => {
   test("claims: setting verifies against the whole distillate, every list, and asks for claims about the setting", async () => {
     const { dir } = fixture();
     const sdir = settingsFixture(dir);
-    const { p, d, draw, model } = await drawn(draftScript({ outline: () => ["departure", "particulars", "knowledge", "arrival"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n") }), { id: "basin", dir: sdir, claims: "setting" });
+    const { p, d, draw, model } = await drawn(draftScript({ outline: () => ["departure", "particulars", "knowledge", "arrival"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n") + "\n<job>Test the first thing: scene one.</job>\n<job>Test a second thing: scene two.</job>" }), { id: "basin", dir: sdir, claims: "setting" });
     const r = await d.check(draw.id);
     expect(r.claims).toBe("setting");
     expect(model.calls.find((c) => c.stage === "check-claims-extract")!.prompt).toContain("claims about the setting the story is set in");
@@ -435,7 +433,7 @@ describe("claims", () => {
   test("no claims key: the checker does not run", async () => {
     const { dir } = fixture();
     const sdir = settingsFixture(dir);
-    const { d, draw, model } = await drawn(draftScript({ outline: () => ["departure", "particulars", "knowledge", "arrival"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n") }), { id: "basin", dir: sdir });
+    const { d, draw, model } = await drawn(draftScript({ outline: () => ["departure", "particulars", "knowledge", "arrival"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n") + "\n<job>Test the first thing: scene one.</job>\n<job>Test a second thing: scene two.</job>" }), { id: "basin", dir: sdir });
     const r = await d.check(draw.id);
     expect(r.claims).toBe("off");
     expect(stagesOf(model, /claims/)).toEqual([]);
@@ -454,7 +452,8 @@ describe("claims", () => {
     const { dir } = fixture();
     const sdir = settingsFixture(dir);
     const script = draftScript({
-      outline: () => ["departure", "particulars", "knowledge", "arrival"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n"),
+      outline: () => ["departure", "particulars", "knowledge", "arrival"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n")
+        + "\n<job>Test the first thing: scene one.</job>\n<job>Test a second thing: scene two.</job>",
       "repair-outline": () => ["departure", "particulars", "knowledge", "arrival"].map((n) => `<section name="${n}">Repaired ${n} body.</section>`).join("\n"),
       "check-ledger": [...ledgerSamples(), ...cleanSamples()],
       "check-derivation": [...derivationSamples(), ...cleanSamples()],
@@ -642,8 +641,13 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
 
   test("a beat over the long-sentence ceiling and a paying beat that pays off the page are each rewritten once", async () => {
     const signalForm = "tense: past\nperson: third\nchronology: linear\ncontainer: prose";
-    // the fixture writes every scene as one long sentence, so at the default ceiling every beat is over it
-    const { p, d, draw, model } = await drawn(draftScript({ schedule: () => schedule({ form: signalForm, cap: 1100 }) }));
+    // every scene is written as one sentence, so every beat is over the default long-sentence ceiling
+    const oneSentence = (prompt: string) => {
+      const n = Number(/Write beat (\d+) of the story/.exec(prompt)?.[1] ?? 0);
+      const rewrite = /<constraints>/.test(prompt) ? " REWRITTEN" : "";
+      return `<scene>Scene ${n} opens.${rewrite} ${Array.from({ length: 297 }, (_, i) => `s${n}w${i}`).join(" ")}</scene>`;
+    };
+    const { p, d, draw, model } = await drawn(draftScript({ schedule: () => schedule({ form: signalForm, cap: 1100 }), scene: oneSentence }));
     await d.check(draw.id);
     await d.draft(draw.id, { profile: "signal", overrides: { "beats.min": 8 } });
     const rewrites = model.calls.filter((c) => c.stage === "scene" && c.prompt.includes("<constraints>"));
@@ -1037,7 +1041,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     // every pass reports A and B; round 1 accepts A, and round 2 raises A again as a re-opening of that fix
     const { d, draw } = await drawn(draftScript({ "check-ledger": [...ledgerSamples(), ...ledgerSamples(), ...ledgerSamples()], "check-derivation": [...derivationSamples(), ...derivationSamples(), ...derivationSamples()] }));
     await d.check(draw.id);
-    const r = await d.autoRounds(draw.id, { cfg: { ...loadDraftConfig().config, repair: { rounds: 9, stop_score: 7, patience: 9, max_calls: 9999 } } });
+    const r = await d.autoRounds(draw.id, { cfg: { ...loadDraftConfig().config, repair: { rounds: 9, stop_score: 7, patience: 9 } } });
     expect(r.stopped).toBe("stalled");
     expect(r.rounds).toHaveLength(2);
     expect(r.rounds[0].accepted).toBeGreaterThan(0);
@@ -1056,7 +1060,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     const derivations = Array.from({ length: 12 }, () => Array.from({ length: 3 }, () => `<impossibility>One.</impossibility><examined>x</examined>`)).flat();
     const { d, draw } = await drawn(draftScript({ "check-ledger": passes, "check-derivation": derivations, execute: withWords(WORDS) }));
     await d.check(draw.id);
-    const r = await d.autoRounds(draw.id, { cfg: { ...loadDraftConfig().config, repair: { rounds: 9, stop_score: 7, patience: 2, max_calls: 9999 } } });
+    const r = await d.autoRounds(draw.id, { cfg: { ...loadDraftConfig().config, repair: { rounds: 9, stop_score: 7, patience: 2 } } });
     expect(r.stopped).toBe("patience");
     const totals = r.rounds.map((x) => x.total);
     expect(Math.min(...totals)).toBe(r.best.total);
@@ -1091,21 +1095,6 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(scenes[0].prompt).toContain("Only the assembler can fire the reliquary.");
   });
 
-  test("auto stops on the call budget", async () => {
-    const WORDS = ["reliquary silk director", "clavicle Verona relic", "assembler forge tally", "director ledger hour", "silk tears cut", "relic bones sold"];
-    let k = 0;
-    const fresh = () => { const w = WORDS[k++ % WORDS.length]; return finding(w, `the ${w} does not hold`, "departure", `The ${w} holds.`); };
-    const passes = Array.from({ length: 6 }, () => { const a = fresh(); return [1, 2, 3].map(() => `<ledger>${LEDGER}</ledger>${a}<examined>x</examined>`); }).flat();
-    const derivations = Array.from({ length: 6 }, () => [1, 2, 3].map(() => `<impossibility>One.</impossibility><examined>x</examined>`)).flat();
-    const { d, draw } = await drawn(draftScript({ "check-ledger": passes, "check-derivation": derivations, execute: withWords(WORDS) }));
-    await d.check(draw.id);
-    const r = await d.autoRounds(draw.id, { cfg: { ...loadDraftConfig().config, repair: { rounds: 9, stop_score: 7, patience: 9, max_calls: 20 } } });
-    expect(r.stopped).toBe("budget");
-    expect(r.calls).toBeGreaterThanOrEqual(20);
-    expect(r.rounds.at(-1)!.calls).toBeGreaterThanOrEqual(20);
-    expect(r.rounds.length).toBeLessThan(9);                                   // the budget, not the cap
-  });
-
   test("auto stops on the round cap", async () => {
     const WORDS = ["reliquary silk director", "clavicle Verona relic", "assembler forge tally", "director ledger hour", "silk tears cut", "relic bones sold", "forge iron count", "hour glass turned"];
     let k = 0;
@@ -1114,7 +1103,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     const derivations = Array.from({ length: 8 }, () => [1, 2, 3].map(() => `<impossibility>One.</impossibility><examined>x</examined>`)).flat();
     const { d, draw } = await drawn(draftScript({ "check-ledger": passes, "check-derivation": derivations, execute: withWords(WORDS) }));
     await d.check(draw.id);
-    const r = await d.autoRounds(draw.id, { cfg: { ...loadDraftConfig().config, repair: { rounds: 2, stop_score: 7, patience: 9, max_calls: 9999 } } });
+    const r = await d.autoRounds(draw.id, { cfg: { ...loadDraftConfig().config, repair: { rounds: 2, stop_score: 7, patience: 9 } } });
     expect(r.stopped).toBe("cap");
     expect(r.rounds).toHaveLength(3);                                          // rounds 1 and 2 repair, the third is where it stops
   });
@@ -1189,21 +1178,6 @@ describe("a check pass scores against its own sample count", () => {
 });
 
 describe("auto acts on reported findings only, and reads its accepted set against itself", () => {
-  test("one clean pass with the budget spent stops on budget, not on the floor", async () => {
-    const script = draftScript({
-      "check-ledger": [1, 2].flatMap(() => [`<ledger>${LEDGER}</ledger><examined>x</examined>`, `<ledger>${LEDGER}</ledger><examined>x</examined>`]),
-      "check-derivation": Array.from({ length: 4 }, () => `<impossibility>One.</impossibility><examined>x</examined>`),
-    });
-    const { db, d, draw, model } = await drawn(script);
-    const cfg = loadDraftConfig(undefined, { "checks.samples": 2 });
-    db.query("UPDATE draws SET draft_config = ? WHERE id = ?").run(JSON.stringify(cfg), draw.id);
-    await d.check(draw.id);
-    const checks = stagesOf(model, /^check-/).length;
-    const r = await d.autoRounds(draw.id, { cfg: { ...cfg.config, repair: { ...cfg.config.repair, max_calls: 1 } } });
-    expect([r.stopped, r.rounds.length, r.left_open]).toEqual(["budget", 1, 0]);
-    expect(stagesOf(model, /^check-/)).toHaveLength(checks);                  // no second pass was paid for
-  });
-
   test("a lone finding over the floor is left open, neither accepted nor dismissed", async () => {
     // two samples: A in one of them scores 2 + 3 + 2 = 7, over the floor, but under keep_if
     const script = draftScript({
@@ -1405,9 +1379,8 @@ describe("a repaired context vignette", () => {
     const third = await d.accept(second.id, [a.id]);
 
     const stages = p.steps(third.id).map((s) => [s.stage, s.model]);
-    expect(stages.filter(([s]) => s === "jobs")).toEqual([["jobs", "copied"]]);
     expect(stages.filter(([s]) => s === "context" || s === "repair-context").map(([, m]) => m)).toEqual(["copied", "copied"]);
-    expect(model.calls.filter((c) => c.stage === "context" || c.stage === "jobs")).toHaveLength(3);   // the draw's own jobs and two contexts, nothing since
+    expect(model.calls.filter((c) => c.stage === "context")).toHaveLength(2);   // the draw's own two contexts, nothing since
 
     const parts = briefParts(p, third.id);
     expect(parts.contexts[0]).toContain("rewritten context");

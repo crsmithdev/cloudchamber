@@ -84,6 +84,8 @@ Premise: {premise}
 
 <section name="arrival">: What arrives, and what it costs one person: the thing the departure sends against someone, the place and the moment it comes in with nothing between them, what it does to them or to the place, and what they lose to it that they cannot get back. Name the person, the place, the moment and the price.
 
+After the sections, name two more vignettes to write, each defined by its job: the one thing about the structure above it tests. The two jobs must be different things; if two vignettes test the same thing one is padding. Output two <job> tags, each one sentence under 40 words naming the job and the scene that does it.
+
 Output only the tags.`,
 
   head: `Below is a story's derived structure and the ${RUN.vignetteWords}-word vignette it came from.
@@ -95,8 +97,6 @@ Output only the tags.`,
 </vignette>
 `,
 
-  jobs: `
-Name two vignettes to write next, each defined by its job: the one thing about the structure above it tests. The two jobs must be different things; if two vignettes test the same thing one is padding. Output two <job> tags, each one sentence under 40 words naming the job and the scene that does it. Nothing else.`,
 
   context: `
 Write one vignette in a <vignette> tag, under ${RUN.vignetteWords + 50} words. Its job: {job}

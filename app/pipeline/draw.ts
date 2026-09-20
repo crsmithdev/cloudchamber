@@ -1,7 +1,7 @@
 /**
  * The generation draw:
  *
- *   draw → premises → execute ×5 → gate → outline → jobs → { context ×2, ending } → brief
+ *   draw → premises → execute ×5 → gate → outline (with the two jobs) → { context ×2, ending } → brief
  *
  * Every model step is a row in `steps` with its prompt, model, system prompt,
  * raw response and parsed output, recorded before the next step starts. The
@@ -72,7 +72,7 @@ export const newDrawId = () => `${now().replace(/[-:TZ]/g, "").slice(0, 15)}-${i
 export const parseOutline = (jobNames: string[]) => (text: string) => {
   const secs = sections(text);
   for (const j of jobNames) if (!secs[j]) throw new Error(`missing <section name="${j}">`);
-  return secs;
+  return { sections: secs, jobs: parseJobs(text) };
 };
 
 /** An outline as stored: its text, and the words of each section. */
@@ -447,12 +447,13 @@ export class Pipeline {
     const outlineHead = fill("outlineHead", { seed: draw.seed_text, premise: c.premise, vignette: c.vignette });
     const { step: outlineStep, value: outline } = await this.invoke(drawId, c.step_id, "outline",
       compose(outlineHead, fill("outlineAsk", {}), this.settingFor("outline", setting)), parseOutline(jobNames));
-    const { text: outlineText, words: outlineWords } = renderOutline(outline);
+    const { text: outlineText, words: outlineWords } = renderOutline(outline.sections);
     this.artifact(outlineStep, "outline", outlineText, { jobs: jobNames, words: outlineWords });
     const head = fill("head", { outline: outlineText, vignette: c.vignette });
     const after = (stage: GenStage, ask: string) => compose(head, ask, this.settingFor(stage, setting), "");
-    const { step: jobsStep, value: jobs } = await this.invoke(drawId, outlineStep.id, "jobs", after("jobs", fill("jobs", {})), parseJobs);
-    jobs.forEach((j, i) => this.artifact(jobsStep, "job", j, { index: i + 1 }));
+    // the outline names the jobs in the same reply: a context reads them off the sections it was written with
+    const jobs = outline.jobs;
+    jobs.forEach((j, i) => this.artifact(outlineStep, "job", j, { index: i + 1 }));
     await Promise.all([
       ...jobs.map((job, i) => this.invoke(drawId, outlineStep.id, "context", after("context", fill("context", { job })), (text) => need(text, "vignette")).then((r) => this.artifact(r.step, "vignette", r.value, { index: i + 1, job, warnings: words(r.value) > 500 ? ["length"] : [] }))),
       this.invoke(drawId, outlineStep.id, "ending", after("ending", fill("ending", { darkness: darknessLine((draw.darkness ?? undefined) as Darkness | undefined) })), (text) => need(text, "ending")).then((r) => this.artifact(r.step, "ending", r.value, { warnings: words(r.value) > 650 ? ["length"] : [] })),

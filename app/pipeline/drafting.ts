@@ -29,7 +29,7 @@ import { SCORE_MAX, same } from "./recur.ts";
 
 /** One brief of an auto run: its last check pass's open findings and their total, what auto accepted on it, and how many passes it had. */
 export type AutoRound = { round: number; id: string; open: number; total: number; accepted: number; calls: number; passes: number };
-export type AutoResult = { id: string; rounds: AutoRound[]; best: AutoRound; stopped: "floor" | "cap" | "patience" | "stalled" | "budget"; floor: number; calls: number; left_open: number };
+export type AutoResult = { id: string; rounds: AutoRound[]; best: AutoRound; stopped: "floor" | "cap" | "patience" | "stalled"; floor: number; calls: number; left_open: number };
 export type DraftOpts = { profile?: string; overrides?: Overrides; auto?: boolean };
 /** A finding as the gate reads it: `auto_eligible` says whether the auto rule would consider it, whatever it scores. */
 export type GateFinding = FindingView & { auto_eligible: boolean };
@@ -72,7 +72,8 @@ export const NUMERAL_LINE = "A listener cannot hold a figure: keep only the numb
 export function rewritePlan(profiles: { beat: number; flags: string[] }[], scenes: { beat: number; text: string }[], cfg: DraftConfig): Map<number, string[]> {
   const lines = new Map<number, string[]>();
   const add = (k: number, line: string) => { if (!lines.get(k)?.includes(line)) lines.set(k, [...(lines.get(k) ?? []), line]); };
-  for (const pr of profiles) for (const line of linesOf(pr.flags, true)) add(pr.beat, line);
+  // a register line imposes a register, so it needs a template that asked for one; a ceiling is a measurement against the pool and does not
+  if (cfg.structure.template !== "auto") for (const pr of profiles) for (const line of linesOf(pr.flags, true)) add(pr.beat, line);
   const listen = (cfg.screens as any).listen ?? {};
   const longMax = Number(listen.long_share_max ?? 1);
   const numeralMax = Number(listen.numerals_max ?? Infinity);
@@ -234,8 +235,8 @@ export class Drafting {
       const { step, schedule } = await runSchedule(this.p, id, parts, briefBlock(parts), resolved.config);
       const scenes = await runScenes(this.p, id, step, parts, ledger, schedule, resolved.config, pass);
       await runScreens(this.p, id, schedule, scenes, resolved.config, pass, undefined, { lexiconPath: this.opts.lexiconPath, narrationDir: this.opts.narrationDir });
-      // a shaped template pays for its register: one rewrite of each beat the screens flag for it
-      if (resolved.config.structure.template !== "auto") await this.registerRewrites(id, resolved.config);
+      // one rewrite of each beat the screens flag: the register lines only under a shaped template, the ceilings always
+      await this.registerRewrites(id, resolved.config);
     });
     settle(this.p.db, drawId, "awaiting_draft_gate");
     return this.p.draw(drawId);
@@ -313,18 +314,15 @@ export class Drafting {
       before = { id, open };
       if (!accept.length) {
         if (++clean >= CLEAN_PASSES) { stopped = "floor"; break; }
-        // one clean pass is not convergence: out of calls before the second, the budget stopped it
-        if (calls >= cfg.repair.max_calls) { stopped = "budget"; break; }
         await this.recheck(id, cfg); continue;
       }
       clean = 0;
       const best = Math.min(...rounds.map((r) => r.total));
       const since = rounds.length - 1 - rounds.findIndex((r) => r.total === best);
-      // patience, the cap and the budget all stop before this round's accepted set is applied:
+      // patience and the cap both stop before this round's accepted set is applied:
       // the row claims no repair, and the findings stay open for the gate
       if (since >= cfg.repair.patience) { stopped = "patience"; break; }
       if (rounds.length > cfg.repair.rounds) { stopped = "cap"; break; }
-      if (calls >= cfg.repair.max_calls) { stopped = "budget"; break; }
       accept = await this.reconcile(id, accept);
       row.accepted = accept.length;
       id = (await this.accept(id, accept.map((f) => f.id), { method: "draw", note: opts.note ?? "auto" })).id;

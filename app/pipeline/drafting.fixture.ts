@@ -67,7 +67,8 @@ export const sceneFor = (prompt: string, over: Record<number, number> = { 2: 700
   const n = Number(/Write beat (\d+) of the story/.exec(prompt)?.[1] ?? 0);
   const words = over[n] ?? 300;
   const rewrite = /<constraints>/.test(prompt) ? " REWRITTEN" : "";
-  return `<scene>Scene ${n} opens.${rewrite} ${Array.from({ length: words - 3 }, (_, i) => `s${n}w${i}`).join(" ")}</scene>`;
+  // the filler is written in sentences: one 300-word sentence would trip the listen screen's long-sentence ceiling
+  return `<scene>Scene ${n} opens.${rewrite} ${Array.from({ length: words - 3 }, (_, i) => `s${n}w${i}${i % 10 === 9 ? "." : ""}`).join(" ")}</scene>`;
 };
 
 export const SCENE_3_PATCH = "Scene 3 opens on the 3rd";
@@ -99,8 +100,8 @@ export function draftScript(over: Record<string, any> = {}) {
     premises: () => [0.05, 0.03, 0.08, 0.03, 0.06].map((p, i) => `<premise><text>Premise ${i + 1} text.</text><probability>${p}</probability></premise>`).join("\n"),
     // the chosen vignette carries B and C, so every fixture span is in the prose a reader sees
     execute: (p: string) => vignette(Number(/Premise (\d)/.exec(p)?.[1] ?? 0)).replace("</vignette>", ` ${SPAN_B}, ${SPAN_C}.</vignette>`),
-    outline: () => ["departure", "particulars", "knowledge", "arrival"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n"),
-    jobs: () => "<job>Test the first thing: scene one.</job><job>Test a second thing: scene two.</job>",
+    outline: () => ["departure", "particulars", "knowledge", "arrival"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n")
+      + "\n<job>Test the first thing: scene one.</job>\n<job>Test a second thing: scene two.</job>",
     context: (p: string) => `<vignette>context for ${/Its job: (.*)/.exec(p)?.[1]}</vignette>`,
     ending: () => ending(),
     "ledger-extract": () => `<ledger>${LEDGER}</ledger>`,

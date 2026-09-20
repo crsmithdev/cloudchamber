@@ -11,7 +11,7 @@ import { settingsFixture } from "../pipeline/settings.fixture.ts";
 
 const CELLS = ["informational", "mixed", "involved"].flatMap((v) => ["non-narrative", "mixed", "narrative"].map((m) => [v, m]));
 const premises = `<premise><text>P1</text><probability>0.05</probability></premise><premise><text>P2</text><probability>0.02</probability></premise><premise><text>P3</text><probability>0.08</probability></premise><premise><text>P4</text><probability>0.03</probability></premise><premise><text>P5</text><probability>0.06</probability></premise>`;
-const outline = `<section name="departure">a</section><section name="particulars">b</section><section name="knowledge">c</section><section name="arrival">d</section>`;
+const outline = `<section name="departure">a</section><section name="particulars">b</section><section name="knowledge">c</section><section name="arrival">d</section><job>one thing</job><job>another thing</job>`;
 
 async function setup() {
   const dir = mkdtempSync(join(tmpdir(), "cloudchamber-api-"));
@@ -23,7 +23,7 @@ async function setup() {
   db.exec(`INSERT INTO themes (id, text, attestation, stories, drafted_at) VALUES ('t1', 'A theme.', 1, '["scp/a"]', 'now')`);
   const model = new FakeModel({
     premises: () => premises, execute: (p: string) => `<vignette>${/Premise: (P\d)/.exec(p)?.[1]} ${"w ".repeat(400)}</vignette>`,
-    outline: () => outline, jobs: () => "<job>one thing</job><job>another thing</job>",
+    outline: () => outline,
     context: () => "<vignette>ctx</vignette>", ending: () => "<ending>end</ending>",
   });
   const pipeline = new Pipeline(db, model, { briefsDir: join(dir, "briefs"), rng: () => 0.001, settingsDir: settingsFixture(dir) });
@@ -136,7 +136,7 @@ describe("api", () => {
     expect(r.body.parts).toEqual({ vignette: null, outline: null, contexts: [], ending: null });
     // before the gate a check would run nothing, and the repair settings are the defaults until the draw has its own
     expect(r.body.checks_next).toEqual([]);
-    expect(r.body.repair).toEqual({ rounds: 4, stop_score: 7, patience: 2, max_calls: 120 });
+    expect(r.body.repair).toEqual({ rounds: 4, stop_score: 7, patience: 2 });
     expect(r.body.steps.map((s: any) => s.tab)).toEqual(["ideate", "ideate", "ideate", "ideate", "ideate", "ideate"]);
     const flag = await j("POST", `/api/draws/${id}/gate`, { action: "flag", note: "looks wrong" });
     expect(flag.body.payload.flagged).toBe(1);

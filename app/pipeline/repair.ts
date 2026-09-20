@@ -192,8 +192,7 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
   });
 
   // the context vignettes keep their jobs: each is rewritten from itself when a finding lands in it, carried otherwise
-  const jobsStep = p.recordStep(newId, outlineStep.id, "jobs", "copied");
-  contexts.forEach((c, i) => p.artifact(jobsStep, "job", c.meta.job as string, { index: i + 1, copied: true }));
+  contexts.forEach((c, i) => p.artifact(outlineStep, "job", c.meta.job as string, { index: i + 1, copied: true }));
   await Promise.all([
     ...placedContexts.map((x, i) => revise(x, { parent: outlineStep.id, rewrite: "repair-context", carry: "context", prompt: passageAsk, meta: { index: i + 1, job: x.meta.job } })),
     revise(ending, {

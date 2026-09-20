@@ -77,7 +77,6 @@ describe("slicing", () => {
     expect(slice(s, "outline")).toContain("## Bodies");
     expect(slice(s, "outline")).toContain("## Events");                   // arithmetic is settled against real dates
     expect(slice(s, "outline")).not.toContain("## Places");
-    expect(slice(s, "jobs")).not.toContain("## Events");
     expect(slice(s, "ending")).toContain("## Terms");
     expect(premises).not.toMatch(/^### /m);
   });
