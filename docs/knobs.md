@@ -11,6 +11,7 @@ cloudchamber draw and POST /api/draws take the same knobs.
 | `--auto` | skip the gate by taking the lowest stated probability; otherwise the draw waits for you |
 | `--setting` | one of setting-c, setting-b, setting-a, or omitted for an unrestricted draw |
 | `--genre` | free text, dropped into one line of the premises ask; omitted, it follows the examples drawn |
+| `--shape` | listen; the premises are asked for a story told aloud: a first moment, an arrival in the flesh, a cost paid on the page, an aftermath. Not stored on the draw; the premises step's prompt shows it |
 | `--sampling` | tail \| off-centre \| standard; where in the stated distribution the five premises are asked for |
 | `--darkness` | light \| grey \| dark \| black; how much the story takes, asked of the premises, the vignettes and the ending; omitted, nothing is asked |
 | `--source` | one or more source ids, comma-separated, to draw the six examples from |
