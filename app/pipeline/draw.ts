@@ -155,7 +155,7 @@ export class Pipeline {
     const attempt = async (model: string, n: number): Promise<{ step: StepRow; value?: T; outcome: "ok" | "shape" | "refusal" | "error" }> => {
       const step = this.insertStep(draw, parent, stage, model, cfg.system, prompt, n, storyId, allowed);
       // a call that throws (no claude on PATH, a spawn that fails) is an error result, so the step does not stay running
-      const r = await this.model.call(stage, cfg.system, prompt, model, allowed)
+      const r = await this.model.call(stage, cfg.system, prompt, model, allowed, cfg.effort)
         .catch((e: unknown): ModelResult => ({ text: "", stop: "error", raw: "", model, durationMs: 0, error: String((e as Error)?.message ?? e) }));
       step.raw_response = r.raw;
       step.model = r.model || model;

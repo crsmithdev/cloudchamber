@@ -121,7 +121,8 @@ export function settle(db: Db, drawId: string, status: Status, opts: { ended?: b
  * On success the status stays at `during` for the caller to settle.
  */
 export async function under<T>(db: Db, drawId: string, during: Status, back: Status, work: () => Promise<T>): Promise<T> {
-  db.query("UPDATE draws SET status = ? WHERE id = ?").run(during, drawId);
+  // the error of the attempt before this one is not this attempt's: a re-run showed the old reason for as long as it ran
+  db.query("UPDATE draws SET status = ?, error = NULL WHERE id = ?").run(during, drawId);
   try {
     return await work();
   } catch (e) {

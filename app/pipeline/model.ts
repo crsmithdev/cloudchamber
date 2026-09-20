@@ -33,14 +33,14 @@ export function usageOf(j: any): Usage | undefined {
 }
 
 export interface ModelAdapter {
-  /** `tools` is a comma-separated list passed as both --tools and --allowedTools; empty or absent seals the call. */
-  call(stage: string, system: string, prompt: string, model: string, tools?: string): Promise<ModelResult>;
+  /** `tools` is a comma-separated list passed as both --tools and --allowedTools; empty or absent seals the call. `effort` is how long the stage is asked to think; unset leaves the CLI default. */
+  call(stage: string, system: string, prompt: string, model: string, tools?: string, effort?: string): Promise<ModelResult>;
 }
 
 export class ClaudeCli implements ModelAdapter {
   constructor(private timeoutMs = 15 * 60 * 1000) {}
 
-  async call(stage: string, system: string, prompt: string, model: string, tools = ""): Promise<ModelResult> {
+  async call(stage: string, system: string, prompt: string, model: string, tools = "", effort?: string): Promise<ModelResult> {
     const dir = mkdtempSync(join(tmpdir(), "cloudchamber-call-"));
     const promptPath = join(dir, `${stage}.prompt`);
     writeFileSync(promptPath, prompt);
@@ -48,7 +48,8 @@ export class ClaudeCli implements ModelAdapter {
     delete env.CLAUDECODE;
     const args = ["claude", "-p", "--output-format", "json", "--no-session-persistence", "--tools", tools,
       ...(tools ? ["--allowedTools", tools] : []),
-      "--setting-sources", "", "--system-prompt", system, "--model", model];
+      "--setting-sources", "", "--system-prompt", system, "--model", model,
+      ...(effort ? ["--effort", effort] : [])];
     const t0 = Date.now();
     const proc = Bun.spawn(args, { env: env as any, stdin: Bun.file(promptPath), stdout: "pipe", stderr: "pipe" });
     const timer = setTimeout(() => proc.kill(), this.timeoutMs);
@@ -68,11 +69,11 @@ export class ClaudeCli implements ModelAdapter {
 
 /** Canned responses for tests: a queue per stage, or a function. */
 export class FakeModel implements ModelAdapter {
-  calls: { stage: string; system: string; prompt: string; model: string; tools: string }[] = [];
+  calls: { stage: string; system: string; prompt: string; model: string; tools: string; effort?: string }[] = [];
   constructor(private script: Record<string, (string | Partial<ModelResult>)[] | ((prompt: string, model: string) => string | Partial<ModelResult>)>) {}
 
-  async call(stage: string, system: string, prompt: string, model: string, tools = ""): Promise<ModelResult> {
-    this.calls.push({ stage, system, prompt, model, tools });
+  async call(stage: string, system: string, prompt: string, model: string, tools = "", effort?: string): Promise<ModelResult> {
+    this.calls.push({ stage, system, prompt, model, tools, effort });
     const s = this.script[stage];
     if (!s) throw new Error(`FakeModel: no script for stage ${stage}`);
     const next = typeof s === "function" ? s(prompt, model) : s.shift();

@@ -11,7 +11,7 @@ import { Pipeline, StepFailure } from "./draw.ts";
 import { originOf } from "./stage.ts";
 import { tabOf } from "./lifecycle.ts";
 import { TEMPLATES, checkTemplate } from "./prompts.ts";
-import { loadStages } from "./config.ts";
+import { loadStages, STAGES } from "./config.ts";
 
 const CELLS = ["informational", "mixed", "involved"].flatMap((v) => ["non-narrative", "mixed", "narrative"].map((m) => [v, m]));
 
@@ -205,6 +205,27 @@ describe("draw graph", () => {
     const steps = p.steps(draw.id);
     expect(steps.map((s) => [s.stage, s.status, s.fail_reason, s.attempt])).toEqual([["premises", "failed", "shape", 1], ["premises", "failed", "shape", 2]]);
     expect(model.calls.every((c) => c.model === loadStages().premises.model)).toBe(true);
+  });
+
+  test("a stage's effort reaches the model call, and an effort stages.toml does not name is refused", () => {
+    const { db, dir } = fixture();
+    const stages = loadStages();
+    const model = new FakeModel(script());
+    const p = new Pipeline(db, model, { rng: () => 0.001, briefsDir: join(dir, "briefs"),
+      stages: { ...stages, premises: { ...stages.premises, effort: "low" } } });
+    return p.start({ mode: "auto", genre: "horror" }).then(() => {
+      const calls = model.calls;
+      expect(calls.find((c) => c.stage === "premises")!.effort).toBe("low");
+      expect(calls.find((c) => c.stage === "outline")!.effort).toBeUndefined();   // unset leaves the CLI default
+    });
+  });
+
+  test("stages.toml refuses an effort level the CLI does not take", () => {
+    const good = { model: "claude-opus-5", fallback: "claude-sonnet-5", system: "s" };
+    const toml = Object.fromEntries(STAGES.map((s) => [s, { ...good }]));
+    expect(() => loadStages({ ...toml, scene: { ...good, effort: "low" } } as any).scene.effort).not.toThrow();
+    expect(loadStages({ ...toml, scene: { ...good, effort: "low" } } as any).scene.effort).toBe("low");
+    expect(() => loadStages({ ...toml, scene: { ...good, effort: "blazing" } } as any)).toThrow(/effort blazing/);
   });
 
   test("refusal reruns once on the fallback model and records both", async () => {

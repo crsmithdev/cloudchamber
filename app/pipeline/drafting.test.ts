@@ -843,6 +843,9 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     }).join("");
     const s = parseSchedule(text, cfg);
     expect(s.beats.map((b) => b.when)).toEqual(whens);
+    // a schedule that closes <when> with a sibling's tag: the stray token is not part of the time (run 10)
+    const strayed = parseSchedule(text.replace("<when>day four, ship-year 400</when>", "<when>day four, ship-year 400</known></when>"), cfg);
+    expect(strayed.beats[4].when).toBe("day four, ship-year 400");
     // beat 4 leaves the present for the recursion and beat 5 comes back; beat 3 repeats beat 2's time and beat 6 only repunctuates it
     expect(s.beats.map((b, i) => movedIn(b, s.beats[i - 1]))).toEqual([false, false, false, true, true, false, false, false]);
     expect(structureQuestions(false, false, false, true)).toContain("time-unplaced");

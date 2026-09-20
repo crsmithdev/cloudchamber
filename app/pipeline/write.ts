@@ -7,7 +7,7 @@
  * draft is run through the deterministic slop screen.
  */
 import type { Pipeline, StepRow } from "./draw.ts";
-import { fill } from "./prompts.ts";
+import { fill, type TemplateName } from "./prompts.ts";
 import { need, samples, tag, words } from "./model.ts";
 import { RUN } from "./config.ts";
 import { eligiblePassages } from "./bank.ts";
@@ -28,6 +28,8 @@ export type Schedule = { form: Record<FormAxis, string>; beats: Beat[]; raw: str
 export type Scene = { beat: number; text: string; artifact_id: string; step_id: string };
 
 export const ABSORBABLE = ["chosen", "context-1", "context-2", "ending"];
+/** The schedule ask each shaped template adds; `auto` adds none. */
+const SHAPE_TEMPLATE: Record<string, TemplateName> = { told: "scheduleTold", signal: "scheduleSignal", listen: "scheduleListen" };
 /** The constraint a beat flagged bodily-emotion is rewritten under. */
 export const BODY_LINE = "When a thing happens in this beat, the narrator says what the body did before saying what it meant: the chest, the hands, the breath, the stomach.";
 /** The paying beat: the withheld thing comes in and does harm, and the loss happens on the page. Three outside judges put these two first, and every presence pass they gave the channel named a barrier or a thing that only stood there. */
@@ -70,8 +72,6 @@ export const STRUCTURE_RULES: ScreenRule[] = [
   { name: "cost-in-scene", flag: "absent", asked: "paying", register: true, line: COST_LINE },
 ];
 const RULE = new Map(STRUCTURE_RULES.map((r) => [r.name, r]));
-/** The rewrite line a structure flag carries, or undefined for a name that is not a rule. */
-export const ruleLine = (flag: string) => RULE.get(flag)?.line;
 /** The lines the flags of one beat carry, each once, in rule order; `register` keeps only the flags that send a beat back on their own. */
 export const linesOf = (flags: string[], register = false) =>
   STRUCTURE_RULES.filter((r) => flags.includes(r.name) && (!register || r.register)).map((r) => r.line).filter((l, i, a) => a.indexOf(l) === i);
@@ -108,7 +108,7 @@ export function parseSchedule(text: string, cfg: DraftConfig): Schedule {
     const setPiece = (tag(b, "set_piece") ?? "").trim();
     // a shaped schedule marks the beat where the withheld thing arrives and the cost is paid; the screen asks that beat
     const pays = /<pays\s*\/?>/i.test(b) || /^(yes|true)\b/i.test((tag(b, "pays") ?? "").trim());
-    beats.push({ n: Number(m[1]), words: Number(m[2]), job: tag(b, "job") ?? "", when: (tag(b, "when") ?? "").trim(), known: tag(b, "known") ?? "", withheld, stakes: tag(b, "stakes") ?? "", set_piece: /^none\.?$/i.test(setPiece) ? "" : setPiece, absorbs: (tag(b, "absorbs") ?? "none").toLowerCase().trim(), pays });
+    beats.push({ n: Number(m[1]), words: Number(m[2]), job: tag(b, "job") ?? "", when: cleanWhen(tag(b, "when")), known: tag(b, "known") ?? "", withheld, stakes: tag(b, "stakes") ?? "", set_piece: /^none\.?$/i.test(setPiece) ? "" : setPiece, absorbs: (tag(b, "absorbs") ?? "none").toLowerCase().trim(), pays });
   }
   if (!beats.length) throw new Error("no <beat> tags");
   beats.sort((a, b) => a.n - b.n);
@@ -137,7 +137,7 @@ export function schedulePrompt(brief: string, cfg: DraftConfig): string {
   ].join("\n");
   const endingLine = cfg.form.ending === "brief" ? "the brief's ending is the last beat, in place" : "the schedule may derive the ending";
   // the told template asks for the narrated shape: a cold open, set pieces, an arrival, a cost, an aftermath; signal for the mission shape
-  const shape = { told: "scheduleTold", signal: "scheduleSignal", listen: "scheduleListen" }[cfg.structure.template];
+  const shape: TemplateName | undefined = SHAPE_TEMPLATE[cfg.structure.template];
   return fill("schedule", { brief, words: String(cfg.length.words), beatsLine, formLines, endingLine, shape: shape ? fill(shape, {}) : "" });
 }
 
@@ -241,6 +241,8 @@ export type Profile = { beat: number; pass: string; answers: Record<string, Answ
  * from the beat before it. A schedule written before <when> existed says nothing,
  * and nothing moves: the question is not asked and no scene is constrained.
  */
+/** A schedule sometimes closes <when> with a sibling's tag; the stray token is not part of the time (run 10). */
+const cleanWhen = (w: string | null) => (w ?? "").replace(/<\/?[a-z_]+>/gi, "").trim();
 const whenKey = (w: string) => w.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 export const movedIn = (b: Beat, prev?: Beat) => !!b.when && !!prev?.when && whenKey(b.when) !== whenKey(prev.when);
 

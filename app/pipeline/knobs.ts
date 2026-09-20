@@ -98,8 +98,8 @@ export function knobs(db: Db, settingsDir: string = SETTINGS): Section[] {
     },
     {
       title: "models",
-      note: "stages.toml: the model each stage calls, and the one it falls back to on a refusal. A draw overrides any of them: `--models judgement=claude-sonnet-5,scene=claude-opus-5` on draw or draft, `models` on the API, the two selects on the forms; groups are prose, judgement, corpus, and the override follows the draw into its repairs and forks.",
-      rows: Object.entries(stages).map(([s, c]) => [s, `${c.model} → ${c.fallback}${c.tools ? ` · tools ${c.tools}` : ""}`] as [string, string]),
+      note: "stages.toml: the model each stage calls, the one it falls back to on a refusal, and how long it is asked to think. A draw overrides any model: `--models judgement=claude-sonnet-5,scene=claude-opus-5` on draw or draft, `models` on the API, the two selects on the forms; groups are prose, judgement, corpus, and the override follows the draw into its repairs and forks. Effort is set in the file alone; unset leaves the CLI default.",
+      rows: Object.entries(stages).map(([s, c]) => [s, `${c.model} → ${c.fallback}${c.effort ? ` · effort ${c.effort}` : ""}${c.tools ? ` · tools ${c.tools}` : ""}`] as [string, string]),
     },
   ];
 }

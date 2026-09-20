@@ -6,7 +6,16 @@ export type CheckStageName = "ledger-extract" | "check-derivation" | "check-ledg
 export type DraftStageName = "reconcile" | "repair-vignette" | "repair-context" | "repair-outline" | "repair-ending" | "schedule" | "scene" | "screen-ledger" | "screen-structure";
 export type StageName = GenStageName | CheckStageName | DraftStageName;
 /** `tools` is the comma-separated list a call may use; absent or empty means `--tools ""`. */
-export type StageConfig = { model: string; fallback: string; system: string; tools?: string };
+export type StageConfig = { model: string; fallback: string; system: string; tools?: string; effort?: Effort };
+
+/**
+ * How long a stage is asked to think. Unset leaves the CLI default. On run 10
+ * `screen-ledger` was 45% of the draft's wall clock and 83% of its output was
+ * thinking, so this is the knob that moves the clock.
+ */
+export const EFFORTS = ["low", "medium", "high", "xhigh", "max"] as const;
+export type Effort = (typeof EFFORTS)[number];
+export const isEffort = (s: string): s is Effort => (EFFORTS as readonly string[]).includes(s);
 
 /**
  * The role a part of a brief plays. A part's role is the stage that wrote it,
@@ -122,15 +131,16 @@ export const RUN = {
   } as Readonly<Record<string, { min?: number; max?: number }>>,
 };
 
-export function loadStages(): Record<StageName, StageConfig> {
-  const cfg = stagesToml as Record<string, Partial<StageConfig>>;
+export function loadStages(defaults: unknown = stagesToml): Record<StageName, StageConfig> {
+  const cfg = defaults as Record<string, Partial<StageConfig>>;
   const out = {} as Record<StageName, StageConfig>;
   for (const s of STAGES) {
     const c = cfg[s];
     if (!c || !c.model || !c.fallback || !c.system) {
       throw new Error(`stages.toml: stage ${s} must name model, fallback and system`);
     }
-    out[s] = { model: c.model, fallback: c.fallback, system: c.system, ...(c.tools ? { tools: c.tools } : {}) };
+    if (c.effort !== undefined && !isEffort(String(c.effort))) throw new Error(`stages.toml: stage ${s} has effort ${c.effort}; one of ${EFFORTS.join(", ")}`);
+    out[s] = { model: c.model, fallback: c.fallback, system: c.system, ...(c.tools ? { tools: c.tools } : {}), ...(c.effort ? { effort: c.effort as Effort } : {}) };
   }
   return out;
 }
