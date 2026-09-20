@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { FakeModel, tag } from "./model.ts";
 import { BODY_LINE, COST_LINE, LENGTH_LINE, NUMERAL_LINE, PRESENCE_LINE, parseConflicts, rewritePlan } from "./drafting.ts";
 import { EVENT_LINE, HOOK_LINE, THEME_LINE, VOICES_LINE } from "./write.ts";
-import { parseSchedule, structurePrompt } from "./write.ts";
+import { movedIn, parseSchedule, scenePrompt, structurePrompt, structureQuestions } from "./write.ts";
 import { checkersNext, NOT_IN_PROSE, parseVerdicts } from "./check.ts";
 import { settingsFixture } from "./settings.fixture.ts";
 import { LISTS, loadSetting } from "./settings.ts";
@@ -828,6 +828,42 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(structurePrompt(s.beats[0], "scene", false, 8)).toContain("what brought them across — never revealed");
     expect(structurePrompt(s.beats[0], "scene", false, 8)).toContain("whether the reductions have a floor — beat 7");
     expect(() => parseSchedule(text.replace("the name on the band", " — "), cfg)).toThrow(/withheld line without an item/);
+  });
+
+  test("a beat the schedule puts at a new time is asked to place it; a beat that does not move is not, and a schedule without <when> moves nothing", () => {
+    const cfg = loadDraftConfig().config;
+    const whens = ["", "day one, ship-year 400", "day one, ship-year 400", "ship-year 393, below the line", "day four, ship-year 400", "day four, ship year 400", "", "day nine, ship-year 400"];
+    const text = `<form>tense: past\nperson: first\nchronology: linear\ncontainer: prose</form>` + whens.map((w, i) => {
+      const n = i + 1;
+      return `<beat n="${n}" words="625"><job>Beat ${n}.</job>${w ? `<when>${w}</when>` : ""}<known>Thing ${n}.</known><withheld>none</withheld><stakes>x</stakes><absorbs>none</absorbs></beat>`;
+    }).join("");
+    const s = parseSchedule(text, cfg);
+    expect(s.beats.map((b) => b.when)).toEqual(whens);
+    // beat 4 leaves the present for the recursion and beat 5 comes back; beat 3 repeats beat 2's time and beat 6 only repunctuates it
+    expect(s.beats.map((b, i) => movedIn(b, s.beats[i - 1]))).toEqual([false, false, false, true, true, false, false, false]);
+    expect(structureQuestions(false, false, false, true)).toContain("time-unplaced");
+    expect(structureQuestions(false, false, false, false)).not.toContain("time-unplaced");
+    const moved = structurePrompt(s.beats[3], "scene", false, 8, false, false, s.beats[2]);
+    expect(moved).toContain("time-unplaced:");
+    expect(moved).toContain("that one was day one, ship-year 400, this one is ship-year 393, below the line");
+    expect(structurePrompt(s.beats[2], "scene", false, 8, false, false, s.beats[1])).not.toContain("time-unplaced:");
+    // a schedule written before <when> existed says nothing and constrains nothing
+    expect(structurePrompt(s.beats[7], "scene", true, 8, false, false, s.beats[6])).not.toContain("time-unplaced:");
+  });
+
+  test("the scene ask carries the beat's time, and says to place the listener only when it moves", () => {
+    const cfg = loadDraftConfig().config;
+    const whens = ["day one", "day one", "ship-year 393", "day one", "day one", "day one", "day one", ""];
+    const text = `<form>tense: past\nperson: first\nchronology: linear\ncontainer: prose</form>` + whens.map((w, i) =>
+      `<beat n="${i + 1}" words="625"><job>Beat ${i + 1}.</job>${w ? `<when>${w}</when>` : ""}<known>Thing.</known><withheld>none</withheld><stakes>x</stakes><absorbs>none</absorbs></beat>`).join("");
+    const s = parseSchedule(text, cfg);
+    const parts = { examples: [], outline: "o", vignette: "v", contexts: [], ending: "e" } as never;
+    const ask = (n: number) => scenePrompt(parts, "ledger", s, s.beats[n - 1], []);
+    expect(ask(2)).toContain("It happens at day one.");
+    expect(ask(2)).not.toContain("places the listener in the new time");
+    expect(ask(3)).toContain("It happens at ship-year 393; the beat before it happened at day one, so its opening places the listener in the new time before its events begin.");
+    expect(ask(4)).toContain("places the listener in the new time");   // and back again
+    expect(ask(8)).not.toContain("It happens at");
   });
 
   test("a schedule contradicting a fixed axis, or outside the beat bounds, fails shape", async () => {

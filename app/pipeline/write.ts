@@ -23,7 +23,7 @@ import { chainOf } from "./chain.ts";
 
 /** `until` is the beat that reveals the item; one past the last beat means the story never does. */
 export type Withheld = { item: string; until: number };
-export type Beat = { n: number; words: number; job: string; known: string; withheld: Withheld[]; stakes: string; set_piece: string; absorbs: string; pays: boolean };
+export type Beat = { n: number; words: number; job: string; when: string; known: string; withheld: Withheld[]; stakes: string; set_piece: string; absorbs: string; pays: boolean };
 export type Schedule = { form: Record<FormAxis, string>; beats: Beat[]; raw: string };
 export type Scene = { beat: number; text: string; artifact_id: string; step_id: string };
 
@@ -33,6 +33,7 @@ export const BODY_LINE = "When a thing happens in this beat, the narrator says w
 /** The paying beat: the withheld thing comes in and does harm, and the loss happens on the page. Three outside judges put these two first, and every presence pass they gave the channel named a barrier or a thing that only stood there. */
 export const PRESENCE_LINE = "In this beat the thing the story withholds is in the same place as a character with nothing between them, and it acts: it touches, moves, breaks or takes a person or a thing, on the page, at the time. It does not stand behind glass, in a doorway, or on a channel, and it does not only get looked at.";
 export const COST_LINE = "In this beat the loss happens as it happens, on the page, in the moment, with the person who pays it present; the narrator does not report it afterward.";
+export const TIME_LINE = "This beat happens at a different point in the story's chronology from the beat before it. Its opening places the listener in the new time, in its own words, before the beat's events begin.";
 export const THEME_LINE = "No sentence in this beat says what the story means or what its lesson is; the events carry it, and nobody names it.";
 export const WITHHELD_LINE = "What the schedule lists as withheld after this beat stays withheld: the beat may imply it and may not state it.";
 export const WRONG_LINE = "The point-of-view character is allowed to be mistaken, unfair or at fault somewhere in this beat, and the beat lets it stand.";
@@ -49,7 +50,7 @@ export const HOOK_LINE = "The first 150 words of this beat say what is wrong: th
  * rewrite on its own, and the line a rewrite carries. The prompt text is in
  * prompts.ts under the same names.
  */
-export type ScreenRule = { name: string; flag: "present" | "absent"; asked: "every" | "first" | "not-last" | "last" | "paying"; register?: boolean; line: string };
+export type ScreenRule = { name: string; flag: "present" | "absent"; asked: "every" | "first" | "not-last" | "last" | "paying" | "moved"; register?: boolean; line: string };
 export const STRUCTURE_RULES: ScreenRule[] = [
   { name: "theme-stated", flag: "present", asked: "every", line: THEME_LINE },
   { name: "bodily-emotion", flag: "absent", asked: "every", register: true, line: BODY_LINE },
@@ -58,6 +59,8 @@ export const STRUCTURE_RULES: ScreenRule[] = [
   { name: "one-voice", flag: "present", asked: "every", register: true, line: VOICES_LINE },
   { name: "nothing-happens", flag: "present", asked: "every", register: true, line: EVENT_LINE },
   { name: "hook-late", flag: "present", asked: "first", register: true, line: HOOK_LINE },
+  // asked only of a beat the schedule puts at a different time from the one before it: run 9 lost clarity on an unsignposted jump
+  { name: "time-unplaced", flag: "present", asked: "moved", register: true, line: TIME_LINE },
   { name: "resolved", flag: "present", asked: "not-last", line: RESOLVED_LINE },
   { name: "resolves-everything", flag: "present", asked: "last", line: OPEN_LINE },
   // asked of the beat that pays: what a listener needs the story to have paid by its end
@@ -105,7 +108,7 @@ export function parseSchedule(text: string, cfg: DraftConfig): Schedule {
     const setPiece = (tag(b, "set_piece") ?? "").trim();
     // a shaped schedule marks the beat where the withheld thing arrives and the cost is paid; the screen asks that beat
     const pays = /<pays\s*\/?>/i.test(b) || /^(yes|true)\b/i.test((tag(b, "pays") ?? "").trim());
-    beats.push({ n: Number(m[1]), words: Number(m[2]), job: tag(b, "job") ?? "", known: tag(b, "known") ?? "", withheld, stakes: tag(b, "stakes") ?? "", set_piece: /^none\.?$/i.test(setPiece) ? "" : setPiece, absorbs: (tag(b, "absorbs") ?? "none").toLowerCase().trim(), pays });
+    beats.push({ n: Number(m[1]), words: Number(m[2]), job: tag(b, "job") ?? "", when: (tag(b, "when") ?? "").trim(), known: tag(b, "known") ?? "", withheld, stakes: tag(b, "stakes") ?? "", set_piece: /^none\.?$/i.test(setPiece) ? "" : setPiece, absorbs: (tag(b, "absorbs") ?? "none").toLowerCase().trim(), pays });
   }
   if (!beats.length) throw new Error("no <beat> tags");
   beats.sort((a, b) => a.n - b.n);
@@ -153,6 +156,9 @@ const register = (s: Schedule, structure: { template: string; register: string }
   const r = structure.register === "auto" ? (structure.template === "signal" ? "signal" : told(s) ? "told" : "none") : structure.register;
   return r === "signal" ? [fill("sceneSignal", {})] : r === "told" ? [fill("sceneTold", {})] : [];
 };
+/** What the scene ask says about the beat's place in time: nothing, the time, or the time and the move to it. */
+const whenLine = (b: Beat, prev?: Beat) =>
+  !b.when ? "" : movedIn(b, prev) ? ` It happens at ${b.when}; the beat before it happened at ${prev!.when}, so its opening places the listener in the new time before its events begin.` : ` It happens at ${b.when}.`;
 const withheldLine = (b: Beat, M: number) => b.withheld.length ? b.withheld.map((w) => `${w.item} (${w.until > M ? "never revealed" : `beat ${w.until}`})`).join("; ") : "nothing";
 
 export function scenePrompt(parts: BriefParts, ledger: string, s: Schedule, b: Beat, soFar: string[], constraints?: string, structure = { template: "auto", register: "auto" }): string {
@@ -166,7 +172,7 @@ export function scenePrompt(parts: BriefParts, ledger: string, s: Schedule, b: B
     ...(material[b.absorbs] ? [fill("sceneMaterial", { material: material[b.absorbs] })] : []),
     ...register(s, structure),
     ...(constraints ? [constraints] : []),
-    fill("sceneAsk", { n: String(b.n), job: b.job, known: b.known, withheld: withheldLine(b, s.beats.length), form: formLine(s), cap: String(b.words), constraintLine: constraints ? " Every line of the constraints holds." : "" }),
+    fill("sceneAsk", { n: String(b.n), job: b.job, whenLine: whenLine(b, s.beats[b.n - 2]), known: b.known, withheld: withheldLine(b, s.beats.length), form: formLine(s), cap: String(b.words), constraintLine: constraints ? " Every line of the constraints holds." : "" }),
   ];
   return blocks.filter(Boolean).join("\n\n");
 }
@@ -230,18 +236,27 @@ export async function bindScene(p: Pipeline, drawId: string, ledger: string, sce
 
 export type Profile = { beat: number; pass: string; answers: Record<string, Answer>; flags: string[] };
 
+/**
+ * A beat moves when the schedule puts it at a different point in the chronology
+ * from the beat before it. A schedule written before <when> existed says nothing,
+ * and nothing moves: the question is not asked and no scene is constrained.
+ */
+const whenKey = (w: string) => w.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+export const movedIn = (b: Beat, prev?: Beat) => !!b.when && !!prev?.when && whenKey(b.when) !== whenKey(prev.when);
+
 /** `paid` is the beat asked whether a presence arrived and a cost was paid: the last beat, or under a shaped template the one before it. */
-export function structurePrompt(b: Beat, scene: string, last: boolean, M = Number.MAX_SAFE_INTEGER, paid = last, first = b.n === 1): string {
+export function structurePrompt(b: Beat, scene: string, last: boolean, M = Number.MAX_SAFE_INTEGER, paid = last, first = b.n === 1, prev?: Beat): string {
   const later = b.withheld.filter((w) => w.until > b.n);
   return fill("screenStructure", {
     n: String(b.n), job: b.job, withheld: later.length ? later.map((w) => `${w.item} — ${w.until > M ? "never revealed" : `beat ${w.until}`}`).join("\n") : "none", scene,
     fifth: fill(last ? "screenResolvesEverything" : "screenResolved", {}), first: first ? fill("screenFirstBeat", {}) : "", last: paid ? fill("screenLastBeat", {}) : "",
+    moved: movedIn(b, prev) ? fill("screenTimeMoved", { prev: prev!.when, when: b.when }) : "",
   });
 }
 
 /** The questions the structure screen asks of beat k. */
-export const structureQuestions = (last: boolean, paid = last, first = false) =>
-  STRUCTURE_RULES.filter((r) => r.asked === "every" || (r.asked === "first" && first) || (r.asked === "last" && last) || (r.asked === "not-last" && !last) || (r.asked === "paying" && paid)).map((r) => r.name);
+export const structureQuestions = (last: boolean, paid = last, first = false, moved = false) =>
+  STRUCTURE_RULES.filter((r) => r.asked === "every" || (r.asked === "first" && first) || (r.asked === "last" && last) || (r.asked === "not-last" && !last) || (r.asked === "paying" && paid) || (r.asked === "moved" && moved)).map((r) => r.name);
 
 /** The flags an answer set raises. The theme may be stated once, on the last beat, the way a narrated story closes. */
 export const flagsOf = (answers: Record<string, Answer>, last = false) =>
@@ -256,8 +271,9 @@ export async function runScreens(p: Pipeline, drawId: string, s: Schedule, scene
   if (enabled.includes("structure")) await Promise.all(beats.map(async (k) => {
     const scene = scenes.find((x) => x.beat === k)!, b = s.beats[k - 1];
     const { samples: n, keep_if } = samplesFor(cfg.screens, "structure");
-    const names = structureQuestions(k === M, k === paidBeat, k === 1);
-    const prompt = structurePrompt(b, scene.text, k === M, M, k === paidBeat, k === 1);
+    const prev = s.beats[k - 2];
+    const names = structureQuestions(k === M, k === paidBeat, k === 1, movedIn(b, prev));
+    const prompt = structurePrompt(b, scene.text, k === M, M, k === paidBeat, k === 1, prev);
     const rs = await samples(n, () => p.invoke(drawId, scene.step_id, "screen-structure", prompt, (t) => parseQuestions(t, names)));
     // an answer is present when it recurs in keep_if samples; the quote is the first sample's
     const answers: Record<string, Answer> = {};

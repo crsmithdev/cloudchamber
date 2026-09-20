@@ -367,7 +367,7 @@ beats: {beatsLine}
 ending: {endingLine}
 </config>
 
-{shape}Derive the story's schedule, which settles what the reader knows at each point and what is still withheld. Output a <form> tag with four lines: tense, person, chronology, container. Then one <beat n="K" words="N"> tag per beat containing <job> (one sentence, what the beat does and where it is set), <known> (what the reader knows by its end, one or two sentences), <withheld> (each thing still withheld after this beat, with the beat number that reveals it, one per line as \`item — beat N\`; the line \`none\` when nothing is), <stakes> (one sentence), <set_piece> (the one moment or image of this beat a listener would retell, one sentence; or none), <absorbs> (chosen | context-1 | context-2 | ending | none: the brief vignette this beat takes its material from, if any; each may be named by at most one beat), and <pays>yes</pays> on the one beat where the withheld thing comes in with nothing between it and a person, does harm, and a named person pays a cost that cannot be got back, if the shape asks for one. A <cast> tag before the beats when the shape asks for one. Output only the tags. Under 1100 words.`,
+{shape}Derive the story's schedule, which settles what the reader knows at each point and what is still withheld. Output a <form> tag with four lines: tense, person, chronology, container. Then one <beat n="K" words="N"> tag per beat containing <job> (one sentence, what the beat does and where it is set), <when> (one short phrase placing the beat in the chronology the <form> declares, in the story's own reckoning: the day, the hour or the year, and the strand when there is more than one), <known> (what the reader knows by its end, one or two sentences), <withheld> (each thing still withheld after this beat, with the beat number that reveals it, one per line as \`item — beat N\`; the line \`none\` when nothing is), <stakes> (one sentence), <set_piece> (the one moment or image of this beat a listener would retell, one sentence; or none), <absorbs> (chosen | context-1 | context-2 | ending | none: the brief vignette this beat takes its material from, if any; each may be named by at most one beat), and <pays>yes</pays> on the one beat where the withheld thing comes in with nothing between it and a person, does harm, and a named person pays a cost that cannot be got back, if the shape asks for one. A <cast> tag before the beats when the shape asks for one. Output only the tags. Under 1100 words.`,
 
   scheduleTold: `The story is told afterward, by its narrator, to a listener. Beat 1 is the worst moment of the story, shown before anything is explained, and beat 2 backs up to the beginning; from there the beats run in order. Every beat has a set piece a listener will retell. Something comes into the same place as the narrator with nothing between them, and does harm there, and it costs the narrator or someone beside them; the beat before the last is where the cost is paid, and that beat is marked <pays>yes</pays>. The last beat is the aftermath, back at the ordinary, with one thing that has not gone away. The brief's ending is material for the beat before the last, not for the last.
 
@@ -395,7 +395,7 @@ One narrator reads this aloud to listeners who cannot see it. Name the feeling a
 
 The material above is the brief's own vignette for this beat; use it as far as it serves the schedule, rewritten to sit in the story.`,
 
-  sceneAsk: `Write beat {n} of the story, in a <scene> tag. Its job: {job} By its end the reader knows: {known} Still withheld after it: {withheld} Form: {form}. Under {cap} words. The schedule above has settled the story: write within it and add nothing it does not hold.{constraintLine} Output only the tag.`,
+  sceneAsk: `Write beat {n} of the story, in a <scene> tag. Its job: {job}{whenLine} By its end the reader knows: {known} Still withheld after it: {withheld} Form: {form}. Under {cap} words. The schedule above has settled the story: write within it and add nothing it does not hold.{constraintLine} Output only the tag.`,
 
   screenLedger: `<ledger>
 {ledger}
@@ -424,7 +424,7 @@ withheld-revealed: an item listed as withheld after this beat is stated in the s
 protagonist-never-wrong: the point-of-view character is not allowed to be mistaken, unfair or at fault anywhere in the scene.
 one-voice: two or more people speak in the scene and sound the same: a line could be moved from one mouth to another and nothing would be lost. Absent when only one person speaks, or when the speakers are told apart by how they talk.
 nothing-happens: nothing happens in the scene that a second person present could see or hear: it is thought, recollection, measurement or summary from start to end.
-{fifth}{first}{last}
+{fifth}{first}{last}{moved}
 
 Output only the tags. Under 300 words.`,
 
@@ -433,6 +433,9 @@ presence-arrives: by the end of this scene the thing the story has been withhold
 cost-paid: by the end of this scene someone has lost something they cannot get back.
 presence-in-room: the thing the story withholds acts in this scene, on the page, at the time: it touches, moves, breaks or takes a person or a thing. A thing that is seen, stands, or gestures and does nothing more is absent, as is one inferred from an instrument, heard over a channel, or remembered afterward.
 cost-in-scene: the loss happens inside this scene as it happens, in the moment, and is not reported afterward or summarised by the narrator.`,
+
+  screenTimeMoved: `
+time-unplaced: this scene stands at a different point in the story's chronology from the scene before it — that one was {prev}, this one is {when} — and its opening does not tell the listener that the time has moved. Absent when the opening places the listener in the new time, in whatever words it chooses, before the scene's events begin.`,
 
   screenResolved: `resolved: the scene settles a question the schedule keeps open for a later beat.`,
   screenFirstBeat: `
