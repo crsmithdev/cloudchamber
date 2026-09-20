@@ -28,13 +28,43 @@ export type Schedule = { form: Record<FormAxis, string>; beats: Beat[]; raw: str
 export type Scene = { beat: number; text: string; artifact_id: string; step_id: string };
 
 export const ABSORBABLE = ["chosen", "context-1", "context-2", "ending"];
-export const STRUCTURE_SCREEN = ["theme-stated", "bodily-emotion", "withheld-revealed", "protagonist-never-wrong"];
-/** Asked of the beat that pays: what a listener needs the story to have paid by its end. */
-export const LAST_BEAT_SCREEN = ["presence-arrives", "cost-paid", "presence-in-room", "cost-in-scene"];
-/** A present answer on these is a flag; theme-stated is allowed once, on the last beat. */
-export const FLAG_PRESENT = new Set(["theme-stated", "withheld-revealed", "protagonist-never-wrong", "resolved", "resolves-everything"]);
-/** An absent answer on these is a flag. */
-export const FLAG_ABSENT = new Set(["bodily-emotion", ...LAST_BEAT_SCREEN]);
+/** The constraint a beat flagged bodily-emotion is rewritten under. */
+export const BODY_LINE = "When a thing happens in this beat, the narrator says what the body did before saying what it meant: the chest, the hands, the breath, the stomach.";
+/** The paying beat: the withheld thing comes in and does harm, and the loss happens on the page. Three outside judges put these two first, and every presence pass they gave the channel named a barrier or a thing that only stood there. */
+export const PRESENCE_LINE = "In this beat the thing the story withholds is in the same place as a character with nothing between them, and it acts: it touches, moves, breaks or takes a person or a thing, on the page, at the time. It does not stand behind glass, in a doorway, or on a channel, and it does not only get looked at.";
+export const COST_LINE = "In this beat the loss happens as it happens, on the page, in the moment, with the person who pays it present; the narrator does not report it afterward.";
+export const THEME_LINE = "No sentence in this beat says what the story means or what its lesson is; the events carry it, and nobody names it.";
+export const WITHHELD_LINE = "What the schedule lists as withheld after this beat stays withheld: the beat may imply it and may not state it.";
+export const WRONG_LINE = "The point-of-view character is allowed to be mistaken, unfair or at fault somewhere in this beat, and the beat lets it stand.";
+export const RESOLVED_LINE = "This beat settles nothing the story still withholds: the questions it has raised are open at the end of the beat.";
+export const OPEN_LINE = "The last beat leaves at least one question the story raised open; it does not close every one.";
+
+/**
+ * A screen rule is one row: the question, which answer is the flag, which
+ * beats it is asked of, whether the flag sends the beat back for a register
+ * rewrite on its own, and the line a rewrite carries. The prompt text is in
+ * prompts.ts under the same names.
+ */
+export type ScreenRule = { name: string; flag: "present" | "absent"; asked: "every" | "not-last" | "last" | "paying"; register?: boolean; line: string };
+export const STRUCTURE_RULES: ScreenRule[] = [
+  { name: "theme-stated", flag: "present", asked: "every", line: THEME_LINE },
+  { name: "bodily-emotion", flag: "absent", asked: "every", register: true, line: BODY_LINE },
+  { name: "withheld-revealed", flag: "present", asked: "every", line: WITHHELD_LINE },
+  { name: "protagonist-never-wrong", flag: "present", asked: "every", line: WRONG_LINE },
+  { name: "resolved", flag: "present", asked: "not-last", line: RESOLVED_LINE },
+  { name: "resolves-everything", flag: "present", asked: "last", line: OPEN_LINE },
+  // asked of the beat that pays: what a listener needs the story to have paid by its end
+  { name: "presence-arrives", flag: "absent", asked: "paying", register: true, line: PRESENCE_LINE },
+  { name: "cost-paid", flag: "absent", asked: "paying", register: true, line: COST_LINE },
+  { name: "presence-in-room", flag: "absent", asked: "paying", register: true, line: PRESENCE_LINE },
+  { name: "cost-in-scene", flag: "absent", asked: "paying", register: true, line: COST_LINE },
+];
+const RULE = new Map(STRUCTURE_RULES.map((r) => [r.name, r]));
+/** The rewrite line a structure flag carries, or undefined for a name that is not a rule. */
+export const ruleLine = (flag: string) => RULE.get(flag)?.line;
+/** The lines the flags of one beat carry, each once, in rule order; `register` keeps only the flags that send a beat back on their own. */
+export const linesOf = (flags: string[], register = false) =>
+  STRUCTURE_RULES.filter((r) => flags.includes(r.name) && (!register || r.register)).map((r) => r.line).filter((l, i, a) => a.indexOf(l) === i);
 
 // --- schedule -------------------------------------------------------------------
 
@@ -203,11 +233,12 @@ export function structurePrompt(b: Beat, scene: string, last: boolean, M = Numbe
 }
 
 /** The questions the structure screen asks of beat k. */
-export const structureQuestions = (last: boolean, paid = last) => [...STRUCTURE_SCREEN, last ? "resolves-everything" : "resolved", ...(paid ? LAST_BEAT_SCREEN : [])];
+export const structureQuestions = (last: boolean, paid = last) =>
+  STRUCTURE_RULES.filter((r) => r.asked === "every" || (r.asked === "last" && last) || (r.asked === "not-last" && !last) || (r.asked === "paying" && paid)).map((r) => r.name);
 
 /** The flags an answer set raises. The theme may be stated once, on the last beat, the way a narrated story closes. */
 export const flagsOf = (answers: Record<string, Answer>, last = false) =>
-  Object.entries(answers).filter(([q, a]) => (FLAG_PRESENT.has(q) && a.answer === "present" && !(last && q === "theme-stated")) || (FLAG_ABSENT.has(q) && a.answer === "absent")).map(([q]) => q);
+  Object.entries(answers).filter(([q, a]) => RULE.get(q)?.flag === a.answer && !(last && q === "theme-stated")).map(([q]) => q);
 
 export async function runScreens(p: Pipeline, drawId: string, s: Schedule, scenes: Scene[], cfg: DraftConfig, pass: string, beats: number[] = scenes.map((x) => x.beat), opts: { lexiconPath?: string; narrationDir?: string } = {}): Promise<void> {
   const enabled = cfg.screens.enabled;

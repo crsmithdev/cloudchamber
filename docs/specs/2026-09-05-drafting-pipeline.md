@@ -873,3 +873,22 @@ Two defects run 7 (`evals/20260920142033-d83e.md`) found by being run:
    a line it has not had gets one more rewrite under everything that
    applies. A beat flagged again for a line it already had waits for a
    person, as before. At most two rounds.
+
+### Amendment 2026-09-20: a screen rule is one row, and `rewrite k` acts on a structure flag
+
+`STRUCTURE_RULES` (`app/pipeline/write.ts`) is the one place a structure
+question is declared: its name, which answer is the flag, which beats it
+is asked of (every, not-last, last, paying), whether the flag sends a beat
+back for a register rewrite on its own, and the line a rewrite carries.
+The question lists, the flag sets and the rewrite lines are derived from
+it. Two consequences:
+
+1. Gate 2's `rewrite k` used to read only `finding` artifacts, so on a
+   beat flagged only by the structure screen (theme stated, a paying
+   question absent) it ran an unconstrained re-roll while the UI promised
+   its flags' replacements. It now carries the beat's structure flags as
+   the lines their rules name, after the open ledger findings. A rewrite
+   named for one finding is that finding alone.
+2. The draft pane's structure block lists every question the screen
+   asked, the paying beat's four included; it had six names hard-coded and
+   the four paying questions were invisible there.

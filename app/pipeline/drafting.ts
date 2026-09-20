@@ -21,7 +21,7 @@ import { briefBlock, briefParts, passId } from "./briefparts.ts";
 import { chainOf, type Chain, type FindingView } from "./chain.ts";
 import { profile } from "./listen.ts";
 import { ofKind } from "./artifacts.ts";
-import { bindScene, runScenes, runSchedule, runScreens, writeScene, type Schedule } from "./write.ts";
+import { bindScene, linesOf, runScenes, runSchedule, runScreens, writeScene, type Schedule } from "./write.ts";
 import { draftView, exportDraft, renderStory, type DraftView } from "./drafts.ts";
 import { tag } from "./model.ts";
 import { fill } from "./prompts.ts";
@@ -57,18 +57,11 @@ export type FindingsView = {
 const AUTO_CHECKERS = ["derivation", "ledger", "claims"];
 /** A floor stop needs this many clean passes in a row on one brief: one sample set can miss what the next one finds. */
 const CLEAN_PASSES = 2;
-/** The constraint a beat flagged bodily-emotion is rewritten under. */
-export const BODY_LINE = "When a thing happens in this beat, the narrator says what the body did before saying what it meant: the chest, the hands, the breath, the stomach.";
-/** The paying beat: the withheld thing comes in and does harm, and the loss happens on the page. Three outside judges put these two first, and every presence pass they gave the channel named a barrier or a thing that only stood there. */
-export const PRESENCE_LINE = "In this beat the thing the story withholds is in the same place as a character with nothing between them, and it acts: it touches, moves, breaks or takes a person or a thing, on the page, at the time. It does not stand behind glass, in a doorway, or on a channel, and it does not only get looked at.";
-export const COST_LINE = "In this beat the loss happens as it happens, on the page, in the moment, with the person who pays it present; the narrator does not report it afterward.";
+export { BODY_LINE, COST_LINE, PRESENCE_LINE } from "./write.ts";
 /** The listen screen's long-sentence share, over the configured ceiling, sends a beat back for one rewrite under this line. */
 export const LENGTH_LINE = "One thing per sentence, short enough to say aloud in one breath; no sentence over thirty words.";
 /** The listen screen's numeral rate, over the configured ceiling, sends a beat back for one rewrite under this line. */
 export const NUMERAL_LINE = "A listener cannot hold a figure: keep only the numbers a person would say aloud, round or cut the rest, and never put two exact figures in one sentence.";
-const REWRITE_LINES: Record<string, string> = {
-  "bodily-emotion": BODY_LINE, "presence-arrives": PRESENCE_LINE, "presence-in-room": PRESENCE_LINE, "cost-paid": COST_LINE, "cost-in-scene": COST_LINE,
-};
 
 /**
  * The register rewrites a draft owes, by beat: the lines the structure screen's
@@ -79,7 +72,7 @@ const REWRITE_LINES: Record<string, string> = {
 export function rewritePlan(profiles: { beat: number; flags: string[] }[], scenes: { beat: number; text: string }[], cfg: DraftConfig): Map<number, string[]> {
   const lines = new Map<number, string[]>();
   const add = (k: number, line: string) => { if (!lines.get(k)?.includes(line)) lines.set(k, [...(lines.get(k) ?? []), line]); };
-  for (const pr of profiles) for (const f of pr.flags) if (REWRITE_LINES[f]) add(pr.beat, REWRITE_LINES[f]);
+  for (const pr of profiles) for (const line of linesOf(pr.flags, true)) add(pr.beat, line);
   const listen = (cfg.screens as any).listen ?? {};
   const longMax = Number(listen.long_share_max ?? 1);
   const numeralMax = Number(listen.numerals_max ?? Infinity);
@@ -393,7 +386,9 @@ export class Drafting {
     const flags = v.screenFindings.filter((f) => f.beat === k && f.decision === "open");
     const chosen = findingId ? flags.filter((f) => f.id === findingId) : flags;
     if (findingId && !chosen.length) throw new Error(`beat ${k}: no screen finding ${findingId} that is open`);
-    const constraints = chosen.length ? constraintsBlock(chosen) : undefined;
+    // the beat's structure flags are constraints too, each as the line its rule carries; a rewrite named for one finding is that finding alone
+    const structural = findingId ? [] : linesOf(v.profiles.find((pr) => pr.beat === k)?.flags ?? []).map((replacement) => ({ replacement }));
+    const constraints = chosen.length || structural.length ? constraintsBlock([...chosen, ...structural]) : undefined;
     await under(this.p.db, drawId, "drafting", "awaiting_draft_gate", () => this.regenerate(drawId, k, cfg, constraints, findingId));
     settle(this.p.db, drawId, "awaiting_draft_gate");
     return this.p.draw(drawId);

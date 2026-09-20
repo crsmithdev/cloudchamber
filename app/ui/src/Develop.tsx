@@ -1451,9 +1451,9 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
               </Head>
               <Facts
                 className="mt-1"
-                rows={["theme-stated", "bodily-emotion", "withheld-revealed", "protagonist-never-wrong", "resolved", "resolves-everything"].flatMap((q) => {
+                rows={[...new Set(s.profiles.flatMap((p) => Object.keys(p.answers)))].map((q) => {
+                  // every question the screen asked, the paying beat's four included, so a flag the gate can act on is never invisible here
                   const hits = s.profiles.filter((p) => p.flags.includes(q));
-                  if (!hits.length && q !== "theme-stated" && q !== "bodily-emotion") return [];
                   return [
                     [
                       q.replace(/-/g, " "),
@@ -1461,7 +1461,7 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
                         <Mark state={hits.length ? "art" : "held"} /> {hits.length ? `${hits.length} of ${M} · beats ${hits.map((h) => h.beat).join(", ")}` : "none"}
                       </span>,
                     ] as [React.ReactNode, React.ReactNode],
-                  ];
+                  ][0];
                 })}
               />
             </>

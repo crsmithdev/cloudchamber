@@ -3,6 +3,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { FakeModel } from "./model.ts";
 import { BODY_LINE, COST_LINE, LENGTH_LINE, NUMERAL_LINE, PRESENCE_LINE, parseConflicts, rewritePlan } from "./drafting.ts";
+import { THEME_LINE } from "./write.ts";
 import { parseSchedule, structurePrompt } from "./write.ts";
 import { checkersNext, NOT_IN_PROSE, parseVerdicts } from "./check.ts";
 import { settingsFixture } from "./settings.fixture.ts";
@@ -840,6 +841,24 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     const b2 = model.calls.length;
     await d.rewrite(draw.id, 8);
     expect(model.calls.slice(b2).map((c) => c.stage).sort()).toEqual(["scene", "screen-ledger", "screen-ledger", "screen-ledger", "screen-structure"]);
+  });
+
+  test("rewrite k carries the beat's structure flags as the lines their rules name; a rewrite for one finding is that finding alone", async () => {
+    const { d, draw, model } = await drawn();
+    await d.check(draw.id);
+    await d.draft(draw.id);
+    // the fixture states the theme on beat 5 and names no body on beat 2; neither is a finding, both are flags the gate can now act on
+    expect(d.view(draw.id).profiles.find((x) => x.beat === 5)!.flags).toEqual(["theme-stated"]);
+    await d.rewrite(draw.id, 5);
+    const five = model.calls.filter((c) => c.stage === "scene").at(-1)!;
+    expect(five.prompt).toContain("Write beat 5 of the story");
+    expect(five.prompt).toContain(`<constraints>\n- ${THEME_LINE}\n</constraints>`);
+    await d.rewrite(draw.id, 2);
+    expect(model.calls.filter((c) => c.stage === "scene").at(-1)!.prompt).toContain(`- ${BODY_LINE}`);
+    // named for the ledger finding on beat 4, the rewrite carries that finding and nothing structural
+    const flag = d.view(draw.id).screenFindings.find((f) => f.beat === 4 && f.decision === "open")!;
+    await d.rewrite(draw.id, 4, flag.id);
+    expect(model.calls.filter((c) => c.stage === "scene").at(-1)!.prompt).toContain("<constraints>\n- 1,106 died.\n</constraints>");
   });
 
   test("a flag's own patch lands as the scene is written, costs no model call, and settles the flag", async () => {
