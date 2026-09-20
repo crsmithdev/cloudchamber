@@ -45,6 +45,8 @@ slop_baseline = "pool"
 samples = 1
 [screens.listen]
 long_share_max = 0.12    # share of a beat's sentences over 30 words; the narration pool sits at 0.04; over this, one rewrite
+numerals_max = 12        # figures per 1k words in a beat; the pool sits at 3.2 and the parity drafts peak at 16.6,
+                         # but the draft three labs could not track ran 9-29 a beat; over this, one rewrite
 
 [repair]
 rounds = 4              # auto repair rounds at most

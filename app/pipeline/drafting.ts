@@ -64,6 +64,8 @@ export const PRESENCE_LINE = "In this beat the thing the story withholds is in t
 export const COST_LINE = "In this beat the loss happens as it happens, on the page, in the moment, with the person who pays it present; the narrator does not report it afterward.";
 /** The listen screen's long-sentence share, over the configured ceiling, sends a beat back for one rewrite under this line. */
 export const LENGTH_LINE = "One thing per sentence, short enough to say aloud in one breath; no sentence over thirty words.";
+/** The listen screen's numeral rate, over the configured ceiling, sends a beat back for one rewrite under this line. */
+export const NUMERAL_LINE = "A listener cannot hold a figure: keep only the numbers a person would say aloud, round or cut the rest, and never put two exact figures in one sentence.";
 const REWRITE_LINES: Record<string, string> = {
   "bodily-emotion": BODY_LINE, "presence-arrives": PRESENCE_LINE, "presence-in-room": PRESENCE_LINE, "cost-paid": COST_LINE, "cost-in-scene": COST_LINE,
 };
@@ -408,9 +410,15 @@ export class Drafting {
     const lines = new Map<number, string[]>();
     const add = (k: number, line: string) => lines.set(k, [...(lines.get(k) ?? []), line]);
     for (const pr of chain.screenProfiles()) for (const line of new Set(pr.flags.map((f) => REWRITE_LINES[f]).filter(Boolean))) add(pr.beat, line);
-    // a beat a listener would lose the thread of: the deterministic measure, over the ceiling the config sets
-    const ceiling = Number((cfg.screens as any).listen?.long_share_max ?? 1);
-    for (const sc of chain.scenes()) if (profile(sc.text).long_sentence_share > ceiling) add(sc.beat, LENGTH_LINE);
+    // a beat a listener would lose the thread of: the deterministic measures, each over the ceiling the config sets
+    const listen = (cfg.screens as any).listen ?? {};
+    const longMax = Number(listen.long_share_max ?? 1);
+    const numeralMax = Number(listen.numerals_max ?? Infinity);
+    for (const sc of chain.scenes()) {
+      const pr = profile(sc.text);
+      if (pr.long_sentence_share > longMax) add(sc.beat, LENGTH_LINE);
+      if (pr.numerals_per_1k > numeralMax) add(sc.beat, NUMERAL_LINE);
+    }
     for (const k of [...lines.keys()].sort((a, b) => a - b)) await this.regenerate(drawId, k, cfg, constraintsBlock(lines.get(k)!.map((replacement) => ({ replacement }))));
   }
 

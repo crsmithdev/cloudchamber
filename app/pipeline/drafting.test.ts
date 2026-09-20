@@ -635,6 +635,29 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(two.prompt.split("no sentence over thirty words").length).toBe(2);
   });
 
+  test("a beat over the numeral ceiling is rewritten once, and a beat under it is not", async () => {
+    const signalForm = "tense: past\nperson: third\nchronology: linear\ncontainer: prose";
+    // beat 3 carries 30 figures in 300 words; every other beat carries the one in "Scene N opens."
+    const heavy = (prompt: string) => {
+      const n = Number(/Write beat (\d+) of the story/.exec(prompt)?.[1] ?? 0);
+      const rewrite = /<constraints>/.test(prompt) ? " REWRITTEN" : "";
+      const figures = n === 3 ? Array.from({ length: 30 }, (_, i) => `${1000 + i}`) : [];
+      const filler = Array.from({ length: 297 - figures.length }, (_, i) => `s${n}w${i}`);
+      return `<scene>Scene ${n} opens.${rewrite} ${[...figures, ...filler].join(" ")}</scene>`;
+    };
+    const { d, draw, model } = await drawn(draftScript({ scene: heavy, schedule: () => schedule({ form: signalForm, cap: 1100 }) }));
+    await d.check(draw.id);
+    await d.draft(draw.id, { profile: "signal", overrides: { "beats.min": 8, "screens.listen.long_share_max": 1 } });
+    const rewrites = model.calls.filter((c) => c.stage === "scene" && c.prompt.includes("<constraints>"));
+    // beat 2 names no body and is rewritten for that; beat 3 is rewritten for its figures alone
+    expect(rewrites.map((c) => /Write beat (\d+)/.exec(c.prompt)![1])).toEqual(["2", "3"]);
+    const three = rewrites.find((c) => /Write beat 3 /.test(c.prompt))!;
+    expect(three.prompt).toContain("A listener cannot hold a figure");
+    expect(three.prompt).not.toContain("no sentence over thirty words");
+    const two = rewrites.find((c) => /Write beat 2 /.test(c.prompt))!;
+    expect(two.prompt).not.toContain("A listener cannot hold a figure");
+  });
+
   test("the outline has four sections and the ending is derived from three of them", async () => {
     const { model } = await drawn();
     const outline = model.calls.find((c) => c.stage === "outline")!;
