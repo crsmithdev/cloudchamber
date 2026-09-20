@@ -481,6 +481,8 @@ describe("tag reading", () => {
     expect(tag('<verdict n="2">\n<parameter name="answer">keep</parameter>\n<why>x</why>\n</verdict>', "answer")).toBe("keep");
     expect(tag("<answer>drop</answer>", "answer")).toBe("drop");
     expect(tag("<why>x</why>", "answer")).toBeNull();
+    expect(tag("<answer>drop</parameter>", "answer")).toBe("drop");
+    expect(tag("<examined>I compared the decks", "examined")).toBeNull();
     const vs = parseVerdicts('<verdict n="1"><answer>keep</answer><why>a</why></verdict><verdict n="2"><parameter name="answer">drop</parameter><why>b</why></verdict>', 2);
     expect(vs.map((v) => v.answer)).toEqual(["keep", "drop"]);
   });

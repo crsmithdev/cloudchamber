@@ -207,8 +207,8 @@ export async function bindScene(p: Pipeline, drawId: string, ledger: string, sce
   const { samples: n, keep_if } = samplesFor(cfg.screens, "ledger");
   const prompt = fill("screenLedger", { ledger, previous: prev ? `<previous-scene>\n${prev.text}\n</previous-scene>\n\n` : "", n: String(k), scene: scene.text });
   const rs = await samples(n, (sample) => p.invoke(drawId, scene.step_id, "screen-ledger", prompt, (t) => {
-    need(t, "examined");
-    return { findings: parseFindings(t, "ledger", sample), examined: tag(t, "examined") };
+    // the examined account is for the reader, not a condition of the answer: Sonnet 5 opens the tag and never closes it (run 9)
+    return { findings: parseFindings(t, "ledger", sample), examined: tag(t, "examined") ?? "" };
   }));
   const all: Finding[] = rs.flatMap((r) => r.value.findings.map((f: Finding) => ({ ...f, sample: r.sample })));
   const flags = cluster(all, keep_if, `${drawId}/${k}`).filter((c) => c.reported);

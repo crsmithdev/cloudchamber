@@ -85,12 +85,10 @@ export class FakeModel implements ModelAdapter {
 // --- parsing helpers ------------------------------------------------------
 
 export function tag(text: string, name: string): string | null {
-  const m = new RegExp(`<${name}(?:\\s[^>]*)?>([\\s\\S]*?)</${name}>`, "i").exec(text);
-  if (m) return m[1].trim();
-  // Sonnet 5 on a sealed headless call sometimes writes a tag in the shape of a tool argument,
-  // <parameter name="answer">keep</parameter>, in a reply that is otherwise in shape (run 9, 2026-09-20)
-  const pm = new RegExp(`<parameter\\s+name="${name}"\\s*>([\\s\\S]*?)</parameter>`, "i").exec(text);
-  return pm ? pm[1].trim() : null;
+  // Sonnet 5 on a sealed headless call sometimes writes a tag in the shape of a tool argument, <parameter name="answer">keep</parameter>,
+  // or closes <answer> with </parameter>, in a reply that is otherwise in shape (run 9, 2026-09-20). Either opening, either closing.
+  const m = new RegExp(`<(?:${name}(?:\\s[^>]*)?|parameter\\s+name="${name}"\\s*)>([\\s\\S]*?)</(?:${name}|parameter)>`, "i").exec(text);
+  return m ? m[1].trim() : null;
 }
 
 /** A tag the parse cannot go without: its content, or a throw naming it. */

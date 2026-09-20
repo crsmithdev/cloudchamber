@@ -91,7 +91,8 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
   const shape = findingShape();
   const S = (name: string) => opts.samples ? { samples: opts.samples, keep_if: Math.min(cfg.checks.keep_if, opts.samples) } : samplesFor(cfg.checks, name);
   const perChecker: { checker: string; clusters: Cluster[]; firstStep: StepRow; samples?: number }[] = [];
-  const findingsOf = (checker: "derivation" | "ledger") => (t: string) => { need(t, "examined"); return { findings: parseFindings(t, checker, 0), examined: tag(t, "examined") }; };
+  // <examined> is the checker's own account of what it compared, kept for the reader; a reply without it, or one that opens it and never closes it (Sonnet 5, run 9), has still answered
+  const findingsOf = (checker: "derivation" | "ledger") => (t: string) => ({ findings: parseFindings(t, checker, 0), examined: tag(t, "examined") ?? "" });
   // the ledger is extracted once for the chain and pinned; every round is checked against it. It is read here once
   // and the verify pass gets the same one: asked again, the chain would answer with the null it cached before the extraction
   const ledger: Promise<string | null> = chain.ledger() ? Promise.resolve(chain.ledger())
