@@ -13,7 +13,7 @@ import { TEMPLATES } from "./prompts.ts";
 import { loadStages } from "./config.ts";
 import { loadDraftConfig } from "./draftconfig.ts";
 import { VERDICT_LOG } from "./paths.ts";
-import { A, B, LEDGER, SCENE_3_PATCH, SPAN_A, SPAN_B, SPAN_C, cleanSamples, derivationSamples, draftScript, drawn, finding, fixture, ledgerSamples, schedule, vignette } from "./drafting.fixture.ts";
+import { A, B, LEDGER, SCENE_3_PATCH, SPAN_A, SPAN_B, SPAN_C, cleanSamples, derivationSamples, draftScript, drawn, finding, fixture, ledgerSamples, schedule, screenStructure, vignette } from "./drafting.fixture.ts";
 import { briefParts, partsIn, partsOf } from "./briefparts.ts";
 import { chainOf } from "./chain.ts";
 
@@ -633,6 +633,43 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     const two = rewrites.find((c) => /Write beat 2 /.test(c.prompt))!;
     expect(two.prompt).toContain("says what the body did before saying what it meant");
     expect(two.prompt.split("no sentence over thirty words").length).toBe(2);
+  });
+
+  test("a paying beat where the thing only stands behind glass is rewritten once, and the thing acts", async () => {
+    const signalForm = "tense: past\nperson: third\nchronology: linear\ncontainer: prose";
+    const withPays = schedule({ form: signalForm, cap: 1100 }).replace(/(<beat n="5"[^>]*>)/, "$1<pays>yes</pays>");
+    // on the paying beat the screen finds the thing present but not acting; a rewrite fixes it, and the screen then passes it
+    const seen = new Set<string>();
+    const glass = (prompt: string) => {
+      const n = Number(/<scene n="(\d+)">/.exec(prompt)?.[1] ?? 0);
+      const out = screenStructure(prompt);
+      if (n !== 5 || seen.has("5")) return out;
+      seen.add("5");
+      return out.replace(/(<question name="presence-in-room"><answer>)present/, "$1absent");
+    };
+    const { d, draw, model } = await drawn(draftScript({ schedule: () => withPays, "screen-structure": glass }));
+    await d.check(draw.id);
+    await d.draft(draw.id, { profile: "signal", overrides: { "beats.min": 8, "screens.listen.long_share_max": 1 } });
+    const rewrites = model.calls.filter((c) => c.stage === "scene" && c.prompt.includes("<constraints>"));
+    // beat 2 for the body, beat 5 for the presence; nothing else
+    expect(rewrites.map((c) => /Write beat (\d+)/.exec(c.prompt)![1])).toEqual(["2", "5"]);
+    const five = rewrites.find((c) => /Write beat 5 /.test(c.prompt))!;
+    expect(five.prompt).toContain("it touches, moves, breaks or takes a person or a thing");
+    expect(five.prompt).toContain("does not stand behind glass");
+    // the screen asks for the harder bar, and the schedule asks the thing back for a second beat
+    const st5 = model.calls.find((c) => c.stage === "screen-structure" && /<scene n="5">/.test(c.prompt))!;
+    expect(st5.prompt).toContain("nothing between them: not glass, a screen, a channel");
+    expect(st5.prompt).toContain("A thing that is seen, stands, or gestures and does nothing more is absent");
+  });
+
+  test("the listen schedule asks the thing back for a second beat, and every shape asks it to do harm", async () => {
+    const { d, draw, model } = await drawn(draftScript({ schedule: () => schedule({ cap: 1100 }) }));
+    await d.check(draw.id);
+    await d.draft(draw.id, { profile: "listen", overrides: { "beats.min": 8, "screens.listen.long_share_max": 1 } });
+    const sched = model.calls.find((c) => c.stage === "schedule")!;
+    expect(sched.prompt).toContain("does harm to that person or that place, and does not explain itself");
+    expect(sched.prompt).toContain("in at least one more beat, before or after that one");
+    expect(sched.prompt).not.toContain("does not answer");
   });
 
   test("a beat over the numeral ceiling is rewritten once, and a beat under it is not", async () => {

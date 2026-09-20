@@ -59,8 +59,8 @@ const AUTO_CHECKERS = ["derivation", "ledger", "claims"];
 const CLEAN_PASSES = 2;
 /** The constraint a beat flagged bodily-emotion is rewritten under. */
 export const BODY_LINE = "When a thing happens in this beat, the narrator says what the body did before saying what it meant: the chest, the hands, the breath, the stomach.";
-/** The paying beat: the withheld thing is in the room, and the loss happens on the page. Three outside judges put these two first. */
-export const PRESENCE_LINE = "In this beat the thing the story withholds is in the room: a character sees it or touches it at the time, on the page, not through an instrument, a channel or a memory.";
+/** The paying beat: the withheld thing comes in and does harm, and the loss happens on the page. Three outside judges put these two first, and every presence pass they gave the channel named a barrier or a thing that only stood there. */
+export const PRESENCE_LINE = "In this beat the thing the story withholds is in the same place as a character with nothing between them, and it acts: it touches, moves, breaks or takes a person or a thing, on the page, at the time. It does not stand behind glass, in a doorway, or on a channel, and it does not only get looked at.";
 export const COST_LINE = "In this beat the loss happens as it happens, on the page, in the moment, with the person who pays it present; the narrator does not report it afterward.";
 /** The listen screen's long-sentence share, over the configured ceiling, sends a beat back for one rewrite under this line. */
 export const LENGTH_LINE = "One thing per sentence, short enough to say aloud in one breath; no sentence over thirty words.";
