@@ -70,7 +70,7 @@ def run_openrouter(p, model):
     key = os.environ.get("OPENROUTER_API_KEY")
     if not key:
         raise SystemExit("OPENROUTER_API_KEY is not set: source ~/.config/cloudchamber/env")
-    body = json.dumps({"model": model, "max_tokens": 4000, "messages": [
+    body = json.dumps({"model": model, "max_tokens": 16000, "reasoning": {"effort": "low"}, "messages": [
         {"role": "system", "content": "You judge stories for listeners. Output only the tags asked for."},
         {"role": "user", "content": p}]}).encode()
     req = urllib.request.Request(OPENROUTER, data=body, method="POST",
@@ -94,6 +94,10 @@ def run_gemini(p, model):
     r = subprocess.run(args, input=p, capture_output=True, text=True, timeout=900)
     try: return json.loads(r.stdout)["response"]
     except Exception: return r.stdout + r.stderr
+
+def complete(r):
+    """Every axis answered and an overall given. A thinking model can spend its budget before it answers; a truncated reply is a failed call, never a verdict."""
+    return len(r["axes"]) == len(RUBRIC) and r["overall"] in ("ours", "source", "tie")
 
 def parse(out, flipped):
     def side(v):
@@ -120,12 +124,19 @@ def main():
     for i in range(args.passes):
         flipped = i % 2 == 1
         one, two = (source, ours) if flipped else (ours, source)
-        out = run(prompt(one, two), args.model)
-        r = parse(out, flipped); r["flipped"] = flipped; results.append(r)
+        for attempt in range(3):
+            r = parse(run(prompt(one, two), args.model), flipped)
+            if complete(r):
+                break
+            print(f"  pass {i+1} attempt {attempt+1} incomplete ({len(r['axes'])}/{len(RUBRIC)} axes); retrying", flush=True)
+        r["flipped"] = flipped; r["complete"] = complete(r); results.append(r)
         print(f"[{args.model}] pass {i+1} ({'source first' if flipped else 'ours first'}): overall {r['overall']}  " + " ".join(f"{k}={v}" for k, v in r["axes"].items()), flush=True)
-    wins = sum(1 for r in results if r["overall"] in ("ours", "tie"))
-    ok = wins * 2 > len(results)          # a majority; the agreed rule is two of three
-    print(f"\nparity: {'yes' if ok else 'no'} ({wins}/{len(results)} passes won or tied)")
+    scored = [r for r in results if r["complete"]]
+    wins = sum(1 for r in scored if r["overall"] in ("ours", "tie"))
+    ok = bool(scored) and wins * 2 > len(scored)   # a majority of the passes that answered
+    dropped = len(results) - len(scored)
+    print(f"\nparity: {'yes' if ok else 'no'} ({wins}/{len(scored)} passes won or tied"
+          + (f", {dropped} dropped as incomplete" if dropped else "") + ")")
     for r in results:
         print("\nneeds:", r["needs"])
     if args.out: json.dump({"ours": args.ours, "source": args.source, "judge": args.judge, "model": args.model, "results": results}, open(args.out, "w"), indent=1)
