@@ -11,6 +11,7 @@ import { renderStory } from "../pipeline/drafts.ts";
 import { status } from "../pipeline/status.ts";
 import { originOf } from "../pipeline/stage.ts";
 import { gateCommand, type GateArgs, type GateResult } from "../pipeline/gate.ts";
+import { MODEL_GROUPS, MODELS } from "../pipeline/config.ts";
 import { chainOf } from "../pipeline/chain.ts";
 import { checkersNext } from "../pipeline/check.ts";
 import { partsView } from "../pipeline/briefparts.ts";
@@ -180,11 +181,11 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     });
   });
 
-  app.post<{ Body: { mode?: "auto" | "manual"; setting?: string; domains?: string; genre?: string; sampling?: string; darkness?: string; shape?: string; source?: string; author?: string; seed?: string; seed_id?: string } }>("/api/draws", async (req, reply) => {
+  app.post<{ Body: { mode?: "auto" | "manual"; setting?: string; domains?: string; genre?: string; sampling?: string; darkness?: string; shape?: string; source?: string; author?: string; seed?: string; seed_id?: string; models?: Record<string, string> } }>("/api/draws", async (req, reply) => {
     const b = req.body ?? {};
     if (b.domains !== undefined) return reply.code(400).send({ error: "domains are gone; a setting loads whole lists" });
     const opts: DrawOpts = { mode: b.mode ?? "manual", setting: b.setting || undefined, genre: b.genre || undefined,
-      sampling: (b.sampling || undefined) as DrawOpts["sampling"], darkness: (b.darkness || undefined) as DrawOpts["darkness"], shape: (b.shape || undefined) as DrawOpts["shape"],
+      sampling: (b.sampling || undefined) as DrawOpts["sampling"], darkness: (b.darkness || undefined) as DrawOpts["darkness"], shape: (b.shape || undefined) as DrawOpts["shape"], models: b.models || undefined,
       ...seedAndSegment({ seed: b.seed, seedId: b.seed_id, source: b.source, author: b.author }) };
     try {
       // validation fails before the first model call; the model steps continue after the reply
@@ -251,6 +252,10 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     defaults: loadDraftConfig().config,
     profiles: profileNames(),
     byProfile: Object.fromEntries(profileNames().map((p) => [p, loadDraftConfig(p).config])),
+    // the model each stage runs on by default, the groups a form can set at once, and the models it can offer
+    stages: Object.fromEntries(Object.entries(pipeline.stages).map(([s, c]) => [s, c.model])),
+    groups: MODEL_GROUPS,
+    models: MODELS,
   }));
 
   app.get<{ Params: { id: string }; Querystring: { all?: string } }>("/api/draws/:id/findings", async (req, reply) => {

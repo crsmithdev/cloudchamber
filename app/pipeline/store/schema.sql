@@ -121,6 +121,7 @@ CREATE TABLE IF NOT EXISTS draws (
   repaired_from TEXT REFERENCES draws(id),   -- the brief this one repairs
   forked_from   TEXT REFERENCES draws(id),   -- the draw whose candidate this one develops
   draft_config  TEXT,                  -- JSON: the resolved draft.toml values a draft ran under
+  models        TEXT,                  -- JSON: {stage: model} overrides of stages.toml for this draw; copied to its repairs and forks
   name          TEXT,                  -- readable, from the seed; written once and never recomputed
   archived_at   TEXT,                  -- set to hide the draw from the lists; nothing else changes
   created_at    TEXT NOT NULL,
@@ -142,6 +143,7 @@ CREATE TABLE IF NOT EXISTS steps (
   fail_reason   TEXT,                  -- shape | refusal | error
   attempt       INTEGER NOT NULL DEFAULT 1,
   tools         TEXT NOT NULL DEFAULT '',   -- comma-separated tool list the call was allowed
+  usage         TEXT,                  -- JSON: input, cache_read, cache_write, output, thinking tokens and cost_usd, as the CLI reported them
   started_at    TEXT NOT NULL,
   ended_at      TEXT,
   error         TEXT

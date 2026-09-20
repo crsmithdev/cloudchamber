@@ -101,7 +101,20 @@ describe("store version", () => {
     old.exec(`CREATE TABLE verdicts (id TEXT PRIMARY KEY, kind TEXT NOT NULL, target_id TEXT NOT NULL, verdict TEXT NOT NULL, artifact INTEGER NOT NULL DEFAULT 0, note TEXT NOT NULL DEFAULT '', method TEXT NOT NULL, at TEXT NOT NULL, by TEXT NOT NULL, pipeline_version TEXT NOT NULL, inherited_from TEXT);
       PRAGMA user_version = 10;`);
     old.close();
-    expect(() => openDb(path)).toThrow(/is at schema 10, and this build reads 11 only/);
+    expect(() => openDb(path)).toThrow(/is at schema 10, and this build reads 12 only/);
+    // a store at 11 migrates in place: the two nullable columns are added and the version moves
+    const at11 = join(dir, "v11.db");
+    const eleven = new Database(at11);
+    eleven.exec(`CREATE TABLE verdicts (id TEXT PRIMARY KEY, kind TEXT NOT NULL, target_id TEXT NOT NULL, verdict TEXT NOT NULL, artifact INTEGER NOT NULL DEFAULT 0, note TEXT NOT NULL DEFAULT '', method TEXT NOT NULL, at TEXT NOT NULL, by TEXT NOT NULL, pipeline_version TEXT NOT NULL, inherited_from TEXT);
+      CREATE TABLE draws (id TEXT PRIMARY KEY, genre TEXT NOT NULL, mode TEXT NOT NULL, seed_mode TEXT NOT NULL, seed_text TEXT NOT NULL, example_ids TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL);
+      CREATE TABLE steps (id TEXT PRIMARY KEY, draw_id TEXT, stage TEXT NOT NULL, model TEXT NOT NULL, system_prompt TEXT NOT NULL, prompt TEXT NOT NULL, status TEXT NOT NULL, started_at TEXT NOT NULL);
+      PRAGMA user_version = 11;`);
+    eleven.close();
+    const migrated = openDb(at11);
+    expect((migrated.query("PRAGMA user_version").get() as any).user_version).toBe(12);
+    expect((migrated.query("PRAGMA table_info(steps)").all() as any[]).some((c) => c.name === "usage")).toBe(true);
+    expect((migrated.query("PRAGMA table_info(draws)").all() as any[]).some((c) => c.name === "models")).toBe(true);
+    migrated.close();
     expect(() => openDb(path)).toThrow(/git checkout 7978c4d/);
   });
 

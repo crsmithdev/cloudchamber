@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { marked } from "marked";
 import { api, when, type Artifact, type AutoResult, type Candidate, type Example, type Facets, type Draw, type Fork, type FullStep, type Origin, type Parts, type Repair, type Source, type Status, type Step } from "./api.ts";
-import { ArchivedToggle, Bar, Btn, Caret, Chip, Field, Head, Icon, Keys, LinkBtn, Mark, Seg, hhmm, lastSelected, markFor, onEnter, rowKeys, secs, usePoll, useRememberSelected, useRowsFromPage, useTick, useAddressBar, type MarkState } from "./ui.tsx";
+import { ArchivedToggle, Bar, Btn, Caret, Chip, Field, Head, Icon, Keys, LinkBtn, Mark, ModelPicks, Seg, hhmm, lastSelected, markFor, onEnter, rowKeys, secs, usageLine, usePoll, useRememberSelected, useRowsFromPage, useTick, useAddressBar, type MarkState } from "./ui.tsx";
 
 /** `checked` and `auto` are the chain's answers; the pane does not read them off the artifact list. */
 export type Detail = { draw: Draw; origin: Origin | null; steps: Step[]; parts: Parts; checks_next: string[]; repair: Repair; checked: boolean; auto: AutoResult | null; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] };
@@ -944,6 +944,8 @@ export function DrawAside({ d, ideation, onStep, top, rows = [] }: { d: Detail; 
               </>,
             )}
             {models.length > 0 && fact("model", "The models the steps ran on.", models.join(" · "), "font-mono")}
+            {d.draw.models && fact("models set", "The stage models this draw was started or drafted with, over stages.toml; they follow it into repairs and forks.", Object.entries(JSON.parse(d.draw.models) as Record<string, string>).map(([s, m]) => `${s}=${m}`).join(" · "), "font-mono")}
+            {usageLine(mine) && fact("usage", "Tokens and list-price cost as the CLI reported them, summed over the steps shown. Cached input is read at a tenth of the price; the cost figure already accounts for it.", usageLine(mine), "font-mono")}
             {fact(
               "model calls",
               "The model calls that finished, and their seconds added together.",
@@ -1053,6 +1055,11 @@ const GENRE_GROUP: Record<string, string> = { scifi: "Sci-fi" };
 function StartForm({ status, like }: { status: Status | null; like?: string }) {
   const [facets, setFacets] = useState<Facets | null>(null);
   const [form, setForm] = useState<Record<string, string>>({ mode: "manual", sampling: "tail" });
+  const [models, setModels] = useState<Record<string, string>>({});
+  const [modelCfg, setModelCfg] = useState<{ stages: Record<string, string>; groups: Record<string, string[]>; models: string[] } | null>(null);
+  useEffect(() => {
+    api.draftConfig().then(setModelCfg).catch(() => setModelCfg(null));
+  }, []);
   // genre is the picked tokens, then any free text after them
   const [genreParts, setGenreParts] = useState<string[]>([]);
   const [genreText, setGenreText] = useState("");
@@ -1073,6 +1080,7 @@ function StartForm({ status, like }: { status: Status | null; like?: string }) {
       .like(like)
       .then((o) => {
         setForm({ mode: o.mode, sampling: o.sampling ?? "tail", darkness: o.darkness ?? "", setting: o.setting ?? "", seed: o.seed_text });
+        if ((o as any).models) setModels((o as any).models);
         setLikedGenre(o.genre ?? "");
         setSeedTouched(false);
         setThemeId(o.seed?.mode === "picked" ? o.seed.themeId : "");
@@ -1119,6 +1127,7 @@ function StartForm({ status, like }: { status: Status | null; like?: string }) {
     try {
       const { id } = await api.startDraw({
         ...form,
+        models: Object.keys(models).length ? models : undefined,
         genre,
         seed: keepsTheme ? undefined : form.seed,
         seed_id: keepsTheme ? themeId : undefined,
@@ -1172,6 +1181,7 @@ function StartForm({ status, like }: { status: Status | null; like?: string }) {
         <Field label="Darkness" help={DARKNESS_HELP[form.darkness || "none"]}>
           <Seg label="Darkness" value={form.darkness || "none"} options={["none", ...(facets?.darkness ?? [])]} onChange={(v) => setForm({ ...form, darkness: v === "none" ? "" : v })} />
         </Field>
+        <ModelPicks cfg={modelCfg} value={models} onChange={setModels} />
         <Field label="Genre" htmlFor="genre">
           <div className="flex flex-col gap-2">
             <div className="srcs" role="group" aria-label="Genre">

@@ -6,7 +6,7 @@ import { DEFAULT_DB, SCHEMA } from "../paths.ts";
 export type Db = Database;
 
 /** Bump with every change to an existing table, and mirror it in extract/store.py. */
-export const SCHEMA_VERSION = 11;
+export const SCHEMA_VERSION = 12;
 
 export function openDb(path: string = DEFAULT_DB): Db {
   if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
@@ -50,9 +50,16 @@ function hasTable(db: Db, name: string): boolean {
 function requireCurrent(db: Db, path: string) {
   const at = userVersion(db);
   if (at >= SCHEMA_VERSION) return;
+  // 11 → 12 (2026-09-20): a usage column on steps and a models column on draws; both nullable, no data moves
+  if (at === 11) {
+    db.exec("ALTER TABLE steps ADD COLUMN usage TEXT");
+    db.exec("ALTER TABLE draws ADD COLUMN models TEXT");
+    db.exec("PRAGMA user_version = 12");
+    return;
+  }
   throw new Error(
-    `${path} is at schema ${at}, and this build reads ${SCHEMA_VERSION} only. ` +
-    `The migrations were removed in 7978c4d..HEAD; to open it, run ` +
+    `${path} is at schema ${at}, and this build reads ${SCHEMA_VERSION} only (11 migrates in place). ` +
+    `The migrations below 11 were removed in 7978c4d..HEAD; to open it, run ` +
     `\`git stash && git checkout 7978c4d\`, open the file once so it migrates, then come back.`,
   );
 }

@@ -11,7 +11,7 @@ const DOC = `cloudchamber — the one command the skill and the UI drive.
                                           a passed story hides all its passages
    cloudchamber replay                         rebuild the verdicts table from bank/verdicts.jsonl
    cloudchamber replay-themes                  rebuild the themes from bank/themes.jsonl
-   cloudchamber draw [--setting ID] [--genre G] [--sampling M] [--darkness D] [--shape listen] [--auto] [--source S[,S]] [--author A]
+   cloudchamber draw [--setting ID] [--genre G] [--sampling M] [--darkness D] [--shape listen] [--auto] [--source S[,S]] [--author A] [--models G=M,...]
                [--seed "text" | --seed-id ID] [--like DRAW]
                                           --like takes another draw's options; the rest override it
    cloudchamber setting lint <id>              check a setting file; exit 1 with one finding per line
@@ -29,7 +29,8 @@ const DOC = `cloudchamber — the one command the skill and the UI drive.
    cloudchamber gate <draw> accept <finding>... | auto | dismiss <finding> | hold | keep | rewrite <k> [--finding ID]  [--note "..."]
        auto repairs round after round, accepting what scores repair.stop_score or more,
        until nothing reaches the floor, the rounds run out, or the total stops falling
-   cloudchamber draft <draw> [--auto] [--profile P] [--words N] [--beats N] [--tense T] [--person P] [--chronology C] [--container C] [--order O]
+   cloudchamber draft <draw> [--auto] [--profile P] [--words N] [--beats N] [--tense T] [--person P] [--chronology C] [--container C] [--order O] [--models G=M,...]
+     --models sets the model per stage or group (prose, judgement, corpus) for the draw and the draws made from it, e.g. judgement=claude-sonnet-5
    cloudchamber story <draw>                   the draft with its screen flags inline
    cloudchamber listen <draw> [--beat K] [--voice V] [--out PATH]   render the draft, or one beat, to a wav with the local kokoro voice
    cloudchamber serve [--port N] [--host H]    API and UI (default 127.0.0.1:3002)
@@ -42,7 +43,7 @@ import { extractAll } from "../pipeline/extract.ts";
 import { status } from "../pipeline/status.ts";
 import { KINDS, inherit, record, replay, type Kind } from "../pipeline/verdicts.ts";
 import { Pipeline, seedAndSegment, type DrawOpts, type DrawRow } from "../pipeline/draw.ts";
-import type { Darkness, Sampling } from "../pipeline/config.ts";
+import { parseModels, type Darkness, type Sampling } from "../pipeline/config.ts";
 import { ClaudeCli } from "../pipeline/model.ts";
 import { existsSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -126,7 +127,7 @@ async function main() {
       const { values } = parseArgs({
         args: rest, allowPositionals: true,
         options: { setting: { type: "string" }, genre: { type: "string" }, sampling: { type: "string" }, darkness: { type: "string" }, shape: { type: "string" }, like: { type: "string" }, auto: { type: "boolean", default: false },
-          source: { type: "string" }, author: { type: "string" }, seed: { type: "string" }, "seed-id": { type: "string" } },
+          source: { type: "string" }, author: { type: "string" }, seed: { type: "string" }, "seed-id": { type: "string" }, models: { type: "string" } },
       });
       const { seed, segment } = seedAndSegment({ seed: values.seed, seedId: values["seed-id"], source: values.source, author: values.author });
       const base = values.like ? pipeline().like(values.like) : {};
@@ -138,6 +139,7 @@ async function main() {
         ...(values.sampling ? { sampling: values.sampling as Sampling } : {}),
         ...(values.darkness ? { darkness: values.darkness as Darkness } : {}),
         ...(values.shape ? { shape: values.shape as "listen" } : {}),
+        ...(values.models ? { models: parseModels(values.models) } : {}),
         ...(segment ? { segment } : {}),
         ...(seed ? { seed } : {}),
       });
@@ -193,14 +195,14 @@ async function main() {
     case "draft": {
       const { values, positionals } = parseArgs({
         args: rest, allowPositionals: true,
-        options: { auto: { type: "boolean", default: false }, profile: { type: "string" }, words: { type: "string" }, beats: { type: "string" }, tense: { type: "string" }, person: { type: "string" }, chronology: { type: "string" }, container: { type: "string" }, order: { type: "string" } },
+        options: { auto: { type: "boolean", default: false }, profile: { type: "string" }, words: { type: "string" }, beats: { type: "string" }, tense: { type: "string" }, person: { type: "string" }, chronology: { type: "string" }, container: { type: "string" }, order: { type: "string" }, models: { type: "string" } },
       });
       const [drawId] = positionals;
       if (!drawId) usage();
       const map: Record<string, string> = { words: "length.words", beats: "beats.count", tense: "form.tense", person: "form.person", chronology: "form.chronology", container: "form.container", order: "scenes.order" };
       const overrides: Overrides = {};
       for (const [flag, key] of Object.entries(map)) if ((values as any)[flag] !== undefined) overrides[key] = (values as any)[flag];
-      const draw = await gateCommand(pipeline(), drafting(), drawId!, "draft", { auto: values.auto, profile: values.profile, overrides: Object.keys(overrides).length ? overrides : undefined }).done as DrawRow;
+      const draw = await gateCommand(pipeline(), drafting(), drawId!, "draft", { auto: values.auto, profile: values.profile, overrides: Object.keys(overrides).length ? overrides : undefined, models: values.models ? parseModels(values.models) : undefined }).done as DrawRow;
       console.log(JSON.stringify(draw, null, 2));
       console.log(`\ncloudchamber story ${draw.id}  ·  cloudchamber gate ${draw.id} keep | rewrite <k> [--finding ID]`);
       break;

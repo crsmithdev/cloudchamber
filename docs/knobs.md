@@ -124,7 +124,7 @@ config.ts. Changing one of these is an edit and a test run, not a flag.
 
 ## models
 
-stages.toml: the model each stage calls, and the one it falls back to on a refusal.
+stages.toml: the model each stage calls, and the one it falls back to on a refusal. A draw overrides any of them: `--models judgement=claude-sonnet-5,scene=claude-opus-5` on draw or draft, `models` on the API, the two selects on the forms; groups are prose, judgement, corpus, and the override follows the draw into its repairs and forks.
 
 | | |
 |---|---|

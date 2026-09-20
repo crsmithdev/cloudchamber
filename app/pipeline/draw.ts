@@ -9,7 +9,7 @@
  * probability, never a judgement.
  */
 import { randomBytes } from "node:crypto";
-import { BANDS, DEFAULT_SAMPLING, RUN, isDarkness, isSampling, type Darkness, loadStages, type Sampling, type StageConfig, type StageName } from "./config.ts";
+import { BANDS, DEFAULT_SAMPLING, RUN, isDarkness, isSampling, type Darkness, loadStages, resolveModels, type Sampling, type StageConfig, type StageName } from "./config.ts";
 import { TEMPLATES, compose, fill } from "./prompts.ts";
 import { need, sections, tag, tags, words, type ModelAdapter, type ModelResult } from "./model.ts";
 import { eligiblePassages, eligibleThemes, type Segment } from "./bank.ts";
@@ -42,6 +42,7 @@ export type DrawOpts = {
   sampling?: Sampling;   // where in the stated distribution the premises are asked for
   darkness?: Darkness;   // how much the story takes; unset asks for nothing
   shape?: "listen";      // the premises are asked for a story told aloud: a hook, an arrival, a cost, an aftermath
+  models?: Record<string, string>;   // {stage or group: model}, over stages.toml, for this draw and the draws made from it
   seedRng?: () => number;
 };
 
@@ -49,12 +50,12 @@ export type DrawRow = {
   id: string; name: string; setting: string | null; genre: string; mode: "auto" | "manual"; segment: string | null;
   seed_mode: string; seed_text: string; seed_theme_id: string | null; example_ids: string; sampling: string; darkness: string | null; status: string;
   gate_method: string | null; chosen_step: string | null; flagged: number; flag_note: string; error: string | null;
-  superseded_by: string | null; repaired_from: string | null; forked_from: string | null; draft_config: string | null; archived_at: string | null; created_at: string; ended_at: string | null;
+  superseded_by: string | null; repaired_from: string | null; forked_from: string | null; draft_config: string | null; models: string | null; archived_at: string | null; created_at: string; ended_at: string | null;
 };
 export type StepRow = {
   id: string; draw_id: string | null; parent_id: string | null; stage: string; model: string; system_prompt: string;
   prompt: string; raw_response: string | null; parsed: string | null; status: string; fail_reason: string | null;
-  attempt: number; tools: string; started_at: string; ended_at: string | null; error: string | null;
+  attempt: number; tools: string; usage: string | null; started_at: string; ended_at: string | null; error: string | null;
 };
 
 export class StepFailure extends Error {
@@ -119,7 +120,7 @@ export class Pipeline {
   private insertStep(draw: string | null, parent: string | null, stage: string, model: string, system: string, prompt: string, attempt: number, storyId: string | null = null, tools = ""): StepRow {
     const row: StepRow = {
       id: `${stage}-${id(4)}`, draw_id: draw, parent_id: parent, stage, model, system_prompt: system, prompt,
-      raw_response: null, parsed: null, status: "running", fail_reason: null, attempt, tools, started_at: now(), ended_at: null, error: null,
+      raw_response: null, parsed: null, status: "running", fail_reason: null, attempt, tools, usage: null, started_at: now(), ended_at: null, error: null,
     };
     this.db.query(`INSERT INTO steps (id, draw_id, story_id, parent_id, stage, model, system_prompt, prompt, status, attempt, tools, started_at)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'running', ?, ?, ?)`)
@@ -139,8 +140,8 @@ export class Pipeline {
 
   private finishStep(step: StepRow, patch: Partial<StepRow>) {
     Object.assign(step, patch, { ended_at: now() });
-    this.db.query(`UPDATE steps SET raw_response = ?, parsed = ?, status = ?, fail_reason = ?, error = ?, model = ?, ended_at = ? WHERE id = ?`)
-      .run(step.raw_response, step.parsed, step.status, step.fail_reason, step.error, step.model, step.ended_at, step.id);
+    this.db.query(`UPDATE steps SET raw_response = ?, parsed = ?, status = ?, fail_reason = ?, error = ?, model = ?, usage = ?, ended_at = ? WHERE id = ?`)
+      .run(step.raw_response, step.parsed, step.status, step.fail_reason, step.error, step.model, step.usage, step.ended_at, step.id);
   }
 
   /**
@@ -149,7 +150,7 @@ export class Pipeline {
    * claims verifier passes "" under `claims: reference`.
    */
   async invoke<T>(draw: string | null, parent: string | null, stage: StageName, prompt: string, parse: (text: string) => T, storyId: string | null = null, tools?: string): Promise<{ step: StepRow; value: T }> {
-    const cfg = this.stages[stage];
+    const cfg = this.stageFor(stage, draw);
     const allowed = tools ?? cfg.tools ?? "";
     const attempt = async (model: string, n: number): Promise<{ step: StepRow; value?: T; outcome: "ok" | "shape" | "refusal" | "error" }> => {
       const step = this.insertStep(draw, parent, stage, model, cfg.system, prompt, n, storyId, allowed);
@@ -158,6 +159,7 @@ export class Pipeline {
         .catch((e: unknown): ModelResult => ({ text: "", stop: "error", raw: "", model, durationMs: 0, error: String((e as Error)?.message ?? e) }));
       step.raw_response = r.raw;
       step.model = r.model || model;
+      step.usage = r.usage ? JSON.stringify(r.usage) : null;
       if (r.stop === "refusal") { this.finishStep(step, { status: "failed", fail_reason: "refusal", error: r.text.slice(0, 500) }); return { step, outcome: "refusal" }; }
       if (r.stop === "error" || r.error) { this.finishStep(step, { status: "failed", fail_reason: "error", error: r.error ?? r.text.slice(0, 500) }); return { step, outcome: "error" }; }
       try {
@@ -254,10 +256,11 @@ export class Pipeline {
     const examples = this.drawExamples(opts.segment);
     const seed = this.drawSeed(opts.seed, setting);
     const genre = this.inferGenre(opts, examples);
-    this.db.query(`INSERT INTO draws (id, name, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, sampling, darkness, status, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?)`)
+    const models = opts.models && Object.keys(opts.models).length ? JSON.stringify(resolveModels(opts.models)) : null;
+    this.db.query(`INSERT INTO draws (id, name, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, sampling, darkness, models, status, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?)`)
       .run(drawId, this.nameFor(seed.text), setting?.id ?? null, genre, opts.mode, opts.segment ? JSON.stringify(opts.segment) : null,
-        seed.mode, seed.text, seed.themeId, JSON.stringify(examples.map((e) => e.id)), sampling, opts.darkness ?? null, now());
+        seed.mode, seed.text, seed.themeId, JSON.stringify(examples.map((e) => e.id)), sampling, opts.darkness ?? null, models, now());
     await under(this.db, drawId, "running", "failed", () => this.premisesAndExecute(drawId, examples.map((e) => e.text), seed.text, genre, sampling, opts.darkness, setting, opts.shape));
     settle(this.db, drawId, "awaiting_gate");
     const draw = this.draw(drawId);
@@ -339,7 +342,26 @@ export class Pipeline {
       darkness: (draw.darkness ?? undefined) as Darkness | undefined,
       segment: draw.segment ? JSON.parse(draw.segment) : undefined,
       seed: draw.seed_theme_id ? { mode: "picked", themeId: draw.seed_theme_id } : { mode: "typed", text: draw.seed_text },
+      ...(draw.models ? { models: JSON.parse(draw.models) } : {}),
     };
+  }
+
+  /** The draw's stage models: stages.toml under its own overrides. */
+  modelsOf(drawId: string | null): Record<string, string> {
+    if (!drawId) return {};
+    const row = this.db.query("SELECT models FROM draws WHERE id = ?").get(drawId) as { models: string | null } | null;
+    return row?.models ? JSON.parse(row.models) : {};
+  }
+  stageFor(stage: StageName, drawId: string | null): StageConfig {
+    const base = this.stages[stage];
+    const m = this.modelsOf(drawId)[stage];
+    return m ? { ...base, model: m } : base;
+  }
+  /** Set or change a draw's stage models before an action; a group or a stage, merged over what it has. */
+  setModels(drawId: string, models: Record<string, string>): Record<string, string> {
+    const merged = { ...this.modelsOf(drawId), ...resolveModels(models) };
+    this.db.query("UPDATE draws SET models = ? WHERE id = ?").run(Object.keys(merged).length ? JSON.stringify(merged) : null, drawId);
+    return merged;
   }
 
   /**
@@ -363,9 +385,9 @@ export class Pipeline {
   /** A draw made from another, `running`: the same seed, examples and options, linked to its source by one of the two columns. */
   copyDraw(src: DrawRow, newId: string, link: { repaired_from: string } | { forked_from: string }, gateMethod: string | null): void {
     const [col, from] = Object.entries(link)[0] as [string, string];
-    this.db.query(`INSERT INTO draws (id, name, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, sampling, darkness, status, gate_method, ${col}, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?, ?, ?)`)
-      .run(newId, this.nameFor(src.seed_text), src.setting, src.genre, src.mode, src.segment, src.seed_mode, src.seed_text, src.seed_theme_id, src.example_ids, src.sampling, src.darkness, gateMethod, from, now());
+    this.db.query(`INSERT INTO draws (id, name, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, sampling, darkness, models, status, gate_method, ${col}, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?, ?, ?)`)
+      .run(newId, this.nameFor(src.seed_text), src.setting, src.genre, src.mode, src.segment, src.seed_mode, src.seed_text, src.seed_theme_id, src.example_ids, src.sampling, src.darkness, src.models, gateMethod, from, now());
   }
 
   async fork(drawId: string, executeStepId: string, newId: string = newDrawId()): Promise<DrawRow> {

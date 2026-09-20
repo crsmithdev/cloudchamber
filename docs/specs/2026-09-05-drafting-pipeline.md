@@ -923,3 +923,22 @@ for where it is decided.
    asked of every beat, and `hook-late` (the first 150 words do not say
    what is wrong), asked of beat 1 alone. The lines are `VOICES_LINE`,
    `EVENT_LINE` and `HOOK_LINE`.
+
+### Amendment 2026-09-20: usage on every step, and the model per stage chosen per draw
+
+Schema 12 (11 migrates in place). Two columns:
+
+1. `steps.usage`: the tokens and list-price cost the CLI reports on each
+   call (input, cache read, cache write, output, thinking, cost_usd),
+   compacted by `usageOf` in `model.ts`. The draw pane sums them into one
+   line. Before this, only character counts were kept and the cost of a
+   story was an estimate.
+2. `draws.models`: `{stage: model}` overrides of `stages.toml` for one
+   draw. `--models judgement=claude-sonnet-5,scene=claude-opus-5` on
+   `draw` or `draft`, `models` on the draw and gate APIs, two selects on
+   the start and draft forms. A group (`prose`, `judgement`, `corpus`,
+   `MODEL_GROUPS` in `config.ts`) expands to its stages; a stage named
+   after a group wins. `invoke` reads the draw's map on every call
+   (`stageFor`), the fallback stays the toml's, and a repair or a fork
+   copies the map, so a chain keeps the models it was started with. Any
+   gate action with `models` sets them on the draw before it runs.

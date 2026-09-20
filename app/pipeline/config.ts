@@ -35,6 +35,45 @@ export const STAGES: StageName[] = [
   "reconcile", "repair-vignette", "repair-context", "repair-outline", "repair-ending", "schedule", "scene", "screen-ledger", "screen-structure",
 ];
 
+/**
+ * The stages by what they do, so a model can be chosen for a whole group: the
+ * prose stages write the story, the judgement stages check and screen it, the
+ * corpus stages read reference material. `--models judgement=claude-sonnet-5`
+ * names a group; `--models scene=claude-opus-5` names one stage.
+ */
+export const MODEL_GROUPS: Readonly<Record<string, StageName[]>> = {
+  prose: ["premises", "execute", "outline", "jobs", "context", "ending", "repair-vignette", "repair-context", "repair-outline", "repair-ending", "schedule", "scene"],
+  judgement: ["ledger-extract", "check-derivation", "check-ledger", "check-verify", "check-structure", "check-resemblance", "check-claims-extract", "check-claims-verify", "reconcile", "screen-ledger", "screen-structure"],
+  corpus: ["themes", "redundancy", "distill-map", "distill"],
+};
+
+/** The models a form offers; any model id the CLI accepts works in `--models` and the API. */
+export const MODELS = ["claude-opus-5", "claude-sonnet-5", "claude-haiku-4-5"] as const;
+
+/** `{stage-or-group: model}` to `{stage: model}`; a group expands before a stage named after it, so the stage wins. A name that is neither throws. */
+export function resolveModels(models: Record<string, string>): Record<string, string> {
+  const out: Record<string, string> = {};
+  const entries = Object.entries(models).filter(([, m]) => m && m.trim());
+  for (const [k, m] of entries) if (MODEL_GROUPS[k]) for (const s of MODEL_GROUPS[k]) out[s] = m.trim();
+  for (const [k, m] of entries) {
+    if (MODEL_GROUPS[k]) continue;
+    if (!(STAGES as string[]).includes(k)) throw new Error(`models: ${k} is not a stage or a group (${[...Object.keys(MODEL_GROUPS), ...STAGES].join(", ")})`);
+    out[k as StageName] = m.trim();
+  }
+  return out;
+}
+
+/** The CLI form: `judgement=claude-sonnet-5,scene=claude-opus-5`. */
+export function parseModels(text: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const part of text.split(",").map((x) => x.trim()).filter(Boolean)) {
+    const i = part.indexOf("=");
+    if (i < 1) throw new Error(`--models: ${part} is not stage=model`);
+    out[part.slice(0, i).trim()] = part.slice(i + 1).trim();
+  }
+  return out;
+}
+
 /** The start form's genre shortcuts, by group. Free text is accepted; this list only saves typing. */
 export const GENRES = genresToml as Record<string, string[]>;
 

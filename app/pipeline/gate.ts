@@ -23,6 +23,7 @@ export type GateArgs = {
   step_id?: string; note?: string; findings?: string[]; finding?: string; beat?: number;
   checks?: string[]; samples?: number;                                  // check
   auto?: boolean; profile?: string; overrides?: Overrides;              // draft
+  models?: Record<string, string>;                                      // any action: {stage or group: model}, set on the draw before it runs
 };
 
 /**
@@ -46,6 +47,7 @@ const need = <T>(v: T | undefined, what: string): T => {
  */
 export function gateCommand(p: Pipeline, d: Drafting, id: string, action: string, a: GateArgs = {}): GateCommand {
   const note = a.note ?? "";
+  if (a.models && Object.keys(a.models).length) p.setModels(id, a.models);
   const cmd = (running: boolean, draw: string | null, done: unknown): GateCommand =>
     ({ action: action as GateAction, draw, running, done: Promise.resolve(done) });
   switch (action) {

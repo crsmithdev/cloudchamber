@@ -44,6 +44,7 @@ export type Draw = {
   repaired_from: string | null;
   forked_from: string | null;
   draft_config: string | null;
+  models: string | null;   // JSON {stage: model} overrides, when the draw was started or drafted with any
   created_at: string;
   ended_at: string | null;
   check?: CheckSummary | null;
@@ -136,12 +137,16 @@ export type DraftConfig = {
   repair: { rounds: number };
 };
 /** A draw's steps come without their text; `/api/steps/:id` carries it when a step is opened. */
+/** The draft defaults, plus the model each stage runs on, the groups a form sets at once, and the models it offers. */
+export type DraftConfigView = { defaults: DraftConfig; profiles: string[]; byProfile: Record<string, DraftConfig>; stages: Record<string, string>; groups: Record<string, string[]>; models: string[] };
+
 export type Step = {
   id: string;
   parent_id: string | null;
   stage: string;
   tab: string | null;   // the tab this step belongs in; the server decides, the page filters by it
   model: string;
+  usage: string | null;   // JSON: input, cache_read, cache_write, output, thinking, cost_usd
   system_prompt: string;
   status: string;
   fail_reason: string | null;
@@ -184,14 +189,14 @@ export const api = {
   draw: (id: string) => j<{ draw: Draw; origin: Origin | null; steps: Step[]; parts: Parts; checks_next: string[]; repair: Repair; checked: boolean; auto: AutoResult | null; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] }>(`/api/draws/${id}`),
   like: (id: string) => j<Like>(`/api/draws/${id}/like`),
   deleteDraw: (id: string) => j<GateResult>(`/api/draws/${id}`, { method: "DELETE", body: "{}" }),
-  startDraw: (b: Record<string, string | undefined>) => j<{ id: string }>("/api/draws", { method: "POST", body: JSON.stringify(b) }),
+  startDraw: (b: Record<string, string | undefined | Record<string, string>>) => j<{ id: string }>("/api/draws", { method: "POST", body: JSON.stringify(b) }),
   gate: (id: string, b: { action: string; step_id?: string; note?: string; findings?: string[]; finding?: string; beat?: number }) => j<GateResult>(`/api/draws/${id}/gate`, { method: "POST", body: JSON.stringify(b) }),
   check: (id: string) => j<GateResult>(`/api/draws/${id}/check`, { method: "POST", body: "{}" }),
-  draft: (id: string, b: { auto?: boolean; profile?: string; overrides?: Record<string, string | number> }) => j<GateResult>(`/api/draws/${id}/draft`, { method: "POST", body: JSON.stringify(b) }),
+  draft: (id: string, b: { auto?: boolean; profile?: string; overrides?: Record<string, string | number>; models?: Record<string, string> }) => j<GateResult>(`/api/draws/${id}/draft`, { method: "POST", body: JSON.stringify(b) }),
   step: (id: string) => j<{ step: FullStep; artifacts: Artifact[] }>(`/api/steps/${id}`),
   findings: (id: string, all = false) => j<Findings>(`/api/draws/${id}/findings${all ? "?all=true" : ""}`),
   story: (id: string) => j<Story>(`/api/draws/${id}/story`),
-  draftConfig: () => j<{ defaults: DraftConfig; profiles: string[]; byProfile: Record<string, DraftConfig> }>("/api/draft-config"),
+  draftConfig: () => j<DraftConfigView>("/api/draft-config"),
   brief: (id: string) => j<Record<string, string>>(`/api/briefs/${id}`),
   briefFile: (id: string, file: string) => `/api/briefs/${id}/${file}`,
 };

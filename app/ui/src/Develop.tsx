@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { api, type AutoResult, type Draw, type DraftConfig, type Finding, type Findings, type Listen, type Story, type Step } from "./api.ts";
+import { api, type AutoResult, type Draw, type DraftConfig, type DraftConfigView, type Finding, type Findings, type Listen, type Story, type Step } from "./api.ts";
 import { BriefFiles, DrawAside, Md, RowHead, SeedNote, StepView, boldLabels, firstParagraph, DrawNotes, inFlight, isWorking, label, stageName, stageNames, type Detail } from "./Draws.tsx";
-import { ArchivedToggle, Bar, Btn, Caret as Chevron, Facts, Field, Head, Icon, Keys, Mark, Seg, lastSelected, markFor, onEnter, rowKeys, secs, usePoll, useRememberSelected, useRowsFromPage, useAddressBar } from "./ui.tsx";
+import { ArchivedToggle, Bar, Btn, Caret as Chevron, Facts, Field, Head, Icon, Keys, Mark, ModelPicks, Seg, lastSelected, markFor, onEnter, rowKeys, secs, usePoll, useRememberSelected, useRowsFromPage, useAddressBar } from "./ui.tsx";
 
 /**
  * Develop a brief: the stages after a brief (docs/specs/2026-09-05-drafting-pipeline.md).
@@ -1092,9 +1092,10 @@ function Profiles({ f }: { f: Findings }) {
 
 const AXES: Record<string, string[]> = { tense: ["past", "present"], person: ["first", "second", "third"], chronology: ["linear", "nonlinear"], container: ["prose", "document", "interleaved"] };
 
-function DraftSettings({ d, onClose, onDraft }: { d: Detail; onClose: () => void; onDraft: (b: { auto?: boolean; profile?: string; overrides?: Record<string, string | number> }) => void }) {
-  const [cfg, setCfg] = useState<{ defaults: DraftConfig; profiles: string[]; byProfile: Record<string, DraftConfig> } | null>(null);
+function DraftSettings({ d, onClose, onDraft }: { d: Detail; onClose: () => void; onDraft: (b: { auto?: boolean; profile?: string; overrides?: Record<string, string | number>; models?: Record<string, string> }) => void }) {
+  const [cfg, setCfg] = useState<DraftConfigView | null>(null);
   const [profile, setProfile] = useState<string>("");
+  const [models, setModels] = useState<Record<string, string>>({});
   const [v, setV] = useState<Record<string, string>>({});
   const [auto, setAuto] = useState(false);
   useEffect(() => {
@@ -1136,6 +1137,7 @@ function DraftSettings({ d, onClose, onDraft }: { d: Detail; onClose: () => void
       <Field label="Profile" help="A profile fills the fields below. Change one after that and it goes as an override.">
         <Seg label="Profile" value={profile || "default"} options={["default", ...cfg.profiles]} onChange={pick} />
       </Field>
+      <ModelPicks cfg={cfg} value={models} onChange={setModels} />
       <Field label="Length" htmlFor="words">
         <div className="ctls">
           <input id="words" type="text" className="num" style={{ width: "5rem" }} value={val("length.words")} onChange={(e) => set("length.words")(e.target.value)} />
@@ -1197,7 +1199,7 @@ function DraftSettings({ d, onClose, onDraft }: { d: Detail; onClose: () => void
         </Field>
       )}
       <div className="actions">
-        <Btn variant="primary" pad onClick={() => onDraft({ auto, profile: profile || undefined, overrides: Object.keys(overrides).length ? overrides : undefined })}>
+        <Btn variant="primary" pad onClick={() => onDraft({ auto, profile: profile || undefined, overrides: Object.keys(overrides).length ? overrides : undefined, models: Object.keys(models).length ? models : undefined })}>
           draft
         </Btn>
       </div>

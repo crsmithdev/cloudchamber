@@ -36,6 +36,20 @@ async function setup() {
 }
 
 describe("api", () => {
+  test("a draw started with models carries them, and the draft config names the stages, groups and models a form offers", async () => {
+    const { j, pipeline } = await setup();
+    const r = await j("POST", "/api/draws", { mode: "manual", genre: "horror", models: { judgement: "claude-sonnet-5" } });
+    expect(r.code).toBe(202);
+    await new Promise((res) => setTimeout(res, 50));
+    expect(JSON.parse(pipeline.draw(r.body.id).models!)["screen-ledger"]).toBe("claude-sonnet-5");
+    const bad = await j("POST", "/api/draws", { mode: "manual", genre: "horror", models: { nowhere: "claude-sonnet-5" } });
+    expect(bad.code).toBe(400);
+    const cfg = await j("GET", "/api/draft-config");
+    expect(cfg.body.groups.judgement).toContain("screen-structure");
+    expect(cfg.body.stages.scene).toBe("claude-opus-5");
+    expect(cfg.body.models).toContain("claude-sonnet-5");
+  });
+
   test("verdict, items and filters", async () => {
     const { j } = await setup();
     let q = await j("GET", "/api/items?kind=example&verdict=unreviewed&limit=2");

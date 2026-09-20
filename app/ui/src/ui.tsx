@@ -228,3 +228,42 @@ export function useAddressBar(hash: string | undefined) {
     dispatchEvent(new HashChangeEvent("hashchange"));
   }, [hash]);
 }
+
+
+/** The two model selects a form offers: one for the prose stages, one for the judgement stages. "default" sends nothing for that group. */
+export function ModelPicks({ cfg, value, onChange }: { cfg: { stages: Record<string, string>; groups: Record<string, string[]>; models: string[] } | null; value: Record<string, string>; onChange: (v: Record<string, string>) => void }) {
+  if (!cfg) return null;
+  const short = (m: string) => m.replace(/^claude-/, "").replace(/-(\d)-(\d)$/, " $1.$2").replace(/-(\d)$/, " $1");
+  const dflt = (g: string) => { const ms = [...new Set((cfg.groups[g] ?? []).map((s) => cfg.stages[s]))]; return ms.length === 1 ? short(ms[0]) : "per stage"; };
+  return (
+    <Field label="Models" help="The model each group of stages runs on for this draw and the draws made from it. default: stages.toml. Prose writes the story; judgement checks and screens it.">
+      <div className="ctls">
+        {["prose", "judgement"].map((g) => (
+          <React.Fragment key={g}>
+            <span className="text-dim">{g}</span>
+            <select className="sel" aria-label={`${g} model`} value={value[g] ?? ""} onChange={(e) => { const v = { ...value }; if (e.target.value) v[g] = e.target.value; else delete v[g]; onChange(v); }}>
+              <option value="">default · {dflt(g)}</option>
+              {cfg.models.map((m) => (
+                <option key={m} value={m}>
+                  {short(m)}
+                </option>
+              ))}
+            </select>
+          </React.Fragment>
+        ))}
+      </div>
+    </Field>
+  );
+}
+
+/** Tokens and list-price cost summed over steps that recorded usage, as one line; null when none did. */
+export function usageLine(steps: { usage?: string | null }[]): string | null {
+  let n = 0, inp = 0, out = 0, think = 0, cached = 0, cost = 0;
+  for (const s of steps) {
+    if (!s.usage) continue;
+    try { const u = JSON.parse(s.usage); n++; inp += (u.input ?? 0) + (u.cache_write ?? 0); cached += u.cache_read ?? 0; out += u.output ?? 0; think += u.thinking ?? 0; cost += u.cost_usd ?? 0; } catch { /* a row written before usage was recorded */ }
+  }
+  if (!n) return null;
+  const k = (x: number) => (x >= 1000 ? `${Math.round(x / 1000)}k` : String(x));
+  return `${n} calls · ${k(inp)} in + ${k(cached)} cached · ${k(out)} out (${k(think)} thinking) · $${cost.toFixed(2)} at list`;
+}

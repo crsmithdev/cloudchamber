@@ -18,9 +18,19 @@ export type ModelResult = {
   raw: string;
   model: string;
   durationMs: number;
-  usage?: Record<string, unknown>;
+  /** Tokens and list-price cost as the CLI reported them; absent when the call did not return them. */
+  usage?: Usage;
   error?: string;
 };
+export type Usage = { input: number; cache_read: number; cache_write: number; output: number; thinking: number; cost_usd: number };
+
+/** The CLI's `usage` and `total_cost_usd`, compacted; null when the reply carries neither. */
+export function usageOf(j: any): Usage | undefined {
+  const u = j?.usage;
+  if (!u && j?.total_cost_usd === undefined) return undefined;
+  return { input: u?.input_tokens ?? 0, cache_read: u?.cache_read_input_tokens ?? 0, cache_write: u?.cache_creation_input_tokens ?? 0, output: u?.output_tokens ?? 0,
+    thinking: u?.output_tokens_details?.thinking_tokens ?? 0, cost_usd: Number(j?.total_cost_usd ?? 0) };
+}
 
 export interface ModelAdapter {
   /** `tools` is a comma-separated list passed as both --tools and --allowedTools; empty or absent seals the call. */
@@ -49,7 +59,7 @@ export class ClaudeCli implements ModelAdapter {
     try {
       const j = JSON.parse(out);
       const used = Object.keys(j.modelUsage ?? {}).find((m) => !/haiku/.test(m)) ?? model;
-      return { text: String(j.result ?? ""), stop: j.stop_reason ?? (j.is_error ? "error" : "end_turn"), raw: out, model: used, durationMs, usage: j.usage, error: j.is_error ? String(j.result) : undefined };
+      return { text: String(j.result ?? ""), stop: j.stop_reason ?? (j.is_error ? "error" : "end_turn"), raw: out, model: used, durationMs, usage: usageOf(j), error: j.is_error ? String(j.result) : undefined };
     } catch {
       return { text: "", stop: "error", raw: out, model, durationMs, error: (err || out || `exit ${proc.exitCode}`).trim().slice(0, 2000) };
     }
@@ -68,7 +78,7 @@ export class FakeModel implements ModelAdapter {
     const next = typeof s === "function" ? s(prompt, model) : s.shift();
     if (next === undefined) throw new Error(`FakeModel: script for ${stage} exhausted`);
     const r: Partial<ModelResult> = typeof next === "string" ? { text: next } : next;
-    return { text: r.text ?? "", stop: r.stop ?? "end_turn", raw: r.raw ?? JSON.stringify({ result: r.text ?? "", stop_reason: r.stop ?? "end_turn" }), model: r.model ?? model, durationMs: 1, error: r.error };
+    return { text: r.text ?? "", stop: r.stop ?? "end_turn", raw: r.raw ?? JSON.stringify({ result: r.text ?? "", stop_reason: r.stop ?? "end_turn" }), model: r.model ?? model, durationMs: 1, usage: r.usage, error: r.error };
   }
 }
 

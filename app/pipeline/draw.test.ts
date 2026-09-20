@@ -443,6 +443,36 @@ describe("draw graph", () => {
     await expect(p.start({ mode: "manual", genre: "horror", shape: "frame" as any })).rejects.toThrow(/shape frame is not listen/);
   });
 
+  test("a draw's stage models override stages.toml for its own calls, follow it into a repair, and are set again at any gate action", async () => {
+    const { db, dir } = fixture();
+    const { p, model } = pipe(db, dir);
+    const draw = await p.start({ mode: "manual", genre: "horror", models: { judgement: "claude-sonnet-5", execute: "claude-haiku-4-5" } });
+    expect(JSON.parse(p.draw(draw.id).models!)).toMatchObject({ execute: "claude-haiku-4-5", "check-ledger": "claude-sonnet-5", "screen-structure": "claude-sonnet-5" });
+    expect(model.calls.find((c) => c.stage === "premises")!.model).toBe(p.stages.premises.model);
+    expect(model.calls.filter((c) => c.stage === "execute").every((c) => c.model === "claude-haiku-4-5")).toBe(true);
+    expect(p.stageFor("check-ledger", draw.id).model).toBe("claude-sonnet-5");
+    expect(p.stageFor("check-ledger", null).model).toBe(p.stages["check-ledger"].model);
+    // a group set later merges over what the draw has; a name that is neither stage nor group is refused
+    expect(p.setModels(draw.id, { scene: "claude-opus-5" })).toMatchObject({ execute: "claude-haiku-4-5", scene: "claude-opus-5" });
+    expect(() => p.setModels(draw.id, { scenes: "claude-opus-5" })).toThrow(/not a stage or a group/);
+    expect(p.like(draw.id).models).toMatchObject({ scene: "claude-opus-5" });
+    // a repair or a fork copies the draw, models included
+    p.copyDraw(p.draw(draw.id), "fork-1", { forked_from: draw.id }, null);
+    expect(JSON.parse(p.draw("fork-1").models!)).toMatchObject({ execute: "claude-haiku-4-5", scene: "claude-opus-5" });
+    expect(p.stageFor("scene", "fork-1").model).toBe("claude-opus-5");
+    expect(db).toBeTruthy();
+  });
+
+  test("a step records the usage the CLI reported, and none when it reported none", async () => {
+    const { db, dir } = fixture();
+    const { p, model } = pipe(db, dir, script({ premises: () => ({ text: premises(), usage: { input: 10, cache_read: 500, cache_write: 20, output: 30, thinking: 5, cost_usd: 0.01 } }) }));
+    const draw = await p.start({ mode: "manual", genre: "horror" });
+    const steps = p.steps(draw.id);
+    expect(JSON.parse(steps.find((s) => s.stage === "premises")!.usage!)).toEqual({ input: 10, cache_read: 500, cache_write: 20, output: 30, thinking: 5, cost_usd: 0.01 });
+    expect(steps.find((s) => s.stage === "execute")!.usage).toBeNull();
+    expect(model.calls.length).toBeGreaterThan(1);
+  });
+
   test("a tail draw is what the default is, and says so", async () => {
     const { db, dir } = fixture();
     const { p, model } = pipe(db, dir);
