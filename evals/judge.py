@@ -8,7 +8,7 @@ the order swapped on alternate passes. The judge answers each rubric axis with
 One, Two or Tie, then an overall call. Parity: ours wins or ties overall in at
 least two of three passes.
 """
-import argparse, json, os, re, subprocess, sys, urllib.request, tempfile
+import argparse, json, os, re, subprocess, sys, time, urllib.request
 
 RUBRIC = [
  ("hook", "In the first two minutes of listening, which story makes it harder to stop?"),
@@ -63,6 +63,32 @@ def run_claude(p, model):
     try: return json.loads(r.stdout)["result"]
     except Exception: return r.stdout + r.stderr
 
+OPENROUTER = "https://openrouter.ai/api/v1/chat/completions"
+
+def run_openrouter(p, model):
+    """A second family through one key. The key lives in ~/.config/cloudchamber/env, never in the repo."""
+    key = os.environ.get("OPENROUTER_API_KEY")
+    if not key:
+        raise SystemExit("OPENROUTER_API_KEY is not set: source ~/.config/cloudchamber/env")
+    body = json.dumps({"model": model, "max_tokens": 4000, "messages": [
+        {"role": "system", "content": "You judge stories for listeners. Output only the tags asked for."},
+        {"role": "user", "content": p}]}).encode()
+    req = urllib.request.Request(OPENROUTER, data=body, method="POST",
+                                 headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"})
+    last = ""
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(req, timeout=900) as r:
+                d = json.load(r)
+            if d.get("error"):
+                last = json.dumps(d["error"])[:400]
+                continue
+            return d["choices"][0]["message"]["content"] or ""
+        except Exception as e:
+            last = f"{type(e).__name__}: {e}"[:400]
+            time.sleep(4 * (attempt + 1))
+    return f"[openrouter failed] {last}"
+
 def run_gemini(p, model):
     args = ["gemini", "-p", "Judge as instructed in the input.", "-o", "json"] + (["-m", model] if model else [])
     r = subprocess.run(args, input=p, capture_output=True, text=True, timeout=900)
@@ -82,20 +108,24 @@ def parse(out, flipped):
 
 def main():
     a = argparse.ArgumentParser(); a.add_argument("--ours", required=True); a.add_argument("--source", required=True)
-    a.add_argument("--passes", type=int, default=3); a.add_argument("--judge", default="claude"); a.add_argument("--model", default="claude-opus-5" )
+    a.add_argument("--passes", type=int, default=3); a.add_argument("--judge", default="claude", choices=["claude", "gemini", "openrouter"])
+    a.add_argument("--model", default="claude-opus-5")
     a.add_argument("--out", default=None)
     args = a.parse_args()
+    if args.judge == "openrouter" and args.model == "claude-opus-5":
+        raise SystemExit("--judge openrouter needs --model, e.g. google/gemini-3.1-pro-preview")
     ours, source = load(args.ours), load(args.source)
-    run = run_gemini if args.judge == "gemini" else run_claude
+    run = {"gemini": run_gemini, "openrouter": run_openrouter}.get(args.judge, run_claude)
     results = []
     for i in range(args.passes):
         flipped = i % 2 == 1
         one, two = (source, ours) if flipped else (ours, source)
         out = run(prompt(one, two), args.model)
         r = parse(out, flipped); r["flipped"] = flipped; results.append(r)
-        print(f"pass {i+1} ({'source first' if flipped else 'ours first'}): overall {r['overall']}  " + " ".join(f"{k}={v}" for k, v in r["axes"].items()), flush=True)
+        print(f"[{args.model}] pass {i+1} ({'source first' if flipped else 'ours first'}): overall {r['overall']}  " + " ".join(f"{k}={v}" for k, v in r["axes"].items()), flush=True)
     wins = sum(1 for r in results if r["overall"] in ("ours", "tie"))
-    print(f"\nparity: {'yes' if wins >= 2 else 'no'} ({wins}/{len(results)} passes won or tied)")
+    ok = wins * 2 > len(results)          # a majority; the agreed rule is two of three
+    print(f"\nparity: {'yes' if ok else 'no'} ({wins}/{len(results)} passes won or tied)")
     for r in results:
         print("\nneeds:", r["needs"])
     if args.out: json.dump({"ours": args.ours, "source": args.source, "judge": args.judge, "model": args.model, "results": results}, open(args.out, "w"), indent=1)
