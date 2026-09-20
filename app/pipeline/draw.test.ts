@@ -433,6 +433,16 @@ describe("draw graph", () => {
     expect(p.draws().map((r) => r.id)).toEqual(["mmm", "zzz", "aaa"]);
   });
 
+  test("a shaped draw asks the premises for a story told aloud, and an unknown shape is refused", async () => {
+    const { db, dir } = fixture();
+    const { p, model } = pipe(db, dir);
+    await p.start({ mode: "manual", genre: "horror", shape: "listen" });
+    const ask = model.calls.find((c) => c.stage === "premises")!.prompt;
+    expect(ask).toContain("Each premise is for a story told aloud to a listener");
+    expect(ask).toContain("pays, on the page, a cost that cannot be got back");
+    await expect(p.start({ mode: "manual", genre: "horror", shape: "frame" as any })).rejects.toThrow(/shape frame is not listen/);
+  });
+
   test("a tail draw is what the default is, and says so", async () => {
     const { db, dir } = fixture();
     const { p, model } = pipe(db, dir);

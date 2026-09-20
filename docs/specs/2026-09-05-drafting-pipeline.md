@@ -840,3 +840,16 @@ among the axes the channels keep, and clarity third. Three changes:
    sits at 0.04): a beat whose share of sentences over thirty words is
    above it is rewritten once under `LENGTH_LINE`. Deterministic, no
    call to decide it.
+
+### Amendment 2026-09-20: the shape at the draw
+
+`cloudchamber draw --shape listen` (API `shape`) puts the listener
+requirements into the premises ask, so the five premises are drawn for
+the template that will draft them: a first moment a listener cannot stop
+inside, a thing that arrives in the flesh and does not answer, a named
+person who pays on the page, an aftermath. Motive: the premise stage
+samples the corpus distribution, and a brief drawn for another shape
+fights a shaped template at the ledger (nine open flags on `2f03`). The
+shape is not a column and the store stays at schema 11; the premises
+step stores its prompt, which is where a shaped draw shows it. `like`
+does not carry it, and the UI draw form does not offer it yet.

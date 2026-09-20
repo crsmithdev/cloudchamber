@@ -38,7 +38,10 @@ Candidate: {candidate}
 
 {seed}
 
-Each premise goes in a <premise> tag containing a <text> (one paragraph, under ${RUN.premiseWords} words, the pitch itself) and a <probability>: your estimate of how likely this premise is as a response to this seed. {sampling}{darkness} Output only the five tags.`,
+Each premise goes in a <premise> tag containing a <text> (one paragraph, under ${RUN.premiseWords} words, the pitch itself) and a <probability>: your estimate of how likely this premise is as a response to this seed. {sampling}{darkness}{shape} Output only the five tags.`,
+
+  /** `--shape listen`: the premises are drawn for the template that will draft them, not only drafted under it. */
+  premisesShape: `Each premise is for a story told aloud to a listener, and holds four things: a first moment a listener cannot stop inside; a thing that arrives in the flesh, in the same place as a person, and does not answer; a named person who pays, on the page, a cost that cannot be got back; and an aftermath with one thing that has not gone away.`,
 
   /** One per sampling mode: the band, and the register that goes with it. */
   samplingAsk: {

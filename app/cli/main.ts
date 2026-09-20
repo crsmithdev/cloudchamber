@@ -11,7 +11,7 @@ const DOC = `cloudchamber — the one command the skill and the UI drive.
                                           a passed story hides all its passages
    cloudchamber replay                         rebuild the verdicts table from bank/verdicts.jsonl
    cloudchamber replay-themes                  rebuild the themes from bank/themes.jsonl
-   cloudchamber draw [--setting ID] [--genre G] [--sampling M] [--darkness D] [--auto] [--source S[,S]] [--author A]
+   cloudchamber draw [--setting ID] [--genre G] [--sampling M] [--darkness D] [--shape listen] [--auto] [--source S[,S]] [--author A]
                [--seed "text" | --seed-id ID] [--like DRAW]
                                           --like takes another draw's options; the rest override it
    cloudchamber setting lint <id>              check a setting file; exit 1 with one finding per line
@@ -125,7 +125,7 @@ async function main() {
     case "draw": {
       const { values } = parseArgs({
         args: rest, allowPositionals: true,
-        options: { setting: { type: "string" }, genre: { type: "string" }, sampling: { type: "string" }, darkness: { type: "string" }, like: { type: "string" }, auto: { type: "boolean", default: false },
+        options: { setting: { type: "string" }, genre: { type: "string" }, sampling: { type: "string" }, darkness: { type: "string" }, shape: { type: "string" }, like: { type: "string" }, auto: { type: "boolean", default: false },
           source: { type: "string" }, author: { type: "string" }, seed: { type: "string" }, "seed-id": { type: "string" } },
       });
       const { seed, segment } = seedAndSegment({ seed: values.seed, seedId: values["seed-id"], source: values.source, author: values.author });
@@ -137,6 +137,7 @@ async function main() {
         ...(values.genre ? { genre: values.genre } : {}),
         ...(values.sampling ? { sampling: values.sampling as Sampling } : {}),
         ...(values.darkness ? { darkness: values.darkness as Darkness } : {}),
+        ...(values.shape ? { shape: values.shape as "listen" } : {}),
         ...(segment ? { segment } : {}),
         ...(seed ? { seed } : {}),
       });

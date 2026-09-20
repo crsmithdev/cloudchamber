@@ -41,6 +41,7 @@ export type DrawOpts = {
   seed?: SeedChoice;
   sampling?: Sampling;   // where in the stated distribution the premises are asked for
   darkness?: Darkness;   // how much the story takes; unset asks for nothing
+  shape?: "listen";      // the premises are asked for a story told aloud: a hook, an arrival, a cost, an aftermath
   seedRng?: () => number;
 };
 
@@ -248,6 +249,7 @@ export class Pipeline {
     const sampling = opts.sampling ?? DEFAULT_SAMPLING;
     if (!isSampling(sampling)) throw new Error(`draw: sampling ${sampling} is not tail | off-centre | standard`);
     if (opts.darkness && !isDarkness(opts.darkness)) throw new Error(`draw: darkness ${opts.darkness} is not light | grey | dark | black`);
+    if (opts.shape && opts.shape !== "listen") throw new Error(`draw: shape ${opts.shape} is not listen`);
     const setting = opts.setting ? loadChecked(opts.setting, this.settingsDir) : undefined;
     const examples = this.drawExamples(opts.segment);
     const seed = this.drawSeed(opts.seed, setting);
@@ -256,17 +258,18 @@ export class Pipeline {
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?)`)
       .run(drawId, this.nameFor(seed.text), setting?.id ?? null, genre, opts.mode, opts.segment ? JSON.stringify(opts.segment) : null,
         seed.mode, seed.text, seed.themeId, JSON.stringify(examples.map((e) => e.id)), sampling, opts.darkness ?? null, now());
-    await under(this.db, drawId, "running", "failed", () => this.premisesAndExecute(drawId, examples.map((e) => e.text), seed.text, genre, sampling, opts.darkness, setting));
+    await under(this.db, drawId, "running", "failed", () => this.premisesAndExecute(drawId, examples.map((e) => e.text), seed.text, genre, sampling, opts.darkness, setting, opts.shape));
     settle(this.db, drawId, "awaiting_gate");
     const draw = this.draw(drawId);
     if (draw.mode === "auto") return this.autoGate(drawId);
     return draw;
   }
 
-  private async premisesAndExecute(drawId: string, examples: string[], seed: string, genre: string, sampling: Sampling, darkness: Darkness | undefined, setting?: Setting) {
+  private async premisesAndExecute(drawId: string, examples: string[], seed: string, genre: string, sampling: Sampling, darkness: Darkness | undefined, setting?: Setting, shape?: "listen") {
     const band = BANDS[sampling];
     const dark = darknessLine(darkness);
-    const ask = fill("premisesAsk", { genre, seed, sampling: TEMPLATES.samplingAsk[sampling], darkness: dark });
+    // the shape is not a column: the premises step stores its prompt, which is where a shaped draw shows it
+    const ask = fill("premisesAsk", { genre, seed, sampling: TEMPLATES.samplingAsk[sampling], darkness: dark, shape: shape === "listen" ? " " + fill("premisesShape", {}) : "" });
     const head = examples.join("\n\n");
     const prompt = compose(head, ask, this.settingFor("premises", setting));
     const { step, value: premises } = await this.invoke(drawId, null, "premises", prompt, (text) => {

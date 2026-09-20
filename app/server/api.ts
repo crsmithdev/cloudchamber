@@ -180,11 +180,11 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     });
   });
 
-  app.post<{ Body: { mode?: "auto" | "manual"; setting?: string; domains?: string; genre?: string; sampling?: string; darkness?: string; source?: string; author?: string; seed?: string; seed_id?: string } }>("/api/draws", async (req, reply) => {
+  app.post<{ Body: { mode?: "auto" | "manual"; setting?: string; domains?: string; genre?: string; sampling?: string; darkness?: string; shape?: string; source?: string; author?: string; seed?: string; seed_id?: string } }>("/api/draws", async (req, reply) => {
     const b = req.body ?? {};
     if (b.domains !== undefined) return reply.code(400).send({ error: "domains are gone; a setting loads whole lists" });
     const opts: DrawOpts = { mode: b.mode ?? "manual", setting: b.setting || undefined, genre: b.genre || undefined,
-      sampling: (b.sampling || undefined) as DrawOpts["sampling"], darkness: (b.darkness || undefined) as DrawOpts["darkness"],
+      sampling: (b.sampling || undefined) as DrawOpts["sampling"], darkness: (b.darkness || undefined) as DrawOpts["darkness"], shape: (b.shape || undefined) as DrawOpts["shape"],
       ...seedAndSegment({ seed: b.seed, seedId: b.seed_id, source: b.source, author: b.author }) };
     try {
       // validation fails before the first model call; the model steps continue after the reply
