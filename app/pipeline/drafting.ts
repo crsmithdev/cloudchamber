@@ -24,6 +24,7 @@ import { ofKind } from "./artifacts.ts";
 import { bindScene, linesOf, runScenes, runSchedule, runScreens, writeScene, type Schedule } from "./write.ts";
 import { draftView, exportDraft, renderStory, type DraftView } from "./drafts.ts";
 import { tag } from "./model.ts";
+import { writeReport } from "./report.ts";
 import { fill } from "./prompts.ts";
 import { SCORE_MAX, same } from "./recur.ts";
 
@@ -99,7 +100,7 @@ export function parseConflicts(block: string): { a: number; b: number; why: stri
 }
 
 export class Drafting {
-  constructor(public p: Pipeline, public opts: { draftsDir?: string; lexiconPath?: string; premisesPath?: string; narrationDir?: string } = {}) {}
+  constructor(public p: Pipeline, public opts: { draftsDir?: string; lexiconPath?: string; premisesPath?: string; narrationDir?: string; outputDir?: string } = {}) {}
 
   /** The draw, when `action` is allowed on it now; otherwise the reason is thrown. */
   private must(drawId: string, action: Action): DrawRow {
@@ -239,6 +240,7 @@ export class Drafting {
       await this.registerRewrites(id, resolved.config);
     });
     settle(this.p.db, drawId, "awaiting_draft_gate");
+    await writeReport(this.p, drawId, this.opts.outputDir);
     return this.p.draw(drawId);
   }
 
@@ -389,6 +391,7 @@ export class Drafting {
     const constraints = chosen.length || structural.length ? constraintsBlock([...chosen, ...structural]) : undefined;
     await under(this.p.db, drawId, "drafting", "awaiting_draft_gate", () => this.regenerate(drawId, k, cfg, constraints, findingId));
     settle(this.p.db, drawId, "awaiting_draft_gate");
+    await writeReport(this.p, drawId, this.opts.outputDir);
     return this.p.draw(drawId);
   }
 

@@ -1,9 +1,10 @@
 # The private corpus, linked in as one directory. See the README.
 /corpus
 
-# Pipeline output: one directory per draw, and the exported drafts.
+# Pipeline output: one directory per draw, the exported drafts, and the reports.
 /briefs/
 /drafts/
+/output/
 
 # The store lives in ~/.cloudchamber/; an old copy may remain here.
 /data/

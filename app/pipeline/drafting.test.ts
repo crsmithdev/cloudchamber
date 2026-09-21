@@ -13,7 +13,7 @@ import { status } from "./status.ts";
 import { TEMPLATES } from "./prompts.ts";
 import { loadStages } from "./config.ts";
 import { loadDraftConfig } from "./draftconfig.ts";
-import { VERDICT_LOG } from "./paths.ts";
+import { OUTPUT, VERDICT_LOG } from "./paths.ts";
 import { A, B, LEDGER, SCENE_3_PATCH, SPAN_A, SPAN_B, SPAN_C, cleanSamples, derivationSamples, draftScript, drawn, finding, fixture, ledgerSamples, schedule, screenStructure, vignette } from "./drafting.fixture.ts";
 import { briefParts, partsIn, partsOf } from "./briefparts.ts";
 import { chainOf } from "./chain.ts";
@@ -488,6 +488,20 @@ describe("tag reading", () => {
 });
 
 describe("draft: schedule, scenes, screens, gate 2", () => {
+  test("a draft leaves its report: the story, its origins, the checks, the schedule, the screens and the cost", async () => {
+    const { p, d, draw } = await drawn();
+    await d.check(draw.id);
+    await d.draft(draw.id, { overrides: { "screens.samples": 3, "screens.keep_if": 2 } });
+    const dir = join(OUTPUT, draw.id);
+    const html = readFileSync(join(dir, "report.html"), "utf8");
+    for (const h of ["The story", "Where it came from", "The brief", "Checks and corrections", "The schedule", "Writing and screening, beat by beat", "What it cost"]) expect(html).toContain(`<h2>${h}</h2>`);
+    const scenes = chainOf(p, draw.id).scenes();
+    expect(html.split('class="beat"').length - 1).toBe(scenes.length);
+    expect(html.split('class="premise').length - 1).toBe(5);
+    // the preload turns the print off: a test starts no browser
+    expect(existsSync(join(dir, "report.pdf"))).toBe(false);
+  });
+
   test("sequential draft: schedule shape, scenes carry the text so far, screens per scene, slop, flags, status", async () => {
     const { p, d, draw, model, dir } = await drawn();
     await d.check(draw.id);

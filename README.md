@@ -124,6 +124,12 @@ bun install
 ./cloudchamber story <draw>                # the draft with its screen flags inline
 ```
 
+Every draft also leaves a report at `output/<draw>/report.html` and
+`report.pdf`. It holds the story, the seed, examples and premises it came
+from, the brief, every check round and the corrections it accepted, the
+schedule, the screens, the listen and slop measures, and the cost by stage.
+`./cloudchamber report <draw>` writes it again for any drafted draw.
+
 Or drive the same actions from the UI:
 
 ```sh
@@ -162,7 +168,7 @@ count and its screen flags.
 | `research/` | literature reviews behind the pipeline's design |
 | `docs/` | the knobs, the evaluation protocol, the specs and the images |
 | `corpus/` | the private corpus, linked in; not tracked |
-| `briefs/`, `drafts/` | pipeline output, one directory per draw; not tracked |
+| `briefs/`, `drafts/`, `output/` | pipeline output, one directory per draw; not tracked |
 | `~/.cloudchamber/` | the SQLite store; rebuilt from the corpus and `bank/` |
 
 ## Docs

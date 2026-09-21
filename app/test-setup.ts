@@ -1,4 +1,4 @@
-/** bun test preload: keep every test away from the tracked bank/, the corpus, briefs/ and data/. */
+/** bun test preload: keep every test away from the tracked bank/, the corpus, briefs/, output/ and data/. */
 import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -8,4 +8,7 @@ process.env.CLOUDCHAMBER_BANK = join(dir, "bank");
 process.env.CLOUDCHAMBER_EXAMPLES = join(dir, "examples");
 process.env.CLOUDCHAMBER_BRIEFS = join(dir, "briefs");
 process.env.CLOUDCHAMBER_DRAFTS = join(dir, "drafts");
+process.env.CLOUDCHAMBER_OUTPUT = join(dir, "output");
+// a draft writes its report; the PDF needs a browser, which a test does not start
+process.env.CLOUDCHAMBER_PDF = "0";
 process.env.CLOUDCHAMBER_DB = join(dir, "test.db");

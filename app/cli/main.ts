@@ -32,6 +32,7 @@ const DOC = `cloudchamber — the one command the skill and the UI drive.
    cloudchamber draft <draw> [--auto] [--profile P] [--words N] [--beats N] [--tense T] [--person P] [--chronology C] [--container C] [--order O] [--models G=M,...]
      --models sets the model per stage or group (prose, judgement, corpus) for the draw and the draws made from it, e.g. judgement=claude-sonnet-5
    cloudchamber story <draw>                   the draft with its screen flags inline
+   cloudchamber report <draw>                  write output/<draw>/report.html and .pdf: the story and everything that made it
    cloudchamber listen <draw> [--beat K] [--voice V] [--out PATH]   render the draft, or one beat, to a wav with the local kokoro voice
    cloudchamber serve [--port N] [--host H]    API and UI (default 127.0.0.1:3002)
    cloudchamber help [--md]                    this, then every tunable value, live\n`;
@@ -54,6 +55,7 @@ import { draftAll, failures, histogram, replayThemes } from "../pipeline/themes.
 import { formatFinding, lintFile, loadSetting, LISTS } from "../pipeline/settings.ts";
 import { distill, readKept } from "../pipeline/distill.ts";
 import { Drafting } from "../pipeline/drafting.ts";
+import { writeReport } from "../pipeline/report.ts";
 import { gateCommand, isGateAction, type GateArgs } from "../pipeline/gate.ts";
 import type { CheckResult } from "../pipeline/check.ts";
 import type { Overrides } from "../pipeline/draftconfig.ts";
@@ -211,6 +213,14 @@ async function main() {
       const [drawId] = rest;
       if (!drawId) usage();
       console.log(drafting().story(drawId!));
+      break;
+    }
+    case "report": {
+      const [drawId] = rest;
+      if (!drawId) usage();
+      const out = await writeReport(drafting().p, drawId!);
+      console.log(out.html);
+      console.log(out.pdf ?? "no pdf: no headless browser found, or CLOUDCHAMBER_PDF=0");
       break;
     }
     case "listen": {

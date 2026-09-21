@@ -29,7 +29,8 @@ export type CachedClaim = { statement: string; span: string; result: string; evi
 /** The model family of a model id: the second token of claude-<family>-... */
 export const family = (model: string) => model.split("-")[1] ?? model;
 
-const NO_CALL = ["copied", "deterministic", "patched"];
+/** The step models that stand for work done without a call. */
+export const NO_CALL = ["copied", "deterministic", "patched"];
 
 const amended = (base: string, amendments: Settled[]) => !amendments.length ? base
   : [base, "", "amended by the findings accepted since; where an amendment and a line above disagree, the amendment holds and the line above is void:", ...amendments.map((a) => `- ${a.replacement}`)].join("\n");

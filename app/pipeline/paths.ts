@@ -7,6 +7,8 @@ export const ROOT = resolve(import.meta.dir, "..", "..");
 export const BANK = process.env.CLOUDCHAMBER_BANK ?? resolve(ROOT, "bank");
 export const BRIEFS = process.env.CLOUDCHAMBER_BRIEFS ?? resolve(ROOT, "briefs");
 export const DRAFTS = process.env.CLOUDCHAMBER_DRAFTS ?? resolve(ROOT, "drafts");
+/** One report per drafted draw: the story and everything that made it, as HTML and PDF. Not tracked. */
+export const OUTPUT = process.env.CLOUDCHAMBER_OUTPUT ?? resolve(ROOT, "output");
 /**
  * The private corpus, linked in as one directory: the books, the example bank,
  * the narration transcripts, the settings and the stories. It is not in this
