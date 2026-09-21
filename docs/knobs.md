@@ -9,7 +9,7 @@ cloudchamber draw and POST /api/draws take the same knobs.
 | | |
 |---|---|
 | `--auto` | skip the gate by taking the lowest stated probability; otherwise the draw waits for you |
-| `--setting` | one of setting-c, setting-b, setting-a, or omitted for an unrestricted draw |
+| `--setting` | one of , or omitted for an unrestricted draw |
 | `--genre` | free text, dropped into one line of the premises ask; omitted, it follows the examples drawn |
 | `--shape` | listen; the premises are asked for a story told aloud: a first moment, an arrival in the flesh, a cost paid on the page, an aftermath. Not stored on the draw; the premises step's prompt shows it |
 | `--sampling` | tail \| off-centre \| standard; where in the stated distribution the five premises are asked for |
@@ -24,9 +24,6 @@ Every draw under a setting carries its lists whole. Caps: 40 entries a list, 45 
 
 | | |
 |---|---|
-| `setting-c` | 0 bodies · 0 events · 0 instruments · 0 places · 0 terms |
-| `setting-b` | 40 bodies · 40 events · 40 instruments · 40 places · 40 terms |
-| `setting-a` | 40 bodies · 40 events · 40 instruments · 40 places · 40 terms |
 
 ## genre shortcuts
 

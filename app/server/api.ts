@@ -135,8 +135,8 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
       .map((s) => ({ id: s.id, genre: s.genre, ...sourceLabel(s.id, s.path) })),
     authors: db.query("SELECT DISTINCT author FROM stories WHERE author <> '' ORDER BY author").all().map((r: any) => r.author),
     cells: db.query("SELECT voice || '/' || mode AS cell, count(*) AS n FROM passages GROUP BY cell").all(),
-    // each setting by its front matter name: "setting-b", not setting-b
-    settings: readdirSync(pipeline.settingsDir).filter((f) => f.endsWith(".md")).map((f) => {
+    // each setting by its front matter name, not by its id
+    settings: (existsSync(pipeline.settingsDir) ? readdirSync(pipeline.settingsDir) : []).filter((f) => f.endsWith(".md")).map((f) => {
       const id = f.replace(/\.md$/, "");
       return { id, name: loadSetting(id, pipeline.settingsDir).name };
     }),

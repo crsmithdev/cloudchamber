@@ -88,8 +88,22 @@ inherits what you already decided.
 - Python 3.11 or later with `pdfplumber`, `pdfminer.six`, `numpy`,
   `sentence-transformers` and `biberplus`, for extraction and theme embeddings.
 
-The corpus is twenty-nine books and one wiki: 619 stories and 4,082 scored
-passages, of which 4,079 are eligible to be drawn as examples.
+## The corpus
+
+The corpus is not in this repository. The books it draws examples from, the
+example bank extracted from them, the transcripts the runs are judged against
+and the author's own stories are third-party or unpublished work, so they live
+in a private repository. The pipeline expects that clone beside this one:
+
+```sh
+git clone <the private corpus repo> ~/cloudchamber-corpus
+```
+
+`sources/**/*.pdf`, `bank/examples/`, `evals/reference/`, `sources/settings/`
+and `stories/` are symlinks into it, and `.gitignore` keeps them out. What is
+here is the metadata: `sources/manifest.toml`, which names the thirty sources,
+and the SCP articles, which are CC BY-SA. The store holds 619 stories and
+4,082 scored passages once the corpus is in place.
 
 ## Quick start
 
@@ -113,6 +127,17 @@ Four tabs: browse the corpus, ideate a draw, check a brief, write the story.
 Three of them show a running operation and the judgement it is waiting for at
 the same time.
 
+The ideate tab: the draws on the left, and on the right the chosen premise
+with the probability the model stated for it, above the vignette that executed
+it.
+
+<img src="docs/ui-ideate.png" alt="The ideate tab: a draw list, a premise at 0.47, and the vignette written from it" width="900">
+
+The write tab: the form the schedule settled on, then each beat with its word
+count and its screen flags.
+
+<img src="docs/ui-write.png" alt="The write tab: length, beats, tense, person and chronology, then the first beat of the draft" width="900">
+
 `./cloudchamber help` prints every command and every tunable value, live.
 
 ## Layout
@@ -124,14 +149,14 @@ the same time.
 | `app/server/` | the Fastify API the UI calls |
 | `app/ui/` | the React UI: browse, ideate, check, write |
 | `extract/` | the Python extractor: PDFs and SCP articles into passages and facets |
-| `sources/` | the corpus, `manifest.toml`, and the lore settings under `settings/` |
+| `sources/` | `manifest.toml` and the SCP articles; the lore settings symlink in |
 | `bank/` | the verdict and theme logs, and the eligible passages as Markdown |
 | `briefs/` | one directory per finished draw |
-| `stories/` | hand-written reference stories; never a prompt input |
 | `docs/` | the knobs, the evaluation protocol and the specs |
 | `evals/` | one report per evaluation run, and the judge |
 | `research/` | literature reviews behind the pipeline's design |
 | `~/.cloudchamber/` | the SQLite store; rebuilt from `sources/` and `bank/` |
+| `~/cloudchamber-corpus/` | the private corpus this repo symlinks to |
 
 ## Docs
 
@@ -153,5 +178,6 @@ python3 -m pytest -q extract/tests   # the extractor; needs the corpus PDFs
 
 ## License
 
-[MIT](LICENSE). The code only: the books under `sources/` are the work of their
-authors and are not licensed by this repository.
+[MIT](LICENSE). The code only. The corpus is not in this repository and is not
+licensed by it: the books, the transcripts and the stories belong to their
+authors.

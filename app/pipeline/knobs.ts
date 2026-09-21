@@ -4,7 +4,7 @@
  * tomls, the sources from the store. `cloudchamber help` prints this after the
  * command grammar, and `--md` writes docs/knobs.md.
  */
-import { readdirSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { BANDS, DARKNESS, GENRES, RUN, SAMPLING, loadStages } from "./config.ts";
 import { TEMPLATES } from "./prompts.ts";
 import { LISTS, loadSetting } from "./settings.ts";
@@ -22,8 +22,15 @@ const SAMPLING_NOTE: Record<string, string> = {
   standard: "the strongest conventional treatment",
 };
 
+/** The setting ids present, or none when the directory is absent. */
+function settingListing(dir: string): string[] {
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir).filter((f) => f.endsWith(".md")).map((f) => f.replace(/\.md$/, ""));
+}
+
 export function knobs(db: Db, settingsDir: string = SETTINGS): Section[] {
-  const settings = readdirSync(settingsDir).filter((f) => f.endsWith(".md")).map((f) => f.replace(/\.md$/, ""));
+  // The settings are not in the repository; a checkout without them lists none.
+  const settings = settingListing(settingsDir);
   const stages = loadStages();
   const sources = db.query("SELECT id, path, genre FROM sources ORDER BY id").all() as { id: string; path: string; genre: string }[];
   const d = draftToml as any;

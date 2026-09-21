@@ -10,8 +10,8 @@
  * remained of that voice left on 2026-09-19. No setting carried either.
  *
  *   ---
- *   id: setting-a
- *   name: The setting-a
+ *   id: <slug>
+ *   name: <the setting's name>
  *   claims: setting
  *   seed_segments: []
  *   ---

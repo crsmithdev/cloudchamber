@@ -32,3 +32,14 @@ app/ui/dist/
 .impeccable/config.local.json
 .impeccable/hook.cache.json
 .impeccable/review/
+
+# The corpus is not in this repository. It lives in a private repository,
+# cloned beside this checkout as ~/cloudchamber-corpus and symlinked in: the
+# source books, the example bank, the narrated-channel transcripts, the lore
+# settings and the stories.
+/stories
+/bank/examples
+/evals/reference
+/sources/settings
+/sources/**/*.pdf
+/research/open-ground-*.md

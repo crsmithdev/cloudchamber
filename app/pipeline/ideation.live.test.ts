@@ -28,7 +28,7 @@ import { DEFAULT_DB, SETTINGS } from "./paths.ts";
 import { entryName, loadChecked, mentioned } from "./settings.ts";
 
 const LIVE = process.env.CLOUDCHAMBER_LIVE === "1";
-const SETTING_IDS = (process.env.CLOUDCHAMBER_LIVE_SETTINGS ?? "setting-a,setting-b,setting-c").split(",");
+const SETTING_IDS = (process.env.CLOUDCHAMBER_LIVE_SETTINGS ?? "").split(",").filter(Boolean);
 
 /** A scratch store with six passages copied from the real one: a draw writes rows, and it must not write them here. */
 function scratch() {

@@ -118,8 +118,8 @@ Real content exists and mockups must use it:
   `gate.json`, `checked.json`, `findings.json`, `brief.json`, rendered to
   static HTML by `tmp/mockups/gen.ts`. These are local scratch and not in
   git; only `worlds.ts` and the two stylesheets are tracked.
-- Ten hand-written reference stories in `stories/`. These are setting-a
-  reference material, not pipeline output.
+- Ten hand-written reference stories in `stories/`, which the private corpus
+  repository holds. They are reference material, not pipeline output.
 - The evaluation protocol in `docs/evaluation.md`, and its recorded runs in
   `evals/`.
 
