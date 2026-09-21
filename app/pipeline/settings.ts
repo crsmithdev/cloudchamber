@@ -1,5 +1,5 @@
 /**
- * A setting is one file under sources/settings/<id>.md: metadata-only front
+ * A setting is one file under corpus/settings/<id>.md: metadata-only front
  * matter and five flat lists of named things. Every stage of a draw loads
  * whole lists, never part of one. The setting's reference/ directory never
  * enters a prompt; it is what `distill` reads.
@@ -137,7 +137,7 @@ export function referenceDir(id: string, dir: string = SETTINGS): string { retur
 
 export function loadSetting(id: string, dir: string = SETTINGS): Setting {
   const path = settingPath(id, dir);
-  if (!existsSync(path)) throw new Error(`setting ${id}: no file at sources/settings/${id}.md`);
+  if (!existsSync(path)) throw new Error(`setting ${id}: no file at corpus/settings/${id}.md`);
   return parseSetting(readFileSync(path, "utf8"), id, dir);
 }
 
@@ -251,7 +251,7 @@ export class SettingLintError extends Error {
 /** Load a setting for a draw or a distill: lint first, throw on findings. */
 export function loadChecked(id: string, dir: string = SETTINGS): Setting {
   const path = settingPath(id, dir);
-  if (!existsSync(path)) throw new Error(`setting ${id}: no file at sources/settings/${id}.md`);
+  if (!existsSync(path)) throw new Error(`setting ${id}: no file at corpus/settings/${id}.md`);
   const text = readFileSync(path, "utf8");
   const findings = lintSetting(text, id);
   if (findings.length) throw new SettingLintError(id, findings);

@@ -1,16 +1,24 @@
-# Google Drive for Desktop scratch
-.tmp.drivedownload/
-.tmp.driveupload/
+# The private corpus, linked in as one directory. See the README.
+/corpus
 
-# Python
+# Pipeline output: one directory per draw, and the exported drafts.
+/briefs/
+/drafts/
+
+# The store lives in ~/.cloudchamber/; an old copy may remain here.
+/data/
+
+# Build output and tool state
+node_modules/
+app/ui/dist/
 __pycache__/
 *.py[cod]
-
-# Agent worktrees
+.pytest_cache/
+.playwright-cli/
 .worktrees/
 
-# Scratch a session serves from the repo: mockups and the like. The phase B
-# world stylesheets and their generator are tracked; fixtures and renders are not.
+# Mockup scratch. The world stylesheets and their generator are tracked;
+# fixtures and renders are not.
 tmp/*
 !tmp/mockups/
 tmp/mockups/*
@@ -18,28 +26,7 @@ tmp/mockups/*
 !tmp/mockups/tide-table.css
 !tmp/mockups/galley-proof.css
 
-# The store lived here before it moved to ~/.cloudchamber/; backups may remain.
-# It is rebuildable from sources/ plus bank/verdicts.jsonl and bank/themes.jsonl,
-# which are tracked because nothing else reproduces them.
-data/
-.pytest_cache/
-
-node_modules/
-app/ui/dist/
-.playwright-cli/
-
-# impeccable per-developer config
+# impeccable per-developer state
 .impeccable/config.local.json
 .impeccable/hook.cache.json
 .impeccable/review/
-
-# The corpus is not in this repository. It lives in a private repository,
-# cloned beside this checkout as ~/cloudchamber-corpus and symlinked in: the
-# source books, the example bank, the narrated-channel transcripts, the lore
-# settings and the stories.
-/stories
-/bank/examples
-/evals/reference
-/sources/settings
-/sources/**/*.pdf
-/research/open-ground-*.md

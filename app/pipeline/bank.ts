@@ -1,13 +1,13 @@
 /**
  * Export the eligible bank to plain files a skill can read without the store.
- *   bank/examples/<source>.md   every eligible passage of that source, verbatim
+ *   corpus/examples/<source>.md every eligible passage of that source, verbatim
  *   bank/themes.md              every eligible theme with its attestation
  * Passed or artifact-flagged items never appear, nor any passage of a passed
  * story. Rebuildable; tracked anyway.
  */
 import { mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { BANK } from "./paths.ts";
+import { BANK, EXAMPLES } from "./paths.ts";
 import type { Db, PassageRow, ThemeRow } from "./store/db.ts";
 import { INELIGIBLE_SQL, eligibleIds } from "./verdicts.ts";
 
@@ -76,10 +76,11 @@ export function eligibleThemes(db: Db): ThemeRow[] {
   return rows.filter((r) => ok.has(r.id));
 }
 
-export function exportBank(db: Db, dir: string = BANK): { files: string[]; passages: number; themes: number } {
-  const exDir = join(dir, "examples");
-  mkdirSync(exDir, { recursive: true });
-  for (const f of readdirSync(exDir)) if (f.endsWith(".md")) rmSync(join(exDir, f));
+/** The passages go to `examples`, which is private; the themes go to `bank`, which is tracked. */
+export function exportBank(db: Db, { bank = BANK, examples = EXAMPLES }: { bank?: string; examples?: string } = {}): { files: string[]; passages: number; themes: number } {
+  mkdirSync(examples, { recursive: true });
+  mkdirSync(bank, { recursive: true });
+  for (const f of readdirSync(examples)) if (f.endsWith(".md")) rmSync(join(examples, f));
   const passages = eligiblePassages(db);
   const bySource = new Map<string, typeof passages>();
   for (const p of passages) {
@@ -92,14 +93,14 @@ export function exportBank(db: Db, dir: string = BANK): { files: string[]; passa
     for (const p of rows) {
       out.push(`### ${p.title} — ${p.author || "unknown"} · ${p.genre} · ${p.voice ?? "?"}/${p.mode ?? "?"} · ${p.id}`, "", p.text, "");
     }
-    const path = join(exDir, `${source}.md`);
+    const path = join(examples, `${source}.md`);
     writeFileSync(path, out.join("\n"));
     files.push(path);
   }
   const themes = eligibleThemes(db);
   const tOut = ["# themes", "", `${themes.length} eligible themes. One sentence each; attestation is how many stories drafted it.`, ""];
   for (const t of themes) tOut.push(`- ${t.text}  \n  ×${t.attestation} · ${JSON.parse(t.stories).join(", ")} · ${t.id}`);
-  const tPath = join(dir, "themes.md");
+  const tPath = join(bank, "themes.md");
   writeFileSync(tPath, tOut.join("\n") + "\n");
   files.push(tPath);
   return { files, passages: passages.length, themes: themes.length };

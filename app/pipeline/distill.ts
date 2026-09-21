@@ -4,7 +4,7 @@
  * call.
  *
  *   map     one call per reference file; candidate entries append to
- *           sources/settings/<id>/candidates.jsonl with the file's topic
+ *           corpus/settings/<id>/candidates.jsonl with the file's topic
  *           and a hash of its content. A file whose hash is already in the
  *           sidecar is skipped, so a killed run resumes by re-running; a
  *           changed or removed file loses its rows, and a changed or new
@@ -226,7 +226,7 @@ export async function distillReduce(p: Pipeline, id: string, setting: Setting): 
 export async function distill(p: Pipeline, id: string, opts: DistillOpts = {}): Promise<string[]> {
   const dir = p.settingsDir;
   const path = settingPath(id, dir);
-  if (!existsSync(path)) throw new Error(`setting ${id}: no file at sources/settings/${id}.md`);
+  if (!existsSync(path)) throw new Error(`setting ${id}: no file at corpus/settings/${id}.md`);
   const setting = parseSetting(readFileSync(path, "utf8"), id, dir);
   const both = !opts.map && !opts.reduce;
   const out: string[] = [];

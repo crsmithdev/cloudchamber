@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCES = ROOT / "sources"
+BOOKS = ROOT / "corpus" / "books"
 
 
 def run(*args, db):
@@ -19,7 +19,7 @@ def run(*args, db):
 def db(tmp_path_factory):
     """A store built from the dev subset: read, segment, facets. Skips when the
     corpus is not on disk (the PDFs are not redistributable)."""
-    if not (SOURCES / "horror" / "Ellen Datlow - The Best Horror of the Year Volume 01.pdf").exists():
+    if not (BOOKS / "Ellen Datlow - The Best Horror of the Year Volume 01.pdf").exists():
         pytest.skip("dev sources not present")
     path = tmp_path_factory.mktemp("store") / "cloudchamber.db"
     run("read", db=path)

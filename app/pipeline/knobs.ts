@@ -1,6 +1,6 @@
 /**
  * Every tunable, read at run time rather than written down: the settings and
- * their list sizes come from sources/settings, the vocabularies from the
+ * their list sizes come from corpus/settings, the vocabularies from the
  * tomls, the sources from the store. `cloudchamber help` prints this after the
  * command grammar, and `--md` writes docs/knobs.md.
  */

@@ -1,4 +1,4 @@
-<img src="docs/logo.svg" alt="" width="200">
+<img src="docs/images/logo.svg" alt="" width="200">
 
 # Cloud Chamber
 
@@ -90,20 +90,27 @@ inherits what you already decided.
 
 ## The corpus
 
-The corpus is not in this repository. The books it draws examples from, the
-example bank extracted from them, the transcripts the runs are judged against
-and the author's own stories are third-party or unpublished work, so they live
-in a private repository. The pipeline expects that clone beside this one:
+The corpus is not in this repository. The books the examples come from, the
+example bank, the transcripts the runs are judged against, the lore settings
+and the author's own stories are third-party or unpublished work. They live in
+a private repository, linked in as one directory:
 
 ```sh
-git clone <the private corpus repo> ~/cloudchamber-corpus
+ln -s ~/cloudchamber-corpus corpus
 ```
 
-`sources/**/*.pdf`, `bank/examples/`, `evals/reference/`, `sources/settings/`
-and `stories/` are symlinks into it, and `.gitignore` keeps them out. What is
-here is the metadata: `sources/manifest.toml`, which names the thirty sources,
-and the SCP articles, which are CC BY-SA. The store holds 619 stories and
-4,082 scored passages once the corpus is in place.
+| `corpus/` | Holds |
+|---|---|
+| `books/` | the source books, one PDF each |
+| `examples/` | every eligible passage, verbatim; `cloudchamber export` writes it |
+| `narration/` | the narrated-channel transcripts the listen screen and the judge read |
+| `settings/` | the lore settings: five lists each, and their reference material |
+| `stories/` | the author's hand-written stories; never a prompt input |
+
+To use your own corpus, give it the same five directories and list your books
+in `sources/manifest.toml`. What is here without it is the manifest and the SCP
+articles under `sources/scp/`, which are CC BY-SA. With the full corpus the
+store holds 619 stories and 4,082 scored passages.
 
 ## Quick start
 
@@ -131,12 +138,12 @@ The ideate tab: the draws on the left, and on the right the chosen premise
 with the probability the model stated for it, above the vignette that executed
 it.
 
-<img src="docs/ui-ideate.png" alt="The ideate tab: a draw list, a premise at 0.47, and the vignette written from it" width="900">
+<img src="docs/images/ui-ideate.png" alt="The ideate tab: a draw list, a premise at 0.47, and the vignette written from it" width="900">
 
 The write tab: the form the schedule settled on, then each beat with its word
 count and its screen flags.
 
-<img src="docs/ui-write.png" alt="The write tab: length, beats, tense, person and chronology, then the first beat of the draft" width="900">
+<img src="docs/images/ui-write.png" alt="The write tab: length, beats, tense, person and chronology, then the first beat of the draft" width="900">
 
 `./cloudchamber help` prints every command and every tunable value, live.
 
@@ -149,14 +156,14 @@ count and its screen flags.
 | `app/server/` | the Fastify API the UI calls |
 | `app/ui/` | the React UI: browse, ideate, check, write |
 | `extract/` | the Python extractor: PDFs and SCP articles into passages and facets |
-| `sources/` | `manifest.toml` and the SCP articles; the lore settings symlink in |
-| `bank/` | the verdict and theme logs, and the eligible passages as Markdown |
-| `briefs/` | one directory per finished draw |
-| `docs/` | the knobs, the evaluation protocol and the specs |
-| `evals/` | one report per evaluation run, and the judge |
+| `sources/` | `manifest.toml`, which names every source, and the SCP articles |
+| `bank/` | the verdict and theme logs; tracked, because nothing else reproduces them |
+| `evals/` | the judge, and one report per evaluation run |
 | `research/` | literature reviews behind the pipeline's design |
-| `~/.cloudchamber/` | the SQLite store; rebuilt from `sources/` and `bank/` |
-| `~/cloudchamber-corpus/` | the private corpus this repo symlinks to |
+| `docs/` | the knobs, the evaluation protocol, the specs and the images |
+| `corpus/` | the private corpus, linked in; not tracked |
+| `briefs/`, `drafts/` | pipeline output, one directory per draw; not tracked |
+| `~/.cloudchamber/` | the SQLite store; rebuilt from the corpus and `bank/` |
 
 ## Docs
 

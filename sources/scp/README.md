@@ -1,8 +1,7 @@
-# refs/scp — original article text
+# SCP articles — original text
 
-Verbatim Wikidot source for the 109 SCP articles that have full entries in
-`sources/texts/scp/`. One file per article; `sources/texts/scp/` holds the
-register's commentary on them.
+Verbatim Wikidot source for 109 SCP articles, one file per article. The
+extractor reads them as the `scp` source in `sources/manifest.toml`.
 
 ## Provenance
 
@@ -26,8 +25,7 @@ HTML-comment attribution line, then the source.
 All content is by its credited authors and licensed **CC BY-SA 3.0**. Author
 names come from each page's licensebox where it renders server-side (99 files),
 otherwise from the original revision in the page history (10 files). SCP-597 is
-recorded as `uncredited` — its licensebox renders an unfilled placeholder, which
-matches the note in `sources/texts/scp/assorted.md`.
+recorded as `uncredited` — its licensebox renders an unfilled placeholder.
 
 Anything derived from these files and published must carry author, source link
 and the CC BY-SA 3.0 notice, and be shared under the same license.

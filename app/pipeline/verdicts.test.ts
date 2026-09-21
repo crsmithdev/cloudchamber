@@ -79,7 +79,7 @@ describe("story verdicts", () => {
     expect(passedStories(db)).toEqual(new Set(["src/a"]));
     expect(eligiblePassages(db).map((p) => p.id)).toEqual(["p3"]);
     expect(latest(db, "example", "p1")?.verdict).toBe("keep");           // the passage's own verdict is untouched
-    expect(exportBank(db, join(dir, "bank")).passages).toBe(1);
+    expect(exportBank(db, { bank: join(dir, "bank"), examples: join(dir, "examples") }).passages).toBe(1);
     record(db, { kind: "story", target_id: "src/a", verdict: "keep", method: "browse" }, log);
     expect(passedStories(db).size).toBe(0);
     expect(eligiblePassages(db).map((p) => p.id)).toEqual(["p1", "p2", "p3"]);
@@ -136,10 +136,10 @@ describe("bank export", () => {
     record(db, { kind: "example", target_id: "p1", verdict: "pass", method: "queue" }, log);
     record(db, { kind: "example", target_id: "p2", verdict: "keep", method: "queue", artifact: true }, log);
     record(db, { kind: "theme", target_id: "t2", verdict: "pass", method: "browse" }, log);
-    const out = exportBank(db, join(dir, "bank"));
+    const out = exportBank(db, { bank: join(dir, "bank"), examples: join(dir, "examples") });
     expect(out.passages).toBe(1);
     expect(out.themes).toBe(1);
-    const ex = readFileSync(join(dir, "bank", "examples", "src.md"), "utf8");
+    const ex = readFileSync(join(dir, "examples", "src.md"), "utf8");
     expect(ex).toContain("p3");
     expect(ex).not.toContain("p1");
     expect(ex).not.toContain("p2");

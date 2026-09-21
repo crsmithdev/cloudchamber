@@ -1,6 +1,6 @@
 """SCP wikidot source -> Doc.
 
-The files in sources/texts/scp/ are verbatim Wikidot markup with a YAML front matter
+The files in sources/scp/ are verbatim Wikidot markup with a YAML front matter
 block prepended by the scraper. This strips the machinery — includes, modules,
 divs, rate widgets, licenseboxes, image blocks, footnote bodies — and keeps the
 prose, because the prose is the only thing worth conditioning on.

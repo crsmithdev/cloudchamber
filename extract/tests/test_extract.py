@@ -5,10 +5,10 @@ import pytest
 import re
 
 from extract import pdf, segment, store
-from extract.tests.conftest import ROOT, SOURCES, run
+from extract.tests.conftest import BOOKS, ROOT, run
 
-VOL01 = SOURCES / "horror" / "Ellen Datlow - The Best Horror of the Year Volume 01.pdf"
-CONTAGION = SOURCES / "horror" / "Brian Evenson - Contagion and Other Stories.pdf"
+VOL01 = BOOKS / "Ellen Datlow - The Best Horror of the Year Volume 01.pdf"
+CONTAGION = BOOKS / "Brian Evenson - Contagion and Other Stories.pdf"
 CONTAGION_STORIES = ["The Polygamy Of Language", "Two Brothers", "A Hanging", "Internal",
                      "Prairie", "Contagion", "Watson's Boy", "By Halves"]
 
@@ -179,7 +179,7 @@ def test_outline_bylines_in_every_house_style_and_chapter_prefixes():
 
 
 def test_nested_outline_uses_the_shallowest_populated_level():
-    chiang = SOURCES / "scifi" / "Ted Chiang - Stories of Your Life and Others.pdf"
+    chiang = BOOKS / "Ted Chiang - Stories of Your Life and Others.pdf"
     if not chiang.exists():
         pytest.skip("chiang not present")
     titles = [t for t, _ in pdf.outline_entries(chiang)]

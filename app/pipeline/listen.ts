@@ -1,6 +1,6 @@
 /**
  * The listenability screen: deterministic, outside any model, against the
- * narrated stories in evals/reference/. Six measures a listener feels and a
+ * narrated stories in corpus/narration/. Six measures a listener feels and a
  * reader does not: sentence length, the share of long sentences, numerals,
  * quotation, the body named, the listener addressed. Each is given for the
  * draft and for the pool, and the draft's minutes at the pool's narration

@@ -12,7 +12,7 @@ the command, read what it prints, report it.
 
 The specs are `docs/specs/2026-09-04-ideation-pipeline.md` (to a brief) and
 `docs/specs/2026-09-05-drafting-pipeline.md` (check, repair, draft). The bank a session
-may read directly is `bank/examples/*.md` (verbatim passages by source) and
+may read directly is `corpus/examples/*.md` (verbatim passages by source) and
 `bank/themes.md`; both hold only what is eligible (not passed, not flagged).
 
 ## Commands
@@ -50,10 +50,10 @@ Source ids are the manifest's table names (`scp`, `datlow-01`, `evenson-contagio
 
 ## Settings
 
-A setting is `sources/settings/<id>.md`: front matter, five lists (Bodies,
+A setting is `corpus/settings/<id>.md`: front matter, five lists (Bodies,
 Events, Instruments, Places, Terms) and the optional prose sections Matrix and
 Jobs. Each stage of a draw loads the lists it needs, each list whole; `LOADING`
-in `app/pipeline/settings.ts` is the table. `sources/settings/<id>/reference/` holds the
+in `app/pipeline/settings.ts` is the table. `corpus/settings/<id>/reference/` holds the
 imported lore; it never enters a draw prompt. `distill` builds the lists from
 the reference files in two passes, and `lint` runs before any draw or distill.
 Front matter `claims: world` or `claims: setting` turns on the claims checker,
@@ -102,6 +102,6 @@ location. The session does not accept or dismiss findings on Chris's behalf.
 
 - Do not write premises, vignettes or themes yourself. Start a draw.
 - Do not read a candidate to the user before the draw has produced all five.
-- Do not put anything from `stories/` into a prompt or a filter.
+- Do not put anything from `corpus/stories/` into a prompt or a filter.
 - Report what a command printed. If it failed, show the error.
 - Do not accept, dismiss, keep, rewrite or archive at either gate unless Chris said to.
