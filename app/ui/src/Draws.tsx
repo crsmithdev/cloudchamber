@@ -4,7 +4,7 @@ import { api, when, type Artifact, type AutoResult, type Candidate, type Example
 import { ArchivedToggle, Bar, Btn, Caret, Chip, Field, Head, Icon, Keys, LinkBtn, Mark, ModelPicks, Seg, hhmm, lastSelected, markFor, onEnter, rowKeys, secs, usageLine, usePoll, useRememberSelected, useRowsFromPage, useTick, useAddressBar, type MarkState } from "./ui.tsx";
 
 /** `checked` and `auto` are the chain's answers; the pane does not read them off the artifact list. */
-export type Detail = { draw: Draw; origin: Origin | null; steps: Step[]; parts: Parts; checks_next: string[]; repair: Repair; checked: boolean; auto: AutoResult | null; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] };
+export type Detail = { draw: Draw; origin: Origin | null; steps: Step[]; parts: Parts; checks_next: string[]; repair: Repair; checked: boolean; auto: AutoResult | null; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[]; report: boolean };
 const STAGES = ["premises", "execute", "gate", "outline", "context", "ending", "brief"];
 export const LABEL: Record<string, string> = {
   awaiting_gate: "choose a premise",

@@ -20,7 +20,7 @@ import { BANDS, DARKNESS, GENRES, SAMPLING } from "../pipeline/config.ts";
 import { exportBank, sourceLabel } from "../pipeline/bank.ts";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, resolve, sep } from "node:path";
-import { BRIEFS } from "../pipeline/paths.ts";
+import { BRIEFS, OUTPUT } from "../pipeline/paths.ts";
 import { Drafting, type FindingsSummary } from "../pipeline/drafting.ts";
 import { loadSetting } from "../pipeline/settings.ts";
 import { loadDraftConfig, profileNames, type DraftConfig } from "../pipeline/draftconfig.ts";
@@ -110,6 +110,8 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     return Promise.race([work.then(() => null, (e: Error) => e), new Promise<null>((r) => setImmediate(() => r(null)))]);
   };
   const drafting = opts.drafting ?? new Drafting(pipeline);
+  // the report a draft leaves at gate 2 (pipeline/report.ts); the PDF is absent until the print finishes, or when no browser is found
+  const reportPdf = (id: string) => join(drafting.opts.outputDir ?? OUTPUT, id, "report.pdf");
 
   app.get("/api/status", async () => status(db));
 
@@ -216,7 +218,8 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
       // what the pane used to read off the artifact list itself: whether a check pass exists, and the auto run that ended here
       const chain = chainOf(pipeline, row.id);
       return { draw, origin: originOf(pipeline, row.id), steps, parts: partsView(pipeline, draw.id), checks_next, repair: cfg.repair, checked: !!chain.pass(), auto: chain.auto(),
-               artifacts: pipeline.artifacts(draw.id), candidates: pipeline.candidates(draw.id), examples: drawExamples(db, draw.example_ids), forks: pipeline.forks(draw.id) };
+               artifacts: pipeline.artifacts(draw.id), candidates: pipeline.candidates(draw.id), examples: drawExamples(db, draw.example_ids), forks: pipeline.forks(draw.id),
+               report: existsSync(reportPdf(draw.id)) };
     } catch (e: any) { return reply.code(404).send({ error: e.message }); }
   });
 
@@ -267,6 +270,14 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
   app.get<{ Params: { id: string }; Querystring: { flags?: string } }>("/api/draws/:id/story", async (req, reply) => {
     const withFlags = !(req.query.flags === "0" || req.query.flags === "false");
     try { const v = drafting.view(req.params.id); return { ...v, text: renderStory(v, withFlags) }; } catch (e: any) { return reply.code(404).send({ error: e.message }); }
+  });
+
+  // the id names a draw that exists, so the path cannot leave output/
+  app.get<{ Params: { id: string } }>("/api/draws/:id/report.pdf", async (req, reply) => {
+    try { pipeline.draw(req.params.id); } catch (e: any) { return reply.code(404).send({ error: e.message }); }
+    const path = reportPdf(req.params.id);
+    if (!existsSync(path)) return reply.code(404).send({ error: `no report.pdf for ${req.params.id}: run cloudchamber report ${req.params.id}` });
+    return reply.type("application/pdf").header("content-disposition", `inline; filename="${req.params.id}-report.pdf"`).send(readFileSync(path));
   });
 
   // a route parameter is decoded, so `..%2F` arrives as `../`: a path must resolve inside briefs/

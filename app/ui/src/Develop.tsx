@@ -1240,6 +1240,12 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
   const words = s.scenes.reduce((a, x) => a + wordsOf(x.text), 0);
   const cfg = d.draw.draft_config ? JSON.parse(d.draw.draft_config) : null;
   const nStructure = s.profiles.reduce((a, p) => a + p.flags.length, 0);
+  // the report is printed after the draft settles, so the link appears on a later poll
+  const report = d.report && (
+    <a href={api.reportPdf(id)} target="_blank" rel="noopener" className="num" title={`The story and everything that made it, from output/${id}/report.pdf.`}>
+      report.pdf
+    </a>
+  );
   return (
     <>
       {gating && (
@@ -1265,6 +1271,7 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
           </span>
           <input type="text" placeholder="note for the log" aria-label="Gate note" value={note} onChange={(e) => setNote(e.target.value)} />
           <span className="end">
+            {report}
             <Btn variant="quiet" pressed={view === "schedule"} onClick={() => setView(view === "schedule" ? "story" : "schedule")}>
               {view === "schedule" ? "story" : "schedule"}
             </Btn>
@@ -1285,6 +1292,7 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
             {d.draw.error && <span className="text-pass"> · the last action failed: {d.draw.error}</span>}
           </span>
           <span className="end">
+            {report}
             <Btn variant="quiet" pressed={view === "schedule"} onClick={() => setView(view === "schedule" ? "story" : "schedule")}>
               {view === "schedule" ? "story" : "schedule"}
             </Btn>

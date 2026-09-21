@@ -7,6 +7,7 @@ import { FakeModel } from "../pipeline/model.ts";
 import { Pipeline } from "../pipeline/draw.ts";
 import { loadDraftConfig } from "../pipeline/draftconfig.ts";
 import { buildApi, Jobs } from "./api.ts";
+import { OUTPUT } from "../pipeline/paths.ts";
 import { settingsFixture } from "../pipeline/settings.fixture.ts";
 
 const CELLS = ["informational", "mixed", "involved"].flatMap((v) => ["non-narrative", "mixed", "narrative"].map((m) => [v, m]));
@@ -295,6 +296,14 @@ describe("api: check, gate 1, draft, gate 2", () => {
     expect(kept.body.payload.draw.status).toBe("drafted");
     expect(kept.body.payload.dir).toBe(join(dir, "drafts", d2.id));
     expect((await j2("GET", `/api/draws/${d2.id}`)).body.draw.status).toBe("drafted");
+    // the report link: absent while no PDF is printed (tests set CLOUDCHAMBER_PDF=0), served once one is there
+    expect((await j2("GET", `/api/draws/${d2.id}`)).body.report).toBe(false);
+    expect((await j2("GET", `/api/draws/${d2.id}/report.pdf`)).code).toBe(404);
+    writeFileSync(join(OUTPUT, d2.id, "report.pdf"), "%PDF-1.4 fake");
+    expect((await j2("GET", `/api/draws/${d2.id}`)).body.report).toBe(true);
+    const pdf = await app2.inject({ method: "GET", url: `/api/draws/${d2.id}/report.pdf` });
+    expect([pdf.statusCode, pdf.headers["content-type"], pdf.body]).toEqual([200, "application/pdf", "%PDF-1.4 fake"]);
+    expect((await j2("GET", `/api/draws/nosuch/report.pdf`)).code).toBe(404);
     expect((await j2("POST", `/api/draws/${d2.id}/draft`, {})).code).toBe(400);
     expect((await j2("POST", `/api/draws/${d2.id}/gate`, { action: "sing" })).code).toBe(400);
   });

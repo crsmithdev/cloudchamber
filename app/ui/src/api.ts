@@ -186,7 +186,7 @@ export const api = {
   verdict: (b: { kind: string; target_id: string; verdict: "keep" | "pass"; artifact: boolean; note: string; method: string }) => j("/api/verdicts", { method: "POST", body: JSON.stringify(b) }),
   items: (q: Record<string, string>) => j<{ total: number; items: Item[] }>(`/api/items?${new URLSearchParams(q)}`),
   draws: (archived = false) => j<Draw[]>(`/api/draws${archived ? "?archived=true" : ""}`),
-  draw: (id: string) => j<{ draw: Draw; origin: Origin | null; steps: Step[]; parts: Parts; checks_next: string[]; repair: Repair; checked: boolean; auto: AutoResult | null; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[] }>(`/api/draws/${id}`),
+  draw: (id: string) => j<{ draw: Draw; origin: Origin | null; steps: Step[]; parts: Parts; checks_next: string[]; repair: Repair; checked: boolean; auto: AutoResult | null; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[]; report: boolean }>(`/api/draws/${id}`),
   like: (id: string) => j<Like>(`/api/draws/${id}/like`),
   deleteDraw: (id: string) => j<GateResult>(`/api/draws/${id}`, { method: "DELETE", body: "{}" }),
   startDraw: (b: Record<string, string | undefined | Record<string, string>>) => j<{ id: string }>("/api/draws", { method: "POST", body: JSON.stringify(b) }),
@@ -199,6 +199,7 @@ export const api = {
   draftConfig: () => j<DraftConfigView>("/api/draft-config"),
   brief: (id: string) => j<Record<string, string>>(`/api/briefs/${id}`),
   briefFile: (id: string, file: string) => `/api/briefs/${id}/${file}`,
+  reportPdf: (id: string) => `/api/draws/${id}/report.pdf`,
 };
 
 export type Status = {
