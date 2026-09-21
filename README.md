@@ -1,3 +1,5 @@
+<img src="docs/logo.svg" alt="" width="200">
+
 # Cloud Chamber
 
 Cloud Chamber turns one sentence into a short story written to be heard.
@@ -148,3 +150,8 @@ bun test app                         # the pipeline, the API and the store
 bunx tsc --noEmit                    # types
 python3 -m pytest -q extract/tests   # the extractor; needs the corpus PDFs
 ```
+
+## License
+
+[MIT](LICENSE). The code only: the books under `sources/` are the work of their
+authors and are not licensed by this repository.
