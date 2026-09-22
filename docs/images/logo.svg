@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="240" height="156" viewBox="-12 10 120 78" role="img" aria-label="Cloud Chamber">
-  <rect x="-12" y="10" width="120" height="78" rx="8" fill="#0d1114"/>
-  <g fill="none" stroke="#d6dde0" stroke-width="6.5" stroke-linecap="round">
-    <path d="M34 54 A30 30 0 0 1 94 54 A20 20 0 0 1 54 54 A10 10 0 0 1 74 54"/>
-    <path d="M34 54 A16 16 0 0 0 2 54 A8 8 0 0 0 18 54"/>
-  </g>
-  <circle cx="34" cy="54" r="11" fill="#e3b463"/>
-</svg>

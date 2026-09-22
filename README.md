@@ -1,6 +1,13 @@
-<img src="docs/images/logo.svg" alt="" width="200">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/wordmark-dark.svg">
+  <img src="docs/images/wordmark-light.svg" alt="Cloud Chamber" width="300">
+</picture>
 
-# Cloud Chamber
+<img src="docs/images/ui-ideate.png" alt="The ideate tab: a draw list, a premise at 0.47, and the vignette written from it" width="49%"> <img src="docs/images/ui-write.png" alt="The write tab: length, beats, tense, person and chronology, then the first beat of the draft" width="49%">
+
+*Left: the ideate tab, the chosen premise with its stated probability above the vignette that executed it. Right: the write tab, the form the schedule settled on, then each beat with its word count and its screen flags.*
+
+[What it is measured against](#what-it-is-measured-against) · [How a draw works](#how-a-draw-works) · [More than a long prompt](#what-makes-it-more-than-a-long-prompt) · [Requirements](#requirements) · [The corpus](#the-corpus) · [Quick start](#quick-start) · [Layout](#layout) · [Docs](#docs) · [Tests](#tests) · [License](#license)
 
 Cloud Chamber turns one sentence into a short story written to be heard.
 
@@ -138,18 +145,7 @@ bun run ui:build && ./cloudchamber serve   # http://127.0.0.1:3002
 
 Four tabs: browse the corpus, ideate a draw, check a brief, write the story.
 Three of them show a running operation and the judgement it is waiting for at
-the same time.
-
-The ideate tab: the draws on the left, and on the right the chosen premise
-with the probability the model stated for it, above the vignette that executed
-it.
-
-<img src="docs/images/ui-ideate.png" alt="The ideate tab: a draw list, a premise at 0.47, and the vignette written from it" width="900">
-
-The write tab: the form the schedule settled on, then each beat with its word
-count and its screen flags.
-
-<img src="docs/images/ui-write.png" alt="The write tab: length, beats, tense, person and chronology, then the first beat of the draft" width="900">
+the same time. The screenshots at the top show two of them.
 
 `./cloudchamber help` prints every command and every tunable value, live.
 
@@ -177,6 +173,8 @@ count and its screen flags.
   `./cloudchamber help --md`; never edited by hand.
 - [`docs/evaluation.md`](docs/evaluation.md): the protocol an evaluation run follows.
 - [`docs/specs/`](docs/specs/): the design of record for each pipeline.
+- [`CONTEXT.md`](CONTEXT.md): the glossary of the domain's terms.
+- [`docs/adr/`](docs/adr/): the decisions that are hard to reverse, and why.
 - [`PRODUCT.md`](PRODUCT.md) and [`DESIGN.md`](DESIGN.md): the product and the
   visual design the UI holds to.
 - [`research/README.md`](research/README.md): what the published record supports.
