@@ -163,9 +163,9 @@ const withheldLine = (b: Beat, M: number) => b.withheld.length ? b.withheld.map(
 
 /**
  * The part of every scene ask that no beat changes: the examples, the outline,
- * the ledger and the schedule. It goes after the stage's system line, where the
- * CLI caches it; in the user prompt it was written to the cache on every call
- * and never read, most of a draft's cost.
+ * the ledger and the schedule. It goes in the system prompt, where the CLI
+ * caches it; in the user prompt it was written to the cache on every call and
+ * never read, most of a draft's cost.
  */
 export function sceneContext(parts: BriefParts, ledger: string, s: Schedule): string {
   return [

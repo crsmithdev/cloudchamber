@@ -27,7 +27,7 @@ async function setup() {
     outline: () => outline,
     context: () => "<vignette>ctx</vignette>", ending: () => "<ending>end</ending>",
   });
-  const pipeline = new Pipeline(db, model, { briefsDir: join(dir, "briefs"), rng: () => 0.001, settingsDir: settingsFixture(dir) });
+  const pipeline = new Pipeline(db, model, { briefsDir: join(dir, "briefs"), rng: () => 0.001, settingsDir: settingsFixture(dir), cacheLeadMs: 0 });
   const app = buildApi(db, pipeline);
   const j = async (method: "GET" | "POST" | "DELETE", url: string, body?: unknown) => {
     const r = await app.inject({ method, url, payload: body as any });
@@ -245,7 +245,7 @@ describe("api: check, gate 1, draft, gate 2", () => {
     const ins = db.query("INSERT INTO passages (id, story_id, text, words, stratum, position, seed, first_seen, voice, mode) VALUES (?, ?, ?, 200, 0, 0, 0, 'now', ?, ?)");
     CELLS.forEach(([v, m], i) => ins.run(`a${i}`, "scp/a", `passage a${i}`, v, m));
     const model = new FakeModel(draftScript());
-    const pipeline = new Pipeline(db, model, { briefsDir: join(dir, "briefs"), rng: () => 0.001 });
+    const pipeline = new Pipeline(db, model, { briefsDir: join(dir, "briefs"), rng: () => 0.001, cacheLeadMs: 0 });
     const { Drafting } = await import("../pipeline/drafting.ts");
     const app = buildApi(db, pipeline, { drafting: new Drafting(pipeline, { draftsDir: join(dir, "drafts") }) });
     const j = async (method: "GET" | "POST", url: string, body?: unknown) => { const r = await app.inject({ method, url, payload: body as any }); return { code: r.statusCode, body: r.json() }; };
@@ -255,7 +255,7 @@ describe("api: check, gate 1, draft, gate 2", () => {
     await wait(draw.id, "awaiting_draft_gate");
     // a second draw goes through the check first
     const model2 = new FakeModel(draftScript());
-    const p2 = new Pipeline(db, model2, { briefsDir: join(dir, "briefs"), rng: () => 0.001 });
+    const p2 = new Pipeline(db, model2, { briefsDir: join(dir, "briefs"), rng: () => 0.001, cacheLeadMs: 0 });
     const app2 = buildApi(db, p2, { drafting: new Drafting(p2, { draftsDir: join(dir, "drafts") }) });
     const j2 = async (method: "GET" | "POST", url: string, body?: unknown) => { const r = await app2.inject({ method, url, payload: body as any }); return { code: r.statusCode, body: r.json() }; };
     const d2 = await p2.start({ mode: "auto", genre: "horror", seed: { mode: "typed", text: "seed two" } });

@@ -123,6 +123,10 @@ export const RUN = {
   mapConcurrency: 8,    // reference files the map pass sends at once
   sceneCapSlack: 0.10,  // a scene over its cap by more than this carries the over_cap warning
   spanWords: 30,        // a finding's quoted span is under this
+  // waits before each retry of a call the API failed on its side (5xx, 529); a transient failure used to fail the whole stage
+  errorBackoffMs: [30_000, 60_000, 120_000],
+  // a check pass starts one call, then the rest this much later: a cache write is readable after about this long, and not by calls started beside it
+  cacheLeadMs: 15_000,
   // the length a part carries a `length` warning outside of, by role
   partWords: {
     vignette: { min: 300, max: 500 },

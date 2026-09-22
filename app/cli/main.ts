@@ -14,6 +14,7 @@ const DOC = `cloudchamber — the one command the skill and the UI drive.
    cloudchamber draw [--setting ID] [--genre G] [--sampling M] [--darkness D] [--shape listen] [--auto] [--source S[,S]] [--author A] [--models G=M,...]
                [--seed "text" | --seed-id ID] [--like DRAW]
                                           --like takes another draw's options; the rest override it
+   cloudchamber draw --resume <draw>          carry a failed draw on from its finished calls, or an auto draw left at the gate
    cloudchamber setting lint <id>              check a setting file; exit 1 with one finding per line
    cloudchamber setting sources <id>           every kept entry beside the reference file it came from
    cloudchamber distill <id> [--map|--reduce]  build a setting's five lists from its reference/, in two passes
@@ -129,8 +130,9 @@ async function main() {
       const { values } = parseArgs({
         args: rest, allowPositionals: true,
         options: { setting: { type: "string" }, genre: { type: "string" }, sampling: { type: "string" }, darkness: { type: "string" }, shape: { type: "string" }, like: { type: "string" }, auto: { type: "boolean", default: false },
-          source: { type: "string" }, author: { type: "string" }, seed: { type: "string" }, "seed-id": { type: "string" }, models: { type: "string" } },
+          source: { type: "string" }, author: { type: "string" }, seed: { type: "string" }, "seed-id": { type: "string" }, models: { type: "string" }, resume: { type: "string" } },
       });
+      if (values.resume) { console.log(JSON.stringify(await pipeline().resume(values.resume), null, 2)); break; }
       const { seed, segment } = seedAndSegment({ seed: values.seed, seedId: values["seed-id"], source: values.source, author: values.author });
       const base = values.like ? pipeline().like(values.like) : {};
       const draw = await pipeline().start({

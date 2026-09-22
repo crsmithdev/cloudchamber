@@ -45,8 +45,12 @@ describe("check and gate 1", () => {
     expect(f.examined.find((e) => e.stage === "check-ledger")!.examined).toContain("ledger×chosen");
     expect(f.judge).toBe("checked on opus; judge and generator share a family");
     expect(f.claims).toEqual([]);
-    // every check step stores no tools and the brief in its prompt
-    for (const s of p.steps(draw.id).filter((s) => /^check-/.test(s.stage))) { expect(s.tools).toBe(""); expect(s.prompt).toContain('<vignette name="chosen">'); expect(s.parsed).toBeTruthy(); }
+    // every check step stores no tools, and its system prompt opens with the brief, the same text on every stage, so the CLI caches it once a pass
+    const checks = p.steps(draw.id).filter((s) => /^check-|^ledger-extract$/.test(s.stage));
+    expect(checks[0].system_prompt).toContain('<vignette name="chosen">');
+    for (const s of checks) { expect(s.tools).toBe(""); expect(s.system_prompt).toBe(checks[0].system_prompt); expect(s.prompt).not.toContain('<vignette name="chosen">'); expect(s.parsed).toBeTruthy(); }
+    // the extraction leads the pass, so the calls after it read the brief it wrote
+    expect(model.calls.find((c) => /^check-|^ledger-extract$/.test(c.stage))!.stage).toBe("ledger-extract");
     expect(model.calls.find((c) => c.stage === "check-resemblance")!.prompt).toContain("3. The madman");
     await expect(d.check("nope")).rejects.toThrow(/no draw nope/);
     expect((status(p.db).draws as any[]).find((x) => x.status === "awaiting_check_gate").n).toBe(1);
@@ -1478,7 +1482,7 @@ describe("the outline a check reads", () => {
     expect(carried).toContain("Section departure body.");
     expect(carried).not.toContain("Repaired departure body.");
     expect(carried).toBe(chainOf(p, next.id).outline());
-    const prompt = p.steps(next.id).find((s) => s.stage === "check-derivation")!.prompt;
+    const prompt = p.steps(next.id).find((s) => s.stage === "check-derivation")!.system_prompt;
     expect(prompt).toContain(carried);
     expect(prompt).toContain("where an amendment and a line above disagree, the amendment holds and the line above is void:\n- Only the assembler can fire the reliquary.");
   });

@@ -961,3 +961,25 @@ Schema 12 (11 migrates in place). Two columns:
 Measured on one brief drafted twice (`evals/20260922-draft-efficiency.md`):
 the drafting phase fell from $6.22 to $4.62, and the panel scored the two
 drafts the same.
+
+### Amendment 2026-09-22: a transient error is retried, the checks share a cached brief, and a failed draw resumes
+
+1. `invoke` retries an error whose text reads `API Error: 5xx` or `529`
+   three times, after 30, 60 and 120 seconds (`RUN.errorBackoffMs`).
+   Every attempt keeps its step row. One such error used to fail the
+   stage: seven did in one hour on 22 Sep.
+2. The context `invoke` takes goes ahead of the stage line. Every stage
+   that reads the whole brief passes it as its context and shares one
+   stage line in `stages.toml`, so the system prompt of a check pass is
+   the same on every call. A cache hit needs the whole system prompt to
+   match, and a write is readable only by a call started about 15 s
+   later, so one call leads the pass (the extraction, or else
+   derivation's first sample) and the rest start `RUN.cacheLeadMs`
+   after it. On two briefs a pass fell from $1.38 and $1.53 to $0.99
+   and $1.01, at the same wall time.
+3. `cloudchamber draw --resume <draw>` carries on a failed draw from its
+   finished calls: the premises stay, and only the executes without a
+   vignette run; a draw that failed before its premises runs them again
+   from the same examples, seed and shape. An auto draw left at the gate
+   takes its candidate again.
+

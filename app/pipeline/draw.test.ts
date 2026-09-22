@@ -43,7 +43,7 @@ const script = (over: Record<string, any> = {}) => ({
 
 function pipe(db: Db, dir: string, s = script(), rng = () => 0.001, settingsDir?: string) {
   const model = new FakeModel(s);
-  return { model, p: new Pipeline(db, model, { rng, briefsDir: join(dir, "briefs"), settingsDir }) };
+  return { model, p: new Pipeline(db, model, { rng, briefsDir: join(dir, "briefs"), settingsDir, backoffMs: [0, 0, 0], cacheLeadMs: 0 }) };
 }
 
 describe("draw graph", () => {
@@ -236,6 +236,57 @@ describe("draw graph", () => {
     const os = p.steps(draw.id).filter((s) => s.stage === "outline");
     expect(os.map((s) => [s.status, s.fail_reason, s.model])).toEqual([["failed", "refusal", loadStages().outline.model], ["done", null, loadStages().outline.fallback]]);
     expect(model.calls.filter((c) => c.stage === "outline").map((c) => c.model)).toEqual([loadStages().outline.model, loadStages().outline.fallback]);
+  });
+
+  test("an error the API reports on its own side is tried again, and each attempt keeps its step", async () => {
+    const { db, dir } = fixture();
+    const overloaded = { text: "", stop: "error", error: "API Error: 529 Overloaded. This is a server-side issue, usually temporary" };
+    const internal = { text: "", stop: "error", error: "API Error: 500 Internal server error. This is a server-side issue, usually temporary" };
+    const { p, model } = pipe(db, dir, script({ outline: [overloaded, internal, outline()] }));
+    const draw = await p.start({ mode: "auto", genre: "horror" });
+    expect(draw.status).toBe("done");
+    expect(p.steps(draw.id).filter((s) => s.stage === "outline").map((s) => [s.status, s.fail_reason])).toEqual([["failed", "error"], ["failed", "error"], ["done", null]]);
+    expect(model.calls.filter((c) => c.stage === "outline")).toHaveLength(3);
+  });
+
+  test("the retries run out, and an error of any other kind is not retried", async () => {
+    const { db, dir } = fixture();
+    const overloaded = { text: "", stop: "error", error: "API Error: 529 Overloaded." };
+    const { p, model } = pipe(db, dir, script({ premises: [overloaded, overloaded, overloaded, overloaded] }));
+    const err = await p.start({ mode: "auto", genre: "horror" }).catch((e) => e);
+    expect(err.reason).toBe("error");
+    expect(model.calls.filter((c) => c.stage === "premises")).toHaveLength(4);   // the first try and three retries
+    const { db: db2, dir: dir2 } = fixture();
+    const { p: p2, model: m2 } = pipe(db2, dir2, script({ premises: [{ text: "", stop: "error", error: "Unable to read managed policy settings." }, premises()] }));
+    expect((await p2.start({ mode: "auto", genre: "horror" }).catch((e) => e)).reason).toBe("error");
+    expect(m2.calls.filter((c) => c.stage === "premises")).toHaveLength(1);
+  });
+
+  test("a failed draw resumes from its finished calls: only the missing executes run, then the gate", async () => {
+    const { db, dir } = fixture();
+    let n = 0;
+    const flaky = (p: string) => (++n === 3 ? { text: "", stop: "error", error: "Unable to read managed policy settings." } : vignette(Number(/Premise (\d)/.exec(p)?.[1] ?? 0)));
+    const { p, model } = pipe(db, dir, script({ execute: flaky }));
+    await expect(p.start({ mode: "auto", genre: "horror" })).rejects.toThrow(/execute failed/);
+    const failed = p.draws()[0];
+    expect(failed.status).toBe("failed");
+    const draw = await p.resume(failed.id);
+    expect(draw.status).toBe("done");
+    expect(model.calls.filter((c) => c.stage === "premises")).toHaveLength(1);
+    expect(model.calls.filter((c) => c.stage === "execute")).toHaveLength(6);   // five, then the one that failed
+    expect(p.candidates(draw.id)).toHaveLength(5);
+  });
+
+  test("a draw that failed before its premises runs them again from the same examples and seed", async () => {
+    const { db, dir } = fixture();
+    const { p, model } = pipe(db, dir, script({ premises: [{ text: "", stop: "error", error: "Unable to read managed policy settings." }, premises()] }));
+    await expect(p.start({ mode: "auto", genre: "horror", shape: "listen", seed: { mode: "typed", text: "A typed seed." } })).rejects.toThrow(/premises failed/);
+    const failed = p.draws()[0];
+    const draw = await p.resume(failed.id);
+    expect(draw.status).toBe("done");
+    const [first, second] = model.calls.filter((c) => c.stage === "premises");
+    expect(second.prompt).toBe(first.prompt);   // the same examples, seed and shape
+    await expect(p.resume(draw.id)).rejects.toThrow(/is done; only a failed draw/);
   });
 
   test("double refusal fails with reason refusal, never shape", async () => {

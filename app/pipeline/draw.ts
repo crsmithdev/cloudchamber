@@ -64,6 +64,8 @@ export class StepFailure extends Error {
   }
 }
 
+/** An error the API reports on its own side, as the CLI words it: `API Error: 529 Overloaded`, `API Error: 500 Internal server error`. */
+const TRANSIENT = /API Error: (5\d\d|529)\b/;
 const id = (n = 6) => randomBytes(n).toString("hex");
 /** A draw id: the UTC second it was made, and four hex digits. */
 export const newDrawId = () => `${now().replace(/[-:TZ]/g, "").slice(0, 15)}-${id(2)}`;
@@ -95,10 +97,14 @@ const darknessLine = (d?: Darkness) => (d ? ` ${TEMPLATES.darknessAsk[d]}` : "")
 
 export class Pipeline {
   stages: Record<StageName, StageConfig>;
+  backoffMs: readonly number[];
+  cacheLeadMs: number;
   briefsDir: string | undefined;
   settingsDir: string;
-  constructor(public db: Db, public model: ModelAdapter, opts: { stages?: Record<StageName, StageConfig>; rng?: () => number; briefsDir?: string; settingsDir?: string } = {}) {
+  constructor(public db: Db, public model: ModelAdapter, opts: { stages?: Record<StageName, StageConfig>; rng?: () => number; briefsDir?: string; settingsDir?: string; backoffMs?: readonly number[]; cacheLeadMs?: number } = {}) {
     this.stages = opts.stages ?? loadStages();
+    this.backoffMs = opts.backoffMs ?? RUN.errorBackoffMs;
+    this.cacheLeadMs = opts.cacheLeadMs ?? RUN.cacheLeadMs;
     this.rng = opts.rng ?? Math.random;
     this.briefsDir = opts.briefsDir;
     this.settingsDir = opts.settingsDir ?? SETTINGS;
@@ -147,14 +153,15 @@ export class Pipeline {
   /**
    * One stage call with the spec's retry table. Returns the successful step and
    * its parsed value. `tools` overrides the stage's declared tool list; the
-   * claims verifier passes "" under `claims: reference`. `context` follows the
-   * stage's system line: text that stays the same across a run of calls, which
-   * the CLI then reads from its cache instead of writing it again.
+   * claims verifier passes "" under `claims: reference`. `context` goes ahead of
+   * the stage's system line: text that stays the same across a run of calls.
+   * The CLI caches the system prompt, and a later call whose system prompt
+   * opens with the same text reads it back, whatever stage line follows.
    */
   async invoke<T>(draw: string | null, parent: string | null, stage: StageName, prompt: string, parse: (text: string) => T, storyId: string | null = null, tools?: string, context?: string): Promise<{ step: StepRow; value: T }> {
     const cfg = this.stageFor(stage, draw);
     const allowed = tools ?? cfg.tools ?? "";
-    const system = context ? `${cfg.system}\n\n${context}` : cfg.system;
+    const system = context ? `${context}\n\n${cfg.system}` : cfg.system;
     const attempt = async (model: string, n: number): Promise<{ step: StepRow; value?: T; outcome: "ok" | "shape" | "refusal" | "error" }> => {
       const step = this.insertStep(draw, parent, stage, model, system, prompt, n, storyId, allowed);
       // a call that throws (no claude on PATH, a spawn that fails) is an error result, so the step does not stay running
@@ -174,9 +181,19 @@ export class Pipeline {
         return { step, outcome: "shape" };
       }
     };
-    let r = await attempt(cfg.model, 1);
-    if (r.outcome === "shape") r = await attempt(cfg.model, 2);
-    if (r.outcome === "refusal") r = await attempt(cfg.fallback, 2);
+    // an error the API reports on its own side is tried again after a wait; every attempt keeps its step row
+    const tried = async (model: string, n: number) => {
+      let r = await attempt(model, n);
+      for (const ms of this.backoffMs) {
+        if (r.outcome !== "error" || !TRANSIENT.test(r.step.error ?? "")) break;
+        await Bun.sleep(ms);
+        r = await attempt(model, n);
+      }
+      return r;
+    };
+    let r = await tried(cfg.model, 1);
+    if (r.outcome === "shape") r = await tried(cfg.model, 2);
+    if (r.outcome === "refusal") r = await tried(cfg.fallback, 2);
     if (r.outcome === "ok") return { step: r.step, value: r.value as T };
     throw new StepFailure(r.outcome, `${stage} failed: ${r.outcome}${r.step.error ? ` (${r.step.error.slice(0, 200)})` : ""}`, r.step);
   }
@@ -291,13 +308,54 @@ export class Pipeline {
     // Number the premises from the tail: #1 is the lowest stated probability. Ties keep the model's order.
     premises.sort((a, b) => a.probability - b.probability);
     premises.forEach((p, i) => this.artifact(step, "premise", p.text, { index: i + 1, probability: p.probability, warnings: words(p.text) > 120 ? ["length"] : [] }));
-    await Promise.all(premises.map((p, i) => {
+    await this.executeAll(drawId, step.id, premises.map((p, i) => ({ ...p, index: i + 1 })), head, seed, dark, setting);
+  }
+
+  /** One execute call per premise, each stored as a vignette under the premises step. */
+  private executeAll(drawId: string, premisesStep: string, premises: { index: number; text: string; probability: number }[], head: string, seed: string, dark: string, setting?: Setting) {
+    return Promise.all(premises.map((p) => {
       const ask = fill("executeAsk", { seed, premise: p.text, darkness: dark });
-      return this.invoke(drawId, step.id, "execute", compose(head, ask, this.settingFor("execute", setting)), (text) => need(text, "vignette")).then((r) => this.artifact(r.step, "vignette", r.value, {
-        index: i + 1, probability: p.probability, premise: p.text,
+      return this.invoke(drawId, premisesStep, "execute", compose(head, ask, this.settingFor("execute", setting)), (text) => need(text, "vignette")).then((r) => this.artifact(r.step, "vignette", r.value, {
+        index: p.index, probability: p.probability, premise: p.text,
         warnings: words(r.value) < 300 || words(r.value) > 500 ? ["length"] : [],
       }));
     }));
+  }
+
+  /**
+   * Carry a draw on from where it stopped, reusing every call that finished. A
+   * draw that failed before the gate keeps its examples, seed and premises, and
+   * runs only the executes that have no vignette; one that failed before its
+   * premises runs them again from the same examples and seed. An auto draw left
+   * at the gate, where a failed outline puts it, takes its candidate again.
+   */
+  async resume(drawId: string): Promise<DrawRow> {
+    const draw = this.draw(drawId);
+    if (draw.status === "awaiting_gate" && draw.mode === "auto") return this.autoGate(drawId);
+    if (draw.status !== "failed") throw new Error(`draw ${drawId} is ${draw.status}; only a failed draw, or an auto draw at the gate, resumes`);
+    const steps = this.steps(drawId).filter((s) => s.stage === "premises");
+    const setting = draw.setting ? loadChecked(draw.setting, this.settingsDir) : undefined;
+    const ids = JSON.parse(draw.example_ids) as string[];
+    const texts = new Map((this.db.query(`SELECT id, text FROM passages WHERE id IN (${ids.map(() => "?").join(",")})`).all(...ids) as { id: string; text: string }[]).map((r) => [r.id, r.text]));
+    const examples = ids.map((id) => texts.get(id)!);
+    const dark = darknessLine((draw.darkness ?? undefined) as Darkness | undefined);
+    const done = steps.find((s) => s.status === "done");
+    await under(this.db, drawId, "running", "failed", async () => {
+      if (!done) {
+        // the shape is not a column; a premises step that ran under it carries it in its prompt
+        const shaped = steps.some((s) => s.prompt.includes(fill("premisesShape", {})));
+        return this.premisesAndExecute(drawId, examples, draw.seed_text, draw.genre, draw.sampling as Sampling, (draw.darkness ?? undefined) as Darkness | undefined, setting, shaped ? "listen" : undefined);
+      }
+      const arts = this.artifacts(drawId);
+      const executes = new Set(this.steps(drawId).filter((s) => s.stage === "execute").map((s) => s.id));
+      const have = new Set(arts.filter((a) => a.kind === "vignette" && executes.has(a.step_id)).map((a) => a.meta.index as number));
+      const premises = arts.filter((a) => a.kind === "premise" && a.step_id === done.id)
+        .map((a) => ({ index: a.meta.index as number, probability: a.meta.probability as number, text: a.content }))
+        .filter((p) => !have.has(p.index));
+      await this.executeAll(drawId, done.id, premises, examples.join("\n\n"), draw.seed_text, dark, setting);
+    });
+    settle(this.db, drawId, "awaiting_gate");
+    return draw.mode === "auto" ? this.autoGate(drawId) : this.draw(drawId);
   }
 
   /** The five executed candidates, sorted by stated probability ascending. */

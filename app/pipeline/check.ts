@@ -75,7 +75,7 @@ const findingShape = () => fill("findingShape", { sections: RUN.coreJobs.join(" 
 
 /** Extract a brief's ledger in one call and store it under `meta`. */
 export async function extractLedger(p: Pipeline, drawId: string, parts: BriefParts, brief: string, meta: Record<string, unknown>): Promise<string> {
-  const { step, value } = await p.invoke(drawId, parts.outlineStepId, "ledger-extract", fill("ledgerExtract", { brief }), (t) => need(t, "ledger"));
+  const { step, value } = await p.invoke(drawId, parts.outlineStepId, "ledger-extract", fill("ledgerExtract", {}), (t) => need(t, "ledger"), null, undefined, brief);
   p.artifact(step, "ledger", String(value), meta);
   return String(value);
 }
@@ -95,19 +95,25 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
   const findingsOf = (checker: "derivation" | "ledger") => (t: string) => ({ findings: parseFindings(t, checker, 0), examined: tag(t, "examined") ?? "" });
   // the ledger is extracted once for the chain and pinned; every round is checked against it. It is read here once
   // and the verify pass gets the same one: asked again, the chain would answer with the null it cached before the extraction
+  const extracting = !chain.ledger() && enabled.includes("ledger");
   const ledger: Promise<string | null> = chain.ledger() ? Promise.resolve(chain.ledger())
-    : enabled.includes("ledger") ? extractLedger(p, drawId, parts, brief, { pass, sample: 1, pinned: true }) : Promise.resolve(null);
+    : extracting ? extractLedger(p, drawId, parts, brief, { pass, sample: 1, pinned: true }) : Promise.resolve(null);
+  // every call of the pass carries the brief as its system prompt, and reads it from the cache only once another call has
+  // written it: calls started together all write. So one call goes first, the extraction or else derivation's first
+  // sample, and the rest start after the lead.
+  const lead = Bun.sleep(p.cacheLeadMs);
+  const order = { lead, leads: extracting ? "ledger-extract" : "check-derivation" };
 
   const runs: Promise<unknown>[] = [];
-  if (enabled.includes("derivation")) runs.push(sampled(p, drawId, parts, "check-derivation", fill("checkDerivation", { brief, findingShape: shape }), S("derivation"), "derivation",
+  if (enabled.includes("derivation")) runs.push(sampled(p, drawId, parts, order, "check-derivation", fill("checkDerivation", { brief, findingShape: shape }), S("derivation"), "derivation",
     (t) => ({ impossibility: tag(t, "impossibility"), ...findingsOf("derivation")(t) })).then((r) => { perChecker.push(r); }));
   // the extraction runs beside the other checkers; only the ledger checker waits for it
-  if (enabled.includes("ledger")) runs.push(ledger.then((l) => sampled(p, drawId, parts, "check-ledger", fill("checkLedger", { brief, ledger: fill("pinnedLedger", { ledger: l! }), findingShape: shape }), S("ledger"), "ledger", findingsOf("ledger")))
+  if (enabled.includes("ledger")) runs.push(ledger.then((l) => sampled(p, drawId, parts, order, "check-ledger", fill("checkLedger", { brief, ledger: fill("pinnedLedger", { ledger: l! }), findingShape: shape }), S("ledger"), "ledger", findingsOf("ledger")))
     .then((r) => { perChecker.push(r); }));
   // structure and resemblance profile the premise, which a repair never changes: once per chain
-  if (enabled.includes("structure")) runs.push(sampled(p, drawId, parts, "check-structure", fill("checkStructure", { brief }), S("structure"), "structure", (t) => ({ answers: parseQuestions(t, STRUCTURE_QUESTIONS) }),
+  if (enabled.includes("structure")) runs.push(sampled(p, drawId, parts, order, "check-structure", fill("checkStructure", { brief }), S("structure"), "structure", (t) => ({ answers: parseQuestions(t, STRUCTURE_QUESTIONS) }),
     (step, value, sample) => p.artifact(step, "profile", JSON.stringify(value.answers), { pass, sample, source: "check", checker: "structure", answers: value.answers })));
-  if (enabled.includes("resemblance")) runs.push(sampled(p, drawId, parts, "check-resemblance", fill("checkResemblance", { brief, list: loadPremiseList(opts.premisesPath) }), S("resemblance"), "resemblance", (t) => {
+  if (enabled.includes("resemblance")) runs.push(sampled(p, drawId, parts, order, "check-resemblance", fill("checkResemblance", { brief, list: loadPremiseList(opts.premisesPath) }), S("resemblance"), "resemblance", (t) => {
     const nearest = tag(t, "nearest");
     if (!nearest) throw new Error("no <nearest> tag");
     const matches = tags(t, "match").map((m) => ({ entry: tag(m, "entry") ?? "", span: tag(m, "span") ?? "" }));
@@ -118,9 +124,10 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
   const { setting } = p.loadDrawSetting(parts.draw);
   // the list already holds claims only when the setting names an authority
   if (enabled.includes("claims") && setting?.claims) {
-    claims = setting.claims;
-    const reference = claims === "setting" ? distillate(setting) : "";
-    runs.push(runClaims(p, drawId, parts, brief, claims, reference, pass, chain).then((r) => { perChecker.push(r); }));
+    const authority = setting.claims;
+    claims = authority;
+    const reference = authority === "setting" ? distillate(setting) : "";
+    runs.push(lead.then(() => runClaims(p, drawId, parts, brief, authority, reference, pass, chain)).then((r) => { perChecker.push(r); }));
   }
   await Promise.all(runs);
 
@@ -177,7 +184,7 @@ async function verifyFindings(p: Pipeline, drawId: string, parts: BriefParts, br
   const cap = String(50 + 40 * subject.length);
   const prompt = fill("checkVerify", { brief, ledger: ledger ? fill("pinnedLedger", { ledger }) : "", findings, cap });
   const readings = await Promise.all(Array.from({ length: VERIFY_READINGS }, () =>
-    p.invoke(drawId, parts.outlineStepId, "check-verify", prompt, (t) => parseVerdicts(t, subject.length)).then((r) => r.value)));
+    p.invoke(drawId, parts.outlineStepId, "check-verify", prompt, (t) => parseVerdicts(t, subject.length), null, undefined, brief).then((r) => r.value)));
   // dropped when any reading drops it; the first reading that drops it gives the reason
   subject.forEach((c, i) => { const drop = readings.map((r) => r[i]).find((v) => v.answer === "drop"); if (drop) out.set(c.id, drop.why); });
   return out;
@@ -196,9 +203,10 @@ export function parseVerdicts(text: string, n: number): { answer: "keep" | "drop
 }
 
 /** S concurrent samples of one checker; the parsed value goes on each step, the findings are clustered. */
-async function sampled(p: Pipeline, drawId: string, parts: BriefParts, stage: any, prompt: string, s: { samples: number; keep_if: number }, checker: string,
+async function sampled(p: Pipeline, drawId: string, parts: BriefParts, order: { lead: Promise<void>; leads: string }, stage: any, prompt: string, s: { samples: number; keep_if: number }, checker: string,
   parse: (text: string) => any, store?: (step: StepRow, value: any, sample: number) => void): Promise<{ checker: string; clusters: Cluster[]; firstStep: StepRow; samples: number }> {
-  const results = await samples(s.samples, () => p.invoke(drawId, parts.outlineStepId, stage, prompt, parse));
+  const results = await samples(s.samples, (n) => (stage === order.leads && n === 1 ? Promise.resolve() : order.lead)
+    .then(() => p.invoke(drawId, parts.outlineStepId, stage, prompt, parse, null, undefined, briefBlock(parts))));
   const findings: Finding[] = [];
   for (const r of results) {
     store?.(r.step, r.value, r.sample);
@@ -215,8 +223,8 @@ const claimMeta = (v: { span: string; result: string; evidence: string; invalida
 
 async function runClaims(p: Pipeline, drawId: string, parts: BriefParts, brief: string, authority: ClaimsAuthority, reference: string, pass: string, chain: Chain) {
   const tpl = CLAIMS_PROMPTS[authority];
-  const { step, value: claims } = await p.invoke(drawId, parts.outlineStepId, "check-claims-extract", fill(tpl.extract, { brief }), (t) =>
-    tags(t, "claim").map((c) => ({ span: tag(c, "span") ?? "", statement: tag(c, "statement") ?? "" })).filter((c) => c.span && c.statement));
+  const { step, value: claims } = await p.invoke(drawId, parts.outlineStepId, "check-claims-extract", fill(tpl.extract, {}), (t) =>
+    tags(t, "claim").map((c) => ({ span: tag(c, "span") ?? "", statement: tag(c, "statement") ?? "" })).filter((c) => c.span && c.statement), null, undefined, brief);
   // a claim already verified anywhere in this chain against the same authority is not re-verified:
   // the distillate does not change, so the verdict cannot. This was 12 calls a round, every round.
   const priorClaims = chain.claims(authority);

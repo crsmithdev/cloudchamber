@@ -191,9 +191,7 @@ Candidates:
 
 Quote every span from a vignette or the ending, never from the outline: the reader of the story sees only those. Report only a conflict that reader would see by comparing two quotes, or a line that breaks a rule the outline states in words. A conflict you find only by arithmetic beyond comparing two stated values, by counting weekdays, or by working out how liquid, light, an instrument or a body behaves is not a finding, and neither is a stated rule beside an exception the text marks, nor a figurative line read as literal fact. When the conflicting fact is also stated in a vignette or the ending, quote it from there. A result of contradicted or contradicts needs the span to assert the conflicting fact itself. A count, a duration or a detail the span does not state is not a contradiction: the span may be one of several, and what it leaves out is unverifiable. The replacement and the patch keep every event the span reports and change only the quantity, the timing or the mechanism that conflicts. Never turn an event into its absence. When the two quotes give one person, place, company or thing two names, or one quantity two values, the replacement names the one of the two that the rest of the brief supports, and never a third. The replacement states the corrected fact and nothing else: no place, count, cause or detail that neither quote states.`,
 
-  checkDerivation: `Below is a story brief: a seed, a premise, an outline in four sections, three vignettes and an ending. The departure section states the one thing in the story that is not true of the actual world and derives everything from it.
-
-{brief}
+  checkDerivation: `Above is a story brief: a seed, a premise, an outline in four sections, three vignettes and an ending. The departure section states the one thing in the story that is not true of the actual world and derives everything from it.
 
 State that departure, in an <impossibility> tag, one sentence. Then check every assertion in the vignettes and ending against that derivation, and do each sum whose figures a vignette or the ending states. Report each assertion that does not follow from the one impossibility, and each sum that does not add up. Report an assertion only when the outline states the rule it breaks, and a sum only when the brief states both figures: a consequence you work out yourself from physics, geometry or a unit is not a finding.
 
@@ -201,17 +199,13 @@ State that departure, in an <impossibility> tag, one sentence. Then check every 
 
 After the findings, an <examined> tag listing each assertion and each sum checked, one per line, whether or not it produced a finding. At most 8 findings. Under 1000 words in total.`,
 
-  ledgerExtract: `Below is a story brief: a seed, a premise, an outline in four sections, three vignettes and an ending.
-
-{brief}
+  ledgerExtract: `Above is a story brief: a seed, a premise, an outline in four sections, three vignettes and an ending.
 
 Extract from the outline every settled fact into a <ledger> tag, one per line, each line opening with its category: time (dates, durations, order), detail (names, quantities, appearance), knowledge (who knows what, and from when), possession (who holds what), world (rules), perspective. These lines are the contract the brief is held to for the rest of its life, so state each one so it can be read against prose by someone who has not seen this outline. Under 600 words. Output only the tag.`,
 
-  checkLedger: `Below is a ledger of a story's settled facts, then the brief itself: a seed, a premise, an outline in four sections, three vignettes and an ending.
+  checkLedger: `Above is a story brief: a seed, a premise, an outline in four sections, three vignettes and an ending. Below is the ledger of its settled facts.
 
 {ledger}
-
-{brief}
 
 The ledger is fixed. It was settled for this brief and every repair of it, and where the prose and the ledger disagree it is the prose that is wrong. An amendment listed under the ledger overrides any earlier line it disagrees with, and that earlier line is void. Check each vignette and the ending against the ledger, and against each other, pairwise. Report each contradiction.
 
@@ -223,9 +217,7 @@ After the findings, an <examined> tag naming each pair compared (ledger×chosen,
 {ledger}
 </ledger>`,
 
-  checkStructure: `Below is a story brief: a seed, a premise, an outline in four sections, three vignettes and an ending.
-
-{brief}
+  checkStructure: `Above is a story brief: a seed, a premise, an outline in four sections, three vignettes and an ending.
 
 Answer seven questions about the brief, each as present or absent, each with one verbatim quote from the brief that settles it. Output one <question name="..."> tag per question containing <answer>present|absent</answer> and <quote>...</quote>.
 
@@ -239,9 +231,7 @@ consequence: the point of departure from the actual has its consequences taken s
 
 Output only the seven tags. Under 350 words.`,
 
-  checkResemblance: `Below is a story brief, and below that an enumerated list of premises editors report seeing too often.
-
-{brief}
+  checkResemblance: `Above is a story brief. Below is an enumerated list of premises editors report seeing too often.
 
 <list>
 {list}
@@ -249,15 +239,11 @@ Output only the seven tags. Under 350 words.`,
 
 Match the brief against the list. For each list entry the brief matches, output a <match> tag containing <entry> (the list line, verbatim) and <span> (the quote from the brief that matches it, under ${RUN.spanWords} words). Then output one <nearest> tag naming the nearest published story, novel or film: <title>, <author>, and <shared> (one sentence stating what the brief shares with it). At most 4 matches. Under 300 words.`,
 
-  claimsExtract: `Below is a story brief: a seed, a premise, an outline in four sections, three vignettes and an ending.
-
-{brief}
+  claimsExtract: `Above is a story brief: a seed, a premise, an outline in four sections, three vignettes and an ending.
 
 Extract only claims about the actual world that carry a quantity or a rule a published source could confirm or deny: a price, a rate, a count, a date, a duration, a distance, a procedure, a statute, a relation between two named places. That a place, institution, product or person exists is not a claim. Skip everything the story invents. Each claim goes in a <claim> tag containing <span> (verbatim quote, under ${RUN.spanWords} words) and <statement> (the claim as one checkable sentence). At most 12 claims. Under 500 words.`,
 
-  claimsExtractSetting: `Below is a story brief: a seed, a premise, an outline in four sections, three vignettes and an ending.
-
-{brief}
+  claimsExtractSetting: `Above is a story brief: a seed, a premise, an outline in four sections, three vignettes and an ending.
 
 Extract only claims about the setting the story is set in, that carry a quantity or a rule the setting itself settles: a price, a rate, a count, a date, a duration, a term of service, an office, a rite, an instrument, or a relation between two bodies. That a place, institution or person exists is not a claim. Skip what the story invents for itself alone, and skip anything that would hold in any world. Each claim goes in a <claim> tag containing <span> (verbatim quote, under ${RUN.spanWords} words) and <statement> (the claim as one checkable sentence). At most 12 claims. Under 500 words.`,
 
@@ -282,9 +268,7 @@ As a checkable sentence: {statement}
 
 Find the line in the setting above that confirms or denies it. The setting is the whole authority: a claim it does not settle is unverifiable, not wrong. Output a <finding> tag containing <span> (the quote above, verbatim), <statement> (the sentence above), <result> (supported | contradicted | unverifiable), <evidence> (the heading it sits under and one quoted line from it, or none), <invalidates> (none), <replacement> (if contradicted, one positive sentence that would hold, keeping what the span reports and changing only the figure or the rule that conflicts; otherwise none). Under 120 words.`,
 
-  checkVerify: `Below is a story brief, the ledger of its settled facts, then the findings its checkers raised against it, numbered.
-
-{brief}
+  checkVerify: `Above is a story brief. Below are the ledger of its settled facts, then the findings its checkers raised against it, numbered.
 
 {ledger}
 

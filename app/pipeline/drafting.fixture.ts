@@ -144,7 +144,7 @@ export function fixture() {
 export async function drawn(script = draftScript(), setting?: { id: string; dir: string; claims?: string }) {
   const { db, dir } = fixture();
   const model = new FakeModel(script);
-  const p = new Pipeline(db, model, { rng: () => 0.001, briefsDir: join(dir, "briefs"), settingsDir: setting?.dir });
+  const p = new Pipeline(db, model, { rng: () => 0.001, briefsDir: join(dir, "briefs"), settingsDir: setting?.dir, backoffMs: [0, 0, 0], cacheLeadMs: 0 });
   if (setting) {
     const path = join(setting.dir, `${setting.id}.md`);
     const text = readFileSync(path, "utf8");
