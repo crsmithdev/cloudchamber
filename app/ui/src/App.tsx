@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+
+const NARROW = "(max-width: 1100px)";
 import { api, type Status } from "./api.ts";
 import { Browser } from "./Browser.tsx";
 import { Draws } from "./Draws.tsx";
@@ -76,6 +78,15 @@ export function App() {
       localStorage.setItem("fb-rail", folded ? "hidden" : "shown");
     } catch {}
   }, [folded]);
+  // under 1100px the rail is a bar across the top with no fold control, so it shows the names whatever the saved fold
+  const [narrow, setNarrow] = useState(() => matchMedia(NARROW).matches);
+  useEffect(() => {
+    const m = matchMedia(NARROW);
+    const change = () => setNarrow(m.matches);
+    m.addEventListener("change", change);
+    return () => m.removeEventListener("change", change);
+  }, []);
+  const mini = folded && !narrow;
   const [light, setLight] = useState(() => {
     try {
       return localStorage.getItem("fb-theme") === "light";
@@ -99,15 +110,15 @@ export function App() {
   };
   // folded, a link is its initial with the name as its title; open, it is the name and its count
   const navLink = ([name, href]: [string, string]) => (
-    <a key={name} href={href} className={"navlink" + (folded ? " mini" : "") + (on(name) ? " on" : "")} title={folded ? name : undefined}>
-      {folded ? name[0] : name}
-      {!folded && count(name)}
+    <a key={name} href={href} className={"navlink" + (mini ? " mini" : "") + (on(name) ? " on" : "")} title={mini ? name : undefined}>
+      {mini ? name[0] : name}
+      {!mini && count(name)}
     </a>
   );
   return (
-    <div className={"shell" + (folded ? " folded" : "")}>
-      <aside className={"rail" + (folded ? " folded" : "")}>
-        {folded ? (
+    <div className={"shell" + (mini ? " folded" : "")}>
+      <aside className={"rail" + (mini ? " folded" : "")}>
+        {mini ? (
           <Logo label="Cloud Chamber" />
         ) : (
           <div className="brand">
@@ -119,7 +130,7 @@ export function App() {
             </div>
           </div>
         )}
-        <nav className={"flex flex-col" + (folded ? " items-center gap-1" : "")} aria-label="Sections">
+        <nav className={"flex flex-col" + (mini ? " items-center gap-1" : "")} aria-label="Sections">
           {TABS.map(navLink)}
           <span className="railsep" aria-hidden="true" />
           {navLink(SOURCES)}
@@ -132,7 +143,7 @@ export function App() {
           onClick={() => setLight((v) => !v)}
         >
           <span className="themedot" aria-hidden="true" />
-          {!folded && <span>{light ? "dark" : "light"}</span>}
+          {!mini && <span>{light ? "dark" : "light"}</span>}
         </button>
         <button
           className="railfold"
