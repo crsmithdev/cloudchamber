@@ -2,7 +2,8 @@
  * A draw's lifecycle: the statuses it moves through, which action each status
  * allows, what running work does to the status, and the answers the UI reads
  * (the tab, whether work is running, whether the draw waits at a gate, and each
- * action allowed or why not). This module is the only writer of draws.status.
+ * action allowed or why not). This module is the only writer of draws.status
+ * and of the link columns that change with it.
  *
  * A failed action on a draw that already stood somewhere puts it back there with
  * the reason in draws.error, cleared by the next action that succeeds. `failed`
@@ -108,29 +109,59 @@ export function lifecycleView(draw: DrawFacts): LifecycleView {
 
 // --- writing the status ---------------------------------------------------------
 
-/** Set a draw's status after an action succeeded, which clears the last failure. `ended` stamps ended_at. */
-export function settle(db: Db, drawId: string, status: Status, opts: { ended?: boolean } = {}): void {
-  db.query(`UPDATE draws SET status = ?, error = NULL${opts.ended ? ", ended_at = ?" : ""} WHERE id = ?`)
-    .run(...(opts.ended ? [status, now(), drawId] : [status, drawId]));
+/** The columns that change with a draw's status: which candidate it chose, how, what replaced it, how it drafts. */
+export type Links = Partial<Record<"chosen_step" | "gate_method" | "superseded_by" | "draft_config", string | null>>;
+/** A draw's new status, its link columns, or both. `ended` stamps ended_at. A settled status clears the last failure. */
+export type Commit = { id: string; status?: Status; ended?: boolean; links?: Links };
+/**
+ * A draw held while work runs: at `during`, with `set` written as the hold begins.
+ * When the work throws the draw goes to `back` with the reason, and `undo` is
+ * written: `back` is where the draw stood before, or `failed` for a draw the
+ * work was creating.
+ */
+export type Hold = { id: string; during: Status; back: Status; set?: Links; undo?: Links };
+
+function write(db: Db, id: string, fields: Record<string, string | null>): void {
+  const keys = Object.keys(fields);
+  if (!keys.length) return;
+  db.query(`UPDATE draws SET ${keys.map((k) => `${k} = ?`).join(", ")} WHERE id = ?`).run(...keys.map((k) => fields[k]), id);
+}
+
+/** Write each draw's status and links in one transaction, so no reader sees half of a change. */
+export function commit(db: Db, commits: Commit | Commit[]): void {
+  db.transaction(() => {
+    for (const c of [commits].flat()) {
+      write(db, c.id, {
+        ...(c.status ? { status: c.status, error: null } : {}),
+        ...(c.ended ? { ended_at: now() } : {}),
+        ...(c.links ?? {}),
+      });
+    }
+  })();
 }
 
 /**
- * Run work with the draw at a working status. When the work throws, the draw goes
- * to `back` with the reason recorded, and the error is rethrown: `back` is the
- * status the draw stood at before, or `failed` for a draw the work was creating.
- * On success the status stays at `during` for the caller to settle.
+ * Run one action's work with its draws held, then commit what it decides. The
+ * work can read the held status and the links written with it. If it throws,
+ * every held draw goes back, with the reason, and the error is rethrown; if it
+ * returns, `then` names the commits, and they land together.
  */
-export async function under<T>(db: Db, drawId: string, during: Status, back: Status, work: () => Promise<T>): Promise<T> {
+export async function act<T>(db: Db, holds: Hold | Hold[], work: () => Promise<T>, then: (value: T) => Commit | Commit[]): Promise<T> {
+  const hs = [holds].flat();
   // the error of the attempt before this one is not this attempt's: a re-run showed the old reason for as long as it ran
-  db.query("UPDATE draws SET status = ?, error = NULL WHERE id = ?").run(during, drawId);
+  db.transaction(() => { for (const h of hs) write(db, h.id, { status: h.during, error: null, ...(h.set ?? {}) }); })();
+  let value: T;
   try {
-    return await work();
+    value = await work();
   } catch (e) {
     const reason = String((e as Error)?.message ?? e).slice(0, 500);
-    db.query(`UPDATE draws SET status = ?, error = ?${back === "failed" ? ", ended_at = ?" : ""} WHERE id = ?`)
-      .run(...(back === "failed" ? [back, reason, now(), drawId] : [back, reason, drawId]));
+    db.transaction(() => {
+      for (const h of hs) write(db, h.id, { status: h.back, error: reason, ...(h.back === "failed" ? { ended_at: now() } : {}), ...(h.undo ?? {}) });
+    })();
     throw e;
   }
+  commit(db, then(value));
+  return value;
 }
 
 // --- recovery on start ------------------------------------------------------------
@@ -139,7 +170,7 @@ export async function under<T>(db: Db, drawId: string, during: Status, back: Sta
  * A process that dies mid-work leaves steps `running` and draws at a working
  * status with no call behind them, and nothing revisits them: the SIGHUP path
  * waits for its jobs, a reboot does not. On start, every such step fails with
- * the reason and its draw goes back where `under()` would have put it, read
+ * the reason and its draw goes back where `act()` would have put it, read
  * off what the draw has: a schedule, a check pass, a brief, a chosen candidate.
  */
 export function recoverInterrupted(db: Db, reason: string): { steps: number; draws: string[] } {

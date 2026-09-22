@@ -19,7 +19,7 @@ export function passId(): string { return `${new Date().toISOString()}-${(passCo
 export const roleOf = (stage: string): PartRole | undefined => STAGE_ROLE[stage];
 
 /** The artifact kind each role is stored as. A context vignette is a `vignette` like the chosen one. */
-const ROLE_KIND: Readonly<Record<PartRole, string>> = {
+const ROLE_KIND: Readonly<Record<PartRole, "vignette" | "outline" | "ending" | "job">> = {
   vignette: "vignette", context: "vignette", outline: "outline", ending: "ending", job: "job",
 };
 

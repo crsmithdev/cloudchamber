@@ -14,7 +14,7 @@ import { RUN, type PartRole, type StageName } from "./config.ts";
 import { newDrawId, type DrawRow, type Pipeline } from "./draw.ts";
 import { fill } from "./prompts.ts";
 import { writeBrief } from "./brief.ts";
-import { settle, under } from "./lifecycle.ts";
+import { act, commit } from "./lifecycle.ts";
 import { briefParts, partOf, partsIn, partsOf, revisePart, type Part } from "./briefparts.ts";
 import { chainOf, type FindingView, type Settled } from "./chain.ts";
 import { quoted, quotesOf, same } from "./recur.ts";
@@ -144,10 +144,10 @@ export async function repair(p: Pipeline, drawId: string, accepted: Accepted[]):
   const src = parts.draw;
   const newId = newDrawId();
   p.copyDraw(src, newId, { repaired_from: drawId }, src.gate_method);
-  await under(p.db, drawId, "repairing", "awaiting_check_gate", () => under(p.db, newId, "running", "failed", () => develop(p, newId, parts, accepted)));
-  settle(p.db, newId, "done", { ended: true });
-  settle(p.db, drawId, "repaired", { ended: true });
-  p.db.query("UPDATE draws SET superseded_by = ? WHERE id = ?").run(newId, drawId);
+  // the new round and its source settle together: a crash between them left a chain with two tips
+  await act(p.db, [{ id: drawId, during: "repairing", back: "awaiting_check_gate" }, { id: newId, during: "running", back: "failed" }],
+    () => develop(p, newId, parts, accepted),
+    () => [{ id: newId, status: "done", ended: true }, { id: drawId, status: "repaired", ended: true, links: { superseded_by: newId } }]);
   return p.draw(newId);
 }
 
@@ -180,7 +180,7 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
 
   // the chosen vignette first: the outline hangs from it
   const { step: vStep } = await revise(vignette, { parent: null, rewrite: "repair-vignette", carry: "repair-vignette", prompt: passageAsk });
-  p.db.query("UPDATE draws SET chosen_step = ? WHERE id = ?").run(vStep.id, newId);
+  commit(p.db, { id: newId, links: { chosen_step: vStep.id } });
 
   // the outline is the chain's contract, carried: the root's with every accepted fix appended, the text the check
   // holds the prose to. Re-deriving it each round wrote lines no author wrote and no checker read, and on the pit

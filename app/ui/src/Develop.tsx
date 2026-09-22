@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { api, type AutoResult, type Draw, type DraftConfig, type DraftConfigView, type Finding, type Findings, type Listen, type Story, type Step } from "./api.ts";
+import { api, type AutoResult, type Draw, type DrawBase, type CheckSummary, type DraftConfig, type DraftConfigView, type Finding, type Findings, type Listen, type Story, type Step } from "./api.ts";
 import { BriefFiles, DrawAside, Md, RowHead, SeedNote, StepView, boldLabels, firstParagraph, DrawNotes, inFlight, isWorking, label, stageName, stageNames, type Detail } from "./Draws.tsx";
 import { ArchivedToggle, Bar, Btn, Caret as Chevron, Facts, Field, Head, Icon, Keys, Mark, ModelPicks, Seg, lastSelected, markFor, onEnter, rowKeys, secs, usePoll, useRememberSelected, useRowsFromPage, useAddressBar } from "./ui.tsx";
 
@@ -99,8 +99,9 @@ export function Develop({ stage, selected, step: stepId }: { stage: "check" | "w
   const shown = all.filter((c) => showArchived || !c.head.archived_at || c === chainOf(current));
   const step = d && stepId ? d.steps.find((s) => s.id === stepId) : undefined;
   // a gate with no open finding and no repair pending has nothing to rule on: the next step is the draft
-  const clean = (r: Draw) => !!r.check && r.at_gate && r.check.open === 0 && r.check.accepted === 0;
-  const statusLine = (r: Draw) => (r.status === "done" ? "unchecked" : clean(r) ? "checked · nothing to fix" : label(r.status));
+  // the list row carries the check summary; the draw detail does not, so a draw read from the detail alone is not clean
+  const clean = (r: DrawBase & { check?: CheckSummary | null }) => !!r.check && r.at_gate && r.check.open === 0 && r.check.accepted === 0;
+  const statusLine = (r: DrawBase & { check?: CheckSummary | null }) => (r.status === "done" ? "unchecked" : clean(r) ? "checked · nothing to fix" : label(r.status));
   // the open row's one summary line; the step log is in the reading pane
   const summary = (r: Draw, detail: Detail | null) => {
     const running = detail?.steps.filter((s) => s.status === "running") ?? [];

@@ -17,7 +17,7 @@ describe("the chain answers the write half from one load", () => {
   test("scenes: the latest artifact per beat wins, in beat order; a patched scene stands in for the one it patches", () => {
     const { p } = bare();
     const sched = p.recordStep("d1", null, "schedule", "copied");
-    p.artifact(sched, "schedule", "raw", { form: { tense: "past" }, beats: [{ n: 1 }, { n: 2 }], words: 10 });
+    p.artifact(sched, "schedule", "raw", { form: { tense: "past" }, beats: [{ n: 1 }, { n: 2 }] as never, words: 10 });
     const s2 = p.recordStep("d1", sched.id, "scene", "copied");
     p.artifact(s2, "scene", "beat two", { beat: 2, words: 2, cap: 5, warnings: [] });
     const s1 = p.recordStep("d1", sched.id, "scene", "copied");

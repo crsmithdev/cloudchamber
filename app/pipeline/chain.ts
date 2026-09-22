@@ -16,6 +16,7 @@ import type { DrawRow, Pipeline, StepRow } from "./draw.ts";
 import { latestAll, type Latest } from "./verdicts.ts";
 import { cluster, excludeDismissed, merge, normalise, same, score, type Cluster, type Finding, type ScoreContext } from "./recur.ts";
 import { briefParts, prose } from "./briefparts.ts";
+import { Lineage } from "./lineage.ts";
 import { latestOf, ofKind, type Artifact, type FindingMeta } from "./artifacts.ts";
 import type { Profile, Scene, Schedule } from "./write.ts";
 import type { AutoResult } from "./drafting.ts";
@@ -41,19 +42,18 @@ export class Chain {
   private verdicts: Map<string, Latest> | null = null;
   private memo = new Map<string, unknown>();
 
-  /** `rows` seeds the chain with draw rows already loaded, so a list of every draw walks no query per row. */
-  constructor(private p: Pipeline, readonly drawId: string, rows?: Map<string, DrawRow>) {
-    if (rows) for (const [id, r] of rows) this.memo.set(`row:${id}`, r);
-    const ids: string[] = [];
-    for (let id: string | null = drawId; id && !ids.includes(id); id = this.row(id).repaired_from) ids.push(id);
-    this.ids = ids;
+  private lineage: Lineage;
+  /** `lineage` holds draw rows already loaded, so a list of every draw walks no query per row. */
+  constructor(private p: Pipeline, readonly drawId: string, lineage?: Lineage) {
+    this.lineage = lineage ?? new Lineage([], (id) => p.draw(id));
+    this.ids = this.lineage.chain(drawId);
   }
 
   private once<T>(key: string, f: () => T): T {
     if (!this.memo.has(key)) this.memo.set(key, f());
     return this.memo.get(key) as T;
   }
-  row(id: string): DrawRow { return this.once(`row:${id}`, () => this.p.draw(id)); }
+  row(id: string): DrawRow { return this.lineage.row(id); }
   artifacts(id: string = this.drawId): Artifact[] { return this.once(`artifacts:${id}`, () => this.p.artifacts(id)); }
   steps(id: string = this.drawId): StepRow[] { return this.once(`steps:${id}`, () => this.p.steps(id)); }
   /** The gate decision on a finding: every finding verdict is read in one query. */
@@ -64,9 +64,9 @@ export class Chain {
   }
 
   /** The first draw of the chain. */
-  get root(): string { return this.ids.at(-1)!; }
+  get root(): string { return this.lineage.root(this.drawId); }
   /** The chain as the list shows it: every round oldest first, this draw last. */
-  get rounds(): string[] { return [...this.ids].reverse(); }
+  get rounds(): string[] { return this.lineage.rounds(this.drawId); }
 
   /** The newest artifact of one kind on this draw, or undefined. */
   latest<K extends string>(kind: K): Artifact<K> | undefined { return latestOf(this.artifacts(), kind); }
@@ -402,4 +402,4 @@ export class Chain {
 }
 
 /** Read a repair chain from one of its draws. Each answer is computed once. */
-export const chainOf = (p: Pipeline, drawId: string, rows?: Map<string, DrawRow>) => new Chain(p, drawId, rows);
+export const chainOf = (p: Pipeline, drawId: string, lineage?: Lineage) => new Chain(p, drawId, lineage);

@@ -5,13 +5,12 @@ import { BRIEFS } from "./paths.ts";
 import type { Db } from "./store/db.ts";
 import { pipelineVersion } from "./version.ts";
 import { partOf, partsFrom, partsIn } from "./briefparts.ts";
-import { parseMeta, type Artifact } from "./artifacts.ts";
+import { readArtifacts } from "./artifacts.ts";
 
 export function writeBrief(db: Db, drawId: string, base: string = BRIEFS, settledLines: { round: number; replacement: string }[] = []): string {
   const draw = db.query("SELECT * FROM draws WHERE id = ?").get(drawId) as any;
   const steps = db.query("SELECT * FROM steps WHERE draw_id = ? ORDER BY started_at, rowid").all(drawId) as any[];
-  const rows = db.query("SELECT a.*, s.stage FROM artifacts a JOIN steps s ON s.id = a.step_id WHERE s.draw_id = ? ORDER BY s.started_at, a.rowid").all(drawId) as { id: string; step_id: string; kind: string; content: string; meta: string; stage: string }[];
-  const arts: (Artifact & { stage: string })[] = rows.map((r) => ({ ...r, meta: parseMeta(r.meta) }));
+  const arts = readArtifacts(db, { draw: drawId });
   const parts = partsFrom(arts, draw.chosen_step);
   const chosen = partOf(parts, "vignette"), outline = partOf(parts, "outline"), ending = partOf(parts, "ending");
   const dir = join(base, drawId);

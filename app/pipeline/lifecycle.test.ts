@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { ACTIONS, STATUSES, lifecycleView, recoverInterrupted, stageTab, tabOf, waitsIn, whyNot, type Action } from "./lifecycle.ts";
+import { ACTIONS, STATUSES, act, commit, lifecycleView, recoverInterrupted, stageTab, tabOf, waitsIn, whyNot, type Action } from "./lifecycle.ts";
 import { STAGES } from "./config.ts";
 import { FakeModel } from "./model.ts";
 import { Pipeline } from "./draw.ts";
@@ -139,7 +139,7 @@ describe("recovery on start", () => {
     set("checking"); expect(back()).toBe("done");                                     // a brief nobody had checked
     set("repairing"); expect(back()).toBe("awaiting_check_gate");
     set("drafting"); expect(back()).toBe("done");                                     // the schedule never landed
-    p.artifact(p.steps(draw.id)[0], "schedule", "x", {});
+    p.artifact(p.steps(draw.id)[0], "schedule", "x", {} as never);
     set("drafting"); expect(back()).toBe("awaiting_draft_gate");                      // a rewrite at gate 2
     set("running"); expect(back()).toBe("awaiting_gate");                             // developing its chosen candidate
     set("running", { chosen_step: null }); expect(back()).toBe("failed");             // a first run
@@ -147,3 +147,44 @@ describe("recovery on start", () => {
     expect(p.draw(draw.id).ended_at).toBeTruthy();
   });
 });
+
+describe("acting on a draw", () => {
+  test("the work sees the held status and the links set with it, and every commit lands together", async () => {
+    const { p, draw } = await drawn(draftScript({}));
+    p.db.query("UPDATE draws SET status = 'awaiting_check_gate' WHERE id = ?").run(draw.id);
+    const next = "repair-1";
+    p.copyDraw(p.draw(draw.id), next, { repaired_from: draw.id }, "manual");
+    let seen: unknown[] = [];
+    await act(p.db, [{ id: draw.id, during: "repairing", back: "awaiting_check_gate" }, { id: next, during: "running", back: "failed", set: { chosen_step: "s-new" } }],
+      async () => { seen = [p.draw(draw.id).status, p.draw(next).status, p.draw(next).chosen_step]; },
+      () => [{ id: next, status: "done", ended: true }, { id: draw.id, status: "repaired", ended: true, links: { superseded_by: next } }]);
+    expect(seen).toEqual(["repairing", "running", "s-new"]);
+    expect(p.draw(draw.id)).toMatchObject({ status: "repaired", superseded_by: next, error: null });
+    expect(p.draw(next)).toMatchObject({ status: "done", chosen_step: "s-new" });
+    expect(p.draw(next).ended_at).toBeTruthy();
+  });
+
+  test("a failure puts every held draw back with the reason, undoes what the hold set, and commits nothing", async () => {
+    const { p, draw } = await drawn(draftScript({}));
+    p.db.query("UPDATE draws SET status = 'awaiting_gate', chosen_step = NULL WHERE id = ?").run(draw.id);
+    const next = "fork-1";
+    p.copyDraw(p.draw(draw.id), next, { forked_from: draw.id }, "manual");
+    let committed = false;
+    const err = await act(p.db, [{ id: draw.id, during: "running", back: "awaiting_gate", set: { chosen_step: "s1" }, undo: { chosen_step: null } }, { id: next, during: "running", back: "failed" }],
+      async () => { throw new Error("outline failed: error"); },
+      () => { committed = true; return []; }).catch((e) => e);
+    expect(String(err)).toContain("outline failed");
+    expect(committed).toBe(false);
+    expect(p.draw(draw.id)).toMatchObject({ status: "awaiting_gate", chosen_step: null, error: "outline failed: error" });
+    expect(p.draw(next)).toMatchObject({ status: "failed", error: "outline failed: error" });
+    expect(p.draw(next).ended_at).toBeTruthy();
+  });
+
+  test("a commit with no status writes only its links and leaves the last failure alone", async () => {
+    const { p, draw } = await drawn(draftScript({}));
+    p.db.query("UPDATE draws SET error = 'earlier' WHERE id = ?").run(draw.id);
+    commit(p.db, { id: draw.id, links: { draft_config: "{}" } });
+    expect(p.draw(draw.id)).toMatchObject({ draft_config: "{}", error: "earlier" });
+  });
+});
+

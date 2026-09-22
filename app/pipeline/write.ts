@@ -17,6 +17,7 @@ import { loadLexicon, restated, slopScreen } from "./slop.ts";
 import { listenScreen, loadNarrationPool } from "./listen.ts";
 import { parseQuestions, type Answer } from "./check.ts";
 import type { BriefParts } from "./briefparts.ts";
+import type { SceneMeta } from "./artifacts.ts";
 import { applyPatches } from "./repair.ts";
 import { record } from "./verdicts.ts";
 import { chainOf } from "./chain.ts";
@@ -238,7 +239,7 @@ export async function bindScene(p: Pipeline, drawId: string, ledger: string, sce
   const out = applyPatches(scene.text, flags);
   if (!out.applied.length) return scene;
   // the scene keeps its beat and cap, not the gate-2 record of the scene it patches: a patch is not a rewrite
-  const { rewrite: _rw, rewrite_finding: _rf, ...meta } = chainOf(p, drawId).artifact(scene.artifact_id)!.meta;
+  const { rewrite: _rw, rewrite_finding: _rf, ...meta } = chainOf(p, drawId).artifact(scene.artifact_id)!.meta as SceneMeta;
   const step = p.recordStep(drawId, scene.step_id, "scene", "patched");
   const artifact_id = p.artifact(step, "scene", out.text, { ...meta, words: words(out.text), patched: out.applied.map((f) => f.id) });
   for (const f of out.applied) record(p.db, { kind: "finding", target_id: f.id, verdict: "keep", method: "draw", note: "patched as written" });

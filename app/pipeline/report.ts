@@ -115,21 +115,20 @@ const LISTEN_ROWS: [keyof ListenProfile, string, number][] = [
 export function renderReport(p: Pipeline, drawId: string): string {
   const chain = chainOf(p, drawId);
   const tip = p.draw(drawId);
-  const rootId = chain.ids.at(-1)!;
+  const rootId = chain.root;
   const root = p.draw(rootId);
   const parts = briefParts(p, drawId);
   const v = draftView(p, drawId);
   const resolved = tip.draft_config ? (JSON.parse(tip.draft_config) as Resolved) : null;
-  const steps = [...chain.ids].reverse().flatMap((id) => p.steps(id));
+  const steps = chain.rounds.flatMap((id) => p.steps(id));
   const cost = costs(steps);
   const ended = steps.map((s) => s.ended_at).filter((x): x is string => !!x).sort().at(-1) ?? root.created_at;
   const story = v.scenes.map((s) => s.text.trim()).join("\n\n");
   const storyWords = words(story);
   const examples = examplesOf(p, JSON.parse(root.example_ids) as string[]);
   const premises = ofKind(p.artifacts(rootId), "premise").sort((a, b) => (a.meta.index ?? 0) - (b.meta.index ?? 0));
-  const auto = ofKind(p.artifacts(drawId), "auto").at(-1);
-  const autoRun = auto ? (JSON.parse(auto.content) as AutoResult) : null;
-  const rounds = [...chain.ids].reverse();
+  const autoRun = chain.auto();
+  const rounds = chain.rounds;
   const settled = chain.settled();
   const sceneArts = ofKind(p.artifacts(drawId), "scene");
   const openBy = (screen: string) => v.screenFindings.filter((f) => f.decision === "open" && f.screen === screen).length;

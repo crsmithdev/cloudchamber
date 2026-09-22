@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { marked } from "marked";
-import { api, when, type Artifact, type AutoResult, type Candidate, type Example, type Facets, type Draw, type Fork, type FullStep, type Origin, type Parts, type Repair, type Source, type Status, type Step } from "./api.ts";
+import { api, when, type Artifact, type AutoResult, type Candidate, type Example, type Facets, type Draw, type DrawBase, type DrawDetail, type Fork, type FullStep, type Origin, type Parts, type Repair, type Source, type Status, type Step } from "./api.ts";
 import { ArchivedToggle, Bar, Btn, Caret, Chip, Field, Head, Icon, Keys, LinkBtn, Mark, ModelPicks, Seg, hhmm, lastSelected, markFor, onEnter, rowKeys, secs, usageLine, usePoll, useRememberSelected, useRowsFromPage, useTick, useAddressBar, type MarkState } from "./ui.tsx";
 
 /** `checked` and `auto` are the chain's answers; the pane does not read them off the artifact list. */
-export type Detail = { draw: Draw; origin: Origin | null; steps: Step[]; parts: Parts; checks_next: string[]; repair: Repair; checked: boolean; auto: AutoResult | null; artifacts: Artifact[]; candidates: Candidate[]; examples: Example[]; forks: Fork[]; report: boolean };
+/** One draw in full, as the server builds it in pipeline/views.ts. */
+export type Detail = DrawDetail;
 const STAGES = ["premises", "execute", "gate", "outline", "context", "ending", "brief"];
 export const LABEL: Record<string, string> = {
   awaiting_gate: "choose a premise",
@@ -237,7 +238,7 @@ export function Draws({ status, selected, like, step: stepId }: { status: Status
     }
   };
   // superseded by a redraw is old; superseded by its own repair is a draw that went on to check
-  const redrawn = (r: Draw) => !!r.superseded_by && !draws.some((x) => x.id === r.superseded_by && x.repaired_from === r.id);
+  const redrawn = (r: DrawBase) => r.superseded?.how === "redrawn";
   const gate = async (action: string, step_id?: string) => {
     if (!d) return;
     setErr("");
@@ -484,7 +485,7 @@ export const stageNames = (steps: { stage: string }[]) => [...new Set(steps.map(
 /** Whether the pipeline is working on a draw: its status says so, or a call is in flight. */
 export const isWorking = (d: Detail | undefined | null) => !!d && (d.draw.running || d.steps.some((s) => s.status === "running"));
 /** A person's flag, and why the last action failed, each said as what it is. */
-export function DrawNotes({ draw }: { draw: Draw }) {
+export function DrawNotes({ draw }: { draw: DrawBase }) {
   return (
     <>
       {draw.error && <div className="err mt-2">{draw.status === "failed" ? "failed" : "the last action failed"}: {draw.error}</div>}

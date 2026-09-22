@@ -22,6 +22,7 @@ import { samplesFor, type DraftConfig } from "./draftconfig.ts";
 import { cluster, excludeDismissed, findingId, merge, normalise, parseFindings, quoted, same, type Cluster, type Finding } from "./recur.ts";
 import { briefBlock, briefParts, passId, prose, type BriefParts } from "./briefparts.ts";
 import { chainOf, type Chain } from "./chain.ts";
+import type { LedgerMeta } from "./artifacts.ts";
 import { RUN } from "./config.ts";
 
 export const PREMISES_PATH = resolve(import.meta.dir, "premises.md");
@@ -74,7 +75,7 @@ export function loadPremiseList(path: string = PREMISES_PATH): string {
 const findingShape = () => fill("findingShape", { sections: RUN.coreJobs.join(" | ") });
 
 /** Extract a brief's ledger in one call and store it under `meta`. */
-export async function extractLedger(p: Pipeline, drawId: string, parts: BriefParts, brief: string, meta: Record<string, unknown>): Promise<string> {
+export async function extractLedger(p: Pipeline, drawId: string, parts: BriefParts, brief: string, meta: LedgerMeta): Promise<string> {
   const { step, value } = await p.invoke(drawId, parts.outlineStepId, "ledger-extract", fill("ledgerExtract", {}), (t) => need(t, "ledger"), null, undefined, brief);
   p.artifact(step, "ledger", String(value), meta);
   return String(value);
@@ -140,7 +141,7 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
   // a clean pass leaves no finding or profile behind, so the pass is marked on its own: the gate reads the latest pass, not the latest with findings
   // with the samples each checker ran in this pass, which the score reads: an earlier pass may have run a different count.
   // Marked only once the verify reading is in: a pass whose verify failed would otherwise read as clean
-  const samples = Object.fromEntries(perChecker.filter((c) => c.samples).map((c) => [c.checker, c.samples]));
+  const samples = Object.fromEntries(perChecker.filter((c) => c.samples).map((c) => [c.checker, c.samples!]));
   if (perChecker.length) p.artifact(perChecker[0].firstStep, "pass", pass, { pass, samples });
   const store = (c: Cluster, extra: Record<string, unknown>) => {
     const owner = perChecker.find((x) => x.checker === c.checkers[0])!;

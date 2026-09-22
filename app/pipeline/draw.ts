@@ -20,8 +20,9 @@ import { pipelineVersion } from "./version.ts";
 import { nextName } from "./names.ts";
 import type { Db } from "./store/db.ts";
 import { writeBrief } from "./brief.ts";
-import { must, settle, under } from "./lifecycle.ts";
-import { parseMeta, type Artifact } from "./artifacts.ts";
+import { act, must } from "./lifecycle.ts";
+import { Lineage } from "./lineage.ts";
+import { ofKind, readArtifacts, writeArtifact, type Artifact, type Kind, type MetaByKind } from "./artifacts.ts";
 import { chainOf } from "./chain.ts";
 
 export type SeedChoice = { mode: "drawn" } | { mode: "picked"; themeId: string } | { mode: "typed"; text: string };
@@ -198,10 +199,8 @@ export class Pipeline {
     throw new StepFailure(r.outcome, `${stage} failed: ${r.outcome}${r.step.error ? ` (${r.step.error.slice(0, 200)})` : ""}`, r.step);
   }
 
-  artifact(step: StepRow, kind: string, content: string, meta: Record<string, unknown> = {}): string {
-    const aid = `${kind}-${id(4)}`;
-    this.db.query("INSERT INTO artifacts (id, step_id, kind, content, meta) VALUES (?, ?, ?, ?, ?)").run(aid, step.id, kind, content, JSON.stringify(meta));
-    return aid;
+  artifact<K extends Kind>(step: StepRow, kind: K, content: string, meta: MetaByKind[K]): string {
+    return writeArtifact(this.db, step.id, kind, content, meta);
   }
 
   // --- draw ------------------------------------------------------------------
@@ -281,8 +280,9 @@ export class Pipeline {
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?)`)
       .run(drawId, this.nameFor(seed.text), setting?.id ?? null, genre, opts.mode, opts.segment ? JSON.stringify(opts.segment) : null,
         seed.mode, seed.text, seed.themeId, JSON.stringify(examples.map((e) => e.id)), sampling, opts.darkness ?? null, models, now());
-    await under(this.db, drawId, "running", "failed", () => this.premisesAndExecute(drawId, examples.map((e) => e.text), seed.text, genre, sampling, opts.darkness, setting, opts.shape));
-    settle(this.db, drawId, "awaiting_gate");
+    await act(this.db, { id: drawId, during: "running", back: "failed" },
+      () => this.premisesAndExecute(drawId, examples.map((e) => e.text), seed.text, genre, sampling, opts.darkness, setting, opts.shape),
+      () => ({ id: drawId, status: "awaiting_gate" }));
     const draw = this.draw(drawId);
     if (draw.mode === "auto") return this.autoGate(drawId);
     return draw;
@@ -340,30 +340,27 @@ export class Pipeline {
     const examples = ids.map((id) => texts.get(id)!);
     const dark = darknessLine((draw.darkness ?? undefined) as Darkness | undefined);
     const done = steps.find((s) => s.status === "done");
-    await under(this.db, drawId, "running", "failed", async () => {
+    await act(this.db, { id: drawId, during: "running", back: "failed" }, async () => {
       if (!done) {
         // the shape is not a column; a premises step that ran under it carries it in its prompt
         const shaped = steps.some((s) => s.prompt.includes(fill("premisesShape", {})));
         return this.premisesAndExecute(drawId, examples, draw.seed_text, draw.genre, draw.sampling as Sampling, (draw.darkness ?? undefined) as Darkness | undefined, setting, shaped ? "listen" : undefined);
       }
       const arts = this.artifacts(drawId);
-      const executes = new Set(this.steps(drawId).filter((s) => s.stage === "execute").map((s) => s.id));
-      const have = new Set(arts.filter((a) => a.kind === "vignette" && executes.has(a.step_id)).map((a) => a.meta.index as number));
-      const premises = arts.filter((a) => a.kind === "premise" && a.step_id === done.id)
-        .map((a) => ({ index: a.meta.index as number, probability: a.meta.probability as number, text: a.content }))
+      const have = new Set(ofKind(arts, "vignette").filter((a) => a.stage === "execute").map((a) => a.meta.index));
+      const premises = ofKind(arts, "premise").filter((a) => a.step_id === done.id)
+        .map((a) => ({ index: a.meta.index, probability: a.meta.probability, text: a.content }))
         .filter((p) => !have.has(p.index));
       await this.executeAll(drawId, done.id, premises, examples.join("\n\n"), draw.seed_text, dark, setting);
-    });
-    settle(this.db, drawId, "awaiting_gate");
+    }, () => ({ id: drawId, status: "awaiting_gate" }));
     return draw.mode === "auto" ? this.autoGate(drawId) : this.draw(drawId);
   }
 
   /** The five executed candidates, sorted by stated probability ascending. */
   candidates(drawId: string): { step_id: string; index: number; probability: number; premise: string; vignette: string; warnings: string[] }[] {
-    const rows = this.db.query(`SELECT a.step_id, a.content, a.meta FROM artifacts a JOIN steps s ON s.id = a.step_id
-                                WHERE s.draw_id = ? AND a.kind = 'vignette' AND s.stage = 'execute'`).all(drawId) as any[];
+    const rows = ofKind(this.artifacts(drawId), "vignette").filter((a) => a.stage === "execute");
     // Numbered from the tail on read too, so draws recorded before this numbering read the same way.
-    return rows.map((r) => { const m = parseMeta(r.meta); return { step_id: r.step_id, index: m.index as number, probability: m.probability, premise: m.premise, vignette: r.content, warnings: m.warnings ?? [] }; })
+    return rows.map((a) => ({ step_id: a.step_id, index: a.meta.index!, probability: a.meta.probability!, premise: a.meta.premise!, vignette: a.content, warnings: a.meta.warnings ?? [] }))
       .sort((a, b) => a.probability - b.probability || a.index - b.index)
       .map((c, i) => ({ ...c, index: i + 1 }));
   }
@@ -373,21 +370,22 @@ export class Pipeline {
     const lo = cs[0].probability;
     const ties = cs.filter((c) => c.probability === lo);
     const chosen = this.pick(ties);
-    this.db.query("UPDATE draws SET gate_method = 'auto' WHERE id = ?").run(drawId);
-    return this.choose(drawId, chosen.step_id);
+    return this.choose(drawId, chosen.step_id, "auto");
   }
 
   // --- gate actions ----------------------------------------------------------
 
-  async choose(drawId: string, executeStepId: string): Promise<DrawRow> {
-    must(this.draw(drawId), "choose");
+  /** `method` is how the candidate was chosen; a draw already chosen once keeps its first method unless the gate is auto. */
+  async choose(drawId: string, executeStepId: string, method?: "auto"): Promise<DrawRow> {
+    const draw = this.draw(drawId);
+    must(draw, "choose");
     const c = this.candidates(drawId).find((c) => c.step_id === executeStepId);
     if (!c) throw new Error(`draw ${drawId}: no execute step ${executeStepId}`);
-    this.db.query("UPDATE draws SET chosen_step = ?, gate_method = coalesce(gate_method, 'manual') WHERE id = ?").run(executeStepId, drawId);
     // a failed development leaves the draw at the gate, where a candidate can be chosen again
-    await under(this.db, drawId, "running", "awaiting_gate", () => this.develop(drawId, c))
-      .catch((e) => { this.db.query("UPDATE draws SET chosen_step = NULL WHERE id = ?").run(drawId); throw e; });
-    settle(this.db, drawId, "done", { ended: true });
+    await act(this.db,
+      { id: drawId, during: "running", back: "awaiting_gate", set: { chosen_step: executeStepId, gate_method: method ?? draw.gate_method ?? "manual" }, undo: { chosen_step: null } },
+      () => this.develop(drawId, c),
+      () => ({ id: drawId, status: "done", ended: true }));
     return this.draw(drawId);
   }
 
@@ -462,19 +460,17 @@ export class Pipeline {
     this.copyDraw(src, newId, { forked_from: drawId }, "manual");
     const step = this.recordStep(newId, null, "execute", "copied", c.premise);
     this.artifact(step, "vignette", c.vignette, { index: c.index, probability: c.probability, premise: c.premise, warnings: c.warnings, forked_from: executeStepId });
-    this.db.query("UPDATE draws SET chosen_step = ? WHERE id = ?").run(step.id, newId);
-    await under(this.db, newId, "running", "failed", () => this.develop(newId, { step_id: step.id, premise: c.premise, vignette: c.vignette }));
-    settle(this.db, newId, "done", { ended: true });
+    await act(this.db, { id: newId, during: "running", back: "failed", set: { chosen_step: step.id } },
+      () => this.develop(newId, { step_id: step.id, premise: c.premise, vignette: c.vignette }),
+      () => ({ id: newId, status: "done", ended: true }));
     return this.draw(newId);
   }
 
   /** The draws forked off this one, each with the execute step of the candidate it develops. */
   forks(drawId: string): { id: string; status: string; step_id: string; index: number }[] {
-    const rows = this.db.query(`SELECT d.id, d.status, a.meta FROM draws d
-                                JOIN steps s ON s.draw_id = d.id AND s.stage = 'execute'
-                                JOIN artifacts a ON a.step_id = s.id AND a.kind = 'vignette'
-                                WHERE d.forked_from = ? ORDER BY d.created_at`).all(drawId) as any[];
-    return rows.map((r) => { const m = parseMeta(r.meta); return { id: r.id, status: r.status, step_id: m.forked_from as string, index: m.index as number }; });
+    const forks = this.db.query("SELECT id, status FROM draws WHERE forked_from = ? ORDER BY created_at").all(drawId) as { id: string; status: string }[];
+    return forks.flatMap((d) => ofKind(this.artifacts(d.id), "vignette").filter((a) => a.stage === "execute")
+      .map((a) => ({ id: d.id, status: d.status, step_id: a.meta.forked_from!, index: a.meta.index! })));
   }
 
   /** Hide a draw from the lists, or put it back. Nothing else about it changes, and it stays reachable by id. */
@@ -485,8 +481,10 @@ export class Pipeline {
    * chain too, and stays as it is. Unarchive is the same walk back.
    */
   archive(drawId: string, archived = true): DrawRow {
-    const ids = chainOf(this, drawId).ids;
-    const shared = (id: string) => (this.db.query("SELECT id FROM draws WHERE repaired_from = ?").all(id) as { id: string }[]).some((r) => !ids.includes(r.id));
+    const lineage = Lineage.all(this.db);
+    const ids = lineage.chain(drawId);
+    // a round another chain also grew from stays in the list while that chain does
+    const shared = (id: string) => lineage.repairs(id).some((r) => !ids.includes(r));
     for (const id of ids) {
       if (id !== drawId && shared(id)) continue;
       this.db.query("UPDATE draws SET archived_at = ? WHERE id = ?").run(archived ? now() : null, id);
@@ -532,18 +530,13 @@ export class Pipeline {
   }
   // created_at is second-resolution, so two draws started in one second need the insertion order to break the tie
   /** The draws that point at this one: its repair, its fork, what superseded it. */
-  referencedBy(drawId: string): string[] {
-    return (this.db.query("SELECT id FROM draws WHERE superseded_by = ? OR repaired_from = ? OR forked_from = ?").all(drawId, drawId, drawId) as { id: string }[]).map((r) => r.id);
-  }
+  referencedBy(drawId: string): string[] { return Lineage.all(this.db).referencedBy(drawId); }
   draws(archived = false): DrawRow[] {
     return this.db.query(`SELECT * FROM draws ${archived ? "" : "WHERE archived_at IS NULL "}ORDER BY created_at DESC, rowid DESC`).all() as DrawRow[];
   }
   steps(drawId: string): StepRow[] { return this.db.query("SELECT * FROM steps WHERE draw_id = ? ORDER BY started_at, rowid").all(drawId) as StepRow[]; }
-  /** Every artifact of a draw, oldest first, its meta parsed once here. */
-  artifacts(drawId: string): Artifact[] {
-    const rows = this.db.query("SELECT a.* FROM artifacts a JOIN steps s ON s.id = a.step_id WHERE s.draw_id = ? ORDER BY s.started_at, a.rowid").all(drawId) as { id: string; step_id: string; kind: string; content: string; meta: string }[];
-    return rows.map((r) => ({ ...r, meta: parseMeta(r.meta) }));
-  }
+  /** Every artifact of a draw, oldest first, its meta parsed once. */
+  artifacts(drawId: string): Artifact[] { return readArtifacts(this.db, { draw: drawId }); }
 }
 
 export { pipelineVersion };

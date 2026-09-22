@@ -172,6 +172,18 @@ describe("api", () => {
     expect((await j("GET", "/api/draws/nope")).code).toBe(404);
   });
 
+  test("a step answers with its artifacts' meta parsed, as the step pane reads it", async () => {
+    const { j, pipeline } = await setup();
+    const draw = await pipeline.start({ mode: "manual", genre: "horror" });
+    const premises = pipeline.steps(draw.id).find((s) => s.stage === "premises")!;
+    const r = await j("GET", `/api/steps/${premises.id}`);
+    expect(r.code).toBe(200);
+    const first = r.body.artifacts.find((a: any) => a.kind === "premise");
+    expect(typeof first.meta).toBe("object");
+    expect(Array.isArray(first.meta.warnings)).toBe(true);
+    expect(first.meta.index).toBe(1);
+  });
+
   test("a draw's options are readable for another like it, and a spent draw is deletable", async () => {
     const { j, pipeline } = await setup();
     const { body: { id } } = await j("POST", "/api/draws", { mode: "manual", genre: "horror", seed: "typed seed" });

@@ -9,21 +9,18 @@ import { newDrawId, Pipeline, seedAndSegment, type DrawOpts } from "../pipeline/
 import { KINDS, latest, latestAll, passedStories, record, type Kind, type Method } from "../pipeline/verdicts.ts";
 import { renderStory } from "../pipeline/drafts.ts";
 import { status } from "../pipeline/status.ts";
-import { originOf } from "../pipeline/stage.ts";
 import { gateCommand, type GateArgs, type GateResult } from "../pipeline/gate.ts";
 import { MODEL_GROUPS, MODELS } from "../pipeline/config.ts";
-import { chainOf } from "../pipeline/chain.ts";
-import { checkersNext } from "../pipeline/check.ts";
-import { partsView } from "../pipeline/briefparts.ts";
-import { lifecycleView, stageTab, type DrawFacts } from "../pipeline/lifecycle.ts";
+import { readArtifacts } from "../pipeline/artifacts.ts";
+import { Views } from "../pipeline/views.ts";
 import { BANDS, DARKNESS, GENRES, SAMPLING } from "../pipeline/config.ts";
 import { exportBank, sourceLabel } from "../pipeline/bank.ts";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, resolve, sep } from "node:path";
 import { BRIEFS, OUTPUT } from "../pipeline/paths.ts";
-import { Drafting, type FindingsSummary } from "../pipeline/drafting.ts";
+import { Drafting } from "../pipeline/drafting.ts";
 import { loadSetting } from "../pipeline/settings.ts";
-import { loadDraftConfig, profileNames, type DraftConfig } from "../pipeline/draftconfig.ts";
+import { loadDraftConfig, profileNames } from "../pipeline/draftconfig.ts";
 
 export type ItemOrder = "source" | "suspects" | "shuffle";
 export type ItemFilter = { kind: Kind; source?: string; author?: string; genre?: string; cell?: string; verdict?: "unreviewed" | "keep" | "pass"; artifact?: boolean; suspect?: boolean; order?: ItemOrder; seed?: number; limit?: number; offset?: number };
@@ -69,15 +66,6 @@ export function listItems(db: Db, f: ItemFilter) {
   return { total: ordered.length, items: ordered.slice(offset, offset + limit) };
 }
 
-/** The six passages a draw drew, with their latest verdicts; a passage gone from the pool keeps its id only. */
-export function drawExamples(db: Db, exampleIds: string) {
-  return (JSON.parse(exampleIds) as string[]).map((id) => {
-    const p = db.query(`SELECT p.id, p.text, p.words, p.voice || '/' || p.mode AS cell, s.title, s.author, s.genre, s.source_id AS source, s.id AS story_id
-                        FROM passages p JOIN stories s ON s.id = p.story_id WHERE p.id = ?`).get(id) as any;
-    return { ...(p ?? { id, text: null }), latest: latest(db, "example", id) };
-  });
-}
-
 /**
  * The long work a request starts and the reply does not wait for. Its failure
  * is on the draw row, so the rejection is dropped here. `idle` lets a restart
@@ -112,6 +100,7 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
   const drafting = opts.drafting ?? new Drafting(pipeline);
   // the report a draft leaves at gate 2 (pipeline/report.ts); the PDF is absent until the print finishes, or when no browser is found
   const reportPdf = (id: string) => join(drafting.opts.outputDir ?? OUTPUT, id, "report.pdf");
+  const views = new Views(pipeline, drafting, (id) => existsSync(reportPdf(id)));
 
   app.get("/api/status", async () => status(db));
 
@@ -147,41 +136,8 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     darkness: DARKNESS,
   }));
 
-  /**
-   * The check summary a list row shows for each round of a repair chain. It is
-   * computed during the request and memoised on what can change it: the draw's
-   * status and the number of finding verdicts. A read of one chain is about 4 ms
-   * with the store on the Linux filesystem and 45 ms on the Windows mount, and a
-   * list holds every round of every chain.
-   */
-  const summaries = new Map<string, FindingsSummary | null>();
-  const findingVerdicts = () => (db.query("SELECT count(*) AS n FROM verdicts WHERE kind = 'finding'").get() as { n: number }).n;
-  const checkSummary = (r: { id: string; status: string }, stage: string, verdicts: number): FindingsSummary | null => {
-    if (stage === "ideate" || r.status === "done") return null;
-    const key = `${r.id}|${r.status}|${verdicts}`;
-    if (summaries.has(key)) return summaries.get(key)!;
-    const out = drafting.findings(r.id).summary;
-    // one entry per draw: the key carries what invalidates it, so the old ones are dead
-    for (const k of summaries.keys()) if (k.startsWith(`${r.id}|`)) summaries.delete(k);
-    summaries.set(key, out);
-    return out;
-  };
 
-  app.get<{ Querystring: { archived?: string } }>("/api/draws", async (req) => {
-    const verdicts = findingVerdicts();
-    const all = pipeline.draws(true);
-    const refs = new Map<string, string[]>();
-    for (const r of all) for (const to of [r.superseded_by, r.repaired_from, r.forked_from]) if (to) refs.set(to, [...(refs.get(to) ?? []), r.id]);
-    // the chain each draw stands in, read by chain.ts from the rows already here: a draw nothing repairs heads its chain
-    const rows = new Map(all.map((r) => [r.id, r]));
-    const repaired = new Set(all.map((r) => r.repaired_from));
-    return all.filter((r) => req.query.archived === "true" || !r.archived_at).map((r) => {
-      const view = lifecycleView({ ...r, referenced_by: refs.get(r.id) ?? [] } as DrawFacts);
-      const stage = view.stage;
-      // the candidate is what tells two briefs of one batch apart, so the list needs it too
-      return { ...r, ...view, origin: stage === "ideate" ? null : originOf(pipeline, r.id), check: checkSummary(r, stage, verdicts), rounds: chainOf(pipeline, r.id, rows).rounds, head: !repaired.has(r.id) };
-    });
-  });
+  app.get<{ Querystring: { archived?: string } }>("/api/draws", async (req) => views.list(req.query.archived === "true"));
 
   app.post<{ Body: { mode?: "auto" | "manual"; setting?: string; domains?: string; genre?: string; sampling?: string; darkness?: string; shape?: string; source?: string; author?: string; seed?: string; seed_id?: string; models?: Record<string, string> } }>("/api/draws", async (req, reply) => {
     const b = req.body ?? {};
@@ -206,28 +162,15 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
   });
 
   app.get<{ Params: { id: string } }>("/api/draws/:id", async (req, reply) => {
-    try {
-      const row = pipeline.draw(req.params.id);
-      const draw = { ...row, ...lifecycleView({ ...row, referenced_by: pipeline.referencedBy(row.id) }) };
-      // the pane polls this every few seconds; a step's prompt and response are read from /api/steps/:id when one is opened
-      const steps = pipeline.steps(draw.id).map(({ prompt, raw_response, parsed, ...s }) =>
-        ({ ...s, tab: stageTab(s.stage), prompt_chars: prompt.length, raw_chars: raw_response?.length ?? 0, parsed_chars: parsed?.length ?? 0 }));
-      // what a check would run on this draw now, and the repair settings it would run under: the page states neither itself
-      const cfg = row.draft_config ? (JSON.parse(row.draft_config).config as DraftConfig) : loadDraftConfig().config;
-      const checks_next = row.chosen_step ? checkersNext(pipeline, row.id, cfg.checks.enabled) : [];
-      // what the pane used to read off the artifact list itself: whether a check pass exists, and the auto run that ended here
-      const chain = chainOf(pipeline, row.id);
-      return { draw, origin: originOf(pipeline, row.id), steps, parts: partsView(pipeline, draw.id), checks_next, repair: cfg.repair, checked: !!chain.pass(), auto: chain.auto(),
-               artifacts: pipeline.artifacts(draw.id), candidates: pipeline.candidates(draw.id), examples: drawExamples(db, draw.example_ids), forks: pipeline.forks(draw.id),
-               report: existsSync(reportPdf(draw.id)) };
-    } catch (e: any) { return reply.code(404).send({ error: e.message }); }
+    try { return views.draw(req.params.id); } catch (e: any) { return reply.code(404).send({ error: e.message }); }
   });
 
   /** One step in full, with its artifacts: the prompt, the raw response and the parsed value. */
   app.get<{ Params: { id: string } }>("/api/steps/:id", async (req, reply) => {
     const step = db.query("SELECT * FROM steps WHERE id = ?").get(req.params.id) as any;
     if (!step) return reply.code(404).send({ error: `no step ${req.params.id}` });
-    const artifacts = db.query("SELECT id, step_id, kind, content, meta FROM artifacts WHERE step_id = ? ORDER BY rowid").all(req.params.id);
+    // parsed meta, as the page reads it: a string here hid every length warning in the step pane
+    const artifacts = readArtifacts(db, { step: req.params.id });
     return { step, artifacts };
   });
 

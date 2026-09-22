@@ -13,7 +13,7 @@
  */
 import type { DrawRow, Pipeline } from "./draw.ts";
 import { record } from "./verdicts.ts";
-import { must, settle, under, type Action, type Status } from "./lifecycle.ts";
+import { act, commit, must, type Action, type Status } from "./lifecycle.ts";
 import { loadDraftConfig, type DraftConfig, type Overrides, type Resolved } from "./draftconfig.ts";
 import { extractLedger, runCheck, STRUCTURE_QUESTIONS, type CheckResult } from "./check.ts";
 import { constraintsBlock, repair } from "./repair.ts";
@@ -123,9 +123,9 @@ export class Drafting {
   /** A check pass under `checking`; the draw comes back to where it stood if the pass fails, and waits at gate 1 when it succeeds. */
   private async recheck(drawId: string, cfg: DraftConfig, opts: { back?: Status; checks?: string[]; samples?: number } = {}): Promise<CheckResult> {
     const back = opts.back ?? (this.p.draw(drawId).status as Status);
-    const r = await under(this.p.db, drawId, "checking", back, () => runCheck(this.p, drawId, cfg, { checks: opts.checks, samples: opts.samples, premisesPath: this.opts.premisesPath }));
-    settle(this.p.db, drawId, "awaiting_check_gate");
-    return r;
+    return act(this.p.db, { id: drawId, during: "checking", back },
+      () => runCheck(this.p, drawId, cfg, { checks: opts.checks, samples: opts.samples, premisesPath: this.opts.premisesPath }),
+      () => ({ id: drawId, status: "awaiting_check_gate" }));
   }
 
   /** A finding by id among what the gate can act on: the reported list first, the reconstruction under the bar only when it is not there. */
@@ -185,7 +185,7 @@ export class Drafting {
     const accepted = chainOf(this.p, drawId).findings(true).filter((f) => f.decision === "accepted");
     const cfg = this.resolved(draw).config;
     const next = await repair(this.p, drawId, accepted);
-    if (draw.draft_config) this.p.db.query("UPDATE draws SET draft_config = ? WHERE id = ?").run(draw.draft_config, next.id);
+    if (draw.draft_config) commit(this.p.db, { id: next.id, links: { draft_config: draw.draft_config } });
     // the new round is a brief nobody has checked: a check that fails leaves it there
     await this.recheck(next.id, cfg, { back: "done" });
     return this.p.draw(next.id);
@@ -222,14 +222,14 @@ export class Drafting {
   async draft(drawId: string, opts: DraftOpts = {}): Promise<DrawRow> {
     let draw = this.must(drawId, "draft");
     const resolved = this.resolved(draw, opts);
-    this.p.db.query("UPDATE draws SET draft_config = ? WHERE id = ?").run(JSON.stringify(resolved), drawId);
+    commit(this.p.db, { id: drawId, links: { draft_config: JSON.stringify(resolved) } });
     if (opts.auto) {
       const next = await this.autoGate(drawId, resolved.config);
       if (next !== drawId) { drawId = next; draw = this.p.draw(drawId); }
     }
     if (chainOf(this.p, drawId).findings().some((f) => f.decision === "accepted")) throw new Error("accepted findings pending repair");
     const id = drawId;
-    await under(this.p.db, id, "drafting", this.p.draw(id).status as Status, async () => {
+    await act(this.p.db, { id, during: "drafting", back: this.p.draw(id).status as Status }, async () => {
       const parts = briefParts(this.p, id);
       const ledger = await this.ensureLedger(id);
       const pass = passId();
@@ -238,8 +238,7 @@ export class Drafting {
       await runScreens(this.p, id, schedule, scenes, resolved.config, pass, undefined, { lexiconPath: this.opts.lexiconPath, narrationDir: this.opts.narrationDir });
       // one rewrite of each beat the screens flag: the register lines only under a shaped template, the ceilings always
       await this.registerRewrites(id, resolved.config);
-    });
-    settle(this.p.db, drawId, "awaiting_draft_gate");
+    }, () => ({ id, status: "awaiting_draft_gate" }));
     await writeReport(this.p, drawId, this.opts.outputDir);
     return this.p.draw(drawId);
   }
@@ -351,12 +350,11 @@ export class Drafting {
     const fixes = accept.map((f, i) => `${i + 1}. ${f.replacement}${f.patch?.trim() ? `\n   patch: "${f.patch.trim()}"` : ""}`).join("\n");
     const prompt = fill("reconcile", { fixes });
     // the call is the start of the repair: while it runs the gate is closed, so no second accept, auto or draft starts
-    const { value: pairs } = await under(this.p.db, drawId, "repairing", "awaiting_check_gate", () => this.p.invoke<{ a: number; b: number; why: string }[]>(drawId, parent, "reconcile", prompt, (t) => {
+    const { value: pairs } = await act(this.p.db, { id: drawId, during: "repairing", back: "awaiting_check_gate" }, () => this.p.invoke<{ a: number; b: number; why: string }[]>(drawId, parent, "reconcile", prompt, (t) => {
       const block = tag(t, "conflicts");
       if (block === null) throw new Error("no <conflicts> tag");
       return parseConflicts(block).filter((x) => x.a >= 1 && x.a <= accept.length && x.b >= 1 && x.b <= accept.length && x.a !== x.b);
-    }));
-    settle(this.p.db, drawId, "awaiting_check_gate");
+    }), () => ({ id: drawId, status: "awaiting_check_gate" }));
     const dropped = new Map<string, FindingView>();
     for (const { a, b } of pairs) {
       const [hi, lo] = a < b ? [a, b] : [b, a];
@@ -389,8 +387,9 @@ export class Drafting {
     // the beat's structure flags are constraints too, each as the line its rule carries; a rewrite named for one finding is that finding alone
     const structural = findingId ? [] : linesOf(v.profiles.find((pr) => pr.beat === k)?.flags ?? []).map((replacement) => ({ replacement }));
     const constraints = chosen.length || structural.length ? constraintsBlock([...chosen, ...structural]) : undefined;
-    await under(this.p.db, drawId, "drafting", "awaiting_draft_gate", () => this.regenerate(drawId, k, cfg, constraints, findingId));
-    settle(this.p.db, drawId, "awaiting_draft_gate");
+    await act(this.p.db, { id: drawId, during: "drafting", back: "awaiting_draft_gate" },
+      () => this.regenerate(drawId, k, cfg, constraints, findingId),
+      () => ({ id: drawId, status: "awaiting_draft_gate" }));
     await writeReport(this.p, drawId, this.opts.outputDir);
     return this.p.draw(drawId);
   }
@@ -448,7 +447,7 @@ export class Drafting {
     const gate2 = ofKind(this.p.artifacts(drawId), "scene").filter((a) => a.meta.rewrite)
       .map((a) => `rewrite ${a.meta.beat}${a.meta.rewrite_finding ? ` ${a.meta.rewrite_finding}` : ""}`);
     const dir = exportDraft(this.p, drawId, resolved, gate2, this.opts.draftsDir, this.p.briefsDir);
-    settle(this.p.db, drawId, "drafted", { ended: true });
+    commit(this.p.db, { id: drawId, status: "drafted", ended: true });
     return { draw: this.p.draw(drawId), dir };
   }
 
