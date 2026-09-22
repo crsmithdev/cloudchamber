@@ -983,3 +983,16 @@ drafts the same.
    from the same examples, seed and shape. An auto draw left at the gate
    takes its candidate again.
 
+### Amendment 2026-09-22: the listen profile fixes a linear chronology
+
+`[profiles.listen]` sets `form.chronology = "linear"`, as `[profiles.signal]`
+does. The rest of the form stays the brief's. One brief drafted twice from
+the same schedule prompt came out linear in one arm and as a cold open with
+a three-day flashback in the other, and the panel gave clarity to the linear
+draft in both reading orders, 9–1 and 6–4
+(`evals/20260922-head-to-head.md`). A schedule that answers another
+chronology fails `shape`, as on any fixed axis. Two changes go with it:
+the fixed-axis check matches the value as a word of its own, since
+`includes` let `nonlinear` pass for `linear`; and `scheduleListen` says the
+chronology is the brief's unless the configuration fixes it.
+

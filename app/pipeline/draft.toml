@@ -91,12 +91,14 @@ form.ending = "open"
 structure.template = "signal"
 
 # what a listener needs, as requirements and not as a plot: a first beat they cannot stop inside, an arrival
-# in the flesh, a cost paid by a named person before the last beat, an aftermath; the form is the brief's
+# in the flesh, a cost paid by a named person before the last beat, an aftermath; the form is the brief's,
+# but the chronology is linear: heard once, a cold open and a flashback lost clarity in both orders
 [profiles.listen]
 length.words = 10000
 beats.min = 10
 beats.max = 14
 beats.words_max = 1100
+form.chronology = "linear"
 form.ending = "open"
 structure.template = "listen"
 structure.register = "signal"   # quoted plain speech, the feeling named, the hour, only the numbers a person would say aloud

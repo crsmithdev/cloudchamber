@@ -90,7 +90,8 @@ export function parseSchedule(text: string, cfg: DraftConfig): Schedule {
     form[axis] = line.replace(new RegExp(`^${axis}\\s*[:=]\\s*`, "i"), "").trim();
     if (!form[axis]) throw new Error(`<form> has no ${axis} line`);
     const fixed = cfg.form[axis];
-    if (fixed !== "auto" && !form[axis].toLowerCase().includes(fixed)) throw new Error(`form ${axis} is fixed to ${fixed}, schedule said ${form[axis]}`);
+    // the value as a word of its own: "nonlinear" and "non-linear" contain "linear" and are not it
+    if (fixed !== "auto" && !new RegExp(`(^|[^a-z-])${fixed}(?![a-z])`).test(form[axis].toLowerCase())) throw new Error(`form ${axis} is fixed to ${fixed}, schedule said ${form[axis]}`);
   });
   const beats: Beat[] = [];
   for (const m of text.matchAll(/<beat\s+n="(\d+)"\s+words="(\d+)"\s*>([\s\S]*?)<\/beat>/gi)) {

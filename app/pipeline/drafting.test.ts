@@ -634,13 +634,15 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(JSON.parse(p.draw(draw.id).draft_config!).config.structure.template).toBe("signal");
   });
 
-  test("the listen profile states the requirements, fixes no form axis, and pays for its register", async () => {
+  test("the listen profile states the requirements, fixes only the chronology, and pays for its register", async () => {
     const { p, d, draw, model } = await drawn(draftScript({ schedule: () => schedule({ cap: 1100 }) }));
     await d.check(draw.id);
     await d.draft(draw.id, { profile: "listen", overrides: { "beats.min": 8, "screens.listen.long_share_max": 1 } });
     const sched = model.calls.find((c) => c.stage === "schedule")!;
     expect(sched.prompt).toContain("Derive the shape from the brief");
-    expect(sched.prompt).toContain("form: derive tense, person, chronology, container");
+    expect(sched.prompt).toContain("form: derive tense, person, container");
+    expect(sched.prompt).toContain("chronology: linear");
+    expect(sched.prompt).toContain("so is the chronology unless the configuration fixes it");
     expect(sched.prompt).not.toContain("<register>");
     // the listen profile fixes the signal register whatever container the schedule derives; the body rewrite of beat 2 still runs
     const scenes = model.calls.filter((c) => c.stage === "scene");
@@ -893,6 +895,16 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(ask(3)).toContain("It happens at ship-year 393; the beat before it happened at day one, so its opening places the listener in the new time before its events begin.");
     expect(ask(4)).toContain("places the listener in the new time");   // and back again
     expect(ask(8)).not.toContain("It happens at");
+  });
+
+  test("the listen profile fixes a linear chronology, and a nonlinear schedule does not pass for it", () => {
+    const cfg = loadDraftConfig("listen").config;
+    expect(cfg.form.chronology).toBe("linear");
+    const text = (chronology: string) => `<form>tense: past\nperson: third\nchronology: ${chronology}\ncontainer: prose</form>` + Array.from({ length: 10 }, (_, i) =>
+      `<beat n="${i + 1}" words="1000"><job>Beat ${i + 1}.</job><known>Thing.</known><withheld>none</withheld><stakes>x</stakes><absorbs>none</absorbs></beat>`).join("");
+    expect(() => parseSchedule(text("linear, one strand, from the draw to the landing"), cfg)).not.toThrow();
+    for (const said of ["nonlinear: opens at the second bell, then goes back", "non-linear", "opens on Deck Zero, goes back three days, then runs forward"])
+      expect(() => parseSchedule(text(said), cfg)).toThrow(/chronology is fixed to linear/);
   });
 
   test("a schedule contradicting a fixed axis, or outside the beat bounds, fails shape", async () => {
