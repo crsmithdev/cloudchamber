@@ -19,4 +19,5 @@ Code reads it only through `CORPUS` and the paths under it in
 setting names land in a public file.
 
 The specs in `docs/specs/` are the design of record for the ideation and
-drafting pipelines.
+drafting pipelines. `CONTEXT.md` is the glossary of the domain's terms, and
+`docs/adr/` records the decisions that are hard to reverse.
