@@ -76,6 +76,19 @@ export function App() {
       localStorage.setItem("fb-rail", folded ? "hidden" : "shown");
     } catch {}
   }, [folded]);
+  const [light, setLight] = useState(() => {
+    try {
+      return localStorage.getItem("fb-theme") === "light";
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    document.documentElement.dataset.theme = light ? "light" : "dark";
+    try {
+      localStorage.setItem("fb-theme", light ? "light" : "dark");
+    } catch {}
+  }, [light]);
   // `browse` was the sources tab's old name; its links still land there
   const sourcesView = view === "sources" || view === "browse";
   const on = (name: string) => (name === "ideate" ? drawsView : name === "sources" ? sourcesView : view === name);
@@ -111,6 +124,16 @@ export function App() {
           <span className="railsep" aria-hidden="true" />
           {navLink(SOURCES)}
         </nav>
+        <button
+          className="railfold"
+          aria-pressed={light ? "true" : "false"}
+          aria-label="Light mode"
+          title="Light mode"
+          onClick={() => setLight((v) => !v)}
+        >
+          <span className="themedot" aria-hidden="true" />
+          {!folded && <span>{light ? "dark" : "light"}</span>}
+        </button>
         <button
           className="railfold"
           aria-pressed={folded ? "true" : "false"}

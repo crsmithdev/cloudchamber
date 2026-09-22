@@ -219,6 +219,22 @@ hand, a verdict triad and one running blue.
 - **Dim** (`dim`, #778790): notes after a head, help text, ids and times,
   the faded rows beside an open one, key labels in a facts list, placeholders.
 
+### Light
+The same chart table by day. The rail control above "collapse" sets
+`data-theme="light"` on the root and keeps the choice in `fb-theme`. Each
+token keeps its role; only its value changes. The steps run from paper to
+ink, and the marks darken to hold contrast on paper.
+
+| token | light | token | light |
+|---|---|---|---|
+| desk | #f3f5f6 | mute | #4f5e66 |
+| sheet | #e9edef | dim | #5d6b73 |
+| raised | #dce3e6 | gold | #94650f |
+| hair | #cdd6da | keep | #2c7447 |
+| rule | #86949b | pass | #b23b37 |
+| ink | #1a2328 | art | #8c660c |
+| | | running | #2d6a98 |
+
 ### Named Rules
 **The Marks-Only Rule.** Colour belongs to the mark, to the state word beside
 it, and to the verdict control that casts it. No surface, panel, border or

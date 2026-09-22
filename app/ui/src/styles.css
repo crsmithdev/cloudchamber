@@ -47,6 +47,23 @@
     color-scheme: dark;
     height: 100%;
   }
+  /* the same chart table by day: the tonal steps invert, the marks darken to hold contrast on paper */
+  html[data-theme="light"] {
+    color-scheme: light;
+    --color-desk: #f3f5f6;
+    --color-sheet: #e9edef;
+    --color-raised: #dce3e6;
+    --color-hair: #cdd6da;
+    --color-rule: #86949b;
+    --color-ink: #1a2328;
+    --color-mute: #4f5e66;
+    --color-dim: #5d6b73;
+    --color-gold: #94650f;
+    --color-keep: #2c7447;
+    --color-pass: #b23b37;
+    --color-art: #8c660c;
+    --color-running: #2d6a98;
+  }
   body,
   #root {
     height: 100%;
@@ -217,6 +234,24 @@
     font-size: var(--text-mark);
     width: 1.75rem;
     text-align: center;
+  }
+  /* the theme control's mark: a half-filled disc in the icon's cell */
+  .themedot {
+    width: 1.75rem;
+    display: flex;
+    justify-content: center;
+  }
+  .themedot::before {
+    content: "";
+    width: 0.8rem;
+    height: 0.8rem;
+    box-sizing: border-box;
+    border: 1.5px solid currentColor;
+    border-radius: var(--radius-dot);
+    background: linear-gradient(90deg, currentColor 50%, transparent 50%);
+  }
+  .railfold + .railfold {
+    margin-top: 0;
   }
   .railfold:hover {
     color: var(--color-ink);
