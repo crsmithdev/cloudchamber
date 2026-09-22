@@ -526,8 +526,12 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(scenes[0].prompt).not.toContain("<story-so-far>");
     expect(scenes[1].prompt).toContain("<story-so-far>\nScene 1 opens.");
     expect(scenes[7].prompt).toContain("Scene 7 opens.");
-    expect(scenes[0].prompt.indexOf("horror passage")).toBeLessThan(scenes[0].prompt.indexOf("<outline>"));
-    expect(scenes[0].prompt).toContain("<ledger>\ntime: the fire was on the 3rd");
+    // the examples, outline, ledger and schedule ride in the system prompt, the same on every beat, so the CLI reads them from its cache
+    expect(scenes[0].system.indexOf("horror passage")).toBeLessThan(scenes[0].system.indexOf("<outline>"));
+    expect(scenes[0].system).toContain("<ledger>\ntime: the fire was on the 3rd");
+    expect(scenes[0].system).toContain("<schedule>");
+    expect(scenes.every((c) => c.system === scenes[0].system)).toBe(true);
+    expect(scenes[0].prompt).not.toContain("<outline>");
     expect(scenes[0].prompt).toContain("Under 625 words");
     expect(scenes[0].prompt).toContain("Form: tense past; person third; chronology linear; container prose");
     expect(scenes[0].prompt).toContain("Still withheld after it: the instrument's wording (beat 7); why she answers only Lauro (beat 6)");
@@ -879,7 +883,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
       `<beat n="${i + 1}" words="625"><job>Beat ${i + 1}.</job>${w ? `<when>${w}</when>` : ""}<known>Thing.</known><withheld>none</withheld><stakes>x</stakes><absorbs>none</absorbs></beat>`).join("");
     const s = parseSchedule(text, cfg);
     const parts = { examples: [], outline: "o", vignette: "v", contexts: [], ending: "e" } as never;
-    const ask = (n: number) => scenePrompt(parts, "ledger", s, s.beats[n - 1], []);
+    const ask = (n: number) => scenePrompt(parts, s, s.beats[n - 1], []);
     expect(ask(2)).toContain("It happens at day one.");
     expect(ask(2)).not.toContain("places the listener in the new time");
     expect(ask(3)).toContain("It happens at ship-year 393; the beat before it happened at day one, so its opening places the listener in the new time before its events begin.");
@@ -1105,11 +1109,11 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     await d.draft(next.id);
     const scenes = model.calls.filter((c) => c.stage === "scene");
     expect(scenes.length).toBeGreaterThan(0);
-    for (const c of scenes) expect(c.prompt).toContain("time: the fire was on the 3rd");
+    for (const c of scenes) expect(c.system).toContain("time: the fire was on the 3rd");
     const screens = model.calls.filter((c) => c.stage === "screen-ledger");
     for (const c of screens) expect(c.prompt).toContain("time: the fire was on the 3rd");
     // the amendment travels with it
-    expect(scenes[0].prompt).toContain("Only the assembler can fire the reliquary.");
+    expect(scenes[0].system).toContain("Only the assembler can fire the reliquary.");
   });
 
   test("auto stops on the round cap", async () => {

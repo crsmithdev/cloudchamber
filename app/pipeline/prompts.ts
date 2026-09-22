@@ -386,7 +386,7 @@ The narrator tells this afterward to a listener who cannot see it. When a thing 
 `,
 
   sceneSignal: `<register>
-One narrator reads this aloud to listeners who cannot see it. Name the feeling as it is felt, and the body with it. People speak in quoted lines, plainly, the way they speak at work; let the argument happen in the room. Each person speaks the way the schedule's cast says they do, and no two alike. When the time or the place changes, the first sentence says so. Give the exact number and the exact hour when there is one. One thing per sentence, short enough to say in one breath.
+One narrator reads this aloud to listeners who cannot see it. Name the feeling as it is felt, and the body with it. People speak in quoted lines, plainly, the way they speak at work; let the argument happen in the room. Each person speaks the way the schedule's cast says they do, and no two alike. When the time or the place changes, the first sentence says so. Give the hour when there is one. Keep only the numbers a person would say aloud, round the rest, and never put two exact figures in one sentence. One thing per sentence, short enough to say in one breath.
 </register>`,
 
   sceneMaterial: `<material>

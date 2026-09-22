@@ -147,15 +147,18 @@ export class Pipeline {
   /**
    * One stage call with the spec's retry table. Returns the successful step and
    * its parsed value. `tools` overrides the stage's declared tool list; the
-   * claims verifier passes "" under `claims: reference`.
+   * claims verifier passes "" under `claims: reference`. `context` follows the
+   * stage's system line: text that stays the same across a run of calls, which
+   * the CLI then reads from its cache instead of writing it again.
    */
-  async invoke<T>(draw: string | null, parent: string | null, stage: StageName, prompt: string, parse: (text: string) => T, storyId: string | null = null, tools?: string): Promise<{ step: StepRow; value: T }> {
+  async invoke<T>(draw: string | null, parent: string | null, stage: StageName, prompt: string, parse: (text: string) => T, storyId: string | null = null, tools?: string, context?: string): Promise<{ step: StepRow; value: T }> {
     const cfg = this.stageFor(stage, draw);
     const allowed = tools ?? cfg.tools ?? "";
+    const system = context ? `${cfg.system}\n\n${context}` : cfg.system;
     const attempt = async (model: string, n: number): Promise<{ step: StepRow; value?: T; outcome: "ok" | "shape" | "refusal" | "error" }> => {
-      const step = this.insertStep(draw, parent, stage, model, cfg.system, prompt, n, storyId, allowed);
+      const step = this.insertStep(draw, parent, stage, model, system, prompt, n, storyId, allowed);
       // a call that throws (no claude on PATH, a spawn that fails) is an error result, so the step does not stay running
-      const r = await this.model.call(stage, cfg.system, prompt, model, allowed, cfg.effort)
+      const r = await this.model.call(stage, system, prompt, model, allowed, cfg.effort)
         .catch((e: unknown): ModelResult => ({ text: "", stop: "error", raw: "", model, durationMs: 0, error: String((e as Error)?.message ?? e) }));
       step.raw_response = r.raw;
       step.model = r.model || model;

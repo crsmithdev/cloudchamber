@@ -99,4 +99,4 @@ beats.max = 14
 beats.words_max = 1100
 form.ending = "open"
 structure.template = "listen"
-structure.register = "signal"   # quoted plain speech, the feeling named, the exact number: the register three outside judges passed
+structure.register = "signal"   # quoted plain speech, the feeling named, the hour, only the numbers a person would say aloud

@@ -776,7 +776,8 @@ in the flesh that does not answer, a split decision with every side
 defensible, the cost paid by a named person in the beat before last, and
 a return where an official asks for a clean ending and does not get one.
 Every scene carries the `sceneSignal` register: the feeling named as it is
-felt, quoted plain speech, the exact number and hour, one thing per
+felt, quoted plain speech, the hour and only the numbers a person
+would say aloud (amended 2026-09-22), one thing per
 sentence. The register rewrites run under any shaped template, not only
 `told`; the scene prompt takes the template as a parameter, since a prose
 container carries no register of its own.
@@ -942,3 +943,21 @@ Schema 12 (11 migrates in place). Two columns:
    (`stageFor`), the fallback stays the toml's, and a repair or a fork
    copies the map, so a chain keeps the models it was started with. Any
    gate action with `models` sets them on the draw before it runs.
+
+### Amendment 2026-09-22: the scene ask caches its fixed part, and the register asks for sayable numbers
+
+1. `sceneContext` (`write.ts`) holds the examples, the outline, the
+   ledger and the schedule. `invoke` takes it as `context` and puts it
+   after the stage's system line; `scenePrompt` keeps the rest. The CLI
+   caches the system prompt, so beat 2 onward reads that part instead of
+   writing it. In the user prompt it was written on every call at twice
+   the input rate and never read: $9.72 of the $15.45 that `c933` cost.
+   The step row stores the whole system prompt, so nothing is lost from
+   the record.
+2. `sceneSignal` asked for "the exact number", and the listen screen
+   sent the beat back under `NUMERAL_LINE` when it got one: 11 of 11
+   beats of `c933`. The register now asks for what the rewrite asked for.
+
+Measured on one brief drafted twice (`evals/20260922-draft-efficiency.md`):
+the drafting phase fell from $6.22 to $4.62, and the panel scored the two
+drafts the same.

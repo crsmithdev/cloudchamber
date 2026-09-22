@@ -161,13 +161,25 @@ const whenLine = (b: Beat, prev?: Beat) =>
   !b.when ? "" : movedIn(b, prev) ? ` It happens at ${b.when}; the beat before it happened at ${prev!.when}, so its opening places the listener in the new time before its events begin.` : ` It happens at ${b.when}.`;
 const withheldLine = (b: Beat, M: number) => b.withheld.length ? b.withheld.map((w) => `${w.item} (${w.until > M ? "never revealed" : `beat ${w.until}`})`).join("; ") : "nothing";
 
-export function scenePrompt(parts: BriefParts, ledger: string, s: Schedule, b: Beat, soFar: string[], constraints?: string, structure = { template: "auto", register: "auto" }): string {
-  const material: Record<string, string> = { chosen: parts.vignette, "context-1": parts.contexts[0] ?? "", "context-2": parts.contexts[1] ?? "", ending: parts.ending };
-  const blocks = [
+/**
+ * The part of every scene ask that no beat changes: the examples, the outline,
+ * the ledger and the schedule. It goes after the stage's system line, where the
+ * CLI caches it; in the user prompt it was written to the cache on every call
+ * and never read, most of a draft's cost.
+ */
+export function sceneContext(parts: BriefParts, ledger: string, s: Schedule): string {
+  return [
     parts.examples.join("\n\n"),
     `<outline>\n${parts.outline}\n</outline>`,
     `<ledger>\n${ledger}\n</ledger>`,
     `<schedule>\n${s.raw}\n</schedule>`,
+  ].filter(Boolean).join("\n\n");
+}
+
+/** The beat's own ask; `sceneContext` carries the rest. */
+export function scenePrompt(parts: BriefParts, s: Schedule, b: Beat, soFar: string[], constraints?: string, structure = { template: "auto", register: "auto" }): string {
+  const material: Record<string, string> = { chosen: parts.vignette, "context-1": parts.contexts[0] ?? "", "context-2": parts.contexts[1] ?? "", ending: parts.ending };
+  const blocks = [
     ...(soFar.length ? [`<story-so-far>\n${soFar.join("\n\n")}\n</story-so-far>`] : []),
     ...(material[b.absorbs] ? [fill("sceneMaterial", { material: material[b.absorbs] })] : []),
     ...register(s, structure),
@@ -179,7 +191,7 @@ export function scenePrompt(parts: BriefParts, ledger: string, s: Schedule, b: B
 
 /** `rewrite` marks a gate-2 rewrite of the beat, with the flag it answers when there is one. */
 export async function writeScene(p: Pipeline, drawId: string, parent: string, parts: BriefParts, ledger: string, s: Schedule, b: Beat, soFar: string[], constraints?: string, rewrite?: { finding?: string }, structure = { template: "auto", register: "auto" }): Promise<Scene> {
-  const { step, value } = await p.invoke(drawId, parent, "scene", scenePrompt(parts, ledger, s, b, soFar, constraints, structure), (t) => need(t, "scene"));
+  const { step, value } = await p.invoke(drawId, parent, "scene", scenePrompt(parts, s, b, soFar, constraints, structure), (t) => need(t, "scene"), null, undefined, sceneContext(parts, ledger, s));
   const n = words(value);
   const artifact_id = p.artifact(step, "scene", value, { beat: b.n, words: n, cap: b.words, warnings: n > b.words * (1 + RUN.sceneCapSlack) ? ["over_cap"] : [], ...(rewrite ? { rewrite: true, ...(rewrite.finding ? { rewrite_finding: rewrite.finding } : {}) } : {}) });
   return { beat: b.n, text: value, artifact_id, step_id: step.id };
