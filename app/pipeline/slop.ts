@@ -1,8 +1,9 @@
 /**
- * The slop screen: deterministic, outside any model. Four measures against the
+ * The slop screen: deterministic, outside any model. Five measures against the
  * eligible passage pool, none summed: lexicon hits with proper nouns excluded,
  * the not-X-but-Y rate, trigrams repeated in the draft and absent from the
- * pool, and paragraph shape per scene. It marks; it does not judge.
+ * pool, paragraph shape per scene, and phrases a speaker says again in quoted
+ * speech. It marks; it does not judge.
  */
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -17,6 +18,8 @@ export type SlopReport = {
   not_but: { hits: number; per_10k: number; pool_per_10k: number; examples: string[] };
   trigrams: { trigram: string; count: number }[];
   paragraphs: { beat: number; words: number; paragraphs: number; mean_words: number; single_sentence_share: number }[];
+  /** A phrase said again inside quoted speech: the cast ask used to produce catchphrases, and judges hear them as tics. */
+  tics: { phrase: string; count: number }[];
 };
 
 export function loadLexicon(path: string = LEXICON_PATH): string[] {
@@ -85,6 +88,23 @@ export function restated(scenes: { beat: number; text: string }[], k: number): R
   return out;
 }
 
+/** Every run of 3 to 5 words inside quotation marks that the draft says three times or more, longest first. */
+export function quotedTics(story: string): { phrase: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const m of story.matchAll(/[“"]([^“”"]{4,400})[”"]/g)) {
+    const ws = wordsOf(m[1]);
+    for (let n = 3; n <= 5; n++) for (let i = 0; i + n <= ws.length; i++) {
+      const phrase = ws.slice(i, i + n).join(" ");
+      counts.set(phrase, (counts.get(phrase) ?? 0) + 1);
+    }
+  }
+  const kept = [...counts].filter(([, c]) => c >= 3).sort((a, b) => b[1] - a[1] || b[0].length - a[0].length);
+  // a shorter phrase inside one already kept is the same tic
+  const out: { phrase: string; count: number }[] = [];
+  for (const [phrase, count] of kept) if (!out.some((o) => o.phrase.includes(phrase) && o.count === count)) out.push({ phrase, count });
+  return out;
+}
+
 export function slopScreen(scenes: { beat: number; text: string }[], pool: string, lexicon: string[]): SlopReport {
   const story = scenes.map((s) => s.text).join("\n\n");
   const sw = wordsOf(story), pw = wordsOf(pool);
@@ -102,6 +122,7 @@ export function slopScreen(scenes: { beat: number; text: string }[], pool: strin
   const per10k = (n: number, w: number) => (w ? Math.round((n / w) * 10000 * 10) / 10 : 0);
   const ptri = trigrams(pw);
   const repeated = [...trigrams(sw)].filter(([t, c]) => c >= 3 && !ptri.has(t)).map(([trigram, count]) => ({ trigram, count })).sort((a, b) => b.count - a.count || a.trigram.localeCompare(b.trigram));
+  const tics = quotedTics(story);
   const paragraphs = scenes.map((s) => {
     const paras = s.text.split(/\n\s*\n/).map((x) => x.trim()).filter(Boolean);
     const lens = paras.map((x) => wordsOf(x).length);
@@ -111,6 +132,6 @@ export function slopScreen(scenes: { beat: number; text: string }[], pool: strin
   return {
     words: sw.length, pool_words: pw.length, lexicon: lex,
     not_but: { hits: hits.length, per_10k: per10k(hits.length, sw.length), pool_per_10k: per10k(poolHits, pw.length), examples: hits.slice(0, 8).map((m) => story.slice(Math.max(0, m.index! - 20), m.index! + m[0].length + 20).replace(/\s+/g, " ")) },
-    trigrams: repeated, paragraphs,
+    trigrams: repeated, paragraphs, tics,
   };
 }

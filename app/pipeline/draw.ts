@@ -281,14 +281,20 @@ export class Pipeline {
       .run(drawId, this.nameFor(seed.text), setting?.id ?? null, genre, opts.mode, opts.segment ? JSON.stringify(opts.segment) : null,
         seed.mode, seed.text, seed.themeId, JSON.stringify(examples.map((e) => e.id)), sampling, opts.darkness ?? null, models, now());
     await act(this.db, { id: drawId, during: "running", back: "failed" },
-      () => this.premisesAndExecute(drawId, examples.map((e) => e.text), seed.text, genre, sampling, opts.darkness, setting, opts.shape),
+      () => this.premisesAndExecute(drawId, examples.map((e) => e.text), seed.text, genre, sampling, opts.darkness, setting, opts.shape, opts.mode === "auto"),
       () => ({ id: drawId, status: "awaiting_gate" }));
     const draw = this.draw(drawId);
     if (draw.mode === "auto") return this.autoGate(drawId);
     return draw;
   }
 
-  private async premisesAndExecute(drawId: string, examples: string[], seed: string, genre: string, sampling: Sampling, darkness: Darkness | undefined, setting?: Setting, shape?: "listen") {
+  /**
+   * The premises, then their executes. An auto draw executes only the premise
+   * its gate will take, the lowest stated probability: the rule reads the
+   * probability, which the premises step states, and never a vignette, so the
+   * other four executes were paid for and never read.
+   */
+  private async premisesAndExecute(drawId: string, examples: string[], seed: string, genre: string, sampling: Sampling, darkness: Darkness | undefined, setting?: Setting, shape?: "listen", auto = false) {
     const band = BANDS[sampling];
     const dark = darknessLine(darkness);
     // the shape is not a column: the premises step stores its prompt, which is where a shaped draw shows it
@@ -308,7 +314,14 @@ export class Pipeline {
     // Number the premises from the tail: #1 is the lowest stated probability. Ties keep the model's order.
     premises.sort((a, b) => a.probability - b.probability);
     premises.forEach((p, i) => this.artifact(step, "premise", p.text, { index: i + 1, probability: p.probability, warnings: words(p.text) > 120 ? ["length"] : [] }));
-    await this.executeAll(drawId, step.id, premises.map((p, i) => ({ ...p, index: i + 1 })), head, seed, dark, setting);
+    const numbered = premises.map((p, i) => ({ ...p, index: i + 1 }));
+    await this.executeAll(drawId, step.id, auto ? [this.lowest(numbered)] : numbered, head, seed, dark, setting);
+  }
+
+  /** The candidate the auto gate takes: the lowest stated probability, a tie broken by the draw's own random pick. */
+  private lowest<T extends { probability: number }>(xs: T[]): T {
+    const lo = Math.min(...xs.map((x) => x.probability));
+    return this.pick(xs.filter((x) => x.probability === lo));
   }
 
   /** One execute call per premise, each stored as a vignette under the premises step. */
@@ -344,14 +357,15 @@ export class Pipeline {
       if (!done) {
         // the shape is not a column; a premises step that ran under it carries it in its prompt
         const shaped = steps.some((s) => s.prompt.includes(fill("premisesShape", {})));
-        return this.premisesAndExecute(drawId, examples, draw.seed_text, draw.genre, draw.sampling as Sampling, (draw.darkness ?? undefined) as Darkness | undefined, setting, shaped ? "listen" : undefined);
+        return this.premisesAndExecute(drawId, examples, draw.seed_text, draw.genre, draw.sampling as Sampling, (draw.darkness ?? undefined) as Darkness | undefined, setting, shaped ? "listen" : undefined, draw.mode === "auto");
       }
       const arts = this.artifacts(drawId);
       const have = new Set(ofKind(arts, "vignette").filter((a) => a.stage === "execute").map((a) => a.meta.index));
-      const premises = ofKind(arts, "premise").filter((a) => a.step_id === done.id)
-        .map((a) => ({ index: a.meta.index, probability: a.meta.probability, text: a.content }))
-        .filter((p) => !have.has(p.index));
-      await this.executeAll(drawId, done.id, premises, examples.join("\n\n"), draw.seed_text, dark, setting);
+      const all = ofKind(arts, "premise").filter((a) => a.step_id === done.id)
+        .map((a) => ({ index: a.meta.index, probability: a.meta.probability, text: a.content }));
+      // an auto draw needs one vignette, the gate's pick; a manual one needs all five
+      const missing = draw.mode === "auto" ? (have.size ? [] : [this.lowest(all)]) : all.filter((p) => !have.has(p.index));
+      await this.executeAll(drawId, done.id, missing, examples.join("\n\n"), draw.seed_text, dark, setting);
     }, () => ({ id: drawId, status: "awaiting_gate" }));
     return draw.mode === "auto" ? this.autoGate(drawId) : this.draw(drawId);
   }

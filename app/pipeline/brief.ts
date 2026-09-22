@@ -5,7 +5,7 @@ import { BRIEFS } from "./paths.ts";
 import type { Db } from "./store/db.ts";
 import { pipelineVersion } from "./version.ts";
 import { partOf, partsFrom, partsIn } from "./briefparts.ts";
-import { readArtifacts } from "./artifacts.ts";
+import { ofKind, readArtifacts } from "./artifacts.ts";
 
 export function writeBrief(db: Db, drawId: string, base: string = BRIEFS, settledLines: { round: number; replacement: string }[] = []): string {
   const draw = db.query("SELECT * FROM draws WHERE id = ?").get(drawId) as any;
@@ -27,7 +27,9 @@ export function writeBrief(db: Db, drawId: string, base: string = BRIEFS, settle
     const p = db.query("SELECT p.id, p.voice, p.mode, p.words, s.title, s.author, s.source_id FROM passages p JOIN stories s ON s.id = p.story_id WHERE p.id = ?").get(pid) as any;
     return p ? `- \`${p.voice}/${p.mode}\` ${p.source_id} · ${p.title} — ${p.author} · ${p.words}w · ${p.id}` : `- ${pid} (no longer in the pool)`;
   });
-  const cands = arts.filter((a) => a.kind === "vignette" && a.stage === "execute").map((a) => ({ a, m: a.meta })).sort((x, y) => x.m.probability - y.m.probability);
+  // every premise the model stated, whether or not it was executed: an auto draw executes only the one its gate takes
+  const executed = new Map(ofKind(arts, "vignette").filter((a) => a.stage === "execute").map((a) => [a.meta.index, a]));
+  const cands = ofKind(arts, "premise").sort((x, y) => (x.meta.index ?? 0) - (y.meta.index ?? 0));
   const modelByStage = new Map<string, string>();
   for (const s of steps) if (s.status === "done") modelByStage.set(s.stage, s.model);
   const refusals = steps.filter((s) => s.fail_reason === "refusal").map((s) => `${s.stage} on ${s.model}`);
@@ -45,7 +47,11 @@ export function writeBrief(db: Db, drawId: string, base: string = BRIEFS, settle
     `## seed (${draw.seed_mode}${draw.seed_theme_id ? `, theme ${draw.seed_theme_id}` : ""})`, "", draw.seed_text, "",
     "## examples", "", ...examples, "",
     "## premises, by stated probability", "",
-    ...cands.map(({ a, m }) => `- **${m.probability}** [${m.index}]${a.step_id === draw.chosen_step ? " ← chosen" : ""} vignette ${a.id}${m.warnings?.length ? ` (${m.warnings.join(", ")})` : ""}: ${m.premise}`), "",
+    ...cands.map((p) => {
+      const v = executed.get(p.meta.index);
+      const mark = !v ? " (not executed)" : v.step_id === draw.chosen_step ? ` ← chosen, vignette ${v.id}` : ` vignette ${v.id}`;
+      return `- **${p.meta.probability}** [${p.meta.index}]${mark}${p.meta.warnings?.length ? ` (${p.meta.warnings.join(", ")})` : ""}: ${p.content}`;
+    }), "",
     `gate: ${draw.gate_method}, chose vignette from step ${draw.chosen_step}`, "",
     "## jobs", "", ...partsIn(parts, "job").map((j, i) => `${i + 1}. ${j.text}`), "",
     "## models", "", ...[...modelByStage].map(([s, m]) => `- ${s}: ${m}`),

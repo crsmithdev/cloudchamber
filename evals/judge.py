@@ -5,8 +5,15 @@
 
 Both texts are shown as unlabelled transcripts, Story One and Story Two, with
 the order swapped on alternate passes. The judge answers each rubric axis with
-One, Two or Tie, then an overall call. Parity: ours wins or ties overall in at
-least two of three passes.
+One, Two or Tie and a 1-5 score for each story, then an overall call. Parity:
+ours wins or ties overall in at least two of three passes.
+
+Two drafts of one brief sit below what a pairwise call against a narrated
+source can separate, and most judges pick whichever story they read first, so
+a head to head runs an even number of passes, half in each order, and only a
+result that holds in both orders counts. `--degrade` judges a draft against a
+damaged copy of itself: a panel that cannot tell those apart cannot rank
+anything finer.
 """
 import argparse, json, os, re, subprocess, sys, time, urllib.request
 
@@ -34,6 +41,17 @@ def load(src):
         return text
     return open(src).read()
 
+DEGRADES = {
+    # the flaw the judges name most: a moment summarised instead of played out
+    "summary": lambda t: "\n\n".join(p.split(". ")[0].strip().rstrip(".") + "." for p in t.split("\n\n") if p.strip()),
+    # the ending a listener is left with, cut away
+    "truncate": lambda t: "\n\n".join(t.split("\n\n")[: max(1, int(len(t.split("\n\n")) * 0.75))]),
+}
+
+def degrade(text, mode):
+    """A deliberately damaged copy of a draft, for calibrating the panel."""
+    return DEGRADES[mode](text)
+
 def prompt(one, two):
     qs = "\n".join(f"{k}: {q}" for k, q in RUBRIC)
     return f"""Two stories written to be read aloud by one narrator on a long-form story channel, given here as plain transcripts. One or both may carry transcription errors (misheard words, missing punctuation); ignore those and judge what a listener would hear.
@@ -46,13 +64,13 @@ def prompt(one, two):
 {two}
 </story_two>
 
-Judge them as a listener who has forty minutes in the car and many channels to choose from. For each question answer One, Two or Tie, with one sentence of evidence that names a moment from each story. Then give an overall call, One, Two or Tie, and three sentences on what the weaker one would need.
+Judge them as a listener who has forty minutes in the car and many channels to choose from. For each question answer One, Two or Tie, and score each story on that question from 1 (poor) to 5 (as good as the best you have heard), with one sentence of evidence that names a moment from each story. The scores are absolute: two stories may both score low, or both high. Then give an overall call, One, Two or Tie, and three sentences on what the weaker one would need.
 
 {qs}
 
 Output exactly this shape and nothing else:
 <verdict>
-<axis name="hook">One|Two|Tie</axis> ...one line per axis in the order given, each followed by <why>one sentence</why>
+<axis name="hook" one="N" two="N">One|Two|Tie</axis> ...one line per axis in the order given, each followed by <why>one sentence</why>
 <overall>One|Two|Tie</overall>
 <needs>three sentences</needs>
 </verdict>"""
@@ -106,21 +124,33 @@ def parse(out, flipped):
         v = v.strip().lower()
         if v.startswith("tie"): return "tie"
         return ("ours" if v.startswith("one") else "source") if not flipped else ("source" if v.startswith("one") else "ours")
-    axes = {m[1]: side(m[2]) for m in re.finditer(r'<axis name="(\w+)">\s*(\w+)', out)}
+    axes, scores = {}, {}
+    for m in re.finditer(r'<axis name="(\w+)"([^>]*)>\s*(\w+)', out):
+        axes[m[1]] = side(m[3])
+        got = {k: int(v) for k, v in re.findall(r'(one|two)="(\d)"', m[2])}
+        if len(got) == 2:
+            scores[m[1]] = {"ours": got["two" if flipped else "one"], "source": got["one" if flipped else "two"]}
     whys = re.findall(r"<why>(.*?)</why>", out, re.S)
     ov = re.search(r"<overall>\s*(\w+)", out)
     needs = re.search(r"<needs>(.*?)</needs>", out, re.S)
-    return {"axes": axes, "whys": [w.strip() for w in whys], "overall": side(ov[1]) if ov else "?", "needs": needs[1].strip() if needs else "", "raw": out}
+    return {"axes": axes, "scores": scores, "whys": [w.strip() for w in whys], "overall": side(ov[1]) if ov else "?", "needs": needs[1].strip() if needs else "", "raw": out}
 
 def main():
-    a = argparse.ArgumentParser(); a.add_argument("--ours", required=True); a.add_argument("--source", required=True)
-    a.add_argument("--passes", type=int, default=3); a.add_argument("--judge", default="claude", choices=["claude", "gemini", "openrouter"])
+    a = argparse.ArgumentParser(); a.add_argument("--ours", required=True); a.add_argument("--source", default=None)
+    a.add_argument("--passes", type=int, default=4); a.add_argument("--judge", default="claude", choices=["claude", "gemini", "openrouter"])
     a.add_argument("--model", default="claude-opus-5")
     a.add_argument("--out", default=None)
+    a.add_argument("--degrade", choices=sorted(DEGRADES), default=None,
+                   help="judge --ours against a damaged copy of itself; --source is then ignored")
     args = a.parse_args()
     if args.judge == "openrouter" and args.model == "claude-opus-5":
         raise SystemExit("--judge openrouter needs --model, e.g. google/gemini-3.1-pro-preview")
-    ours, source = load(args.ours), load(args.source)
+    if not args.source and not args.degrade:
+        raise SystemExit("--source is required unless --degrade names a damage to judge against")
+    if args.passes % 2:
+        print(f"  note: {args.passes} passes is odd, so one reading order gets one more; most judges follow the order", flush=True)
+    ours = load(args.ours)
+    source = degrade(ours, args.degrade) if args.degrade else load(args.source)
     run = {"gemini": run_gemini, "openrouter": run_openrouter}.get(args.judge, run_claude)
     results = []
     for i in range(args.passes):
@@ -139,8 +169,14 @@ def main():
     dropped = len(results) - len(scored)
     print(f"\nparity: {'yes' if ok else 'no'} ({wins}/{len(scored)} passes won or tied"
           + (f", {dropped} dropped as incomplete" if dropped else "") + ")")
+    # the absolute scores, averaged per axis: what a pairwise call cannot show when both sit at the ceiling
+    rows = [(k, [r["scores"][k] for r in scored if k in r.get("scores", {})]) for k, _ in RUBRIC]
+    if any(v for _, v in rows):
+        print("\nscores, 1-5, mean over the passes that gave them:")
+        for k, v in rows:
+            if v: print(f"  {k:<9} ours {sum(x['ours'] for x in v) / len(v):.1f}   {'damaged' if args.degrade else 'source'} {sum(x['source'] for x in v) / len(v):.1f}   ({len(v)} passes)")
     for r in results:
         print("\nneeds:", r["needs"])
-    if args.out: json.dump({"ours": args.ours, "source": args.source, "judge": args.judge, "model": args.model, "results": results}, open(args.out, "w"), indent=1)
+    if args.out: json.dump({"ours": args.ours, "source": args.source, "degrade": args.degrade, "judge": args.judge, "model": args.model, "results": results}, open(args.out, "w"), indent=1)
 
 if __name__ == "__main__": main()

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { restated, slopScreen } from "./slop.ts";
+import { quotedTics, restated, slopScreen } from "./slop.ts";
 
 const pool = "She walked to the recorder's office and asked for the index. The clerk said no. Nothing here is strange, and the ledger holds. The morning was cold.";
 
@@ -41,5 +41,17 @@ describe("slop screen", () => {
   test("a word that is a proper noun in the draft is not a lexicon hit", () => {
     const r = slopScreen([{ beat: 1, text: "Whisper went home. Whisper slept. The dog barked." }], pool, ["whisper", "barked"]);
     expect(r.lexicon.map((l) => l.term)).toEqual(["barked"]);
+  });
+});
+
+describe("tics", () => {
+  test("a phrase said three times inside quotes is a tic; narration and two sayings are not", () => {
+    const story = `"Bet you it holds," Caleb said.\n\n"Bet you it holds," he said again at the door.\n\nThe bet you it holds line was his, and he knew it.\n\n"Bet you it holds," he said, one last time.\n\n"Mind the step," said Nell. "Mind the step," she said later.`;
+    const tics = quotedTics(story);
+    expect(tics.map((t) => [t.phrase, t.count])).toEqual([["bet you it holds", 3]]);
+  });
+
+  test("a draft with no repeated quoted phrase has none", () => {
+    expect(quotedTics(`"One thing," she said. "Another thing entirely," he said.`)).toEqual([]);
   });
 });

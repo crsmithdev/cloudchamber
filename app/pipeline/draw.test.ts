@@ -9,6 +9,7 @@ import { openDb, type Db } from "./store/db.ts";
 import { FakeModel } from "./model.ts";
 import { Pipeline, StepFailure } from "./draw.ts";
 import { originOf } from "./stage.ts";
+import { ofKind } from "./artifacts.ts";
 import { tabOf } from "./lifecycle.ts";
 import { TEMPLATES, checkTemplate } from "./prompts.ts";
 import { loadStages, STAGES } from "./config.ts";
@@ -47,7 +48,7 @@ function pipe(db: Db, dir: string, s = script(), rng = () => 0.001, settingsDir?
 }
 
 describe("draw graph", () => {
-  test("auto draw: examples and seed drawn, five executions, lowest probability, outline, jobs, siblings, brief", async () => {
+  test("auto draw: examples and seed drawn, one execution of the lowest probability, outline, jobs, siblings, brief", async () => {
     const { db, dir } = fixture();
     const { p, model } = pipe(db, dir);
     const draw = await p.start({ mode: "auto", segment: { source: "scp" } });
@@ -58,7 +59,8 @@ describe("draw graph", () => {
     expect(JSON.parse(draw.example_ids)).toHaveLength(6);
     expect(new Set(JSON.parse(draw.example_ids).map((id: string) => id[0]))).toEqual(new Set(["h"]));   // segment respected
     const stages = model.calls.map((c) => c.stage);
-    expect(stages.filter((s) => s === "execute")).toHaveLength(5);
+    // the auto gate takes the lowest stated probability, so only that premise is executed
+    expect(stages.filter((s) => s === "execute")).toHaveLength(1);
     expect(stages.indexOf("outline")).toBeGreaterThan(stages.lastIndexOf("execute"));
     expect(stages.filter((s) => s === "context")).toHaveLength(2);
     expect(stages.filter((s) => s === "ending")).toHaveLength(1);
@@ -72,7 +74,8 @@ describe("draw graph", () => {
     const ex = model.calls.filter((c) => c.stage === "execute");
     expect(ex[0].prompt).toContain("Premise 2 text.");
     expect(ex[0].prompt).not.toContain("Premise 1 text.");
-    expect(p.candidates(draw.id).map((c) => [c.index, c.probability])).toEqual([[1, 0.03], [2, 0.03], [3, 0.05], [4, 0.06], [5, 0.08]]);
+    expect(ofKind(p.artifacts(draw.id), "premise").map((a) => [a.meta.index, a.meta.probability])).toEqual([[1, 0.03], [2, 0.03], [3, 0.05], [4, 0.06], [5, 0.08]]);
+    expect(p.candidates(draw.id).map((c) => [c.premise, c.probability])).toEqual([["Premise 2 text.", 0.03]]);
     // gate: lowest probability (0.03, tie between 2 and 4 → rng 0.001 picks the first)
     expect(draw.gate_method).toBe("auto");
     const chosen = p.candidates(draw.id).find((c) => c.step_id === draw.chosen_step)!;
@@ -267,14 +270,26 @@ describe("draw graph", () => {
     let n = 0;
     const flaky = (p: string) => (++n === 3 ? { text: "", stop: "error", error: "Unable to read managed policy settings." } : vignette(Number(/Premise (\d)/.exec(p)?.[1] ?? 0)));
     const { p, model } = pipe(db, dir, script({ execute: flaky }));
-    await expect(p.start({ mode: "auto", genre: "horror" })).rejects.toThrow(/execute failed/);
+    await expect(p.start({ mode: "manual", genre: "horror" })).rejects.toThrow(/execute failed/);
     const failed = p.draws()[0];
     expect(failed.status).toBe("failed");
     const draw = await p.resume(failed.id);
-    expect(draw.status).toBe("done");
+    expect(draw.status).toBe("awaiting_gate");
     expect(model.calls.filter((c) => c.stage === "premises")).toHaveLength(1);
     expect(model.calls.filter((c) => c.stage === "execute")).toHaveLength(6);   // five, then the one that failed
     expect(p.candidates(draw.id)).toHaveLength(5);
+  });
+
+  test("an auto draw whose one execute failed resumes with that execute, then takes it at the gate", async () => {
+    const { db, dir } = fixture();
+    let n = 0;
+    const flaky = (p: string) => (++n === 1 ? { text: "", stop: "error", error: "Unable to read managed policy settings." } : vignette(Number(/Premise (\d)/.exec(p)?.[1] ?? 0)));
+    const { p, model } = pipe(db, dir, script({ execute: flaky }));
+    await expect(p.start({ mode: "auto", genre: "horror" })).rejects.toThrow(/execute failed/);
+    const draw = await p.resume(p.draws()[0].id);
+    expect(draw.status).toBe("done");
+    expect(model.calls.filter((c) => c.stage === "execute")).toHaveLength(2);   // the failed one, then its retry
+    expect(p.candidates(draw.id).map((c) => c.probability)).toEqual([0.03]);
   });
 
   test("a draw that failed before its premises runs them again from the same examples and seed", async () => {
@@ -424,7 +439,7 @@ describe("draw graph", () => {
     const draw = await p.start({ mode: "auto", genre: "horror", darkness: "black" });
     expect(draw.darkness).toBe("black");
     const withIt = model.calls.filter((c) => c.stage === "premises" || c.stage === "execute" || c.stage === "ending");
-    expect(withIt).toHaveLength(7);
+    expect(withIt).toHaveLength(3);   // the premises, the one auto execute, the ending
     for (const c of withIt) expect(c.prompt).toContain(sentence);
     for (const c of model.calls.filter((c) => c.stage === "outline" || c.stage === "context")) expect(c.prompt).not.toContain(sentence);
     expect(p.like(draw.id).darkness).toBe("black");

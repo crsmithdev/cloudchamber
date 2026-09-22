@@ -113,7 +113,7 @@ describe("check and gate 1", () => {
     expect(p.artifacts(next.id).filter((a) => a.kind === "job").map((a) => a.content)).toEqual(["Test the first thing: scene one.", "Test a second thing: scene two."]);
     expect(model.calls.find((c) => c.stage === "repair-ending")!.prompt).toContain(SPAN_A);
     expect(model.calls.find((c) => c.stage === "repair-ending")!.prompt).toContain("Rewrite the ending");
-    expect(model.calls.filter((c) => c.stage === "execute")).toHaveLength(5);      // nothing regenerated from the premise
+    expect(model.calls.filter((c) => c.stage === "execute")).toHaveLength(1);      // the auto draw's one, nothing regenerated from the premise
     // the new brief and its trail
     const bdir = join(dir, "briefs", next.id);
     for (const f of ["vignette.md", "outline.md", "context-1.md", "context-2.md", "ending.md", "ending.previous.md", "trail.md"]) expect(existsSync(join(bdir, f))).toBe(true);

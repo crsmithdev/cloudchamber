@@ -1518,6 +1518,20 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
                     ),
                   ],
                   [
+                    "said again in dialogue",
+                    s.slop.tics?.length ? (
+                      <span className="chips">
+                        {s.slop.tics.slice(0, 8).map((t) => (
+                          <span key={t.phrase} className="chip num">
+                            {t.phrase} <b className="font-semibold text-ink">{t.count}</b>
+                          </span>
+                        ))}
+                      </span>
+                    ) : (
+                      <span className="text-dim">none</span>
+                    ),
+                  ],
+                  [
                     "paragraphs",
                     <div className="paras">
                       {s.slop.paragraphs.map((p) => {
