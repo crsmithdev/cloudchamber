@@ -3,37 +3,23 @@
   <img src="docs/images/wordmark-light.svg" alt="Cloud Chamber" width="300">
 </picture>
 
-<img src="docs/images/ui-ideate.png" alt="The ideate tab: a draw list, a premise at 0.47, and the vignette written from it" width="49%"> <img src="docs/images/ui-write.png" alt="The write tab: length, beats, tense, person and chronology, then the first beat of the draft" width="49%">
-
-*Left: the ideate tab, the chosen premise with its stated probability above the vignette that executed it. Right: the write tab, the form the schedule settled on, then each beat with its word count and its screen flags.*
-
-[What it is measured against](#what-it-is-measured-against) · [How a draw works](#how-a-draw-works) · [More than a long prompt](#what-makes-it-more-than-a-long-prompt) · [Requirements](#requirements) · [The corpus](#the-corpus) · [Quick start](#quick-start) · [Layout](#layout) · [Docs](#docs) · [Tests](#tests) · [License](#license)
-
-Cloud Chamber turns one sentence into a short story written to be heard.
-
-A seed and six passages from published fiction become five premises. You pick
-one. The pipeline derives an outline, two context vignettes and an ending,
-checks that brief with independent checkers, repairs what they find, then
-writes the story a beat at a time and screens every beat. It stops at three
-gates, and a person decides at each one.
+Cloud Chamber turns one sentence into a short story written to be heard. A
+seed and six passages from published fiction become five premises. You pick
+one, and the pipeline derives a brief, checks it with independent checkers,
+repairs what they find, then writes the story a beat at a time and screens
+every beat. It stops at three gates, and a person decides at each one.
 
 Every model call is a headless `claude -p`. Nothing is fine-tuned and no model
 is served. The work is in the asks, the checkers and the record of what was
 already judged.
 
-## What it is measured against
+<img src="docs/images/ui-ideate.png" alt="The ideate tab: a draw list, a premise at 0.47, and the vignette written from it" width="49%"> <img src="docs/images/ui-write.png" alt="The write tab: length, beats, tense, person and chronology, then the first beat of the draft" width="49%">
 
-The benchmark is the narrated science fiction and horror on YouTube: an hour
-of story, read aloud, that people finish. A run is judged against a real
-transcript from one of those channels.
+*Left: the ideate tab, the chosen premise with its stated probability above the vignette that executed it. Right: the write tab, the form the schedule settled on, then each beat with its word count and its screen flags.*
 
-The judging is blind and pairwise. Two unlabelled transcripts go to a judge as
-Story One and Story Two. The judge answers eight questions a listener can
-answer — the hook, whether the thing arrives in the flesh, whether the people
-sound like people, feeling, cost, the ending, clarity by ear, momentum — and
-then makes an overall call. The order swaps between passes. The panel is five
-model families, none of them Claude: Gemini 3.1 Pro, GPT-5.1, Grok 4.3,
-Kimi K2.5 and GLM-4.7, three passes each.
+A run is judged blind and pairwise against a real transcript from a narrated
+fiction channel. Five model families judge, none of them Claude, three passes
+each.
 
 | run | code | overall | axis calls won or tied |
 |---|---|---|---|
@@ -42,9 +28,47 @@ Kimi K2.5 and GLM-4.7, three passes each.
 
 No judge in thirty passes preferred the channel's story.
 
-The limits are real: one seed, one source transcript, one story per run, and
-judges that stand in for a listener rather than being one. The reports under
-[`evals/`](evals/) record every run, the failures included.
+## Install
+
+```sh
+git clone git@github.com:crsmithdev/cloudchamber.git
+cd cloudchamber && bun install
+ln -s ~/cloudchamber-corpus corpus         # the corpus; see below
+```
+
+Requires:
+
+- [bun](https://bun.sh) 1.3 or later, for the pipeline, the API and the UI.
+- The `claude` CLI on `PATH`. Every model call is a headless `claude -p`.
+- Python 3.11 or later with `pdfplumber`, `pdfminer.six`, `numpy`,
+  `sentence-transformers` and `biberplus`, for extraction and theme embeddings.
+
+## Quick start
+
+```sh
+./cloudchamber extract                     # read, segment and score the corpus into the store
+./cloudchamber draw --genre horror         # five premises, then wait at gate 0
+./cloudchamber gate <draw> choose <execute-step>
+./cloudchamber gate <draw> auto            # check and repair until it converges
+./cloudchamber draft <draw> --profile listen
+./cloudchamber story <draw>                # the draft with its screen flags inline
+```
+
+Every draft also leaves a report at `output/<draw>/report.html` and
+`report.pdf`. It holds the story, the seed, examples and premises it came
+from, the brief, every check round and the corrections it accepted, the
+schedule, the screens, the listen and slop measures, and the cost by stage.
+`./cloudchamber report <draw>` writes it again for any drafted draw.
+
+Or drive the same actions from the UI:
+
+```sh
+bun run ui:build && ./cloudchamber serve   # http://127.0.0.1:3002
+```
+
+Four tabs: browse the corpus, ideate a draw, check a brief, write the story.
+Three of them show a running operation and the judgement it is waiting for at
+the same time. The screenshots above show two of them.
 
 ## How a draw works
 
@@ -88,12 +112,40 @@ against transcripts of the real channels. They mark; they do not judge.
 theme or a brief goes to a verdict log and is replayed, so a regeneration
 inherits what you already decided.
 
-## Requirements
+## Configuration
 
-- [bun](https://bun.sh) 1.3 or later, for the pipeline, the API and the UI.
-- The `claude` CLI on `PATH`. Every model call is a headless `claude -p`.
-- Python 3.11 or later with `pdfplumber`, `pdfminer.six`, `numpy`,
-  `sentence-transformers` and `biberplus`, for extraction and theme embeddings.
+`./cloudchamber help` prints every command and every tunable value, live.
+[`docs/knobs.md`](docs/knobs.md) is the same list, written out.
+
+## What it is measured against
+
+The benchmark is the narrated science fiction and horror on YouTube: an hour
+of story, read aloud, that people finish. A run is judged against a real
+transcript from one of those channels.
+
+Two unlabelled transcripts go to a judge as Story One and Story Two. The judge
+answers eight questions a listener can answer — the hook, whether the thing
+arrives in the flesh, whether the people sound like people, feeling, cost, the
+ending, clarity by ear, momentum — and then makes an overall call. The order
+swaps between passes. The panel is Gemini 3.1 Pro, GPT-5.1, Grok 4.3,
+Kimi K2.5 and GLM-4.7, three passes each.
+
+The limits are real: one seed, one source transcript, one story per run, and
+judges that stand in for a listener rather than being one. The reports under
+[`evals/`](evals/) record every run, the failures included, and
+[`docs/evaluation.md`](docs/evaluation.md) states the protocol.
+
+## When not to use it
+
+- You want a novel, or a story to read on the page. A draw writes one story of
+  about 10,000 words, shaped for the ear.
+- You want to type a prompt and get prose back. A draw stops at three gates
+  and waits for a person at each one.
+- You want it cheap or quick. A run is dozens of headless model calls.
+- You have no corpus. Without books and transcripts, the premises have nothing
+  to derive from and the listen screen has nothing to measure against.
+- You want the same result twice. The premise draw samples the tail of a
+  stated distribution on purpose.
 
 ## The corpus
 
@@ -119,36 +171,6 @@ in `sources/manifest.toml`. What is here without it is the manifest and the SCP
 articles under `sources/scp/`, which are CC BY-SA. With the full corpus the
 store holds 619 stories and 4,082 scored passages.
 
-## Quick start
-
-```sh
-bun install
-./cloudchamber extract                     # read, segment and score the corpus into the store
-./cloudchamber draw --genre horror         # five premises, then wait at gate 0
-./cloudchamber gate <draw> choose <execute-step>
-./cloudchamber gate <draw> auto            # check and repair until it converges
-./cloudchamber draft <draw> --profile listen
-./cloudchamber story <draw>                # the draft with its screen flags inline
-```
-
-Every draft also leaves a report at `output/<draw>/report.html` and
-`report.pdf`. It holds the story, the seed, examples and premises it came
-from, the brief, every check round and the corrections it accepted, the
-schedule, the screens, the listen and slop measures, and the cost by stage.
-`./cloudchamber report <draw>` writes it again for any drafted draw.
-
-Or drive the same actions from the UI:
-
-```sh
-bun run ui:build && ./cloudchamber serve   # http://127.0.0.1:3002
-```
-
-Four tabs: browse the corpus, ideate a draw, check a brief, write the story.
-Three of them show a running operation and the judgement it is waiting for at
-the same time. The screenshots at the top show two of them.
-
-`./cloudchamber help` prints every command and every tunable value, live.
-
 ## Layout
 
 | Path | Holds |
@@ -167,6 +189,14 @@ the same time. The screenshots at the top show two of them.
 | `briefs/`, `drafts/`, `output/` | pipeline output, one directory per draw; not tracked |
 | `~/.cloudchamber/` | the SQLite store; rebuilt from the corpus and `bank/` |
 
+## Development
+
+```sh
+bun test app                         # the pipeline, the API and the store
+bunx tsc --noEmit                    # types
+python3 -m pytest -q extract/tests   # the extractor; needs the corpus PDFs
+```
+
 ## Docs
 
 - [`docs/knobs.md`](docs/knobs.md): every tunable. Generated by
@@ -178,14 +208,6 @@ the same time. The screenshots at the top show two of them.
 - [`PRODUCT.md`](PRODUCT.md) and [`DESIGN.md`](DESIGN.md): the product and the
   visual design the UI holds to.
 - [`research/README.md`](research/README.md): what the published record supports.
-
-## Tests
-
-```sh
-bun test app                         # the pipeline, the API and the store
-bunx tsc --noEmit                    # types
-python3 -m pytest -q extract/tests   # the extractor; needs the corpus PDFs
-```
 
 ## License
 
