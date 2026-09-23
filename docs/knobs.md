@@ -104,7 +104,7 @@ cloudchamber draft; every key of draft.toml is overridable per draw, and a profi
 | `--chronology / --container` | linear \| nonlinear · prose \| document \| interleaved |
 | `--order` | sequential |
 | `checks` | claims, derivation, ledger, structure, resemblance · 2 samples, kept at 2 |
-| `screens` | ledger, structure, slop, listen · 1 samples, kept at 1 |
+| `screens` | ledger, structure, slop, listen, claims · 1 samples, kept at 1 |
 | `repair` | auto: up to 4 rounds, accepting findings scoring 7+, patience 2 |
 
 ## fixed in code

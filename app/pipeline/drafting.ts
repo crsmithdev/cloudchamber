@@ -19,6 +19,7 @@ import { extractLedger, runCheck, STRUCTURE_QUESTIONS, type CheckResult } from "
 import { constraintsBlock, repair } from "./repair.ts";
 import { briefBlock, briefParts, passId } from "./briefparts.ts";
 import { chainOf, type Chain, type FindingView } from "./chain.ts";
+import { BriefSession } from "./briefsession.ts";
 import { profile } from "./listen.ts";
 import { ofKind } from "./artifacts.ts";
 import { bindScene, linesOf, runScenes, runSchedule, runScreens, writeScene, type Schedule } from "./write.ts";
@@ -259,7 +260,7 @@ export class Drafting {
     const have = chainOf(this.p, drawId).ledger();
     if (have) return have;
     const parts = briefParts(this.p, drawId);
-    return extractLedger(this.p, drawId, parts, briefBlock(parts), { pass: passId(), sample: 1, ledger_only: true });
+    return extractLedger(new BriefSession(this.p, drawId, parts, "ledger-extract"), { pass: passId(), sample: 1, ledger_only: true });
   }
 
   /**

@@ -97,6 +97,13 @@ export function parseJobs(text: string): string[] {
 /** The darkness sentence as a template slot: empty when unset, so the prompt reads as it did before the knob. */
 const darknessLine = (d?: Darkness) => (d ? ` ${TEMPLATES.darknessAsk[d]}` : "");
 
+/**
+ * What a call needs beyond its prompt: the story a theme is drafted from, the
+ * tools it may use, and the text that leads its system prompt so a run of calls
+ * reads it from the cache (ADR-0010).
+ */
+export type InvokeOpts = { storyId?: string | null; tools?: string; context?: string };
+
 export class Pipeline {
   stages: Record<StageName, StageConfig>;
   backoffMs: readonly number[];
@@ -160,7 +167,8 @@ export class Pipeline {
    * The CLI caches the system prompt, and a later call whose system prompt
    * opens with the same text reads it back, whatever stage line follows.
    */
-  async invoke<T>(draw: string | null, parent: string | null, stage: StageName, prompt: string, parse: (text: string) => T, storyId: string | null = null, tools?: string, context?: string): Promise<{ step: StepRow; value: T }> {
+  async invoke<T>(draw: string | null, parent: string | null, stage: StageName, prompt: string, parse: (text: string) => T, opts: InvokeOpts = {}): Promise<{ step: StepRow; value: T }> {
+    const { storyId = null, tools, context } = opts;
     const cfg = this.stageFor(stage, draw);
     const allowed = tools ?? cfg.tools ?? "";
     const system = context ? `${context}\n\n${cfg.system}` : cfg.system;

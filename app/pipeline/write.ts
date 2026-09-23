@@ -15,7 +15,7 @@ import { FORM_VALUES, samplesFor, type DraftConfig, type FormAxis } from "./draf
 import { cluster, findingId, parseFindings, type Finding } from "./recur.ts";
 import { loadLexicon, restated, slopScreen } from "./slop.ts";
 import { listenScreen, loadNarrationPool } from "./listen.ts";
-import { parseQuestions, type Answer } from "./check.ts";
+import { parseQuestions, screenClaims, type Answer } from "./check.ts";
 import type { BriefParts } from "./briefparts.ts";
 import type { SceneMeta } from "./artifacts.ts";
 import { clusterSamples, runSamples, voteAnswers } from "./sampled.ts";
@@ -194,7 +194,7 @@ export function scenePrompt(parts: BriefParts, s: Schedule, b: Beat, soFar: stri
 
 /** `rewrite` marks a gate-2 rewrite of the beat, with the flag it answers when there is one. */
 export async function writeScene(p: Pipeline, drawId: string, parent: string, parts: BriefParts, ledger: string, s: Schedule, b: Beat, soFar: string[], constraints?: string, rewrite?: { finding?: string }, structure = { template: "auto", register: "auto" }): Promise<Scene> {
-  const { step, value } = await p.invoke(drawId, parent, "scene", scenePrompt(parts, s, b, soFar, constraints, structure), (t) => need(t, "scene"), null, undefined, sceneContext(parts, ledger, s));
+  const { step, value } = await p.invoke(drawId, parent, "scene", scenePrompt(parts, s, b, soFar, constraints, structure), (t) => need(t, "scene"), { context: sceneContext(parts, ledger, s) });
   const n = words(value);
   const artifact_id = p.artifact(step, "scene", value, { beat: b.n, words: n, cap: b.words, warnings: n > b.words * (1 + RUN.sceneCapSlack) ? ["over_cap"] : [], ...(rewrite ? { rewrite: true, ...(rewrite.finding ? { rewrite_finding: rewrite.finding } : {}) } : {}) });
   return { beat: b.n, text: value, artifact_id, step_id: step.id };
@@ -315,6 +315,11 @@ export async function runScreens(p: Pipeline, drawId: string, s: Schedule, scene
     const report = slopScreen(scenes.map((x) => ({ beat: x.beat, text: x.text })), pool, loadLexicon(opts.lexiconPath));
     const step = p.recordStep(drawId, scenes[0]?.step_id ?? null, "screen-slop", "deterministic", report);
     p.artifact(step, "slop", JSON.stringify(report), { pass, source: "screen", screen: "slop" });
+  }
+  // the claims a scene makes about its setting: the checkers read the brief, and a scene invents past it
+  if (enabled.includes("claims")) {
+    const { setting } = p.loadDrawSetting(p.draw(drawId));
+    if (setting?.claims) await screenClaims(p, drawId, scenes.map((x) => ({ beat: x.beat, text: x.text })), setting, pass, chainOf(p, drawId), scenes[0]?.step_id ?? null);
   }
   if (enabled.includes("listen")) {
     const report = listenScreen(scenes.map((x) => ({ beat: x.beat, text: x.text })), loadNarrationPool(opts.narrationDir));

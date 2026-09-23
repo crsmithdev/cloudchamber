@@ -17,12 +17,13 @@ import { resolve } from "node:path";
 import type { Pipeline, StepRow } from "./draw.ts";
 import { fill, type TemplateName } from "./prompts.ts";
 import { need, samples, tag, tags } from "./model.ts";
-import { distillate, type ClaimsAuthority } from "./settings.ts";
+import { distillate, type ClaimsAuthority, type Setting } from "./settings.ts";
 import { samplesFor, type DraftConfig } from "./draftconfig.ts";
 import { cluster, excludeDismissed, findingId, merge, normalise, parseFindings, quoted, same, type Cluster, type Finding } from "./recur.ts";
 import { briefBlock, briefParts, passId, prose, type BriefParts } from "./briefparts.ts";
 import { chainOf, type Chain } from "./chain.ts";
-import { clusterSamples, runSamples } from "./sampled.ts";
+import { clusterSamples } from "./sampled.ts";
+import { BriefSession } from "./briefsession.ts";
 import type { LedgerMeta } from "./artifacts.ts";
 import { RUN } from "./config.ts";
 
@@ -76,9 +77,9 @@ export function loadPremiseList(path: string = PREMISES_PATH): string {
 const findingShape = () => fill("findingShape", { sections: RUN.coreJobs.join(" | ") });
 
 /** Extract a brief's ledger in one call and store it under `meta`. */
-export async function extractLedger(p: Pipeline, drawId: string, parts: BriefParts, brief: string, meta: LedgerMeta): Promise<string> {
-  const { step, value } = await p.invoke(drawId, parts.outlineStepId, "ledger-extract", fill("ledgerExtract", {}), (t) => need(t, "ledger"), null, undefined, brief);
-  p.artifact(step, "ledger", String(value), meta);
+export async function extractLedger(session: BriefSession, meta: LedgerMeta): Promise<string> {
+  const { step, value } = await session.call("ledger-extract", fill("ledgerExtract", {}), (t) => need(t, "ledger"));
+  session.p.artifact(step, "ledger", String(value), meta);
   return String(value);
 }
 
@@ -98,24 +99,21 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
   // the ledger is extracted once for the chain and pinned; every round is checked against it. It is read here once
   // and the verify pass gets the same one: asked again, the chain would answer with the null it cached before the extraction
   const extracting = !chain.ledger() && enabled.includes("ledger");
+  // every call of the pass reads the brief from one cached system prompt; the session holds it and the lead (ADR-0010)
+  const session = new BriefSession(p, drawId, parts, extracting ? "ledger-extract" : "check-derivation");
   const ledger: Promise<string | null> = chain.ledger() ? Promise.resolve(chain.ledger())
-    : extracting ? extractLedger(p, drawId, parts, brief, { pass, sample: 1, pinned: true }) : Promise.resolve(null);
-  // every call of the pass carries the brief as its system prompt, and reads it from the cache only once another call has
-  // written it: calls started together all write. So one call goes first, the extraction or else derivation's first
-  // sample, and the rest start after the lead.
-  const lead = Bun.sleep(p.cacheLeadMs);
-  const order = { lead, leads: extracting ? "ledger-extract" : "check-derivation" };
+    : extracting ? extractLedger(session, { pass, sample: 1, pinned: true }) : Promise.resolve(null);
 
   const runs: Promise<unknown>[] = [];
-  if (enabled.includes("derivation")) runs.push(sampled(p, drawId, parts, order, "check-derivation", fill("checkDerivation", { brief, findingShape: shape }), S("derivation"), "derivation",
+  if (enabled.includes("derivation")) runs.push(sampled(session, "check-derivation", fill("checkDerivation", { brief, findingShape: shape }), S("derivation"), "derivation",
     (t) => ({ impossibility: tag(t, "impossibility"), ...findingsOf("derivation")(t) })).then((r) => { perChecker.push(r); }));
   // the extraction runs beside the other checkers; only the ledger checker waits for it
-  if (enabled.includes("ledger")) runs.push(ledger.then((l) => sampled(p, drawId, parts, order, "check-ledger", fill("checkLedger", { brief, ledger: fill("pinnedLedger", { ledger: l! }), findingShape: shape }), S("ledger"), "ledger", findingsOf("ledger")))
+  if (enabled.includes("ledger")) runs.push(ledger.then((l) => sampled(session, "check-ledger", fill("checkLedger", { brief, ledger: fill("pinnedLedger", { ledger: l! }), findingShape: shape }), S("ledger"), "ledger", findingsOf("ledger")))
     .then((r) => { perChecker.push(r); }));
   // structure and resemblance profile the premise, which a repair never changes: once per chain
-  if (enabled.includes("structure")) runs.push(sampled(p, drawId, parts, order, "check-structure", fill("checkStructure", { brief }), S("structure"), "structure", (t) => ({ answers: parseQuestions(t, STRUCTURE_QUESTIONS) }),
+  if (enabled.includes("structure")) runs.push(sampled(session, "check-structure", fill("checkStructure", { brief }), S("structure"), "structure", (t) => ({ answers: parseQuestions(t, STRUCTURE_QUESTIONS) }),
     (step, value, sample) => p.artifact(step, "profile", JSON.stringify(value.answers), { pass, sample, source: "check", checker: "structure", answers: value.answers })));
-  if (enabled.includes("resemblance")) runs.push(sampled(p, drawId, parts, order, "check-resemblance", fill("checkResemblance", { brief, list: loadPremiseList(opts.premisesPath) }), S("resemblance"), "resemblance", (t) => {
+  if (enabled.includes("resemblance")) runs.push(sampled(session, "check-resemblance", fill("checkResemblance", { brief, list: loadPremiseList(opts.premisesPath) }), S("resemblance"), "resemblance", (t) => {
     const nearest = tag(t, "nearest");
     if (!nearest) throw new Error("no <nearest> tag");
     const matches = tags(t, "match").map((m) => ({ entry: tag(m, "entry") ?? "", span: tag(m, "span") ?? "" }));
@@ -129,7 +127,7 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
     const authority = setting.claims;
     claims = authority;
     const reference = authority === "setting" ? distillate(setting) : "";
-    runs.push(lead.then(() => runClaims(p, drawId, parts, brief, authority, reference, pass, chain)).then((r) => { perChecker.push(r); }));
+    runs.push(runClaims(session, authority, reference, pass, chain).then((r) => { perChecker.push(r); }));
   }
   await Promise.all(runs);
 
@@ -138,7 +136,7 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
   // the clusters under keep_if, merged as the gate reads them back, so one verify call grades the whole list
   const under = excludeDismissed(merge(perChecker.flatMap((c) => c.clusters.filter((x) => !x.reported))), dismissed)
     .filter((c) => !merged.some((m) => same(m, c)));
-  const dropped = await verifyFindings(p, drawId, parts, brief, await ledger, [...merged, ...under]);
+  const dropped = await verifyFindings(session, parts, await ledger, [...merged, ...under]);
   // a clean pass leaves no finding or profile behind, so the pass is marked on its own: the gate reads the latest pass, not the latest with findings
   // with the samples each checker ran in this pass, which the score reads: an earlier pass may have run a different count.
   // Marked only once the verify reading is in: a pass whose verify failed would otherwise read as clean
@@ -173,7 +171,7 @@ export const NOT_IN_PROSE = "the span is not in a vignette or the ending, which 
  * Returns the ids to drop, each with the reason. Claims have their own
  * verifier and are not read again.
  */
-async function verifyFindings(p: Pipeline, drawId: string, parts: BriefParts, brief: string, ledger: string | null, all: Cluster[]): Promise<Map<string, string>> {
+async function verifyFindings(session: BriefSession, parts: BriefParts, ledger: string | null, all: Cluster[]): Promise<Map<string, string>> {
   const out = new Map<string, string>();
   const seen = prose(parts);
   const subject: Cluster[] = [];
@@ -184,9 +182,9 @@ async function verifyFindings(p: Pipeline, drawId: string, parts: BriefParts, br
   if (!subject.length) return out;
   const findings = subject.map((c, i) => `${i + 1}. span: "${c.span}"\n   statement: ${c.statement}\n   result: ${c.result}\n   evidence: ${c.evidence}`).join("\n");
   const cap = String(50 + 40 * subject.length);
-  const prompt = fill("checkVerify", { brief, ledger: ledger ? fill("pinnedLedger", { ledger }) : "", findings, cap });
+  const prompt = fill("checkVerify", { ledger: ledger ? fill("pinnedLedger", { ledger }) : "", findings, cap });
   const readings = await Promise.all(Array.from({ length: VERIFY_READINGS }, () =>
-    p.invoke(drawId, parts.outlineStepId, "check-verify", prompt, (t) => parseVerdicts(t, subject.length), null, undefined, brief).then((r) => r.value)));
+    session.call("check-verify", prompt, (t) => parseVerdicts(t, subject.length)).then((r) => r.value)));
   // dropped when any reading drops it; the first reading that drops it gives the reason
   subject.forEach((c, i) => { const drop = readings.map((r) => r[i]).find((v) => v.answer === "drop"); if (drop) out.set(c.id, drop.why); });
   return out;
@@ -205,15 +203,11 @@ export function parseVerdicts(text: string, n: number): { answer: "keep" | "drop
 }
 
 /** S concurrent samples of one checker; the parsed value goes on each step, the findings are clustered. */
-async function sampled(p: Pipeline, drawId: string, parts: BriefParts, order: { lead: Promise<void>; leads: string }, stage: any, prompt: string, s: { samples: number; keep_if: number }, checker: string,
+async function sampled(session: BriefSession, stage: any, prompt: string, s: { samples: number; keep_if: number }, checker: string,
   parse: (text: string) => any, store?: (step: StepRow, value: any, sample: number) => void): Promise<{ checker: string; clusters: Cluster[]; firstStep: StepRow; samples: number }> {
-  const results = await runSamples(p, {
-    draw: drawId, parent: parts.outlineStepId, stage, prompt, parse, samples: s.samples, context: briefBlock(parts),
-    // one call fills the cache and the rest read it: the lead is awaited by every sample but the lead's own
-    before: (n) => (stage === order.leads && n === 1 ? Promise.resolve() : order.lead),
-  });
+  const results = await session.samples(stage, prompt, parse, s.samples);
   for (const r of results) store?.(r.step, r.value, r.sample);
-  return { checker, clusters: clusterSamples(results, (v) => (v.findings ?? []) as Finding[], s.keep_if, drawId), firstStep: results[0].step, samples: results.length };
+  return { checker, clusters: clusterSamples(results, (v) => (v.findings ?? []) as Finding[], s.keep_if, session.drawId), firstStep: results[0].step, samples: results.length };
 }
 
 const RESULTS = new Set(["supported", "contradicted", "unverifiable"]);
@@ -222,10 +216,11 @@ const RESULTS = new Set(["supported", "contradicted", "unverifiable"]);
 const claimMeta = (v: { span: string; result: string; evidence: string; invalidates: string; replacement: string; patch: string }, pass: string, authority: ClaimsAuthority, extra: Record<string, unknown> = {}) =>
   ({ pass, span: v.span, result: v.result, evidence: v.evidence, invalidates: v.invalidates, replacement: v.replacement, patch: v.patch, authority, ...extra });
 
-async function runClaims(p: Pipeline, drawId: string, parts: BriefParts, brief: string, authority: ClaimsAuthority, reference: string, pass: string, chain: Chain) {
+async function runClaims(session: BriefSession, authority: ClaimsAuthority, reference: string, pass: string, chain: Chain) {
+  const p = session.p, drawId = session.drawId;
   const tpl = CLAIMS_PROMPTS[authority];
-  const { step, value: claims } = await p.invoke(drawId, parts.outlineStepId, "check-claims-extract", fill(tpl.extract, {}), (t) =>
-    tags(t, "claim").map((c) => ({ span: tag(c, "span") ?? "", statement: tag(c, "statement") ?? "" })).filter((c) => c.span && c.statement), null, undefined, brief);
+  const { step, value: claims } = await session.call("check-claims-extract", fill(tpl.extract, {}), (t) =>
+    tags(t, "claim").map((c) => ({ span: tag(c, "span") ?? "", statement: tag(c, "statement") ?? "" })).filter((c) => c.span && c.statement));
   // a claim already verified anywhere in this chain against the same authority is not re-verified:
   // the distillate does not change, so the verdict cannot. This was 12 calls a round, every round.
   const priorClaims = chain.claims(authority);
@@ -239,7 +234,8 @@ async function runClaims(p: Pipeline, drawId: string, parts: BriefParts, brief: 
       const result = f.result.toLowerCase().trim();
       if (!RESULTS.has(result)) throw new Error(`result must be supported | contradicted | unverifiable, got ${f.result}`);
       return { ...f, result, span: f.span || c.span, statement: f.statement || c.statement };
-    }, null, authority === "world" ? undefined : "").then((r) => {
+      // the web is the authority only under `world`; every other authority reads the reference in the prompt
+    }, { tools: authority === "world" ? undefined : "" }).then((r) => {
       p.artifact(r.step, "claim", r.value.statement, claimMeta(r.value, pass, authority));
       return r.value;
     });
@@ -253,3 +249,54 @@ async function runClaims(p: Pipeline, drawId: string, parts: BriefParts, brief: 
   }));
   return { checker: "claims", clusters, firstStep: step };
 }
+
+/**
+ * The claims a draft makes about its setting, checked after it is written.
+ * The checkers read the brief, and a scene invents past it: on one draft of a
+ * setting that declares an authority, twelve claims came out of the scenes,
+ * two of them contradicting the setting (a twelfth suit-wearer where the
+ * setting says twelve became nine; Holy Smoke given to every soldier where the
+ * setting makes it a chaplain's). Neither was in the brief, so no check pass
+ * could have seen them. A contradiction is a flag on the beat whose scene says
+ * it, for `rewrite k` to answer.
+ */
+export async function screenClaims(p: Pipeline, drawId: string, scenes: { beat: number; text: string }[], setting: Setting, pass: string, chain: Chain, parent: string | null): Promise<Cluster[]> {
+  const authority: ClaimsAuthority | null = setting.claims;
+  if (!authority || !scenes.length) return [];
+  const reference = authority === "setting" ? distillate(setting) : "";
+  const tpl = CLAIMS_PROMPTS[authority];
+  const story = scenes.map((s) => s.text).join("\n\n");
+  const { step, value: claims } = await p.invoke(drawId, parent, "check-claims-extract", fill(tpl.extract, {}), (t) =>
+    tags(t, "claim").map((c) => ({ span: tag(c, "span") ?? "", statement: tag(c, "statement") ?? "" })).filter((c) => c.span && c.statement),
+    { context: story });
+  // a claim this chain already verified against the same authority keeps its verdict, as at the gate
+  const prior = chain.claims(authority);
+  const verified = await Promise.all(claims.map((c) => {
+    const known = prior.find((v) => normalise(v.statement) === normalise(c.statement));
+    if (known) return Promise.resolve({ ...known, cached: true } as any);
+    return p.invoke(drawId, step.id, "check-claims-verify", fill(tpl.verify, { reference, span: c.span, statement: c.statement }), (t) => {
+      const f = parseFindings(t, "claims", 1)[0];
+      if (!f) throw new Error("no <finding> tag");
+      const result = f.result.toLowerCase().trim();
+      if (!RESULTS.has(result)) throw new Error(`result must be supported | contradicted | unverifiable, got ${f.result}`);
+      return { ...f, result, span: f.span || c.span, statement: f.statement || c.statement };
+    }, { tools: authority === "world" ? undefined : "" }).then((r) => {
+      p.artifact(r.step, "claim", r.value.statement, claimMeta(r.value, pass, authority, { source: "screen" }));
+      return r.value;
+    });
+  }));
+  const beatOf = (span: string) => scenes.find((s) => normalise(s.text).includes(normalise(span)))?.beat ?? scenes[0].beat;
+  const flags: Cluster[] = [];
+  for (const f of verified.filter((v: any) => v.result === "contradicted")) {
+    const beat = beatOf(f.span);
+    const c: Cluster = {
+      id: findingId("claims", f.span, `${drawId}/${beat}`), checkers: ["claims"], samples: [1], n: 1, span: f.span, statement: f.statement,
+      result: f.result, evidence: f.evidence, invalidates: String(beat), replacement: f.replacement, patch: f.patch ?? "", reported: true,
+    };
+    const { reported: _r, ...meta } = c;
+    p.artifact(step, "finding", c.statement, { ...meta, pass, source: "screen", screen: "claims", beat });
+    flags.push(c);
+  }
+  return flags;
+}
+

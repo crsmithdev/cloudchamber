@@ -1519,9 +1519,9 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
                   ],
                   [
                     "said again in dialogue",
-                    s.slop.tics?.length ? (
+                    s.slop.repeated_speech?.length ? (
                       <span className="chips">
-                        {s.slop.tics.slice(0, 8).map((t) => (
+                        {s.slop.repeated_speech.slice(0, 8).map((t) => (
                           <span key={t.phrase} className="chip num">
                             {t.phrase} <b className="font-semibold text-ink">{t.count}</b>
                           </span>

@@ -125,7 +125,7 @@ export async function distillMap(p: Pipeline, id: string, setting: Setting): Pro
         for (const list of LISTS) for (const entry of parseEntries(raw, list)) got.push({ list, entry, source: topic || f, file: f, hash });
         if (!got.length) throw new Error("no <entry> tags in any list");
         return got;
-      }, `setting/${id}/map/${f}`);
+      }, { storyId: `setting/${id}/map/${f}` });
       // a synchronous append between awaits: concurrent files never interleave their rows
       appendFileSync(candidatesPath(id, dir), `${value.map((r) => JSON.stringify(r)).join("\n")}\n`);
       lines[i] = `${f}: ${value.length} candidates (${words(text)} words)`;
@@ -159,7 +159,7 @@ async function trimLong(p: Pipeline, id: string, list: ListName, kept: string[],
       const got = parseEntries(raw, list);
       if (got.length !== long.length) throw new Error(`asked to cut ${long.length} entries, got ${got.length}`);
       return got;
-    }, `setting/${id}/trim/${list}`);
+    }, { storyId: `setting/${id}/trim/${list}` });
     fixed = value;
   } catch (e) {
     out.push(`${list}: the trim call failed (${e instanceof StepFailure ? e.reason : String((e as any)?.message ?? e)})`);
@@ -203,7 +203,7 @@ export async function distillReduce(p: Pipeline, id: string, setting: Setting): 
         const got = parseEntries(raw, list);
         if (!got.length) throw new Error(`no <entry> tags in <${list.toLowerCase()}>`);
         return got;
-      }, `setting/${id}/reduce/${list}`);
+      }, { storyId: `setting/${id}/reduce/${list}` });
       kept = value;
     } catch (e) {
       out.push(`${list}: ${e instanceof StepFailure ? e.reason : String((e as any)?.message ?? e)}`);

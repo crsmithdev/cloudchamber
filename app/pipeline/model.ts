@@ -67,16 +67,16 @@ export class ClaudeCli implements ModelAdapter {
   }
 }
 
-/** Canned responses for tests: a queue per stage, or a function. */
+/** Canned responses for tests: a queue per stage, or a function of the ask. The system prompt is passed too, because a stage's fixed context rides there (ADR-0010). */
 export class FakeModel implements ModelAdapter {
   calls: { stage: string; system: string; prompt: string; model: string; tools: string; effort?: string }[] = [];
-  constructor(private script: Record<string, (string | Partial<ModelResult>)[] | ((prompt: string, model: string) => string | Partial<ModelResult>)>) {}
+  constructor(private script: Record<string, (string | Partial<ModelResult>)[] | ((prompt: string, model: string, system: string) => string | Partial<ModelResult>)>) {}
 
   async call(stage: string, system: string, prompt: string, model: string, tools = "", effort?: string): Promise<ModelResult> {
     this.calls.push({ stage, system, prompt, model, tools, effort });
     const s = this.script[stage];
     if (!s) throw new Error(`FakeModel: no script for stage ${stage}`);
-    const next = typeof s === "function" ? s(prompt, model) : s.shift();
+    const next = typeof s === "function" ? s(prompt, model, system) : s.shift();
     if (next === undefined) throw new Error(`FakeModel: script for ${stage} exhausted`);
     const r: Partial<ModelResult> = typeof next === "string" ? { text: next } : next;
     return { text: r.text ?? "", stop: r.stop ?? "end_turn", raw: r.raw ?? JSON.stringify({ result: r.text ?? "", stop_reason: r.stop ?? "end_turn" }), model: r.model ?? model, durationMs: 1, usage: r.usage, error: r.error };

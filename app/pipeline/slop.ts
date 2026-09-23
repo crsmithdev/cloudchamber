@@ -2,8 +2,8 @@
  * The slop screen: deterministic, outside any model. Five measures against the
  * eligible passage pool, none summed: lexicon hits with proper nouns excluded,
  * the not-X-but-Y rate, trigrams repeated in the draft and absent from the
- * pool, paragraph shape per scene, and phrases a speaker says again in quoted
- * speech. It marks; it does not judge.
+ * pool, paragraph shape per scene, and phrases said again in quoted speech.
+ * It marks; it does not judge.
  */
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -18,8 +18,15 @@ export type SlopReport = {
   not_but: { hits: number; per_10k: number; pool_per_10k: number; examples: string[] };
   trigrams: { trigram: string; count: number }[];
   paragraphs: { beat: number; words: number; paragraphs: number; mean_words: number; single_sentence_share: number }[];
-  /** A phrase said again inside quoted speech: the cast ask used to produce catchphrases, and judges hear them as tics. */
-  tics: { phrase: string; count: number }[];
+/**
+   * A phrase said three times or more inside quoted speech. It reports what it
+   * says and no more: over nine drafts these were as often a repeated fact or
+   * motif ("four hundred years" six times) as a speaker's catchphrase ("it's an
+   * honor"). Attributing a phrase to one speaker would tell them apart, but only
+   * 17 to 45 quoted lines a draft name their speaker, and under that rule every
+   * draft measured zero.
+   */
+  repeated_speech: { phrase: string; count: number }[];
 };
 
 export function loadLexicon(path: string = LEXICON_PATH): string[] {
@@ -88,8 +95,8 @@ export function restated(scenes: { beat: number; text: string }[], k: number): R
   return out;
 }
 
-/** Every run of 3 to 5 words inside quotation marks that the draft says three times or more, longest first. */
-export function quotedTics(story: string): { phrase: string; count: number }[] {
+/** Every run of 3 to 5 words inside quotation marks that the draft says three times or more, longest first. It does not know who said them. */
+export function repeatedSpeech(story: string): { phrase: string; count: number }[] {
   const counts = new Map<string, number>();
   for (const m of story.matchAll(/[“"]([^“”"]{4,400})[”"]/g)) {
     const ws = wordsOf(m[1]);
@@ -121,8 +128,8 @@ export function slopScreen(scenes: { beat: number; text: string }[], pool: strin
   const poolHits = (pool.match(NOT_BUT) ?? []).length;
   const per10k = (n: number, w: number) => (w ? Math.round((n / w) * 10000 * 10) / 10 : 0);
   const ptri = trigrams(pw);
-  const repeated = [...trigrams(sw)].filter(([t, c]) => c >= 3 && !ptri.has(t)).map(([trigram, count]) => ({ trigram, count })).sort((a, b) => b.count - a.count || a.trigram.localeCompare(b.trigram));
-  const tics = quotedTics(story);
+  const repeated_trigrams = [...trigrams(sw)].filter(([t, c]) => c >= 3 && !ptri.has(t)).map(([trigram, count]) => ({ trigram, count })).sort((a, b) => b.count - a.count || a.trigram.localeCompare(b.trigram));
+  const repeated = repeatedSpeech(story);
   const paragraphs = scenes.map((s) => {
     const paras = s.text.split(/\n\s*\n/).map((x) => x.trim()).filter(Boolean);
     const lens = paras.map((x) => wordsOf(x).length);
@@ -132,6 +139,6 @@ export function slopScreen(scenes: { beat: number; text: string }[], pool: strin
   return {
     words: sw.length, pool_words: pw.length, lexicon: lex,
     not_but: { hits: hits.length, per_10k: per10k(hits.length, sw.length), pool_per_10k: per10k(poolHits, pw.length), examples: hits.slice(0, 8).map((m) => story.slice(Math.max(0, m.index! - 20), m.index! + m[0].length + 20).replace(/\s+/g, " ")) },
-    trigrams: repeated, paragraphs, tics,
+    trigrams: repeated_trigrams, paragraphs, repeated_speech: repeated,
   };
 }

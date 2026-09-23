@@ -146,7 +146,7 @@ export async function draftStory(p: Pipeline, storyId: string, embed: Embedder =
     const ts = tags(text, "theme");
     if (!ts.length) throw new Error("no <theme> tags");
     return ts.slice(0, 4).map((t) => t.replace(/\s+/g, " ").trim());
-  }, storyId);
+  }, { storyId });
   const report: DraftReport = { story: storyId, drafted: rows.length, banked: 0, attested: 0, rejected: [] };
   const valid: string[] = [];
   for (const t of rows) {
@@ -167,7 +167,7 @@ export async function draftStory(p: Pipeline, storyId: string, embed: Embedder =
         if (m) { if (!near.some((n) => n.id === m[1])) throw new Error(`same:${m[1]} names a theme not offered`); return m[1]; }
         if (/\bdifferent\b/i.test(out)) return null;
         throw new Error("neither same:<id> nor different");
-      }, storyId);
+      }, { storyId });
       sameAs = value;
     }
     if (sameAs) {

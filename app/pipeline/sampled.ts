@@ -29,7 +29,7 @@ export type SampleAsk<T> = {
 export async function runSamples<T>(p: Pipeline, ask: SampleAsk<T>): Promise<Sample<T>[]> {
   return samples(ask.samples, async (n) => {
     await ask.before?.(n);
-    return p.invoke(ask.draw, ask.parent, ask.stage, ask.prompt, (t) => ask.parse(t, n), null, undefined, ask.context);
+    return p.invoke(ask.draw, ask.parent, ask.stage, ask.prompt, (t) => ask.parse(t, n), { context: ask.context });
   });
 }
 

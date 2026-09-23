@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { quotedTics, restated, slopScreen } from "./slop.ts";
+import { repeatedSpeech, restated, slopScreen } from "./slop.ts";
 
 const pool = "She walked to the recorder's office and asked for the index. The clerk said no. Nothing here is strange, and the ledger holds. The morning was cold.";
 
@@ -44,14 +44,14 @@ describe("slop screen", () => {
   });
 });
 
-describe("tics", () => {
+describe("phrases said again in dialogue", () => {
   test("a phrase said three times inside quotes is a tic; narration and two sayings are not", () => {
     const story = `"Bet you it holds," Caleb said.\n\n"Bet you it holds," he said again at the door.\n\nThe bet you it holds line was his, and he knew it.\n\n"Bet you it holds," he said, one last time.\n\n"Mind the step," said Nell. "Mind the step," she said later.`;
-    const tics = quotedTics(story);
+    const tics = repeatedSpeech(story);
     expect(tics.map((t) => [t.phrase, t.count])).toEqual([["bet you it holds", 3]]);
   });
 
   test("a draft with no repeated quoted phrase has none", () => {
-    expect(quotedTics(`"One thing," she said. "Another thing entirely," he said.`)).toEqual([]);
+    expect(repeatedSpeech(`"One thing," she said. "Another thing entirely," he said.`)).toEqual([]);
   });
 });

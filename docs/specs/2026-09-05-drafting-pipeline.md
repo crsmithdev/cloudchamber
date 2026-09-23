@@ -996,3 +996,20 @@ the fixed-axis check matches the value as a word of its own, since
 `includes` let `nonlinear` pass for `linear`; and `scheduleListen` says the
 chronology is the brief's unless the configuration fixes it.
 
+### Amendment 2026-09-22 (night): the claims a scene makes are screened
+
+`screens.enabled` gains `claims`, which runs only when the draw's setting
+declares an authority. After the scenes are written and screened, the claims
+extraction reads the story (in the system prompt, as the cached context) and
+each claim is verified against the same authority as at gate 1, with the
+chain's verdicts reused. A contradiction is stored as a finding on the beat
+whose scene holds its span, so `rewrite k` answers it.
+
+The checkers read the brief, and a scene invents past it. On one draft under a
+setting that declares `claims: setting`, twelve claims came out of the scenes:
+three supported, seven unverifiable, and two contradicted — a twelfth
+suit-wearer where the setting says twelve became nine, and a chaplain's
+compound given to every soldier. Neither was in the brief, so no check pass
+could have seen them. The pass cost $1.27: $0.23 to extract and $1.04 to
+verify twelve claims on Sonnet.
+

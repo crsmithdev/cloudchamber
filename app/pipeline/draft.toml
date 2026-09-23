@@ -37,7 +37,7 @@ samples = 1
 samples = 1
 
 [screens]
-enabled = ["ledger", "structure", "slop", "listen"]
+enabled = ["ledger", "structure", "slop", "listen", "claims"]   # claims runs only under a setting that declares an authority
 samples = 1              # four calls a scene was most of gate 2; the flags are read, not counted
 keep_if = 1
 slop_baseline = "pool"

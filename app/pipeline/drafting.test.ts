@@ -14,7 +14,8 @@ import { TEMPLATES } from "./prompts.ts";
 import { loadStages } from "./config.ts";
 import { loadDraftConfig } from "./draftconfig.ts";
 import { OUTPUT, VERDICT_LOG } from "./paths.ts";
-import { A, B, LEDGER, SCENE_3_PATCH, SPAN_A, SPAN_B, SPAN_C, cleanSamples, derivationSamples, draftScript, drawn, finding, fixture, ledgerSamples, schedule, screenStructure, vignette, fromAsk } from "./drafting.fixture.ts";
+import { ofKind } from "./artifacts.ts";
+import { A, B, LEDGER, SCENE_3_PATCH, SPAN_A, SPAN_B, SPAN_C, cleanSamples, derivationSamples, draftScript, drawn, finding, fixture, ledgerSamples, schedule, screenStructure, vignette, fromAsk, claimsExtract, claimVerify } from "./drafting.fixture.ts";
 import { briefParts, partsIn, partsOf } from "./briefparts.ts";
 import { chainOf } from "./chain.ts";
 import { renderStory } from "./drafts.ts";
@@ -1497,5 +1498,41 @@ describe("the outline a check reads", () => {
     const prompt = p.steps(next.id).find((s) => s.stage === "check-derivation")!.system_prompt;
     expect(prompt).toContain(carried);
     expect(prompt).toContain("where an amendment and a line above disagree, the amendment holds and the line above is void:\n- Only the assembler can fire the reliquary.");
+  });
+});
+
+describe("the claims screen", () => {
+  // a scene invents past the brief: the checkers never see what beat 3 says about the setting
+  const sceneClaims = () => `<claim><span>s3w7 s3w8</span><statement>The basin holds nine wells.</statement></claim>`;
+  const sceneVerify = () => `<finding><span>s3w7 s3w8</span><statement>The basin holds nine wells.</statement><result>contradicted</result><evidence>Places: "the basin holds three wells"</evidence><invalidates>none</invalidates><replacement>The basin holds three wells.</replacement><patch>none</patch></finding>`;
+
+  test("a contradiction a scene makes about the setting is a flag on the beat that says it", async () => {
+    const { dir } = fixture();
+    const sdir = settingsFixture(dir);
+    let extracts = 0;
+    const script = draftScript({
+      // the scenes ride in the system prompt, where the cache reads them; the brief's pass sends the brief there instead
+      "check-claims-extract": (_p: string, _m: string, system: string) => { extracts++; return system.includes("s3w7") ? sceneClaims() : claimsExtract(); },   // the scenes; beat 3 is patched, so its opening words are not a marker
+      "check-claims-verify": (p: string) => (p.includes("nine wells") ? sceneVerify() : claimVerify(p)),
+    });
+    const { p, d, draw } = await drawn(script, { id: "basin", dir: sdir, claims: "setting" });
+    await d.check(draw.id);
+    await d.draft(draw.id);
+    const flags = ofKind(p.artifacts(draw.id), "finding").filter((a) => a.meta.screen === "claims");
+    expect(flags).toHaveLength(1);
+    expect(flags[0].meta).toMatchObject({ beat: 3, invalidates: "3", source: "screen", screen: "claims", span: "s3w7 s3w8" });
+    // the extract ran once at the gate and once over the scenes
+    expect(extracts).toBe(2);
+    const steps = p.steps(draw.id).filter((s) => s.stage === "check-claims-extract");
+    expect(steps).toHaveLength(2);
+    expect(steps[1].prompt).not.toContain("<vignette");      // the scenes, not the brief
+    expect(steps[1].system_prompt).toContain("s3w7");
+  });
+
+  test("a draw with no setting runs no claims screen", async () => {
+    const { p, d, draw } = await drawn(draftScript({}));
+    await d.check(draw.id);
+    await d.draft(draw.id);
+    expect(p.steps(draw.id).filter((s) => s.stage === "check-claims-extract")).toHaveLength(0);
   });
 });
