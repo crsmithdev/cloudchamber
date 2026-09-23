@@ -21,3 +21,23 @@ setting names land in a public file.
 The specs in `docs/specs/` are the design of record for the ideation and
 drafting pipelines. `CONTEXT.md` is the glossary of the domain's terms, and
 `docs/adr/` records the decisions that are hard to reverse.
+
+## Prompt accretion
+
+A measured failure invites one more clause in the prompt. Be highly suspicious
+of that move. One more clause is sometimes right, but frequent use is a code
+smell.
+
+The pipeline can state one constraint at four moments: the schedule plans it and
+the register shapes it, both in `app/pipeline/prompts.ts`; the screen question
+detects it and the rewrite line repairs it, both in `app/pipeline/write.ts`.
+Before you add a clause, find which of the four already states the property.
+Keep the constraint at the layer that enforces it, and let the other layers
+point at that layer.
+
+Add a clause only when no layer states the property. Name the layer you chose in
+the commit.
+
+Remove clauses with the protocol you add them with: three drafts a side, matched
+pairs, both orders, and a within-arm floor. A clause the panel does not miss was
+never doing work.
