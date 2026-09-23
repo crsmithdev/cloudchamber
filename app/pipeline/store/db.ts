@@ -13,6 +13,8 @@ export function openDb(path: string = DEFAULT_DB): Db {
   const db = new Database(path);
   db.exec("PRAGMA journal_mode=WAL");
   db.exec("PRAGMA foreign_keys=ON");
+  // a second process on one store (the service and a CLI run) waits for the writer instead of failing at once with "database is locked"
+  db.exec("PRAGMA busy_timeout=5000");
   // the store is over 100 MB on a slow mount; the default 2 MB cache re-reads pages on every scan
   db.exec("PRAGMA cache_size=-131072");
   const fresh = !hasTable(db, "verdicts");

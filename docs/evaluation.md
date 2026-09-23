@@ -111,3 +111,11 @@ run. Link the brief and the draft directories.
 
 Keep the failures. A `cap` run with a bad story is the most useful row in the
 table.
+
+## Pooling a panel
+
+`evals/tally.py <judge json>... [--floor <within-arm json>...]` pools the runs
+of a panel. Each judge is weighted by how little it takes the story it read
+first, which on 22 September was three passes in four; a judge that always
+takes the first read counts for nothing. `--floor` takes the runs of two drafts
+by one code, which is the floor the comparison has to clear.

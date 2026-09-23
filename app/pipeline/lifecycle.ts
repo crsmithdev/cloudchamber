@@ -17,10 +17,12 @@
 import type { Db } from "./store/db.ts";
 import type { DrawRow } from "./draw.ts";
 import { now } from "./paths.ts";
+import { stageTab, type Tab } from "./config.ts";
 
 export const STATUSES = ["running", "awaiting_gate", "done", "checking", "awaiting_check_gate", "repairing", "repaired", "drafting", "awaiting_draft_gate", "drafted", "failed"] as const;
 export type Status = (typeof STATUSES)[number];
-export type Tab = "ideate" | "check" | "write";
+// the tab a stage belongs in is a fact about the stage: config.ts holds the table, and this re-export keeps one import for the page
+export { stageTab, type Tab };
 
 export const ACTIONS = ["choose", "fork", "flag", "archive", "unarchive", "delete", "check", "auto", "accept", "dismiss", "hold", "draft", "rewrite", "keep"] as const;
 export type Action = (typeof ACTIONS)[number];
@@ -69,26 +71,6 @@ export function tabOf(draw: Pick<DrawRow, "status" | "chosen_step" | "repaired_f
   return "ideate";
 }
 
-/**
- * The tab a step belongs in: generation is ideate, checking and repair are
- * check, and scheduling, scenes and screens are write. The page filters its
- * step list by this rather than holding the stage names itself.
- */
-/**
- * The tab each stage's steps belong in. `null` is a stage that runs on no draw
- * — the corpus and setting stages — so no draw's step list holds one. The page
- * filters its steps by this rather than keeping the stage names itself; a new
- * stage has to be placed here, which is the point of writing them all out.
- */
-const STAGE_TAB: Readonly<Record<string, Tab | null>> = {
-  themes: null, redundancy: null, "distill-map": null, distill: null,
-  premises: "ideate", execute: "ideate", outline: "ideate", jobs: "ideate", context: "ideate", ending: "ideate",
-  "ledger-extract": "check", "check-derivation": "check", "check-ledger": "check", "check-verify": "check",
-  "check-structure": "check", "check-resemblance": "check", "check-claims-extract": "check", "check-claims-verify": "check",
-  reconcile: "check", "repair-vignette": "check", "repair-context": "check", "repair-outline": "check", "repair-ending": "check",
-  schedule: "write", scene: "write", "screen-ledger": "write", "screen-structure": "write", "screen-slop": "write", "screen-restated": "write", "screen-listen": "write",
-};
-export const stageTab = (stage: string): Tab | null => STAGE_TAB[stage] ?? null;
 
 /** The tab where a draw at this status waits for a person: at a gate, or a brief nobody has checked. */
 export function waitsIn(status: string): Tab | null {

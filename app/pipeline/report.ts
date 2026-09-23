@@ -24,14 +24,24 @@ import { pipelineVersion } from "./version.ts";
 import type { AutoResult } from "./drafting.ts";
 import type { ListenProfile } from "./listen.ts";
 
-/** Write the report for a drafted draw; the PDF only when a browser is found and CLOUDCHAMBER_PDF is not "0". */
-export async function writeReport(p: Pipeline, drawId: string, base: string = OUTPUT): Promise<{ html: string; pdf: string | null }> {
+/**
+ * What turns the report's HTML into a PDF. Two of them: a headless browser,
+ * and one that prints nothing, which the tests and `CLOUDCHAMBER_PDF=0` use —
+ * the print takes seconds and needs a browser installed.
+ */
+export type PdfPrinter = (html: string, pdf: string) => Promise<boolean>;
+export const noPdf: PdfPrinter = async () => false;
+/** The printer a run uses unless it is given one: no PDF under `CLOUDCHAMBER_PDF=0`. */
+export const defaultPrinter = (): PdfPrinter => (process.env.CLOUDCHAMBER_PDF === "0" ? noPdf : printPdf);
+
+/** Write the report for a drafted draw; the PDF only when the printer produces one. */
+export async function writeReport(p: Pipeline, drawId: string, base: string = OUTPUT, print: PdfPrinter = defaultPrinter()): Promise<{ html: string; pdf: string | null }> {
   const dir = join(base, drawId);
   mkdirSync(dir, { recursive: true });
   const html = join(dir, "report.html");
   writeFileSync(html, renderReport(p, drawId));
   const pdf = join(dir, "report.pdf");
-  return { html, pdf: process.env.CLOUDCHAMBER_PDF !== "0" && (await printPdf(html, pdf)) ? pdf : null };
+  return { html, pdf: (await print(html, pdf)) ? pdf : null };
 }
 
 const BROWSERS = ["google-chrome", "google-chrome-stable", "chromium", "chromium-browser"];
@@ -42,7 +52,7 @@ const PRINT_TIMEOUT_MS = 60_000;
  * or the print failed. Spawned, not run in line: the server drafts in its own
  * process and must keep answering while the page prints.
  */
-async function printPdf(html: string, pdf: string): Promise<boolean> {
+export const printPdf: PdfPrinter = async (html, pdf) => {
   const bin = BROWSERS.map((b) => Bun.which(b)).find(Boolean);
   if (!bin) return false;
   const proc = Bun.spawn([bin, "--headless=new", "--disable-gpu", "--no-pdf-header-footer", `--print-to-pdf=${pdf}`, `file://${html}`], { stdout: "ignore", stderr: "ignore" });
@@ -51,7 +61,7 @@ async function printPdf(html: string, pdf: string): Promise<boolean> {
   const code = await proc.exited;
   clearTimeout(timer);
   return code === 0 && Bun.file(pdf).size > 0;
-}
+};
 
 // --- reading the chain -------------------------------------------------------
 

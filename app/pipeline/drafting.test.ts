@@ -14,7 +14,7 @@ import { TEMPLATES } from "./prompts.ts";
 import { loadStages } from "./config.ts";
 import { loadDraftConfig } from "./draftconfig.ts";
 import { OUTPUT, VERDICT_LOG } from "./paths.ts";
-import { A, B, LEDGER, SCENE_3_PATCH, SPAN_A, SPAN_B, SPAN_C, cleanSamples, derivationSamples, draftScript, drawn, finding, fixture, ledgerSamples, schedule, screenStructure, vignette } from "./drafting.fixture.ts";
+import { A, B, LEDGER, SCENE_3_PATCH, SPAN_A, SPAN_B, SPAN_C, cleanSamples, derivationSamples, draftScript, drawn, finding, fixture, ledgerSamples, schedule, screenStructure, vignette, fromAsk } from "./drafting.fixture.ts";
 import { briefParts, partsIn, partsOf } from "./briefparts.ts";
 import { chainOf } from "./chain.ts";
 import { renderStory } from "./drafts.ts";
@@ -22,7 +22,7 @@ import { renderStory } from "./drafts.ts";
 /** The default floor is 7; B, an particulars finding at two of three samples, sits at 6, so a test that needs two fixes at once lowers it. */
 const floor6 = () => ({ ...loadDraftConfig().config, repair: { ...loadDraftConfig().config.repair, stop_score: 6 } });
 /** A chosen vignette that carries the given spans, so a finding quoting one is in the prose a reader sees. */
-const withWords = (words: string[]) => (p: string) => vignette(Number(/Premise (\d)/.exec(p)?.[1] ?? 0)).replace("</vignette>", ` ${words.join(". ")}.</vignette>`);
+const withWords = (words: string[]) => (p: string) => vignette(Number(fromAsk(p, /Premise (\d)/, "the premise number"))).replace("</vignette>", ` ${words.join(". ")}.</vignette>`);
 const stagesOf = (model: FakeModel, re: RegExp) => model.calls.filter((c) => re.test(c.stage)).map((c) => c.stage);
 
 describe("check and gate 1", () => {
@@ -148,7 +148,7 @@ describe("check and gate 1", () => {
   test("a finding whose span is inside the chosen vignette rewrites the vignette and copies the ending", async () => {
     const span = "the twelfth relic, the Verona clavicle";
     const script = draftScript({
-      execute: (p: string) => vignette(Number(/Premise (\d)/.exec(p)?.[1] ?? 0), `Here lies ${span} on the silk.`),
+      execute: (p: string) => vignette(Number(fromAsk(p, /Premise (\d)/, "the premise number")), `Here lies ${span} on the silk.`),
       "check-ledger": [...ledgerSamples(B(span), B(span)), ...cleanSamples()],
       "check-derivation": [...cleanSamples(), ...cleanSamples()],
     });
@@ -667,7 +667,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     const signalForm = "tense: past\nperson: third\nchronology: linear\ncontainer: prose";
     // every scene is written as one sentence, so every beat is over the default long-sentence ceiling
     const oneSentence = (prompt: string) => {
-      const n = Number(/Write beat (\d+) of the story/.exec(prompt)?.[1] ?? 0);
+      const n = Number(fromAsk(prompt, /Write beat (\d+) of the story/, "the beat number"));
       const rewrite = /<constraints>/.test(prompt) ? " REWRITTEN" : "";
       return `<scene>Scene ${n} opens.${rewrite} ${Array.from({ length: 297 }, (_, i) => `s${n}w${i}`).join(" ")}</scene>`;
     };
@@ -689,7 +689,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     // on the paying beat the screen finds the thing present but not acting; a rewrite fixes it, and the screen then passes it
     const seen = new Set<string>();
     const glass = (prompt: string) => {
-      const n = Number(/<scene n="(\d+)">/.exec(prompt)?.[1] ?? 0);
+      const n = Number(fromAsk(prompt, /<scene n="(\d+)">/, "the scene number"));
       const out = screenStructure(prompt);
       if (n !== 5 || seen.has("5")) return out;
       seen.add("5");
@@ -714,7 +714,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     const signalForm = "tense: past\nperson: third\nchronology: linear\ncontainer: prose";
     const seen = new Set<string>();
     const answer = (prompt: string) => {
-      const n = Number(/<scene n="(\d+)">/.exec(prompt)?.[1] ?? 0);
+      const n = Number(fromAsk(prompt, /<scene n="(\d+)">/, "the scene number"));
       let out = screenStructure(prompt);
       if (seen.has(String(n))) return out;
       seen.add(String(n));
@@ -761,7 +761,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     const signalForm = "tense: past\nperson: third\nchronology: linear\ncontainer: prose";
     // beat 3 carries 30 figures in 300 words; every other beat carries the one in "Scene N opens."
     const heavy = (prompt: string) => {
-      const n = Number(/Write beat (\d+) of the story/.exec(prompt)?.[1] ?? 0);
+      const n = Number(fromAsk(prompt, /Write beat (\d+) of the story/, "the beat number"));
       const rewrite = /<constraints>/.test(prompt) ? " REWRITTEN" : "";
       const figures = n === 3 ? Array.from({ length: 30 }, (_, i) => `${1000 + i}`) : [];
       const filler = Array.from({ length: 297 - figures.length }, (_, i) => `s${n}w${i}`);
@@ -798,7 +798,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     // every beat is short sentences; beat 3 carries 30 figures, and its numeral rewrite comes back as one long sentence
     const shortLines = (n: number, k: number) => Array.from({ length: k }, (_, i) => `s${n} w${i} a b c d e f g.`).join(" ");
     const scene = (prompt: string) => {
-      const n = Number(/Write beat (\d+) of the story/.exec(prompt)?.[1] ?? 0);
+      const n = Number(fromAsk(prompt, /Write beat (\d+) of the story/, "the beat number"));
       const rewrite = /<constraints>/.test(prompt);
       if (n === 3 && rewrite && /cannot hold a figure/.test(prompt) && !/thirty words/.test(prompt)) return `<scene>Scene 3 opens. REWRITTEN ${Array.from({ length: 300 }, (_, i) => `s3w${i}`).join(" ")}</scene>`;
       const figures = n === 3 && !rewrite ? Array.from({ length: 30 }, (_, i) => `${1000 + i}.`).join(" ") + " " : "";
@@ -1455,7 +1455,7 @@ describe("a patch that renames one mention", () => {
   const rename = (patch: string) => finding("Clearwater held the contract.", "the contractor is named twice", "none", "Brightwell held the contract, and its cart came at nine.", "the fire was on the 3rd", undefined, patch);
   const run = async (text: string) => {
     const script = draftScript({
-      execute: (p: string) => vignette(Number(/Premise (\d)/.exec(p)?.[1] ?? 0)).replace("</vignette>", ` ${text}</vignette>`),
+      execute: (p: string) => vignette(Number(fromAsk(p, /Premise (\d)/, "the premise number"))).replace("</vignette>", ` ${text}</vignette>`),
       "check-ledger": [...[1, 2, 3].map(() => `<ledger>${LEDGER}</ledger>${rename("Brightwell held the contract.")}<examined>x</examined>`), ...cleanSamples()],
       "check-derivation": [...cleanSamples(), ...cleanSamples()],
     });

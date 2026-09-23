@@ -22,6 +22,7 @@ import { samplesFor, type DraftConfig } from "./draftconfig.ts";
 import { cluster, excludeDismissed, findingId, merge, normalise, parseFindings, quoted, same, type Cluster, type Finding } from "./recur.ts";
 import { briefBlock, briefParts, passId, prose, type BriefParts } from "./briefparts.ts";
 import { chainOf, type Chain } from "./chain.ts";
+import { clusterSamples, runSamples } from "./sampled.ts";
 import type { LedgerMeta } from "./artifacts.ts";
 import { RUN } from "./config.ts";
 
@@ -206,14 +207,13 @@ export function parseVerdicts(text: string, n: number): { answer: "keep" | "drop
 /** S concurrent samples of one checker; the parsed value goes on each step, the findings are clustered. */
 async function sampled(p: Pipeline, drawId: string, parts: BriefParts, order: { lead: Promise<void>; leads: string }, stage: any, prompt: string, s: { samples: number; keep_if: number }, checker: string,
   parse: (text: string) => any, store?: (step: StepRow, value: any, sample: number) => void): Promise<{ checker: string; clusters: Cluster[]; firstStep: StepRow; samples: number }> {
-  const results = await samples(s.samples, (n) => (stage === order.leads && n === 1 ? Promise.resolve() : order.lead)
-    .then(() => p.invoke(drawId, parts.outlineStepId, stage, prompt, parse, null, undefined, briefBlock(parts))));
-  const findings: Finding[] = [];
-  for (const r of results) {
-    store?.(r.step, r.value, r.sample);
-    for (const f of (r.value.findings ?? []) as Finding[]) findings.push({ ...f, sample: r.sample });
-  }
-  return { checker, clusters: cluster(findings, s.keep_if, drawId), firstStep: results[0].step, samples: results.length };
+  const results = await runSamples(p, {
+    draw: drawId, parent: parts.outlineStepId, stage, prompt, parse, samples: s.samples, context: briefBlock(parts),
+    // one call fills the cache and the rest read it: the lead is awaited by every sample but the lead's own
+    before: (n) => (stage === order.leads && n === 1 ? Promise.resolve() : order.lead),
+  });
+  for (const r of results) store?.(r.step, r.value, r.sample);
+  return { checker, clusters: clusterSamples(results, (v) => (v.findings ?? []) as Finding[], s.keep_if, drawId), firstStep: results[0].step, samples: results.length };
 }
 
 const RESULTS = new Set(["supported", "contradicted", "unverifiable"]);

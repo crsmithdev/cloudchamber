@@ -16,6 +16,7 @@ import type { DrawRow, Pipeline, StepRow } from "./draw.ts";
 import { latestAll, type Latest } from "./verdicts.ts";
 import { cluster, excludeDismissed, merge, normalise, same, score, type Cluster, type Finding, type ScoreContext } from "./recur.ts";
 import { briefParts, prose } from "./briefparts.ts";
+import { checkerOf } from "./config.ts";
 import { Lineage } from "./lineage.ts";
 import { latestOf, ofKind, type Artifact, type FindingMeta } from "./artifacts.ts";
 import type { Profile, Scene, Schedule } from "./write.ts";
@@ -168,9 +169,9 @@ export class Chain {
       // a pass stored before the counts were recorded: the steps averaged over every pass
       const passes = Math.max(1, this.passes().length);
       const out: Record<string, number> = { claims: 1 };
-      for (const s of this.steps().filter((s) => s.status === "done" && /^check-/.test(s.stage))) {
-        const checker = s.stage.replace(/^check-/, "");
-        if (checker.startsWith("claims") || checker === "verify") continue;
+      for (const s of this.steps().filter((x) => x.status === "done")) {
+        const checker = checkerOf(s.stage);
+        if (!checker || checker === "claims") continue;
         out[checker] = (out[checker] ?? 0) + 1;
       }
       for (const k of Object.keys(out)) if (k !== "claims") out[k] = Math.max(1, Math.round(out[k] / passes));
@@ -348,10 +349,10 @@ export class Chain {
       const per = this.samples();
       const reported = this.reported();
       const perChecker: Cluster[] = [];
-      const stages = [...new Set(this.steps().filter((s) => /^check-/.test(s.stage)).map((s) => s.stage))];
+      const stages = [...new Set(this.steps().filter((s) => checkerOf(s.stage)).map((s) => s.stage))];
       for (const stage of stages) {
-        const checker = stage.replace(/^check-/, "");
-        if (checker.startsWith("claims") || !per[checker]) continue;
+        const checker = checkerOf(stage)!;
+        if (checker === "claims" || !per[checker]) continue;
         // the latest pass ran the last `samples` steps of this stage
         const steps = this.steps().filter((s) => s.stage === stage && s.status === "done" && s.parsed).slice(-per[checker]);
         const findings: Finding[] = [];

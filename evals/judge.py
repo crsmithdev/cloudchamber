@@ -161,7 +161,10 @@ def main():
             if complete(r):
                 break
             print(f"  pass {i+1} attempt {attempt+1} incomplete ({len(r['axes'])}/{len(RUBRIC)} axes); retrying", flush=True)
-        r["flipped"] = flipped; r["complete"] = complete(r); results.append(r)
+        r["flipped"] = flipped; r["complete"] = complete(r)
+        # whether this pass simply took the story it read first: most judges do, and a run that always does carries no weight
+        r["followed_order"] = r["overall"] == ("source" if flipped else "ours")
+        results.append(r)
         print(f"[{args.model}] pass {i+1} ({'source first' if flipped else 'ours first'}): overall {r['overall']}  " + " ".join(f"{k}={v}" for k, v in r["axes"].items()), flush=True)
     scored = [r for r in results if r["complete"]]
     wins = sum(1 for r in scored if r["overall"] in ("ours", "tie"))
@@ -169,6 +172,10 @@ def main():
     dropped = len(results) - len(scored)
     print(f"\nparity: {'yes' if ok else 'no'} ({wins}/{len(scored)} passes won or tied"
           + (f", {dropped} dropped as incomplete" if dropped else "") + ")")
+    followed = sum(1 for r in scored if r["followed_order"])
+    if scored:
+        print(f"reading order: taken in {followed} of {len(scored)} passes"
+              + ("  (this run says nothing but the order)" if followed == len(scored) else ""))
     # the absolute scores, averaged per axis: what a pairwise call cannot show when both sit at the ceiling
     rows = [(k, [r["scores"][k] for r in scored if k in r.get("scores", {})]) for k, _ in RUBRIC]
     if any(v for _, v in rows):

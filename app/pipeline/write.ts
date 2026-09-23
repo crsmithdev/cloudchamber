@@ -18,6 +18,7 @@ import { listenScreen, loadNarrationPool } from "./listen.ts";
 import { parseQuestions, type Answer } from "./check.ts";
 import type { BriefParts } from "./briefparts.ts";
 import type { SceneMeta } from "./artifacts.ts";
+import { clusterSamples, runSamples, voteAnswers } from "./sampled.ts";
 import { applyPatches } from "./repair.ts";
 import { record } from "./verdicts.ts";
 import { chainOf } from "./chain.ts";
@@ -226,12 +227,12 @@ export async function bindScene(p: Pipeline, drawId: string, ledger: string, sce
   const k = scene.beat;
   const { samples: n, keep_if } = samplesFor(cfg.screens, "ledger");
   const prompt = fill("screenLedger", { ledger, previous: prev ? `<previous-scene>\n${prev.text}\n</previous-scene>\n\n` : "", n: String(k), scene: scene.text });
-  const rs = await samples(n, (sample) => p.invoke(drawId, scene.step_id, "screen-ledger", prompt, (t) => {
+  const rs = await runSamples(p, {
+    draw: drawId, parent: scene.step_id, stage: "screen-ledger", prompt, samples: n,
     // the examined account is for the reader, not a condition of the answer: Sonnet 5 opens the tag and never closes it (run 9)
-    return { findings: parseFindings(t, "ledger", sample), examined: tag(t, "examined") ?? "" };
-  }));
-  const all: Finding[] = rs.flatMap((r) => r.value.findings.map((f: Finding) => ({ ...f, sample: r.sample })));
-  const flags = cluster(all, keep_if, `${drawId}/${k}`).filter((c) => c.reported);
+    parse: (t, sample) => ({ findings: parseFindings(t, "ledger", sample), examined: tag(t, "examined") ?? "" }),
+  });
+  const flags = clusterSamples(rs, (v) => v.findings, keep_if, `${drawId}/${k}`).filter((c) => c.reported);
   for (const c of flags) {
     const { reported: _r, ...meta } = c;
     p.artifact(rs[0].step, "finding", c.statement, { ...meta, invalidates: String(k), pass, source: "screen", screen: "ledger", beat: k });
@@ -290,14 +291,8 @@ export async function runScreens(p: Pipeline, drawId: string, s: Schedule, scene
     const prev = s.beats[k - 2];
     const names = structureQuestions(k === M, k === paidBeat, k === 1, movedIn(b, prev));
     const prompt = structurePrompt(b, scene.text, k === M, M, k === paidBeat, k === 1, prev);
-    const rs = await samples(n, () => p.invoke(drawId, scene.step_id, "screen-structure", prompt, (t) => parseQuestions(t, names)));
-    // an answer is present when it recurs in keep_if samples; the quote is the first sample's
-    const answers: Record<string, Answer> = {};
-    for (const q of names) {
-      const present = rs.filter((r) => r.value[q].answer === "present");
-      const pick = present.length >= keep_if ? present[0] : rs.find((r) => r.value[q].answer === "absent") ?? rs[0];
-      answers[q] = { answer: present.length >= keep_if ? "present" : "absent", quote: pick.value[q].quote };
-    }
+    const rs = await runSamples(p, { draw: drawId, parent: scene.step_id, stage: "screen-structure", prompt, samples: n, parse: (t) => parseQuestions(t, names) });
+    const answers = voteAnswers(rs, names, keep_if);
     const flags = flagsOf(answers, k === M);
     p.artifact(rs[0].step, "profile", JSON.stringify(answers), { pass, source: "screen", screen: "structure", beat: k, answers, flags, samples: n });
   }));

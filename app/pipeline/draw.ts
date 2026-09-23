@@ -22,6 +22,7 @@ import type { Db } from "./store/db.ts";
 import { writeBrief } from "./brief.ts";
 import { act, must } from "./lifecycle.ts";
 import { Lineage } from "./lineage.ts";
+import { lengthWarnings } from "./briefparts.ts";
 import { ofKind, readArtifacts, writeArtifact, type Artifact, type Kind, type MetaByKind } from "./artifacts.ts";
 import { chainOf } from "./chain.ts";
 
@@ -313,7 +314,7 @@ export class Pipeline {
     });
     // Number the premises from the tail: #1 is the lowest stated probability. Ties keep the model's order.
     premises.sort((a, b) => a.probability - b.probability);
-    premises.forEach((p, i) => this.artifact(step, "premise", p.text, { index: i + 1, probability: p.probability, warnings: words(p.text) > 120 ? ["length"] : [] }));
+    premises.forEach((p, i) => this.artifact(step, "premise", p.text, { index: i + 1, probability: p.probability, warnings: words(p.text) > RUN.premiseWarnWords ? ["length"] : [] }));
     const numbered = premises.map((p, i) => ({ ...p, index: i + 1 }));
     await this.executeAll(drawId, step.id, auto ? [this.lowest(numbered)] : numbered, head, seed, dark, setting);
   }
@@ -330,7 +331,7 @@ export class Pipeline {
       const ask = fill("executeAsk", { seed, premise: p.text, darkness: dark });
       return this.invoke(drawId, premisesStep, "execute", compose(head, ask, this.settingFor("execute", setting)), (text) => need(text, "vignette")).then((r) => this.artifact(r.step, "vignette", r.value, {
         index: p.index, probability: p.probability, premise: p.text,
-        warnings: words(r.value) < 300 || words(r.value) > 500 ? ["length"] : [],
+        warnings: lengthWarnings("vignette", r.value),
       }));
     }));
   }
@@ -528,8 +529,8 @@ export class Pipeline {
     const jobs = outline.jobs;
     jobs.forEach((j, i) => this.artifact(outlineStep, "job", j, { index: i + 1 }));
     await Promise.all([
-      ...jobs.map((job, i) => this.invoke(drawId, outlineStep.id, "context", after("context", fill("context", { job })), (text) => need(text, "vignette")).then((r) => this.artifact(r.step, "vignette", r.value, { index: i + 1, job, warnings: words(r.value) > 500 ? ["length"] : [] }))),
-      this.invoke(drawId, outlineStep.id, "ending", after("ending", fill("ending", { darkness: darknessLine((draw.darkness ?? undefined) as Darkness | undefined) })), (text) => need(text, "ending")).then((r) => this.artifact(r.step, "ending", r.value, { warnings: words(r.value) > 650 ? ["length"] : [] })),
+      ...jobs.map((job, i) => this.invoke(drawId, outlineStep.id, "context", after("context", fill("context", { job })), (text) => need(text, "vignette")).then((r) => this.artifact(r.step, "vignette", r.value, { index: i + 1, job, warnings: lengthWarnings("context", r.value) }))),
+      this.invoke(drawId, outlineStep.id, "ending", after("ending", fill("ending", { darkness: darknessLine((draw.darkness ?? undefined) as Darkness | undefined) })), (text) => need(text, "ending")).then((r) => this.artifact(r.step, "ending", r.value, { warnings: lengthWarnings("ending", r.value) })),
     ]);
     const dir = writeBrief(this.db, drawId, this.briefsDir);
     this.artifact(outlineStep, "brief", dir, {});

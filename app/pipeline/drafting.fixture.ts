@@ -11,7 +11,7 @@ import { FakeModel, tag } from "./model.ts";
 import { openDb } from "./store/db.ts";
 import { Pipeline } from "./draw.ts";
 import { Drafting } from "./drafting.ts";
-import { loadDraftConfig } from "./draftconfig.ts";
+import { noPdf } from "./report.ts";
 
 export const SPAN_A = "The director fires the reliquary";
 export const SPAN_B = "the twelfth relic, the Verona clavicle";
@@ -41,9 +41,19 @@ export const STRUCTURE_Q = ["threat", "category-violation", "agency", "obscurity
 export const structure = (present = ["threat", "agency", "consequence"]) => STRUCTURE_Q.map((q) => `<question name="${q}"><answer>${present.includes(q) ? "present" : "absent"}</answer><quote>a quote for ${q}</quote></question>`).join("");
 export const resemblance = () => `<match><entry>3. The madman, the crank or the conspiracy theorist turns out to have been right.</entry><span>the director was right all along</span></match><nearest><title>The Monkey's Paw</title><author>W. W. Jacobs</author><shared>a wish that is paid for in the currency it names</shared></nearest>`;
 
+/**
+ * A fake reply keys off the ask's own words, so a template edit must fail here
+ * rather than quietly feed the test a beat 0 or an empty statement.
+ */
+export function fromAsk(prompt: string, re: RegExp, what: string): string {
+  const m = re.exec(prompt);
+  if (!m) throw new Error(`the fixture cannot read ${what} from this prompt: the template's wording changed. Looked for ${re}`);
+  return m[1];
+}
+
 export const claimsExtract = () => `<claim><span>four hundred kilometres from Naples</span><statement>Naples to Van is about 400 km.</statement></claim><claim><span>€40 a kilo</span><statement>Bronte pistachios cost about €40 per kilo.</statement></claim>`;
 export const claimVerify = (prompt: string) => {
-  const stmt = /As a checkable sentence: (.*)/.exec(prompt)?.[1] ?? "";
+  const stmt = fromAsk(prompt, /As a checkable sentence: (.*)/, "the claim");
   return stmt.includes("400 km")
     ? finding("four hundred kilometres from Naples", stmt, "none", "Naples to Van is about 2,000 km.", "https://example.org/distance · \"2,032 km by road\"", "contradicted")
     : finding("€40 a kilo", stmt, "none", "none", "https://example.org/pistachio · \"€45–60 per kilo\"", "supported");
@@ -64,7 +74,7 @@ export function schedule(opts: { beats?: number; cap?: number; form?: string; ab
 }
 
 export const sceneFor = (prompt: string, over: Record<number, number> = { 2: 700 }) => {
-  const n = Number(/Write beat (\d+) of the story/.exec(prompt)?.[1] ?? 0);
+  const n = Number(fromAsk(prompt, /Write beat (\d+) of the story/, "the beat number"));
   const words = over[n] ?? 300;
   const rewrite = /<constraints>/.test(prompt) ? " REWRITTEN" : "";
   // the filler is written in sentences: one 300-word sentence would trip the listen screen's long-sentence ceiling
@@ -75,7 +85,7 @@ export const SCENE_3_PATCH = "Scene 3 opens on the 3rd";
 
 /** Beat 3 carries a patchable flag; beat 4 one the fix is too big for, so `patch` must skip it. */
 export const screenLedger = (prompt: string) => {
-  const n = Number(/<scene n="(\d+)">/.exec(prompt)?.[1] ?? 0);
+  const n = Number(fromAsk(prompt, /<scene n="(\d+)">/, "the scene number"));
   const f = n === 3 ? finding("Scene 3 opens", "the date is off by two months", "3", "The fire was on the 3rd.", "time: the fire was on the 3rd", undefined, SCENE_3_PATCH)
     : n === 4 ? finding("Scene 4 opens", "the count is wrong throughout", "4", "1,106 died.", "detail: 1,106 dead")
     : "";
@@ -83,7 +93,7 @@ export const screenLedger = (prompt: string) => {
 };
 
 export const screenStructure = (prompt: string) => {
-  const n = Number(/<scene n="(\d+)">/.exec(prompt)?.[1] ?? 0);
+  const n = Number(fromAsk(prompt, /<scene n="(\d+)">/, "the scene number"));
   const last = /resolves-everything:/.test(prompt), paid = /presence-arrives:/.test(prompt);
   const names = ["theme-stated", "bodily-emotion", "withheld-revealed", "protagonist-never-wrong", "one-voice", "nothing-happens", last ? "resolves-everything" : "resolved", ...(/hook-late:/.test(prompt) ? ["hook-late"] : []), ...(paid ? ["presence-arrives", "cost-paid", "presence-in-room", "cost-in-scene"] : [])];
   // beat 5 states the theme; beat 2 names no body; the paying beat pays what a listener needs paid, on the page
@@ -99,7 +109,7 @@ export function draftScript(over: Record<string, any> = {}) {
   return {
     premises: () => [0.05, 0.03, 0.08, 0.03, 0.06].map((p, i) => `<premise><text>Premise ${i + 1} text.</text><probability>${p}</probability></premise>`).join("\n"),
     // the chosen vignette carries B and C, so every fixture span is in the prose a reader sees
-    execute: (p: string) => vignette(Number(/Premise (\d)/.exec(p)?.[1] ?? 0)).replace("</vignette>", ` ${SPAN_B}, ${SPAN_C}.</vignette>`),
+    execute: (p: string) => vignette(Number(fromAsk(p, /Premise (\d)/, "the premise number"))).replace("</vignette>", ` ${SPAN_B}, ${SPAN_C}.</vignette>`),
     outline: () => ["departure", "particulars", "knowledge", "arrival"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n")
       + "\n<job>Test the first thing: scene one.</job>\n<job>Test a second thing: scene two.</job>",
     context: (p: string) => `<vignette>context for ${/Its job: (.*)/.exec(p)?.[1]}</vignette>`,
@@ -151,10 +161,11 @@ export async function drawn(script = draftScript(), setting?: { id: string; dir:
     writeFileSync(path, setting.claims ? text.replace("claims: setting", `claims: ${setting.claims}`) : text.replace("claims: setting\n", ""));
   }
   const draw = await p.start({ mode: "auto", genre: "horror", setting: setting?.id, seed: { mode: "typed", text: "a typed seed" } });
-  const d = new Drafting(p, { draftsDir: join(dir, "drafts") });
+  const d = new Drafting(p, {
+    printPdf: noPdf,   // a fixture never spawns a browser
+    draftsDir: join(dir, "drafts") });
   // the fixtures script three samples per checker and three per screen; pin that here so a
   // change to the defaults in draft.toml does not rewrite every assertion in this file
-  const cfg = loadDraftConfig(undefined, { "checks.samples": 3, "screens.samples": 3, "screens.keep_if": 2 });
-  db.query("UPDATE draws SET draft_config = ? WHERE id = ?").run(JSON.stringify(cfg), draw.id);
+  d.configure(draw.id, { overrides: { "checks.samples": 3, "screens.samples": 3, "screens.keep_if": 2 } });
   return { db, dir, model, p, d, draw };
 }
