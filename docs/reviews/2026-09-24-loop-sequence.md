@@ -156,10 +156,13 @@ building them.
 
 The rule itself survives a cheap loop, and one half of it starts working for the
 first time. Its two halves are add and remove. The add half rests on a measured
-local optimum: on 23 September the two presence clauses took register rewrites
-from 10 to 25 and drafting cost up 50%, the register cut took them from 10 to 26
-and cost up 46%, and neither arm won. A faster loop does not move that. The
-remove half has never been affordable:
+cost: on 23 September the two presence clauses took register rewrites from 10 to
+25 and drafting cost up 50%, and the register cut took them from 10 to 26 and
+cost up 46%. That half is deterministic and holds. The quality half does not:
+two drafts of one arm differ about twice as much as two arms do, so the panel
+could not resolve either change in either direction
+(`evals/20260924-draft-variance-dominates.md`). "Neither arm won" is not
+evidence of a local optimum. The remove half has never been affordable:
 the register cut was rejected **on cost**, not on quality, so *"remove clauses
 with the protocol you add them with"* has never once run to a verdict. At L1 it
 can. Expect the first honest use of the loop to be a deletion, not an addition.
