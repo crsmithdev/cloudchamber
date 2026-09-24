@@ -1,27 +1,18 @@
 /**
- * Stages 3 to 5: schedule, scenes, screens. One call derives the beat sheet;
- * one fresh call writes each beat; each scene is screened against the ledger
- * as it is written and the screen's own patches go in before the next beat
- * reads it; every scene is then screened for a fixed list of structural tells,
- * each is screened for a sentence an earlier beat already said, and the joined
- * draft is run through the deterministic slop screen.
+ * Stage 3, and the shapes stages 4 and 5 are built from: one call derives the
+ * beat sheet, and the rest of this module is the pure material a scene ask and
+ * a structure screen are assembled out of — the schedule parser, the prompt
+ * builders, the screen rules and the lines a flagged beat is rewritten under.
+ *
+ * The calls that write and screen the scenes live in `scenesession.ts`, which
+ * owns the cached system prompt they share.
  */
 import type { Pipeline, StepRow } from "./draw.ts";
 import { fill, type TemplateName } from "./prompts.ts";
-import { need, samples, tag, words } from "./model.ts";
-import { RUN } from "./config.ts";
-import { eligiblePassages } from "./bank.ts";
-import { FORM_VALUES, samplesFor, type DraftConfig, type FormAxis } from "./draftconfig.ts";
-import { cluster, findingId, parseFindings, type Finding } from "./recur.ts";
-import { loadLexicon, restated, slopScreen } from "./slop.ts";
-import { listenScreen, loadNarrationPool } from "./listen.ts";
-import { parseQuestions, screenClaims, type Answer } from "./check.ts";
+import { tag, words } from "./model.ts";
+import { FORM_VALUES, type DraftConfig, type FormAxis } from "./draftconfig.ts";
+import { type Answer } from "./check.ts";
 import type { BriefParts } from "./briefparts.ts";
-import type { SceneMeta } from "./artifacts.ts";
-import { clusterSamples, runSamples, voteAnswers } from "./sampled.ts";
-import { applyPatches } from "./repair.ts";
-import { record } from "./verdicts.ts";
-import { chainOf } from "./chain.ts";
 
 /** `until` is the beat that reveals the item; one past the last beat means the story never does. */
 export type Withheld = { item: string; until: number };
@@ -192,61 +183,6 @@ export function scenePrompt(parts: BriefParts, s: Schedule, b: Beat, soFar: stri
   return blocks.filter(Boolean).join("\n\n");
 }
 
-/** `rewrite` marks a gate-2 rewrite of the beat, with the flag it answers when there is one. */
-export async function writeScene(p: Pipeline, drawId: string, parent: string, parts: BriefParts, ledger: string, s: Schedule, b: Beat, soFar: string[], constraints?: string, rewrite?: { finding?: string }, structure = { template: "auto", register: "auto" }): Promise<Scene> {
-  const { step, value } = await p.invoke(drawId, parent, "scene", scenePrompt(parts, s, b, soFar, constraints, structure), (t) => need(t, "scene"), { context: sceneContext(parts, ledger, s) });
-  const n = words(value);
-  const artifact_id = p.artifact(step, "scene", value, { beat: b.n, words: n, cap: b.words, warnings: n > b.words * (1 + RUN.sceneCapSlack) ? ["over_cap"] : [], ...(rewrite ? { rewrite: true, ...(rewrite.finding ? { rewrite_finding: rewrite.finding } : {}) } : {}) });
-  return { beat: b.n, text: value, artifact_id, step_id: step.id };
-}
-
-/** Every beat written and bound to the ledger; a sequential beat reads the corrected text of the beats before it. */
-export async function runScenes(p: Pipeline, drawId: string, scheduleStep: StepRow, parts: BriefParts, ledger: string, s: Schedule, cfg: DraftConfig, pass: string): Promise<Scene[]> {
-  const write = (b: Beat, soFar: string[]) => writeScene(p, drawId, scheduleStep.id, parts, ledger, s, b, soFar, undefined, undefined, cfg.structure);
-  if (cfg.scenes.order === "parallel") {
-    const raw = await Promise.all(s.beats.map((b) => write(b, [])));
-    return Promise.all(raw.map((sc, i) => bindScene(p, drawId, ledger, sc, raw[i - 1], cfg, pass)));
-  }
-  const out: Scene[] = [];
-  for (const b of s.beats) out.push(await bindScene(p, drawId, ledger, await write(b, out.map((x) => x.text)), out.at(-1), cfg, pass));
-  return out;
-}
-
-/**
- * Hold one scene to the ledger: screen it against the ledger and the scene
- * before it, store each flag, and put every flag's own patch into the scene
- * word for word. The scene that comes back is the one the next beat reads and
- * the one gate 2 shows. On two drafts of one seed the scenes contradicted the
- * ledger they were given about three times a beat, and a beat written after a
- * contradiction inherited it through the story so far; a patch costs no call,
- * so the ledger binds where the scene is written rather than at the gate. A
- * flag whose fix needs more than its span stays open for `rewrite k`.
- */
-export async function bindScene(p: Pipeline, drawId: string, ledger: string, scene: Scene, prev: Scene | undefined, cfg: DraftConfig, pass: string): Promise<Scene> {
-  if (!cfg.screens.enabled.includes("ledger")) return scene;
-  const k = scene.beat;
-  const { samples: n, keep_if } = samplesFor(cfg.screens, "ledger");
-  const prompt = fill("screenLedger", { ledger, previous: prev ? `<previous-scene>\n${prev.text}\n</previous-scene>\n\n` : "", n: String(k), scene: scene.text });
-  const rs = await runSamples(p, {
-    draw: drawId, parent: scene.step_id, stage: "screen-ledger", prompt, samples: n,
-    // the examined account is for the reader, not a condition of the answer: Sonnet 5 opens the tag and never closes it (run 9)
-    parse: (t, sample) => ({ findings: parseFindings(t, "ledger", sample), examined: tag(t, "examined") ?? "" }),
-  });
-  const flags = clusterSamples(rs, (v) => v.findings, keep_if, `${drawId}/${k}`).filter((c) => c.reported);
-  for (const c of flags) {
-    const { reported: _r, ...meta } = c;
-    p.artifact(rs[0].step, "finding", c.statement, { ...meta, invalidates: String(k), pass, source: "screen", screen: "ledger", beat: k });
-  }
-  const out = applyPatches(scene.text, flags);
-  if (!out.applied.length) return scene;
-  // the scene keeps its beat and cap, not the gate-2 record of the scene it patches: a patch is not a rewrite
-  const { rewrite: _rw, rewrite_finding: _rf, ...meta } = chainOf(p, drawId).artifact(scene.artifact_id)!.meta as SceneMeta;
-  const step = p.recordStep(drawId, scene.step_id, "scene", "patched");
-  const artifact_id = p.artifact(step, "scene", out.text, { ...meta, words: words(out.text), patched: out.applied.map((f) => f.id) });
-  for (const f of out.applied) record(p.db, { kind: "finding", target_id: f.id, verdict: "keep", method: "draw", note: "patched as written" });
-  return { beat: k, text: out.text, artifact_id, step_id: step.id };
-}
-
 // --- screens ----------------------------------------------------------------------
 
 export type Profile = { beat: number; pass: string; answers: Record<string, Answer>; flags: string[] };
@@ -278,52 +214,3 @@ export const structureQuestions = (last: boolean, paid = last, first = false, mo
 /** The flags an answer set raises. The theme may be stated once, on the last beat, the way a narrated story closes. */
 export const flagsOf = (answers: Record<string, Answer>, last = false) =>
   Object.entries(answers).filter(([q, a]) => RULE.get(q)?.flag === a.answer && !(last && q === "theme-stated")).map(([q]) => q);
-
-export async function runScreens(p: Pipeline, drawId: string, s: Schedule, scenes: Scene[], cfg: DraftConfig, pass: string, beats: number[] = scenes.map((x) => x.beat), opts: { lexiconPath?: string; narrationDir?: string } = {}): Promise<void> {
-  const enabled = cfg.screens.enabled;
-  const M = s.beats.length;
-  // the beat the schedule marked as paying, else the shaped default: the cost lands before the last beat, which is the aftermath
-  const marked = s.beats.find((b) => b.pays)?.n;
-  const paidBeat = cfg.structure.template === "auto" || M < 2 ? M : marked ?? M - 1;
-  if (enabled.includes("structure")) await Promise.all(beats.map(async (k) => {
-    const scene = scenes.find((x) => x.beat === k)!, b = s.beats[k - 1];
-    const { samples: n, keep_if } = samplesFor(cfg.screens, "structure");
-    const prev = s.beats[k - 2];
-    const names = structureQuestions(k === M, k === paidBeat, k === 1, movedIn(b, prev));
-    const prompt = structurePrompt(b, scene.text, k === M, M, k === paidBeat, k === 1, prev);
-    const rs = await runSamples(p, { draw: drawId, parent: scene.step_id, stage: "screen-structure", prompt, samples: n, parse: (t) => parseQuestions(t, names) });
-    const answers = voteAnswers(rs, names, keep_if);
-    const flags = flagsOf(answers, k === M);
-    p.artifact(rs[0].step, "profile", JSON.stringify(answers), { pass, source: "screen", screen: "structure", beat: k, answers, flags, samples: n });
-  }));
-  // a sentence the beat says again is a flag with a location and no patch: rewrite k takes it as a constraint
-  for (const k of beats) {
-    const scene = scenes.find((x) => x.beat === k)!;
-    // the told shape replays its cold open whole in the arrival beat: a sentence beat 1 said is meant to be said again
-    const hits = restated(scenes, k).filter((h) => !(cfg.structure.template === "told" && h.earlier_beat === 1));
-    if (!hits.length) continue;
-    const step = p.recordStep(drawId, scene.step_id, "screen-restated", "deterministic", hits);
-    for (const h of hits) {
-      const meta = { id: findingId("restated", h.span, `${drawId}/${k}`), checkers: ["restated"], samples: [1], n: 1, span: h.span, statement: `beat ${k} says again what beat ${h.earlier_beat} said`,
-        result: `restates:${h.earlier}`, evidence: h.earlier, invalidates: String(k), replacement: `Beat ${k} does not repeat what beat ${h.earlier_beat} already says: "${h.earlier}"`, patch: "" };
-      p.artifact(step, "finding", meta.statement, { ...meta, pass, source: "screen", screen: "restated", beat: k });
-    }
-  }
-  // the deterministic reports cover the whole draft as it stands, however few beats were re-screened: a rewrite changes the story-wide figures too
-  if (enabled.includes("slop")) {
-    const pool = cfg.screens.slop_baseline === "pool" ? eligiblePassages(p.db).map((x) => x.text).join("\n\n") : "";
-    const report = slopScreen(scenes.map((x) => ({ beat: x.beat, text: x.text })), pool, loadLexicon(opts.lexiconPath));
-    const step = p.recordStep(drawId, scenes[0]?.step_id ?? null, "screen-slop", "deterministic", report);
-    p.artifact(step, "slop", JSON.stringify(report), { pass, source: "screen", screen: "slop" });
-  }
-  // the claims a scene makes about its setting: the checkers read the brief, and a scene invents past it
-  if (enabled.includes("claims")) {
-    const { setting } = p.loadDrawSetting(p.draw(drawId));
-    if (setting?.claims) await screenClaims(p, drawId, scenes.map((x) => ({ beat: x.beat, text: x.text })), setting, pass, chainOf(p, drawId), scenes[0]?.step_id ?? null);
-  }
-  if (enabled.includes("listen")) {
-    const report = listenScreen(scenes.map((x) => ({ beat: x.beat, text: x.text })), loadNarrationPool(opts.narrationDir));
-    const step = p.recordStep(drawId, scenes[0]?.step_id ?? null, "screen-listen", "deterministic", report);
-    p.artifact(step, "listen", JSON.stringify(report), { pass, source: "screen", screen: "listen" });
-  }
-}

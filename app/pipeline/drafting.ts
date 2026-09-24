@@ -22,7 +22,8 @@ import { chainOf, type Chain, type FindingView } from "./chain.ts";
 import { BriefSession } from "./briefsession.ts";
 import { profile } from "./listen.ts";
 import { ofKind } from "./artifacts.ts";
-import { bindScene, linesOf, runScenes, runSchedule, runScreens, writeScene, type Schedule } from "./write.ts";
+import { linesOf, runSchedule, type Schedule } from "./write.ts";
+import { SceneSession, type ScreenPaths } from "./scenesession.ts";
 import { draftView, exportDraft, renderStory, type DraftView } from "./drafts.ts";
 import { tag } from "./model.ts";
 import { defaultPrinter, writeReport, type PdfPrinter } from "./report.ts";
@@ -102,6 +103,11 @@ export function parseConflicts(block: string): { a: number; b: number; why: stri
 
 export class Drafting {
   constructor(public p: Pipeline, public opts: { draftsDir?: string; lexiconPath?: string; premisesPath?: string; narrationDir?: string; outputDir?: string; printPdf?: PdfPrinter } = {}) {}
+
+  /** Where the deterministic screens read their pools from. */
+  private screenPaths(): ScreenPaths {
+    return { lexiconPath: this.opts.lexiconPath, narrationDir: this.opts.narrationDir };
+  }
 
   /** The draw, when `action` is allowed on it now; otherwise the reason is thrown. */
   private must(drawId: string, action: Action): DrawRow {
@@ -246,8 +252,8 @@ export class Drafting {
       const ledger = await this.ensureLedger(id);
       const pass = passId();
       const { step, schedule } = await runSchedule(this.p, id, parts, briefBlock(parts), resolved.config);
-      const scenes = await runScenes(this.p, id, step, parts, ledger, schedule, resolved.config, pass);
-      await runScreens(this.p, id, schedule, scenes, resolved.config, pass, undefined, { lexiconPath: this.opts.lexiconPath, narrationDir: this.opts.narrationDir });
+      const session = new SceneSession({ p: this.p, drawId: id, parent: step.id, parts, ledger, schedule, cfg: resolved.config, pass, paths: this.screenPaths() });
+      await session.screen(await session.all());
       // one rewrite of each beat the screens flag: the register lines only under a shaped template, the ceilings always
       await this.registerRewrites(id, resolved.config);
     }, () => ({ id, status: "awaiting_draft_gate" }));
@@ -408,20 +414,15 @@ export class Drafting {
 
   /** Write beat k again under the constraints, bind it and the beat after it to the ledger, and re-screen both. The caller holds the status. */
   private async regenerate(drawId: string, k: number, cfg: DraftConfig, constraints?: string, findingId?: string): Promise<void> {
-    const chain = chainOf(this.p, drawId);
-    const schedule = chain.schedule()!, scenes = chain.scenes(), M = schedule.beats.length;
-    const parts = briefParts(this.p, drawId);
-    // the pinned one: a repaired draw carries no ledger of its own, the chain root holds it
-    const ledger = chain.ledger() ?? "";
-    const scheduleStep = this.p.steps(drawId).find((s) => s.stage === "schedule" && s.status === "done")!;
+    const session = SceneSession.resume(this.p, drawId, cfg, passId(), this.screenPaths());
+    const scenes = session.scenes(), M = session.schedule.beats.length;
     const before = scenes.filter((s) => s.beat < k).map((s) => s.text);
-    const pass = passId();
     // the scene carries the gate-2 record: which beat was rewritten, and under which flag
-    const written = await writeScene(this.p, drawId, scheduleStep.id, parts, ledger, schedule, schedule.beats[k - 1], cfg.scenes.order === "sequential" ? before : [], constraints, { finding: findingId }, cfg.structure);
-    const bound = await bindScene(this.p, drawId, ledger, written, scenes[k - 2], cfg, pass);
+    const written = await session.write(session.schedule.beats[k - 1], cfg.scenes.order === "sequential" ? before : [], { constraints, rewrite: { finding: findingId } });
+    const bound = await session.bind(written, scenes[k - 2]);
     // the beat after it read the old text: it is held to the new one, as it was when first written
-    if (k < M) await bindScene(this.p, drawId, ledger, scenes[k], bound, cfg, pass);
-    await runScreens(this.p, drawId, schedule, chainOf(this.p, drawId).scenes(), cfg, pass, k < M ? [k, k + 1] : [k], { lexiconPath: this.opts.lexiconPath, narrationDir: this.opts.narrationDir });
+    if (k < M) await session.bind(scenes[k], bound);
+    await session.screen(session.scenes(), k < M ? [k, k + 1] : [k]);
   }
 
   /**
