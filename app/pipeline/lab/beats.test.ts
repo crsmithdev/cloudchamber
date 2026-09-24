@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { beatPasses, sharedBeats, whyNotL1, type BeatText } from "./beats.ts";
+import { beatPasses, judgeableBeats, sharedBeats, whyNotL1, type BeatText } from "./beats.ts";
 
 const beat = (drawId: string, n: number, job: string, last = 3): BeatText =>
   ({ drawId, n, last, plan: { n, job, known: "k", stakes: "s" }, text: `${drawId} beat ${n}`, soFar: "" });
@@ -48,5 +48,32 @@ describe("the passes a beat pair runs", () => {
     const pair = sharedBeats(pinned("a"), pinned("b"))[0]!;
     const asks = beatPasses(pair, ["one"], 4);
     expect(asks.map((x) => x.flipped)).toEqual([false, true, false, true]);
+  });
+});
+
+describe("a beat pair needs one story before it", () => {
+  const withSoFar = (drawId: string, soFar: string[]): BeatText[] =>
+    [1, 2, 3].map((n) => ({ drawId, n, last: 3, plan: { n, job: ["open", "turn", "pay"][n - 1]!, known: "k", stakes: "s" }, text: `${drawId} beat ${n}`, soFar: soFar.slice(0, n - 1).join("\n\n") }));
+
+  test("beat 1 is judgeable whatever follows, because nothing comes before it", () => {
+    const a = withSoFar("a", ["a1", "a2"]), b = withSoFar("b", ["b1", "b2"]);
+    expect(whyNotL1(a, b, 1)).toBeNull();
+  });
+
+  test("a later beat of two drafts that diverged is refused, and says to branch at it", () => {
+    const a = withSoFar("a", ["a1", "a2"]), b = withSoFar("b", ["b1", "b2"]);
+    expect(whyNotL1(a, b, 3)).toMatch(/different stories before beat 3.*--at-beat 3.*copies beats 1\.\.2/s);
+  });
+
+  test("a branch at beat 3 shares beats 1 and 2, so beat 3 is a pair", () => {
+    const a = withSoFar("a", ["shared1", "shared2"]), b = withSoFar("b", ["shared1", "shared2"]);
+    expect(whyNotL1(a, b, 3)).toBeNull();
+    expect(judgeableBeats(a, b).map((x) => x.n)).toEqual([1, 2, 3]);
+  });
+
+  test("judgeableBeats keeps only the beats whose context matches", () => {
+    // branched at beat 1: they share the empty context of beat 1 and nothing after
+    const a = withSoFar("a", ["a1", "a2"]), b = withSoFar("b", ["b1", "b2"]);
+    expect(judgeableBeats(a, b).map((x) => x.n)).toEqual([1]);
   });
 });

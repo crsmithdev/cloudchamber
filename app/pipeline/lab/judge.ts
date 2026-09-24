@@ -11,6 +11,7 @@
  * axis is a failed call that is tried again rather than a verdict (ADR-0011).
  */
 import { JUDGE_SYSTEM, complete, followedOrder, judgePrompt, parseVerdict, type Parsed } from "./rubric.ts";
+export { judgePrompt };
 
 const OPENROUTER = "https://openrouter.ai/api/v1/chat/completions";
 
@@ -28,6 +29,8 @@ export type CallOpts = {
   concurrency?: number;
   fetch?: typeof globalThis.fetch;
   onPass?: (r: PassResult) => void;
+  /** When a reply has answered everything it was asked. Defaults to the story rubric's eight axes. */
+  done?: (p: Parsed) => boolean;
 };
 
 export function judgeKey(): string {
@@ -55,12 +58,17 @@ export async function callJudge(prompt: string, model: string, key: string, f: t
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** Run one pass, trying again while the reply does not answer every axis. */
-export async function runPass(ask: PassAsk, texts: { ours: string; source: string }, o: CallOpts = {}): Promise<PassResult> {
+/**
+ * Run one pass, trying again while the reply does not answer what it was asked.
+ *
+ * The caller builds the prompt, because what a pass compares differs by level:
+ * two whole drafts at L2, two versions of one beat at L1. `done` is the test
+ * for a finished reply, which is `complete` at L2 and `beatComplete` at L1.
+ */
+export async function runPass(ask: PassAsk, prompt: string, o: CallOpts = {}): Promise<PassResult> {
   const key = o.key ?? judgeKey();
   const f = o.fetch ?? fetch;
-  const [one, two] = ask.flipped ? [texts.source, texts.ours] : [texts.ours, texts.source];
-  const prompt = judgePrompt(one, two);
+  const done = o.done ?? complete;
   const started = Date.now();
   let parsed: Parsed = { axes: {}, scores: {}, whys: [], overall: "?", needs: "", raw: "" };
   let cost: number | null = null;
@@ -72,14 +80,14 @@ export async function runPass(ask: PassAsk, texts: { ours: string; source: strin
       const r = await callJudge(prompt, ask.judge, key, f);
       cost = r.cost_usd ?? cost;
       parsed = parseVerdict(r.text, ask.flipped);
-      if (complete(parsed)) break;
-      error = `incomplete: ${Object.keys(parsed.axes).length}/8 axes`;
+      if (done(parsed)) break;
+      error = `incomplete: ${Object.keys(parsed.axes).length} axes answered`;
     } catch (e) {
       error = String((e as Error)?.message ?? e).slice(0, 300);
       await sleep(4000 * (attempt + 1));
     }
   }
-  const ok = complete(parsed);
+  const ok = done(parsed);
   return {
     ...ask, parsed, complete: ok, followed_order: followedOrder(parsed.overall, ask.flipped),
     cost_usd: cost, ms: Date.now() - started, attempts: Math.min(attempt + 1, tries),
@@ -92,7 +100,7 @@ export async function runPass(ask: PassAsk, texts: { ours: string; source: strin
  * so the wall time of the judging phase is one pass plus the queue, not the sum
  * of them; on the runs of 23 September that phase was 36 calls in sequence.
  */
-export async function runPasses(asks: PassAsk[], text: (drawId: string) => string, o: CallOpts = {}): Promise<PassResult[]> {
+export async function runPasses(asks: PassAsk[], prompt: (ask: PassAsk) => string, o: CallOpts = {}): Promise<PassResult[]> {
   const key = o.key ?? judgeKey();
   const limit = Math.max(1, o.concurrency ?? 12);
   const out: PassResult[] = new Array(asks.length);
@@ -100,7 +108,7 @@ export async function runPasses(asks: PassAsk[], text: (drawId: string) => strin
   const worker = async () => {
     for (let i = next++; i < asks.length; i = next++) {
       const a = asks[i]!;
-      const r = await runPass(a, { ours: text(a.ours), source: text(a.source) }, { ...o, key });
+      const r = await runPass(a, prompt(a), { ...o, key });
       out[i] = r;
       o.onPass?.(r);
     }

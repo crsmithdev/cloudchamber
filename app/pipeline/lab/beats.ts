@@ -56,15 +56,43 @@ export function sharedBeats(a: BeatText[], b: BeatText[]): { n: number; a: BeatT
   return out;
 }
 
-/** Why a pair of drafts cannot be judged at L1, or null when it can. */
-export function whyNotL1(a: BeatText[], b: BeatText[]): string | null {
+/**
+ * Why a beat of two drafts cannot be judged as a pair, or null when it can.
+ *
+ * The context test is the one that is easy to miss and expensive to get wrong.
+ * A judge is shown the story so far **once**, above both versions, because that
+ * is what makes the pair a pair: everything before the beat is held still and
+ * only the beat's prose varies. Two drafts that were branched at beat 1 share a
+ * schedule but diverge immediately, so by beat 4 they have told different
+ * stories and there is no single story so far to show. Judging them anyway
+ * shows one side a context it was not written for, and it loses for reasons
+ * that are nothing to do with its prose.
+ *
+ * On 2026-09-24 a calibration did exactly that and the draft whose context was
+ * used won nine beats of eleven
+ * (`evals/20260924-the-l1-calibration-was-invalid.md`). A pair at beat k needs
+ * `cloudchamber branch <draw> --at-beat k`, which copies beats 1..k-1 word for
+ * word.
+ */
+export function whyNotL1(a: BeatText[], b: BeatText[], n?: number): string | null {
   if (!a.length || !b.length) return "one of the drafts has no scenes";
   if (a[0]!.last !== b[0]!.last) return `the drafts have different schedules: ${a[0]!.last} beats against ${b[0]!.last}`;
   const shared = sharedBeats(a, b);
   if (!shared.length) return "the drafts share no beat with the same plan; L1 needs two drafts of one schedule (see `cloudchamber branch`)";
   if (shared.length < a[0]!.last) return `only ${shared.length} of ${a[0]!.last} beats share a plan; the drafts were not branched from one schedule`;
+  if (n !== undefined) {
+    const pair = shared.find((x) => x.n === n);
+    if (!pair) return `the drafts do not share beat ${n}`;
+    if (pair.a.soFar !== pair.b.soFar) {
+      return `the drafts tell different stories before beat ${n}, so there is no one story so far to judge it against: branch at beat ${n} (\`cloudchamber branch <draw> --at-beat ${n}\`), which copies beats 1..${n - 1} word for word`;
+    }
+  }
   return null;
 }
+
+/** The beats of two drafts that share the story before them, and so can be judged as pairs. */
+export const judgeableBeats = (a: BeatText[], b: BeatText[]) =>
+  sharedBeats(a, b).filter((x) => x.a.soFar === x.b.soFar);
 
 /**
  * The passes to run for one beat pair: every judge, `passes` times, half in
