@@ -26,7 +26,7 @@ import { linesOf, runSchedule, type Schedule } from "./write.ts";
 import { SceneSession, type ScreenPaths } from "./scenesession.ts";
 import { draftView, exportDraft, renderStory, type DraftView } from "./drafts.ts";
 import { tag } from "./model.ts";
-import { defaultPrinter, writeReport, type PdfPrinter } from "./report.ts";
+import { defaultPrinter, noPdf, writeReport, type PdfPrinter } from "./report.ts";
 import { fill } from "./prompts.ts";
 import { SCORE_MAX, same } from "./recur.ts";
 
@@ -257,7 +257,8 @@ export class Drafting {
       // one rewrite of each beat the screens flag: the register lines only under a shaped template, the ceilings always
       await this.registerRewrites(id, resolved.config);
     }, () => ({ id, status: "awaiting_draft_gate" }));
-    await writeReport(this.p, drawId, this.opts.outputDir, this.opts.printPdf ?? defaultPrinter());
+    // HTML only: the PDF print is up to 60 s and no model reads it, so gate 2 starts it instead (`keep`)
+    await writeReport(this.p, drawId, this.opts.outputDir, noPdf);
     return this.p.draw(drawId);
   }
 
@@ -408,7 +409,8 @@ export class Drafting {
     await act(this.p.db, { id: drawId, during: "drafting", back: "awaiting_draft_gate" },
       () => this.regenerate(drawId, k, cfg, constraints, findingId),
       () => ({ id: drawId, status: "awaiting_draft_gate" }));
-    await writeReport(this.p, drawId, this.opts.outputDir, this.opts.printPdf ?? defaultPrinter());
+    // HTML only: the PDF print is up to 60 s and no model reads it, so gate 2 starts it instead (`keep`)
+    await writeReport(this.p, drawId, this.opts.outputDir, noPdf);
     return this.p.draw(drawId);
   }
 
@@ -461,6 +463,9 @@ export class Drafting {
       .map((a) => `rewrite ${a.meta.beat}${a.meta.rewrite_finding ? ` ${a.meta.rewrite_finding}` : ""}`);
     const dir = exportDraft(this.p, drawId, resolved, gate2, this.opts.draftsDir, this.p.briefsDir);
     commit(this.p.db, { id: drawId, status: "drafted", ended: true });
+    // the one place the PDF is worth printing, and it is not waited on: the route says to run
+    // `cloudchamber report <draw>` while it is missing, and a CLI keep may exit before it lands
+    void writeReport(this.p, drawId, this.opts.outputDir, this.opts.printPdf ?? defaultPrinter()).catch(() => {});
     return { draw: this.p.draw(drawId), dir };
   }
 

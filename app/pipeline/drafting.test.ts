@@ -2,7 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { FakeModel, tag } from "./model.ts";
-import { BODY_LINE, COST_LINE, LENGTH_LINE, NUMERAL_LINE, PRESENCE_LINE, parseConflicts, rewritePlan } from "./drafting.ts";
+import { BODY_LINE, COST_LINE, Drafting, LENGTH_LINE, NUMERAL_LINE, PRESENCE_LINE, parseConflicts, rewritePlan } from "./drafting.ts";
+import type { PdfPrinter } from "./report.ts";
 import { EVENT_LINE, HOOK_LINE, THEME_LINE, VOICES_LINE } from "./write.ts";
 import { movedIn, parseSchedule, scenePrompt, structurePrompt, structureQuestions } from "./write.ts";
 import { checkersNext, NOT_IN_PROSE, parseVerdicts } from "./check.ts";
@@ -493,6 +494,26 @@ describe("tag reading", () => {
 });
 
 describe("draft: schedule, scenes, screens, gate 2", () => {
+  test("the PDF is off the drafting path: no print during draft or rewrite, one started by keep", async () => {
+    const { p, draw, dir } = await drawn();
+    let calls = 0;
+    let started: () => void = () => {};
+    const printed = new Promise<void>((r) => { started = r; });
+    const spy: PdfPrinter = async () => { calls++; started(); return false; };
+    const d = new Drafting(p, { printPdf: spy, draftsDir: join(dir, "drafts") });
+    d.configure(draw.id, { overrides: { "checks.samples": 3, "screens.samples": 3, "screens.keep_if": 2 } });
+    await d.check(draw.id);
+    await d.draft(draw.id, { overrides: { "screens.samples": 3, "screens.keep_if": 2 } });
+    // the draft and every register rewrite inside it wrote the HTML and printed nothing
+    expect(readFileSync(join(OUTPUT, draw.id, "report.html"), "utf8")).toContain("<h2>The story</h2>");
+    expect(calls).toBe(0);
+    await d.rewrite(draw.id, 1);
+    expect(calls).toBe(0);
+    d.keep(draw.id);
+    await printed;
+    expect(calls).toBe(1);
+  });
+
   test("a draft leaves its report: the story, its origins, the checks, the schedule, the screens and the cost", async () => {
     const { p, d, draw } = await drawn();
     await d.check(draw.id);
