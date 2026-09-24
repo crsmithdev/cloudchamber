@@ -32,6 +32,10 @@ const DOC = `cloudchamber — the one command the skill and the UI drive.
        until nothing reaches the floor, the rounds run out, or the total stops falling
    cloudchamber draft <draw> [--auto] [--profile P] [--words N] [--beats N] [--tense T] [--person P] [--chronology C] [--container C] [--order O] [--models G=M,...]
      --models sets the model per stage or group (prose, judgement, corpus) for the draw and the draws made from it, e.g. judgement=claude-sonnet-5
+   cloudchamber branch <draw> [--at-beat K] [--profile P] [--models G=M,...]
+       develop an existing draft as a draw of its own: the brief, the ledger, the schedule and the
+       beats under K are carried over word for word, and the beats from K on are written again.
+       With no --at-beat the schedule alone is carried: two arms drafted from one plan.
    cloudchamber story <draw>                   the draft with its screen flags inline
    cloudchamber report <draw>                  write output/<draw>/report.html and .pdf: the story and everything that made it
    cloudchamber listen <draw> [--beat K] [--voice V] [--out PATH]   render the draft, or one beat, to a wav with the local kokoro voice
@@ -64,7 +68,7 @@ import type { Overrides } from "../pipeline/draftconfig.ts";
 const [cmd, ...rest] = process.argv.slice(2);
 
 function usage(code = 1): never {
-  console.error("usage: cloudchamber <extract|status|export|verdict|replay|replay-themes|draw|delete|gate|draws|candidates|draw-show|brief|check|findings|draft|story|listen|themes|setting|distill|serve|help>");
+  console.error("usage: cloudchamber <extract|status|export|verdict|replay|replay-themes|draw|delete|gate|draws|candidates|draw-show|brief|check|findings|draft|branch|story|listen|themes|setting|distill|serve|help>");
   console.error("run `cloudchamber help` for the full grammar and the tunable values");
   process.exit(code);
 }
@@ -209,6 +213,22 @@ async function main() {
       const draw = await gateCommand(pipeline(), drafting(), drawId!, "draft", { auto: values.auto, profile: values.profile, overrides: Object.keys(overrides).length ? overrides : undefined, models: values.models ? parseModels(values.models) : undefined }).done as DrawRow;
       console.log(JSON.stringify(draw, null, 2));
       console.log(`\ncloudchamber story ${draw.id}  ·  cloudchamber gate ${draw.id} keep | rewrite <k> [--finding ID]`);
+      break;
+    }
+    case "branch": {
+      const { values, positionals } = parseArgs({
+        args: rest, allowPositionals: true,
+        options: { "at-beat": { type: "string" }, profile: { type: "string" }, models: { type: "string" } },
+      });
+      const [drawId] = positionals;
+      if (!drawId) usage();
+      const draw = await gateCommand(pipeline(), drafting(), drawId!, "branch", {
+        at_beat: values["at-beat"] ? Number(values["at-beat"]) : undefined,
+        profile: values.profile,
+        models: values.models ? parseModels(values.models) : undefined,
+      }).done as DrawRow;
+      console.log(JSON.stringify(draw, null, 2));
+      console.log(`\nbranched ${drawId} at ${draw.branch_at}  ·  cloudchamber story ${draw.id}  ·  cloudchamber gate ${draw.id} keep | rewrite <k>`);
       break;
     }
     case "story": {

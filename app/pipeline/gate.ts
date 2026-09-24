@@ -23,6 +23,7 @@ export type GateArgs = {
   step_id?: string; note?: string; findings?: string[]; finding?: string; beat?: number;
   checks?: string[]; samples?: number;                                  // check
   auto?: boolean; profile?: string; overrides?: Overrides;              // draft
+  at_beat?: number;                                                     // branch
   models?: Record<string, string>;                                      // any action: {stage or group: model}, set on the draw before it runs
 };
 
@@ -47,7 +48,8 @@ const need = <T>(v: T | undefined, what: string): T => {
  */
 export function gateCommand(p: Pipeline, d: Drafting, id: string, action: string, a: GateArgs = {}): GateCommand {
   const note = a.note ?? "";
-  if (a.models && Object.keys(a.models).length) p.setModels(id, a.models);
+  // a branch's models belong to the new draw, not to the draw it develops: the source is left as it stands
+  if (a.models && Object.keys(a.models).length && action !== "branch") p.setModels(id, a.models);
   const cmd = (running: boolean, draw: string | null, done: unknown): GateCommand =>
     ({ action: action as GateAction, draw, running, done: Promise.resolve(done) });
   switch (action) {
@@ -72,6 +74,8 @@ export function gateCommand(p: Pipeline, d: Drafting, id: string, action: string
     case "rewrite": return cmd(true, id, d.rewrite(id, Number(need(a.beat, "beat")), a.finding));
     case "check": return cmd(true, id, d.check(id, { checks: a.checks, samples: a.samples }));
     case "draft": return cmd(true, id, d.draft(id, { auto: !!a.auto, profile: a.profile, overrides: a.overrides }));
+    // the branch is the draw to show next, as a fork is
+    case "branch": return cmd(true, null, d.branch(id, { atBeat: a.at_beat, profile: a.profile, overrides: a.overrides, models: a.models }));
     // a deleted draw is nothing to show next
     case "delete": p.delete(id); return cmd(false, null, { deleted: id });
   }

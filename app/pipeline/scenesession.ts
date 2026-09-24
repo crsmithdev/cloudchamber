@@ -111,14 +111,21 @@ export class SceneSession {
     return { beat: b.n, text: value, artifact_id, step_id: step.id };
   }
 
-  /** Every beat written and bound; a sequential beat reads the corrected text of the beats before it. */
-  async all(): Promise<Scene[]> {
+  /**
+   * Every beat from `from` on, written and bound; a sequential beat reads the
+   * corrected text of the beats before it. The beats under `from` are the
+   * scenes this draw already stores, which a branch copied, and they come back
+   * with the rest so the caller sees the whole story.
+   */
+  async all(from = 1): Promise<Scene[]> {
+    const done = from > 1 ? this.scenes().filter((x) => x.beat < from) : [];
+    const todo = this.schedule.beats.filter((b) => b.n >= from);
     if (this.cfg.scenes.order === "parallel") {
-      const raw = await Promise.all(this.schedule.beats.map((b) => this.write(b, [])));
-      return Promise.all(raw.map((sc, i) => this.bind(sc, raw[i - 1])));
+      const raw = await Promise.all(todo.map((b) => this.write(b, [])));
+      return [...done, ...await Promise.all(raw.map((sc, i) => this.bind(sc, i ? raw[i - 1] : done.at(-1))))];
     }
-    const out: Scene[] = [];
-    for (const b of this.schedule.beats) out.push(await this.bind(await this.write(b, out.map((x) => x.text)), out.at(-1)));
+    const out = [...done];
+    for (const b of todo) out.push(await this.bind(await this.write(b, out.map((x) => x.text)), out.at(-1)));
     return out;
   }
 

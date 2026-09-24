@@ -13,6 +13,7 @@ import { ofKind } from "./artifacts.ts";
 import { tabOf } from "./lifecycle.ts";
 import { TEMPLATES, checkTemplate } from "./prompts.ts";
 import { loadStages, STAGES } from "./config.ts";
+import { treeVersion } from "./version.ts";
 
 const CELLS = ["informational", "mixed", "involved"].flatMap((v) => ["non-narrative", "mixed", "narrative"].map((m) => [v, m]));
 
@@ -105,6 +106,17 @@ describe("draw graph", () => {
     expect(trail).toContain("gate: auto");
     expect(trail.match(/^- \*\*0\.0\d\*\*/gm)).toHaveLength(5);
     expect(readFileSync(join(dirP, "vignette.md"), "utf8")).toContain("w2_0");
+  });
+
+  test("every step records the tree it ran from, so a measurement cannot be read against the wrong one", async () => {
+    const { db, dir } = fixture();
+    const { p } = pipe(db, dir);
+    const draw = await p.start({ mode: "auto", segment: { source: "scp" } });
+    const versions = new Set(p.steps(draw.id).map((s) => s.version));
+    expect(versions.size).toBe(1);
+    // the short sha of this checkout, or `dev` where git cannot answer, with `+dirty` when app/ or extract/ differ from it
+    expect([...versions][0]).toMatch(/^([0-9a-f]{7,}|dev)(\+dirty)?$/);
+    expect([...versions][0]).toBe(treeVersion());
   });
 
   test("manual draw stops at the gate; choose resumes; candidates sorted by probability", async () => {

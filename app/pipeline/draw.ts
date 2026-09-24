@@ -16,7 +16,7 @@ import { eligiblePassages, eligibleThemes, type Segment } from "./bank.ts";
 import { loadChecked, slice, type GenStage, type Setting } from "./settings.ts";
 import { SETTINGS } from "./paths.ts";
 import { now } from "./paths.ts";
-import { pipelineVersion } from "./version.ts";
+import { pipelineVersion, treeVersion } from "./version.ts";
 import { nextName } from "./names.ts";
 import type { Db } from "./store/db.ts";
 import { writeBrief } from "./brief.ts";
@@ -52,12 +52,13 @@ export type DrawRow = {
   id: string; name: string; setting: string | null; genre: string; mode: "auto" | "manual"; segment: string | null;
   seed_mode: string; seed_text: string; seed_theme_id: string | null; example_ids: string; sampling: string; darkness: string | null; status: string;
   gate_method: string | null; chosen_step: string | null; flagged: number; flag_note: string; error: string | null;
-  superseded_by: string | null; repaired_from: string | null; forked_from: string | null; draft_config: string | null; models: string | null; archived_at: string | null; created_at: string; ended_at: string | null;
+  superseded_by: string | null; repaired_from: string | null; forked_from: string | null; branched_from: string | null; branch_at: string | null;
+  draft_config: string | null; models: string | null; archived_at: string | null; created_at: string; ended_at: string | null;
 };
 export type StepRow = {
   id: string; draw_id: string | null; parent_id: string | null; stage: string; model: string; system_prompt: string;
   prompt: string; raw_response: string | null; parsed: string | null; status: string; fail_reason: string | null;
-  attempt: number; tools: string; usage: string | null; started_at: string; ended_at: string | null; error: string | null;
+  attempt: number; tools: string; usage: string | null; version: string; started_at: string; ended_at: string | null; error: string | null;
 };
 
 export class StepFailure extends Error {
@@ -135,11 +136,11 @@ export class Pipeline {
   private insertStep(draw: string | null, parent: string | null, stage: string, model: string, system: string, prompt: string, attempt: number, storyId: string | null = null, tools = ""): StepRow {
     const row: StepRow = {
       id: `${stage}-${id(4)}`, draw_id: draw, parent_id: parent, stage, model, system_prompt: system, prompt,
-      raw_response: null, parsed: null, status: "running", fail_reason: null, attempt, tools, usage: null, started_at: now(), ended_at: null, error: null,
+      raw_response: null, parsed: null, status: "running", fail_reason: null, attempt, tools, usage: null, version: treeVersion(), started_at: now(), ended_at: null, error: null,
     };
-    this.db.query(`INSERT INTO steps (id, draw_id, story_id, parent_id, stage, model, system_prompt, prompt, status, attempt, tools, started_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'running', ?, ?, ?)`)
-      .run(row.id, draw, storyId, parent, stage, model, system, prompt, attempt, tools, row.started_at);
+    this.db.query(`INSERT INTO steps (id, draw_id, story_id, parent_id, stage, model, system_prompt, prompt, status, attempt, tools, version, started_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'running', ?, ?, ?, ?)`)
+      .run(row.id, draw, storyId, parent, stage, model, system, prompt, attempt, tools, row.version, row.started_at);
     return row;
   }
 
@@ -464,12 +465,12 @@ export class Pipeline {
    * the candidate's premise and vignette across as a copied step, so every
    * later stage reads it the way it reads any other draw.
    */
-  /** A draw made from another, `running`: the same seed, examples and options, linked to its source by one of the two columns. */
-  copyDraw(src: DrawRow, newId: string, link: { repaired_from: string } | { forked_from: string }, gateMethod: string | null): void {
-    const [col, from] = Object.entries(link)[0] as [string, string];
-    this.db.query(`INSERT INTO draws (id, name, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, sampling, darkness, models, status, gate_method, ${col}, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?, ?, ?)`)
-      .run(newId, this.nameFor(src.seed_text), src.setting, src.genre, src.mode, src.segment, src.seed_mode, src.seed_text, src.seed_theme_id, src.example_ids, src.sampling, src.darkness, src.models, gateMethod, from, now());
+  /** A draw made from another, `running`: the same seed, examples and options, linked to its source by the columns `link` names. */
+  copyDraw(src: DrawRow, newId: string, link: { repaired_from: string } | { forked_from: string } | { branched_from: string; branch_at: string }, gateMethod: string | null): void {
+    const cols = Object.keys(link), vals = Object.values(link);
+    this.db.query(`INSERT INTO draws (id, name, setting, genre, mode, segment, seed_mode, seed_text, seed_theme_id, example_ids, sampling, darkness, models, status, gate_method, ${cols.join(", ")}, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?, ${cols.map(() => "?").join(", ")}, ?)`)
+      .run(newId, this.nameFor(src.seed_text), src.setting, src.genre, src.mode, src.segment, src.seed_mode, src.seed_text, src.seed_theme_id, src.example_ids, src.sampling, src.darkness, src.models, gateMethod, ...vals, now());
   }
 
   async fork(drawId: string, executeStepId: string, newId: string = newDrawId()): Promise<DrawRow> {

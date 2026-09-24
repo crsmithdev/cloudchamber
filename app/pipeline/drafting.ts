@@ -11,7 +11,8 @@
  * (repaired_from) and the source becomes `repaired`. `--auto` works gate 1 by
  * the mechanical rule and stops at gate 2.
  */
-import type { DrawRow, Pipeline } from "./draw.ts";
+import { newDrawId, type DrawRow, type Pipeline } from "./draw.ts";
+import { copyDraft } from "./branch.ts";
 import { record } from "./verdicts.ts";
 import { act, commit, must, type Action, type Status } from "./lifecycle.ts";
 import { loadDraftConfig, type DraftConfig, type Overrides, type Resolved } from "./draftconfig.ts";
@@ -34,6 +35,8 @@ import { SCORE_MAX, same } from "./recur.ts";
 export type AutoRound = { round: number; id: string; open: number; total: number; accepted: number; calls: number; passes: number };
 export type AutoResult = { id: string; rounds: AutoRound[]; best: AutoRound; stopped: "floor" | "cap" | "patience" | "stalled"; floor: number; calls: number; left_open: number };
 export type DraftOpts = { profile?: string; overrides?: Overrides; auto?: boolean };
+/** A branch takes the source's drafting configuration unless it names its own, and the beat to write from. */
+export type BranchOpts = { atBeat?: number; profile?: string; overrides?: Overrides; models?: Record<string, string> };
 /** A finding as the gate reads it: `auto_eligible` says whether the auto rule would consider it, whatever it scores. */
 export type GateFinding = FindingView & { auto_eligible: boolean };
 /** The latest pass in four numbers, for a list row. */
@@ -253,13 +256,50 @@ export class Drafting {
       const pass = passId();
       const { step, schedule } = await runSchedule(this.p, id, parts, briefBlock(parts), resolved.config);
       const session = new SceneSession({ p: this.p, drawId: id, parent: step.id, parts, ledger, schedule, cfg: resolved.config, pass, paths: this.screenPaths() });
-      await session.screen(await session.all());
-      // one rewrite of each beat the screens flag: the register lines only under a shaped template, the ceilings always
-      await this.registerRewrites(id, resolved.config);
+      await this.scenes(session, resolved.config, 1);
     }, () => ({ id, status: "awaiting_draft_gate" }));
     // HTML only: the PDF print is up to 60 s and no model reads it, so gate 2 starts it instead (`keep`)
     await writeReport(this.p, drawId, this.opts.outputDir, noPdf);
     return this.p.draw(drawId);
+  }
+
+  /**
+   * The scenes of a draft, from `from` on: written, bound, screened, and given
+   * the rewrites the screens ask for. The beats under `from` were copied by a
+   * branch and are held still — they carry the source's screen answers already,
+   * and a second rewrite of them would move the material the branch pins.
+   */
+  private async scenes(session: SceneSession, cfg: DraftConfig, from: number): Promise<void> {
+    const scenes = await session.all(from);
+    await session.screen(scenes, scenes.filter((x) => x.beat >= from).map((x) => x.beat));
+    // one rewrite of each beat the screens flag: the register lines only under a shaped template, the ceilings always
+    await this.registerRewrites(session.drawId, cfg, from);
+  }
+
+  /**
+   * Develop an existing draft from a beat as a draw of its own: the brief, the
+   * pinned ledger, the schedule and the beats under `at_beat` are carried over
+   * word for word, and the beats from there on are written again. The source is
+   * untouched.
+   *
+   * Pinning the schedule is the largest variance cut a comparison has. With no
+   * `at_beat` the branch writes every scene against the schedule the source
+   * derived, so two arms differ by the change under test and not by their plans.
+   */
+  async branch(drawId: string, opts: BranchOpts = {}): Promise<DrawRow> {
+    const src = this.must(drawId, "branch");
+    const newId = newDrawId();
+    const { from } = copyDraft(this.p, src, newId, opts.atBeat ?? 1);
+    if (opts.models && Object.keys(opts.models).length) this.p.setModels(newId, opts.models);
+    // the source's drafting configuration unless this branch names another: what is under test is the only thing that moves
+    const resolved = this.resolved(src, opts);
+    commit(this.p.db, { id: newId, links: { draft_config: JSON.stringify(resolved) } });
+    await act(this.p.db, { id: newId, during: "drafting", back: "failed" }, async () => {
+      const session = SceneSession.resume(this.p, newId, resolved.config, passId(), this.screenPaths());
+      await this.scenes(session, resolved.config, from);
+    }, () => ({ id: newId, status: "awaiting_draft_gate" }));
+    await writeReport(this.p, newId, this.opts.outputDir, noPdf);
+    return this.p.draw(newId);
   }
 
   /** A draft started without a check has no ledger; one extraction supplies it. */
@@ -441,12 +481,12 @@ export class Drafting {
    * for a rewrite, and the rewrites kept the motifs. It stays a gate-2 flag
    * for `rewrite k`.
    */
-  private async registerRewrites(drawId: string, cfg: DraftConfig): Promise<void> {
+  private async registerRewrites(drawId: string, cfg: DraftConfig, from = 1): Promise<void> {
     const done = new Map<number, Set<string>>();
     for (let round = 0; round < 2; round++) {
       const chain = chainOf(this.p, drawId);
       const plan = rewritePlan(chain.screenProfiles(), chain.scenes(), cfg);
-      const due = [...plan].filter(([k, lines]) => lines.some((l) => !done.get(k)?.has(l))).sort((a, b) => a[0] - b[0]);
+      const due = [...plan].filter(([k, lines]) => k >= from && lines.some((l) => !done.get(k)?.has(l))).sort((a, b) => a[0] - b[0]);
       if (!due.length) return;
       for (const [k, lines] of due) {
         done.set(k, new Set([...(done.get(k) ?? []), ...lines]));

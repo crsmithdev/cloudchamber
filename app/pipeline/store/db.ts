@@ -6,7 +6,7 @@ import { DEFAULT_DB, SCHEMA } from "../paths.ts";
 export type Db = Database;
 
 /** Bump with every change to an existing table, and mirror it in extract/store.py. */
-export const SCHEMA_VERSION = 12;
+export const SCHEMA_VERSION = 13;
 
 export function openDb(path: string = DEFAULT_DB): Db {
   if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
@@ -47,7 +47,9 @@ function hasTable(db: Db, name: string): boolean {
  * Refuse a store older than SCHEMA_VERSION. The migrations that brought a
  * store from version 1 up to 11 were removed once every live store was at 11;
  * they are still in git, so an older file is opened by checking out the commit
- * named below, opening it once so it migrates in place, and coming back.
+ * named below, opening it once so it migrates in place, and coming back. The
+ * arms below run in order, so a store at 11 climbs to SCHEMA_VERSION in one
+ * open.
  */
 function requireCurrent(db: Db, path: string) {
   const at = userVersion(db);
@@ -57,10 +59,17 @@ function requireCurrent(db: Db, path: string) {
     db.exec("ALTER TABLE steps ADD COLUMN usage TEXT");
     db.exec("ALTER TABLE draws ADD COLUMN models TEXT");
     db.exec("PRAGMA user_version = 12");
+  }
+  // 12 → 13 (2026-09-24): the branch link on draws and the tree a step ran from; all nullable, no data moves
+  if (userVersion(db) === 12) {
+    db.exec("ALTER TABLE steps ADD COLUMN version TEXT");
+    db.exec("ALTER TABLE draws ADD COLUMN branched_from TEXT REFERENCES draws(id)");
+    db.exec("ALTER TABLE draws ADD COLUMN branch_at TEXT");
+    db.exec("PRAGMA user_version = 13");
     return;
   }
   throw new Error(
-    `${path} is at schema ${at}, and this build reads ${SCHEMA_VERSION} only (11 migrates in place). ` +
+    `${path} is at schema ${at}, and this build reads ${SCHEMA_VERSION} only (11 and 12 migrate in place). ` +
     `The migrations below 11 were removed in 7978c4d..HEAD; to open it, run ` +
     `\`git stash && git checkout 7978c4d\`, open the file once so it migrates, then come back.`,
   );

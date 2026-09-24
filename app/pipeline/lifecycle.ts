@@ -7,8 +7,8 @@
  *
  * A failed action on a draw that already stood somewhere puts it back there with
  * the reason in draws.error, cleared by the next action that succeeds. `failed`
- * is only for a draw whose own creation failed: a draw's first run, a fork, or a
- * repair's new round, none of which had a status to go back to.
+ * is only for a draw whose own creation failed: a draw's first run, a fork, a
+ * branch, or a repair's new round, none of which had a status to go back to.
  *
  * The tabs follow docs/specs/2026-09-10-four-tabs.md: every draw is in ideate for
  * ever, and also in check from the moment a candidate is chosen, and in write
@@ -24,7 +24,7 @@ export type Status = (typeof STATUSES)[number];
 // the tab a stage belongs in is a fact about the stage: config.ts holds the table, and this re-export keeps one import for the page
 export { stageTab, type Tab };
 
-export const ACTIONS = ["choose", "fork", "flag", "archive", "unarchive", "delete", "check", "auto", "accept", "dismiss", "hold", "draft", "rewrite", "keep"] as const;
+export const ACTIONS = ["choose", "fork", "flag", "archive", "unarchive", "delete", "check", "auto", "accept", "dismiss", "hold", "draft", "branch", "rewrite", "keep"] as const;
 export type Action = (typeof ACTIONS)[number];
 
 const RUNNING = new Set<string>(["running", "checking", "repairing", "drafting"]);
@@ -39,6 +39,8 @@ const WHEN: Partial<Record<Action, string[]>> = {
   check: AT_BRIEF, auto: AT_BRIEF, draft: AT_BRIEF,
   accept: ["awaiting_check_gate"], dismiss: ["awaiting_check_gate"], hold: ["awaiting_check_gate"],
   rewrite: ["awaiting_draft_gate"], keep: ["awaiting_draft_gate"],
+  // a branch develops a draft, so there has to be one; a draft still being written has no settled scenes to carry
+  branch: ["awaiting_draft_gate", "drafted"],
 };
 
 /** What the rules read off a draw. `referenced_by` is every draw pointing at it, which only delete reads. */
@@ -159,7 +161,7 @@ export function recoverInterrupted(db: Db, reason: string): { steps: number; dra
   const stamp = now();
   const steps = db.query("UPDATE steps SET status = 'failed', fail_reason = 'error', ended_at = ?, error = ? WHERE status = 'running'").run(stamp, reason).changes;
   const draws: string[] = [];
-  for (const d of db.query("SELECT id, status, chosen_step, repaired_from, forked_from FROM draws WHERE status IN ('running', 'checking', 'repairing', 'drafting')").all() as Interrupted[]) {
+  for (const d of db.query("SELECT id, status, chosen_step, repaired_from, forked_from, branched_from FROM draws WHERE status IN ('running', 'checking', 'repairing', 'drafting')").all() as Interrupted[]) {
     const back = interruptedBack(db, d);
     db.query(`UPDATE draws SET status = ?, error = ?${back === "failed" ? ", ended_at = ?" : ""} WHERE id = ?`)
       .run(...(back === "failed" ? [back, reason, stamp, d.id] : [back, reason, d.id]));
@@ -167,13 +169,15 @@ export function recoverInterrupted(db: Db, reason: string): { steps: number; dra
   }
   return { steps, draws };
 }
-type Interrupted = { id: string; status: string; chosen_step: string | null; repaired_from: string | null; forked_from: string | null };
+type Interrupted = { id: string; status: string; chosen_step: string | null; repaired_from: string | null; forked_from: string | null; branched_from: string | null };
 /** The status an interrupted draw stood at before the work began. */
 function interruptedBack(db: Db, d: Interrupted): Status {
   const has = (kind: string) => !!db.query("SELECT 1 FROM artifacts a JOIN steps s ON s.id = a.step_id WHERE s.draw_id = ? AND a.kind = ? LIMIT 1").get(d.id, kind);
   // a first run, a fork or a repair's new round was making the draw; a draw developing its chosen candidate was at the gate
   if (d.status === "running") return d.repaired_from || d.forked_from || !d.chosen_step ? "failed" : "awaiting_gate";
   if (d.status === "repairing") return "awaiting_check_gate";
+  // a branch was being created: its schedule is copied, so a schedule does not say it ever stood anywhere
+  if (d.status === "drafting" && d.branched_from) return "failed";
   if (d.status === "drafting" && has("schedule")) return "awaiting_draft_gate";
   return has("pass") ? "awaiting_check_gate" : "done";
 }

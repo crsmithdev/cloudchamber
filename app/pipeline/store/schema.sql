@@ -120,6 +120,8 @@ CREATE TABLE IF NOT EXISTS draws (
   superseded_by TEXT REFERENCES draws(id),
   repaired_from TEXT REFERENCES draws(id),   -- the brief this one repairs
   forked_from   TEXT REFERENCES draws(id),   -- the draw whose candidate this one develops
+  branched_from TEXT REFERENCES draws(id),   -- the draw whose draft this one develops
+  branch_at     TEXT,                  -- the last step of that draft this one carries over
   draft_config  TEXT,                  -- JSON: the resolved draft.toml values a draft ran under
   models        TEXT,                  -- JSON: {stage: model} overrides of stages.toml for this draw; copied to its repairs and forks
   name          TEXT,                  -- readable, from the seed; written once and never recomputed
@@ -144,6 +146,7 @@ CREATE TABLE IF NOT EXISTS steps (
   attempt       INTEGER NOT NULL DEFAULT 1,
   tools         TEXT NOT NULL DEFAULT '',   -- comma-separated tool list the call was allowed
   usage         TEXT,                  -- JSON: input, cache_read, cache_write, output, thinking tokens and cost_usd, as the CLI reported them
+  version       TEXT,                  -- the tree the step ran from: the short sha, with +dirty when app/ or extract/ differed from it
   started_at    TEXT NOT NULL,
   ended_at      TEXT,
   error         TEXT
