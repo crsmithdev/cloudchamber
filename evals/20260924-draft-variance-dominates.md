@@ -100,3 +100,17 @@ Six within-arm pairs, each pooled over 12 passes, on one brief. The distance
 statistic is not the protocol's and has not been agreed. Nothing here says the
 register cut is good or bad; it says the run could not tell, and neither could
 the two beside it.
+
+## Correction, the same day
+
+`evals/20260924-judged-at-24-passes.md` judged these pairs again at 24
+passes a judge. Two claims above do not hold:
+
+- "The panel is close to deterministic within a pair" is false. `cut2 v cut3`
+  moved from 0.19 to 0.55. The judges follow the reading order on about 80%
+  of passes, so four passes carry about one informative pass each.
+- "Twice the effect" becomes "about the same size": the floor sits 0.16 from
+  a coin flip and the comparison sits 0.15.
+
+The main claim holds. Draft-to-draft variance is real (`cut1` never won when
+read second, 0/72), and three drafts an arm cannot resolve the register cut.
