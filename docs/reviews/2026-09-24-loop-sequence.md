@@ -38,6 +38,66 @@ The spine is **1 → 2 → 3**. Step 2 is the keystone: it takes a judged run fr
 35–45 minutes and about $26 of hand work down to one command, which is what
 makes steps 4, 5 and 7 affordable at all.
 
+## What `bank/judgements.jsonl` is for
+
+The review has step 2 append every pass to a log and rebuild its tables from it.
+That is an archive. It is worth more as a **set the next run is answered
+against**, and the three uses below decide its columns. One row per pass:
+experiment, brief, arm, the stored draft ids of the pair, judge, reading order,
+the eight axes, overall, cost.
+
+**1. Re-pool a past run under a corrected rule. This is the only free one.**
+Pooling is deterministic, so a change to the weight or the floor rule re-reads
+every past run at no cost. On 23 September the floor rule was wrong and the
+register cut came back at 0.29, and the run was written off as unreadable. The
+passes themselves were fine; only the arithmetic over them was not. Logged, the
+corrected all-three-pairs rule is applied to that run again for nothing, and it
+either becomes readable or is rejected for a reason that holds.
+
+**2. Reuse the arm, never the verdict.** A verdict is a judgement of two
+particular texts and does not transfer to new prose. The stored arm does: all
+three runs of 23 September answered against the same `fix1-3` drafts, which is
+three of the six drafts a comparison needs. The log names the draft ids of every
+pair, so the runner finds a stored arm instead of drafting a baseline again.
+Step 1 is what makes an arm re-derivable — a branch at beat 1 writes a second
+arm against the first's schedule.
+
+The floor is the same saving and nobody has taken it yet. Each of the three runs
+floored its **own** arm — `pres1`–`pres2`, `last1`–`last3`, `cut1`–`cut3` — so
+each paid for a floor, and two of the three floors were badly shaped. The
+review's rule is a floor cached per baseline, judged once on one brief until the
+baseline moves. The log is what makes "cached" mean anything.
+
+**3. Record what the panel has already ruled on.** Three clauses were judged and
+rejected on 23 September and the record of that is three markdown files. The log
+is what stops a fourth session proposing the presence clause again.
+
+**What it is not.** It is not a test set a prompt change replays against. New
+prompt text makes new prose, new prose needs new passes, and there is no free
+regression run here. The saving is the baseline half of a comparison and the
+floor, not the comparison.
+
+## Accretion, once the loop is cheap
+
+`CLAUDE.md`'s rule is about **prompt text**, and it says so: it names the four
+layers that can state a constraint, all of them in `prompts.ts` and `write.ts`.
+A judgements log, a case in the runner and a stored arm are code. They do not
+accrete in the sense the rule means, and the rule is not an argument against
+building them.
+
+The rule itself survives a cheap loop, and one half of it starts working for the
+first time. Its two halves are add and remove. The add half rests on a measured
+local optimum: on 23 September the two presence clauses took register rewrites
+from 10 to 25 and drafting cost up 50%, the register cut took them from 10 to 26
+and cost up 46%, and neither arm won. A faster loop does not move that. The
+remove half has never been affordable:
+the register cut was rejected **on cost**, not on quality, so *"remove clauses
+with the protocol you add them with"* has never once run to a verdict. At L1 it
+can. Expect the first honest use of the loop to be a deletion, not an addition.
+
+Nothing in `CLAUDE.md` changes until the loop exists and has run. A rule relaxed
+before its replacement works is a rule with nothing behind it.
+
 ## Three changes to the review's ordering
 
 **`steps.version` moves from 06 into step 1.** The review parks it with the rest
