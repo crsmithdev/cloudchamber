@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { TEMPLATES } from "./prompts.ts";
-
-const words = (s: string) => s.split(/\s+/).filter(Boolean).length;
+import { words } from "./model.ts";
 
 /**
  * What each drafting template is allowed to weigh. A template the model reads
