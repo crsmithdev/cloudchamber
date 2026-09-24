@@ -62,7 +62,14 @@ def main():
     share = report(load(args.runs), "the comparison")
     floor = report(load(args.floor), "the noise floor (two drafts by one code)") if args.floor else None
     if share is not None and floor is not None:
-        print(f"\nours {share:.2f} against a floor of {floor:.2f}: "
-              + ("clears the floor" if share - floor > 0.1 else "inside the floor, so this says nothing yet"))
+        gap = share - floor
+        # the protocol runs in both directions: an ablation that loses is a result, not an absence of one
+        if gap > 0.1:
+            verdict = "clears the floor"
+        elif gap < -0.1:
+            verdict = "falls below the floor: the change loses"
+        else:
+            verdict = "inside the floor, so this says nothing yet"
+        print(f"\nours {share:.2f} against a floor of {floor:.2f}: {verdict}")
 
 if __name__ == "__main__": main()

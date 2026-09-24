@@ -26,7 +26,7 @@ worth $1.60.
 
 ## What changed
 
-`44af975`: one sentence deleted from `scheduleListen`, 409 words to 354. The
+`44af975`: one sentence deleted from `scheduleListen`, 386 words to 354. The
 last-beat floor stays. `scheduleSignal` is untouched, because these drafts run
 the listen template.
 
