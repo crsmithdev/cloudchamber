@@ -30,7 +30,7 @@ distance **0.16**.
 **The judges follow the reading order on about 80% of passes.** Only the
 other 20% carry information about the stories, so four passes a judge leave
 about one informative pass each. That is why `cut2 v cut3` read 0.19 at four
-passes and 0.55 at 24. The halves now agree to within about 0.15 on every
+passes and 0.55 at 24. The halves now agree to within 0.17 on every
 pair, so 24 passes is enough to read one pair.
 
 **Draft-to-draft variance is real, not an artefact of too few passes.** `cut1`
