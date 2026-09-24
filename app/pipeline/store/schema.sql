@@ -147,6 +147,7 @@ CREATE TABLE IF NOT EXISTS steps (
   tools         TEXT NOT NULL DEFAULT '',   -- comma-separated tool list the call was allowed
   usage         TEXT,                  -- JSON: input, cache_read, cache_write, output, thinking tokens and cost_usd, as the CLI reported them
   version       TEXT,                  -- the tree the step ran from: the short sha, with +dirty when app/ or extract/ differed from it
+  pid           INTEGER,               -- the process that started it; recovery leaves a running step alone while that process lives
   started_at    TEXT NOT NULL,
   ended_at      TEXT,
   error         TEXT

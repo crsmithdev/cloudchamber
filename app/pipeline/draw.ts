@@ -58,7 +58,7 @@ export type DrawRow = {
 export type StepRow = {
   id: string; draw_id: string | null; parent_id: string | null; stage: string; model: string; system_prompt: string;
   prompt: string; raw_response: string | null; parsed: string | null; status: string; fail_reason: string | null;
-  attempt: number; tools: string; usage: string | null; version: string; started_at: string; ended_at: string | null; error: string | null;
+  attempt: number; tools: string; usage: string | null; version: string; pid: number | null; started_at: string; ended_at: string | null; error: string | null;
 };
 
 export class StepFailure extends Error {
@@ -136,11 +136,11 @@ export class Pipeline {
   private insertStep(draw: string | null, parent: string | null, stage: string, model: string, system: string, prompt: string, attempt: number, storyId: string | null = null, tools = ""): StepRow {
     const row: StepRow = {
       id: `${stage}-${id(4)}`, draw_id: draw, parent_id: parent, stage, model, system_prompt: system, prompt,
-      raw_response: null, parsed: null, status: "running", fail_reason: null, attempt, tools, usage: null, version: treeVersion(), started_at: now(), ended_at: null, error: null,
+      raw_response: null, parsed: null, status: "running", fail_reason: null, attempt, tools, usage: null, version: treeVersion(), pid: process.pid, started_at: now(), ended_at: null, error: null,
     };
-    this.db.query(`INSERT INTO steps (id, draw_id, story_id, parent_id, stage, model, system_prompt, prompt, status, attempt, tools, version, started_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'running', ?, ?, ?, ?)`)
-      .run(row.id, draw, storyId, parent, stage, model, system, prompt, attempt, tools, row.version, row.started_at);
+    this.db.query(`INSERT INTO steps (id, draw_id, story_id, parent_id, stage, model, system_prompt, prompt, status, attempt, tools, version, pid, started_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'running', ?, ?, ?, ?, ?)`)
+      .run(row.id, draw, storyId, parent, stage, model, system, prompt, attempt, tools, row.version, row.pid, row.started_at);
     return row;
   }
 

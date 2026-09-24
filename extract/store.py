@@ -9,7 +9,7 @@ from pathlib import Path
 
 SCHEMA = Path("app/pipeline/store/schema.sql")
 # Mirrors SCHEMA_VERSION in app/pipeline/store/db.ts, which owns the schema.
-SCHEMA_VERSION = 13
+SCHEMA_VERSION = 14
 
 
 def now() -> str:

@@ -156,18 +156,48 @@ export async function act<T>(db: Db, holds: Hold | Hold[], work: () => Promise<T
  * waits for its jobs, a reboot does not. On start, every such step fails with
  * the reason and its draw goes back where `act()` would have put it, read
  * off what the draw has: a schedule, a check pass, a brief, a chosen candidate.
+ *
+ * A step whose process is still alive is left exactly as it is, and so is its
+ * draw. The store is shared: a `cloudchamber` CLI run and the service hold it
+ * at once, and "running when I started" does not mean "abandoned".
  */
-export function recoverInterrupted(db: Db, reason: string): { steps: number; draws: string[] } {
+/**
+ * Whether another process still holds this step. Signal 0 asks the kernel
+ * without delivering anything: it returns for a process this user owns, and
+ * throws `EPERM` for one it does not — which still means the process is there.
+ * Only `ESRCH`, no such process, says the step was abandoned.
+ */
+export function alive(pid: number | null): boolean {
+  if (!pid || pid === process.pid) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    return (e as NodeJS.ErrnoException)?.code === "EPERM";
+  }
+}
+
+export function recoverInterrupted(db: Db, reason: string): { steps: number; draws: string[]; left: number } {
   const stamp = now();
-  const steps = db.query("UPDATE steps SET status = 'failed', fail_reason = 'error', ended_at = ?, error = ? WHERE status = 'running'").run(stamp, reason).changes;
+  // a CLI run shares this store, so a running step whose process is alive has a call behind it after all.
+  // `serve` used to fail every running step on start; on 2026-09-24 a commit reloaded the service and it
+  // killed a `cloudchamber branch` that was 5 beats in, $0.86 spent.
+  const running = db.query("SELECT id, draw_id, pid FROM steps WHERE status = 'running'").all() as { id: string; draw_id: string | null; pid: number | null }[];
+  const live = running.filter((s) => alive(s.pid));
+  const dead = running.filter((s) => !alive(s.pid));
+  const busy = new Set(live.map((s) => s.draw_id).filter(Boolean) as string[]);
+  const fail = db.query("UPDATE steps SET status = 'failed', fail_reason = 'error', ended_at = ?, error = ? WHERE id = ?");
+  for (const s of dead) fail.run(stamp, reason, s.id);
+  const steps = dead.length;
   const draws: string[] = [];
-  for (const d of db.query("SELECT id, status, chosen_step, repaired_from, forked_from, branched_from FROM draws WHERE status IN ('running', 'checking', 'repairing', 'drafting')").all() as Interrupted[]) {
+  const held = db.query("SELECT id, status, chosen_step, repaired_from, forked_from, branched_from FROM draws WHERE status IN ('running', 'checking', 'repairing', 'drafting')").all() as Interrupted[];
+  for (const d of held.filter((x) => !busy.has(x.id))) {
     const back = interruptedBack(db, d);
     db.query(`UPDATE draws SET status = ?, error = ?${back === "failed" ? ", ended_at = ?" : ""} WHERE id = ?`)
       .run(...(back === "failed" ? [back, reason, stamp, d.id] : [back, reason, d.id]));
     draws.push(d.id);
   }
-  return { steps, draws };
+  return { steps, draws, left: live.length };
 }
 type Interrupted = { id: string; status: string; chosen_step: string | null; repaired_from: string | null; forked_from: string | null; branched_from: string | null };
 /** The status an interrupted draw stood at before the work began. */

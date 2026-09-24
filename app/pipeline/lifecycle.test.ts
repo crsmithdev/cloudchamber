@@ -122,11 +122,48 @@ describe("recovery on start", () => {
     const step = p.steps(draw.id).find((s) => s.stage === "check-ledger")!;
     p.db.query("UPDATE steps SET status = 'running', ended_at = NULL WHERE id = ?").run(step.id);
     p.db.query("UPDATE draws SET status = 'checking' WHERE id = ?").run(draw.id);
-    expect(recoverInterrupted(p.db, "restart")).toEqual({ steps: 1, draws: [draw.id] });
+    // the step's process is gone, so recovery owns it
+    p.db.query("UPDATE steps SET pid = NULL WHERE id = ?").run(step.id);
+    expect(recoverInterrupted(p.db, "restart")).toEqual({ steps: 1, draws: [draw.id], left: 0 });
     expect(p.steps(draw.id).find((s) => s.id === step.id)).toMatchObject({ status: "failed", fail_reason: "error", error: "restart" });
     expect(p.draw(draw.id)).toMatchObject({ status: "awaiting_check_gate", error: "restart" });
     // a second start finds nothing to do
-    expect(recoverInterrupted(p.db, "restart")).toEqual({ steps: 0, draws: [] });
+    expect(recoverInterrupted(p.db, "restart")).toEqual({ steps: 0, draws: [], left: 0 });
+  });
+
+  test("a step whose process is still alive is left alone, and so is its draw", async () => {
+    const { p, d, draw } = await drawn(draftScript({ "check-ledger": [...ledgerSamples(), ...cleanSamples()], "check-derivation": [...derivationSamples(), ...cleanSamples()] }));
+    await d.check(draw.id);
+    const step = p.steps(draw.id).find((s) => s.stage === "check-ledger")!;
+    // a CLI run holding the same store: the step is running and its process is this one, which is alive
+    p.db.query("UPDATE steps SET status = 'running', ended_at = NULL, pid = ? WHERE id = ?").run(process.pid + 0, step.id);
+    p.db.query("UPDATE draws SET status = 'checking' WHERE id = ?").run(draw.id);
+
+    // `alive` ignores this very process, so stand in for another live one: pid 1 always exists
+    p.db.query("UPDATE steps SET pid = 1 WHERE id = ?").run(step.id);
+    expect(recoverInterrupted(p.db, "restart")).toEqual({ steps: 0, draws: [], left: 1 });
+    expect(p.steps(draw.id).find((s) => s.id === step.id)).toMatchObject({ status: "running" });
+    expect(p.draw(draw.id).status).toBe("checking");
+
+    // once that process is gone, the next start recovers it as before
+    p.db.query("UPDATE steps SET pid = 0x7ffffff WHERE id = ?").run(step.id);
+    expect(recoverInterrupted(p.db, "restart")).toEqual({ steps: 1, draws: [draw.id], left: 0 });
+    expect(p.draw(draw.id).status).toBe("awaiting_check_gate");
+  });
+
+  test("one dead step does not drag down a draw another process is working on", async () => {
+    const { p, d, draw } = await drawn(draftScript({ "check-ledger": [...ledgerSamples(), ...cleanSamples()], "check-derivation": [...derivationSamples(), ...cleanSamples()] }));
+    await d.check(draw.id);
+    const [a, b] = p.steps(draw.id).filter((s) => s.stage === "check-ledger");
+    p.db.query("UPDATE steps SET status = 'running', ended_at = NULL, pid = 1 WHERE id = ?").run(a!.id);
+    p.db.query("UPDATE steps SET status = 'running', ended_at = NULL, pid = 0x7ffffff WHERE id = ?").run(b!.id);
+    p.db.query("UPDATE draws SET status = 'checking' WHERE id = ?").run(draw.id);
+    const r = recoverInterrupted(p.db, "restart");
+    // the abandoned step is failed, the live one is not, and the draw stays where the live process left it
+    expect(r).toEqual({ steps: 1, draws: [], left: 1 });
+    expect(p.steps(draw.id).find((s) => s.id === a!.id)!.status).toBe("running");
+    expect(p.steps(draw.id).find((s) => s.id === b!.id)!.status).toBe("failed");
+    expect(p.draw(draw.id).status).toBe("checking");
   });
 
   test("where each working status goes back to", async () => {

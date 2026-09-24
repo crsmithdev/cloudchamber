@@ -19,6 +19,7 @@ export async function serve(port: number, opts: { db?: string; uiDir?: string; h
   // a step still running from before this process began has no call behind it
   const r = recoverInterrupted(db, "interrupted: the server was not running to finish the call");
   if (r.draws.length) console.log(`recovered ${r.steps} interrupted step(s) on ${r.draws.join(", ")}`);
+  if (r.left) console.log(`left ${r.left} step(s) alone: another process is still running them`);
   const pipeline = new Pipeline(db, new ClaudeCli());
   const jobs = new Jobs();
   const app = buildApi(db, pipeline, { logger: false, jobs });

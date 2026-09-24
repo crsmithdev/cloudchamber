@@ -6,7 +6,7 @@ import { DEFAULT_DB, SCHEMA } from "../paths.ts";
 export type Db = Database;
 
 /** Bump with every change to an existing table, and mirror it in extract/store.py. */
-export const SCHEMA_VERSION = 13;
+export const SCHEMA_VERSION = 14;
 
 export function openDb(path: string = DEFAULT_DB): Db {
   if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
@@ -66,6 +66,11 @@ function requireCurrent(db: Db, path: string) {
     db.exec("ALTER TABLE draws ADD COLUMN branched_from TEXT REFERENCES draws(id)");
     db.exec("ALTER TABLE draws ADD COLUMN branch_at TEXT");
     db.exec("PRAGMA user_version = 13");
+  }
+  // 13 → 14 (2026-09-24): the process that owns a running step, so recovery cannot kill a live one
+  if (userVersion(db) === 13) {
+    db.exec("ALTER TABLE steps ADD COLUMN pid INTEGER");
+    db.exec("PRAGMA user_version = 14");
     return;
   }
   throw new Error(
