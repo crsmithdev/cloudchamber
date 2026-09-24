@@ -8,10 +8,12 @@ ordering. Written 2026-09-24 with `main` at `b68ec27`.
 ## The constraint that sets the order
 
 **OpenRouter credit.** A judged run is the gate on anything that changes what a
-model reads. L1 costs about $5, L2 about $25. On 24 September the balance was
-$3.58, so **no judged run could run at all**. Everything that needs no panel is
-therefore built first, in dependency order, and the judged work queues behind a
-top-up.
+model reads. L1 costs about $5, L2 about $25. On the morning of 24 September the
+balance was $3.58, so **no judged run could run at all**, and everything that
+needs no panel was built first, in dependency order. Chris topped it up that
+afternoon and the balance is $28.58; the order stands, because it was never
+only about money — a slice checked against the stored passes is checked in
+seconds and for nothing, and a slice checked by a panel is not.
 
 The second constraint is the record of 23 September: three prompt changes were
 judged and **none landed** (`evals/20260923-presence.md`,
@@ -24,8 +26,8 @@ loop exists.**
 | # | Candidate | Time | Judged run | Blocked by |
 |---|---|---|---|---|
 | 0 | Take the report off the critical path (04a) | 10 min | none | — **landed `b68ec27`** |
-| 1 | Branch a draft at a point (01) + `steps.version` | 40 min | none | — |
-| 2 | The experiment runner, `cloudchamber lab` (02) | 90 min | none to build | 1 |
+| 1 | Branch a draft at a point (01) + `steps.version` | 40 min | none | — **landed `0c586a2`** |
+| 2 | The experiment runner, `cloudchamber lab` (02) | 90 min | none to build | 1 — *pooling `2b59240`, the judge ask `77797b4`* |
 | 3 | Beat-level judging, L1 (03) | 45 min | **calibration owed** | 1, credit |
 | — | *gate: does L1 reproduce the L2 losses of 23 Sep?* | | | 3 |
 | 4 | Rewrite waves, odd then even (04b) | 20 min | owes L2 | 2 |
@@ -38,6 +40,66 @@ The spine is **1 → 2 → 3**. Step 2 is the keystone: it takes a judged run fr
 35–45 minutes and about $26 of hand work down to one command, which is what
 makes steps 4, 5 and 7 affordable at all.
 
+## Four things step 2 has to get right
+
+Written 2026-09-24 while building it, from what the runs of 22–23 September
+cost to work with rather than from the design.
+
+**1. An experiment needs an identity, and three other problems follow from its
+not having one.** The arms of 23 September are `cut1.txt` and `fix1.txt` in
+`~/.cloudchamber/ab/20260922-repeat/`, made by a shell script written for that
+run. Nothing in the store knows the experiment happened; the passes were found
+again by searching the filesystem for a field name.
+
+That is why an arm cannot be reused: an arm is not a draw, it is a text file
+exported from a scratch store that no longer exists. It is why the gate below
+step 3 — *does L1 reproduce the L2 losses of 23 Sep?* — is not runnable as
+written, because it needs those arms back. And it is why the floor cannot be
+cached per baseline: nothing names the baseline.
+
+So `lab` writes an **experiment** whose arms are draw ids in a store that
+outlives the run, not paths. Step 1 makes an arm re-derivable from a pinned
+schedule; this is the other half of the same idea, and without it the log's
+second use is words.
+
+**2. A badly shaped run is refused before it bills, not described afterwards.**
+Both mistakes of 23 September were found by reading prose once the money was
+spent. `floorPairs` and `anchoredOn` exist now (`app/pipeline/lab/pool.ts`), and
+they belong at the front of a run as preconditions:
+
+- a floor whose pairs all hang off one draft — the register cut;
+- an arm with fewer drafts than the protocol asks for;
+- a pooled result where every judge's weight came out zero, which is a run that
+  says only what it read first. The presence floor was exactly that, on two
+  judges and eight passes, and it was still reported as 0.62.
+
+A run that cannot say anything should fail at the start.
+
+**3. The runner records its own clock.** The target is a judged result in under
+ten minutes and nothing anywhere measures one. `steps` carries `started_at` and
+`ended_at`, but an experiment has no wall time of its own, so steps 4 and 5 —
+which both promise a speedup and both owe an L2 run — would be settled with a
+stopwatch and a memory. Per phase: draft, screen, judge, pool. It is the same
+rule `steps.version` follows, which is that a measurement belongs in the
+artifact and not in the write-up.
+
+**4. An arm is a commit.** The review writes `--arm <ref-or-worktree>`, which
+allows an arm to be a dirty tree, and that is the mistake of 23 September in
+the specification: a figure measured inside a worktree carrying a rejected
+change, published as a fact about `main`. `steps.version` now detects it. `lab`
+should refuse it, or record the diff as part of the experiment. Otherwise the
+run is not reproducible and the log's third use records a verdict on a clause
+that exists nowhere.
+
+**And one rule for building it.** Every slice of the runner must be verifiable
+with no judged run, against the stored passes as a golden set. That is how the
+first two slices landed on a balance of $3.58: pooling was checked against
+`tally.py` over the three runs of 23 September, and the parser against all 252
+stored replies. The corollary is that the golden set is an asset, not a test
+fixture — it sits in one scratch directory that nothing backs up, and the
+copies now in `app/pipeline/lab/` were made because a slice happened to need
+them.
+
 ## What `bank/judgements.jsonl` is for
 
 The review has step 2 append every pass to a log and rebuild its tables from it.
@@ -46,13 +108,20 @@ against**, and the three uses below decide its columns. One row per pass:
 experiment, brief, arm, the stored draft ids of the pair, judge, reading order,
 the eight axes, overall, cost.
 
-**1. Re-pool a past run under a corrected rule. This is the only free one.**
-Pooling is deterministic, so a change to the weight or the floor rule re-reads
-every past run at no cost. On 23 September the floor rule was wrong and the
-register cut came back at 0.29, and the run was written off as unreadable. The
-passes themselves were fine; only the arithmetic over them was not. Logged, the
-corrected all-three-pairs rule is applied to that run again for nothing, and it
-either becomes readable or is rejected for a reason that holds.
+**1. Re-pool a past run under a corrected rule. This is the only free one, and
+only for a run logged under the corrected rule's inputs.** Pooling is
+deterministic, so a change to the weight rule re-reads every past run at no
+cost, and the three runs of 23 September re-pool to their published numbers
+today (`app/pipeline/lab/pool.test.ts`).
+
+The floor rule is the case where it does not help, and finding that out is what
+the use is for. The corrected rule needs all three within-arm pairings, and
+every run of 23 September judged only 1 v 2 and 1 v 3 — `cut2 v cut3` was never
+asked. So the register cut cannot be rescued by arithmetic; it needs twelve
+fresh passes over drafts that already exist, which is the cheapest judged run
+available. **A log makes a rule change free only over the pairs it holds.**
+That is an argument for judging the third pairing at the time, not for a
+smarter tally afterwards.
 
 **2. Reuse the arm, never the verdict.** A verdict is a judgement of two
 particular texts and does not transfer to new prose. The stored arm does: all
