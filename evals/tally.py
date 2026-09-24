@@ -9,6 +9,12 @@ judge's weight here is 1 - (passes where it took the first read) / (its passes),
 and a judge that always takes the first read counts for nothing. `--floor` takes
 the runs of a within-arm pair — two drafts by one code — which is the noise floor
 the result has to clear.
+
+Give the floor the same judges and the same passes as the comparison, and pair
+**all three** drafts of one arm — 1 v 2, 1 v 3, 2 v 3. A floor anchored on one
+draft measures that draft, not the arm: on 23 September both floor pairs ran
+against `cut1`, the weakest of its three, and the floor came out at 0.29 rather
+than near 0.5 (evals/20260923-register-cut.md).
 """
 import argparse, glob, json, os, statistics as st
 
