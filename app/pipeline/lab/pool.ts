@@ -194,10 +194,11 @@ export function anchoredOn(pairs: [string, string][]): string | null {
  * reads each pair both ways round equally often, so the lean cancels, and
  * every pass carries eight graded answers instead of one call.
  *
- * On the register cut's six pairs, six disjoint sets of four passes a judge
- * each landed within about 0.15 of the 24-pass gap, where the overall call at
- * four passes read `cut2 v cut3` as 0.19 and it was a coin flip
- * (`evals/20260924-the-score-gap.md`).
+ * On the register cut's six pairs, 32 of 36 disjoint sets of four passes a
+ * judge fell on the same side of `GAP_MARGIN` as the 24-pass gap, and none was
+ * more than 0.22 from it. The overall call at four passes read `cut2 v cut3`
+ * as 0.19 when it was a coin flip. One pair still needs eight passes a judge
+ * (`evals/20260924-against-the-channels.md`).
  */
 export function scoreGap(runs: Run[]): { gap: number; passes: number } {
   const gaps = runs.flatMap((r) => r.results).filter((p) => p.complete).flatMap((p) => {

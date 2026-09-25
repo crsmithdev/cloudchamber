@@ -21,7 +21,7 @@ Chris set two goals, in this order:
 | Two drafts of one arm differ twice as much as two arms. | 24 passes: floor 0.16 from a coin flip, the arms 0.15. | They differ about as much. The register cut is still not resolved. |
 | The panel judges a prompt change cheaply. | A change the size of the register cut needs about 12 matched pairs an arm. | The panel resolves a large change only. |
 | A beat pair (L1) is the cheap, narrow instrument. | Beat 1 of `5bfc v 48ec` at 24 passes: 0.71, a stable preference. | Beat judging has no special advantage. L1 is deprioritised. |
-| The overall call is the statistic. | The mean score gap over the axes. Six disjoint sets of four passes a judge land on the side of the margin the 24-pass reading does. | **The score gap is the statistic.** A judged pair costs $0.36 to $0.72, not $2.15. |
+| The overall call is the statistic. | The mean score gap over the axes. 32 of 36 disjoint sets of four passes a judge land on the same side of the margin as the 24-pass reading. | **The score gap is the statistic.** A judged pair costs $0.36 to $0.72, not $2.15. |
 | A draft costs about $8. | That is the list price. Drafting runs on the subscription. | A draft costs time (about 40 minutes). Only judging costs money. |
 
 Two consequences follow:
