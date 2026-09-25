@@ -59,13 +59,37 @@ export function copyDraft(p: Pipeline, src: DrawRow, newId: string, atBeat: numb
     const missing = Array.from({ length: atBeat - 1 }, (_, i) => i + 1).filter((k) => !have.has(k));
     throw new Error(`draw ${src.id}: a branch at beat ${atBeat} carries beats 1..${atBeat - 1}, and ${missing.join(", ")} ${missing.length > 1 ? "are" : "is"} not written`);
   }
+  const at = carried.at(-1)?.step_id ?? sched.step_id;
+  const oStep = copyBrief(p, src, newId, at);
 
+  const sStep = p.recordStep(newId, oStep.id, "schedule", "copied");
+  p.artifact(sStep, "schedule", sched.content, sched.meta);
+
+  for (const sc of carried) {
+    const meta = chain.artifact(sc.artifact_id)!.meta as SceneMeta;
+    const step = p.recordStep(newId, sStep.id, "scene", "copied");
+    // a scene keeps its beat, its cap and its length; the source's gate-2 record of it is the source's
+    const { rewrite: _rw, rewrite_finding: _rf, ...rest } = meta;
+    p.artifact(step, "scene", sc.text, carry(rest, sc.artifact_id) as SceneMeta);
+  }
+
+  p.artifact(oStep, "brief", writeBrief(p.db, newId, p.briefsDir), {});
+  return { from: atBeat, at };
+}
+
+/**
+ * Copy `src`'s brief and pinned ledger onto a new draw, and nothing of its
+ * draft: a sibling derives its own schedule and writes every scene. `at` is the
+ * source step the new draw carries last, the ending's step when no draft is
+ * carried. Returns the outline step, which the schedule hangs off.
+ */
+export function copyBrief(p: Pipeline, src: DrawRow, newId: string, at?: string) {
+  const chain = chainOf(p, src.id);
   const parts = partsOf(p, src.id);
   const chosen = partOf(parts, "vignette"), outline = partOf(parts, "outline"), ending = partOf(parts, "ending");
   if (!chosen || !outline || !ending) throw new Error(`draw ${src.id}: brief incomplete (vignette, outline or ending missing)`);
-  const at = carried.at(-1)?.step_id ?? sched.step_id;
 
-  p.copyDraw(src, newId, { branched_from: src.id, branch_at: at }, src.gate_method);
+  p.copyDraw(src, newId, { branched_from: src.id, branch_at: at ?? ending.stepId }, src.gate_method);
 
   // the brief, part by part, under the stage that wrote it in the source: a copied part reads as the part it copies
   const vStep = p.recordStep(newId, null, chosen.stage as StageName, "copied");
@@ -92,18 +116,6 @@ export function copyDraft(p: Pipeline, src: DrawRow, newId: string, atBeat: numb
     p.artifact(lStep, "ledger", ledger, { pass: passId(), sample: 1, ledger_only: true });
   }
 
-  const sStep = p.recordStep(newId, oStep.id, "schedule", "copied");
-  p.artifact(sStep, "schedule", sched.content, sched.meta);
-
-  for (const sc of carried) {
-    const meta = chain.artifact(sc.artifact_id)!.meta as SceneMeta;
-    const step = p.recordStep(newId, sStep.id, "scene", "copied");
-    // a scene keeps its beat, its cap and its length; the source's gate-2 record of it is the source's
-    const { rewrite: _rw, rewrite_finding: _rf, ...rest } = meta;
-    p.artifact(step, "scene", sc.text, carry(rest, sc.artifact_id) as SceneMeta);
-  }
-
-  p.artifact(oStep, "brief", writeBrief(p.db, newId, p.briefsDir), {});
-  return { from: atBeat, at };
+  return oStep;
 }
 

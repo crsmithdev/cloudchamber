@@ -36,8 +36,8 @@ import type { Axis, Pass, Run, Side } from "./pool.ts";
 
 export const JUDGEMENT_LOG = join(BANK, "judgements.jsonl");
 
-/** Which half of a run a pass belongs to: the arms against each other, or one arm against itself. */
-export type PairKind = "comparison" | "floor";
+/** Which half of a run a pass belongs to: the arms against each other, or one arm against itself; or drafts ranked for best of N. */
+export type PairKind = "comparison" | "floor" | "rank";
 
 /** One judge pass over one pair, as the log keeps it. */
 export type Judgement = {
@@ -71,6 +71,8 @@ export type Judgement = {
   at: string;
   /** The tree the runner ran under: short sha, `+dirty` when the code differs from it. */
   version: string;
+  /** Why an incomplete pass is incomplete, as the last try reported it. */
+  error?: string;
 };
 
 export type JudgementInput = Omit<Judgement, "id" | "at">;

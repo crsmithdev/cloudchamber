@@ -182,3 +182,30 @@ export function anchoredOn(pairs: [string, string][]): string | null {
   }
   return null;
 }
+
+/**
+ * The mean score gap: `ours` minus `source`, over every axis a pass scored and
+ * every pass that scored one, on the 1–5 scale. Positive favours `ours`.
+ *
+ * The overall call wastes most passes. The judges take the story they read
+ * first on about 80% of them, the weighting in `pool` then gives those judges
+ * little or no weight, and four passes a judge leave about one pass of signal.
+ * The scores lean to the first story too (+0.37 on 24 September), but a run
+ * reads each pair both ways round equally often, so the lean cancels, and
+ * every pass carries eight graded answers instead of one call.
+ *
+ * On the register cut's six pairs, six disjoint sets of four passes a judge
+ * each landed within about 0.15 of the 24-pass gap, where the overall call at
+ * four passes read `cut2 v cut3` as 0.19 and it was a coin flip
+ * (`evals/20260924-the-score-gap.md`).
+ */
+export function scoreGap(runs: Run[]): { gap: number; passes: number } {
+  const gaps = runs.flatMap((r) => r.results).filter((p) => p.complete).flatMap((p) => {
+    const s = Object.values(p.scores ?? {});
+    return s.length ? [s.reduce((t, x) => t + (x!.ours - x!.source), 0) / s.length] : [];
+  });
+  return { gap: gaps.length ? gaps.reduce((t, x) => t + x, 0) / gaps.length : NaN, passes: gaps.length };
+}
+
+/** A score gap has to clear this, in either direction, before it says one draft is better. */
+export const GAP_MARGIN = 0.15;

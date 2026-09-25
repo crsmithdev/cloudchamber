@@ -36,6 +36,9 @@ const DOC = `cloudchamber — the one command the skill and the UI drive.
        develop an existing draft as a draw of its own: the brief, the ledger, the schedule and the
        beats under K are carried over word for word, and the beats from K on are written again.
        With no --at-beat the schedule alone is carried: two arms drafted from one plan.
+   cloudchamber lab best <draw> [--n 3] [--passes 8] [--concurrency 12]
+       draft the brief until there are N drafts (the draw counts if it is drafted), judge every pair
+       with the OpenRouter panel, log each pass to bank/judgements.jsonl, and rank the drafts by score gap
    cloudchamber story <draw>                   the draft with its screen flags inline
    cloudchamber report <draw>                  write output/<draw>/report.html and .pdf: the story and everything that made it
    cloudchamber listen <draw> [--beat K] [--voice V] [--out PATH]   render the draft, or one beat, to a wav with the local kokoro voice
@@ -60,6 +63,8 @@ import { draftAll, failures, histogram, replayThemes } from "../pipeline/themes.
 import { formatFinding, lintFile, loadSetting, LISTS } from "../pipeline/settings.ts";
 import { distill, readKept } from "../pipeline/distill.ts";
 import { Drafting } from "../pipeline/drafting.ts";
+import { best } from "../pipeline/lab/best.ts";
+import { GAP_MARGIN, fmt2 } from "../pipeline/lab/pool.ts";
 import { writeReport } from "../pipeline/report.ts";
 import { gateCommand, isGateAction, type GateArgs } from "../pipeline/gate.ts";
 import type { CheckResult } from "../pipeline/check.ts";
@@ -68,7 +73,7 @@ import type { Overrides } from "../pipeline/draftconfig.ts";
 const [cmd, ...rest] = process.argv.slice(2);
 
 function usage(code = 1): never {
-  console.error("usage: cloudchamber <extract|status|export|verdict|replay|replay-themes|draw|delete|gate|draws|candidates|draw-show|brief|check|findings|draft|branch|story|listen|themes|setting|distill|serve|help>");
+  console.error("usage: cloudchamber <extract|status|export|verdict|replay|replay-themes|draw|delete|gate|draws|candidates|draw-show|brief|check|findings|draft|branch|lab|story|listen|themes|setting|distill|serve|help>");
   console.error("run `cloudchamber help` for the full grammar and the tunable values");
   process.exit(code);
 }
@@ -229,6 +234,27 @@ async function main() {
       }).done as DrawRow;
       console.log(JSON.stringify(draw, null, 2));
       console.log(`\nbranched ${drawId} at ${draw.branch_at}  ·  cloudchamber story ${draw.id}  ·  cloudchamber gate ${draw.id} keep | rewrite <k>`);
+      break;
+    }
+    case "lab": {
+      const { values, positionals } = parseArgs({
+        args: rest, allowPositionals: true,
+        options: { n: { type: "string" }, passes: { type: "string" }, concurrency: { type: "string" } },
+      });
+      const [sub, drawId] = positionals;
+      if (sub !== "best" || !drawId) usage();
+      const r = await best(drafting(), drawId!, {
+        n: values.n ? Number(values.n) : undefined,
+        passes: values.passes ? Number(values.passes) : undefined,
+        concurrency: values.concurrency ? Number(values.concurrency) : undefined,
+        say: (line) => console.error(line),
+      });
+      const gap = (x: number | undefined) => (x === undefined ? "  -  " : fmt2(x).padStart(5));
+      console.log(`\n${"draft".padEnd(22)}   gap ${r.drafts.map((id) => id.slice(-4).padStart(5)).join(" ")}`);
+      for (const s of r.standings) console.log(`${s.id.padEnd(22)} ${gap(s.score)}  ${r.drafts.map((id) => (id === s.id ? "  -  " : gap(s.against[id]))).join(" ")}`);
+      console.log(`\n${r.winner ? `winner ${r.winner}: its score gap against every other draft is over ${GAP_MARGIN}` : "no clear winner: the top draft is inside the margin against at least one other"}`);
+      console.log(`experiment ${r.experiment} · $${r.cost_usd.toFixed(2)} · drafting ${Math.round(r.ms.draft / 1000)} s · judging ${Math.round(r.ms.judge / 1000)} s${r.failed ? ` · ${r.failed} passes failed` : ""}`);
+      if (r.winner) console.log(`cloudchamber story ${r.winner}  ·  cloudchamber gate ${r.winner} keep`);
       break;
     }
     case "story": {

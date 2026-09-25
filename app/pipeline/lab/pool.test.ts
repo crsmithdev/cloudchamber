@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { anchoredOn, floorPairs, fmt2, pool, verdict, type Run, type Verdict } from "./pool.ts";
+import { GAP_MARGIN, anchoredOn, floorPairs, fmt2, pool, scoreGap, verdict, type Run, type Verdict } from "./pool.ts";
 import fixture from "./pool.fixture.json";
 
 /**
@@ -90,5 +90,30 @@ describe("reading a share against a floor", () => {
     expect(fmt2(0.635)).toBe("0.64");
     expect(fmt2(0.39)).toBe("0.39");
     expect(fmt2(NaN)).toBe("NaN");
+  });
+});
+
+describe("the score gap", () => {
+  const { readJudgements, asRuns } = require("./log.ts");
+  const logged = readJudgements(require("node:path").join(import.meta.dir, "../../../bank/judgements.jsonl"))
+    .filter((r: any) => ["20260924-register-cut-x24", "20260924-l2-floor-cut2-cut3-x24"].includes(r.experiment));
+  const pair = (a: string, b: string, maxPass = 24, minPass = 1) =>
+    scoreGap(asRuns(logged.filter((r: any) => r.ours === a && r.source === b && r.pass >= minPass && r.pass <= maxPass)));
+
+  test("reads the register cut's pairs at 24 passes a judge", () => {
+    expect(fmt2(pair("cut2", "cut3").gap)).toBe("0.07");
+    expect(fmt2(pair("cut1", "cut2").gap)).toBe("-0.22");
+    expect(fmt2(pair("cut1", "cut3").gap)).toBe("-0.39");
+    expect(fmt2(pair("cut1", "fix1").gap)).toBe("-0.40");
+    expect(fmt2(pair("cut2", "fix2").gap)).toBe("0.03");
+    expect(fmt2(pair("cut3", "fix3").gap)).toBe("-0.28");
+  });
+
+  test("four passes a judge land on the same side of the margin as 24, where the overall call did not", () => {
+    for (const [a, b] of [["cut1", "cut3"], ["cut1", "fix1"], ["cut3", "fix3"]]) {
+      for (let i = 0; i < 6; i++) expect(pair(a!, b!, i * 4 + 4, i * 4 + 1).gap).toBeLessThan(-GAP_MARGIN);
+    }
+    // the pair the overall call read as 0.19 at four passes is inside the margin at four
+    expect(Math.abs(pair("cut2", "cut3", 4).gap)).toBeLessThan(GAP_MARGIN);
   });
 });

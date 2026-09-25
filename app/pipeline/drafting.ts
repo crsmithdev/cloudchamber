@@ -11,8 +11,9 @@
  * (repaired_from) and the source becomes `repaired`. `--auto` works gate 1 by
  * the mechanical rule and stops at gate 2.
  */
+import { writeBrief } from "./brief.ts";
 import { newDrawId, type DrawRow, type Pipeline } from "./draw.ts";
-import { copyDraft } from "./branch.ts";
+import { copyBrief, copyDraft } from "./branch.ts";
 import { record } from "./verdicts.ts";
 import { act, commit, must, type Action, type Status } from "./lifecycle.ts";
 import { loadDraftConfig, type DraftConfig, type Overrides, type Resolved } from "./draftconfig.ts";
@@ -250,17 +251,40 @@ export class Drafting {
     }
     if (chainOf(this.p, drawId).findings().some((f) => f.decision === "accepted")) throw new Error("accepted findings pending repair");
     const id = drawId;
-    await act(this.p.db, { id, during: "drafting", back: this.p.draw(id).status as Status }, async () => {
-      const parts = briefParts(this.p, id);
-      const ledger = await this.ensureLedger(id);
-      const pass = passId();
-      const { step, schedule } = await runSchedule(this.p, id, parts, briefBlock(parts), resolved.config);
-      const session = new SceneSession({ p: this.p, drawId: id, parent: step.id, parts, ledger, schedule, cfg: resolved.config, pass, paths: this.screenPaths() });
-      await this.scenes(session, resolved.config, 1);
-    }, () => ({ id, status: "awaiting_draft_gate" }));
+    await act(this.p.db, { id, during: "drafting", back: this.p.draw(id).status as Status }, () => this.write(id, resolved.config),
+      () => ({ id, status: "awaiting_draft_gate" }));
     // HTML only: the PDF print is up to 60 s and no model reads it, so gate 2 starts it instead (`keep`)
     await writeReport(this.p, drawId, this.opts.outputDir, noPdf);
     return this.p.draw(drawId);
+  }
+
+  /** A whole draft from the brief: the schedule, then every scene. */
+  private async write(id: string, cfg: DraftConfig): Promise<void> {
+    const parts = briefParts(this.p, id);
+    const ledger = await this.ensureLedger(id);
+    const { step, schedule } = await runSchedule(this.p, id, parts, briefBlock(parts), cfg);
+    const session = new SceneSession({ p: this.p, drawId: id, parent: step.id, parts, ledger, schedule, cfg, pass: passId(), paths: this.screenPaths() });
+    await this.scenes(session, cfg, 1);
+  }
+
+  /**
+   * Another draft of the same brief, as a draw of its own: the brief and the
+   * pinned ledger are carried over, and the schedule and every scene are
+   * written again. Best of N drafts siblings; the source is untouched. The
+   * source's drafting configuration holds unless `opts` names a profile or an
+   * override, which resolves it again as it stands now.
+   */
+  async sibling(drawId: string, opts: DraftOpts = {}): Promise<DrawRow> {
+    const src = this.p.draw(drawId);
+    const newId = newDrawId();
+    const oStep = copyBrief(this.p, src, newId);
+    this.p.artifact(oStep, "brief", writeBrief(this.p.db, newId, this.p.briefsDir), {});
+    const resolved = this.resolved(src, opts);
+    commit(this.p.db, { id: newId, links: { draft_config: JSON.stringify(resolved) } });
+    await act(this.p.db, { id: newId, during: "drafting", back: "failed" }, () => this.write(newId, resolved.config),
+      () => ({ id: newId, status: "awaiting_draft_gate" }));
+    await writeReport(this.p, newId, this.opts.outputDir, noPdf);
+    return this.p.draw(newId);
   }
 
   /**

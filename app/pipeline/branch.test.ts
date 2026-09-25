@@ -142,3 +142,49 @@ describe("branch a draft", () => {
     expect(p.draws()).toHaveLength(draws);
   });
 });
+
+describe("a sibling draft", () => {
+  test("carries the brief and the ledger, derives its own schedule, and writes every scene; the source is left as it stands", async () => {
+    const { p, d, draw, model } = await drawn();
+    await d.check(draw.id);
+    await d.draft(draw.id, { overrides: OVERRIDES });
+    const srcSteps = p.steps(draw.id).length;
+    const before = model.calls.length;
+
+    const s = await d.sibling(draw.id);
+    expect(s.status).toBe("awaiting_draft_gate");
+    expect(s.branched_from).toBe(draw.id);
+    const srcChain = chainOf(p, draw.id), sChain = chainOf(p, s.id);
+    expect(sChain.ledger()).toBe(srcChain.ledger());
+    expect(sChain.outline()).toBe(srcChain.outline());
+    // the brief is carried with no call; the schedule and the scenes are called for again
+    expect(stagesOf(model, before, /^(execute|outline|context|ending|ledger-extract)$/)).toEqual([]);
+    expect(stagesOf(model, before, /^schedule$/)).toHaveLength(1);
+    expect(stagesOf(model, before, /^scene$/)).toHaveLength(8);
+    expect(p.steps(s.id).find((x: any) => x.stage === "schedule")!.model).not.toBe("copied");
+    expect(scenesOf(p, s.id).every((x) => !scenesOf(p, draw.id).some((y) => y.artifact_id === x.artifact_id))).toBe(true);
+    // the draft configuration is the source's
+    expect(s.draft_config).toBe(p.draw(draw.id).draft_config);
+    expect(p.steps(draw.id)).toHaveLength(srcSteps);
+  });
+
+  test("a brief that was never drafted can have siblings too", async () => {
+    const { p, d, draw } = await drawn();
+    await d.check(draw.id);
+    d.configure(draw.id, { overrides: OVERRIDES });
+    const s = await d.sibling(draw.id);
+    expect(scenesOf(p, s.id).map((x) => x.beat)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    expect(p.draw(draw.id).status).toBe("awaiting_check_gate");
+  });
+});
+
+describe("a sibling under a named profile", () => {
+  test("resolves the configuration again instead of carrying the source's", async () => {
+    const { p, d, draw } = await drawn();
+    await d.check(draw.id);
+    d.configure(draw.id, { overrides: OVERRIDES });
+    const s = await d.sibling(draw.id, { overrides: { ...OVERRIDES, "beats.count": 8 } });
+    expect(s.draft_config).not.toBe(p.draw(draw.id).draft_config);
+    expect(JSON.parse(s.draft_config!).overridden).toContain("beats.count");
+  });
+});
