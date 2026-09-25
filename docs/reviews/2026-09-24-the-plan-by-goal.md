@@ -4,6 +4,10 @@
 the order of `2026-09-24-the-plan-after-the-score-gap.md`. That document and
 `2026-09-24-loop-sequence.md` stay the record of why each built piece exists.
 
+Revision 11: plot holes, from a count of every finding the store holds, and
+four points from `2026-09-25-evaluation-of-the-plan-by-goal.md`. It adds
+steps 12 and 13 and keeps the numbers of steps 1 to 11.
+
 Revision 10: the check loop, from a walk back through the chain `4400` →
 `ae64` → `63b0` → `350a` on 25 September. Revision 9 counted findings that
 the verify pass had rejected; a red-team round caught it, and this revision
@@ -36,8 +40,9 @@ store, `bank/judgements.jsonl` or the code at `main`.
 **Scope.** This plan serves principles 2, 3 and 4 and the goals. It changes
 nothing in ideation (principle 1). In the checks (principle 2) it changes how
 long a check pass thinks, when claims are found and repaired, and how the
-clean passes run; it does not change what counts as a finding. A step that could weaken principle 2 is guarded for it or listed
-under decisions.
+clean passes run. Steps 12 and 13 change what counts as a finding: they add
+the plot holes that no checker asks about today. A step that could weaken
+principle 2 is guarded for it or listed under decisions.
 
 ## Where the time goes
 
@@ -132,6 +137,56 @@ a person repairs, and the time comes from passes that think far longer than
 they used to. The derivation and ledger checks kept one late finding in the
 chain, and raised 57 that verify rejected.
 
+## What the checks find
+
+Every brief checker is a contradiction detector. `checkDerivation` holds each
+assertion to the one impossibility and does the sums (`prompts.ts:196`).
+`checkLedger` holds the vignettes and the ending to the ledger and to each
+other (`prompts.ts:210`). Claims hold the brief to the setting. No checker
+asks the questions that find a plot hole:
+
+| Kind of defect | Asked today |
+|---|---|
+| a contradiction of a fact, a figure, a name or a rule | yes, by all three |
+| who knows what, and from when | in part: the ledger's `knowledge` lines |
+| an event that does not follow from what comes before it | no |
+| a choice with an obvious better option the story does not close off | no |
+| a setup with no payoff, or a payoff with no setup | no |
+| a question a reader asks that the story does not answer | no |
+| a red-team pass on the idea (principle 2) | nothing runs one |
+
+Over the 130 draws the store has checked:
+
+| | Count |
+|---|---|
+| derivation and ledger findings raised | 1,086 |
+| dropped by verify | 876 (81%) |
+| kept | 210, in 96 draws |
+| kept, by `invalidates` | none 91, particulars 40, arithmetic 21, departure 15, knowledge 14, debt audit 11, custody 9, arrival 9 |
+| kept, then accepted by auto / passed by auto / no decision | 140 / 19 / 49 |
+| kept by both checkers | 92 of 210 |
+
+A read of every sixth kept finding shows mostly figures and details, for
+example "the pod is four decks above the bench, not two" and "27 of 180 is
+not most". A listener is unlikely to notice these. A smaller part breaks a
+rule the story rests on: a returned person who walks when the returned do
+not walk; Aurelle losing the reading of hands when the outline takes the
+reading of brains; the seal that speaks while Cathal is on the rocks. Much of
+the arithmetic is in figures the outline invents, and the listen profile then
+cuts numerals from the draft.
+
+| Stage | Calls | List $ | Call minutes |
+|---|---|---|---|
+| check-derivation and check-ledger | 732 | 49.3 | 1,296 |
+| check-verify | 292 | 13.0 | 181 |
+| claims extract and verify | 653 | 49.5 | 72 |
+
+The brief checks cost about $0.50 a draw at list. Their cost is the wall time
+of the passes and the rounds, which steps 2 to 5 address. What they catch is
+continuity. What they miss is not measured: nothing holds a brief with a
+known plot hole, so the recall of the checks is unknown. Steps 12 and 13
+measure it and then close the gap.
+
 The judge side:
 
 | Judge | p50 | max | Share of spend | Note |
@@ -153,7 +208,7 @@ about $0.72 at 8.
 | G4 | in the draft `9c02`: 113 claims calls, 5 rebinds and 5 structure screens replaced before anything read them. In the check chain `4400` → `350a`: a claims extraction and verify on every pass over text that changed by 2 or 3 sentences, and two second clean passes | calls whose answer a later call replaces before anything reads it, plus claims calls over text a pass has already checked |
 | G5 | $12–14 a listen draft unrestricted; $20–22 under claims; $36.57 for the claims chain, of which $16.03 is ideation, checks and repair | `usage.cost_usd` |
 | G6 | the rule in force: 3 judges, 8 passes a judge, about $0.72 a pair | `cost_usd` a judged pair |
-| G7 | 15,940 lines of tracked non-test source, TypeScript and Python | `wc -l` |
+| G7 | 15,940 lines of tracked non-test source, TypeScript with the UI's `.tsx`, and Python (12,019 without `.tsx`) | `wc -l` |
 
 G5 is read in list dollars. Drafting runs on the subscription, and nothing
 measured links the list price to its limit.
@@ -197,21 +252,28 @@ the stored findings came from more passes than a replay makes. A change that als
 unattended is read by a person on the repaired text, since no replay can
 repeat a gate decision. It costs Claude calls, not a panel.
 
+**Plot holes.** A change to what the checks ask is also run on step 12's
+plot-hole set. It must catch at least the plants today's loop catches, kind
+by kind, over two runs. The set has no truth for a hole nobody planted, so a
+person reads what the change keeps on the replayed chains.
+
 ## The order
 
 | # | Step | Goals | Guard | Adds | Removes |
 |---|---|---|---|---|---|
 | 1 | **Skip what the round replaces, and one claims screen a draft.** In `registerRewrites`, `regenerate(k)` neither rebinds nor re-screens k+1 when k+1 is due in the same round. The first-pass screen and every automatic rewrite skip the claims screen; `scenes` runs it once when the rewrites end, even when none ran, and records each beat's findings under that beat's latest pass so `screenFindings` (`chain.ts:122-126`) shows them. A gate-2 `rewrite k` still screens. | G4, G5, G1 | same prompts: the scene and bind prompts of k+1 are the same bytes (`write.ts:174-183`). A test pins the call count. A second test asserts the one change a person sees: gate 2 shows the claims of the final text, where today each beat shows the claims of the last rewrite that screened it | a flag on `regenerate`; the per-beat pass bookkeeping | under claims, 123 calls, about 12.7 min and $10.3 a draft (`9c02`); with no claims, the 5 rebinds and 5 screens, about 6.4 min and $1.40, estimated from `9c02` |
 | 2 | **Measure how long a check should think.** On briefs from 24 and 25 September, run the derivation and ledger checks at today's setting twice, then at effort `medium` and `low`. Compare the findings verify keeps, the time and the cost; the round-3 finding "Aurelle cannot read their hands" is the case to watch, since passes that thought 2.6k tokens missed it. Effort is a `stages.toml` key per stage (`config.ts:192`). | G1, G5, principle 2 | checks: the kept findings against today's twice-run spread | — | if a lower effort keeps the same findings, most of each pass's 3–4 min |
-| 3 | **Find the claims once.** Round 1 runs the claims extraction several times and verifies the union; the chain cache already holds the verdicts (`check.ts:224-226`). A later round extracts claims only from the sentences its repair changed and from the new ledger amendments, which can void a line (`chain.ts:37-38`). A claim is a single span checked against the setting, so no pair of unchanged sentences is lost. | G4, G5, G1, principle 2 | checks: every claims finding the stored rounds kept appears in round 1 | a sentence diff between a repair and its source | a claims extraction and its verify calls on every pass over unchanged text, about $1 and 40 s a pass |
-| 4 | **Repair a contradicted claim in the round that finds it.** Auto accepts a claims finding that verify kept as `contradicted` with a quoted line from the setting, whatever its score, and reconcile holds it with the round's other fixes. Today it scores 3 and waits for the gate. | G1, principle 2 | checks, and a person reads the repaired text of the replayed chains | an accept rule for claims in `autoRounds` | a gate round for each claim; three of this chain's four rounds |
-| 5 | **One clean pass at four samples.** In place of two clean passes of two samples each, one pass of four. The samples run at once, so the wall time halves. The recurrence score reads samples run (`chain.ts:164-168`), so 2 of 4 scores lower than 2 of 2 does today; the replay checks that auto stops at the same findings. `recheck` is called with no sample count (`drafting.ts:212`, `:382`, `:401`), and the pass after a repair runs before auto knows it is clean, so every post-repair pass runs four samples. | G1, G4 | checks | a sample count on every post-repair pass | the second clean pass |
+| 3 | **Find the claims once.** Round 1 runs the claims extraction several times and verifies the union; the chain cache already holds the verdicts (`check.ts:224-226`). A later round extracts claims only from the sentences its repair changed, each with its paragraph so that a pronoun keeps its referent, and from the new ledger amendments, which can void a line (`chain.ts:37-38`). A claim is a single span checked against the setting, so no pair of unchanged sentences is lost. | G4, G5, G1, principle 2 | checks: every claims finding the stored rounds kept appears in round 1 | a sentence diff between a repair and its source | a claims extraction and its verify calls on every pass over unchanged text, about $1 and 40 s a pass |
+| 4 | **Repair a contradicted claim in the round that finds it.** Auto accepts a claims finding that verify kept as `contradicted` with a quoted line from the setting, whatever its score, and reconcile holds it with the round's other fixes. Today it scores 3 and waits for the gate. On a conflict reconcile keeps the fix earlier in the list, and the list is sorted by score (`drafting.ts:442-446`), so a claim at 3 would always lose. The accept rule puts an accepted claim first: the setting is canon, and a derivation or ledger fix is not. | G1, principle 2 | checks, and a person reads the repaired text of the replayed chains | an accept rule for claims in `autoRounds`, and its place at the head of the list | a gate round for each claim; three of this chain's four rounds |
+| 5 | **One clean pass at four samples.** In place of two clean passes of two samples each, one pass of four. The samples run at once, so the wall time halves. The recurrence score reads samples run (`chain.ts:164-168`), and `score` gives 3 only when a finding recurs in every sample, 2 when it misses one, and 1 otherwise (`recur.ts:182`). So 2 of 4 would score 1 where 1 of 2 scores 2 today, and a finding at 7 would fall to 5, under `stop_score`. The step scores recurrence as a share: 3 in every sample, 2 in half or more, 1 below that. At 1, 2 and 3 samples that gives today's scores exactly, so the screens and today's passes do not move; at 4 it scores 2 of 4 as 1 of 2 scores today. The replay checks that auto stops at the same findings. `recheck` is called with no sample count (`drafting.ts:212`, `:382`, `:401`), and the pass after a repair runs before auto knows it is clean, so every post-repair pass runs four samples. | G1, G4 | checks | a sample count on every post-repair pass; recurrence as a share | the second clean pass |
 | 6 | **Fewer judges.** Re-pool every stored experiment of 24 September without each judge in turn. Remove a judge whose absence leaves every reading outside the margin on its side; try Gemini first, then GLM. | G6, G2 | the stored log | — | Gemini: 61% of the spend. GLM: 17%, and 2–8 min of every judged run |
 | 7 | **The comparison runner.** `lab compare --arm <draws> --arm <draws>`: pairs across arms matched by source, both orders, the score gap per arm pair, and the within-arm pairs as the floor. The same command judges a draw against a transcript, so G3 has an instrument in the repository. Arms are drafted in their own worktrees with `cloudchamber branch` and judged from the main checkout, so the log lands in `main`'s `bank/` (`paths.ts:5-7`). A bind in an arm writes its verdicts to the worktree's `bank/` (`scenesession.ts:163`), so the arm run sets `CLOUDCHAMBER_BANK` (`paths.ts:6`) to `main`'s. | G2, G3 | the stored runs re-pool to their published numbers | arm pooling in `pool.ts`; a command; the read-only reference bind of the canon guard | nothing tracked: the transcript scripts were never committed |
 | 8 | **The listen ceilings.** First type the ceilings in `draftconfig.ts`: today `rewritePlan` reads them untyped (`drafting.ts:82`), and a misspelt override adds a new key while the ceiling stays at 0.12 (`draftconfig.ts:68-71`), so the arm silently does nothing. Then one comparison, three arms: today; the numeral counter not counting clock times; that plus `long_share_max = 0.15`. The counter is shared (`listen.ts:49,98`, `report.ts:120`, `drafts.ts:81`), so the pool figure that `numerals_max` was set against is measured again first. | G1, G5 | changed output | the types | about half the length rewrites across the stored drafts; a third in `9c02` |
 | 9 | **Write in sequence, then bind at once.** In the first pass, write every beat in sequence from the unbound text of the beats before it, then bind all beats at once, as the `parallel` order already binds (`scenesession.ts:124-125`). In each rewrite round, write the due beats in sequence, each from the new text before it, as today (`drafting.ts:484-487`); then bind every rewritten beat against its new predecessor, and every beat after a rewritten one that is not itself due, all at once; then screen once, over every rewritten and every rebound beat, so each gets a new pass and gate 2 shows its new flags (`chain.ts:96-127`). Today `registerRewrites` awaits each rewrite's binds and screen in turn (`drafting.ts:508-517`). A bind's patch to beat k no longer reaches the writing of k+1, and a bind of k+1 reads k before k's own patch lands; each beat still reads the new text of the beat before it. The canon guard is what measures both. Binds that start together miss the prompt cache (ADR-0010), about $1.2 a draft. | G1 | changed output, and canon | — | the inline bind (`scenesession.ts:128`), the serial rewrite loop and step 1's flag on `regenerate`; the first pass from about 16 to about 7 min, the rewrite phase from about 14 to about 6 |
 | 10 | **Effort `low` on the bind.** First the noise floor: the stored bind prompts run again at today's setting, to learn how often the bind agrees with itself. Effort is a `stages.toml` key only (`config.ts:192`), so each arm is a commit. | G1, G5 | changed output, and canon | — | unknown: 4.1k of the bind's 4.5k output tokens are thinking |
 | 11 | **Delete what nothing uses.** `evals/judge.py` and `evals/tally.py` (270 lines; `rubric.test.ts` and `pool.test.ts` already run on fixtures, so only their reference comments change). `app/pipeline/lab/beats.ts` and its test (191 lines; nothing else imports it, and beat branches are dropped). The per-beat half of `rubric.ts` that only `beats.ts` calls (`BeatPlan`, `beatPrompt`, `beatComplete`, `beatAxes`, from line 103) and its tests. The three other exports used nowhere: `StoryRow`, `DrawAction`, `OffList`. | G7 | the suite | — | about 540 lines |
+| 12 | **A plot-hole set.** Take 5 briefs that passed gate 1, 3 unrestricted and 2 under claims. Plant 3 plot holes in each, 15 in all, 3 of each kind: an event that does not follow, a choice with an obvious better option the brief does not close off, a fact a character acts on before they can know it, a setup with no payoff, and a broken outline rule. Each plant changes one vignette or the ending, and `evals/plotholes/` records its span and its kind. Run today's check pass twice on each brief and count, by kind, the plants that verify keeps. The broken rules are the control: today's checks should catch them. | principle 2 | none: it changes no code path | a fixture of 15 plants and a count | — ; it costs about $5 and 30 min |
+| 13 | **A reader check.** A sixth checker, `reader` (`check.ts:31`), reads the brief as a skeptical reader and reports each question the story raises and does not answer: an event with no cause in the brief, a choice whose better option the brief does not close off, a fact a character acts on before they can learn it, and a setup with no payoff. It runs once a chain, in round 1, as structure and resemblance already do (`check.ts:48`). A repair changes 2 or 3 sentences, so this assumes a repair does not open a hole. Verify needs its own question for these findings: today it drops a finding whose evidence is not a quote that conflicts (`prompts.ts:279`, `:289`), and a plot hole is an absence, not a conflict. A reader finding does not reach auto's bar. It goes to the gate, because its repair can change the outline. It lands only if step 12 shows that today's checks miss the kinds it asks about. | principle 2 | checks, and plot holes: recall on the four new kinds rises, and the control holds | a checker; its prompt and its verify question | — ; about 2 calls and $0.15 a chain, beside the other round-1 checkers |
 
 Steps 1, 2, 6, 7 and 11 need no panel. Step 1's two halves land together:
 skipping the rebind of k+1 changes the story a claims extraction reads, unless
@@ -221,6 +283,15 @@ costs; step 4 depends on step 3, since a claim found once in round 1 is
 repaired once. Step 7 runs steps 8 to 10, which go as one
 judged series in that order, each against the last arm that landed. Step 11
 can run at any point; it touches no prompt.
+
+Step 9 removes step 1's flag on `regenerate`. That cost is accepted: step 1
+lands on a test alone and saves about $10.3 a claims draft now, and step 9
+waits for step 7's runner.
+
+Step 12 runs before step 2. Step 2 reads the plot-hole set as well as the
+stored chains: a lower effort that keeps the stored findings but loses planted
+holes does not land. Step 13 follows step 3, so that a round-1 pass holds
+every checker that runs once.
 
 Four limits on step 7. Every worktree shares one store (`paths.ts:33`), so
 all arms must be at one schema version. `branch` copies the source's stored
@@ -289,7 +360,7 @@ a judge, the inline bind and the serial rewrite loop. Added: a flag and the
 per-beat bookkeeping (step 1); a sentence diff (step 3); an accept rule for
 claims (step 4); a sample count on post-repair passes (step 5); arm pooling, a command and the
 reference bind (step 7); the ceiling types (step 8); the round-at-once
-rewrite (step 9).
+rewrite (step 9); a sixth checker, if step 12 shows the gap (step 13).
 **Drafting ends with fewer mechanisms, and the line total likely ends a
 little smaller: the deletions are counted, the additions are estimates.** The
 line count at the end of step 11 is the reading.
@@ -302,6 +373,7 @@ line count at the end of step 11 is the reading.
 | G1's length | the listen profile (10,000 words, about 12 beats) or the default (5,000 words, 5–10 beats); draft time scales with beats | measure G1 at the listen profile, since that is what gets drafted |
 | Auto repairs a contradicted claim (principle 2, step 4) | today a claims finding scores 3 and waits for a person; auto would repair it on verify's verdict and a quoted line from the setting | repair it: the verdict carries its evidence, and the replacement changes only the figure or rule that conflicts. A person reads the replayed chains' repairs before it lands |
 | Effort on the checks (principle 2) | step 2 measures it | set it from step 2's result |
+| The reader check (principle 2, step 13) | build it if step 12 shows the gap; or keep the checks to continuity | build it if the gap shows. Principle 2 names plot holes and red-team passes, and no check asks for either. Its findings go to a person, so a false one costs a gate decision, not an unattended repair |
 | The claims screen (principle 2) | keep it, once a draft (step 1); or turn it off, $9.94 and 126 calls a draft | keep it: it is the only check of drafted text against the setting. Its 304 unverifiable of 309 looks like an extraction fault, a principle-2 follow-up |
 | Best of 3 (principle 3) | a default, or a command | a command. The drafts run in parallel, so the wall time barely moves, but the Claude cost triples, against G5 |
 
@@ -344,9 +416,12 @@ line count at the end of step 11 is the reading.
 - **The panel is a proxy, and it reads text.** No person has heard a draft and
   a channel story side by side. G3 rests on the panel alone.
 - **Ideation is outside this plan.** Nothing here measures originality.
-- **Do the checks find plot holes?** The replay measures findings against
-  what the stored rounds kept, not against a person's reading. A defect no
-  round ever kept is invisible to it.
+- **Do the checks find plot holes?** They find continuity errors: 210 kept
+  findings in 130 draws, mostly figures and details. No checker asks about
+  causes, choices, setups or unanswered questions. Step 12 measures the miss
+  and step 13 closes it. A hole in a kind nobody planted stays invisible.
+- **Plot holes in the draft.** The draft invents past the brief, and the bind
+  checks only contradiction. Step 13 reads the brief, not the story.
 - **Why does a check pass think six times longer than on 22 September?**
   The prompt and the model are the same. Step 2 measures what effort buys
   back, not why it changed.
