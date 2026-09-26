@@ -157,3 +157,8 @@ export function experiments(rows: Judgement[]): { id: string; brief: string; lev
 export function ruledOn(rows: Judgement[]): string[] {
   return [...new Set(rows.filter((r) => r.kind === "comparison").map((r) => r.arm))].sort();
 }
+
+/** Filter logged passes for one pair and convert them to runs. */
+export function pairRuns(rows: Judgement[], ours: string, source: string): Run[] {
+  return asRuns(rows.filter((r) => r.ours === ours && r.source === source));
+}

@@ -209,3 +209,103 @@ export function scoreGap(runs: Run[]): { gap: number; passes: number } {
 
 /** A score gap has to clear this, in either direction, before it says one draft is better. */
 export const GAP_MARGIN = 0.15;
+
+/** One matched pair between two arms, pooled. */
+export type MatchedPair = {
+  ours: string;
+  source: string;
+  share: number;
+  gap: number;
+  passes: number;
+};
+
+/** One within-arm pair, pooled as floor. */
+export type FloorPair = {
+  a: string;
+  b: string;
+  share: number;
+  distance: number;
+  gap: number;
+  passes: number;
+};
+
+/** The summary of an arm comparison: matched pairs, pooled score gap, and floor metrics. */
+export type ArmComparison = {
+  share: number;
+  gap: number;
+  passes: number;
+  pairs: MatchedPair[];
+  floor?: {
+    pairs: FloorPair[];
+    meanDistance: number;
+    meanGap: number;
+  };
+  lands: boolean;
+  verdict: "clears margin" | "within margin" | "falls below -GAP_MARGIN: the change loses" | "no complete passes";
+};
+
+/**
+ * Pool matched pairs across arms and read them against floor pairs.
+ *
+ * A prompt change lands if the pooled score gap does not fall below -GAP_MARGIN.
+ * Within-arm pairs supply the noise floor: mean distance from a coin flip,
+ * and mean score gap spread.
+ */
+export function armPool(
+  comparisonPairs: { ours: string; source: string; runs: Run[] }[],
+  floorPairsList?: { a: string; b: string; runs: Run[] }[],
+): ArmComparison {
+  const pairs: MatchedPair[] = comparisonPairs.map((p) => {
+    const pooled = pool(p.runs);
+    const sg = scoreGap(p.runs);
+    return {
+      ours: p.ours,
+      source: p.source,
+      share: pooled.share,
+      gap: sg.gap,
+      passes: sg.passes,
+    };
+  });
+
+  const allCompRuns = comparisonPairs.flatMap((p) => p.runs);
+  const overallPool = pool(allCompRuns);
+  const overallGap = scoreGap(allCompRuns);
+
+  let floor: ArmComparison["floor"];
+  if (floorPairsList && floorPairsList.length > 0) {
+    const fPairs: FloorPair[] = floorPairsList.map((p) => {
+      const pooled = pool(p.runs);
+      const sg = scoreGap(p.runs);
+      return {
+        a: p.a,
+        b: p.b,
+        share: pooled.share,
+        distance: Number.isNaN(pooled.share) ? NaN : Math.abs(pooled.share - 0.5),
+        gap: sg.gap,
+        passes: sg.passes,
+      };
+    });
+    const validDists = fPairs.map((f) => f.distance).filter((d) => !Number.isNaN(d));
+    const validGaps = fPairs.map((f) => Math.abs(f.gap)).filter((g) => !Number.isNaN(g));
+    floor = {
+      pairs: fPairs,
+      meanDistance: validDists.length ? validDists.reduce((t, x) => t + x, 0) / validDists.length : NaN,
+      meanGap: validGaps.length ? validGaps.reduce((t, x) => t + x, 0) / validGaps.length : NaN,
+    };
+  }
+
+  const gap = overallGap.gap;
+  const lands = !Number.isNaN(gap) && gap >= -GAP_MARGIN;
+  const verdict: ArmComparison["verdict"] = Number.isNaN(gap) ? "no complete passes"
+    : gap > GAP_MARGIN ? "clears margin" : gap >= -GAP_MARGIN ? "within margin" : "falls below -GAP_MARGIN: the change loses";
+
+  return {
+    share: overallPool.share,
+    gap: overallGap.gap,
+    passes: overallGap.passes,
+    pairs,
+    ...(floor ? { floor } : {}),
+    lands,
+    verdict,
+  };
+}

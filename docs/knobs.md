@@ -151,4 +151,5 @@ stages.toml: the model each stage calls, the one it falls back to on a refusal, 
 | `scene` | claude-opus-5 → claude-sonnet-5 |
 | `screen-ledger` | claude-opus-5 → claude-sonnet-5 |
 | `screen-structure` | claude-opus-5 → claude-sonnet-5 |
+| `reference-bind` | claude-opus-5 → claude-sonnet-5 |
 

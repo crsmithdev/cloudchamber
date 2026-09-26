@@ -3,7 +3,7 @@ import genresToml from "./genres.toml";
 
 export type GenStageName = "themes" | "redundancy" | "distill-map" | "distill" | "premises" | "execute" | "outline" | "context" | "ending";
 export type CheckStageName = "ledger-extract" | "check-derivation" | "check-ledger" | "check-verify" | "check-structure" | "check-resemblance" | "check-claims-extract" | "check-claims-verify";
-export type DraftStageName = "reconcile" | "repair-vignette" | "repair-context" | "repair-outline" | "repair-ending" | "schedule" | "scene" | "screen-ledger" | "screen-structure";
+export type DraftStageName = "reconcile" | "repair-vignette" | "repair-context" | "repair-outline" | "repair-ending" | "schedule" | "scene" | "screen-ledger" | "screen-structure" | "reference-bind";
 export type StageName = GenStageName | CheckStageName | DraftStageName;
 /** `tools` is the comma-separated list a call may use; absent or empty means `--tools ""`. */
 export type StageConfig = { model: string; fallback: string; system: string; tools?: string; effort?: Effort };
@@ -70,6 +70,8 @@ const STAGE_TABLE: Readonly<Record<string, StageFacts>> = {
   scene: { tab: "write", group: "prose" },
   "screen-ledger": { tab: "write", group: "judgement" },
   "screen-structure": { tab: "write", group: "judgement" },
+  // the canon guard's reader: the bind's prompt on its own stage, so an arm that moves the bind does not move its judge
+  "reference-bind": { tab: "write", group: "judgement" },
   "screen-slop": { tab: "write", call: false },
   "screen-restated": { tab: "write", call: false },
   "screen-listen": { tab: "write", call: false },

@@ -39,6 +39,13 @@ const DOC = `cloudchamber — the one command the skill and the UI drive.
    cloudchamber lab best <draw> [--n 3] [--passes 8] [--concurrency 12]
        draft the brief until there are N drafts (the draw counts if it is drafted), judge every pair
        with the OpenRouter panel, log each pass to bank/judgements.jsonl, and rank the drafts by score gap
+   cloudchamber lab compare --arm <draws> --arm <draws> [--passes 8] [--concurrency 12] [--judges M,...]
+       judge pairs across arms matched by source (or a draw against a transcript) with the OpenRouter panel,
+       log each pass to bank/judgements.jsonl, and report the score gaps; the first arm is the control,
+       and its drafts judged against each other are the floor
+   cloudchamber lab canon <draw>...
+       the canon guard: read each draft's final text with the bind's prompt, read-only, and count the
+       contradictions that survive into it, per beat; the reading goes on a reference draw of its own
    cloudchamber story <draw>                   the draft with its screen flags inline
    cloudchamber report <draw>                  write output/<draw>/report.html and .pdf: the story and everything that made it
    cloudchamber listen <draw> [--beat K] [--voice V] [--out PATH]   render the draft, or one beat, to a wav with the local kokoro voice
@@ -64,6 +71,8 @@ import { formatFinding, lintFile, loadSetting, LISTS } from "../pipeline/setting
 import { distill, readKept } from "../pipeline/distill.ts";
 import { Drafting } from "../pipeline/drafting.ts";
 import { best } from "../pipeline/lab/best.ts";
+import { compare, formatComparison, resolveDrawId } from "../pipeline/lab/compare.ts";
+import { referenceBind } from "../pipeline/lab/canon.ts";
 import { GAP_MARGIN, fmt2 } from "../pipeline/lab/pool.ts";
 import { writeReport } from "../pipeline/report.ts";
 import { gateCommand, isGateAction, type GateArgs } from "../pipeline/gate.ts";
@@ -239,22 +248,56 @@ async function main() {
     case "lab": {
       const { values, positionals } = parseArgs({
         args: rest, allowPositionals: true,
-        options: { n: { type: "string" }, passes: { type: "string" }, concurrency: { type: "string" } },
+        options: {
+          n: { type: "string" },
+          passes: { type: "string" },
+          concurrency: { type: "string" },
+          arm: { type: "string", multiple: true },
+          judges: { type: "string" },
+        },
       });
       const [sub, drawId] = positionals;
-      if (sub !== "best" || !drawId) usage();
-      const r = await best(drafting(), drawId!, {
-        n: values.n ? Number(values.n) : undefined,
-        passes: values.passes ? Number(values.passes) : undefined,
-        concurrency: values.concurrency ? Number(values.concurrency) : undefined,
-        say: (line) => console.error(line),
-      });
-      const gap = (x: number | undefined) => (x === undefined ? "  -  " : fmt2(x).padStart(5));
-      console.log(`\n${"draft".padEnd(22)}   gap ${r.drafts.map((id) => id.slice(-4).padStart(5)).join(" ")}`);
-      for (const s of r.standings) console.log(`${s.id.padEnd(22)} ${gap(s.score)}  ${r.drafts.map((id) => (id === s.id ? "  -  " : gap(s.against[id]))).join(" ")}`);
-      console.log(`\n${r.winner ? `winner ${r.winner}: its score gap against every other draft is over ${GAP_MARGIN}` : "no clear winner: the top draft is inside the margin against at least one other"}`);
-      console.log(`experiment ${r.experiment} · $${r.cost_usd.toFixed(2)} · drafting ${Math.round(r.ms.draft / 1000)} s · judging ${Math.round(r.ms.judge / 1000)} s${r.failed ? ` · ${r.failed} passes failed` : ""}`);
-      if (r.winner) console.log(`cloudchamber story ${r.winner}  ·  cloudchamber gate ${r.winner} keep`);
+      if (sub === "best") {
+        if (!drawId) usage();
+        const r = await best(drafting(), drawId!, {
+          n: values.n ? Number(values.n) : undefined,
+          passes: values.passes ? Number(values.passes) : undefined,
+          concurrency: values.concurrency ? Number(values.concurrency) : undefined,
+          say: (line) => console.error(line),
+        });
+        const gap = (x: number | undefined) => (x === undefined ? "  -  " : fmt2(x).padStart(5));
+        console.log(`\n${"draft".padEnd(22)}   gap ${r.drafts.map((id) => id.slice(-4).padStart(5)).join(" ")}`);
+        for (const s of r.standings) console.log(`${s.id.padEnd(22)} ${gap(s.score)}  ${r.drafts.map((id) => (id === s.id ? "  -  " : gap(s.against[id]))).join(" ")}`);
+        console.log(`\n${r.winner ? `winner ${r.winner}: its score gap against every other draft is over ${GAP_MARGIN}` : "no clear winner: the top draft is inside the margin against at least one other"}`);
+        console.log(`experiment ${r.experiment} · $${r.cost_usd.toFixed(2)} · drafting ${Math.round(r.ms.draft / 1000)} s · judging ${Math.round(r.ms.judge / 1000)} s${r.failed ? ` · ${r.failed} passes failed` : ""}`);
+        if (r.winner) console.log(`cloudchamber story ${r.winner}  ·  cloudchamber gate ${r.winner} keep`);
+      } else if (sub === "compare") {
+        const rawArms = values.arm ?? [];
+        const arms = rawArms.map((a) => a.split(/[,\s]+/).filter(Boolean));
+        if (arms.length < 2) {
+          console.error("lab compare needs at least two --arm arguments");
+          usage();
+        }
+        const r = await compare(drafting(), {
+          arms,
+          passes: values.passes ? Number(values.passes) : undefined,
+          concurrency: values.concurrency ? Number(values.concurrency) : undefined,
+          judges: values.judges ? values.judges.split(",").map((s) => s.trim()) : undefined,
+          say: (line) => console.error(line),
+        });
+        console.log(formatComparison(r));
+      } else if (sub === "canon") {
+        const ids = positionals.slice(1);
+        if (!ids.length) usage();
+        const d = drafting();
+        for (const id of ids) {
+          const r = await referenceBind(d.p, resolveDrawId(d, id));
+          const beats = Object.entries(r.perBeat).map(([b, n]) => `${b}:${n}`).join(" ");
+          console.log(`${r.drawId}  ${r.contradictions} in ${r.beats} beats (${fmt2(r.ratePerBeat)} a beat)  ${beats}  reference ${r.referenceDrawId}`);
+        }
+      } else {
+        usage();
+      }
       break;
     }
     case "story": {
