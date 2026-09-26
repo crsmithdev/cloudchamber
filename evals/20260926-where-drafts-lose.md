@@ -18,7 +18,7 @@ are pooled; read one order at a time, the gap swings by a point or more.
 | feeling | +1.18 | 14% |
 | cost | +1.26 | 3% |
 
-## Vox Mortis: 4 drafts, 48 passes
+## Vox Mortis: 3 drafts, 48 passes, two stories
 
 Every axis is won by +2.1 to +3.5, and no pass is lost. It cannot tell a
 better draft from a good one.
