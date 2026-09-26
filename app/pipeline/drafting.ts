@@ -149,10 +149,10 @@ export class Drafting {
   }
 
   /** A check pass under `checking`; the draw comes back to where it stood if the pass fails, and waits at gate 1 when it succeeds. */
-  private async recheck(drawId: string, cfg: DraftConfig, opts: { back?: Status; checks?: string[]; samples?: number; keep_if?: number } = {}): Promise<CheckResult> {
+  private async recheck(drawId: string, cfg: DraftConfig, opts: { back?: Status; checks?: string[]; samples?: number; keep_if?: number; pass?: string } = {}): Promise<CheckResult> {
     const back = opts.back ?? (this.p.draw(drawId).status as Status);
     return act(this.p.db, { id: drawId, during: "checking", back },
-      () => runCheck(this.p, drawId, cfg, { checks: opts.checks, samples: opts.samples, keep_if: opts.keep_if, premisesPath: this.opts.premisesPath }),
+      () => runCheck(this.p, drawId, cfg, { checks: opts.checks, samples: opts.samples, keep_if: opts.keep_if, pass: opts.pass, premisesPath: this.opts.premisesPath }),
       () => ({ id: drawId, status: "awaiting_check_gate" }));
   }
 
@@ -202,7 +202,7 @@ export class Drafting {
   // --- gate 1 ----------------------------------------------------------------
 
   /** Accept findings by id and run the repair, then the re-check. Returns the repaired draw. */
-  async accept(drawId: string, ids: string[], opts: { method?: "gate" | "draw"; note?: string } = {}): Promise<DrawRow> {
+  async accept(drawId: string, ids: string[], opts: { method?: "gate" | "draw"; note?: string; checks?: string[] } = {}): Promise<DrawRow> {
     const draw = this.must(drawId, "accept");
     const chain = chainOf(this.p, drawId);
     for (const id of ids) {
@@ -215,7 +215,7 @@ export class Drafting {
     const next = await repair(this.p, drawId, accepted);
     if (draw.draft_config) commit(this.p.db, { id: next.id, links: { draft_config: draw.draft_config } });
     // the new round is a brief nobody has checked: a check that fails leaves it there
-    await this.recheck(next.id, cfg, { back: "done", ...FULL_PASS });
+    await this.recheck(next.id, cfg, { back: "done", checks: opts.checks, ...FULL_PASS });
     return this.p.draw(next.id);
   }
 
@@ -385,7 +385,10 @@ export class Drafting {
     const cfg = opts.cfg ?? this.resolved(draw).config;
     const floor = cfg.repair.stop_score;
     let id = drawId;
-    if (!chainOf(this.p, id).pass()) await this.recheck(id, cfg, FULL_PASS);
+    // a claims finding scores under the floor and only a person rules on it: auto's rounds run without claims,
+    // and claims run once on the brief auto stops on, into the pass the gate reads
+    const rounds_checks = cfg.checks.enabled.filter((c) => c !== "claims");
+    if (!chainOf(this.p, id).pass()) await this.recheck(id, cfg, { ...FULL_PASS, checks: rounds_checks });
     const rounds: AutoRound[] = [];
     let stopped: AutoResult["stopped"];
     let clean = 0;
@@ -406,7 +409,7 @@ export class Drafting {
         // the samples this pass ran, as it recorded them
         clean += Math.max(0, ...Object.values(chainOf(this.p, id).samples()));
         if (clean >= CLEAN_SAMPLES) { stopped = "floor"; break; }
-        await this.recheck(id, cfg); continue;
+        await this.recheck(id, cfg, { checks: rounds_checks }); continue;
       }
       clean = 0;
       const best = Math.min(...rounds.map((r) => r.total));
@@ -417,8 +420,12 @@ export class Drafting {
       if (rounds.length > cfg.repair.rounds) { stopped = "cap"; break; }
       accept = await this.reconcile(id, accept);
       row.accepted = accept.length;
-      id = (await this.accept(id, accept.map((f) => f.id), { method: "draw", note: opts.note ?? "auto" })).id;
+      id = (await this.accept(id, accept.map((f) => f.id), { method: "draw", note: opts.note ?? "auto", checks: rounds_checks })).id;
     }
+    const gatePass = chainOf(this.p, id).pass()!;
+    const claimed = this.p.artifacts(id).some((a) => a.kind === "claim" && a.meta.pass === gatePass);
+    if (cfg.checks.enabled.includes("claims") && this.p.loadDrawSetting(this.p.draw(id)).setting?.claims && !claimed)
+      await this.recheck(id, cfg, { checks: ["claims"], pass: gatePass });
     const best = rounds.reduce((a, r) => (r.total < a.total ? r : a), rounds[0]);
     // what the last round would have repaired had the loop gone on: the gate's work, not auto's
     const result: AutoResult = { id, rounds, best, stopped, floor, calls: rounds.at(-1)!.calls, left_open: accept.length };

@@ -1155,6 +1155,26 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(await run(`The span "context for Test the first thing: scene one." says it all.`)).toBe(1);
   });
 
+  test("auto's rounds run without claims, and claims run once on the brief auto stops on, into the pass the gate reads", async () => {
+    const { dir } = fixture();
+    const sdir = settingsFixture(dir);
+    const script = draftScript({
+      "check-ledger": [...ledgerSamples(A(), B(), 4), ...cleanSamples(), ...cleanSamples()],
+      "check-derivation": [...derivationSamples(A(), 4), ...cleanSamples(), ...cleanSamples()],
+    });
+    const { p, d, draw, model } = await drawn(script, { id: "basin", dir: sdir, claims: "world" });
+    const r = await d.autoRounds(draw.id);
+    expect(r.stopped).toBe("floor");
+    expect(model.calls.filter((c) => c.stage === "check-claims-extract")).toHaveLength(1);
+    // the first round's brief carries no claims; the brief auto stopped on does, in its latest pass
+    expect(p.artifacts(draw.id).filter((a) => a.kind === "claim")).toHaveLength(0);
+    const gate = d.findings(r.id);
+    expect(gate.findings.filter((f) => f.checkers.includes("claims")).map((f) => f.span)).toEqual(["four hundred kilometres from Naples"]);
+    expect(gate.claims).toHaveLength(2);
+    // joining the pass wrote no second pass record, so the samples the score reads are the pass's own
+    expect(chainOf(p, r.id).samples().ledger).toBe(4);
+  });
+
   test("auto stops as stalled when a repair leaves the same findings open on the new brief", async () => {
     // every pass reports A and B; round 1 accepts A, and round 2 raises A again as a re-opening of that fix
     const { d, draw } = await drawn(draftScript({ "check-ledger": [...ledgerSamples(), ...ledgerSamples(), ...ledgerSamples()], "check-derivation": [...derivationSamples(), ...derivationSamples(), ...derivationSamples()] }));

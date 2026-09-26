@@ -89,11 +89,12 @@ export async function extractLedger(session: BriefSession, meta: LedgerMeta): Pr
 const isQuestion = (c: { checkers: string[] }) => c.checkers.every((x) => x === "reader");
 
 /** Run every enabled checker over the brief. The draw must hold a brief; status is the caller's. */
-export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, opts: { checks?: string[]; samples?: number; keep_if?: number; premisesPath?: string } = {}): Promise<CheckResult> {
+export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, opts: { checks?: string[]; samples?: number; keep_if?: number; premisesPath?: string; pass?: string } = {}): Promise<CheckResult> {
   const parts = briefParts(p, drawId);
   const chain = chainOf(p, drawId);
   const brief = briefBlock(parts);
-  const pass = passId();
+  // a pass joined late, as claims join the pass a gate reads, keeps its id and its record of samples
+  const pass = opts.pass ?? passId();
   const enabled = checkersNext(p, drawId, opts.checks ?? cfg.checks.enabled, chain);
   const dismissed = chain.dismissed();
   const shape = findingShape();
@@ -150,7 +151,7 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
   // with the samples each checker ran in this pass, which the score reads: an earlier pass may have run a different count.
   // Marked only once the verify reading is in: a pass whose verify failed would otherwise read as clean
   const samples = Object.fromEntries(perChecker.filter((c) => c.samples).map((c) => [c.checker, c.samples!]));
-  if (perChecker.length) p.artifact(perChecker[0].firstStep, "pass", pass, { pass, samples });
+  if (perChecker.length && !opts.pass) p.artifact(perChecker[0].firstStep, "pass", pass, { pass, samples });
   const store = (c: Cluster, extra: Record<string, unknown>) => {
     const owner = perChecker.find((x) => x.checker === c.checkers[0])!;
     const { reported: _r, ...meta } = c;
