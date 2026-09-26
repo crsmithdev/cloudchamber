@@ -1,22 +1,29 @@
-// Plant plot holes in copies of stored briefs and run today's check on each, with a ledger extracted from the planted text.
-// usage: bun evals/plotholes/run.ts <code dir, the repository or a worktree> <plants.json> <runs> <out.json> [effort for check-derivation and check-ledger]
-const [code, plantsPath, runsArg, out, effort] = process.argv.slice(2);
+// Plant plot holes in copies of stored briefs and run the check on each, with a ledger extracted from the planted text.
+// The code under test is the checkout this file runs from; effort comes from its stages.toml.
+// usage: bun evals/plotholes/run.ts <plants.json> <runs> <out.json>
+// Verdicts go to a scratch bank unless CLOUDCHAMBER_BANK names one, and the copies are archived when the run ends.
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+const [plantsPath, runsArg, out] = process.argv.slice(2);
+if (!plantsPath || !runsArg || !out) throw new Error("usage: bun evals/plotholes/run.ts <plants.json> <runs> <out.json>");
 const runs = Number(runsArg);
-const { openDb } = await import(`${code}/app/pipeline/store/db.ts`);
-const { Pipeline, newDrawId } = await import(`${code}/app/pipeline/draw.ts`);
-const { ClaudeCli } = await import(`${code}/app/pipeline/model.ts`);
-const { Drafting } = await import(`${code}/app/pipeline/drafting.ts`);
-const { copyBrief } = await import(`${code}/app/pipeline/branch.ts`);
-const { commit } = await import(`${code}/app/pipeline/lifecycle.ts`);
-const { chainOf } = await import(`${code}/app/pipeline/chain.ts`);
-const { briefParts } = await import(`${code}/app/pipeline/briefparts.ts`);
+// paths.ts reads the bank when it loads, so the scratch one is set first
+process.env.CLOUDCHAMBER_BANK ??= mkdtempSync(join(tmpdir(), "plotholes-bank-"));
+const { openDb } = await import("../../app/pipeline/store/db.ts");
+const { Pipeline, newDrawId } = await import("../../app/pipeline/draw.ts");
+const { ClaudeCli } = await import("../../app/pipeline/model.ts");
+const { Drafting } = await import("../../app/pipeline/drafting.ts");
+const { copyBrief } = await import("../../app/pipeline/branch.ts");
+const { commit } = await import("../../app/pipeline/lifecycle.ts");
+const { chainOf } = await import("../../app/pipeline/chain.ts");
 
 type Plant = { id: string; draw: string; kind: string; part: string; original: string; planted: string; hole: string };
 const plants: Plant[] = JSON.parse(await Bun.file(plantsPath).text());
 const db = openDb();
 const p = new Pipeline(db, new ClaudeCli());
 const d = new Drafting(p);
-if (effort) for (const s of ["check-derivation", "check-ledger"]) (p as any).stages[s] = { ...(p as any).stages[s], effort };
 
 // the artifact holding a part of a copied brief: the chosen vignette, a context in job order, or the ending
 function partArtifact(id: string, part: string): { id: string; content: string } {
@@ -43,14 +50,13 @@ await Promise.all([...byDraw].flatMap(([src, ps]) => Array.from({ length: runs }
   db.query("DELETE FROM artifacts WHERE kind = 'ledger' AND step_id IN (SELECT id FROM steps WHERE draw_id = ?)").run(id);
   db.query("DELETE FROM steps WHERE draw_id = ? AND stage = 'ledger-extract'").run(id);
   commit(db, { id, status: "done", ended: true });
-  const planted = briefParts(p, id);
-  for (const pl of ps) if (!JSON.stringify(planted).includes(pl.planted.slice(0, 60).replace(/"/g, '\\"').slice(0, 40))) console.error(`warn ${pl.id}: planted text not visible in briefParts`);
   const t0 = Date.now();
   await d.check(id);
   const kept = chainOf(p, id).findings(true).filter((f: any) => f.reported && f.source === "check")
     .map((f: any) => ({ checkers: f.checkers, score: f.score, span: f.span, statement: f.statement, result: f.result, evidence: f.evidence }));
   const steps = db.query("SELECT round(sum(json_extract(usage, '$.cost_usd')), 2) usd FROM steps WHERE draw_id = ?").get(id) as any;
   results.push({ src, copy: id, run: run + 1, ms: Date.now() - t0, usd: steps.usd, kept });
+  p.archive(id);
   console.error(`${src} run ${run + 1}: ${kept.length} kept, $${steps.usd}`);
 })));
 await Bun.write(out, JSON.stringify({ plants, results }, null, 1));

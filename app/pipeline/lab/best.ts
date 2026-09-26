@@ -18,7 +18,12 @@ import { runPasses, judgeKey, judgePrompt, type PassAsk, type PassResult, type C
 import { asRuns, recordJudgements, JUDGEMENT_LOG, type Judgement, type JudgementInput } from "./log.ts";
 import { GAP_MARGIN, floorPairs, scoreGap } from "./pool.ts";
 
-export const JUDGES = ["google/gemini-3.1-pro-preview", "openai/gpt-5.1", "z-ai/glm-4.7"];
+/**
+ * The panel. GLM-4.7 left it on 26 September: it set the wall time of every
+ * judged run (p50 123 s, max 504 s), and without it every stored experiment's
+ * mean kept its side (`evals/20260925-fewer-judges.md`).
+ */
+export const JUDGES = ["google/gemini-3.1-pro-preview", "openai/gpt-5.1"];
 
 export type BestOpts = {
   n?: number;
