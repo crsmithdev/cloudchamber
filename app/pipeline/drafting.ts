@@ -62,8 +62,15 @@ export type FindingsView = {
  * it scores.
  */
 const AUTO_CHECKERS = ["derivation", "ledger", "claims"];
-/** A floor stop needs this many clean passes in a row on one brief: one sample set can miss what the next one finds. */
-const CLEAN_PASSES = 2;
+/**
+ * A floor stop needs this many clean samples in a row on one brief: one sample
+ * set can miss what the next one finds. A pass after a repair, and auto's own
+ * first pass, runs all of them at once, and reports a finding in 3 of the 4:
+ * near the rate at which two sequential passes of two, each needing 2 of 2,
+ * reported one. A first pass a person ran at the default 2 gets a second 2.
+ */
+export const CLEAN_SAMPLES = 4;
+const FULL_PASS = { samples: CLEAN_SAMPLES, keep_if: 3 };
 export { BODY_LINE, COST_LINE, PRESENCE_LINE } from "./write.ts";
 /** The listen screen's long-sentence share, over the configured ceiling, sends a beat back for one rewrite under this line. */
 export const LENGTH_LINE = "One thing per sentence, short enough to say aloud in one breath; no sentence over thirty words.";
@@ -142,10 +149,10 @@ export class Drafting {
   }
 
   /** A check pass under `checking`; the draw comes back to where it stood if the pass fails, and waits at gate 1 when it succeeds. */
-  private async recheck(drawId: string, cfg: DraftConfig, opts: { back?: Status; checks?: string[]; samples?: number } = {}): Promise<CheckResult> {
+  private async recheck(drawId: string, cfg: DraftConfig, opts: { back?: Status; checks?: string[]; samples?: number; keep_if?: number } = {}): Promise<CheckResult> {
     const back = opts.back ?? (this.p.draw(drawId).status as Status);
     return act(this.p.db, { id: drawId, during: "checking", back },
-      () => runCheck(this.p, drawId, cfg, { checks: opts.checks, samples: opts.samples, premisesPath: this.opts.premisesPath }),
+      () => runCheck(this.p, drawId, cfg, { checks: opts.checks, samples: opts.samples, keep_if: opts.keep_if, premisesPath: this.opts.premisesPath }),
       () => ({ id: drawId, status: "awaiting_check_gate" }));
   }
 
@@ -208,7 +215,7 @@ export class Drafting {
     const next = await repair(this.p, drawId, accepted);
     if (draw.draft_config) commit(this.p.db, { id: next.id, links: { draft_config: draw.draft_config } });
     // the new round is a brief nobody has checked: a check that fails leaves it there
-    await this.recheck(next.id, cfg, { back: "done" });
+    await this.recheck(next.id, cfg, { back: "done", ...FULL_PASS });
     return this.p.draw(next.id);
   }
 
@@ -359,9 +366,8 @@ export class Drafting {
    * see the same. The Mission Control chain spent twenty calls on two such
    * rounds before patience fired. That stop is `stalled`.
    *
-   * A clean pass is one sample set. The floor stop waits for `CLEAN_PASSES`
-   * clean passes in a row on the same brief, each a fresh check, so a pass
-   * that missed a defect does not end the chain. One row per brief: a re-check
+   * The floor stop waits for `CLEAN_SAMPLES` clean samples in a row on the
+   * same brief, so a sample set that missed a defect does not end the chain. One row per brief: a re-check
    * overwrites the brief's row, so every row holds its brief's last pass and
    * the lowest total is a brief's, not a pass's.
    *
@@ -379,7 +385,7 @@ export class Drafting {
     const cfg = opts.cfg ?? this.resolved(draw).config;
     const floor = cfg.repair.stop_score;
     let id = drawId;
-    if (!chainOf(this.p, id).pass()) await this.recheck(id, cfg);
+    if (!chainOf(this.p, id).pass()) await this.recheck(id, cfg, FULL_PASS);
     const rounds: AutoRound[] = [];
     let stopped: AutoResult["stopped"];
     let clean = 0;
@@ -397,7 +403,9 @@ export class Drafting {
       if (before && before.id !== id && open.length === before.open.length && open.every((f) => before!.open.some((o) => same(o, f)))) { stopped = "stalled"; break; }
       before = { id, open };
       if (!accept.length) {
-        if (++clean >= CLEAN_PASSES) { stopped = "floor"; break; }
+        // the samples this pass ran, as it recorded them
+        clean += Math.max(0, ...Object.values(chainOf(this.p, id).samples()));
+        if (clean >= CLEAN_SAMPLES) { stopped = "floor"; break; }
         await this.recheck(id, cfg); continue;
       }
       clean = 0;

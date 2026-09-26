@@ -129,8 +129,8 @@ describe("check and gate 1", () => {
     const trail = readFileSync(join(bdir, "trail.md"), "utf8");
     expect(trail).toContain("# Trail (repaired)");
     expect(trail).toContain(`## repaired_from\n\n${draw.id}\n\n- Only the assembler can fire the reliquary.`);
-    // the re-check ran on the new draw and found nothing
-    expect(p.steps(next.id).filter((s) => s.stage === "check-ledger")).toHaveLength(3);
+    // the re-check ran on the new draw, at the four samples a pass after a repair runs, and found nothing
+    expect(p.steps(next.id).filter((s) => s.stage === "check-ledger")).toHaveLength(4);
     expect(d.findings(next.id).findings).toEqual([]);
     expect(d.findings(next.id).judge).toBe("checked on opus; judge and generator share a family");
     await expect(d.accept(draw.id, [a.id])).rejects.toThrow(/is repaired, not awaiting_check_gate/);
@@ -325,7 +325,7 @@ describe("check and gate 1", () => {
     let extracts = 0;
     const script = draftScript({
       "ledger-extract": () => { extracts++; return `<ledger>${extracts === 1 ? LEDGER : "time: a different ledger entirely"}</ledger>`; },
-      "check-ledger": [...ledgerSamples(), ...ledgerSamples()],
+      "check-ledger": [...ledgerSamples(), ...ledgerSamples(A(), B(), 4)],
       "check-derivation": [...derivationSamples(), ...cleanSamples()],
     });
     const { p, d, draw, model } = await drawn(script);
@@ -348,7 +348,7 @@ describe("check and gate 1", () => {
 
   test("structure and resemblance profile the premise once for the chain; a repair round runs neither", async () => {
     const script = draftScript({
-      "check-ledger": [...ledgerSamples(), ...ledgerSamples()],
+      "check-ledger": [...ledgerSamples(), ...ledgerSamples(A(), B(), 4)],
       "check-derivation": [...derivationSamples(), ...cleanSamples()],
     });
     const { p, d, draw, model } = await drawn(script);
@@ -372,7 +372,7 @@ describe("check and gate 1", () => {
 
   test("a repair rewrites without the six example passages; a first draft keeps them", async () => {
     const script = draftScript({
-      "check-ledger": [...ledgerSamples(), ...ledgerSamples()],
+      "check-ledger": [...ledgerSamples(), ...ledgerSamples(A(), B(), 4)],
       "check-derivation": [...derivationSamples(), ...cleanSamples()],
     });
     const { d, draw, model } = await drawn(script);
@@ -1060,20 +1060,21 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
   });
 
   test("--auto: accepts findings at or above the score floor, leaves the rest open, repairs, re-checks, drafts, stops at gate 2", async () => {
-    const script = draftScript({ "check-ledger": [...ledgerSamples(), ...cleanSamples(), ...cleanSamples()], "check-derivation": [...derivationSamples(), ...cleanSamples(), ...cleanSamples()] });
+    // auto checks the unchecked draw itself, at the four samples of a full pass
+    const script = draftScript({ "check-ledger": [...ledgerSamples(A(), B(), 4), ...cleanSamples(), ...cleanSamples()], "check-derivation": [...derivationSamples(A(), 4), ...cleanSamples(), ...cleanSamples()] });
     const { p, d, draw, model } = await drawn(script);
     const out = await d.draft(draw.id, { auto: true });
     expect(out.id).not.toBe(draw.id);
     expect(out.repaired_from).toBe(draw.id);
     expect(out.status).toBe("awaiting_draft_gate");
     expect(p.draw(draw.id).status).toBe("repaired");
-    // A reaches the floor; B is under it and C recurred once of three, under keep_if: both stay open for a person, undecided
+    // A reaches the floor; B is under it and C recurred once of four, under keep_if: both stay open for a person, undecided
     const first = d.findings(draw.id, { all: true }).findings;
     expect(first.map((f) => [f.score, f.decision, f.note])).toEqual([[10, "accepted", "auto"], [6, "open", ""], [5, "open", ""]]);
     expect(first[2].reported).toBe(false);
     expect(stagesOf(model, /^reconcile$/)).toHaveLength(0);                    // one fix: nothing to read against itself
     expect((p.db.query("SELECT DISTINCT method FROM verdicts WHERE kind = 'finding'").all() as any[]).map((v) => v.method)).toEqual(["draw"]);
-    expect(stagesOf(model, /^check-ledger$/)).toHaveLength(9);                // one round of repair, then two clean passes end it
+    expect(stagesOf(model, /^check-ledger$/)).toHaveLength(8);                // a pass of four, one repair, then one clean pass of four ends it
     expect(stagesOf(model, /^scene$/)).toHaveLength(8);
     expect(out.draft_config).toBeTruthy();
     expect(JSON.parse(out.draft_config!).config.length.words).toBe(5000);
@@ -1086,9 +1087,9 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     const r = await d.autoRounds(draw.id);
     expect(r.stopped).toBe("floor");
     expect(r.floor).toBe(7);
-    expect(r.rounds.map((x) => [x.round, x.open, x.total, x.accepted, x.passes])).toEqual([[1, 2, 16, 1, 1], [2, 0, 0, 0, 2]]);   // C is under keep_if: not open to auto; two clean passes end it
+    expect(r.rounds.map((x) => [x.round, x.open, x.total, x.accepted, x.passes])).toEqual([[1, 2, 16, 1, 1], [2, 0, 0, 0, 1]]);   // C is under keep_if: not open to auto; one clean pass of four ends it
     expect(r.left_open).toBe(0);                                               // a floor stop leaves nothing to rule on
-    expect(r.best.round).toBe(2);                                              // one row per brief: the second clean pass overwrote round 2's row
+    expect(r.best.round).toBe(2);
     expect(r.id).toBe(r.rounds[1].id);
     expect(r.id).not.toBe(draw.id);
     // the round table is stored on the brief auto stopped on, so the gate can render it
@@ -1116,8 +1117,9 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
       "relic bones sold", "forge iron count", "hour glass turned", "tally marks burned", "bones washed clean", "iron gate sealed", "glass eye watched"];
     let k = 0;
     const fresh = () => { const w = WORDS[k++ % WORDS.length]; return finding(w, `the ${w} does not hold`, "departure", `The ${w} holds.`); };
-    const passes = Array.from({ length: 12 }, () => { const a = fresh(); return [`<ledger>${LEDGER}</ledger>${a}<examined>x</examined>`, `<ledger>${LEDGER}</ledger>${a}<examined>x</examined>`, `<ledger>${LEDGER}</ledger>${a}<examined>x</examined>`]; }).flat();
-    const derivations = Array.from({ length: 12 }, () => Array.from({ length: 3 }, () => `<impossibility>One.</impossibility><examined>x</examined>`)).flat();
+    // the first pass runs three samples, and every pass after a repair four
+    const passes = Array.from({ length: 12 }, (_, i) => { const a = fresh(); return Array.from({ length: i ? 4 : 3 }, () => `<ledger>${LEDGER}</ledger>${a}<examined>x</examined>`); }).flat();
+    const derivations = Array.from({ length: 12 }, (_, i) => Array.from({ length: i ? 4 : 3 }, () => `<impossibility>One.</impossibility><examined>x</examined>`)).flat();
     const { d, draw } = await drawn(draftScript({ "check-ledger": passes, "check-derivation": derivations, execute: withWords(WORDS) }));
     await d.check(draw.id);
     const r = await d.autoRounds(draw.id, { cfg: { ...loadDraftConfig().config, repair: { rounds: 9, stop_score: 7, patience: 2 } } });
@@ -1159,8 +1161,8 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     const WORDS = ["reliquary silk director", "clavicle Verona relic", "assembler forge tally", "director ledger hour", "silk tears cut", "relic bones sold", "forge iron count", "hour glass turned"];
     let k = 0;
     const fresh = () => { const w = WORDS[k++ % WORDS.length]; return finding(w, `the ${w} does not hold`, "departure", `The ${w} holds.`); };
-    const passes = Array.from({ length: 8 }, () => { const a = fresh(); return [1, 2, 3].map(() => `<ledger>${LEDGER}</ledger>${a}<examined>x</examined>`); }).flat();
-    const derivations = Array.from({ length: 8 }, () => [1, 2, 3].map(() => `<impossibility>One.</impossibility><examined>x</examined>`)).flat();
+    const passes = Array.from({ length: 8 }, (_, i) => { const a = fresh(); return Array.from({ length: i ? 4 : 3 }, () => `<ledger>${LEDGER}</ledger>${a}<examined>x</examined>`); }).flat();
+    const derivations = Array.from({ length: 8 }, (_, i) => Array.from({ length: i ? 4 : 3 }, () => `<impossibility>One.</impossibility><examined>x</examined>`)).flat();
     const { d, draw } = await drawn(draftScript({ "check-ledger": passes, "check-derivation": derivations, execute: withWords(WORDS) }));
     await d.check(draw.id);
     const r = await d.autoRounds(draw.id, { cfg: { ...loadDraftConfig().config, repair: { rounds: 2, stop_score: 7, patience: 9 } } });
@@ -1206,7 +1208,7 @@ describe("templates and store", () => {
 
 describe("finding ids are scoped by draw", () => {
   test("two draws with the same span do not share verdicts; a repaired draw's re-check does not inherit its source's accepted findings", async () => {
-    const { p, d, draw } = await drawn(draftScript({ "check-ledger": [...ledgerSamples(), ...ledgerSamples()], "check-derivation": [...derivationSamples(), ...derivationSamples()] }));
+    const { p, d, draw } = await drawn(draftScript({ "check-ledger": [...ledgerSamples(), ...ledgerSamples(A(), B(), 4)], "check-derivation": [...derivationSamples(), ...derivationSamples(A(), 4)] }));
     await d.check(draw.id);
     const [a] = d.findings(draw.id).findings;
     const next = await d.accept(draw.id, [a.id]);
@@ -1426,10 +1428,10 @@ describe("a repaired context vignette", () => {
     const script = draftScript({
       "check-ledger": [
         ...[1, 2, 3].map(() => `<ledger>${LEDGER}</ledger>${inContext()}<examined>x</examined>`),
-        ...[1, 2, 3].map(() => `<ledger>${LEDGER}</ledger>${A()}<examined>x</examined>`),
+        ...[1, 2, 3, 4].map(() => `<ledger>${LEDGER}</ledger>${A()}<examined>x</examined>`),   // the pass after a repair runs four
         ...cleanSamples(),
       ],
-      "check-derivation": [...cleanSamples(), ...cleanSamples(), ...cleanSamples()],
+      "check-derivation": [...cleanSamples(3), ...cleanSamples(), ...cleanSamples()],
     });
     const { p, d, draw, model, dir } = await drawn(script);
     await d.check(draw.id);

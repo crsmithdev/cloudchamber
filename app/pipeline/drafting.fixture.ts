@@ -28,14 +28,19 @@ export const C = () => finding(SPAN_C, "the tears the outline cut are back", "kn
 
 export const LEDGER = "time: the fire was on the 3rd\ndetail: 1,106 dead\npossession: the director holds the order";
 
-/** Three ledger samples: A in all three, B in 1 and 3, C in 2 only. */
-export const ledgerSamples = (a = A(), b = B()) => [
+/**
+ * Ledger samples: A in all, B in all but the second, C in the second only. A
+ * first pass runs three; a pass after a repair runs four, and the fourth
+ * carries A and B, so B recurs 3 of 4 as it recurred 2 of 3.
+ */
+export const ledgerSamples = (a = A(), b = B(), n = 3) => [
   `<ledger>${LEDGER}</ledger>${a}${b}<examined>ledger×chosen\nledger×context-1\nchosen×ending</examined>`,
   `<ledger>${LEDGER}</ledger>${a}${C()}<examined>ledger×chosen\nchosen×ending</examined>`,
   `<ledger>${LEDGER}</ledger>${a}${b}<examined>ledger×chosen\nledger×ending</examined>`,
-];
-export const derivationSamples = (a = A()) => Array.from({ length: 3 }, () => `<impossibility>One reliquary that fires.</impossibility>${a}<examined>the director fires it\n1,106 = 12 × 92 + 2</examined>`);
-export const cleanSamples = () => Array.from({ length: 3 }, () => `<ledger>${LEDGER}</ledger><impossibility>One reliquary.</impossibility><examined>everything checked, nothing found</examined>`);
+  `<ledger>${LEDGER}</ledger>${a}${b}<examined>ledger×chosen\nchosen×ending</examined>`,
+].slice(0, n);
+export const derivationSamples = (a = A(), n = 3) => Array.from({ length: n }, () => `<impossibility>One reliquary that fires.</impossibility>${a}<examined>the director fires it\n1,106 = 12 × 92 + 2</examined>`);
+export const cleanSamples = (n = 4) => Array.from({ length: n }, () => `<ledger>${LEDGER}</ledger><impossibility>One reliquary.</impossibility><examined>everything checked, nothing found</examined>`);
 
 export const STRUCTURE_Q = ["threat", "category-violation", "agency", "obscurity", "thickening", "spectacle", "consequence"];
 export const structure = (present = ["threat", "agency", "consequence"]) => STRUCTURE_Q.map((q) => `<question name="${q}"><answer>${present.includes(q) ? "present" : "absent"}</answer><quote>a quote for ${q}</quote></question>`).join("");

@@ -84,7 +84,7 @@ export async function extractLedger(session: BriefSession, meta: LedgerMeta): Pr
 }
 
 /** Run every enabled checker over the brief. The draw must hold a brief; status is the caller's. */
-export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, opts: { checks?: string[]; samples?: number; premisesPath?: string } = {}): Promise<CheckResult> {
+export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, opts: { checks?: string[]; samples?: number; keep_if?: number; premisesPath?: string } = {}): Promise<CheckResult> {
   const parts = briefParts(p, drawId);
   const chain = chainOf(p, drawId);
   const brief = briefBlock(parts);
@@ -92,7 +92,7 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
   const enabled = checkersNext(p, drawId, opts.checks ?? cfg.checks.enabled, chain);
   const dismissed = chain.dismissed();
   const shape = findingShape();
-  const S = (name: string) => opts.samples ? { samples: opts.samples, keep_if: Math.min(cfg.checks.keep_if, opts.samples) } : samplesFor(cfg.checks, name);
+  const S = (name: string) => opts.samples ? { samples: opts.samples, keep_if: Math.min(opts.keep_if ?? cfg.checks.keep_if, opts.samples) } : samplesFor(cfg.checks, name);
   const perChecker: { checker: string; clusters: Cluster[]; firstStep: StepRow; samples?: number }[] = [];
   // <examined> is the checker's own account of what it compared, kept for the reader; a reply without it, or one that opens it and never closes it (Sonnet 5, run 9), has still answered
   const findingsOf = (checker: "derivation" | "ledger") => (t: string) => ({ findings: parseFindings(t, checker, 0), examined: tag(t, "examined") ?? "" });
