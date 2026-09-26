@@ -1,0 +1,165 @@
+{
+ "plants": [
+  "P01",
+  "P02",
+  "P03",
+  "P04",
+  "P05",
+  "P06",
+  "P07",
+  "P08",
+  "P09",
+  "P10",
+  "P11",
+  "P12",
+  "P13",
+  "P14",
+  "P15"
+ ],
+ "results": [
+  {
+   "src": "20260924223235-3cee",
+   "run": 2,
+   "usd": 1.84,
+   "kept": [
+    {
+     "checkers": [
+      "ledger"
+     ],
+     "score": 9,
+     "span": "every generation, patient as sediment",
+     "statement": "The organism's four-century passage through the food chain is characterized as patience, i.e. as intent held over time."
+    }
+   ]
+  },
+  {
+   "src": "20260922154740-35c1",
+   "run": 1,
+   "usd": 1.92,
+   "kept": [
+    {
+     "checkers": [
+      "derivation",
+      "ledger"
+     ],
+     "score": 10,
+     "span": "He says you went back to the house after and lay on top of the covers till dawn, with your boots on.",
+     "statement": "Walt, speaking through the shared root, reports what Lyle did indoors after the grafting."
+    }
+   ]
+  },
+  {
+   "src": "20260921145735-c933",
+   "run": 2,
+   "usd": 2.23,
+   "kept": []
+  },
+  {
+   "src": "20260921145735-c933",
+   "run": 1,
+   "usd": 2.18,
+   "kept": []
+  },
+  {
+   "src": "20260919210221-f1a4",
+   "run": 1,
+   "usd": 1.95,
+   "kept": [
+    {
+     "checkers": [
+      "derivation"
+     ],
+     "score": 9,
+     "span": "Halvorsen and Ilse and Ito and Adeyemi entering the bay at 14:37:14",
+     "statement": "The other four crew enter the interface bay at 14:37:14 UTC."
+    }
+   ]
+  },
+  {
+   "src": "20260922154740-35c1",
+   "run": 2,
+   "usd": 1.96,
+   "kept": [
+    {
+     "checkers": [
+      "derivation",
+      "ledger"
+     ],
+     "score": 10,
+     "span": "He says you went back to the house after and lay on top of the covers till dawn, with your boots on.",
+     "statement": "Walt, speaking through the root, reports what Lyle did indoors after the grafting."
+    },
+    {
+     "checkers": [
+      "derivation"
+     ],
+     "score": 3,
+     "span": "The date in the corner is next week.",
+     "statement": "The tape Lyle plays on March 6, 1009 — sorry, March 6, 2009 — carries a recording timestamp a week in the future."
+    }
+   ]
+  },
+  {
+   "src": "20260917235657-ae6d",
+   "run": 1,
+   "usd": 2.05,
+   "kept": [
+    {
+     "checkers": [
+      "derivation",
+      "ledger"
+     ],
+     "score": 9,
+     "span": "he began to haul, and he wound the timer again to six so he would know when she was due at the lip",
+     "statement": "Anselm starts the egg timer a second time to measure the six-minute haul."
+    }
+   ]
+  },
+  {
+   "src": "20260917235657-ae6d",
+   "run": 2,
+   "usd": 2.41,
+   "kept": [
+    {
+     "checkers": [
+      "ledger",
+      "derivation"
+     ],
+     "score": 10,
+     "span": "he wound the timer again to six so he would know when she was due at the lip",
+     "statement": "Anselm winds the egg timer for the six-minute haul as well as for the eleven-minute hang."
+    }
+   ]
+  },
+  {
+   "src": "20260924223235-3cee",
+   "run": 1,
+   "usd": 2.01,
+   "kept": []
+  },
+  {
+   "src": "20260919210221-f1a4",
+   "run": 2,
+   "usd": 1.94,
+   "kept": [
+    {
+     "checkers": [
+      "derivation",
+      "ledger"
+     ],
+     "score": 10,
+     "span": "Halvorsen had already read Ilse's; she had passed him her pages across that same table within the hour, before she sealed them",
+     "statement": "Ilse showed Halvorsen her account before sealing it, within the hour of contact."
+    },
+    {
+     "checkers": [
+      "derivation"
+     ],
+     "score": 8,
+     "span": "Halvorsen and Ilse and Ito and Adeyemi entering the bay at 14:37:14",
+     "statement": "The other four crew reach the interface bay at 14:37:14 UTC."
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,152 @@
+[
+  {
+    "id": "P01",
+    "draw": "20260917235657-ae6d",
+    "kind": "unfollowed_event",
+    "part": "context-1",
+    "original": "He read it over and it was true. He pressed send and reached for the coffee.",
+    "planted": "He read it over and it was true. He pressed send, drove east to the camp, and gave the brother at the registry table his name for the list. Then he parked on Fourth again and reached for the coffee.",
+    "hole": "Why does a surveyor who has just certified the block as sound, with no pull and no faith shown, sign up to be lowered into the pit?",
+    "why_not_contradiction": "No line limits who may join the list or says Dale never visits the camp; the registry shown ends on Day 10 and his descent could fall after it."
+  },
+  {
+    "id": "P02",
+    "draw": "20260917235657-ae6d",
+    "kind": "unclosed_choice",
+    "part": "vignette",
+    "original": "It isn't bruising. It's all of my blood picking a direction.",
+    "planted": "It isn't bruising. It's all of my blood picking a direction.\n\nTonight I moved my cot to the east end of the dormitory, the end nearest the rim. There are empty cots at the west end.",
+    "hole": "Having just learned the pit is pulling her blood, why does Ruth move closer to it when empty cots farther away are available?",
+    "why_not_contradiction": "The outline already has Ruth sleeping close to the pit and pooling faster; nothing states where in the dormitory she sleeps or forbids the west end."
+  },
+  {
+    "id": "P03",
+    "draw": "20260917235657-ae6d",
+    "kind": "broken_rule",
+    "part": "context-2",
+    "original": "When the timer rang at eleven, he began to haul.",
+    "planted": "When the timer rang at eleven, he began to haul, and he wound the timer again to six so he would know when she was due at the lip.",
+    "hole": "The outline says the egg timer is never started for the haul, yet Anselm times the haul with it.",
+    "why_not_contradiction": "Control: this deliberately contradicts the stated rule that the egg timer measures only the 11 minutes at full rope and is never started for the lowering or the haul."
+  },
+  {
+    "id": "P04",
+    "draw": "20260922154740-35c1",
+    "kind": "unfollowed_event",
+    "part": "context-2",
+    "original": "\"I know.\" She takes a breath and lets it go. \"Janet around?\"",
+    "planted": "\"I know. A girl from the extension office called me Monday, asking if I still had a copy.\" She takes a breath and lets it go. \"Janet around?\"",
+    "hole": "Why would the extension office, which withdrew Tape 12 in 1988, suddenly go looking for a copy twenty-one years later?",
+    "why_not_contradiction": "The outline says only that the office withdrew the tape in 1988 and the county passed it around; nothing says the office never asked about it again, and the call comes from a living clerk, not the cut phone call from the dead father."
+  },
+  {
+    "id": "P05",
+    "draw": "20260922154740-35c1",
+    "kind": "unpaid_setup",
+    "part": "vignette",
+    "original": "My father has been dead nine years. He's the first post. I've never counted the others.",
+    "planted": "My father has been dead nine years. He's the first post. I've never counted the others. His twelve-gauge still hangs over the back door where he left it. This morning I took it down, loaded both barrels, and stood it by the kitchen table.",
+    "hole": "Lyle loads his father's shotgun and stands it by the table the morning after the grafting, so what is it for, and why does it never appear again?",
+    "why_not_contradiction": "No line lists what is in the house or says Lyle owns no gun, and the ending's inventory of the kitchen table does not claim to be complete."
+  },
+  {
+    "id": "P06",
+    "draw": "20260922154740-35c1",
+    "kind": "broken_rule",
+    "part": "ending",
+    "original": "\"He says you did well last night,\" she says. \"He says you didn't follow the hands.\"",
+    "planted": "\"He says you did well last night,\" she says. \"He says you didn't follow the hands. He says you went back to the house after and lay on top of the covers till dawn, with your boots on.\"",
+    "hole": "The outline says Walt cannot know what Lyle does in the house, because the root stops where the posts stop, yet he reports what Lyle did in the house.",
+    "why_not_contradiction": "Control: this deliberately contradicts the knowledge rule that Walt cannot know what Lyle does in the house."
+  },
+  {
+    "id": "P07",
+    "draw": "20260921145735-c933",
+    "kind": "premature_knowledge",
+    "part": "context-2",
+    "original": "Day 14. Sieber wanted timecodes, so I went through the day-one footage again, frame by frame, with the broadcaster's viewer counter in the top corner of the picture.",
+    "planted": "Day 14. Sieber wanted timecodes, so I went through the day-one footage again, frame by frame, with the broadcaster's viewer counter in the top corner of the picture. I did it alone with the door shut, and I asked Sieber not to open his copy until I'd finished, because two of us on the same minute would count twice.",
+    "hole": "Marit acts on the rule that each watcher adds to the growth before she has plotted the radius against the counter, the step later in this same scene that shows the law.",
+    "why_not_contradiction": "The outline dates the team's knowledge of the law to day 14, the day of this scene, and no line says she did not suspect it before she plotted the table."
+  },
+  {
+    "id": "P08",
+    "draw": "20260921145735-c933",
+    "kind": "unpaid_setup",
+    "part": "vignette",
+    "original": "We don't say that out loud.",
+    "planted": "We don't say that out loud.\n\nPell has kept a climbing harness under his desk since day twenty, checked and coiled, with two hundred meters of rope.",
+    "hole": "Pell's packed harness and rope promise a descent or a jump, so why is it never mentioned again, not even when the ending names what Pell is doing?",
+    "why_not_contradiction": "No line lists what is in the room or says Pell never prepared a descent; owning a harness is not jumping, so his point that a jumper makes it worse still holds."
+  },
+  {
+    "id": "P09",
+    "draw": "20260921145735-c933",
+    "kind": "unclosed_choice",
+    "part": "ending",
+    "original": "That's two of us doing it with one voice.",
+    "planted": "That's two of us doing it with one voice. The office across the landing is empty, and its door shuts. I have moved my chair to the end of his desk instead, where I can see his throat.",
+    "hole": "If listening to Sieber adds to the radius, why does Marit move closer to him instead of into the empty room with a shut door?",
+    "why_not_contradiction": "The arrival requires Marit to count his breaths but no line says she cannot leave the room or that the log must be kept beside him."
+  },
+  {
+    "id": "P10",
+    "draw": "20260919210221-f1a4",
+    "kind": "premature_knowledge",
+    "part": "vignette",
+    "original": "\"Ask it the question,\" Ilse said. \"The actual question.\"",
+    "planted": "\"Ask it the question,\" Ilse said. \"The actual question.\"\n\nHalvorsen put his hand to the chest pocket where he had carried a photograph of his father's kitchen since launch. He had packed it because it would need something of his to speak with.",
+    "hole": "How could Halvorsen know before launch that the builders would speak through the listener's own memories, when nobody had yet touched the proxy?",
+    "why_not_contradiction": "The knowledge section gives Halvorsen the transit timeline and says nothing about what he guessed of the interface, and no line says he packed no personal items."
+  },
+  {
+    "id": "P11",
+    "draw": "20260919210221-f1a4",
+    "kind": "unpaid_setup",
+    "part": "vignette",
+    "original": "Up close it had the fibrous, unfinished look of something halfway through growing, black filament laid over black filament in a weave that let Mercury-light through in slow-moving lozenges.",
+    "planted": "Up close it had the fibrous, unfinished look of something halfway through growing, black filament laid over black filament in a weave that let Mercury-light through in slow-moving lozenges. Behind them it was growing across the mouth of the bay they had come in by; Ito had taped the edge when they entered, and the weave was already a hand's width past the tape.",
+    "hole": "The lattice is closing the way out of the bay, so how did the four get out, and why does nobody mention it again?",
+    "why_not_contradiction": "The outline says the lattice is still growing and the shell keeps closing; nothing gives the bay mouth's width or the growth rate, so a hand's width does not trap them."
+  },
+  {
+    "id": "P12",
+    "draw": "20260919210221-f1a4",
+    "kind": "broken_rule",
+    "part": "ending",
+    "original": "Four envelopes on the galley table.",
+    "planted": "Four envelopes on the galley table. Halvorsen had already read Ilse's; she had passed him her pages across that same table within the hour, before she sealed them, and he had handed them back without a word.",
+    "hole": "The outline says the accounts were written within the hour, sealed and unshared, yet Ilse shows hers to Halvorsen before she seals it.",
+    "why_not_contradiction": "Control: this deliberately contradicts the stated protocol that the accounts were sealed and unshared."
+  },
+  {
+    "id": "P13",
+    "draw": "20260924223235-3cee",
+    "kind": "unfollowed_event",
+    "part": "context-2",
+    "original": "She sleeps four hours. The tube is still there in the morning.",
+    "planted": "She sleeps four hours. The tube is still there in the morning, and it has a label on it now, printed in the lab's format, with a sample number and yesterday's date.",
+    "hole": "Who printed and fixed a lab label on the unlabeled tube in Sabine's quarters overnight, and why?",
+    "why_not_contradiction": "The brief says only that Sabine did not write her name on it; nothing says her quarters are locked or that nobody else prints lab labels."
+  },
+  {
+    "id": "P14",
+    "draw": "20260924223235-3cee",
+    "kind": "unclosed_choice",
+    "part": "ending",
+    "original": "She has three sterile controls that were never sterile.",
+    "planted": "She has three sterile controls that were never sterile. She burned the forty reference ampoules from 2209 as well, sealed in glass in the vault's cold safe, which had never touched a gram of the soil; the protocol would have let her leave the safe shut.",
+    "hole": "If Sabine believed the organism lived in the soil, why did she also burn sealed seed that never touched soil, when she could have left the safe shut?",
+    "why_not_contradiction": "The ampoules are part of the 2.1 million seeds and humanity's entire holding that she burned, and no line says the burn protocol had to include the cold safe."
+  },
+  {
+    "id": "P15",
+    "draw": "20260924223235-3cee",
+    "kind": "premature_knowledge",
+    "part": "context-1",
+    "original": "The camera holds the empty hull for seven-tenths of a second and the file ends.",
+    "planted": "The camera holds the empty hull for seven-tenths of a second and the file ends. Sabine copied it out of the buffer at 04:12:24, from the terminal in her quarters, before the overwrite reached it.",
+    "hole": "How did Sabine know at 04:12 to save that camera's buffer, seconds after an unflagged event that raised no alarm?",
+    "why_not_contradiction": "The brief says she saw the log, not the act, which still holds, and it never says how or when the nine-second file was kept from the overwrite."
+  }
+]
