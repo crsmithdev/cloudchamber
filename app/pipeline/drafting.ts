@@ -295,9 +295,10 @@ export class Drafting {
    */
   private async scenes(session: SceneSession, cfg: DraftConfig, from: number): Promise<void> {
     const scenes = await session.all(from);
-    await session.screen(scenes, scenes.filter((x) => x.beat >= from).map((x) => x.beat));
+    await session.screen(scenes, scenes.filter((x) => x.beat >= from).map((x) => x.beat), { claims: false });
     // one rewrite of each beat the screens flag: the register lines only under a shaped template, the ceilings always
     await this.registerRewrites(session.drawId, cfg, from);
+    await session.screenClaims(session.scenes());
   }
 
   /**
@@ -479,7 +480,7 @@ export class Drafting {
   }
 
   /** Write beat k again under the constraints, bind it and the beat after it to the ledger, and re-screen both. The caller holds the status. */
-  private async regenerate(drawId: string, k: number, cfg: DraftConfig, constraints?: string, findingId?: string): Promise<void> {
+  private async regenerate(drawId: string, k: number, cfg: DraftConfig, constraints?: string, findingId?: string, opts: { rebindNext?: boolean; claims?: boolean } = {}): Promise<void> {
     const session = SceneSession.resume(this.p, drawId, cfg, passId(), this.screenPaths());
     const scenes = session.scenes(), M = session.schedule.beats.length;
     const before = scenes.filter((s) => s.beat < k).map((s) => s.text);
@@ -487,8 +488,9 @@ export class Drafting {
     const written = await session.write(session.schedule.beats[k - 1], cfg.scenes.order === "sequential" ? before : [], { constraints, rewrite: { finding: findingId } });
     const bound = await session.bind(written, scenes[k - 2]);
     // the beat after it read the old text: it is held to the new one, as it was when first written
-    if (k < M) await session.bind(scenes[k], bound);
-    await session.screen(session.scenes(), k < M ? [k, k + 1] : [k]);
+    const rebindNext = opts.rebindNext ?? true;
+    if (k < M && rebindNext) await session.bind(scenes[k], bound);
+    await session.screen(session.scenes(), (k < M && rebindNext) ? [k, k + 1] : [k], { claims: opts.claims ?? true });
   }
 
   /**
@@ -512,9 +514,13 @@ export class Drafting {
       const plan = rewritePlan(chain.screenProfiles(), chain.scenes(), cfg);
       const due = [...plan].filter(([k, lines]) => k >= from && lines.some((l) => !done.get(k)?.has(l))).sort((a, b) => a[0] - b[0]);
       if (!due.length) return;
+      const dueBeats = new Set(due.map(([k]) => k));
       for (const [k, lines] of due) {
         done.set(k, new Set([...(done.get(k) ?? []), ...lines]));
-        await this.regenerate(drawId, k, cfg, constraintsBlock(lines.map((replacement) => ({ replacement }))));
+        await this.regenerate(drawId, k, cfg, constraintsBlock(lines.map((replacement) => ({ replacement }))), undefined, {
+          rebindNext: !dueBeats.has(k + 1),
+          claims: false,
+        });
       }
     }
   }

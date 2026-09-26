@@ -294,7 +294,7 @@ export async function screenClaims(p: Pipeline, drawId: string, scenes: { beat: 
       result: f.result, evidence: f.evidence, invalidates: String(beat), replacement: f.replacement, patch: f.patch ?? "", reported: true,
     };
     const { reported: _r, ...meta } = c;
-    p.artifact(step, "finding", c.statement, { ...meta, pass, source: "screen", screen: "claims", beat });
+    p.artifact(step, "finding", c.statement, { ...meta, pass: chain.screenPass(beat) ?? pass, source: "screen", screen: "claims", beat });
     flags.push(c);
   }
   return flags;

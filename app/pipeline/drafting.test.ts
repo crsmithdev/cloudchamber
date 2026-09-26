@@ -20,6 +20,7 @@ import { A, B, LEDGER, SCENE_3_PATCH, SPAN_A, SPAN_B, SPAN_C, cleanSamples, deri
 import { briefParts, partsIn, partsOf } from "./briefparts.ts";
 import { chainOf } from "./chain.ts";
 import { renderStory } from "./drafts.ts";
+import { constraintsBlock } from "./repair.ts";
 
 /** The default floor is 7; B, an particulars finding at two of three samples, sits at 6, so a test that needs two fixes at once lowers it. */
 const floor6 = () => ({ ...loadDraftConfig().config, repair: { ...loadDraftConfig().config.repair, stop_score: 6 } });
@@ -1555,5 +1556,99 @@ describe("the claims screen", () => {
     await d.check(draw.id);
     await d.draft(draw.id);
     expect(p.steps(draw.id).filter((s) => s.stage === "check-claims-extract")).toHaveLength(0);
+  });
+
+  test("registerRewrites skips rebind and re-screen of k+1 when k+1 is due in the same round, and pins call counts", async () => {
+    const seen = new Set<string>();
+    const answer = (prompt: string) => {
+      const n = Number(fromAsk(prompt, /<scene n="(\d+)">/, "the scene number"));
+      let out = screenStructure(prompt);
+      if (seen.has(String(n))) return out;
+      seen.add(String(n));
+      // Flag beat 3 with one-voice; beat 2 already flags for missing bodily-emotion
+      if (n === 3) out = out.replace(/(<question name="one-voice"><answer>)absent/, "$1present");
+      return out;
+    };
+    const { p, d, draw, model } = await drawn(draftScript({ schedule: () => schedule({ cap: 1100 }), "screen-structure": answer }));
+    await d.check(draw.id);
+    await d.draft(draw.id, { profile: "listen", overrides: { "beats.min": 8, "screens.listen.long_share_max": 1 } });
+
+    // Both beat 2 and beat 3 were due in round 0:
+    // Beat 2 rewrite did not rebind beat 3, and did not re-screen beat 3.
+    // Beat 3 rewrite bound beat 3 and rebound beat 4, and re-screened beats 3 and 4.
+    const scenes = model.calls.filter((c) => c.stage === "scene");
+    expect(scenes).toHaveLength(10); // 8 initial + beat 2 + beat 3
+    expect(scenes.map((c) => /Write beat (\d+)/.exec(c.prompt)![1])).toEqual(["1", "2", "3", "4", "5", "6", "7", "8", "2", "3"]);
+
+    // screen-ledger: 8 initial binds (1 sample each).
+    // Rewrites: beat 2 bound (1), beat 3 rebind skipped, beat 3 bound (1), beat 4 rebound (1) = 3 calls.
+    // Total screen-ledger calls = 11 (would be 12 if beat 3 rebind was not skipped).
+    const ledgers = model.calls.filter((c) => c.stage === "screen-ledger");
+    expect(ledgers).toHaveLength(11);
+
+    // screen-structure: 8 initial screens (1 sample each).
+    // Rewrites: beat 2 only (1, since beat 3 re-screen was skipped), beats 3 and 4 (2) = 3 calls.
+    // Total screen-structure calls = 11 (would be 12 if beat 3 re-screen was not skipped).
+    const structures = model.calls.filter((c) => c.stage === "screen-structure");
+    expect(structures).toHaveLength(11);
+
+    // Scene and bind prompts of beat 3 (k+1):
+    // The scene prompt for beat 3 rewrite reads rewritten beat 2 in its story so far:
+    const scene3 = scenes[9];
+    expect(scene3.prompt).toContain("<story-so-far>");
+    expect(scene3.prompt).toContain("Scene 2 opens. REWRITTEN");
+    const chain = chainOf(p, draw.id);
+    const sched = chain.schedule()!;
+    const parts = briefParts(p, draw.id);
+    const before3 = chain.scenes().filter((s) => s.beat < 3).map((s) => s.text);
+    const cfg = JSON.parse(p.draw(draw.id).draft_config!).config;
+    const expectedPrompt = scenePrompt(parts, sched, sched.beats[2], before3, constraintsBlock([{ replacement: VOICES_LINE }]), cfg.structure);
+    expect(scene3.prompt).toBe(expectedPrompt);
+
+    // The bind prompt for beat 3 bind reads rewritten beat 2 in previous-scene:
+    const ledger3 = ledgers.find((c) => c.prompt.includes('<scene n="3">') && c.prompt.includes("Scene 2 opens. REWRITTEN"))!;
+    expect(ledger3.prompt).toContain("<previous-scene>\nScene 2 opens. REWRITTEN");
+  });
+
+  test("gate 2 shows claims of the final text across beats after rewrites", async () => {
+    const { dir } = fixture();
+    const sdir = settingsFixture(dir);
+    let extracts = 0;
+    // Beat 1 carries a contradicted setting claim
+    const sceneClaims = () => `<claim><span>s1w7 s1w8</span><statement>The basin holds nine wells.</statement></claim>`;
+    const sceneVerify = () => `<finding><span>s1w7 s1w8</span><statement>The basin holds nine wells.</statement><result>contradicted</result><evidence>Places: "the basin holds three wells"</evidence><invalidates>none</invalidates><replacement>The basin holds three wells.</replacement><patch>none</patch></finding>`;
+    const script = draftScript({
+      schedule: () => schedule({ cap: 1100 }),
+      "check-claims-extract": (_p: string, _m: string, system: string) => { extracts++; return system.includes("s1w7") ? sceneClaims() : claimsExtract(); },
+      "check-claims-verify": (p: string) => (p.includes("nine wells") ? sceneVerify() : claimVerify(p)),
+    });
+    const { p, d, draw } = await drawn(script, { id: "basin", dir: sdir, claims: "setting" });
+    await d.check(draw.id);
+    // Draft under listen profile: beat 2 is rewritten because it names no body
+    await d.draft(draw.id, { profile: "listen", overrides: { "beats.min": 8, "screens.listen.long_share_max": 1 } });
+
+    // Claims extraction ran only once during drafting (at the end of scenes), not during first pass or rewrites
+    expect(extracts).toBe(2); // 1 during check, 1 during draft
+
+    const chain = chainOf(p, draw.id);
+    // Beat 2 was rewritten, so its screen pass is newer than beat 1's screen pass:
+    expect(chain.screenPass(2)).not.toBe(chain.screenPass(1));
+
+    // Gate 2 view shows beat 1's claims finding on the final text:
+    const v = d.view(draw.id);
+    const claimFindings = v.screenFindings.filter((f) => f.screen === "claims");
+    expect(claimFindings).toHaveLength(1);
+    expect(claimFindings[0]).toMatchObject({ beat: 1, span: "s1w7 s1w8", screen: "claims", result: "contradicted" });
+    expect(chain.screenPass(1)).toBeDefined();
+    expect(claimFindings[0].pass).toBe(chain.screenPass(1)!);
+
+    // a gate-2 rewrite still screens claims, over the beats it re-screens only, so beat 1's flag stays one flag
+    for (const n of [1, 2]) {
+      await d.rewrite(draw.id, 2);
+      expect(extracts).toBe(2 + n);
+      const afterClaims = d.view(draw.id).screenFindings.filter((f) => f.screen === "claims");
+      expect(afterClaims.filter((f) => f.beat === 1)).toMatchObject([{ span: "s1w7 s1w8" }]);
+      expect(new Set(afterClaims.map((f) => f.id)).size).toBe(afterClaims.length);
+    }
   });
 });

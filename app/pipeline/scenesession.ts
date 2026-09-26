@@ -166,8 +166,17 @@ export class SceneSession {
 
   // --- screens ----------------------------------------------------------------
 
+  /** The claims a scene makes about its setting: the checkers read the brief, and a scene invents past it. */
+  async screenClaims(scenes: Scene[] = this.scenes()): Promise<void> {
+    const { enabled } = this.cfg.screens;
+    if (enabled.includes("claims")) {
+      const { setting } = this.p.loadDrawSetting(this.p.draw(this.drawId));
+      if (setting?.claims) await screenClaims(this.p, this.drawId, scenes.map((x) => ({ beat: x.beat, text: x.text })), setting, this.pass, chainOf(this.p, this.drawId), scenes[0]?.step_id ?? null);
+    }
+  }
+
   /** Every enabled screen over `scenes`; `beats` narrows the per-beat ones after a rewrite. */
-  async screen(scenes: Scene[], beats: number[] = scenes.map((x) => x.beat)): Promise<void> {
+  async screen(scenes: Scene[], beats: number[] = scenes.map((x) => x.beat), opts: { claims?: boolean } = {}): Promise<void> {
     const { enabled } = this.cfg.screens;
     const s = this.schedule;
     const M = s.beats.length;
@@ -210,10 +219,8 @@ export class SceneSession {
     }
 
     // the claims a scene makes about its setting: the checkers read the brief, and a scene invents past it
-    if (enabled.includes("claims")) {
-      const { setting } = this.p.loadDrawSetting(this.p.draw(this.drawId));
-      if (setting?.claims) await screenClaims(this.p, this.drawId, scenes.map((x) => ({ beat: x.beat, text: x.text })), setting, this.pass, chainOf(this.p, this.drawId), scenes[0]?.step_id ?? null);
-    }
+    // over the re-screened beats only: an unchanged beat keeps its flags under its own pass, and a second copy would show twice
+    if (opts.claims ?? true) await this.screenClaims(scenes.filter((x) => beats.includes(x.beat)));
 
     if (enabled.includes("listen")) {
       const report = listenScreen(scenes.map((x) => ({ beat: x.beat, text: x.text })), loadNarrationPool(this.paths.narrationDir));
