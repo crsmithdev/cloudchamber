@@ -125,6 +125,7 @@ export function draftScript(over: Record<string, any> = {}) {
     "check-verify": (p: string) => Array.from({ length: (p.match(/^\d+\. span:/gm) ?? []).length }, (_, i) => `<verdict n="${i + 1}"><answer>keep</answer><why>holds</why></verdict>`).join(""),
     "check-structure": () => structure(),
     "check-resemblance": () => resemblance(),
+    "check-reader": () => `<examined>why the director fires it: the outline and the vignette say</examined>`,
     "check-claims-extract": () => claimsExtract(),
     "check-claims-verify": claimVerify,
     reconcile: () => "<conflicts></conflicts>",

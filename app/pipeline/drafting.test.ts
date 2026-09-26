@@ -33,7 +33,7 @@ describe("check and gate 1", () => {
     const { model, p, d, draw } = await drawn();
     const r = await d.check(draw.id);
     expect(p.draw(draw.id).status).toBe("awaiting_check_gate");
-    expect(stagesOf(model, /^check-/).sort()).toEqual(["check-derivation", "check-derivation", "check-derivation", "check-ledger", "check-ledger", "check-ledger", "check-resemblance", "check-structure", "check-verify", "check-verify"]);
+    expect(stagesOf(model, /^check-/).sort()).toEqual(["check-derivation", "check-derivation", "check-derivation", "check-ledger", "check-ledger", "check-ledger", "check-reader", "check-reader", "check-reader", "check-resemblance", "check-structure", "check-verify", "check-verify"]);
     expect(r.claims).toBe("off");
     // A recurs 3/3 in both checkers and merges; B recurs 2/3; C (1/3) is not stored
     const f = d.findings(draw.id);
@@ -1096,6 +1096,63 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     const art = p.artifacts(r.id).find((a) => a.kind === "auto")!;
     expect(JSON.parse(art.content)).toMatchObject({ stopped: "floor", floor: 7 });
     expect(art.meta).toMatchObject({ rounds: 2, best: r.best.id });
+  });
+
+  test("the reader check asks once a chain, has its own verify, and leaves its questions to a person", async () => {
+    // a span no contradiction checker flags, so the question stands alone
+    const question = `<finding><span>context for Test the first thing: scene one.</span><statement>Why does the director keep the relic when he could sell it?</statement><result>unanswered</result><evidence>none</evidence><invalidates>knowledge</invalidates><replacement>The director cannot sell a relic the order holds.</replacement><patch>none</patch></finding><examined>why he keeps it</examined>`;
+    const verifies: string[] = [];
+    const script = draftScript({
+      "check-reader": () => question,
+      "check-verify": (p: string) => { verifies.push(p); return Array.from({ length: (p.match(/^\d+\. span:/gm) ?? []).length }, (_, i) => `<verdict n="${i + 1}"><answer>keep</answer><why>holds</why></verdict>`).join(""); },
+      "check-ledger": [...ledgerSamples(), ...cleanSamples(), ...cleanSamples()],
+      "check-derivation": [...derivationSamples(), ...cleanSamples(), ...cleanSamples()],
+    });
+    const { d, draw, model } = await drawn(script);
+    await d.check(draw.id);
+    const reader = d.findings(draw.id).findings.filter((f) => f.checkers.includes("reader"));
+    expect(reader.map((f) => f.statement)).toEqual(["Why does the director keep the relic when he could sell it?"]);
+    // read back by its own question, not the contradiction one
+    expect(verifies.filter((v) => v.includes("questions a reader raised")).length).toBeGreaterThan(0);
+    expect(verifies.filter((v) => v.includes("questions a reader raised")).every((v) => v.includes("Why does the director keep the relic"))).toBe(true);
+    expect(verifies.filter((v) => !v.includes("questions a reader raised")).every((v) => !v.includes("keep the relic"))).toBe(true);
+    // auto never takes it, whatever it scores; the repair round does not ask again
+    expect(reader[0].auto_eligible).toBe(false);
+    const r = await d.autoRounds(draw.id);
+    expect(d.findings(r.rounds[0].id, { all: true }).findings.find((f) => f.checkers.includes("reader"))!.decision).toBe("open");
+    const asked = model.calls.filter((c) => c.stage === "check-reader").length;
+    expect(asked).toBe(3);                                                       // round 1's three samples, and none after
+  });
+
+  test("a reader's question on a span a contradiction checker also flags stays its own finding, for a person", async () => {
+    const question = `<finding><span>${SPAN_B}</span><statement>Why is the relic named at all?</statement><result>unanswered</result><evidence>none</evidence><invalidates>knowledge</invalidates><replacement>The relic is named for the saint.</replacement><patch>none</patch></finding>`;
+    const { d, draw } = await drawn(draftScript({ "check-reader": () => question }));
+    await d.check(draw.id);
+    const onB = d.findings(draw.id).findings.filter((f) => f.span === SPAN_B);
+    expect(onB.map((f) => f.checkers.join("+")).sort()).toEqual(["ledger", "reader"]);
+    expect(onB.find((f) => f.checkers.includes("reader"))!.auto_eligible).toBe(false);
+    expect(onB.find((f) => f.checkers.includes("ledger"))!.auto_eligible).toBe(true);
+  });
+
+  test("a reader's question is dropped only on a quoted line the story says", async () => {
+    const question = `<finding><span>context for Test the first thing: scene one.</span><statement>Why does the director keep the relic?</statement><result>unanswered</result><evidence>none</evidence><invalidates>knowledge</invalidates><replacement>The director cannot sell it.</replacement><patch>none</patch></finding>`;
+    const run = async (why: string) => {
+      const script = draftScript({
+        "check-reader": () => question,
+        "check-verify": (p: string) => p.includes("questions a reader raised")
+          ? `<verdict n="1"><answer>drop</answer><why>${why}</why></verdict>`
+          : Array.from({ length: (p.match(/^\d+\. span:/gm) ?? []).length }, (_, i) => `<verdict n="${i + 1}"><answer>keep</answer><why>holds</why></verdict>`).join(""),
+      });
+      const { d, draw } = await drawn(script);
+      await d.check(draw.id);
+      return d.findings(draw.id).findings.filter((f) => f.checkers.includes("reader")).length;
+    };
+    // explained away by inference: the gap stands
+    expect(await run("The reader infers he keeps it out of habit, a deliberate silence.")).toBe(1);
+    // answered in a line the story says, quoted: dropped
+    expect(await run(`The context says "context for Test a second thing: scene two." which answers it.`)).toBe(0);
+    // the question's own span, quoted back, raises the question and does not answer it
+    expect(await run(`The span "context for Test the first thing: scene one." says it all.`)).toBe(1);
   });
 
   test("auto stops as stalled when a repair leaves the same findings open on the new brief", async () => {

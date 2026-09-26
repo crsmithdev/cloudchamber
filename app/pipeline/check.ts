@@ -28,7 +28,7 @@ import type { LedgerMeta } from "./artifacts.ts";
 import { RUN } from "./config.ts";
 
 export const PREMISES_PATH = resolve(import.meta.dir, "premises.md");
-export const CHECKERS = ["derivation", "ledger", "structure", "resemblance", "claims"] as const;
+export const CHECKERS = ["derivation", "ledger", "structure", "resemblance", "claims", "reader"] as const;
 export type Checker = (typeof CHECKERS)[number];
 export const STRUCTURE_QUESTIONS = ["threat", "category-violation", "agency", "obscurity", "thickening", "spectacle", "consequence"];
 
@@ -47,6 +47,8 @@ export function checkersNext(p: Pipeline, drawId: string, enabled: readonly stri
     if (!enabled.includes(c)) return false;
     if (c === "structure" || c === "resemblance") return !chain.profile(c);
     if (c === "claims") return !!setting?.claims;
+    // the reader's plot holes are the story's, and a repair rewrites two or three sentences: once, in round 1
+    if (c === "reader") return !p.draw(drawId).repaired_from;
     return true;
   });
 }
@@ -83,6 +85,9 @@ export async function extractLedger(session: BriefSession, meta: LedgerMeta): Pr
   return String(value);
 }
 
+/** A reader's question: a gap for a person, never merged with a contradiction or taken by auto. */
+const isQuestion = (c: { checkers: string[] }) => c.checkers.every((x) => x === "reader");
+
 /** Run every enabled checker over the brief. The draw must hold a brief; status is the caller's. */
 export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, opts: { checks?: string[]; samples?: number; keep_if?: number; premisesPath?: string } = {}): Promise<CheckResult> {
   const parts = briefParts(p, drawId);
@@ -95,7 +100,7 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
   const S = (name: string) => opts.samples ? { samples: opts.samples, keep_if: Math.min(opts.keep_if ?? cfg.checks.keep_if, opts.samples) } : samplesFor(cfg.checks, name);
   const perChecker: { checker: string; clusters: Cluster[]; firstStep: StepRow; samples?: number }[] = [];
   // <examined> is the checker's own account of what it compared, kept for the reader; a reply without it, or one that opens it and never closes it (Sonnet 5, run 9), has still answered
-  const findingsOf = (checker: "derivation" | "ledger") => (t: string) => ({ findings: parseFindings(t, checker, 0), examined: tag(t, "examined") ?? "" });
+  const findingsOf = (checker: "derivation" | "ledger" | "reader") => (t: string) => ({ findings: parseFindings(t, checker, 0), examined: tag(t, "examined") ?? "" });
   // the ledger is extracted once for the chain and pinned; every round is checked against it. It is read here once
   // and the verify pass gets the same one: asked again, the chain would answer with the null it cached before the extraction
   const extracting = !chain.ledger() && enabled.includes("ledger");
@@ -109,6 +114,8 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
     (t) => ({ impossibility: tag(t, "impossibility"), ...findingsOf("derivation")(t) })).then((r) => { perChecker.push(r); }));
   // the extraction runs beside the other checkers; only the ledger checker waits for it
   if (enabled.includes("ledger")) runs.push(ledger.then((l) => sampled(session, "check-ledger", fill("checkLedger", { brief, ledger: fill("pinnedLedger", { ledger: l! }), findingShape: shape }), S("ledger"), "ledger", findingsOf("ledger")))
+    .then((r) => { perChecker.push(r); }));
+  if (enabled.includes("reader")) runs.push(sampled(session, "check-reader", fill("checkReader", { sections: RUN.coreJobs.join(" | ") }), S("reader"), "reader", findingsOf("reader"))
     .then((r) => { perChecker.push(r); }));
   // structure and resemblance profile the premise, which a repair never changes: once per chain
   if (enabled.includes("structure")) runs.push(sampled(session, "check-structure", fill("checkStructure", { brief }), S("structure"), "structure", (t) => ({ answers: parseQuestions(t, STRUCTURE_QUESTIONS) }),
@@ -132,10 +139,12 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
   await Promise.all(runs);
 
   const reported = perChecker.flatMap((c) => c.clusters.filter((x) => x.reported));
-  const merged = excludeDismissed(merge(reported), dismissed);
+  // a reader's question and a contradiction on the same span stay two findings: one goes to a person, the other can go to auto
+  const byKind = (cs: Cluster[]) => [...merge(cs.filter((c) => !isQuestion(c))), ...merge(cs.filter(isQuestion))];
+  const merged = excludeDismissed(byKind(reported), dismissed);
   // the clusters under keep_if, merged as the gate reads them back, so one verify call grades the whole list
-  const under = excludeDismissed(merge(perChecker.flatMap((c) => c.clusters.filter((x) => !x.reported))), dismissed)
-    .filter((c) => !merged.some((m) => same(m, c)));
+  const under = excludeDismissed(byKind(perChecker.flatMap((c) => c.clusters.filter((x) => !x.reported))), dismissed)
+    .filter((c) => !merged.some((m) => same(m, c) && isQuestion(m) === isQuestion(c)));
   const dropped = await verifyFindings(session, parts, await ledger, [...merged, ...under]);
   // a clean pass leaves no finding or profile behind, so the pass is marked on its own: the gate reads the latest pass, not the latest with findings
   // with the samples each checker ran in this pass, which the score reads: an earlier pass may have run a different count.
@@ -167,7 +176,8 @@ export const NOT_IN_PROSE = "the span is not in a vignette or the ending, which 
 
 /**
  * The pairing step: a finding whose span is not in the prose is dropped with no
- * call, then one call reads every other finding back against the brief.
+ * call, then one call reads every other finding back against the brief, and
+ * one reads the reader's questions back against the story.
  * Returns the ids to drop, each with the reason. Claims have their own
  * verifier and are not read again.
  */
@@ -179,14 +189,26 @@ async function verifyFindings(session: BriefSession, parts: BriefParts, ledger: 
     if (c.checkers.length === 1 && c.checkers[0] === "claims") continue;
     if (!quoted(seen, c.span, 1)) out.set(c.id, NOT_IN_PROSE); else subject.push(c);
   }
-  if (!subject.length) return out;
-  const findings = subject.map((c, i) => `${i + 1}. span: "${c.span}"\n   statement: ${c.statement}\n   result: ${c.result}\n   evidence: ${c.evidence}`).join("\n");
-  const cap = String(50 + 40 * subject.length);
-  const prompt = fill("checkVerify", { ledger: ledger ? fill("pinnedLedger", { ledger }) : "", findings, cap });
-  const readings = await Promise.all(Array.from({ length: VERIFY_READINGS }, () =>
-    session.call("check-verify", prompt, (t) => parseVerdicts(t, subject.length)).then((r) => r.value)));
-  // dropped when any reading drops it; the first reading that drops it gives the reason
-  subject.forEach((c, i) => { const drop = readings.map((r) => r[i]).find((v) => v.answer === "drop"); if (drop) out.set(c.id, drop.why); });
+  // a reader's question is a gap, not a conflict: it has no second quote for checkVerify to hold it to, so it has its own question
+  const questions = subject.filter(isQuestion);
+  const conflicts = subject.filter((c) => !questions.includes(c));
+  // a question is dropped only on a line the story says: without the quote, a drop explained a plot hole away (plants 2026-09-26)
+  const story = prose(parts);
+  // and not on the question's own span, which raises the question rather than answering it
+  const answered = (why: string, c: Cluster) => [...why.matchAll(/["“]([^"”]{12,})["”]/g)].some((m) => quoted(story, m[1]!) && !quoted(c.span, m[1]!));
+  const read = async (list: Cluster[], template: "checkVerify" | "readerVerify", extra: Record<string, string>, line: (c: Cluster) => string, holds: (why: string, c: Cluster) => boolean) => {
+    if (!list.length) return;
+    const findings = list.map((c, i) => `${i + 1}. span: "${c.span}"\n   ${line(c)}`).join("\n");
+    const prompt = fill(template, { findings, cap: String(50 + 40 * list.length), ...extra });
+    const readings = await Promise.all(Array.from({ length: VERIFY_READINGS }, () =>
+      session.call("check-verify", prompt, (t) => parseVerdicts(t, list.length)).then((r) => r.value)));
+    // dropped when any reading drops it; the first reading that drops it gives the reason
+    list.forEach((c, i) => { const drop = readings.map((r) => r[i]).find((v) => v.answer === "drop" && holds(v.why, c)); if (drop) out.set(c.id, drop.why); });
+  };
+  await Promise.all([
+    read(conflicts, "checkVerify", { ledger: ledger ? fill("pinnedLedger", { ledger }) : "" }, (c) => `statement: ${c.statement}\n   result: ${c.result}\n   evidence: ${c.evidence}`, () => true),
+    read(questions, "readerVerify", {}, (c) => `question: ${c.statement}`, answered),
+  ]);
   return out;
 }
 

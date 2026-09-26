@@ -6,7 +6,7 @@ describe("draft config", () => {
     const d = loadDraftConfig();
     expect(d.config.length.words).toBe(5000);
     expect(d.config.beats).toEqual({ count: "auto", min: 5, max: 10, words_min: 400, words_max: 800 });
-    expect(d.config.checks.enabled).toEqual(["claims", "derivation", "ledger", "structure", "resemblance"]);
+    expect(d.config.checks.enabled).toEqual(["claims", "derivation", "ledger", "structure", "resemblance", "reader"]);
     expect(d.overridden).toEqual([]);
     const f = loadDraftConfig("flash", { "form.tense": "past", "scenes.order": "parallel", "beats.count": "4" });
     expect(f.config.length.words).toBe(1500);

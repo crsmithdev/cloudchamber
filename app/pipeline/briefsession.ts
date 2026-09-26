@@ -19,7 +19,7 @@ import { briefBlock, type BriefParts } from "./briefparts.ts";
 
 /** Every stage whose prompt is a whole brief, and which therefore shares the cached system prompt. */
 export const stagesReadingTheBrief: StageName[] = [
-  "ledger-extract", "check-derivation", "check-ledger", "check-verify", "check-structure", "check-resemblance", "check-claims-extract",
+  "ledger-extract", "check-derivation", "check-ledger", "check-verify", "check-structure", "check-resemblance", "check-reader", "check-claims-extract",
 ];
 /** The one system line those stages carry, so their system prompts match. */
 export const sharedLine = "You read a story brief and answer what is asked about it. Output only the tags asked for.";

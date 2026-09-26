@@ -147,8 +147,8 @@ describe("api", () => {
     const done = await j("GET", `/api/draws/${id}`);
     expect(done.body.draw.status).toBe("done");
     expect(done.body.draw.gate_method).toBe("manual");
-    // the brief exists now, so a check would run the four that need no setting; claims is out, the draw is unrestricted
-    expect(done.body.checks_next).toEqual(["derivation", "ledger", "structure", "resemblance"]);
+    // the brief exists now, so a check would run the five that need no setting; claims is out, the draw is unrestricted
+    expect(done.body.checks_next).toEqual(["derivation", "ledger", "structure", "resemblance", "reader"]);
     expect(done.body.artifacts.filter((a: any) => a.kind === "vignette")).toHaveLength(7);   // 5 executed + 2 context
     // the parts of the brief come by role, so the page never tells a context vignette from the chosen one itself
     const parts = done.body.parts;

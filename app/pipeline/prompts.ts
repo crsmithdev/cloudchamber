@@ -268,6 +268,36 @@ As a checkable sentence: {statement}
 
 Find the line in the setting above that confirms or denies it. The setting is the whole authority: a claim it does not settle is unverifiable, not wrong. Output a <finding> tag containing <span> (the quote above, verbatim), <statement> (the sentence above), <result> (supported | contradicted | unverifiable), <evidence> (the heading it sits under and one quoted line from it, or none), <invalidates> (none), <replacement> (if contradicted, one positive sentence that would hold, keeping what the span reports and changing only the figure or the rule that conflicts; otherwise none). Under 120 words.`,
 
+  checkReader: `Above is a story brief: a seed, a premise, an outline in four sections, three vignettes and an ending. A reader of the story sees only the vignettes and the ending, reads them once and with attention, and never sees the outline.
+
+Read the story as that reader and find its plot holes: the places where the reader stops and asks a question that nothing in the vignettes or the ending answers. Four kinds:
+- an event with no cause: something happens, and nothing says why or how it could;
+- a choice with a better way open: a character does something costly while an obvious other course was open, and the story neither closes that course off nor says why;
+- knowledge too early: a character acts on a fact before the story shows how they could know it;
+- a setup with no payoff: an object, a threat or a promise the story makes prominent, and never uses or resolves.
+
+Not a plot hole: two stated facts that disagree (another check reads those); a mystery the story poses on purpose and leaves open as a mystery; the one impossibility the story is built on, which needs no cause; a question the ending answers.
+
+Each hole goes in a <finding> tag containing: <span> (the verbatim quote from a vignette or the ending where the question arises, under ${RUN.spanWords} words), <statement> (the question the reader asks, as one sentence), <result>unanswered</result>, <evidence> (a verbatim quote of the outline line that answers the question, or none), <invalidates> (which outline section would have to change: {sections} | none), <replacement> (one factual sentence in the outline's register that would answer it), <patch>none</patch>.
+
+After the findings, an <examined> tag listing each question you considered, one per line, whether or not it became a finding. At most 6 findings. Under 900 words in total.`,
+
+  readerVerify: `Above is a story brief. Below are questions a reader raised about the story, numbered, each with the span where it arises.
+
+<findings>
+{findings}
+</findings>
+
+A reader of the story sees only the vignettes and the ending, and reads them once, with attention. For each question, search every vignette and the ending, later scenes included, for the line that answers it.
+
+Drop a question only when one of these is true, and quote the words that show it:
+- a line of a vignette or the ending answers it: quote that line, word for word;
+- it asks how the story's one impossibility works: quote the line of the story that states the impossibility.
+
+Otherwise keep it. A question the reader has to answer by a guess, by inference from mood, or by assuming the silence is on purpose stays kept: that is the gap.
+
+Output one <verdict n="..."> tag per question, containing <answer>keep|drop</answer> (one of those two words and nothing else) and <why> (one sentence, carrying the quote in double quotes when the answer is drop). Under {cap} words.`,
+
   checkVerify: `Above is a story brief. Below are the ledger of its settled facts, then the findings its checkers raised against it, numbered.
 
 {ledger}

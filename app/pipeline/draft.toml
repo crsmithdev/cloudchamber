@@ -28,7 +28,7 @@ template = "auto"       # auto | listen | told | signal: listen states what a li
 order = "sequential"    # sequential | parallel
 
 [checks]
-enabled = ["claims", "derivation", "ledger", "structure", "resemblance"]
+enabled = ["claims", "derivation", "ledger", "structure", "resemblance", "reader"]
 samples = 2              # the score's recurrence term already separates 2 of 2 from 1 of 2
 keep_if = 2
 [checks.structure]
