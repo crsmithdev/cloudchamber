@@ -61,6 +61,8 @@ Each moves a given. The order below assumes the recommendation.
 | G2 and GLM | keep GLM; drop it for latency | drop it: its absence moves only three thin 4-pass pairs from inside the margin to `+`, and every experiment mean keeps its side. G6 −17%, G2 loses its slowest judge |
 | G6's rest | 4 passes a judge on pooled reads; accept G6 unmet | accept it unmet: 24 passes is the measured minimum for one pair, and 4 passes leave about one informative pass a judge |
 | Claims | every round, as today; at the gate only; off | at the gate only: claims run on the brief a person rules on |
+| Principle 3's bar | Void of Fears as today; a story from each channel the corpus holds but Vox Mortis | one from each: every draft already beats Void of Fears on the mean and Vox Mortis by 2.6, so neither alone can tell a better draft from a good one |
+| Best of three at gate 2 | a command, as today; the default path | decide on F4's figure: it triples the Claude cost of a draft, against G5 |
 | Step 4 | land; drop | drop |
 | Reader check | on by default; on demand (`--checks reader`) | on by default after its two defects are fixed; it adds 13–20% to a check pass |
 
@@ -141,6 +143,26 @@ below −0.5.
 | D3 | **Step 10, bind effort `low`, and a Sonnet bind.** Two arms, as D2. | canon and changed output | G1, G5 | ~$105 |
 | D4 | **Step 8's ceilings.** Recount the rewrite triggers on D1's and D2's drafts under each ceiling, then canon on the one that lands. | canon | G1, G5 | ~$10 |
 
+### F. Compelling drafts: principle 3 ($185 and a person's hour)
+
+Where the drafts stand: against Void of Fears (`vs-hIS0zHK8`) every draft of
+24 September wins on the mean score gap (+0.32), and loses three axes it has
+lost since 19 September: **hook −0.62, presence −0.38, momentum −0.38**. It
+wins feeling, cost and ending by about a point
+(`evals/20260924-against-the-channels.md`). Against Vox Mortis it wins by 2.6.
+No person has heard a draft beside a channel story.
+
+| # | Step | Decides it | Cost |
+|---|---|---|---|
+| F1 | **Where drafts lose, from the log.** Pool every stored judgement against a transcript by axis, with the spread between halves of each pair's passes. It confirms or drops hook, presence and momentum as the target. | the stored log | $0 |
+| F2 | **A bar worth beating.** Judge D1's three control drafts against one story each from Void of Fears, Void Signal and Galactic Horrors, at 24 passes a judge (the measured minimum for one pair). Void Signal and Galactic Horrors have never been judged against; Vox Mortis is left out, since every draft beats it by 2.6. This is G3's instrument, a draw against a transcript, and the reference for F4 and F5. | — | ~$30 |
+| F3 | **A person listens.** Chris hears one D1 draft and one channel story, rendered with `cloudchamber listen`, and marks where his attention goes. The panel reads text; principle 3 says audio drama. | Chris | a person's hour |
+| F4 | **Best of three.** Two drafts of one arm differ about as much as two arms do, so choosing the best of three by the panel may be the largest quality gain available. Measure the chosen draft's gap against F2's bar, against the mean of the three. | F2's bar | ~$15 |
+| F5 | **One change for the weakest axis.** Take the axis F1 and F3 agree on. State its fix at the one layer the accretion rule names for it: the schedule plans it, the register shapes it, the screen detects it, the rewrite line repairs it. Six drafts an arm, and three more control drafts to make six, judged against F2's bar at 24 passes, because three drafts cannot resolve a gain smaller than about 0.5. | changed output, on the axis and the mean | ~$140 |
+
+F1 and F3 need nothing else and run first. F2 and F4 read D1's drafts. F5
+runs after D, so its control is the draft path that lands.
+
 ### E. Measure G1 ($40)
 
 One chain end to end on each profile the G1 decision names, with nothing else
@@ -158,10 +180,11 @@ Only measured or derived figures; the rest is left open.
 | G5 | C2, C3, D3 | `low` halved check cost on the plot-hole set |
 | G6 | A4 | −17%; the rest is accepted unmet |
 | G7 | D2 removes the serial rewrite loop | A1 adds about 50 lines |
+| Principle 3 | F4, F5 | hook, presence and momentum lose to Void of Fears by 0.38–0.62; a gain under about 0.5 is invisible at three drafts, which is why F5 drafts six |
 
-Principle 1, ideation, is outside this plan. No step makes a draft better:
-every step here cuts time or cost behind a guard against loss. Principle 3
-needs its own plan.
+Principle 1, ideation, is outside this plan. Phases A to E cut time and cost
+behind guards against loss; phase F is the only one that aims to make a draft
+better, and it can show a gain only as large as its panel resolves.
 
 ## Dropped
 
