@@ -81,9 +81,8 @@ export function rewritePlan(profiles: { beat: number; flags: string[] }[], scene
   const add = (k: number, line: string) => { if (!lines.get(k)?.includes(line)) lines.set(k, [...(lines.get(k) ?? []), line]); };
   // a register line imposes a register, so it needs a template that asked for one; a ceiling is a measurement against the pool and does not
   if (cfg.structure.template !== "auto") for (const pr of profiles) for (const line of linesOf(pr.flags, true)) add(pr.beat, line);
-  const listen = (cfg.screens as any).listen ?? {};
-  const longMax = Number(listen.long_share_max ?? 1);
-  const numeralMax = Number(listen.numerals_max ?? Infinity);
+  const longMax = cfg.screens.listen?.long_share_max ?? 1;
+  const numeralMax = cfg.screens.listen?.numerals_max ?? Infinity;
   for (const sc of scenes) {
     const pr = profile(sc.text);
     if (pr.long_sentence_share > longMax) add(sc.beat, LENGTH_LINE);

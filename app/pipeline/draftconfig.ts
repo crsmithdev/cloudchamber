@@ -14,7 +14,16 @@ export type DraftConfig = {
   structure: { template: string; register: string };
   scenes: { order: "sequential" | "parallel" };
   checks: { enabled: string[]; samples: number; keep_if: number } & Record<string, unknown>;
-  screens: { enabled: string[]; samples: number; keep_if: number; slop_baseline: string } & Record<string, unknown>;
+  screens: {
+    enabled: string[];
+    samples: number;
+    keep_if: number;
+    slop_baseline: string;
+    listen?: {
+      long_share_max?: number;
+      numerals_max?: number;
+    };
+  } & Record<string, unknown>;
   repair: { rounds: number; stop_score: number; patience: number };
 };
 export type Resolved = { config: DraftConfig; overridden: string[]; profile: string | null };
@@ -48,7 +57,7 @@ function flatten(obj: any, prefix = ""): [string, unknown][] {
 function coerce(path: string, v: string | number): unknown {
   if (typeof v === "number") return v;
   if (path === "beats.count" && v === "auto") return "auto";
-  if (/^(length\.(words|tolerance)|beats\.(count|min|max|words_min|words_max)|checks\..*samples|checks\..*keep_if|screens\..*samples|screens\..*keep_if|repair\.(rounds|stop_score|patience))$/.test(path)) {
+  if (/^(length\.(words|tolerance)|beats\.(count|min|max|words_min|words_max)|checks\..*samples|checks\..*keep_if|screens\..*samples|screens\..*keep_if|screens\.listen\.(long_share_max|numerals_max)|repair\.(rounds|stop_score|patience))$/.test(path)) {
     const n = Number(v);
     if (!Number.isFinite(n)) throw new Error(`draft config: ${path} must be a number, got ${v}`);
     return n;
@@ -91,6 +100,20 @@ export function validate(c: DraftConfig): void {
   if (!["sequential", "parallel"].includes(c.scenes.order)) bad(`scenes.order must be sequential or parallel, got ${c.scenes.order}`);
   if (!(c.checks.samples >= 1 && c.checks.keep_if >= 1)) bad("checks.samples and checks.keep_if must be at least 1");
   if (!(c.screens.samples >= 1 && c.screens.keep_if >= 1)) bad("screens.samples and screens.keep_if must be at least 1");
+  if (c.screens.listen) {
+    const allowed = new Set(["long_share_max", "numerals_max"]);
+    for (const k of Object.keys(c.screens.listen)) {
+      if (!allowed.has(k)) bad(`unknown screens.listen key: ${k}`);
+    }
+    if (c.screens.listen.long_share_max !== undefined) {
+      const v = c.screens.listen.long_share_max;
+      if (!(Number.isFinite(v) && v >= 0 && v <= 1)) bad(`screens.listen.long_share_max must be in [0, 1], got ${v}`);
+    }
+    if (c.screens.listen.numerals_max !== undefined) {
+      const v = c.screens.listen.numerals_max;
+      if (!(Number.isFinite(v) && v >= 0)) bad(`screens.listen.numerals_max must be non-negative, got ${v}`);
+    }
+  }
   if (!(Number.isInteger(c.repair.rounds) && c.repair.rounds >= 0)) bad("repair.rounds must be a non-negative integer");
   if (!(c.repair.stop_score >= 0 && c.repair.stop_score <= SCORE_MAX)) bad(`repair.stop_score must be in 0..${SCORE_MAX}`);
   if (!(Number.isInteger(c.repair.patience) && c.repair.patience >= 1)) bad("repair.patience must be a positive integer");

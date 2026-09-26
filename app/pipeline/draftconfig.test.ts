@@ -38,4 +38,27 @@ describe("draft config", () => {
     expect(() => loadDraftConfig(undefined, { "scenes.order": "random" })).toThrow(/scenes.order/);
     expect(() => loadDraftConfig("epic")).toThrow(/no profile epic; have flash, novelette/);
   });
+
+  test("screens.listen ceilings are typed, coerced, and validated", () => {
+    const d = loadDraftConfig().config;
+    expect(d.screens.listen).toEqual({ long_share_max: 0.12, numerals_max: 12 });
+
+    // override coercion
+    const over = loadDraftConfig(undefined, {
+      "screens.listen.long_share_max": "0.18",
+      "screens.listen.numerals_max": "10",
+    }).config;
+    expect(over.screens.listen?.long_share_max).toBe(0.18);
+    expect(over.screens.listen?.numerals_max).toBe(10);
+
+    // misspelt key is rejected naming the key
+    expect(() => loadDraftConfig(undefined, { "screens.listen.long_max": "0.15" }))
+      .toThrow(/unknown screens.listen key: long_max/);
+
+    // out-of-range values are rejected
+    expect(() => loadDraftConfig(undefined, { "screens.listen.long_share_max": "1.2" }))
+      .toThrow(/screens.listen.long_share_max must be in \[0, 1\]/);
+    expect(() => loadDraftConfig(undefined, { "screens.listen.numerals_max": "-5" }))
+      .toThrow(/screens.listen.numerals_max must be non-negative/);
+  });
 });
