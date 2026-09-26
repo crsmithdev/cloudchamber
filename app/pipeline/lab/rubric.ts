@@ -1,7 +1,7 @@
 /**
  * The judge ask, and how a reply is read.
  *
- * Every word here is `evals/judge.py`'s and must stay so. The panel judged the
+ * Every word here was `evals/judge.py`'s and must stay so. The panel judged the
  * runs of 22 and 23 September under this text; change it and the stored passes
  * stop being comparable with anything judged after, which is the one thing a
  * floor cached per baseline depends on. `rubric.test.ts` reads the parser
@@ -58,89 +58,6 @@ Output exactly this shape and nothing else:
 <needs>three sentences</needs>
 </verdict>`;
 }
-
-/**
- * The beat ask (L1).
- *
- * A beat pair holds the brief, the schedule and the story so far fixed, and
- * varies only the prose of one beat. That is the point of it: at L2 two drafts
- * of one arm differ about twice as much as two arms do
- * (`evals/20260924-draft-variance-dominates.md`), and almost all of that is the
- * draft choosing a different story. A beat pair cannot.
- *
- * The axes are the story axes minus the ones a middle beat cannot answer.
- * `momentum` asks which story a listener would abandon, which is a question
- * about a whole; `hook` belongs to the first beat and `ending` to the last, so
- * each is asked only there. Presence, people, feeling, cost and clarity are
- * properties of the prose in front of the judge and are asked of every beat.
- */
-export const BEAT_AXES = ["presence", "people", "feeling", "cost", "clarity"] as const satisfies readonly Axis[];
-
-/**
- * The same eight questions, asked of a scene rather than of a story. Only the
- * noun changes, and `momentum` is dropped because it asks about a whole. A
- * judge shown `<scene_one>` and asked which *story* it preferred was answering
- * a question it had not been given.
- */
-export const BEAT_RUBRIC: Readonly<Partial<Record<Axis, string>>> = {
-  hook: "In the first half minute of listening, which scene makes it harder to stop?",
-  presence: "In which scene does the thing the story is about arrive more fully, in the flesh, in the same place as the people, rather than only being inferred?",
-  people: "In which scene are the people easier to tell apart by ear, and whose speech sounds like people talking?",
-  feeling: "In which scene does the listener feel what the characters feel, as it happens?",
-  cost: "In which scene does someone pay a cost that is felt and cannot be taken back?",
-  ending: "Which of these would leave a listener sitting in the car after arriving?",
-  clarity: "Heard once, read aloud at a steady pace, which scene is easier to follow, with fewer sentences a listener would lose the thread of?",
-};
-
-/** The axes a beat is asked, given where it sits in the draft. */
-export const beatAxes = (n: number, last: number): Axis[] => [
-  ...(n === 1 ? (["hook"] as Axis[]) : []),
-  ...BEAT_AXES,
-  ...(n === last ? (["ending"] as Axis[]) : []),
-];
-
-/** What the beat was planned to do, as the schedule entry reads. */
-export type BeatPlan = { n: number; job: string; known: string; stakes: string };
-
-export function beatPrompt(o: { plan: BeatPlan; last: number; soFar: string; one: string; two: string }): string {
-  const axes = beatAxes(o.plan.n, o.last);
-  const qs = axes.map((k) => `${k}: ${BEAT_RUBRIC[k]}`).join("\n");
-  const soFar = o.soFar.trim()
-    ? `Both versions come after this, which is the same for both and is not being judged:\n\n<story_so_far>\n${o.soFar}\n</story_so_far>\n\n`
-    : "This is the opening of the story; nothing comes before it.\n\n";
-  return `Two versions of one scene from a story written to be read aloud by one narrator on a long-form story channel. They were written to the same plan, for the same place in the same story, and differ only in their prose.
-
-${soFar}The scene was planned to do this:
-
-<plan>
-${o.plan.job}
-By its end the listener knows: ${o.plan.known}
-What is at stake: ${o.plan.stakes}
-</plan>
-
-<scene_one>
-${o.one}
-</scene_one>
-
-<scene_two>
-${o.two}
-</scene_two>
-
-Judge them as a listener who is ${o.plan.n === 1 ? "deciding whether to keep listening" : `already ${o.plan.n - 1} scene${o.plan.n === 2 ? "" : "s"} in`}. For each question answer One, Two or Tie, and score each scene from 1 (poor) to 5 (as good as the best you have heard), with one sentence of evidence that names a moment from each. The scores are absolute: both may score low, or both high. Then give an overall call, One, Two or Tie, and two sentences on what the weaker one would need.
-
-${qs}
-
-Output exactly this shape and nothing else:
-<verdict>
-<axis name="${axes[0]}" one="N" two="N">One|Two|Tie</axis> ...one line per axis in the order given, each followed by <why>one sentence</why>
-<overall>One|Two|Tie</overall>
-<needs>two sentences</needs>
-</verdict>`;
-}
-
-/** A beat reply is complete when it answered the axes that beat was asked. */
-export const beatComplete = (p: Pick<Parsed, "axes" | "overall">, n: number, last: number): boolean =>
-  beatAxes(n, last).every((a) => p.axes[a] !== undefined) && ["ours", "source", "tie"].includes(p.overall);
 
 /** Which side a One-or-Two answer names, once the reading order is undone. */
 export function side(v: string, flipped: boolean): Side {

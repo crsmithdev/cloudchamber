@@ -1,10 +1,9 @@
 /**
  * Pooling the passes of a panel into one number, and reading it against a floor.
  *
- * The rules are `evals/tally.py`'s and do not change here; what changes is that
- * they stop being a script run by hand over loose files. `tally.py` stays as the
- * reference implementation, and `pool.test.ts` holds it and this module to the
- * same answers.
+ * The rules were `evals/tally.py`'s and do not change here; what changes is that
+ * they stop being a script run by hand over loose files. `tally.py` was the
+ * reference implementation, and `pool.test.ts` holds this module to its answers.
  *
  * Two rules carry the weight:
  *

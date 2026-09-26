@@ -86,10 +86,6 @@ export type PassageRow = {
   d4: number | null; d5: number | null; d6: number | null; voice: string | null; mode: string | null;
   first_seen: string;
 };
-export type StoryRow = {
-  id: string; source_id: string; ord: number; title: string; author: string; genre: string;
-  words: number; text: string; locator: string; split_by: string;
-};
 export type ThemeRow = {
   id: string; text: string; attestation: number; stories: string; embedding: Uint8Array | null;
   drafted_at: string; duplicate_of: string | null;

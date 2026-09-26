@@ -1,8 +1,8 @@
 /**
  * Calling the panel.
  *
- * `evals/judge.py` runs its passes in sequence, one pair per process, which is
- * most of the 35–45 minutes an experiment takes. Every pass is independent — a
+ * `evals/judge.py` ran its passes in sequence, one pair per process, which was
+ * most of the 35–45 minutes an experiment took. Every pass is independent — a
  * different judge, or the same judge on a different pair or reading order — so
  * they all go at once here.
  *
@@ -23,7 +23,7 @@ export type PassResult = PassAsk & { parsed: Parsed; complete: boolean; followed
 
 export type CallOpts = {
   key?: string;
-  /** Tries per pass before it is recorded incomplete. `judge.py` uses 3. */
+  /** Tries per pass before it is recorded incomplete. `judge.py` used 3. */
   tries?: number;
   /** How many calls may be in flight at once. */
   concurrency?: number;
@@ -61,9 +61,8 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 /**
  * Run one pass, trying again while the reply does not answer what it was asked.
  *
- * The caller builds the prompt, because what a pass compares differs by level:
- * two whole drafts at L2, two versions of one beat at L1. `done` is the test
- * for a finished reply, which is `complete` at L2 and `beatComplete` at L1.
+ * The caller builds the prompt. `done` is the test for a finished reply, which
+ * defaults to `complete`.
  */
 export async function runPass(ask: PassAsk, prompt: string, o: CallOpts = {}): Promise<PassResult> {
   const key = o.key ?? judgeKey();

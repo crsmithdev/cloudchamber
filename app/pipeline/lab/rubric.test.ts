@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { RUBRIC, beatAxes, beatComplete, beatPrompt, complete, followedOrder, judgePrompt, parseVerdict, side } from "./rubric.ts";
+import { RUBRIC, complete, followedOrder, judgePrompt, parseVerdict, side } from "./rubric.ts";
 import { AXES } from "./pool.ts";
 import fixture from "./rubric.fixture.json";
 
@@ -87,56 +87,5 @@ describe("the ask is the one the stored passes were judged under", () => {
     expect(p).not.toMatch(/\bours\b|\bmine\b|\bbaseline\b/);
     for (const [k, q] of RUBRIC) expect(p).toContain(`${k}: ${q}`);
     expect(p).toContain(`<axis name="hook" one="N" two="N">One|Two|Tie</axis>`);
-  });
-});
-
-describe("the beat ask (L1)", () => {
-  test("a middle beat is not asked what a whole story answers", () => {
-    expect(beatAxes(5, 11)).toEqual(["presence", "people", "feeling", "cost", "clarity"]);
-    // momentum asks which story a listener would abandon; it is never asked of a beat
-    expect(beatAxes(1, 11)).not.toContain("momentum");
-    expect(beatAxes(11, 11)).not.toContain("momentum");
-  });
-
-  test("hook belongs to the first beat and ending to the last", () => {
-    expect(beatAxes(1, 11)[0]).toBe("hook");
-    expect(beatAxes(11, 11).at(-1)).toBe("ending");
-    expect(beatAxes(5, 11)).not.toContain("hook");
-    expect(beatAxes(5, 11)).not.toContain("ending");
-    // a one-beat draft is both
-    expect(beatAxes(1, 1)).toEqual(["hook", "presence", "people", "feeling", "cost", "clarity", "ending"]);
-  });
-
-  test("the ask shows the plan, the story so far once, and both scenes unlabelled", () => {
-    const p = beatPrompt({ plan: { n: 4, job: "She opens the ledger.", known: "the count is wrong", stakes: "her post" }, last: 11, soFar: "WHAT CAME BEFORE", one: "ALPHA", two: "BETA" });
-    expect(p).toContain("<story_so_far>\nWHAT CAME BEFORE\n</story_so_far>");
-    expect(p).toContain("is the same for both and is not being judged");
-    expect(p).toContain("<scene_one>\nALPHA\n</scene_one>");
-    expect(p).toContain("<scene_two>\nBETA\n</scene_two>");
-    expect(p).toContain("She opens the ledger.");
-    expect(p).toContain("already 3 scenes in");
-    expect(p).not.toMatch(/\bours\b|\bbaseline\b/);
-  });
-
-  test("the first beat says nothing comes before it", () => {
-    const p = beatPrompt({ plan: { n: 1, job: "j", known: "k", stakes: "s" }, last: 11, soFar: "", one: "A", two: "B" });
-    expect(p).toContain("This is the opening of the story");
-    expect(p).not.toContain("<story_so_far>");
-    expect(p).toContain("deciding whether to keep listening");
-  });
-
-  test("the questions ask about a scene, because a scene is what is shown", () => {
-    const p = beatPrompt({ plan: { n: 4, job: "j", known: "k", stakes: "s" }, last: 11, soFar: "x", one: "A", two: "B" });
-    for (const line of p.split("\n").filter((l) => /^(presence|people|feeling|cost|clarity):/.test(l))) {
-      expect(line).toContain("scene");
-    }
-  });
-
-  test("a beat reply is complete when it answered the axes that beat was asked", () => {
-    const mid = beatAxes(5, 11).map((a) => `<axis name="${a}" one="3" two="4">One</axis>`).join("") + "<overall>One</overall>";
-    expect(beatComplete(parseVerdict(mid, false), 5, 11)).toBe(true);
-    // the same reply does not answer beat 1, which is also asked hook
-    expect(beatComplete(parseVerdict(mid, false), 1, 11)).toBe(false);
-    expect(beatComplete(parseVerdict(mid, false), 11, 11)).toBe(false);
   });
 });

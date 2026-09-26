@@ -22,7 +22,6 @@ export type Example = { id: string; text: string | null; words?: number; cell?: 
  * field the page reads and the server stops sending fails to compile here.
  */
 import type { DrawListRow, DrawDetail, StepSummary } from "../../pipeline/views.ts";
-import type { Action } from "../../pipeline/lifecycle.ts";
 import type { AutoResult, AutoRound, FindingsSummary, FindingsView, GateFinding } from "../../pipeline/drafting.ts";
 import type { Beat } from "../../pipeline/write.ts";
 import type { DraftView } from "../../pipeline/drafts.ts";
@@ -39,7 +38,6 @@ export type { AutoResult, AutoRound, FindingsSummary, Beat, DraftConfig, Artifac
 export type Draw = DrawListRow;
 /** What the list row and the draw detail both carry: the row, the lifecycle answers, and what superseded it. */
 export type DrawBase = DrawDetail["draw"];
-export type DrawAction = Action;
 /** What a round of a repair chain shows in the list. Null until the server has computed it. */
 export type CheckSummary = FindingsSummary;
 export type Finding = GateFinding;
@@ -53,7 +51,6 @@ export type Profile = {
   beat?: number;
   flags?: string[];
 };
-export type OffList = FindingsView["off_list"];
 /** The server leaves claims and profiles loosely typed; the page reads them as above. */
 export type Findings = Omit<FindingsView, "claims" | "profiles"> & { claims: Claim[]; profiles: Profile[] };
 export type Scene = DraftView["scenes"][number];

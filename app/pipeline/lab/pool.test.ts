@@ -9,7 +9,7 @@ import fixture from "./pool.fixture.json";
  * nothing backs up, and the write-ups in `evals/` quote the pooled numbers but
  * not the passes under them.
  *
- * `evals/tally.py` is the reference implementation. Every share below was read
+ * `evals/tally.py` was the reference implementation. Every share below was read
  * off it against the same files on 2026-09-24.
  */
 const runs = (key: string): Run[] => (fixture as Record<string, Run[]>)[key]!;
