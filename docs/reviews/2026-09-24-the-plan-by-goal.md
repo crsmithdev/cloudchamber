@@ -4,6 +4,60 @@
 the order of `2026-09-24-the-plan-after-the-score-gap.md`. That document and
 `2026-09-24-loop-sequence.md` stay the record of why each built piece exists.
 
+Revision 12: where each step stands on 26 September, after Gemini's run of
+25 September and its review (`2026-09-25-final-report.md` on
+`feature/bind-effort-low` is not a record: its guards did not run). The
+section below is the record; the rest of the plan is unchanged.
+
+## Where it stands, 26 September
+
+| Step | State | Evidence |
+|---|---|---|
+| 11 delete | landed `aa0271f` | −474 lines; the suite |
+| 6 fewer judges | measured `6c1fdbc`; no change | no judge can go under the test; `evals/20260925-fewer-judges.md` |
+| 1 skip replaced calls | landed `9d6f919` | a gate-2 rewrite duplicated claims flags; fixed, and a test fails without the fix |
+| 7 compare runner | landed `8764ad6` | re-pools to the published numbers; `lab canon` added; two readings of one draft disagree by 0.62 a beat (`evals/20260926-reference-bind-noise.md`) |
+| 8 listen ceilings | first half landed `df59e22` | the ceilings are typed; the arms are not drafted |
+| 12 plot-hole set | landed `2e45f19` | today's check: controls 5/6, the four other kinds 0/24 (`evals/20260926-plot-holes.md`) |
+| 5 one clean pass of four | landed `87a2ff0` | replays below |
+| 3 claims once | **not landed**: guard failed | round 1 extracted the stored claims, but verify called them unverifiable; worded again in round 3, the same facts came back contradicted. Re-verifying each round is what found them |
+| 4 repair canon claims | **held**: `feature/canon-claims` | the one canon repair in the replay rewrote the premise: the brief opens a Sister on purpose, the setting says captives, and auto opened the captive instead |
+| 2 check effort | measured; decision for Chris | below |
+| 13 reader check | **held**: `feature/reader-check` | plot holes 11/24 against 0/24, controls 5/6, +13% cost; its questions go to a person |
+| 9, 10 | not run | they need drafted arms, the panel and several canon readings an arm |
+
+**Measured draft, new `main`** (a branch of `9c02`, listen profile, one draft):
+38.0 min and $9.13 at list, against 51.8 min and $20.54. The claims screen fell
+from 126 calls and $9.94 to 14 calls and $1.04.
+
+**Replays** from each chain's original brief and unamended ledger
+(`copyBrief`, then the root's first ledger; the stored rounds carried
+amendments that answered the findings under test):
+
+| Chain | Loop | Stop | Rounds | Min | $ | Kept, in short |
+|---|---|---|---|---|---|---|
+| `88c3` | today | patience | 4 | 27 | 12.11 | Cleary, shower block, cardigan, 1979, memory |
+| `88c3` | steps 3–5 | floor | 3 | 18 | 12.60 | Cleary, shower block; the cardigan and 1979 were raised 3 of 4 and dropped by verify |
+| `88c3` | today, checks at `low` | floor | 3 | 9 | 7.05 | Cleary, shower block |
+| `4400` | today | floor | 2 | 19 | 8.83 | the voice; two claims left for the gate |
+| `4400` | steps 3–5 | patience | 3 | 18 | 12.11 | the voice, three Sisters, the lost signs, four claims (one repaired, see step 4) |
+| `4400` | today, checks at `low` | floor | 1 | 4 | 2.87 | the voice, at score 6: under the floor, not repaired |
+
+**Step 2, effort `low` on derivation and ledger.** It halves the time and
+the cost of a pass: on the plot-hole set 2.9 against 5.9 min a pass and $10.31
+against $20.49; on `88c3` it kept the same findings. It loses some
+recurrence: on `4400` the voice scored 6 against 10, and the plot-hole
+controls fell from 5/6 to 4/6, within two runs' noise. `medium` was not run.
+
+Decisions for Chris:
+
+| Decision | Recommendation |
+|---|---|
+| Step 4 | do not land: a canon claim can be the story's departure, and only a person can tell |
+| Step 13 | land after a person reads its questions on `4400` and `88c3` |
+| Step 2 | run `medium` on the same set before choosing; `low` costs findings on `4400` |
+| Step 3 | drop it; verify's wording sensitivity is the problem, and a later round's re-verify is what finds the claims |
+
 Revision 11: plot holes, from a count of every finding the store holds, and
 four points from `2026-09-25-evaluation-of-the-plan-by-goal.md`. It adds
 steps 12 and 13 and keeps the numbers of steps 1 to 11.
