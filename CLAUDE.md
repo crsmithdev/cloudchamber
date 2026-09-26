@@ -1,22 +1,23 @@
 # Cloud Chamber
 
-A story-ideation pipeline: a seed and six example passages become five
-premises, each executed as a vignette; you choose one at the gate, and the
-draw derives an outline, two context vignettes, an ending and a brief.
+A story pipeline: a seed becomes premises, a brief, a checked outline and a
+draft. Run the CLI as `bun cloudchamber <command>`.
 
 `docs/knobs.md` lists every tunable — the settings and their list sizes,
 the genre shortcuts, the sampling modes, the sources, the drafting defaults
-and the model per stage. It is generated: run `cloudchamber help` for the same
-thing live, or `cloudchamber help --md > docs/knobs.md` after changing a setting
-file or a toml. Never edit it by hand.
+and the model per stage. It is generated: run `bun cloudchamber help` for the same
+thing live. After you change a setting file or a toml, regenerate it with the
+settings hidden, so that no setting name lands in this public repository:
+
+```
+CLOUDCHAMBER_SETTINGS=/nonexistent bun cloudchamber help --md > docs/knobs.md
+```
 
 The corpus is not in this repository. The books, the example bank, the
 narration transcripts, the settings and the stories live in a private
 repository, cloned as `~/cloudchamber-corpus` and linked in as `corpus/`.
 Code reads it only through `CORPUS` and the paths under it in
-`app/pipeline/paths.ts`. The public repository names no setting: run the
-`help --md` regeneration with `CLOUDCHAMBER_SETTINGS=/nonexistent`, or the
-setting names land in a public file.
+`app/pipeline/paths.ts`. The public repository names no setting.
 
 The specs in `docs/specs/` are the design of record for the ideation and
 drafting pipelines. `CONTEXT.md` is the glossary of the domain's terms, and
@@ -24,9 +25,11 @@ drafting pipelines. `CONTEXT.md` is the glossary of the domain's terms, and
 
 ## Prompt accretion
 
-A measured failure invites one more clause in the prompt. Be highly suspicious
-of that move. One more clause is sometimes right, but frequent use is a code
-smell.
+This rule covers prompt text only. Code that measures prompts, such as a log,
+a lab case or a stored arm, is outside it.
+
+A measured failure invites one more clause in the prompt. One more clause is
+sometimes right, but frequent use is a code smell.
 
 The pipeline can state one constraint at four moments: the schedule plans it and
 the register shapes it, both in `app/pipeline/prompts.ts`; the screen question
@@ -38,6 +41,7 @@ point at that layer.
 Add a clause only when no layer states the property. Name the layer you chose in
 the commit.
 
-Remove clauses with the protocol you add them with: three drafts a side, matched
-pairs, both orders, and a within-arm floor. A clause the panel does not miss was
-never doing work.
+Test a removal the same way as an addition: arms from `cloudchamber branch`,
+judged by the panel in `app/pipeline/lab/`, read by the score gap in
+`lab/pool.ts`. A gap inside the margin means the panel cannot tell the arms
+apart. It does not prove that the clause does no work.
