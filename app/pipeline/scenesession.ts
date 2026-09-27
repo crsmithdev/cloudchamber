@@ -29,10 +29,10 @@ import { applyPatches } from "./repair.ts";
 import { record } from "./verdicts.ts";
 import { eligiblePassages } from "./bank.ts";
 import { loadLexicon, restated, slopScreen } from "./slop.ts";
-import { atFault, listenScreen, loadNarrationPool } from "./listen.ts";
+import { atFault, listenScreen, loadNarrationPool, type Fault } from "./listen.ts";
 import { parseQuestions, screenClaims } from "./check.ts";
 import {
-  flagsOf, movedIn, sceneContext, scenePrompt, structurePrompt, structureQuestions,
+  FAULT_LINE, flagsOf, movedIn, sceneContext, scenePrompt, structurePrompt, structureQuestions,
   type Beat, type Schedule, type Scene,
 } from "./write.ts";
 
@@ -42,7 +42,7 @@ const BASE_MIN_BINDS = 5;
 /** A beat written again under a constraints block, marked as a rewrite, with the flag it answers when there is one. */
 type Rewrite = { beat: number; kind: "rewrite"; constraints?: string; finding?: string };
 /** A beat whose faulted sentences are swapped in place under the listen lines. */
-type Edit = { beat: number; kind: "edit"; lines: string[]; fault: { long: boolean; numerals: boolean } };
+type Edit = { beat: number; kind: "edit"; faults: Fault[] };
 /** One change `revise` makes to a stored beat. The caller chooses the kind. */
 export type Change = Rewrite | Edit;
 
@@ -171,8 +171,9 @@ export class SceneSession {
    * Of 165 rewrites on 19-26 Sep, 80 were for length or numerals alone, and a
    * rewrite changes 45-80% of a scene.
    */
-  async edit(scene: Scene, lines: string[], fault: { long: boolean; numerals: boolean }): Promise<Scene> {
-    const sentences = atFault(scene.text, fault);
+  async edit(scene: Scene, faults: Fault[]): Promise<Scene> {
+    const sentences = atFault(scene.text, faults);
+    const lines = faults.map((f) => FAULT_LINE[f]);
     if (!sentences.length) return scene;
     const prompt = fill("sceneEdit", { scene: scene.text, sentences: sentences.map((x) => `<sentence>${x}</sentence>`).join("\n"), lines: lines.join(" "), cap: String(Math.max(200, words(sentences.join(" ")) * 2)) });
     const { step, value: edits } = await this.p.invoke(this.drawId, scene.step_id, "scene-edit", prompt, (t) =>
@@ -240,9 +241,9 @@ export class SceneSession {
 
     await Promise.all(changes.filter((c): c is Edit => c.kind === "edit").map(async (c) => {
       const scene = this.scenes().find((s) => s.beat === c.beat)!;
-      if (await this.edit(scene, c.lines, c.fault) === scene) return;
+      if (await this.edit(scene, c.faults) === scene) return;
       local.add(c.beat);
-      if (c.fault.numerals) facts.add(c.beat);
+      if (c.faults.includes("numerals")) facts.add(c.beat);
     }));
     for (const c of changes.filter((c): c is Rewrite => c.kind === "rewrite").sort((a, b) => a.beat - b.beat)) {
       const before = this.scenes().filter((s) => s.beat < c.beat).map((s) => s.text);

@@ -13,6 +13,7 @@ import { tag, words } from "./model.ts";
 import { FORM_VALUES, type DraftConfig, type FormAxis } from "./draftconfig.ts";
 import { type Answer } from "./check.ts";
 import type { BriefParts } from "./briefparts.ts";
+import type { Fault } from "./listen.ts";
 
 /** `until` is the beat that reveals the item; one past the last beat means the story never does. */
 export type Withheld = { item: string; until: number };
@@ -38,6 +39,12 @@ export const OPEN_LINE = "The last beat leaves at least one question the story r
 export const VOICES_LINE = "The people in this beat speak in quoted lines and are told apart by how they talk, as the schedule's cast says; no two sound alike, and no line could be moved from one mouth to another.";
 export const EVENT_LINE = "Something happens in this beat that a second person present could see or hear: an act, an arrival, a breakage, a refusal said aloud. It is not thought, recollection or measurement alone.";
 export const HOOK_LINE = "The first 150 words of this beat say what is wrong: the thing the story is about, or its first effect, named or shown before any routine, setting or history.";
+/** The listen screen's long-sentence share, over the configured ceiling, sends a beat back for one rewrite under this line. */
+export const LENGTH_LINE = "One thing per sentence, short enough to say aloud in one breath; no sentence over thirty words.";
+/** The listen screen's numeral rate, over the configured ceiling, sends a beat back for one rewrite under this line. */
+export const NUMERAL_LINE = "A listener cannot hold a figure: keep only the numbers a person would say aloud, round or cut the rest, and never put two exact figures in one sentence.";
+/** The rewrite line for each listen fault; an edit carries the same line. */
+export const FAULT_LINE: Record<Fault, string> = { long: LENGTH_LINE, numerals: NUMERAL_LINE };
 
 /**
  * A screen rule is one row: the question, which answer is the flag, which

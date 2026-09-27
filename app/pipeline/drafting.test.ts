@@ -847,7 +847,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
       [{ beat: 2, flags: ["bodily-emotion"] }, { beat: 5, flags: ["theme-stated"] }, { beat: 7, flags: ["presence-in-room", "cost-in-scene", "presence-arrives"] }],
       [{ beat: 2, text: short }, { beat: 3, text: `${figures} ${short}` }, { beat: 4, text: long }, { beat: 5, text: short }, { beat: 7, text: short }],
       cfg);
-    expect([...plan]).toEqual([[2, [BODY_LINE]], [7, [PRESENCE_LINE, COST_LINE]], [3, [NUMERAL_LINE]], [4, [LENGTH_LINE]]]);
+    expect([...plan]).toEqual([[2, { register: [BODY_LINE], faults: [] }], [7, { register: [PRESENCE_LINE, COST_LINE], faults: [] }], [3, { register: [], faults: ["numerals"] }], [4, { register: [], faults: ["long"] }]]);
     expect(rewritePlan([], [{ beat: 4, text: long }], { ...cfg, screens: { ...cfg.screens, listen: { long_share_max: 1 } } }).size).toBe(0);
   });
 

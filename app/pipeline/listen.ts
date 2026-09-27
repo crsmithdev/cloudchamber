@@ -13,7 +13,7 @@ import { NARRATION } from "./paths.ts";
 export type ListenProfile = {
   words: number;
   sentence_mean: number;        // words per sentence
-  long_sentence_share: number;  // sentences over 30 words, as a share of sentences
+  long_sentence_share: number;  // sentences over LONG_WORDS words, as a share of sentences
   numerals_per_1k: number;
   quotes_per_1k: number;        // quotation marks
   body_per_1k: number;          // a body part or bodily verb
@@ -37,9 +37,24 @@ const QUOTE = /["“”]/g;
 const wordsOf = (t: string) => t.match(/[A-Za-z][A-Za-z'’-]*/g) ?? [];
 export const sentencesOf = (t: string) => t.split(/(?<=[.!?]["”’']?)\s+|\n+/).map((x) => x.trim()).filter((x) => wordsOf(x).length > 0);
 
-/** The sentences a listen line faults: over thirty words, or holding a figure. */
-export function atFault(text: string, fault: { long: boolean; numerals: boolean }): string[] {
-  return sentencesOf(text).filter((s) => (fault.long && wordsOf(s).length > 30) || (fault.numerals && new RegExp(NUMERAL.source).test(s)));
+/** A sentence over this many words is too long to say aloud in one breath. */
+export const LONG_WORDS = 30;
+
+/** What the listen screen can fault a beat for: too many long sentences, or too many figures. */
+export type Fault = "long" | "numerals";
+
+/** The faults a beat's text has over the configured ceilings. An unset ceiling faults nothing. */
+export function faultsOver(text: string, ceilings: { long_share_max?: number; numerals_max?: number } = {}): Fault[] {
+  const pr = profile(text);
+  return [
+    ...(pr.long_sentence_share > (ceilings.long_share_max ?? 1) ? ["long" as const] : []),
+    ...(pr.numerals_per_1k > (ceilings.numerals_max ?? Infinity) ? ["numerals" as const] : []),
+  ];
+}
+
+/** The sentences the faults point at: over LONG_WORDS words, or holding a figure. */
+export function atFault(text: string, faults: Fault[]): string[] {
+  return sentencesOf(text).filter((s) => (faults.includes("long") && wordsOf(s).length > LONG_WORDS) || (faults.includes("numerals") && new RegExp(NUMERAL.source).test(s)));
 }
 
 export function profile(text: string): ListenProfile {
@@ -50,7 +65,7 @@ export function profile(text: string): ListenProfile {
   return {
     words: wordsOf(text).length,
     sentence_mean: lens.length ? Math.round((lens.reduce((a, b) => a + b, 0) / lens.length) * 10) / 10 : 0,
-    long_sentence_share: lens.length ? Math.round((lens.filter((l) => l > 30).length / lens.length) * 100) / 100 : 0,
+    long_sentence_share: lens.length ? Math.round((lens.filter((l) => l > LONG_WORDS).length / lens.length) * 100) / 100 : 0,
     numerals_per_1k: per1k((text.match(NUMERAL) ?? []).length),
     quotes_per_1k: per1k((text.match(QUOTE) ?? []).length),
     body_per_1k: per1k((text.match(BODY) ?? []).length),

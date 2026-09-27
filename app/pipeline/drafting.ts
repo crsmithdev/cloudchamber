@@ -22,9 +22,9 @@ import { constraintsBlock, repair } from "./repair.ts";
 import { briefBlock, briefParts, passId } from "./briefparts.ts";
 import { chainOf, type Chain, type FindingView } from "./chain.ts";
 import { BriefSession } from "./briefsession.ts";
-import { profile } from "./listen.ts";
+import { faultsOver, type Fault } from "./listen.ts";
 import { ofKind } from "./artifacts.ts";
-import { linesOf, runSchedule, type Schedule, type Scene } from "./write.ts";
+import { FAULT_LINE, linesOf, runSchedule, type Schedule, type Scene } from "./write.ts";
 import { SceneSession, type Change, type ScreenPaths } from "./scenesession.ts";
 import { draftView, exportDraft, renderStory, type DraftView } from "./drafts.ts";
 import { tag } from "./model.ts";
@@ -71,11 +71,7 @@ const AUTO_CHECKERS = ["derivation", "ledger", "claims"];
  */
 export const CLEAN_SAMPLES = 4;
 const FULL_PASS = { samples: CLEAN_SAMPLES, keep_if: 3 };
-export { BODY_LINE, COST_LINE, PRESENCE_LINE } from "./write.ts";
-/** The listen screen's long-sentence share, over the configured ceiling, sends a beat back for one rewrite under this line. */
-export const LENGTH_LINE = "One thing per sentence, short enough to say aloud in one breath; no sentence over thirty words.";
-/** The listen screen's numeral rate, over the configured ceiling, sends a beat back for one rewrite under this line. */
-export const NUMERAL_LINE = "A listener cannot hold a figure: keep only the numbers a person would say aloud, round or cut the rest, and never put two exact figures in one sentence.";
+export { BODY_LINE, COST_LINE, LENGTH_LINE, NUMERAL_LINE, PRESENCE_LINE } from "./write.ts";
 
 /**
  * The register rewrites a draft owes, by beat: the lines the structure screen's
@@ -83,20 +79,24 @@ export const NUMERAL_LINE = "A listener cannot hold a figure: keep only the numb
  * sets (a beat a listener would lose the thread of). Pure: run it on the
  * scenes as they stand, and again after a rewrite.
  */
-export function rewritePlan(profiles: { beat: number; flags: string[] }[], scenes: { beat: number; text: string }[], cfg: DraftConfig): Map<number, string[]> {
-  const lines = new Map<number, string[]>();
-  const add = (k: number, line: string) => { if (!lines.get(k)?.includes(line)) lines.set(k, [...(lines.get(k) ?? []), line]); };
+export function rewritePlan(profiles: { beat: number; flags: string[] }[], scenes: { beat: number; text: string }[], cfg: DraftConfig): Map<number, Owed> {
+  const plan = new Map<number, Owed>();
+  const at = (k: number) => plan.get(k) ?? plan.set(k, { register: [], faults: [] }).get(k)!;
   // a register line imposes a register, so it needs a template that asked for one; a ceiling is a measurement against the pool and does not
-  if (cfg.structure.template !== "auto") for (const pr of profiles) for (const line of linesOf(pr.flags, true)) add(pr.beat, line);
-  const longMax = cfg.screens.listen?.long_share_max ?? 1;
-  const numeralMax = cfg.screens.listen?.numerals_max ?? Infinity;
-  for (const sc of scenes) {
-    const pr = profile(sc.text);
-    if (pr.long_sentence_share > longMax) add(sc.beat, LENGTH_LINE);
-    if (pr.numerals_per_1k > numeralMax) add(sc.beat, NUMERAL_LINE);
+  if (cfg.structure.template !== "auto") for (const pr of profiles) {
+    const lines = linesOf(pr.flags, true);
+    if (lines.length) at(pr.beat).register.push(...lines.filter((l) => !at(pr.beat).register.includes(l)));
   }
-  return lines;
+  for (const sc of scenes) {
+    const faults = faultsOver(sc.text, cfg.screens.listen);
+    if (faults.length) at(sc.beat).faults.push(...faults);
+  }
+  return plan;
 }
+/** What one beat owes: the register lines its structure flags map to, and the listen faults over the ceilings. */
+export type Owed = { register: string[]; faults: Fault[] };
+/** Every line a beat owes, register lines first. */
+export const owedLines = (o: Owed) => [...o.register, ...o.faults.map((f) => FAULT_LINE[f])];
 const autoEligible = (f: FindingView) =>
   f.checkers.some((c) => AUTO_CHECKERS.includes(c)) && !!f.evidence.trim() && f.evidence.trim().toLowerCase() !== "none"
   && !f.relitigates;
@@ -522,17 +522,16 @@ export class Drafting {
     for (let round = 0; round < 2; round++) {
       const chain = chainOf(this.p, drawId);
       const plan = rewritePlan(chain.screenProfiles(), chain.scenes(), cfg);
-      const due = [...plan].filter(([k, lines]) => k >= from && lines.some((l) => !done.get(k)?.has(l))).sort((a, b) => a[0] - b[0]);
+      const due = [...plan].filter(([k, o]) => k >= from && owedLines(o).some((l) => !done.get(k)?.has(l))).sort((a, b) => a[0] - b[0]);
       if (!due.length) return;
-      for (const [k, lines] of due) done.set(k, new Set([...(done.get(k) ?? []), ...lines]));
+      for (const [k, o] of due) done.set(k, new Set([...(done.get(k) ?? []), ...owedLines(o)]));
 
       const session = SceneSession.resume(this.p, drawId, cfg, passId(), this.screenPaths());
       // a beat owed only the listen lines is edited in place, sentence by sentence, under fix = "edit"
       const editing = cfg.screens.listen?.fix === "edit";
-      const listenOnly = (lines: string[]) => editing && lines.every((l) => l === LENGTH_LINE || l === NUMERAL_LINE);
-      await session.revise(due.map(([k, lines]): Change => listenOnly(lines)
-        ? { beat: k, kind: "edit", lines, fault: { long: lines.includes(LENGTH_LINE), numerals: lines.includes(NUMERAL_LINE) } }
-        : { beat: k, kind: "rewrite", constraints: constraintsBlock(lines.map((replacement) => ({ replacement }))) }));
+      await session.revise(due.map(([k, o]): Change => editing && !o.register.length
+        ? { beat: k, kind: "edit", faults: o.faults }
+        : { beat: k, kind: "rewrite", constraints: constraintsBlock(owedLines(o).map((replacement) => ({ replacement }))) }));
     }
   }
 

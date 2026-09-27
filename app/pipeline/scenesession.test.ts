@@ -33,7 +33,7 @@ async function revising() {
 describe("SceneSession.revise", () => {
   test("a numeral edit binds its beat and the beat after it, and screens neither for structure", async () => {
     const { session, after, beatsOf } = await revising();
-    await session.revise([{ beat: 3, kind: "edit", lines: ["round the figures"], fault: { long: false, numerals: true } }]);
+    await session.revise([{ beat: 3, kind: "edit", faults: ["numerals"] }]);
     expect(after().filter((c) => c.stage === "scene-edit")).toHaveLength(1);
     expect(session.scenes().find((s) => s.beat === 3)!.text).toContain("About a thousand wards burned in May.");
     expect(beatsOf("screen-ledger")).toEqual([3, 4]);
@@ -42,7 +42,7 @@ describe("SceneSession.revise", () => {
 
   test("a length edit changes no fact and binds nothing", async () => {
     const { session, after, beatsOf } = await revising();
-    await session.revise([{ beat: 3, kind: "edit", lines: ["split the long sentences"], fault: { long: true, numerals: false } }]);
+    await session.revise([{ beat: 3, kind: "edit", faults: ["long"] }]);
     expect(after().filter((c) => c.stage === "scene-edit")).toHaveLength(1);
     expect(session.scenes().find((s) => s.beat === 3)!.text).toContain("The ward burned. It burned.");
     expect(beatsOf("screen-ledger")).toEqual([]);
