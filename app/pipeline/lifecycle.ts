@@ -133,19 +133,28 @@ export function commit(db: Db, commits: Commit | Commit[]): void {
 export async function act<T>(db: Db, holds: Hold | Hold[], work: () => Promise<T>, then: (value: T) => Commit | Commit[]): Promise<T> {
   const hs = [holds].flat();
   // the error of the attempt before this one is not this attempt's: a re-run showed the old reason for as long as it ran
-  db.transaction(() => { for (const h of hs) write(db, h.id, { status: h.during, error: null, ...(h.set ?? {}) }); })();
+  // the hold records where the draw goes back, so a recovery after a dead process puts it where a throw would have
+  db.transaction(() => { for (const h of hs) write(db, h.id, { status: h.during, error: null, ...(h.set ?? {}), hold_back: h.back, hold_undo: JSON.stringify(h.undo ?? {}) }); })();
   let value: T;
   try {
     value = await work();
   } catch (e) {
     const reason = String((e as Error)?.message ?? e).slice(0, 500);
     db.transaction(() => {
-      for (const h of hs) write(db, h.id, { status: h.back, error: reason, ...(h.back === "failed" ? { ended_at: now() } : {}), ...(h.undo ?? {}) });
+      for (const h of hs) release(db, h.id, h.back, reason, h.undo);
     })();
     throw e;
   }
-  commit(db, then(value));
+  db.transaction(() => {
+    commit(db, then(value));
+    for (const h of hs) write(db, h.id, { hold_back: null, hold_undo: null });
+  })();
   return value;
+}
+
+/** Put a held draw back at `back` with the reason, write the undo links, and end the hold. */
+function release(db: Db, id: string, back: Status, reason: string, undo: Links = {}): void {
+  write(db, id, { status: back, error: reason, ...(back === "failed" ? { ended_at: now() } : {}), ...undo, hold_back: null, hold_undo: null });
 }
 
 // --- recovery on start ------------------------------------------------------------
@@ -154,8 +163,8 @@ export async function act<T>(db: Db, holds: Hold | Hold[], work: () => Promise<T
  * A process that dies mid-work leaves steps `running` and draws at a working
  * status with no call behind them, and nothing revisits them: the SIGHUP path
  * waits for its jobs, a reboot does not. On start, every such step fails with
- * the reason and its draw goes back where `act()` would have put it, read
- * off what the draw has: a schedule, a check pass, a brief, a chosen candidate.
+ * the reason and its draw goes back where `act()` would have put it: the
+ * status and the undo links the hold wrote when it began.
  *
  * A step whose process is still alive is left exactly as it is, and so is its
  * draw. The store is shared: a `cloudchamber` CLI run and the service hold it
@@ -190,24 +199,10 @@ export function recoverInterrupted(db: Db, reason: string): { steps: number; dra
   for (const s of dead) fail.run(stamp, reason, s.id);
   const steps = dead.length;
   const draws: string[] = [];
-  const held = db.query("SELECT id, status, chosen_step, repaired_from, forked_from, branched_from FROM draws WHERE status IN ('running', 'checking', 'repairing', 'drafting')").all() as Interrupted[];
+  const held = db.query("SELECT id, hold_back, hold_undo FROM draws WHERE hold_back IS NOT NULL").all() as { id: string; hold_back: Status; hold_undo: string }[];
   for (const d of held.filter((x) => !busy.has(x.id))) {
-    const back = interruptedBack(db, d);
-    db.query(`UPDATE draws SET status = ?, error = ?${back === "failed" ? ", ended_at = ?" : ""} WHERE id = ?`)
-      .run(...(back === "failed" ? [back, reason, stamp, d.id] : [back, reason, d.id]));
+    release(db, d.id, d.hold_back, reason, JSON.parse(d.hold_undo) as Links);
     draws.push(d.id);
   }
   return { steps, draws, left: live.length };
-}
-type Interrupted = { id: string; status: string; chosen_step: string | null; repaired_from: string | null; forked_from: string | null; branched_from: string | null };
-/** The status an interrupted draw stood at before the work began. */
-function interruptedBack(db: Db, d: Interrupted): Status {
-  const has = (kind: string) => !!db.query("SELECT 1 FROM artifacts a JOIN steps s ON s.id = a.step_id WHERE s.draw_id = ? AND a.kind = ? LIMIT 1").get(d.id, kind);
-  // a first run, a fork or a repair's new round was making the draw; a draw developing its chosen candidate was at the gate
-  if (d.status === "running") return d.repaired_from || d.forked_from || !d.chosen_step ? "failed" : "awaiting_gate";
-  if (d.status === "repairing") return "awaiting_check_gate";
-  // a branch was being created: its schedule is copied, so a schedule does not say it ever stood anywhere
-  if (d.status === "drafting" && d.branched_from) return "failed";
-  if (d.status === "drafting" && has("schedule")) return "awaiting_draft_gate";
-  return has("pass") ? "awaiting_check_gate" : "done";
 }

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { ACTIONS, STATUSES, act, commit, lifecycleView, recoverInterrupted, stageTab, tabOf, waitsIn, whyNot, type Action } from "./lifecycle.ts";
+import { ACTIONS, STATUSES, act, commit, lifecycleView, recoverInterrupted, stageTab, tabOf, waitsIn, whyNot, type Action, type Links, type Status } from "./lifecycle.ts";
 import { STAGES } from "./config.ts";
 import { FakeModel } from "./model.ts";
 import { Pipeline } from "./draw.ts";
@@ -114,6 +114,10 @@ describe("a failed action puts the draw back where it stood", () => {
   });
 });
 
+/** A draw held by an action whose process then died: the work never settles, so the hold is all that is left. */
+const held = (db: Parameters<typeof act>[0], id: string, during: Status, back: Status, links: { set?: Links; undo?: Links } = {}) =>
+  void act(db, { id, during, back, ...links }, () => new Promise<void>(() => {}), () => ({ id }));
+
 describe("recovery on start", () => {
   test("an interrupted step fails with the reason and its draw goes back where it stood", async () => {
     const { p, d, draw } = await drawn(draftScript({ "check-ledger": [...ledgerSamples(), ...cleanSamples()], "check-derivation": [...derivationSamples(), ...cleanSamples()] }));
@@ -121,7 +125,7 @@ describe("recovery on start", () => {
     // the process died mid-recheck: one step is left running and the draw at checking, with a pass behind it
     const step = p.steps(draw.id).find((s) => s.stage === "check-ledger")!;
     p.db.query("UPDATE steps SET status = 'running', ended_at = NULL WHERE id = ?").run(step.id);
-    p.db.query("UPDATE draws SET status = 'checking' WHERE id = ?").run(draw.id);
+    held(p.db, draw.id, "checking", "awaiting_check_gate");
     // the step's process is gone, so recovery owns it
     p.db.query("UPDATE steps SET pid = NULL WHERE id = ?").run(step.id);
     expect(recoverInterrupted(p.db, "restart")).toEqual({ steps: 1, draws: [draw.id], left: 0 });
@@ -137,7 +141,7 @@ describe("recovery on start", () => {
     const step = p.steps(draw.id).find((s) => s.stage === "check-ledger")!;
     // a CLI run holding the same store: the step is running and its process is this one, which is alive
     p.db.query("UPDATE steps SET status = 'running', ended_at = NULL, pid = ? WHERE id = ?").run(process.pid + 0, step.id);
-    p.db.query("UPDATE draws SET status = 'checking' WHERE id = ?").run(draw.id);
+    held(p.db, draw.id, "checking", "awaiting_check_gate");
 
     // `alive` ignores this very process, so stand in for another live one: pid 1 always exists
     p.db.query("UPDATE steps SET pid = 1 WHERE id = ?").run(step.id);
@@ -157,7 +161,7 @@ describe("recovery on start", () => {
     const [a, b] = p.steps(draw.id).filter((s) => s.stage === "check-ledger");
     p.db.query("UPDATE steps SET status = 'running', ended_at = NULL, pid = 1 WHERE id = ?").run(a!.id);
     p.db.query("UPDATE steps SET status = 'running', ended_at = NULL, pid = 0x7ffffff WHERE id = ?").run(b!.id);
-    p.db.query("UPDATE draws SET status = 'checking' WHERE id = ?").run(draw.id);
+    held(p.db, draw.id, "checking", "awaiting_check_gate");
     const r = recoverInterrupted(p.db, "restart");
     // the abandoned step is failed, the live one is not, and the draw stays where the live process left it
     expect(r).toEqual({ steps: 1, draws: [], left: 1 });
@@ -166,23 +170,28 @@ describe("recovery on start", () => {
     expect(p.draw(draw.id).status).toBe("checking");
   });
 
-  test("where each working status goes back to", async () => {
+  test("a held draw goes back to the status its hold named, with the hold's undo links", async () => {
     const { p, draw } = await drawn(draftScript({}));
-    const set = (status: string, over: Record<string, unknown> = {}) => {
-      p.db.query("UPDATE draws SET status = ?, chosen_step = ?, repaired_from = ?, forked_from = ? WHERE id = ?")
-        .run(status, "chosen_step" in over ? (over.chosen_step as string | null) : draw.chosen_step, (over.repaired_from as string) ?? null, (over.forked_from as string) ?? null, draw.id);
-    };
-    const back = () => { recoverInterrupted(p.db, "restart"); return p.draw(draw.id).status; };
-    set("checking"); expect(back()).toBe("done");                                     // a brief nobody had checked
-    set("repairing"); expect(back()).toBe("awaiting_check_gate");
-    set("drafting"); expect(back()).toBe("done");                                     // the schedule never landed
-    p.artifact(p.steps(draw.id)[0], "schedule", "x", {} as never);
-    set("drafting"); expect(back()).toBe("awaiting_draft_gate");                      // a rewrite at gate 2
-    set("running"); expect(back()).toBe("awaiting_gate");                             // developing its chosen candidate
-    set("running", { chosen_step: null }); expect(back()).toBe("failed");             // a first run
-    set("running", { repaired_from: draw.id }); expect(back()).toBe("failed");        // a repair's new round
+    // a choose that died: the draw goes back to the gate and forgets the candidate it was developing
+    held(p.db, draw.id, "running", "awaiting_gate", { set: { chosen_step: "s1" }, undo: { chosen_step: null } });
+    expect(p.draw(draw.id)).toMatchObject({ status: "running", chosen_step: "s1" });
+    recoverInterrupted(p.db, "restart");
+    expect(p.draw(draw.id)).toMatchObject({ status: "awaiting_gate", chosen_step: null, error: "restart", hold_back: null, hold_undo: null });
+    // a draw the work was creating stood nowhere before: it fails and ends
+    held(p.db, draw.id, "drafting", "failed");
+    recoverInterrupted(p.db, "restart");
+    expect(p.draw(draw.id).status).toBe("failed");
     expect(p.draw(draw.id).ended_at).toBeTruthy();
   });
+
+  test("a hold that ends leaves nothing for recovery", async () => {
+    const { p, draw } = await drawn(draftScript({}));
+    await act(p.db, { id: draw.id, during: "checking", back: "done" }, async () => {}, () => ({ id: draw.id, status: "awaiting_check_gate" }));
+    await act(p.db, { id: draw.id, during: "checking", back: "awaiting_check_gate" }, async () => { throw new Error("x"); }, () => ({ id: draw.id })).catch(() => {});
+    expect(p.draw(draw.id)).toMatchObject({ hold_back: null, hold_undo: null });
+    expect(recoverInterrupted(p.db, "restart").draws).toEqual([]);
+  });
+
 });
 
 describe("acting on a draw", () => {

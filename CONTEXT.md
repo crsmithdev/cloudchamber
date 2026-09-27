@@ -298,3 +298,4 @@ Two drafts judged against each other, half the passes in each reading order.
 - **Flag**: a screen's finding on a scene; also the gate action that marks a draw for attention.
 - **Artifact**: a stored output of a step (a premise, a vignette, a finding); also the verdict mark for an extraction artifact.
 - **Withheld**: a passage held out of the pool; what a schedule keeps from the reader until a later beat.
+- **Hold**: the operator leaving a finding open at gate 1; an action holding a draw at a working status while its work runs, which records where the draw goes back.

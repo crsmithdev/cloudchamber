@@ -6,7 +6,7 @@ import { DEFAULT_DB, SCHEMA } from "../paths.ts";
 export type Db = Database;
 
 /** Bump with every change to an existing table, and mirror it in extract/store.py. */
-export const SCHEMA_VERSION = 14;
+export const SCHEMA_VERSION = 15;
 
 export function openDb(path: string = DEFAULT_DB): Db {
   if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
@@ -71,6 +71,12 @@ function requireCurrent(db: Db, path: string) {
   if (userVersion(db) === 13) {
     db.exec("ALTER TABLE steps ADD COLUMN pid INTEGER");
     db.exec("PRAGMA user_version = 14");
+  }
+  // 14 → 15 (2026-09-27): where a held draw goes back, written by the hold, so recovery reads it instead of guessing; no data moves
+  if (userVersion(db) === 14) {
+    db.exec("ALTER TABLE draws ADD COLUMN hold_back TEXT");
+    db.exec("ALTER TABLE draws ADD COLUMN hold_undo TEXT");
+    db.exec("PRAGMA user_version = 15");
     return;
   }
   throw new Error(

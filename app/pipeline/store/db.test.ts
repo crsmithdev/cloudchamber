@@ -17,6 +17,8 @@ function at12(path: string) {
   db.exec("ALTER TABLE draws DROP COLUMN branch_at");
   db.exec("ALTER TABLE steps DROP COLUMN version");
   db.exec("ALTER TABLE steps DROP COLUMN pid");
+  db.exec("ALTER TABLE draws DROP COLUMN hold_back");
+  db.exec("ALTER TABLE draws DROP COLUMN hold_undo");
   db.exec("PRAGMA user_version = 12");
   db.close();
 }
@@ -30,7 +32,7 @@ describe("store version", () => {
     old.exec(`CREATE TABLE verdicts (id TEXT PRIMARY KEY, kind TEXT NOT NULL, target_id TEXT NOT NULL, verdict TEXT NOT NULL, artifact INTEGER NOT NULL DEFAULT 0, note TEXT NOT NULL DEFAULT '', method TEXT NOT NULL, at TEXT NOT NULL, by TEXT NOT NULL, pipeline_version TEXT NOT NULL, inherited_from TEXT);
       PRAGMA user_version = 10;`);
     old.close();
-    expect(() => openDb(path)).toThrow(/is at schema 10, and this build reads 14 only/);
+    expect(() => openDb(path)).toThrow(/is at schema 10, and this build reads 15 only/);
     expect(() => openDb(path)).toThrow(/git checkout 7978c4d/);
   });
 
@@ -51,6 +53,8 @@ describe("store version", () => {
     expect(columns(migrated, "steps")).toContain("version");    // 12 → 13
     expect(columns(migrated, "draws")).toContain("branched_from");
     expect(columns(migrated, "steps")).toContain("pid");         // 13 → 14
+    expect(columns(migrated, "draws")).toContain("hold_back");   // 14 → 15
+    expect(columns(migrated, "draws")).toContain("hold_undo");
     migrated.close();
   });
 
@@ -64,6 +68,7 @@ describe("store version", () => {
     expect(columns(db, "draws")).toContain("branch_at");
     expect(columns(db, "steps")).toContain("version");
     expect(columns(db, "steps")).toContain("pid");
+    expect(columns(db, "draws")).toContain("hold_back");
     expect(db.query("SELECT id FROM draws").all()).toEqual([{ id: "d1" }]);
     expect(db.query("SELECT branched_from FROM draws WHERE id = 'd1'").get()).toEqual({ branched_from: null });
     expect(db.query("SELECT version FROM steps WHERE id = 's1'").get()).toEqual({ version: null });

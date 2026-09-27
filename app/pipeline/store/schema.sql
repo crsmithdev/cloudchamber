@@ -126,6 +126,8 @@ CREATE TABLE IF NOT EXISTS draws (
   models        TEXT,                  -- JSON: {stage: model} overrides of stages.toml for this draw; copied to its repairs and forks
   name          TEXT,                  -- readable, from the seed; written once and never recomputed
   archived_at   TEXT,                  -- set to hide the draw from the lists; nothing else changes
+  hold_back     TEXT,                  -- set only while an action holds the draw: the status recovery puts it back at
+  hold_undo     TEXT,                  -- JSON: the links recovery writes with hold_back
   created_at    TEXT NOT NULL,
   ended_at      TEXT
 );
