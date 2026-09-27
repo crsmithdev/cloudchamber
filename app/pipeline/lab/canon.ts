@@ -63,6 +63,7 @@ export async function referenceBind(p: Pipeline, drawId: string, opts: Reference
       previous: prev ? `<previous-scene>\n${prev.text}\n</previous-scene>\n\n` : "",
       n: String(sc.beat),
       scene: sc.text,
+      ask: fill("screenLedgerAsk", {}),
     });
     return p.invoke(refDrawId, null, "reference-bind", prompt, (text) => parseFindings(text, "ledger", 1));
   }));

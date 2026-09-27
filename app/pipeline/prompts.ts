@@ -411,6 +411,16 @@ The material above is the brief's own vignette for this beat; use it as far as i
 
   sceneAsk: `Write beat {n} of the story, in a <scene> tag. Its job: {job}{whenLine} By its end the reader knows: {known} Still withheld after it: {withheld} Form: {form}. Under {cap} words. The schedule above has settled the story: write within it and add nothing it does not hold.{constraintLine} Output only the tag.`,
 
+  // the listen screen's lines, applied to the sentences it measured at fault, not to the whole scene
+  sceneEdit: `<scene>
+{scene}
+</scene>
+
+<sentences>
+{sentences}
+</sentences>
+
+Each sentence listed above breaks this rule: {lines} Rewrite each one in the scene's own voice so it keeps the rule, and change nothing else: every event, name and line of speech stays. For each, output an <edit> tag containing <from> (the sentence, verbatim) and <to> (what stands in its place; two or three sentences are fine). Output only the tags. Under {cap} words.`,
   screenLedger: `<ledger>
 {ledger}
 </ledger>
@@ -419,7 +429,20 @@ The material above is the brief's own vignette for this beat; use it as far as i
 {scene}
 </scene>
 
-Check the scene against the ledger and against the previous scene. A reader sees only the scenes: report a line that states a fact the ledger or the previous scene settles otherwise, and nothing else. Not a finding: a figurative line (a simile, a metaphor, or a character's way of describing a feeling) read as literal fact; a character's loose, everyday wording of a fact the ledger states exactly; a line that hedges the fact it states; a count, a duration or a detail the scene leaves out. Report each contradiction in a <finding> tag containing <span> (verbatim quote from the scene, under ${RUN.spanWords} words), <statement> (one sentence), <result> (contradicts:<verbatim quote of the ledger line or previous-scene span>), <invalidates> (the beat number, or none), <replacement> (one positive sentence that would hold), <patch> (the span rewritten in the scene's own voice so the contradiction is gone, no longer than the span, ready to stand in its place word for word; or none when the fix needs more than that span). Then an <examined> tag naming what was compared. At most 6 findings. Under 500 words.`,
+{ask}`,
+  screenLedgerAsk: `Check the scene against the ledger and against the previous scene. A reader sees only the scenes: report a line that states a fact the ledger or the previous scene settles otherwise, and nothing else. Not a finding: a figurative line (a simile, a metaphor, or a character's way of describing a feeling) read as literal fact; a character's loose, everyday wording of a fact the ledger states exactly; a line that hedges the fact it states; a count, a duration or a detail the scene leaves out. Report each contradiction in a <finding> tag containing <span> (verbatim quote from the scene, under ${RUN.spanWords} words), <statement> (one sentence), <result> (contradicts:<verbatim quote of the ledger line or previous-scene span>), <invalidates> (the beat number, or none), <replacement> (one positive sentence that would hold), <patch> (the span rewritten in the scene's own voice so the contradiction is gone, no longer than the span, ready to stand in its place word for word; or none when the fix needs more than that span). Then an <examined> tag naming what was compared. At most 6 findings. Under 500 words.`,
+  // the binds of a whole draft fork one session that holds the ledger and every scene (model.ts); the base call asks nothing
+  screenLedgerBase: `<base/>
+<ledger>
+{ledger}
+</ledger>
+
+{scenes}
+
+These are the ledger and the scenes of one story. Each message after this one asks about one scene. Reply with <ready/> only.`,
+  screenLedgerFork: `The scene to check is <scene n="{n}"> above{previous}. The other scenes are not part of this check.
+
+{ask}`,
 
   screenStructure: `<beat n="{n}">
 job: {job}

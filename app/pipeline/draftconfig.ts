@@ -22,6 +22,8 @@ export type DraftConfig = {
     listen?: {
       long_share_max?: number;
       numerals_max?: number;
+      /** edit: only the sentences at fault are rewritten in place; rewrite: the whole scene is written again */
+      fix?: "edit" | "rewrite";
     };
   } & Record<string, unknown>;
   repair: { rounds: number; stop_score: number; patience: number };
@@ -57,6 +59,8 @@ function flatten(obj: any, prefix = ""): [string, unknown][] {
 function coerce(path: string, v: string | number): unknown {
   if (typeof v === "number") return v;
   if (path === "beats.count" && v === "auto") return "auto";
+  // a list of checkers or screens, comma-separated, so one run can turn one on or off
+  if (/^(checks|screens)\.enabled$/.test(path)) return v.split(",").map((x) => x.trim()).filter(Boolean);
   if (/^(length\.(words|tolerance)|beats\.(count|min|max|words_min|words_max)|checks\..*samples|checks\..*keep_if|screens\..*samples|screens\..*keep_if|screens\.listen\.(long_share_max|numerals_max)|repair\.(rounds|stop_score|patience))$/.test(path)) {
     const n = Number(v);
     if (!Number.isFinite(n)) throw new Error(`draft config: ${path} must be a number, got ${v}`);
@@ -101,7 +105,7 @@ export function validate(c: DraftConfig): void {
   if (!(c.checks.samples >= 1 && c.checks.keep_if >= 1)) bad("checks.samples and checks.keep_if must be at least 1");
   if (!(c.screens.samples >= 1 && c.screens.keep_if >= 1)) bad("screens.samples and screens.keep_if must be at least 1");
   if (c.screens.listen) {
-    const allowed = new Set(["long_share_max", "numerals_max"]);
+    const allowed = new Set(["long_share_max", "numerals_max", "fix"]);
     for (const k of Object.keys(c.screens.listen)) {
       if (!allowed.has(k)) bad(`unknown screens.listen key: ${k}`);
     }
@@ -109,6 +113,7 @@ export function validate(c: DraftConfig): void {
       const v = c.screens.listen.long_share_max;
       if (!(Number.isFinite(v) && v >= 0 && v <= 1)) bad(`screens.listen.long_share_max must be in [0, 1], got ${v}`);
     }
+    if (c.screens.listen.fix !== undefined && !["edit", "rewrite"].includes(c.screens.listen.fix)) bad(`screens.listen.fix must be edit or rewrite, got ${c.screens.listen.fix}`);
     if (c.screens.listen.numerals_max !== undefined) {
       const v = c.screens.listen.numerals_max;
       if (!(Number.isFinite(v) && v >= 0)) bad(`screens.listen.numerals_max must be non-negative, got ${v}`);

@@ -35,7 +35,12 @@ const YOU = /\byou(?:'re|'d|'ve|'ll)?\b/gi;
 const NUMERAL = /\b\d[\d,.:]*\b/g;
 const QUOTE = /["“”]/g;
 const wordsOf = (t: string) => t.match(/[A-Za-z][A-Za-z'’-]*/g) ?? [];
-const sentencesOf = (t: string) => t.split(/(?<=[.!?]["”’']?)\s+|\n+/).map((x) => x.trim()).filter((x) => wordsOf(x).length > 0);
+export const sentencesOf = (t: string) => t.split(/(?<=[.!?]["”’']?)\s+|\n+/).map((x) => x.trim()).filter((x) => wordsOf(x).length > 0);
+
+/** The sentences a listen line faults: over thirty words, or holding a figure. */
+export function atFault(text: string, fault: { long: boolean; numerals: boolean }): string[] {
+  return sentencesOf(text).filter((s) => (fault.long && wordsOf(s).length > 30) || (fault.numerals && new RegExp(NUMERAL.source).test(s)));
+}
 
 export function profile(text: string): ListenProfile {
   const n = Math.max(1, wordsOf(text).length);

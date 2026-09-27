@@ -6,7 +6,7 @@ describe("draft config", () => {
     const d = loadDraftConfig();
     expect(d.config.length.words).toBe(5000);
     expect(d.config.beats).toEqual({ count: "auto", min: 5, max: 10, words_min: 400, words_max: 800 });
-    expect(d.config.checks.enabled).toEqual(["claims", "derivation", "ledger", "structure", "resemblance", "reader"]);
+    expect(d.config.checks.enabled).toEqual(["claims", "ledger", "structure", "resemblance", "reader"]);
     expect(d.overridden).toEqual([]);
     const f = loadDraftConfig("flash", { "form.tense": "past", "scenes.order": "parallel", "beats.count": "4" });
     expect(f.config.length.words).toBe(1500);
@@ -41,7 +41,7 @@ describe("draft config", () => {
 
   test("screens.listen ceilings are typed, coerced, and validated", () => {
     const d = loadDraftConfig().config;
-    expect(d.screens.listen).toEqual({ long_share_max: 0.12, numerals_max: 12 });
+    expect(d.screens.listen).toEqual({ long_share_max: 0.12, numerals_max: 12, fix: "edit" });
 
     // override coercion
     const over = loadDraftConfig(undefined, {
@@ -60,5 +60,10 @@ describe("draft config", () => {
       .toThrow(/screens.listen.long_share_max must be in \[0, 1\]/);
     expect(() => loadDraftConfig(undefined, { "screens.listen.numerals_max": "-5" }))
       .toThrow(/screens.listen.numerals_max must be non-negative/);
+  });
+  test("a list override turns checkers and screens on or off for one run", () => {
+    const c = loadDraftConfig(undefined, { "checks.enabled": "ledger, reader", "screens.enabled": "ledger,listen" }).config;
+    expect(c.checks.enabled).toEqual(["ledger", "reader"]);
+    expect(c.screens.enabled).toEqual(["ledger", "listen"]);
   });
 });

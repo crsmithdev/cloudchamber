@@ -7,6 +7,13 @@
  * gets `--tools X --allowedTools X` instead of the empty list; both are needed
  * for a headless call to reach a tool. Never `--bare`: it skips the stored
  * subscription login.
+ *
+ * A call that asks for a session keeps its transcript, and a later call can
+ * resume it. A resumed call always forks: it answers in a new session whose
+ * history is the old one, so a failed or parallel turn never lands in the
+ * history another call reads. The history is read back from the prompt cache
+ * at a tenth of the input price, where a fresh call writes its whole input to
+ * the cache at twice the price and nothing reads it again.
  */
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -21,7 +28,11 @@ export type ModelResult = {
   /** Tokens and list-price cost as the CLI reported them; absent when the call did not return them. */
   usage?: Usage;
   error?: string;
+  /** The session this call answered in, when the call asked for one. */
+  session?: string;
 };
+/** Keep the call's transcript; `resume` forks from a session an earlier call returned. */
+export type SessionAsk = { resume?: string };
 export type Usage = { input: number; cache_read: number; cache_write: number; output: number; thinking: number; cost_usd: number };
 
 /** The CLI's `usage` and `total_cost_usd`, compacted; null when the reply carries neither. */
@@ -34,19 +45,23 @@ export function usageOf(j: any): Usage | undefined {
 
 export interface ModelAdapter {
   /** `tools` is a comma-separated list passed as both --tools and --allowedTools; empty or absent seals the call. `effort` is how long the stage is asked to think; unset leaves the CLI default. */
-  call(stage: string, system: string, prompt: string, model: string, tools?: string, effort?: string): Promise<ModelResult>;
+  call(stage: string, system: string, prompt: string, model: string, tools?: string, effort?: string, session?: SessionAsk): Promise<ModelResult>;
 }
 
 export class ClaudeCli implements ModelAdapter {
+  /** Each session's running cost: the CLI reports a resumed call's cost as the whole session's, parent included. */
+  private totals = new Map<string, number>();
+
   constructor(private timeoutMs = 15 * 60 * 1000) {}
 
-  async call(stage: string, system: string, prompt: string, model: string, tools = "", effort?: string): Promise<ModelResult> {
+  async call(stage: string, system: string, prompt: string, model: string, tools = "", effort?: string, session?: SessionAsk): Promise<ModelResult> {
     const dir = mkdtempSync(join(tmpdir(), "cloudchamber-call-"));
     const promptPath = join(dir, `${stage}.prompt`);
     writeFileSync(promptPath, prompt);
     const env = { ...process.env } as Record<string, string | undefined>;
     delete env.CLAUDECODE;
-    const args = ["claude", "-p", "--output-format", "json", "--no-session-persistence", "--tools", tools,
+    const args = ["claude", "-p", "--output-format", "json", ...(session ? [] : ["--no-session-persistence"]),
+      ...(session?.resume ? ["--resume", session.resume, "--fork-session"] : []), "--tools", tools,
       ...(tools ? ["--allowedTools", tools] : []),
       "--setting-sources", "", "--system-prompt", system, "--model", model,
       ...(effort ? ["--effort", effort] : [])];
@@ -60,7 +75,13 @@ export class ClaudeCli implements ModelAdapter {
     try {
       const j = JSON.parse(out);
       const used = Object.keys(j.modelUsage ?? {}).find((m) => !/haiku/.test(m)) ?? model;
-      return { text: String(j.result ?? ""), stop: j.stop_reason ?? (j.is_error ? "error" : "end_turn"), raw: out, model: used, durationMs, usage: usageOf(j), error: j.is_error ? String(j.result) : undefined };
+      const usage = usageOf(j);
+      const id = session && j.session_id ? String(j.session_id) : undefined;
+      if (id && usage) {
+        this.totals.set(id, usage.cost_usd);
+        usage.cost_usd = Math.max(0, usage.cost_usd - (session!.resume ? this.totals.get(session!.resume) ?? 0 : 0));
+      }
+      return { text: String(j.result ?? ""), stop: j.stop_reason ?? (j.is_error ? "error" : "end_turn"), raw: out, model: used, durationMs, usage, error: j.is_error ? String(j.result) : undefined, session: id };
     } catch {
       return { text: "", stop: "error", raw: out, model, durationMs, error: (err || out || `exit ${proc.exitCode}`).trim().slice(0, 2000) };
     }
@@ -69,17 +90,18 @@ export class ClaudeCli implements ModelAdapter {
 
 /** Canned responses for tests: a queue per stage, or a function of the ask. The system prompt is passed too, because a stage's fixed context rides there (ADR-0010). */
 export class FakeModel implements ModelAdapter {
-  calls: { stage: string; system: string; prompt: string; model: string; tools: string; effort?: string }[] = [];
+  calls: { stage: string; system: string; prompt: string; model: string; tools: string; effort?: string; session?: SessionAsk }[] = [];
   constructor(private script: Record<string, (string | Partial<ModelResult>)[] | ((prompt: string, model: string, system: string) => string | Partial<ModelResult>)>) {}
 
-  async call(stage: string, system: string, prompt: string, model: string, tools = "", effort?: string): Promise<ModelResult> {
-    this.calls.push({ stage, system, prompt, model, tools, effort });
+  async call(stage: string, system: string, prompt: string, model: string, tools = "", effort?: string, session?: SessionAsk): Promise<ModelResult> {
+    this.calls.push({ stage, system, prompt, model, tools, effort, ...(session ? { session } : {}) });
     const s = this.script[stage];
     if (!s) throw new Error(`FakeModel: no script for stage ${stage}`);
     const next = typeof s === "function" ? s(prompt, model, system) : s.shift();
     if (next === undefined) throw new Error(`FakeModel: script for ${stage} exhausted`);
     const r: Partial<ModelResult> = typeof next === "string" ? { text: next } : next;
-    return { text: r.text ?? "", stop: r.stop ?? "end_turn", raw: r.raw ?? JSON.stringify({ result: r.text ?? "", stop_reason: r.stop ?? "end_turn" }), model: r.model ?? model, durationMs: 1, usage: r.usage, error: r.error };
+    return { text: r.text ?? "", stop: r.stop ?? "end_turn", raw: r.raw ?? JSON.stringify({ result: r.text ?? "", stop_reason: r.stop ?? "end_turn" }), model: r.model ?? model, durationMs: 1, usage: r.usage, error: r.error,
+      ...(session ? { session: r.session ?? `fake-${this.calls.length}` } : {}) };
   }
 }
 

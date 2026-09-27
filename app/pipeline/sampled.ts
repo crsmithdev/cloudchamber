@@ -8,10 +8,10 @@
  */
 import type { Pipeline, StepRow } from "./draw.ts";
 import type { StageName } from "./config.ts";
-import { samples } from "./model.ts";
+import { samples, type SessionAsk } from "./model.ts";
 import { cluster, type Cluster, type Finding } from "./recur.ts";
 
-export type Sample<T> = { step: StepRow; value: T; sample: number };
+export type Sample<T> = { step: StepRow; value: T; sample: number; session?: string };
 export type SampleAsk<T> = {
   draw: string;
   parent: string | null;
@@ -23,13 +23,15 @@ export type SampleAsk<T> = {
   context?: string;
   /** Held before a sample starts, so one call can fill the cache before the rest (check.ts's lead). */
   before?: (sample: number) => Promise<void> | void;
+  /** Fork every sample from one session, which holds the text the ask points at (model.ts). */
+  session?: SessionAsk;
 };
 
 /** Run the ask `samples` times at once, and return each sample's step and parsed value. */
 export async function runSamples<T>(p: Pipeline, ask: SampleAsk<T>): Promise<Sample<T>[]> {
   return samples(ask.samples, async (n) => {
     await ask.before?.(n);
-    return p.invoke(ask.draw, ask.parent, ask.stage, ask.prompt, (t) => ask.parse(t, n), { context: ask.context });
+    return p.invoke(ask.draw, ask.parent, ask.stage, ask.prompt, (t) => ask.parse(t, n), { context: ask.context, session: ask.session });
   });
 }
 

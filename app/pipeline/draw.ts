@@ -11,7 +11,7 @@
 import { randomBytes } from "node:crypto";
 import { BANDS, DEFAULT_SAMPLING, RUN, isDarkness, isSampling, type Darkness, loadStages, resolveModels, type Sampling, type StageConfig, type StageName } from "./config.ts";
 import { TEMPLATES, compose, fill } from "./prompts.ts";
-import { need, sections, tag, tags, words, type ModelAdapter, type ModelResult } from "./model.ts";
+import { need, sections, tag, tags, words, type ModelAdapter, type ModelResult, type SessionAsk } from "./model.ts";
 import { eligiblePassages, eligibleThemes, type Segment } from "./bank.ts";
 import { loadChecked, slice, type GenStage, type Setting } from "./settings.ts";
 import { SETTINGS } from "./paths.ts";
@@ -103,7 +103,7 @@ const darknessLine = (d?: Darkness) => (d ? ` ${TEMPLATES.darknessAsk[d]}` : "")
  * tools it may use, and the text that leads its system prompt so a run of calls
  * reads it from the cache (ADR-0010).
  */
-export type InvokeOpts = { storyId?: string | null; tools?: string; context?: string };
+export type InvokeOpts = { storyId?: string | null; tools?: string; context?: string; session?: SessionAsk };
 
 export class Pipeline {
   stages: Record<StageName, StageConfig>;
@@ -168,15 +168,15 @@ export class Pipeline {
    * The CLI caches the system prompt, and a later call whose system prompt
    * opens with the same text reads it back, whatever stage line follows.
    */
-  async invoke<T>(draw: string | null, parent: string | null, stage: StageName, prompt: string, parse: (text: string) => T, opts: InvokeOpts = {}): Promise<{ step: StepRow; value: T }> {
-    const { storyId = null, tools, context } = opts;
+  async invoke<T>(draw: string | null, parent: string | null, stage: StageName, prompt: string, parse: (text: string) => T, opts: InvokeOpts = {}): Promise<{ step: StepRow; value: T; session?: string }> {
+    const { storyId = null, tools, context, session } = opts;
     const cfg = this.stageFor(stage, draw);
     const allowed = tools ?? cfg.tools ?? "";
     const system = context ? `${context}\n\n${cfg.system}` : cfg.system;
-    const attempt = async (model: string, n: number): Promise<{ step: StepRow; value?: T; outcome: "ok" | "shape" | "refusal" | "error" }> => {
+    const attempt = async (model: string, n: number): Promise<{ step: StepRow; value?: T; session?: string; outcome: "ok" | "shape" | "refusal" | "error" }> => {
       const step = this.insertStep(draw, parent, stage, model, system, prompt, n, storyId, allowed);
       // a call that throws (no claude on PATH, a spawn that fails) is an error result, so the step does not stay running
-      const r = await this.model.call(stage, system, prompt, model, allowed, cfg.effort)
+      const r = await this.model.call(stage, system, prompt, model, allowed, cfg.effort, session)
         .catch((e: unknown): ModelResult => ({ text: "", stop: "error", raw: "", model, durationMs: 0, error: String((e as Error)?.message ?? e) }));
       step.raw_response = r.raw;
       step.model = r.model || model;
@@ -186,7 +186,7 @@ export class Pipeline {
       try {
         const value = parse(r.text);
         this.finishStep(step, { status: "done", parsed: JSON.stringify(value) });
-        return { step, value, outcome: "ok" };
+        return { step, value, session: r.session, outcome: "ok" };
       } catch (e: any) {
         this.finishStep(step, { status: "failed", fail_reason: "shape", error: String(e?.message ?? e) });
         return { step, outcome: "shape" };
@@ -205,7 +205,7 @@ export class Pipeline {
     let r = await tried(cfg.model, 1);
     if (r.outcome === "shape") r = await tried(cfg.model, 2);
     if (r.outcome === "refusal") r = await tried(cfg.fallback, 2);
-    if (r.outcome === "ok") return { step: r.step, value: r.value as T };
+    if (r.outcome === "ok") return { step: r.step, value: r.value as T, ...(r.session ? { session: r.session } : {}) };
     throw new StepFailure(r.outcome, `${stage} failed: ${r.outcome}${r.step.error ? ` (${r.step.error.slice(0, 200)})` : ""}`, r.step);
   }
 

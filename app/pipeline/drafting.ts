@@ -24,7 +24,7 @@ import { chainOf, type Chain, type FindingView } from "./chain.ts";
 import { BriefSession } from "./briefsession.ts";
 import { profile } from "./listen.ts";
 import { ofKind } from "./artifacts.ts";
-import { linesOf, runSchedule, type Schedule } from "./write.ts";
+import { linesOf, runSchedule, type Schedule, type Scene } from "./write.ts";
 import { SceneSession, type ScreenPaths } from "./scenesession.ts";
 import { draftView, exportDraft, renderStory, type DraftView } from "./drafts.ts";
 import { tag } from "./model.ts";
@@ -494,7 +494,7 @@ export class Drafting {
   }
 
   /** Write beat k again under the constraints, bind it and the beat after it to the ledger, and re-screen both. The caller holds the status. */
-  private async regenerate(drawId: string, k: number, cfg: DraftConfig, constraints?: string, findingId?: string, opts: { rebindNext?: boolean; claims?: boolean } = {}): Promise<void> {
+  private async regenerate(drawId: string, k: number, cfg: DraftConfig, constraints?: string, findingId?: string): Promise<void> {
     const session = SceneSession.resume(this.p, drawId, cfg, passId(), this.screenPaths());
     const scenes = session.scenes(), M = session.schedule.beats.length;
     const before = scenes.filter((s) => s.beat < k).map((s) => s.text);
@@ -502,9 +502,8 @@ export class Drafting {
     const written = await session.write(session.schedule.beats[k - 1], cfg.scenes.order === "sequential" ? before : [], { constraints, rewrite: { finding: findingId } });
     const bound = await session.bind(written, scenes[k - 2]);
     // the beat after it read the old text: it is held to the new one, as it was when first written
-    const rebindNext = opts.rebindNext ?? true;
-    if (k < M && rebindNext) await session.bind(scenes[k], bound);
-    await session.screen(session.scenes(), (k < M && rebindNext) ? [k, k + 1] : [k], { claims: opts.claims ?? true });
+    if (k < M) await session.bind(scenes[k], bound);
+    await session.screen(session.scenes(), k < M ? [k, k + 1] : [k]);
   }
 
   /**
@@ -520,6 +519,10 @@ export class Drafting {
    * twenty times a draft on motifs and callbacks, sent nine beats each back
    * for a rewrite, and the rewrites kept the motifs. It stays a gate-2 flag
    * for `rewrite k`.
+   *
+   * Each round writes its due beats in sequence, each from the new text before
+   * it, then binds every rewritten beat and every beat after one that is not
+   * itself due, all at once, and screens once over them.
    */
   private async registerRewrites(drawId: string, cfg: DraftConfig, from = 1): Promise<void> {
     const done = new Map<number, Set<string>>();
@@ -528,14 +531,53 @@ export class Drafting {
       const plan = rewritePlan(chain.screenProfiles(), chain.scenes(), cfg);
       const due = [...plan].filter(([k, lines]) => k >= from && lines.some((l) => !done.get(k)?.has(l))).sort((a, b) => a[0] - b[0]);
       if (!due.length) return;
-      const dueBeats = new Set(due.map(([k]) => k));
-      for (const [k, lines] of due) {
-        done.set(k, new Set([...(done.get(k) ?? []), ...lines]));
-        await this.regenerate(drawId, k, cfg, constraintsBlock(lines.map((replacement) => ({ replacement }))), undefined, {
-          rebindNext: !dueBeats.has(k + 1),
-          claims: false,
-        });
+      for (const [k, lines] of due) done.set(k, new Set([...(done.get(k) ?? []), ...lines]));
+
+      const session = SceneSession.resume(this.p, drawId, cfg, passId(), this.screenPaths());
+      // a beat owed only the listen lines is edited in place, sentence by sentence, under fix = "edit"
+      const editing = cfg.screens.listen?.fix === "edit";
+      const listenOnly = (lines: string[]) => editing && lines.every((l) => l === LENGTH_LINE || l === NUMERAL_LINE);
+      // a split sentence changes no fact; a rounded figure can, so a numeral edit is bound again
+      await Promise.all(due.filter(([, lines]) => listenOnly(lines)).map(async ([k, lines]) => {
+        const scene = session.scenes().find((s) => s.beat === k)!;
+        const out = await session.edit(scene, lines, { long: lines.includes(LENGTH_LINE), numerals: lines.includes(NUMERAL_LINE) });
+        if (out !== scene && lines.includes(NUMERAL_LINE)) await session.bind(out, session.scenes().find((s) => s.beat === k - 1));
+      }));
+      const rewrites = due.filter(([, lines]) => !listenOnly(lines));
+      if (!rewrites.length) continue;
+      const dueBeats = new Set(rewrites.map(([k]) => k));
+      const M = session.schedule.beats.length;
+      const writtenScenes = new Map<number, Scene>();
+
+      for (const [k, lines] of rewrites) {
+        const scenes = session.scenes();
+        const before = scenes.filter((s) => s.beat < k).map((s) => s.text);
+        const constraints = constraintsBlock(lines.map((replacement) => ({ replacement })));
+        const written = await session.write(session.schedule.beats[k - 1], cfg.scenes.order === "sequential" ? before : [], { constraints, rewrite: { finding: undefined } });
+        writtenScenes.set(k, written);
       }
+
+      const currentScenes = session.scenes();
+      const beatsToBind = new Map<number, { scene: Scene; prev: Scene | undefined }>();
+
+      for (const [k] of rewrites) {
+        const scene = writtenScenes.get(k)!;
+        const prev = k === 1 ? undefined : (writtenScenes.get(k - 1) ?? currentScenes.find((s) => s.beat === k - 1));
+        beatsToBind.set(k, { scene, prev });
+        if (k < M && !dueBeats.has(k + 1)) {
+          const sceneNext = currentScenes.find((s) => s.beat === k + 1)!;
+          const prevNext = writtenScenes.get(k)!;
+          beatsToBind.set(k + 1, { scene: sceneNext, prev: prevNext });
+        }
+      }
+
+      const base = await session.bindBase(currentScenes, beatsToBind.size);
+      await Promise.all(
+        Array.from(beatsToBind.values()).map(({ scene, prev }) => session.bind(scene, prev, base))
+      );
+
+      const screenBeats = Array.from(beatsToBind.keys()).sort((a, b) => a - b);
+      await session.screen(session.scenes(), screenBeats, { claims: false });
     }
   }
 

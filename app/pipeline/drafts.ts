@@ -97,7 +97,7 @@ export function exportDraft(p: Pipeline, drawId: string, resolved: Resolved, gat
   const briefTrail = join(briefs, drawId, "trail.md");
   const steps = p.steps(drawId);
   const models = new Map<string, string>();
-  for (const s of steps) if (s.status === "done") models.set(s.stage, s.model);
+  for (const s of steps) if (s.status === "done" && (s.model !== "patched" || !models.has(s.stage))) models.set(s.stage, s.model);
   const trail = [
     existsSync(briefTrail) ? readFileSync(briefTrail, "utf8").trimEnd() : `# Trail — ${drawId}`, "",
     "## draft", "",

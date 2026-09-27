@@ -109,6 +109,9 @@ export const screenStructure = (prompt: string) => {
 export const ending = (span = SPAN_A) => `<ending>${span}, and the count closes. The last beat.</ending>`;
 export const vignette = (n: number, extra = "") => `<vignette>${extra ? extra + " " : ""}${Array.from({ length: 400 }, (_, i) => `w${n}_${i}`).join(" ")}</vignette>`;
 
+/** Every checker the fixtures script, derivation included, which draft.toml leaves off by default. */
+export const ALL_CHECKERS = "claims,derivation,ledger,structure,resemblance,reader";
+
 /** The script for a full draw plus check and draft. Queues are consumed in call order. */
 export function draftScript(over: Record<string, any> = {}) {
   return {
@@ -172,6 +175,6 @@ export async function drawn(script = draftScript(), setting?: { id: string; dir:
     draftsDir: join(dir, "drafts") });
   // the fixtures script three samples per checker and three per screen; pin that here so a
   // change to the defaults in draft.toml does not rewrite every assertion in this file
-  d.configure(draw.id, { overrides: { "checks.samples": 3, "screens.samples": 3, "screens.keep_if": 2 } });
+  d.configure(draw.id, { overrides: { "checks.samples": 3, "checks.enabled": ALL_CHECKERS, "screens.samples": 3, "screens.keep_if": 2 } });
   return { db, dir, model, p, d, draw };
 }

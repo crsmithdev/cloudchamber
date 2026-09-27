@@ -16,7 +16,7 @@ import { loadStages } from "./config.ts";
 import { loadDraftConfig } from "./draftconfig.ts";
 import { OUTPUT, VERDICT_LOG } from "./paths.ts";
 import { ofKind } from "./artifacts.ts";
-import { A, B, LEDGER, SCENE_3_PATCH, SPAN_A, SPAN_B, SPAN_C, cleanSamples, derivationSamples, draftScript, drawn, finding, fixture, ledgerSamples, schedule, screenStructure, vignette, fromAsk, claimsExtract, claimVerify } from "./drafting.fixture.ts";
+import { A, ALL_CHECKERS, B, LEDGER, SCENE_3_PATCH, SPAN_A, SPAN_B, SPAN_C, cleanSamples, derivationSamples, draftScript, drawn, finding, fixture, ledgerSamples, schedule, screenStructure, vignette, fromAsk, claimsExtract, claimVerify } from "./drafting.fixture.ts";
 import { briefParts, partsIn, partsOf } from "./briefparts.ts";
 import { chainOf } from "./chain.ts";
 import { renderStory } from "./drafts.ts";
@@ -502,7 +502,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     const printed = new Promise<void>((r) => { started = r; });
     const spy: PdfPrinter = async () => { calls++; started(); return false; };
     const d = new Drafting(p, { printPdf: spy, draftsDir: join(dir, "drafts") });
-    d.configure(draw.id, { overrides: { "checks.samples": 3, "screens.samples": 3, "screens.keep_if": 2 } });
+    d.configure(draw.id, { overrides: { "checks.samples": 3, "checks.enabled": ALL_CHECKERS, "screens.samples": 3, "screens.keep_if": 2 } });
     await d.check(draw.id);
     await d.draft(draw.id, { overrides: { "screens.samples": 3, "screens.keep_if": 2 } });
     // the draft and every register rewrite inside it wrote the HTML and printed nothing
@@ -547,12 +547,14 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(sa.meta.beats).toHaveLength(8);
     expect(sa.meta.form).toEqual({ tense: "past", person: "third", chronology: "linear", container: "prose" });
     expect(sa.meta.beats[0].withheld).toEqual([{ item: "the instrument's wording", until: 7 }, { item: "why she answers only Lauro", until: 6 }]);
-    // scenes, in sequence, each carrying the text so far and its beat's material
+    // scenes, in sequence, as turns of one session: each forks the one before, whose history holds the text so far
     const scenes = model.calls.filter((c) => c.stage === "scene");
     expect(scenes).toHaveLength(8);
-    expect(scenes[0].prompt).not.toContain("<story-so-far>");
-    expect(scenes[1].prompt).toContain("<story-so-far>\nScene 1 opens.");
-    expect(scenes[7].prompt).toContain("Scene 7 opens.");
+    expect(scenes.every((c) => !c.prompt.includes("<story-so-far>"))).toBe(true);
+    expect(scenes[0].session).toEqual({});
+    const sceneIndex = model.calls.indexOf(scenes[0]);
+    expect(scenes[1].session).toEqual({ resume: `fake-${sceneIndex + 1}` });
+    expect(scenes.slice(1).every((c, i) => c.session?.resume === `fake-${model.calls.indexOf(scenes[i]) + 1}`)).toBe(true);
     // the examples, outline, ledger and schedule ride in the system prompt, the same on every beat, so the CLI reads them from its cache
     expect(scenes[0].system.indexOf("horror passage")).toBeLessThan(scenes[0].system.indexOf("<outline>"));
     expect(scenes[0].system).toContain("<ledger>\ntime: the fire was on the 3rd");
@@ -569,8 +571,15 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     const sceneArts = p.artifacts(draw.id).filter((a) => a.kind === "scene").map((a) => a.meta);
     expect(sceneArts.find((m) => m.beat === 2)!.warnings).toEqual(["over_cap"]);
     expect(sceneArts.find((m) => m.beat === 1)!.warnings).toEqual([]);
-    // screens: ledger ×3 and structure ×1 per scene, slop once
-    expect(stagesOf(model, /^screen-ledger$/)).toHaveLength(24);
+    // screens: ledger ×3 and structure ×1 per scene, slop once; the binds fork one base session that holds the ledger and the draft
+    const binds = model.calls.filter((c) => c.stage === "screen-ledger");
+    expect(binds.filter((c) => c.prompt.includes("<base/>"))).toHaveLength(1);
+    expect(binds.filter((c) => !c.prompt.includes("<base/>"))).toHaveLength(24);
+    const baseCall = binds.find((c) => c.prompt.includes("<base/>"))!;
+    expect(baseCall.prompt).toContain("time: the fire was on the 3rd");
+    expect(baseCall.prompt).toContain("Scene 8 opens.");
+    const baseId = `fake-${model.calls.indexOf(baseCall) + 1}`;
+    expect(binds.filter((c) => !c.prompt.includes("<base/>")).every((c) => c.session?.resume === baseId && !c.prompt.includes("time: the fire"))).toBe(true);
     expect(stagesOf(model, /^screen-structure$/)).toHaveLength(8);
     const st5 = model.calls.find((c) => c.stage === "screen-structure" && /<scene n="5">/.test(c.prompt))!;
     expect(st5.prompt).toContain("withheld after this beat: the instrument's wording — beat 7\nwhy she answers only Lauro — beat 6");   // until 6 > 5: still withheld after beat 5
@@ -584,8 +593,8 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(st8.prompt).toContain("resolves-everything:");
     expect(st8.prompt).not.toContain("resolved:");
     expect(st5.prompt).toContain("Implication and foreshadowing are not reveals");
-    const sl2 = model.calls.find((c) => c.stage === "screen-ledger" && /<scene n="2">/.test(c.prompt))!;
-    expect(sl2.prompt).toContain("<previous-scene>\nScene 1 opens.");
+    const sl2 = model.calls.find((c) => c.stage === "screen-ledger" && c.prompt.startsWith(`The scene to check is <scene n="2">`))!;
+    expect(sl2.prompt).toContain(`above, and the previous scene is <scene n="1">.`);
     expect(p.steps(draw.id).filter((s) => s.stage === "screen-slop").map((s) => s.model)).toEqual(["deterministic"]);
     const v = d.view(draw.id);
     expect(v.screenFindings.map((f) => [f.beat, f.screen, f.n, !!f.patch])).toEqual([[3, "ledger", 3, true], [4, "ledger", 3, false]]);
@@ -696,7 +705,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     };
     const { p, d, draw, model } = await drawn(draftScript({ schedule: () => schedule({ form: signalForm, cap: 1100 }), scene: oneSentence }));
     await d.check(draw.id);
-    await d.draft(draw.id, { profile: "signal", overrides: { "beats.min": 8 } });
+    await d.draft(draw.id, { profile: "signal", overrides: { "beats.min": 8, "screens.listen.fix": "rewrite" } });
     const rewrites = model.calls.filter((c) => c.stage === "scene" && c.prompt.includes("<constraints>"));
     expect(rewrites.length).toBe(8);
     expect(rewrites.every((c) => c.prompt.includes("no sentence over thirty words"))).toBe(true);
@@ -704,6 +713,32 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     const two = rewrites.find((c) => /Write beat 2 /.test(c.prompt))!;
     expect(two.prompt).toContain("says what the body did before saying what it meant");
     expect(two.prompt.split("no sentence over thirty words").length).toBe(2);
+  });
+
+  test("under fix = edit, a beat owed only the length line has its long sentences edited in place, with no rewrite and no rebind", async () => {
+    const signalForm = "tense: past\nperson: third\nchronology: linear\ncontainer: prose";
+    const oneSentence = (prompt: string) => {
+      const n = Number(fromAsk(prompt, /Write beat (\d+) of the story/, "the beat number"));
+      return `<scene>Scene ${n} opens. ${Array.from({ length: 297 }, (_, i) => `s${n}w${i}`).join(" ")}</scene>`;
+    };
+    // each long sentence comes back split in two, word for word otherwise
+    const split = (prompt: string) => [...prompt.matchAll(/<sentence>([\s\S]*?)<\/sentence>/g)]
+      .map(([, s]) => `<edit><from>${s}</from><to>${s!.replace(/ (s\d+w150) /, ". $1 ")}</to></edit>`).join("");
+    const { p, d, draw, model } = await drawn(draftScript({ schedule: () => schedule({ form: signalForm, cap: 1100 }), scene: oneSentence, "scene-edit": split }));
+    await d.check(draw.id);
+    await d.draft(draw.id, { profile: "signal", overrides: { "beats.min": 8 } });
+    // beat 2 also names no body, so it owes a register line as well and is rewritten whole; the other seven are edited
+    const rewrites = model.calls.filter((c) => c.stage === "scene" && c.prompt.includes("<constraints>"));
+    expect(rewrites.map((c) => /Write beat (\d+)/.exec(c.prompt)![1])).toEqual(["2"]);
+    const edits = model.calls.filter((c) => c.stage === "scene-edit");
+    expect(edits).toHaveLength(7);
+    expect(edits.every((c) => c.prompt.includes("no sentence over thirty words") && !c.prompt.includes("Scene 1 opens.</sentence>"))).toBe(true);
+    const scenes = d.view(draw.id).scenes;
+    const three = scenes.find((s) => s.beat === 3)!;
+    expect(three.text).toContain("s3w149. s3w150");
+    expect(p.artifacts(draw.id).find((a) => a.kind === "scene" && a.meta.beat === 3 && a.meta.edited)!.meta.edited).toEqual(["One thing per sentence, short enough to say aloud in one breath; no sentence over thirty words."]);
+    // a split sentence changes no fact: the length edits are not bound again; beat 2's rewrite binds 2 and 3, one sample each
+    expect(model.calls.filter((c) => c.stage === "screen-ledger" && !c.prompt.includes("<base/>"))).toHaveLength(8 + 2);
   });
 
   test("a paying beat where the thing only stands behind glass is rewritten once, and the thing acts", async () => {
@@ -792,7 +827,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     };
     const { d, draw, model } = await drawn(draftScript({ scene: heavy, schedule: () => schedule({ form: signalForm, cap: 1100 }) }));
     await d.check(draw.id);
-    await d.draft(draw.id, { profile: "signal", overrides: { "beats.min": 8, "screens.listen.long_share_max": 1 } });
+    await d.draft(draw.id, { profile: "signal", overrides: { "beats.min": 8, "screens.listen.long_share_max": 1, "screens.listen.fix": "rewrite" } });
     const rewrites = model.calls.filter((c) => c.stage === "scene" && c.prompt.includes("<constraints>"));
     // beat 2 names no body and is rewritten for that; beat 3 is rewritten for its figures alone
     expect(rewrites.map((c) => /Write beat (\d+)/.exec(c.prompt)![1])).toEqual(["2", "3"]);
@@ -829,7 +864,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     };
     const { d, draw, model } = await drawn(draftScript({ scene, schedule: () => schedule({ form: signalForm, cap: 1100 }) }));
     await d.check(draw.id);
-    await d.draft(draw.id, { profile: "signal", overrides: { "beats.min": 8 } });
+    await d.draft(draw.id, { profile: "signal", overrides: { "beats.min": 8, "screens.listen.fix": "rewrite" } });
     const rewrites = model.calls.filter((c) => c.stage === "scene" && c.prompt.includes("<constraints>"));
     // round one: beat 2 for the body, beat 3 for its figures; round two: beat 3 again, now for its length. Beat 2 still names no body and is not sent back
     expect(rewrites.map((c) => /Write beat (\d+)/.exec(c.prompt)![1])).toEqual(["2", "3", "3"]);
@@ -1014,7 +1049,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     const { p, d, draw, model } = await drawn();
     await d.draft(draw.id);
     expect(model.calls.filter((c) => c.stage === "scene")).toHaveLength(8);   // no call beyond the scenes and the screens
-    expect(stagesOf(model, /^screen-ledger$/)).toHaveLength(24);
+    expect(stagesOf(model, /^screen-ledger$/)).toHaveLength(25);   // 24 binds and their base
     const scene3 = d.view(draw.id).scenes.find((s) => s.beat === 3)!;
     expect(scene3.text).toContain(SCENE_3_PATCH);
     expect(scene3.text).not.toContain("Scene 3 opens.");
@@ -1228,7 +1263,9 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     const scenes = model.calls.filter((c) => c.stage === "scene");
     expect(scenes.length).toBeGreaterThan(0);
     for (const c of scenes) expect(c.system).toContain("time: the fire was on the 3rd");
-    const screens = model.calls.filter((c) => c.stage === "screen-ledger");
+    // the ledger rides in the base session the binds fork, or in a bind that runs fresh
+    const screens = model.calls.filter((c) => c.stage === "screen-ledger" && !c.session?.resume);
+    expect(screens.length).toBeGreaterThan(0);
     for (const c of screens) expect(c.prompt).toContain("time: the fire was on the 3rd");
     // the amendment travels with it
     expect(scenes[0].system).toContain("Only the assembler can fire the reliquary.");
@@ -1266,7 +1303,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
 
 describe("templates and store", () => {
   test("every check and drafting template states a word cap and passes the vocabulary rule", () => {
-    const names = ["checkDerivation", "checkLedger", "checkStructure", "checkResemblance", "claimsExtract", "claimsVerifyWorld", "claimsVerifyReference", "checkVerify", "reconcile", "repairVignette", "repairEnding", "schedule", "sceneAsk", "screenLedger", "screenStructure"] as const;
+    const names = ["checkDerivation", "checkLedger", "checkStructure", "checkResemblance", "claimsExtract", "claimsVerifyWorld", "claimsVerifyReference", "checkVerify", "reconcile", "repairVignette", "repairEnding", "schedule", "sceneAsk", "screenLedgerAsk", "screenStructure"] as const;
     for (const n of names) {
       const t = (TEMPLATES as any)[n] as string;
       expect(t).toMatch(/Under \{?\w*\}? ?words|Under \d+ words|Under \{cap\} words/);
@@ -1661,9 +1698,11 @@ describe("the claims screen", () => {
 
     // screen-ledger: 8 initial binds (1 sample each).
     // Rewrites: beat 2 bound (1), beat 3 rebind skipped, beat 3 bound (1), beat 4 rebound (1) = 3 calls.
-    // Total screen-ledger calls = 11 (would be 12 if beat 3 rebind was not skipped).
-    const ledgers = model.calls.filter((c) => c.stage === "screen-ledger");
+    // Total screen-ledger binds = 11 (would be 12 if beat 3 rebind was not skipped), and one base for the 8 initial binds;
+    // the rewrites bind too few scenes to pay for a base.
+    const ledgers = model.calls.filter((c) => c.stage === "screen-ledger" && !c.prompt.includes("<base/>"));
     expect(ledgers).toHaveLength(11);
+    expect(model.calls.filter((c) => c.stage === "screen-ledger" && c.prompt.includes("<base/>"))).toHaveLength(1);
 
     // screen-structure: 8 initial screens (1 sample each).
     // Rewrites: beat 2 only (1, since beat 3 re-screen was skipped), beats 3 and 4 (2) = 3 calls.

@@ -28,7 +28,10 @@ template = "auto"       # auto | listen | told | signal: listen states what a li
 order = "sequential"    # sequential | parallel
 
 [checks]
-enabled = ["claims", "derivation", "ledger", "structure", "resemblance", "reader"]
+# derivation is off: on 39 stored passes of 24-26 Sep the ledger checker alone kept every finding both raised, and the
+# derivation-only findings were dropped or left open. Since 19 Sep auto accepted 11 derivation-only findings of 116.
+# Turn it back on for one run with --set checks.enabled=claims,derivation,ledger,structure,resemblance,reader
+enabled = ["claims", "ledger", "structure", "resemblance", "reader"]
 samples = 2              # the score's recurrence term already separates 2 of 2 from 1 of 2
 keep_if = 2
 [checks.structure]
@@ -47,6 +50,8 @@ samples = 1
 long_share_max = 0.12    # share of a beat's sentences over 30 words; the narration pool sits at 0.04; over this, one rewrite
 numerals_max = 12        # figures per 1k words in a beat; the pool sits at 3.2 and the parity drafts peak at 16.6,
                          # but the draft three labs could not track ran 9-29 a beat; over this, one rewrite
+fix = "edit"             # edit | rewrite: 80 of 165 rewrites (19-26 Sep) were for length or numerals alone, and a rewrite
+                         # changes 45-80% of a scene; edit rewrites only the sentences at fault, in one call, in place
 
 [repair]
 rounds = 4              # auto repair rounds at most, and the loop's only hard bound

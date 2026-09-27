@@ -103,7 +103,7 @@ cloudchamber draft; every key of draft.toml is overridable per draw, and a profi
 | `--tense / --person` | past \| present · first \| second \| third |
 | `--chronology / --container` | linear \| nonlinear · prose \| document \| interleaved |
 | `--order` | sequential |
-| `checks` | claims, derivation, ledger, structure, resemblance, reader · 2 samples, kept at 2 |
+| `checks` | claims, ledger, structure, resemblance, reader · 2 samples, kept at 2 |
 | `screens` | ledger, structure, slop, listen, claims · 1 samples, kept at 1 |
 | `repair` | auto: up to 4 rounds, accepting findings scoring 7+, patience 2 |
 
@@ -135,8 +135,8 @@ stages.toml: the model each stage calls, the one it falls back to on a refusal, 
 | `context` | claude-opus-5 → claude-sonnet-5 |
 | `ending` | claude-opus-5 → claude-sonnet-5 |
 | `ledger-extract` | claude-opus-5 → claude-sonnet-5 |
-| `check-derivation` | claude-opus-5 → claude-sonnet-5 |
-| `check-ledger` | claude-opus-5 → claude-sonnet-5 |
+| `check-derivation` | claude-opus-5 → claude-sonnet-5 · effort low |
+| `check-ledger` | claude-opus-5 → claude-sonnet-5 · effort low |
 | `check-verify` | claude-opus-5 → claude-sonnet-5 |
 | `check-structure` | claude-opus-5 → claude-sonnet-5 |
 | `check-resemblance` | claude-opus-5 → claude-sonnet-5 |
@@ -150,7 +150,8 @@ stages.toml: the model each stage calls, the one it falls back to on a refusal, 
 | `repair-ending` | claude-opus-5 → claude-sonnet-5 |
 | `schedule` | claude-opus-5 → claude-sonnet-5 |
 | `scene` | claude-opus-5 → claude-sonnet-5 |
-| `screen-ledger` | claude-opus-5 → claude-sonnet-5 |
+| `scene-edit` | claude-opus-5 → claude-sonnet-5 · effort low |
+| `screen-ledger` | claude-opus-5 → claude-sonnet-5 · effort low |
 | `screen-structure` | claude-opus-5 → claude-sonnet-5 |
 | `reference-bind` | claude-opus-5 → claude-sonnet-5 |
 

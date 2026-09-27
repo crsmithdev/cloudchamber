@@ -20,7 +20,7 @@ import type { SceneMeta } from "./artifacts.ts";
 import { briefParts } from "./briefparts.ts";
 import { chainOf } from "./chain.ts";
 import { fill } from "./prompts.ts";
-import { need, tag, words } from "./model.ts";
+import { need, tag, tags, words, type SessionAsk } from "./model.ts";
 import { RUN } from "./config.ts";
 import { samplesFor } from "./draftconfig.ts";
 import { clusterSamples, runSamples, voteAnswers } from "./sampled.ts";
@@ -29,12 +29,15 @@ import { applyPatches } from "./repair.ts";
 import { record } from "./verdicts.ts";
 import { eligiblePassages } from "./bank.ts";
 import { loadLexicon, restated, slopScreen } from "./slop.ts";
-import { listenScreen, loadNarrationPool } from "./listen.ts";
+import { atFault, listenScreen, loadNarrationPool } from "./listen.ts";
 import { parseQuestions, screenClaims } from "./check.ts";
 import {
   flagsOf, movedIn, sceneContext, scenePrompt, structurePrompt, structureQuestions,
   type Beat, type Schedule, type Scene,
 } from "./write.ts";
+
+/** The fewest binds a base session pays for: the base costs about what four forks save (bindBase). */
+const BASE_MIN_BINDS = 5;
 
 /** Where the deterministic screens read their pools from; a test points them at fixtures. */
 export type ScreenPaths = { lexiconPath?: string; narrationDir?: string };
@@ -99,34 +102,80 @@ export class SceneSession {
   // --- writing ----------------------------------------------------------------
 
   /** One beat. `rewrite` marks a gate-2 rewrite, with the flag it answers when there is one. */
-  async write(b: Beat, soFar: string[], opts: { constraints?: string; rewrite?: { finding?: string } } = {}): Promise<Scene> {
+  async write(b: Beat, soFar: string[], opts: { constraints?: string; rewrite?: { finding?: string }; session?: SessionAsk } = {}): Promise<Scene & { session?: string }> {
     const prompt = scenePrompt(this.parts, this.schedule, b, soFar, opts.constraints, this.cfg.structure);
-    const { step, value } = await this.p.invoke(this.drawId, this.parent, "scene", prompt, (t) => need(t, "scene"), { context: this.context });
+    const { step, value, session } = await this.p.invoke(this.drawId, this.parent, "scene", prompt, (t) => need(t, "scene"), { context: this.context, session: opts.session });
     const n = words(value);
     const artifact_id = this.p.artifact(step, "scene", value, {
       beat: b.n, words: n, cap: b.words,
       warnings: n > b.words * (1 + RUN.sceneCapSlack) ? ["over_cap"] : [],
       ...(opts.rewrite ? { rewrite: true, ...(opts.rewrite.finding ? { rewrite_finding: opts.rewrite.finding } : {}) } : {}),
     });
-    return { beat: b.n, text: value, artifact_id, step_id: step.id };
+    return { beat: b.n, text: value, artifact_id, step_id: step.id, ...(session ? { session } : {}) };
   }
 
   /**
    * Every beat from `from` on, written and bound; a sequential beat reads the
-   * corrected text of the beats before it. The beats under `from` are the
-   * scenes this draw already stores, which a branch copied, and they come back
-   * with the rest so the caller sees the whole story.
+   * unbound text of the beats before it, then all beats bind at once. The beats
+   * under `from` are the scenes this draw already stores, which a branch copied,
+   * and they come back with the rest so the caller sees the whole story.
+   *
+   * The sequential beats are turns of one session: each forks the one before,
+   * so the story so far is the session's history and is read from the cache,
+   * not sent again in the ask (model.ts). Only the first beat carries the
+   * stored scenes under `from` in its ask.
    */
   async all(from = 1): Promise<Scene[]> {
     const done = from > 1 ? this.scenes().filter((x) => x.beat < from) : [];
     const todo = this.schedule.beats.filter((b) => b.n >= from);
     if (this.cfg.scenes.order === "parallel") {
       const raw = await Promise.all(todo.map((b) => this.write(b, [])));
-      return [...done, ...await Promise.all(raw.map((sc, i) => this.bind(sc, i ? raw[i - 1] : done.at(-1))))];
+      const base = await this.bindBase([...done, ...raw], raw.length);
+      return [...done, ...await Promise.all(raw.map((sc, i) => this.bind(sc, i ? raw[i - 1] : done.at(-1), base)))];
     }
-    const out = [...done];
-    for (const b of todo) out.push(await this.bind(await this.write(b, out.map((x) => x.text)), out.at(-1)));
-    return out;
+    const raw: Scene[] = [];
+    let session: string | undefined;
+    for (const b of todo) {
+      const { session: next, ...scene } = await this.write(b, session ? [] : done.map((x) => x.text), { session: session ? { resume: session } : {} });
+      raw.push(scene);
+      session = next;
+    }
+    const base = await this.bindBase([...done, ...raw], raw.length);
+    return [...done, ...await Promise.all(raw.map((sc, i) => this.bind(sc, i ? raw[i - 1] : done.at(-1), base)))];
+  }
+
+  /**
+   * A session that holds the ledger and every scene, for `binding` binds to
+   * fork, so each bind reads the ledger and the scenes from the cache and sends
+   * only its ask. The base writes the whole draft to the cache once, about
+   * four binds' saving, so fewer binds than BASE_MIN_BINDS run fresh.
+   */
+  async bindBase(scenes: Scene[], binding: number): Promise<string | undefined> {
+    if (!this.cfg.screens.enabled.includes("ledger") || binding < BASE_MIN_BINDS) return undefined;
+    const prompt = fill("screenLedgerBase", { ledger: this.ledger, scenes: scenes.map((x) => `<scene n="${x.beat}">\n${x.text}\n</scene>`).join("\n\n") });
+    const { session } = await this.p.invoke(this.drawId, scenes[0].step_id, "screen-ledger", prompt, (t) => t, { session: {} });
+    return session;
+  }
+
+  /**
+   * The listen screen's lines, applied in place: only the sentences a line
+   * faults go to the model, and each comes back as a word-for-word swap, as a
+   * bind's patch does. A swap whose sentence is not in the scene is left out.
+   * Of 165 rewrites on 19-26 Sep, 80 were for length or numerals alone, and a
+   * rewrite changes 45-80% of a scene.
+   */
+  async edit(scene: Scene, lines: string[], fault: { long: boolean; numerals: boolean }): Promise<Scene> {
+    const sentences = atFault(scene.text, fault);
+    if (!sentences.length) return scene;
+    const prompt = fill("sceneEdit", { scene: scene.text, sentences: sentences.map((x) => `<sentence>${x}</sentence>`).join("\n"), lines: lines.join(" "), cap: String(Math.max(200, words(sentences.join(" ")) * 2)) });
+    const { step, value: edits } = await this.p.invoke(this.drawId, scene.step_id, "scene-edit", prompt, (t) =>
+      tags(t, "edit").map((e) => ({ from: tag(e, "from") ?? "", to: tag(e, "to") ?? "" })).filter((e) => e.from && e.to));
+    let text = scene.text;
+    for (const e of edits) if (text.split(e.from).length === 2) text = text.replace(e.from, () => e.to);
+    if (text === scene.text) return scene;
+    const { rewrite: _rw, rewrite_finding: _rf, ...meta } = chainOf(this.p, this.drawId).artifact(scene.artifact_id)!.meta as SceneMeta;
+    const artifact_id = this.p.artifact(step, "scene", text, { ...meta, words: words(text), edited: lines });
+    return { beat: scene.beat, text, artifact_id, step_id: step.id };
   }
 
   /**
@@ -139,13 +188,16 @@ export class SceneSession {
    * so the ledger binds where the scene is written rather than at the gate. A
    * flag whose fix needs more than its span stays open for `rewrite k`.
    */
-  async bind(scene: Scene, prev: Scene | undefined): Promise<Scene> {
+  async bind(scene: Scene, prev: Scene | undefined, base?: string): Promise<Scene> {
     if (!this.cfg.screens.enabled.includes("ledger")) return scene;
     const k = scene.beat;
     const { samples: n, keep_if } = samplesFor(this.cfg.screens, "ledger");
-    const prompt = fill("screenLedger", { ledger: this.ledger, previous: prev ? `<previous-scene>\n${prev.text}\n</previous-scene>\n\n` : "", n: String(k), scene: scene.text });
+    const ask = fill("screenLedgerAsk", {});
+    const prompt = base
+      ? fill("screenLedgerFork", { n: String(k), previous: prev ? `, and the previous scene is <scene n="${prev.beat}">` : "", ask })
+      : fill("screenLedger", { ledger: this.ledger, previous: prev ? `<previous-scene>\n${prev.text}\n</previous-scene>\n\n` : "", n: String(k), scene: scene.text, ask });
     const rs = await runSamples(this.p, {
-      draw: this.drawId, parent: scene.step_id, stage: "screen-ledger", prompt, samples: n,
+      draw: this.drawId, parent: scene.step_id, stage: "screen-ledger", prompt, samples: n, ...(base ? { session: { resume: base } } : {}),
       // the examined account is for the reader, not a condition of the answer: Sonnet 5 opens the tag and never closes it (run 9)
       parse: (t, sample) => ({ findings: parseFindings(t, "ledger", sample), examined: tag(t, "examined") ?? "" }),
     });
