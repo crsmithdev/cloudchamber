@@ -14,7 +14,7 @@ export const OUTPUT = process.env.CLOUDCHAMBER_OUTPUT ?? resolve(ROOT, "output")
  * the narration transcripts, the settings and the stories. It is not in this
  * repository; see the README.
  */
-export const CORPUS = process.env.CLOUDCHAMBER_CORPUS ?? resolve(ROOT, "corpus");
+const CORPUS = process.env.CLOUDCHAMBER_CORPUS ?? resolve(ROOT, "corpus");
 /** CLOUDCHAMBER_SETTINGS relocates the settings; tests point it at a fixture directory. */
 export const SETTINGS = process.env.CLOUDCHAMBER_SETTINGS ?? resolve(CORPUS, "settings");
 /** The narrated stories a draft is measured against for listenability: one transcript JSON per video, by channel. */

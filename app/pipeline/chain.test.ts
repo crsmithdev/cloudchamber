@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { fixture } from "./drafting.fixture.ts";
 import { FakeModel } from "./model.ts";
-import { Pipeline, type StepRow } from "./draw.ts";
+import { Pipeline } from "./draw.ts";
 import { chainOf } from "./chain.ts";
 import { record } from "./verdicts.ts";
 

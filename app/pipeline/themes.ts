@@ -19,7 +19,7 @@ import { eligibleIds } from "./verdicts.ts";
 
 export type Embedder = (texts: string[]) => Promise<number[][]>;
 
-export const pythonEmbedder: Embedder = async (texts) => {
+const pythonEmbedder: Embedder = async (texts) => {
   if (!texts.length) return [];
   const p = Bun.spawn(["python3", "-m", "extract", "embed", "--stdin"], { cwd: ROOT, stdin: "pipe", stdout: "pipe", stderr: "pipe", env: { ...process.env, CLOUDCHAMBER_DB: ":memory:" } });
   p.stdin.write(JSON.stringify(texts));
@@ -29,16 +29,16 @@ export const pythonEmbedder: Embedder = async (texts) => {
   return JSON.parse(out);
 };
 
-export const FEWSHOT_MIN = 12;
-export const FEWSHOT_N = 8;
-export const NEAREST = 10;
+const FEWSHOT_MIN = 12;
+const FEWSHOT_N = 8;
+const NEAREST = 10;
 
 // --- row validation --------------------------------------------------------
 
 const RELATIVE_OPENER = /^(Those|These|That|This)\s+(who|whom|whose|which|kept|held|left|made|born|sent|given|taken|chosen|bought|sold|paid|owed|entrusted|charged|hired|passed|spared|raised)\b/;
 
 /** Capitalised words not at the start of the text or of a sentence, `I` excepted. */
-export function properNouns(text: string): string[] {
+function properNouns(text: string): string[] {
   const t = text.replace(/\s+/g, " ").trim();
   return [...t.matchAll(/(?<![.!?:;]\s)(?<!^)\b([A-Z][a-z]+)/g)].map((m) => m[1]).filter((c) => c !== "I");
 }
@@ -57,7 +57,7 @@ export function validateTheme(text: string): string[] {
   return why;
 }
 
-export const themeId = (text: string) => createHash("sha1").update(text.toLowerCase().replace(/\s+/g, " ").trim()).digest("hex").slice(0, 12);
+const themeId = (text: string) => createHash("sha1").update(text.toLowerCase().replace(/\s+/g, " ").trim()).digest("hex").slice(0, 12);
 
 // --- embeddings ------------------------------------------------------------
 
@@ -70,7 +70,7 @@ const cosine = (a: number[], b: number[]) => a.reduce((s, x, i) => s + x * b[i],
  * whichever plan SQLite picks for the scan. Two themes drafted in one second
  * carry the same `drafted_at`, which is why the rowid decides.
  */
-export function nearest(db: Db, vec: number[], n = NEAREST): (ThemeRow & { score: number })[] {
+function nearest(db: Db, vec: number[], n = NEAREST): (ThemeRow & { score: number })[] {
   const rows = db.query("SELECT rowid AS seq, * FROM themes WHERE duplicate_of IS NULL AND embedding IS NOT NULL").all() as (ThemeRow & { seq: number })[];
   return rows.map((r) => ({ ...r, score: cosine(vec, fromBlob(r.embedding!)) }))
     .sort((a, b) => b.score - a.score || a.seq - b.seq)

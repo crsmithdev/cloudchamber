@@ -38,7 +38,7 @@ export type BestOpts = {
 };
 
 /** One draft's standing: its mean score gap over every pair it is in, and its gap against each other draft. */
-export type Standing = { id: string; score: number; against: Record<string, number> };
+type Standing = { id: string; score: number; against: Record<string, number> };
 export type Ranking = { standings: Standing[]; winner: string | null };
 export type BestResult = Ranking & { experiment: string; drafts: string[]; cost_usd: number; failed: number; ms: { draft: number; judge: number } };
 

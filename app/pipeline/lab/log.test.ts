@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { asRuns, experiment, experiments, formatNotes, readJudgements, recordJudgement, recordJudgements, ruledOn, type JudgementInput } from "./log.ts";
+import { asRuns, experiment, experiments, formatNotes, readJudgements, recordJudgements, type JudgementInput } from "./log.ts";
 import { fmt2, pool, verdict, type Run } from "./pool.ts";
 import fixture from "./pool.fixture.json";
 
@@ -70,8 +70,8 @@ describe("the log itself", () => {
 
   test("one line per pass, appended, and read back as it was written", () => {
     const log = logFile();
-    recordJudgement(row(), log);
-    recordJudgement(row({ pass: 2, flipped: true }), log);
+    recordJudgements([row()], log);
+    recordJudgements([row({ pass: 2, flipped: true })], log);
     expect(readFileSync(log, "utf8").trimEnd().split("\n")).toHaveLength(2);
     const back = readJudgements(log);
     expect(back).toHaveLength(2);
@@ -81,7 +81,7 @@ describe("the log itself", () => {
 
   test("a line that will not parse is skipped rather than failing the read", () => {
     const log = logFile();
-    recordJudgement(row(), log);
+    recordJudgements([row()], log);
     Bun.write(log, readFileSync(log, "utf8") + "{not json\n");
     expect(readJudgements(log)).toHaveLength(1);
   });
@@ -100,13 +100,12 @@ describe("the log itself", () => {
     expect(readJudgements(log)).toEqual([]);
   });
 
-  test("the experiments and the arms already ruled on come back off the log", () => {
+  test("the experiments come back off the log", () => {
     const log = logFile();
     recordJudgements([row(), row({ pass: 2 }), row({ experiment: "e2", arm: "pres", ours: "pres1" })], log);
     const rows = readJudgements(log);
     // the two experiments land in the same second here, so compare as a set rather than on the newest-first order
     expect(experiments(rows).map((e) => `${e.id}:${e.passes}`).sort()).toEqual(["e1:2", "e2:1"]);
-    expect(ruledOn(rows)).toEqual(["cut", "pres"]);
   });
 
   test("the notes name the reading order and give each axis its sentence", () => {

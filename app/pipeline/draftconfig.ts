@@ -87,7 +87,7 @@ export function loadDraftConfig(profile?: string, overrides: Overrides = {}, def
   return { config, overridden, profile: profile ?? null };
 }
 
-export function validate(c: DraftConfig): void {
+function validate(c: DraftConfig): void {
   const bad = (m: string) => { throw new Error(`draft config: ${m}`); };
   if (!(c.length.words > 0)) bad("length.words must be positive");
   if (!(c.length.tolerance >= 0 && c.length.tolerance < 1)) bad("length.tolerance must be in [0, 1)");

@@ -29,7 +29,7 @@ export type Settled = { finding: string; draw: string; round: number; replacemen
 export type CachedClaim = { statement: string; span: string; result: string; evidence: string; invalidates: string; replacement: string; patch: string; draw: string };
 
 /** The model family of a model id: the second token of claude-<family>-... */
-export const family = (model: string) => model.split("-")[1] ?? model;
+const family = (model: string) => model.split("-")[1] ?? model;
 
 /** The step models that stand for work done without a call. */
 export const NO_CALL = ["copied", "deterministic", "patched"];

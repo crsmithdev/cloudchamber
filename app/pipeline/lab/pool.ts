@@ -41,11 +41,11 @@ export type Pass = {
 export type Run = { model: string; file: string; results: Pass[] };
 
 /** What a pass took, for runs written before `judge.py` recorded it. */
-export const followedOrder = (p: Pass): boolean =>
+const followedOrder = (p: Pass): boolean =>
   p.followed_order ?? (p.overall === (p.flipped ? "source" : "ours"));
 
 /** A judge's share of the pooled number: how much it followed the reading order, and how often it took our side. */
-export type JudgeRow = {
+type JudgeRow = {
   model: string;
   passes: number;
   /** Ours counts 1 and a tie counts a half. */
@@ -60,7 +60,7 @@ export type JudgeRow = {
 /** Only a pass that answered every axis and gave an overall is pooled; `judge.py` retries the rest and records them. */
 const scored = (runs: Run[]): Pass[] => runs.flatMap((r) => r.results).filter((p) => p.complete);
 
-export function judgeRows(runs: Run[]): JudgeRow[] {
+function judgeRows(runs: Run[]): JudgeRow[] {
   const models = [...new Set(runs.map((r) => r.model))].sort();
   return models.map((model) => {
     const ps = runs.filter((r) => r.model === model).flatMap((r) => r.results).filter((p) => p.complete);
@@ -81,7 +81,7 @@ export function judgeRows(runs: Run[]): JudgeRow[] {
 }
 
 /** The mean score each axis gave each side, over every pass that scored it. */
-export function axisScores(runs: Run[]): Partial<Record<Axis, { ours: number; source: number; n: number }>> {
+function axisScores(runs: Run[]): Partial<Record<Axis, { ours: number; source: number; n: number }>> {
   const out: Partial<Record<Axis, { ours: number; source: number; n: number }>> = {};
   const ps = runs.flatMap((r) => r.results);
   for (const a of AXES) {
@@ -134,7 +134,7 @@ export function fmt2(x: number): string {
 export type Verdict = "clears the floor" | "falls below the floor: the change loses" | "inside the floor, so this says nothing yet";
 
 /** The threshold a share has to beat the floor by, in either direction, before the run says anything. */
-export const FLOOR_MARGIN = 0.1;
+const FLOOR_MARGIN = 0.1;
 
 /**
  * `tally.py` compares raw floats with `>`, and so does this. A gap of exactly a
@@ -170,19 +170,6 @@ export function floorPairs<T>(drafts: T[]): [T, T][] {
 }
 
 /**
- * Whether a set of floor runs pairs the arm's drafts as `floorPairs` says, or
- * hangs them all off one draft. A floor that fails this is not a floor: it
- * measures its anchor.
- */
-export function anchoredOn(pairs: [string, string][]): string | null {
-  if (pairs.length < 2) return null;
-  for (const candidate of new Set(pairs.flat())) {
-    if (pairs.every((p) => p.includes(candidate))) return candidate;
-  }
-  return null;
-}
-
-/**
  * The mean score gap: `ours` minus `source`, over every axis a pass scored and
  * every pass that scored one, on the 1–5 scale. Positive favours `ours`.
  *
@@ -211,7 +198,7 @@ export function scoreGap(runs: Run[]): { gap: number; passes: number } {
 export const GAP_MARGIN = 0.15;
 
 /** One matched pair between two arms, pooled. */
-export type MatchedPair = {
+type MatchedPair = {
   ours: string;
   source: string;
   share: number;
@@ -220,7 +207,7 @@ export type MatchedPair = {
 };
 
 /** One within-arm pair, pooled as floor. */
-export type FloorPair = {
+type FloorPair = {
   a: string;
   b: string;
   share: number;

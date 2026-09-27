@@ -7,7 +7,7 @@ import { Drafting } from "../drafting.ts";
 import { fixture } from "../drafting.fixture.ts";
 import { FakeModel } from "../model.ts";
 import { readJudgements } from "./log.ts";
-import { AXES, fmt2 } from "./pool.ts";
+import { AXES } from "./pool.ts";
 import { compare, findNarrationPath, formatComparison, loadStoryText, pairArms, whyNotCompare } from "./compare.ts";
 
 const reply = (answer: string) =>

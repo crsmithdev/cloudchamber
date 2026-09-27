@@ -1,9 +1,9 @@
 import stagesToml from "./stages.toml";
 import genresToml from "./genres.toml";
 
-export type GenStageName = "themes" | "redundancy" | "distill-map" | "distill" | "premises" | "execute" | "outline" | "context" | "ending";
+type GenStageName = "themes" | "redundancy" | "distill-map" | "distill" | "premises" | "execute" | "outline" | "context" | "ending";
 export type CheckStageName = "ledger-extract" | "check-derivation" | "check-ledger" | "check-verify" | "check-structure" | "check-resemblance" | "check-reader" | "check-claims-extract" | "check-claims-verify";
-export type DraftStageName = "reconcile" | "repair-vignette" | "repair-context" | "repair-outline" | "repair-ending" | "schedule" | "scene" | "scene-edit" | "screen-ledger" | "screen-structure" | "reference-bind";
+type DraftStageName = "reconcile" | "repair-vignette" | "repair-context" | "repair-outline" | "repair-ending" | "schedule" | "scene" | "scene-edit" | "screen-ledger" | "screen-structure" | "reference-bind";
 export type StageName = GenStageName | CheckStageName | DraftStageName;
 /** `tools` is the comma-separated list a call may use; absent or empty means `--tools ""`. */
 export type StageConfig = { model: string; fallback: string; system: string; tools?: string; effort?: Effort };
@@ -13,9 +13,9 @@ export type StageConfig = { model: string; fallback: string; system: string; too
  * `screen-ledger` was 45% of the draft's wall clock and 83% of its output was
  * thinking, so this is the knob that moves the clock.
  */
-export const EFFORTS = ["low", "medium", "high", "xhigh", "max"] as const;
-export type Effort = (typeof EFFORTS)[number];
-export const isEffort = (s: string): s is Effort => (EFFORTS as readonly string[]).includes(s);
+const EFFORTS = ["low", "medium", "high", "xhigh", "max"] as const;
+type Effort = (typeof EFFORTS)[number];
+const isEffort = (s: string): s is Effort => (EFFORTS as readonly string[]).includes(s);
 
 /**
  * The role a part of a brief plays. A part's role is the stage that wrote it,
@@ -37,7 +37,7 @@ export type PartRole = "vignette" | "outline" | "context" | "ending" | "job";
  * alone lost it, and the next repair wrote both contexts afresh under new jobs.
  */
 export type Tab = "ideate" | "check" | "write";
-export type StageFacts = { tab: Tab | null; group?: "prose" | "judgement" | "corpus"; role?: PartRole; checker?: string; call?: false };
+type StageFacts = { tab: Tab | null; group?: "prose" | "judgement" | "corpus"; role?: PartRole; checker?: string; call?: false };
 
 const STAGE_TABLE: Readonly<Record<string, StageFacts>> = {
   themes: { tab: null, group: "corpus" },

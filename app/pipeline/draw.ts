@@ -16,7 +16,7 @@ import { eligiblePassages, eligibleThemes, type Segment } from "./bank.ts";
 import { loadChecked, slice, type GenStage, type Setting } from "./settings.ts";
 import { SETTINGS } from "./paths.ts";
 import { now } from "./paths.ts";
-import { pipelineVersion, treeVersion } from "./version.ts";
+import { treeVersion } from "./version.ts";
 import { nextName } from "./names.ts";
 import type { Db } from "./store/db.ts";
 import { writeBrief } from "./brief.ts";
@@ -24,7 +24,6 @@ import { act, must } from "./lifecycle.ts";
 import { Lineage } from "./lineage.ts";
 import { lengthWarnings } from "./briefparts.ts";
 import { ofKind, readArtifacts, writeArtifact, type Artifact, type Kind, type MetaByKind } from "./artifacts.ts";
-import { chainOf } from "./chain.ts";
 
 export type SeedChoice = { mode: "drawn" } | { mode: "picked"; themeId: string } | { mode: "typed"; text: string };
 /** The seed and the segment a request names in flat fields, as the CLI and the API take them; unnamed, the draw draws them. */
@@ -74,14 +73,14 @@ const id = (n = 6) => randomBytes(n).toString("hex");
 export const newDrawId = () => `${now().replace(/[-:TZ]/g, "").slice(0, 15)}-${id(2)}`;
 
 /** Parse an outline response, requiring every job's section. */
-export const parseOutline = (jobNames: string[]) => (text: string) => {
+const parseOutline = (jobNames: string[]) => (text: string) => {
   const secs = sections(text);
   for (const j of jobNames) if (!secs[j]) throw new Error(`missing <section name="${j}">`);
   return { sections: secs, jobs: parseJobs(text) };
 };
 
 /** An outline as stored: its text, and the words of each section. */
-export function renderOutline(secs: Record<string, string>): { text: string; words: Record<string, number> } {
+function renderOutline(secs: Record<string, string>): { text: string; words: Record<string, number> } {
   return {
     text: Object.entries(secs).map(([n, body]) => `## ${n}\n\n${body}`).join("\n\n"),
     words: Object.fromEntries(Object.entries(secs).map(([n, b]) => [n, words(b)])),
@@ -89,7 +88,7 @@ export function renderOutline(secs: Record<string, string>): { text: string; wor
 }
 
 /** Parse a jobs response: exactly the context vignette count, all distinct. */
-export function parseJobs(text: string): string[] {
+function parseJobs(text: string): string[] {
   const js = tags(text, "job");
   if (js.length !== RUN.contextVignettes) throw new Error(`expected ${RUN.contextVignettes} jobs, got ${js.length}`);
   if (new Set(js.map((j) => j.toLowerCase())).size !== js.length) throw new Error("identical jobs");
@@ -564,4 +563,3 @@ export class Pipeline {
   artifacts(drawId: string): Artifact[] { return readArtifacts(this.db, { draw: drawId }); }
 }
 
-export { pipelineVersion };

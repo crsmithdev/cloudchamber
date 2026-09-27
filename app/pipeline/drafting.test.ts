@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { FakeModel, tag } from "./model.ts";
-import { BODY_LINE, COST_LINE, Drafting, LENGTH_LINE, NUMERAL_LINE, PRESENCE_LINE, parseConflicts, rewritePlan } from "./drafting.ts";
+import { BODY_LINE, COST_LINE, Drafting, PRESENCE_LINE, parseConflicts, rewritePlan } from "./drafting.ts";
 import type { PdfPrinter } from "./report.ts";
 import { EVENT_LINE, HOOK_LINE, THEME_LINE, VOICES_LINE } from "./write.ts";
 import { movedIn, parseSchedule, scenePrompt, STRUCTURE_RULES, structureScreen } from "./write.ts";
@@ -685,7 +685,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
 
   test("a schedule that marks a beat <pays> moves the arrival screen to that beat", async () => {
     const withPays = schedule({ cap: 1100 }).replace(/(<beat n="5"[^>]*>)/, "$1<pays>yes</pays>");
-    const { p, d, draw, model } = await drawn(draftScript({ schedule: () => withPays }));
+    const { d, draw, model } = await drawn(draftScript({ schedule: () => withPays }));
     await d.check(draw.id);
     await d.draft(draw.id, { profile: "listen", overrides: { "beats.min": 8, "screens.listen.long_share_max": 1 } });
     const st5 = model.calls.find((c) => c.stage === "screen-structure" && /<scene n="5">/.test(c.prompt))!;
@@ -703,7 +703,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
       const rewrite = /<constraints>/.test(prompt) ? " REWRITTEN" : "";
       return `<scene>Scene ${n} opens.${rewrite} ${Array.from({ length: 297 }, (_, i) => `s${n}w${i}`).join(" ")}</scene>`;
     };
-    const { p, d, draw, model } = await drawn(draftScript({ schedule: () => schedule({ form: signalForm, cap: 1100 }), scene: oneSentence }));
+    const { d, draw, model } = await drawn(draftScript({ schedule: () => schedule({ form: signalForm, cap: 1100 }), scene: oneSentence }));
     await d.check(draw.id);
     await d.draft(draw.id, { profile: "signal", overrides: { "beats.min": 8, "screens.listen.fix": "rewrite" } });
     const rewrites = model.calls.filter((c) => c.stage === "scene" && c.prompt.includes("<constraints>"));

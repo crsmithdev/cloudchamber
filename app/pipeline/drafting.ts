@@ -24,7 +24,7 @@ import { chainOf, type Chain, type FindingView } from "./chain.ts";
 import { BriefSession } from "./briefsession.ts";
 import { faultsOver, type Fault } from "./listen.ts";
 import { ofKind } from "./artifacts.ts";
-import { FAULT_LINE, linesOf, runSchedule, type Schedule, type Scene } from "./write.ts";
+import { FAULT_LINE, linesOf, runSchedule } from "./write.ts";
 import { SceneSession, type Change, type ScreenPaths } from "./scenesession.ts";
 import { draftView, exportDraft, renderStory, type DraftView } from "./drafts.ts";
 import { tag } from "./model.ts";
@@ -69,7 +69,7 @@ const AUTO_CHECKERS = ["derivation", "ledger", "claims"];
  * near the rate at which two sequential passes of two, each needing 2 of 2,
  * reported one. A first pass a person ran at the default 2 gets a second 2.
  */
-export const CLEAN_SAMPLES = 4;
+const CLEAN_SAMPLES = 4;
 const FULL_PASS = { samples: CLEAN_SAMPLES, keep_if: 3 };
 export { BODY_LINE, COST_LINE, LENGTH_LINE, NUMERAL_LINE, PRESENCE_LINE } from "./write.ts";
 
@@ -96,7 +96,7 @@ export function rewritePlan(profiles: { beat: number; flags: string[] }[], scene
 /** What one beat owes: the register lines its structure flags map to, and the listen faults over the ceilings. */
 export type Owed = { register: string[]; faults: Fault[] };
 /** Every line a beat owes, register lines first. */
-export const owedLines = (o: Owed) => [...o.register, ...o.faults.map((f) => FAULT_LINE[f])];
+const owedLines = (o: Owed) => [...o.register, ...o.faults.map((f) => FAULT_LINE[f])];
 const autoEligible = (f: FindingView) =>
   f.checkers.some((c) => AUTO_CHECKERS.includes(c)) && !!f.evidence.trim() && f.evidence.trim().toLowerCase() !== "none"
   && !f.relitigates;

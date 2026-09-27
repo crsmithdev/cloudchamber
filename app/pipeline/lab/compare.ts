@@ -80,7 +80,7 @@ export function loadStoryText(d: Drafting, id: string, narrationDir: string = NA
  * one source are a matched pair. Not the lineage root, which a repair chain
  * shares across different briefs.
  */
-export function sourceOf(lineage: Lineage | undefined, id: string): string {
+function sourceOf(lineage: Lineage | undefined, id: string): string {
   try { return lineage?.row(id).branched_from ?? id; } catch { return id; }
 }
 

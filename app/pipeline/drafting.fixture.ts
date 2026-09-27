@@ -24,7 +24,7 @@ export const finding = (span: string, statement: string, invalidates: string, re
 export const A = (s = SPAN_A) => finding(s, "the director fires the reliquary herself", "departure", "Only the assembler can fire the reliquary.");
 // B and C quote the ledger, not the prose: a rule a reader does not see scores one where a line they do see scores two
 export const B = (s = SPAN_B) => finding(s, "the twelfth relic is named differently in the two vignettes", "particulars", "The twelfth relic is the Verona clavicle in every account.", "the fire was on the 3rd");
-export const C = () => finding(SPAN_C, "the tears the outline cut are back", "knowledge", "The silk is dry.", "the director holds the order");
+const C = () => finding(SPAN_C, "the tears the outline cut are back", "knowledge", "The silk is dry.", "the director holds the order");
 
 export const LEDGER = "time: the fire was on the 3rd\ndetail: 1,106 dead\npossession: the director holds the order";
 
@@ -42,9 +42,9 @@ export const ledgerSamples = (a = A(), b = B(), n = 3) => [
 export const derivationSamples = (a = A(), n = 3) => Array.from({ length: n }, () => `<impossibility>One reliquary that fires.</impossibility>${a}<examined>the director fires it\n1,106 = 12 × 92 + 2</examined>`);
 export const cleanSamples = (n = 4) => Array.from({ length: n }, () => `<ledger>${LEDGER}</ledger><impossibility>One reliquary.</impossibility><examined>everything checked, nothing found</examined>`);
 
-export const STRUCTURE_Q = ["threat", "category-violation", "agency", "obscurity", "thickening", "spectacle", "consequence"];
-export const structure = (present = ["threat", "agency", "consequence"]) => STRUCTURE_Q.map((q) => `<question name="${q}"><answer>${present.includes(q) ? "present" : "absent"}</answer><quote>a quote for ${q}</quote></question>`).join("");
-export const resemblance = () => `<match><entry>3. The madman, the crank or the conspiracy theorist turns out to have been right.</entry><span>the director was right all along</span></match><nearest><title>The Monkey's Paw</title><author>W. W. Jacobs</author><shared>a wish that is paid for in the currency it names</shared></nearest>`;
+const STRUCTURE_Q = ["threat", "category-violation", "agency", "obscurity", "thickening", "spectacle", "consequence"];
+const structure = (present = ["threat", "agency", "consequence"]) => STRUCTURE_Q.map((q) => `<question name="${q}"><answer>${present.includes(q) ? "present" : "absent"}</answer><quote>a quote for ${q}</quote></question>`).join("");
+const resemblance = () => `<match><entry>3. The madman, the crank or the conspiracy theorist turns out to have been right.</entry><span>the director was right all along</span></match><nearest><title>The Monkey's Paw</title><author>W. W. Jacobs</author><shared>a wish that is paid for in the currency it names</shared></nearest>`;
 
 /**
  * A fake reply keys off the ask's own words, so a template edit must fail here
@@ -89,7 +89,7 @@ export const sceneFor = (prompt: string, over: Record<number, number> = { 2: 700
 export const SCENE_3_PATCH = "Scene 3 opens on the 3rd";
 
 /** Beat 3 carries a patchable flag; beat 4 one the fix is too big for, so `patch` must skip it. */
-export const screenLedger = (prompt: string) => {
+const screenLedger = (prompt: string) => {
   const n = Number(fromAsk(prompt, /<scene n="(\d+)">/, "the scene number"));
   const f = n === 3 ? finding("Scene 3 opens", "the date is off by two months", "3", "The fire was on the 3rd.", "time: the fire was on the 3rd", undefined, SCENE_3_PATCH)
     : n === 4 ? finding("Scene 4 opens", "the count is wrong throughout", "4", "1,106 died.", "detail: 1,106 dead")
@@ -106,7 +106,7 @@ export const screenStructure = (prompt: string) => {
   return names.map((q) => `<question name="${q}"><answer>${present.has(q) ? "present" : "absent"}</answer><quote>quote ${q} ${n}</quote></question>`).join("");
 };
 
-export const ending = (span = SPAN_A) => `<ending>${span}, and the count closes. The last beat.</ending>`;
+const ending = (span = SPAN_A) => `<ending>${span}, and the count closes. The last beat.</ending>`;
 export const vignette = (n: number, extra = "") => `<vignette>${extra ? extra + " " : ""}${Array.from({ length: 400 }, (_, i) => `w${n}_${i}`).join(" ")}</vignette>`;
 
 /** Every checker the fixtures script, derivation included, which draft.toml leaves off by default. */

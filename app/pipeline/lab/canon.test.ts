@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { bindDisagreement, referenceBind } from "./canon.ts";
+import { referenceBind } from "./canon.ts";
 import { fixture } from "../drafting.fixture.ts";
 import { FakeModel } from "../model.ts";
 import { Pipeline } from "../draw.ts";
@@ -99,13 +99,5 @@ describe("reference bind of the canon guard", () => {
     expect(p.artifacts(res.referenceDrawId!).filter((a) => a.kind === "finding").length).toBe(2);
     expect(refDraw.status).toBe("done");
     expect(res.perBeat).toEqual({ 1: 1, 2: 1 });
-  });
-
-  test("bindDisagreement is the mean absolute difference by beat, so beats do not cancel", () => {
-    const r = (perBeat: Record<number, number>) => ({ drawId: "d1", referenceDrawId: null, beats: 4, contradictions: 0, ratePerBeat: 0, perBeat, findings: [] });
-    // the same total, two beats apart: a net count would read 0
-    expect(bindDisagreement(r({ 1: 1, 2: 0, 3: 0, 4: 1 }), r({ 1: 0, 2: 1, 3: 1, 4: 0 }))).toBe(1);
-    expect(bindDisagreement(r({ 1: 2, 2: 0, 3: 0, 4: 0 }), r({ 1: 1, 2: 0, 3: 0, 4: 0 }))).toBe(0.25);
-    expect(bindDisagreement(r({ 1: 1, 2: 1 }), r({ 1: 1, 2: 1 }))).toBe(0);
   });
 });

@@ -21,7 +21,6 @@ import { ofKind } from "./artifacts.ts";
 import { toToml, type Resolved } from "./draftconfig.ts";
 import { words } from "./model.ts";
 import { pipelineVersion } from "./version.ts";
-import type { AutoResult } from "./drafting.ts";
 import type { ListenProfile } from "./listen.ts";
 
 /**
@@ -52,7 +51,7 @@ const PRINT_TIMEOUT_MS = 60_000;
  * or the print failed. Spawned, not run in line: the server drafts in its own
  * process and must keep answering while the page prints.
  */
-export const printPdf: PdfPrinter = async (html, pdf) => {
+const printPdf: PdfPrinter = async (html, pdf) => {
   const bin = BROWSERS.map((b) => Bun.which(b)).find(Boolean);
   if (!bin) return false;
   const proc = Bun.spawn([bin, "--headless=new", "--disable-gpu", "--no-pdf-header-footer", `--print-to-pdf=${pdf}`, `file://${html}`], { stdout: "ignore", stderr: "ignore" });

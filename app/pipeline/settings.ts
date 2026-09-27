@@ -30,15 +30,15 @@ import { RUN } from "./config.ts";
 
 export const LISTS = ["Bodies", "Events", "Instruments", "Places", "Terms"] as const;
 export type ListName = (typeof LISTS)[number];
-export const FRONT_MATTER_KEYS = ["id", "name", "seed_segments", "claims"];
+const FRONT_MATTER_KEYS = ["id", "name", "seed_segments", "claims"];
 /** Where the claims checker verifies: the web, or the setting's own distillate. Absent: the checker does not run. */
-export const CLAIMS_VALUES = ["world", "setting"] as const;
+const CLAIMS_VALUES = ["world", "setting"] as const;
 export type ClaimsAuthority = (typeof CLAIMS_VALUES)[number];
-export const REDRAFT = "<!-- redraft -->";
+const REDRAFT = "<!-- redraft -->";
 /** What each list is to the model. All five are closed classes; people, intervals and sensations are unlisted and so unconstrained. */
-export const INTENT = "the setting records these; anything else must be marked for a source";
+const INTENT = "the setting records these; anything else must be marked for a source";
 
-export type Span = { start: number; end: number };   // body offsets in the file text, heading excluded
+type Span = { start: number; end: number };   // body offsets in the file text, heading excluded
 export type Setting = {
   id: string;
   name: string;
@@ -57,7 +57,7 @@ export type GenStage = "premises" | "execute" | "outline" | "context" | "ending"
  * there is. The other four lists are synchronic — they say what is in the
  * world — so Events is what the stages that settle dates settle them against.
  */
-export const LOADING: Record<GenStage, { lists: ListName[] }> = {
+const LOADING: Record<GenStage, { lists: ListName[] }> = {
   premises: { lists: ["Bodies", "Events"] },
   execute: { lists: ["Instruments", "Places", "Terms"] },
   outline: { lists: ["Bodies", "Events", "Instruments"] },
@@ -108,7 +108,7 @@ function spansUnder(hs: Heading[], i: number, level: number, end: number): { tit
 const body = (text: string, s: Span) => text.slice(s.start, s.end).trim();
 
 /** List items of a section body, bullet markers and the redraft marker stripped; `none` is no entries. */
-export function entries(bodyText: string): string[] {
+function entries(bodyText: string): string[] {
   return bodyText.replace(REDRAFT, "").split("\n").map((l) => l.replace(/^\s*[-*]\s+/, "").trim())
     .filter((l) => l && l !== "none");
 }
@@ -199,9 +199,6 @@ function capitalisedRuns(name: string): string[] {
   return out;
 }
 
-/** Every entry of a list the text reaches for. */
-export const mentioned = (text: string, rows: string[]) => rows.filter((e) => mentions(text, e));
-
 // --- lint ------------------------------------------------------------------
 
 export type Finding = { list: string; entry: string; reason: string };
@@ -242,7 +239,7 @@ export function lintFile(id: string, dir: string = SETTINGS): Finding[] {
   return lintSetting(readFileSync(settingPath(id, dir), "utf8"), id);
 }
 
-export class SettingLintError extends Error {
+class SettingLintError extends Error {
   constructor(public id: string, public findings: Finding[]) {
     super(`setting ${id} fails lint:\n${findings.map(formatFinding).join("\n")}`);
   }

@@ -16,7 +16,7 @@ let passCounter = 0;
 export function passId(): string { return `${new Date().toISOString()}-${(passCounter++).toString(36).padStart(3, "0")}`; }
 
 /** The role a stage writes, or none when the stage writes no part of a brief. */
-export const roleOf = (stage: string): PartRole | undefined => STAGE_ROLE[stage];
+const roleOf = (stage: string): PartRole | undefined => STAGE_ROLE[stage];
 
 /** The artifact kind each role is stored as. A context vignette is a `vignette` like the chosen one. */
 const ROLE_KIND: Readonly<Record<PartRole, "vignette" | "outline" | "ending" | "job">> = {

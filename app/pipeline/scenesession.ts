@@ -13,7 +13,7 @@
  * that calls `sceneContext`. A caller says which beat to write; it cannot say
  * what context to write it against.
  */
-import type { Pipeline, StepRow } from "./draw.ts";
+import type { Pipeline } from "./draw.ts";
 import type { BriefParts } from "./briefparts.ts";
 import type { DraftConfig } from "./draftconfig.ts";
 import type { SceneMeta } from "./artifacts.ts";

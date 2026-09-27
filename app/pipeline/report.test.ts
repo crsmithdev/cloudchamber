@@ -45,7 +45,7 @@ describe("the report", () => {
 
 describe("the brief on disk", () => {
   test("one file per part, and a trail naming every premise, the chosen one, and the models", async () => {
-    const { p, draw, db, dir } = await drafted();
+    const { draw, db, dir } = await drafted();
     const base = join(dir, "briefs-test");
     const at = writeBrief(db, draw.id, base);
     for (const f of ["vignette.md", "outline.md", "context-1.md", "context-2.md", "ending.md", "trail.md"]) {

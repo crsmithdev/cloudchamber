@@ -1,7 +1,7 @@
 /** Run the Python extraction seam. */
 import { ROOT } from "./paths.ts";
 
-export function runExtract(args: string[], db?: string): { ok: boolean; out: string } {
+function runExtract(args: string[], db?: string): { ok: boolean; out: string } {
   const env = { ...process.env, ...(db ? { CLOUDCHAMBER_DB: db } : {}) };
   const p = Bun.spawnSync(["python3", "-m", "extract", ...args], { cwd: ROOT, env, stdout: "pipe", stderr: "pipe" });
   const out = p.stdout.toString() + p.stderr.toString();

@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { FIXTURE_SETTING, settingsFixture } from "./settings.fixture.ts";
-import { LISTS, distillate, entryName, formatFinding, lintSetting, loadSetting, mentioned, mentions, parseSetting, replaceList, slice } from "./settings.ts";
+import { LISTS, distillate, formatFinding, lintSetting, loadSetting, mentions, parseSetting, replaceList, slice } from "./settings.ts";
 
 const lint = (text: string) => lintSetting(text, "basin").map(formatFinding);
 
@@ -118,13 +118,5 @@ describe("reading a draw back against the setting", () => {
     expect(mentions("she filed the Notice of Withdrawal on Tuesday", s.lists.Instruments[1])).toBe(true);
     expect(mentions("the recorder's counter", s.lists.Places[0])).toBe(true);
     expect(mentions("he ellised the building", s.lists.Terms[1])).toBe(true);
-  });
-
-  test("mentioned reports which entries a passage reaches for, and finds none in prose that names nothing", () => {
-    const text = "At the Recorder's counter she filed the Notice of Withdrawal; the Hiring Hall had already dispatched.";
-    expect(mentioned(text, s.lists.Bodies).map(entryName)).toEqual(["Hiring Hall"]);
-    expect(mentioned(text, s.lists.Instruments).map(entryName)).toEqual(["Notice of Withdrawal"]);
-    expect(mentioned(text, s.lists.Places).map(entryName)).toEqual(["Recorder's counter"]);
-    expect(mentioned("A man walked into a room and sat down for a long time.", [...s.lists.Bodies, ...s.lists.Terms])).toEqual([]);
   });
 });

@@ -9,19 +9,19 @@
  */
 import type { Pipeline, StepRow } from "./draw.ts";
 import { fill, type TemplateName } from "./prompts.ts";
-import { tag, words } from "./model.ts";
+import { tag } from "./model.ts";
 import { FORM_VALUES, type DraftConfig, type FormAxis } from "./draftconfig.ts";
 import { type Answer } from "./check.ts";
 import type { BriefParts } from "./briefparts.ts";
 import type { Fault } from "./listen.ts";
 
 /** `until` is the beat that reveals the item; one past the last beat means the story never does. */
-export type Withheld = { item: string; until: number };
+type Withheld = { item: string; until: number };
 export type Beat = { n: number; words: number; job: string; when: string; known: string; withheld: Withheld[]; stakes: string; set_piece: string; absorbs: string; pays: boolean };
 export type Schedule = { form: Record<FormAxis, string>; beats: Beat[]; raw: string };
 export type Scene = { beat: number; text: string; artifact_id: string; step_id: string };
 
-export const ABSORBABLE = ["chosen", "context-1", "context-2", "ending"];
+const ABSORBABLE = ["chosen", "context-1", "context-2", "ending"];
 /** The schedule ask each shaped template adds; `auto` adds none. */
 const SHAPE_TEMPLATE: Record<string, TemplateName> = { told: "scheduleTold", signal: "scheduleSignal", listen: "scheduleListen" };
 /** The constraint a beat flagged bodily-emotion is rewritten under. */
@@ -29,12 +29,12 @@ export const BODY_LINE = "When a thing happens in this beat, the narrator says w
 /** The paying beat: the withheld thing comes in and does harm, and the loss happens on the page. Three outside judges put these two first, and every presence pass they gave the channel named a barrier or a thing that only stood there. */
 export const PRESENCE_LINE = "In this beat the thing the story withholds is in the same place as a character with nothing between them, and it acts: it touches, moves, breaks or takes a person or a thing, on the page, at the time. It does not stand behind glass, in a doorway, or on a channel, and it does not only get looked at.";
 export const COST_LINE = "In this beat the loss happens as it happens, on the page, in the moment, with the person who pays it present; the narrator does not report it afterward.";
-export const TIME_LINE = "This beat happens at a different point in the story's chronology from the beat before it. Its opening places the listener in the new time, in its own words, before the beat's events begin.";
+const TIME_LINE = "This beat happens at a different point in the story's chronology from the beat before it. Its opening places the listener in the new time, in its own words, before the beat's events begin.";
 export const THEME_LINE = "No sentence in this beat says what the story means or what its lesson is; the events carry it, and nobody names it.";
-export const WITHHELD_LINE = "What the schedule lists as withheld after this beat stays withheld: the beat may imply it and may not state it.";
-export const WRONG_LINE = "The point-of-view character is allowed to be mistaken, unfair or at fault somewhere in this beat, and the beat lets it stand.";
-export const RESOLVED_LINE = "This beat settles nothing the story still withholds: the questions it has raised are open at the end of the beat.";
-export const OPEN_LINE = "The last beat leaves at least one question the story raised open; it does not close every one.";
+const WITHHELD_LINE = "What the schedule lists as withheld after this beat stays withheld: the beat may imply it and may not state it.";
+const WRONG_LINE = "The point-of-view character is allowed to be mistaken, unfair or at fault somewhere in this beat, and the beat lets it stand.";
+const RESOLVED_LINE = "This beat settles nothing the story still withholds: the questions it has raised are open at the end of the beat.";
+const OPEN_LINE = "The last beat leaves at least one question the story raised open; it does not close every one.";
 /** Three outside judges gave the source people, momentum and the hook on the clean text (evals/20260920-clean-judge.md): a cast told apart by ear, one visible event a beat, and what is wrong said first. */
 export const VOICES_LINE = "The people in this beat speak in quoted lines and are told apart by how they talk, as the schedule's cast says; no two sound alike, and no line could be moved from one mouth to another.";
 export const EVENT_LINE = "Something happens in this beat that a second person present could see or hear: an act, an arrival, a breakage, a refusal said aloud. It is not thought, recollection or measurement alone.";
@@ -127,7 +127,7 @@ export function parseSchedule(text: string, cfg: DraftConfig): Schedule {
   return { form, beats, raw: text.trim() };
 }
 
-export function schedulePrompt(brief: string, cfg: DraftConfig): string {
+function schedulePrompt(brief: string, cfg: DraftConfig): string {
   const { count, min, max, words_min, words_max } = cfg.beats;
   const beatsLine = `${count === "auto" ? `between ${min} and ${max}` : `exactly ${count}`}, each between ${words_min} and ${words_max} words, caps summing to about ${cfg.length.words}`;
   const fixed = (Object.keys(FORM_VALUES) as FormAxis[]).filter((a) => cfg.form[a] !== "auto");

@@ -35,7 +35,7 @@ export type ReferenceBindResult = {
  * A contradiction that stands. The bind answers `contradicts:<quote>`; a reply
  * that withdraws its own finding answers `contradicts:none`, and is not one.
  */
-export function isContradiction(f: Finding): boolean {
+function isContradiction(f: Finding): boolean {
   const r = f.result.toLowerCase().trim();
   if (!r.startsWith("contradict")) return false;
   const quote = r.replace(/^contradict(s|ed)?:?/, "").trim();
@@ -90,15 +90,4 @@ export async function referenceBind(p: Pipeline, drawId: string, opts: Reference
   if (refDrawId) commit(p.db, { id: refDrawId, status: "done", ended: true });
 
   return { drawId, referenceDrawId: refDrawId, beats: scenes.length, contradictions: found.length, ratePerBeat: found.length / scenes.length, perBeat, findings: found };
-}
-
-/**
- * How far two readings of one draft disagree: the mean, over beats, of the
- * absolute difference in contradictions. A net count would let one beat's
- * extra flag cancel another beat's missing one.
- */
-export function bindDisagreement(r1: ReferenceBindResult, r2: ReferenceBindResult): number {
-  const beats = [...new Set([...Object.keys(r1.perBeat), ...Object.keys(r2.perBeat)])].map(Number);
-  if (!beats.length) return 0;
-  return beats.reduce((t, b) => t + Math.abs((r1.perBeat[b] ?? 0) - (r2.perBeat[b] ?? 0)), 0) / beats.length;
 }

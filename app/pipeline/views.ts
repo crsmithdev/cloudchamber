@@ -31,9 +31,9 @@ export type DrawListRow = DrawRow & LifecycleView & {
 export type StepSummary = Omit<StepRow, "prompt" | "raw_response" | "parsed"> & { tab: Tab | null; prompt_chars: number; raw_chars: number; parsed_chars: number };
 
 /** One of the six passages a draw drew, with its latest verdict; a passage gone from the pool keeps its id only. */
-export type DrawExample = { id: string; text: string | null; words?: number; cell?: string; title?: string; author?: string; genre?: string; source?: string; story_id?: string; latest: ReturnType<typeof latest> };
+type DrawExample = { id: string; text: string | null; words?: number; cell?: string; title?: string; author?: string; genre?: string; source?: string; story_id?: string; latest: ReturnType<typeof latest> };
 
-export function drawExamples(db: Db, exampleIds: string): DrawExample[] {
+function drawExamples(db: Db, exampleIds: string): DrawExample[] {
   return (JSON.parse(exampleIds) as string[]).map((id) => {
     const p = db.query(`SELECT p.id, p.text, p.words, p.voice || '/' || p.mode AS cell, s.title, s.author, s.genre, s.source_id AS source, s.id AS story_id
                         FROM passages p JOIN stories s ON s.id = p.story_id WHERE p.id = ?`).get(id) as Omit<DrawExample, "latest"> | null;

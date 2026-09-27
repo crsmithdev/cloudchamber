@@ -1,4 +1,4 @@
-export type Latest = { verdict: "keep" | "pass"; artifact: boolean; note: string; at: string; inherited_from: string | null } | null;
+type Latest = { verdict: "keep" | "pass"; artifact: boolean; note: string; at: string; inherited_from: string | null } | null;
 export type Item = {
   id: string;
   text: string;
@@ -22,28 +22,25 @@ export type Example = { id: string; text: string | null; words?: number; cell?: 
  * field the page reads and the server stops sending fails to compile here.
  */
 import type { DrawListRow, DrawDetail, StepSummary } from "../../pipeline/views.ts";
-import type { AutoResult, AutoRound, FindingsSummary, FindingsView, GateFinding } from "../../pipeline/drafting.ts";
-import type { Beat } from "../../pipeline/write.ts";
+import type { AutoResult, FindingsSummary, FindingsView, GateFinding } from "../../pipeline/drafting.ts";
 import type { DraftView } from "../../pipeline/drafts.ts";
-import type { SlopReport } from "../../pipeline/slop.ts";
-import type { ListenProfile, ListenReport } from "../../pipeline/listen.ts";
+import type { ListenReport } from "../../pipeline/listen.ts";
 import type { DraftConfig } from "../../pipeline/draftconfig.ts";
 import type { StepRow } from "../../pipeline/draw.ts";
 import type { Artifact } from "../../pipeline/artifacts.ts";
-import type { Part } from "../../pipeline/briefparts.ts";
 import type { Origin } from "../../pipeline/stage.ts";
 import type { GateResult } from "../../pipeline/gate.ts";
 
-export type { AutoResult, AutoRound, FindingsSummary, Beat, DraftConfig, Artifact, Part, Origin, GateResult, ListenProfile, DrawDetail };
+export type { AutoResult, DraftConfig, Artifact, Origin, GateResult, DrawDetail };
 export type Draw = DrawListRow;
 /** What the list row and the draw detail both carry: the row, the lifecycle answers, and what superseded it. */
 export type DrawBase = DrawDetail["draw"];
 /** What a round of a repair chain shows in the list. Null until the server has computed it. */
 export type CheckSummary = FindingsSummary;
 export type Finding = GateFinding;
-export type Claim = { statement: string; span: string; result: string; evidence: string; authority: string };
+type Claim = { statement: string; span: string; result: string; evidence: string; authority: string };
 /** A check's profile of a brief, as the page reads it: structure answers, or the resemblance matches and the nearest story. */
-export type Profile = {
+type Profile = {
   checker?: string;
   answers?: Record<string, { answer: string; quote: string }>;
   matches?: { entry: string; span: string }[];
@@ -53,8 +50,6 @@ export type Profile = {
 };
 /** The server leaves claims and profiles loosely typed; the page reads them as above. */
 export type Findings = Omit<FindingsView, "claims" | "profiles"> & { claims: Claim[]; profiles: Profile[] };
-export type Scene = DraftView["scenes"][number];
-export type Slop = SlopReport;
 export type Listen = ListenReport;
 export type Story = DraftView & { text: string };
 /** A draw's steps come without their text; `/api/steps/:id` carries it when a step is opened. */
@@ -122,7 +117,7 @@ export type Like = {
   seed?: { mode: "picked"; themeId: string } | { mode: "typed"; text: string };
   seed_text: string;
 };
-export type SamplingMode = { mode: string; floor: number; ceiling: number };
+type SamplingMode = { mode: string; floor: number; ceiling: number };
 export type Facets = {
   sources: Source[];
   authors: string[];

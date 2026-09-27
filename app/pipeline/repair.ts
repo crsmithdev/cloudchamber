@@ -21,7 +21,7 @@ import { quoted, quotesOf, same } from "./recur.ts";
 
 /** What a repair needs of an accepted finding: where it is, what it says, what replaces it, and the patch when the fix is the span alone. */
 export type Accepted = Pick<FindingView, "id" | "span" | "statement" | "result" | "invalidates" | "replacement" | "patch">;
-export const hasPatch = (f: Pick<Accepted, "patch">): boolean => !!f.patch.trim();
+const hasPatch = (f: Pick<Accepted, "patch">): boolean => !!f.patch.trim();
 
 // as loose as the checker that quoted it, so a span the verify pass kept is found here too
 const inside = (span: string, text: string) => !span.trim() || quoted(text, span, 1);
@@ -35,7 +35,7 @@ const inside = (span: string, text: string) => !span.trim() || quoted(text, span
  * Quotes in the evidence do not count: on the pit chain one of those carried a
  * registry row's fix into a notebook entry.
  */
-export function landsIn(f: Accepted, text: string): boolean {
+function landsIn(f: Accepted, text: string): boolean {
   if (inside(f.span, text)) return true;
   if (hasPatch(f)) return false;
   const second = quotesOf({ result: f.result, evidence: "" })[0];
@@ -43,7 +43,7 @@ export function landsIn(f: Accepted, text: string): boolean {
 }
 
 /** Where a span sits in a text — word for word first, then ignoring how its whitespace was broken — or null. */
-export function looseIndex(text: string, span: string): { from: number; to: number } | null {
+function looseIndex(text: string, span: string): { from: number; to: number } | null {
   const exact = text.indexOf(span);
   if (exact >= 0) return { from: exact, to: exact + span.length };
   const words = span.trim().split(/\s+/).map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
@@ -84,7 +84,7 @@ const namesIn = (t: string) => new Set((t.match(NAME) ?? []).map((n) => n.toLowe
  * contract" beside "the Clearwater cart". Such a patch is not applied, and the
  * finding repairs its passage as a whole.
  */
-export function localPatch(f: Accepted, passages: string[]): boolean {
+function localPatch(f: Accepted, passages: string[]): boolean {
   if (!hasPatch(f)) return false;
   const passage = passages.find((t) => inside(f.span, t));
   if (!passage) return true;
@@ -131,7 +131,7 @@ export function place<P extends Passage>(accepted: Accepted[], passages: P[]): P
 export const constraintsBlock = (accepted: Pick<Accepted, "replacement">[]) => fill("constraints", { constraints: accepted.map((f) => `- ${f.replacement}`).join("\n") });
 
 /** The fixes accepted in earlier rounds, which the repair must keep true rather than trade away. */
-export const settledBlock = (settled: Settled[]) =>
+const settledBlock = (settled: Settled[]) =>
   settled.length ? fill("settled", { settled: settled.map((sc) => `- ${sc.replacement}`).join("\n") }) : "";
 
 /**

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { GAP_MARGIN, anchoredOn, armPool, floorPairs, fmt2, pool, scoreGap, verdict, type Run, type Verdict } from "./pool.ts";
-import { pairRuns, readJudgements } from "./log.ts";
+import { GAP_MARGIN, armPool, floorPairs, fmt2, pool, scoreGap, verdict, type Run, type Verdict } from "./pool.ts";
+import { asRuns, readJudgements, type Judgement } from "./log.ts";
 import { join } from "node:path";
 import fixture from "./pool.fixture.json";
 
@@ -58,14 +58,8 @@ describe("pooling a panel, against tally.py", () => {
 });
 
 describe("the floor is built from every pairing of an arm", () => {
-  test("three drafts make three pairs, and none is the anchor of all of them", () => {
+  test("three drafts make three pairs", () => {
     expect(floorPairs(["a", "b", "c"])).toEqual([["a", "b"], ["a", "c"], ["b", "c"]]);
-    expect(anchoredOn(floorPairs(["a", "b", "c"]))).toBeNull();
-  });
-
-  test("the shape 23 September used is refused: both pairs hang off one draft", () => {
-    // evals/20260923-register-cut.md: cut1 v cut2 and cut1 v cut3, and cut1 was the weakest of the three
-    expect(anchoredOn([["cut1", "cut2"], ["cut1", "cut3"]])).toBe("cut1");
   });
 
   test("a floor needs at least two drafts", () => {
@@ -121,6 +115,7 @@ describe("the score gap", () => {
 });
 
 describe("arm pooling of stored runs", () => {
+  const pairRuns = (rows: Judgement[], ours: string, source: string) => asRuns(rows.filter((r) => r.ours === ours && r.source === source));
   const allRows = readJudgements(join(import.meta.dir, "../../../bank/judgements.jsonl"));
 
   test("register-cut-x24 re-pools to its published numbers", () => {

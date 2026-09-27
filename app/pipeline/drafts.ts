@@ -44,7 +44,7 @@ export function renderStory(v: DraftView, withFlags = true): string {
   return out.join("\n") + "\n";
 }
 
-export function renderSchedule(v: DraftView): string {
+function renderSchedule(v: DraftView): string {
   if (!v.schedule) return "";
   const out = ["# Schedule", "", ...Object.entries(v.schedule.form).map(([k, x]) => `- ${k}: ${x}`), ""];
   for (const b of v.schedule.beats) {
@@ -54,7 +54,7 @@ export function renderSchedule(v: DraftView): string {
   return out.join("\n");
 }
 
-export function renderFindings(p: Pipeline, drawId: string, v: DraftView): string {
+function renderFindings(p: Pipeline, drawId: string, v: DraftView): string {
   const checks = chainOf(p, drawId).findings();
   const out = ["# Findings", ""];
   out.push("## Check", "");

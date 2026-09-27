@@ -40,7 +40,7 @@ export function judgeKey(): string {
 }
 
 /** One call to one judge. Returns the reply text and what the provider reported it cost. */
-export async function callJudge(prompt: string, model: string, key: string, f: typeof globalThis.fetch = fetch): Promise<{ text: string; cost_usd: number | null }> {
+async function callJudge(prompt: string, model: string, key: string, f: typeof globalThis.fetch = fetch): Promise<{ text: string; cost_usd: number | null }> {
   const r = await f(OPENROUTER, {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },

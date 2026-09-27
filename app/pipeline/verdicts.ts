@@ -37,7 +37,7 @@ export type VerdictInput = Pick<Verdict, "kind" | "target_id" | "verdict" | "met
   Partial<Pick<Verdict, "artifact" | "note" | "by" | "inherited_from" | "snapshot">>;
 
 export const KINDS = new Set<Kind>(["example", "theme", "brief", "story", "finding", "draft"]);
-export const METHODS = new Set<Method>(["queue", "browse", "gate", "cli", "draw"]);
+const METHODS = new Set<Method>(["queue", "browse", "gate", "cli", "draw"]);
 
 export function validateLine(raw: string, lineNo: number): Verdict {
   let v: any;
@@ -162,7 +162,7 @@ export function tokenOverlap(a: string, b: string): number {
   return shared / Math.max(1, Math.min(na, nb));
 }
 
-export const INHERIT_THRESHOLD = 0.8;
+const INHERIT_THRESHOLD = 0.8;
 
 /**
  * For every latest example verdict whose passage no longer exists, find a

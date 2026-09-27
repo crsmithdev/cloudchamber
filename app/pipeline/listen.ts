@@ -35,10 +35,10 @@ const YOU = /\byou(?:'re|'d|'ve|'ll)?\b/gi;
 const NUMERAL = /\b\d[\d,.:]*\b/g;
 const QUOTE = /["“”]/g;
 const wordsOf = (t: string) => t.match(/[A-Za-z][A-Za-z'’-]*/g) ?? [];
-export const sentencesOf = (t: string) => t.split(/(?<=[.!?]["”’']?)\s+|\n+/).map((x) => x.trim()).filter((x) => wordsOf(x).length > 0);
+const sentencesOf = (t: string) => t.split(/(?<=[.!?]["”’']?)\s+|\n+/).map((x) => x.trim()).filter((x) => wordsOf(x).length > 0);
 
 /** A sentence over this many words is too long to say aloud in one breath. */
-export const LONG_WORDS = 30;
+const LONG_WORDS = 30;
 
 /** What the listen screen can fault a beat for: too many long sentences, or too many figures. */
 export type Fault = "long" | "numerals";

@@ -9,7 +9,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { normalise } from "./recur.ts";
 
-export const LEXICON_PATH = resolve(import.meta.dir, "slop.txt");
+const LEXICON_PATH = resolve(import.meta.dir, "slop.txt");
 
 export type SlopReport = {
   words: number;
@@ -38,7 +38,7 @@ const wordsOf = (t: string) => t.toLowerCase().match(/[a-z][a-z'’-]*/g) ?? [];
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /** Verbatim from the simulation: "not X but Y" and "it wasn't X. It was Y". */
-export const NOT_BUT = /\b(?:not|isn't|wasn't|isn’t|wasn’t|never)\b[^.;:]{1,60}?\bbut\b|\b(?:wasn't|isn't|wasn’t|isn’t|not)\b[^.]{1,60}\.\s+(?:It|That|This|She|He|They)\s+(?:was|is|were)\b/gi;
+const NOT_BUT = /\b(?:not|isn't|wasn't|isn’t|wasn’t|never)\b[^.;:]{1,60}?\bbut\b|\b(?:wasn't|isn't|wasn’t|isn’t|not)\b[^.]{1,60}\.\s+(?:It|That|This|She|He|They)\s+(?:was|is|were)\b/gi;
 
 /** A word is a proper noun in this draft when it appears capitalised more often than not. */
 function properNouns(text: string): Set<string> {

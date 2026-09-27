@@ -176,7 +176,7 @@ function release(db: Db, id: string, back: Status, reason: string, undo: Links =
  * throws `EPERM` for one it does not — which still means the process is there.
  * Only `ESRCH`, no such process, says the step was abandoned.
  */
-export function alive(pid: number | null): boolean {
+function alive(pid: number | null): boolean {
   if (!pid || pid === process.pid) return false;
   try {
     process.kill(pid, 0);

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { api, type AutoResult, type Draw, type DrawBase, type CheckSummary, type DraftConfig, type DraftConfigView, type Finding, type Findings, type Listen, type Story, type Step } from "./api.ts";
+import { api, type AutoResult, type Draw, type DrawBase, type CheckSummary, type DraftConfigView, type Finding, type Findings, type Listen, type Story, type Step } from "./api.ts";
 import { BriefFiles, DrawAside, Md, RowHead, SeedNote, StepView, boldLabels, firstParagraph, DrawNotes, inFlight, isWorking, label, stageName, stageNames, type Detail } from "./Draws.tsx";
 import { ArchivedToggle, Bar, Btn, Caret as Chevron, Facts, Field, Head, Icon, Keys, Mark, ModelPicks, Seg, lastSelected, markFor, onEnter, rowKeys, secs, usePoll, useRememberSelected, useRowsFromPage, useAddressBar } from "./ui.tsx";
 
@@ -1681,4 +1681,3 @@ function ScheduleView({ s }: { s: Story }) {
   );
 }
 
-export type { Step };

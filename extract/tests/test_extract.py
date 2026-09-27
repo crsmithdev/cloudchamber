@@ -99,7 +99,7 @@ def test_facets_fitted_and_labelled(db):
     assert len(cells) == 9
 
 
-def test_facets_refuse_backend_mix_and_warn_on_drift(db, tmp_path):
+def test_facets_refuse_backend_mix_and_warn_on_drift(db):
     out = run("facets", db=db.execute("PRAGMA database_list").fetchone()[2]).stdout
     assert "existing fit" in out
 

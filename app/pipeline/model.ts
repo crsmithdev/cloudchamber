@@ -33,10 +33,10 @@ export type ModelResult = {
 };
 /** Keep the call's transcript; `resume` forks from a session an earlier call returned. */
 export type SessionAsk = { resume?: string };
-export type Usage = { input: number; cache_read: number; cache_write: number; output: number; thinking: number; cost_usd: number };
+type Usage = { input: number; cache_read: number; cache_write: number; output: number; thinking: number; cost_usd: number };
 
 /** The CLI's `usage` and `total_cost_usd`, compacted; null when the reply carries neither. */
-export function usageOf(j: any): Usage | undefined {
+function usageOf(j: any): Usage | undefined {
   const u = j?.usage;
   if (!u && j?.total_cost_usd === undefined) return undefined;
   return { input: u?.input_tokens ?? 0, cache_read: u?.cache_read_input_tokens ?? 0, cache_write: u?.cache_creation_input_tokens ?? 0, output: u?.output_tokens ?? 0,

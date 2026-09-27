@@ -40,7 +40,7 @@ seed_segments: []
 - 5 July — the date the contract stops the waterfront, named without a year
 `;
 
-export const FIXTURE_REFERENCE: Record<string, string> = {
+const FIXTURE_REFERENCE: Record<string, string> = {
   "land.md": `---
 topic: Land and title
 sources:

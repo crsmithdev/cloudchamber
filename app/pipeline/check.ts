@@ -16,10 +16,10 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { Pipeline, StepRow } from "./draw.ts";
 import { fill, type TemplateName } from "./prompts.ts";
-import { need, samples, tag, tags } from "./model.ts";
+import { need, tag, tags } from "./model.ts";
 import { distillate, type ClaimsAuthority, type Setting } from "./settings.ts";
 import { samplesFor, type DraftConfig } from "./draftconfig.ts";
-import { cluster, excludeDismissed, findingId, merge, normalise, parseFindings, quoted, same, type Cluster, type Finding } from "./recur.ts";
+import { excludeDismissed, findingId, merge, normalise, parseFindings, quoted, same, type Cluster, type Finding } from "./recur.ts";
 import { briefBlock, briefParts, passId, prose, type BriefParts } from "./briefparts.ts";
 import { chainOf, type Chain } from "./chain.ts";
 import { clusterSamples } from "./sampled.ts";
@@ -27,8 +27,8 @@ import { BriefSession } from "./briefsession.ts";
 import type { LedgerMeta } from "./artifacts.ts";
 import { RUN, type CheckStageName } from "./config.ts";
 
-export const PREMISES_PATH = resolve(import.meta.dir, "premises.md");
-export const CHECKERS = ["derivation", "ledger", "structure", "resemblance", "claims", "reader"] as const;
+const PREMISES_PATH = resolve(import.meta.dir, "premises.md");
+const CHECKERS = ["derivation", "ledger", "structure", "resemblance", "claims", "reader"] as const;
 export type Checker = (typeof CHECKERS)[number];
 export const STRUCTURE_QUESTIONS = ["threat", "category-violation", "agency", "obscurity", "thickening", "spectacle", "consequence"];
 
@@ -71,7 +71,7 @@ export function parseQuestions(text: string, names: string[]): Record<string, An
   return out;
 }
 
-export function loadPremiseList(path: string = PREMISES_PATH): string {
+function loadPremiseList(path: string = PREMISES_PATH): string {
   if (!existsSync(path)) return "";
   return readFileSync(path, "utf8").split("\n").filter((l) => /^\d+\.\s/.test(l)).join("\n");
 }
@@ -171,7 +171,7 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
  * agree cut that to about one in twenty-five, and a real finding one reading
  * drops comes back on the next pass.
  */
-export const VERIFY_READINGS = 2;
+const VERIFY_READINGS = 2;
 
 export const NOT_IN_PROSE = "the span is not in a vignette or the ending, which is all a reader of the story sees";
 

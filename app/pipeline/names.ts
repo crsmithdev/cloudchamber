@@ -3,7 +3,7 @@
  * order they appear, lowercased and hyphenated, and -2, -3 … for draws that
  * slug the same way. The name is written to the row when the draw is created
  * and never recomputed, so nothing that happens to any other draw can change
- * it. `drawNames` numbers a whole set at once and exists for the backfill.
+ * it.
  */
 const STOP = new Set(["about", "after", "again", "against", "because", "before", "being", "between", "could", "every", "might", "never", "often", "other", "should", "since", "still", "their", "there", "these", "they", "thing", "things", "those", "through", "under", "until", "until", "where", "which", "while", "whose", "would", "without", "within"]);
 
@@ -29,18 +29,4 @@ export function nextName(existing: Iterable<string>, seed: string): string {
     if (m) max = Math.max(max, Number(m[1]));
   }
   return max === 0 ? slug : `${slug}-${max + 1}`;
-}
-
-/** Names for a whole set at once, oldest first. The 7 -> 8 migration's backfill; new draws take `nextName`. */
-export function drawNames(draws: { id: string; seed_text: string; created_at: string }[]): Map<string, string> {
-  const ordered = [...draws].sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));
-  const seen = new Map<string, number>();
-  const out = new Map<string, string>();
-  for (const r of ordered) {
-    const slug = seedSlug(r.seed_text);
-    const n = (seen.get(slug) ?? 0) + 1;
-    seen.set(slug, n);
-    out.set(r.id, n === 1 ? slug : `${slug}-${n}`);
-  }
-  return out;
 }

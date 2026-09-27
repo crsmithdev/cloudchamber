@@ -25,7 +25,7 @@ import { StepFailure } from "./draw.ts";
 import { tags, tag, words } from "./model.ts";
 import { fill, TEMPLATES } from "./prompts.ts";
 import {
-  LISTS, entryName, isEmpty, lintSetting, formatFinding, parseFrontMatter, parseSetting, replaceList, settingPath, referenceDir,
+  LISTS, entryName, lintSetting, formatFinding, parseFrontMatter, parseSetting, replaceList, settingPath, referenceDir,
   type ListName, type Setting,
 } from "./settings.ts";
 
@@ -36,7 +36,7 @@ export type Candidate = { list: ListName; entry: string; source: string; file: s
 export type Kept = { list: ListName; entry: string; file: string };
 
 export const candidatesPath = (id: string, dir: string) => join(dir, id, "candidates.jsonl");
-export const keptPath = (id: string, dir: string) => join(dir, id, "kept.jsonl");
+const keptPath = (id: string, dir: string) => join(dir, id, "kept.jsonl");
 
 export function readKept(id: string, dir: string): Kept[] {
   const path = keptPath(id, dir);
@@ -95,7 +95,7 @@ const parseEntries = (raw: string, list: ListName): string[] =>
  * reads a candidate from text that is no longer there. Returns a report line
  * per file.
  */
-export async function distillMap(p: Pipeline, id: string, setting: Setting): Promise<string[]> {
+async function distillMap(p: Pipeline, id: string, setting: Setting): Promise<string[]> {
   const dir = p.settingsDir;
   const refs = new Map(referenceFiles(id, dir).map((f) => [f, readReference(join(referenceDir(id, dir), f))]));
   const rows = readCandidates(id, dir);
@@ -180,7 +180,7 @@ async function trimLong(p: Pipeline, id: string, list: ListName, kept: string[],
  * Reduce: one call per list over its candidates, written into the setting
  * file in place. Returns a report line per list.
  */
-export async function distillReduce(p: Pipeline, id: string, setting: Setting): Promise<string[]> {
+async function distillReduce(p: Pipeline, id: string, setting: Setting): Promise<string[]> {
   const dir = p.settingsDir;
   const path = settingPath(id, dir);
   const all = readCandidates(id, dir);

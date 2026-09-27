@@ -22,8 +22,7 @@ Two backends, chosen at import time:
               clause-level features are proxied or missing. It still reaches
               all six dimensions — 47 of the 51 features are lexical enough
               to fake — but four features are simply absent and the proxies
-              are rough. `coverage()` reports what is actually populated,
-              and `pipeline facets` prints it.
+              are rough.
 
 `BACKEND` says which one is live, and it is not decided by the import alone:
 biberplus imports fine without its spaCy model, and would then fail on every
@@ -457,36 +456,6 @@ LABELS: dict[str, tuple[str, tuple[str, str, str]]] = {
     "d6": ("elaboration", ("unelaborated", "moderate", "elaborated")),
 }
 
-# The coverage grid stays two-dimensional on purpose. Bucketing on all six
-# would be 3^6 = 729 cells over a pool of a few thousand, which is not
-# coverage, it is a histogram of singletons.
-GRID = ("d1", "d2")
-
-VOICE_LABELS = LABELS["d1"][1]
-MODE_LABELS = LABELS["d2"][1]
-CELLS = [f"{v}/{m}" for v in VOICE_LABELS for m in MODE_LABELS]
-
-
-def coverage(backend: str = "") -> dict[str, float]:
-    """Fraction of each dimension's features the given backend populates.
-
-    The number to look at before trusting a dimension. As of 2026-09-03 the
-    local fallback covers every dimension well enough to score it, but not
-    equally well, and the thin ones are thin in ways that matter: D3 has no
-    phrasal coordination, D5 no WHIZ-deletion relatives, D6 no object-position
-    that-relatives.
-    """
-    backend = backend or BACKEND
-    out = {}
-    for dim in ALL_DIMENSIONS:
-        names = [n for n, poles in FEATURES.items() if dim in poles]
-        if backend == "biberplus":
-            out[dim] = 1.0
-        else:
-            out[dim] = len([n for n in names if n in LOCAL_FEATURES]) / len(names)
-    return out
-
-
 def scorable_dimensions(backend: str = "") -> tuple[str, ...]:
     """Which dimensions the given backend can honestly score.
 
@@ -888,53 +857,3 @@ def facets(feats: dict[str, float], stats: dict) -> dict:
         out[name] = _bucket(score, cuts.get(dim, [0.0, 0.0]), labels)
     out.update(d)
     return out
-
-
-def cell(facet: dict | None) -> str:
-    """The coverage-grid cell a passage falls in. 9 cells, plus one for
-    unscored.
-
-    Tolerates a non-dict: `themes.jsonl` has carried its own `facets` — a list
-    of shape labels from `themes.py` — since before this module existed, and
-    the two are unrelated.
-    """
-    if not isinstance(facet, dict) or not facet:
-        return "(unscored)"
-    return "/".join(facet.get(LABELS[d][0], "?") for d in GRID)
-
-
-def label_options() -> dict[str, tuple[str, ...]]:
-    """Every filterable label, by dimension name. Used by `--facet`."""
-    return {LABELS[d][0]: LABELS[d][1] for d in ALL_DIMENSIONS}
-
-
-def matches(facet: dict | None, query: str) -> bool:
-    """Does a passage match a `--facet` query?
-
-    Accepts a whole cell (`involved/narrative`), a `dimension=label` pair
-    (`persuasion=persuasive`), or a bare label where it is unambiguous.
-    `moderate` is deliberately not unambiguous — D4 and D6 both use it — and
-    a bare ambiguous label matches nothing, which `__main__` turns into an
-    error rather than a silently empty queue.
-    """
-    if not isinstance(facet, dict) or not facet:
-        return False
-    query = query.strip().lower()
-    if "=" in query:
-        dim, _, want = query.partition("=")
-        return str(facet.get(dim.strip(), "")).lower() == want.strip()
-    if cell(facet) == query:
-        return True
-    owners = [n for n, labels in label_options().items() if query in labels]
-    if len(owners) != 1:
-        return False
-    return str(facet.get(owners[0], "")).lower() == query
-
-
-def ambiguous(query: str) -> list[str]:
-    """Dimension names that share a bare label. Empty when the query is fine."""
-    query = query.strip().lower()
-    if "=" in query or "/" in query:
-        return []
-    owners = [n for n, labels in label_options().items() if query in labels]
-    return owners if len(owners) > 1 else []

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import re
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from typing import Iterator, Literal
 
 BlockKind = Literal["prose", "quote", "heading", "list", "meta"]
@@ -51,19 +51,12 @@ class Doc:
             if b.kind in ("prose", "quote"):
                 yield b
 
-    def word_count(self) -> int:
-        return sum(b.words for b in self.blocks)
-
     def finalize(self) -> "Doc":
         """Assign positions once all blocks are in. Call before harvesting."""
         n = len(self.blocks)
         for i, b in enumerate(self.blocks):
             b.position = 0.0 if n <= 1 else i / (n - 1)
         return self
-
-    def to_dict(self) -> dict:
-        d = asdict(self)
-        return d
 
 
 # --- text hygiene shared by every adapter --------------------------------

@@ -1,13 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { marked } from "marked";
-import { api, when, type Artifact, type AutoResult, type Candidate, type Example, type Facets, type Draw, type DrawBase, type DrawDetail, type Fork, type FullStep, type Origin, type Parts, type Repair, type Source, type Status, type Step } from "./api.ts";
+import { api, when, type Artifact, type Example, type Facets, type Draw, type DrawBase, type DrawDetail, type FullStep, type Source, type Status, type Step } from "./api.ts";
 import { ArchivedToggle, Bar, Btn, Caret, Chip, Field, Head, Icon, Keys, LinkBtn, Mark, ModelPicks, Seg, hhmm, lastSelected, markFor, onEnter, rowKeys, secs, usageLine, usePoll, useRememberSelected, useRowsFromPage, useTick, useAddressBar, type MarkState } from "./ui.tsx";
 
 /** `checked` and `auto` are the chain's answers; the pane does not read them off the artifact list. */
 /** One draw in full, as the server builds it in pipeline/views.ts. */
 export type Detail = DrawDetail;
 const STAGES = ["premises", "execute", "gate", "outline", "context", "ending", "brief"];
-export const LABEL: Record<string, string> = {
+const LABEL: Record<string, string> = {
   awaiting_gate: "choose a premise",
   done: "brief",
   awaiting_check_gate: "review findings",
@@ -504,7 +504,7 @@ export const inFlight = (d: Detail) => {
  * set it is under the name, and explains the step on hover. A running row sweeps; the gate waits; what is still
  * to come is faint.
  */
-export function Log({ d, onStep, ideation }: { d: Detail; onStep: (id: string) => void; ideation?: boolean }) {
+function Log({ d, onStep, ideation }: { d: Detail; onStep: (id: string) => void; ideation?: boolean }) {
   const byParent = new Map<string | null, Step[]>();
   for (const s of d.steps) {
     const k = s.parent_id;
@@ -1270,7 +1270,7 @@ function StartForm({ status, like }: { status: Status | null; like?: string }) {
 /** Markdown from the outline stage opens paragraphs with a label and a colon; the label reads better set bold. */
 export const boldLabels = (md: string) => md.replace(/^([A-Z][A-Za-z0-9 ,'’/&-]{0,40}):(?=\s)/gm, "**$1:**");
 
-export function useBrief(id: string) {
+function useBrief(id: string) {
   const [brief, setBrief] = useState<Record<string, string> | null>(null);
   useEffect(() => {
     setBrief(null);
@@ -1282,7 +1282,7 @@ export function useBrief(id: string) {
   return brief;
 }
 
-export const BRIEF_FILES = ["outline.md", "vignette.md", "context-1.md", "context-2.md", "ending.md", "ending.previous.md"];
+const BRIEF_FILES = ["outline.md", "vignette.md", "context-1.md", "context-2.md", "ending.md", "ending.previous.md"];
 
 /** The brief's files as a table: one row per file, the open one's text under it. */
 export function BriefFiles({ id, open = "outline.md" }: { id: string; open?: string }) {

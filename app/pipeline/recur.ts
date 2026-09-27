@@ -12,9 +12,9 @@
 import { createHash } from "node:crypto";
 import { tag, tags } from "./model.ts";
 
-export const SPAN_OVERLAP = 0.5;
-export const STATEMENT_OVERLAP = 0.6;
-export const INVALIDATES_ORDER = ["departure", "particulars", "knowledge"];
+const SPAN_OVERLAP = 0.5;
+const STATEMENT_OVERLAP = 0.6;
+const INVALIDATES_ORDER = ["departure", "particulars", "knowledge"];
 
 export type Finding = {
   checker: string;
@@ -44,7 +44,7 @@ export type Cluster = {
   reported: boolean;
 };
 
-export function toks(s: string): Set<string> { return new Set(s.toLowerCase().match(/[a-z0-9]+/g) ?? []); }
+function toks(s: string): Set<string> { return new Set(s.toLowerCase().match(/[a-z0-9]+/g) ?? []); }
 
 export function overlap(a: string, b: string): number {
   const A = toks(a), B = toks(b);
@@ -78,7 +78,7 @@ export function parseFindings(text: string, checker: string, sample: number): Fi
   })).filter((f) => f.span);
 }
 
-export function invalidatesRank(inv: string): number {
+function invalidatesRank(inv: string): number {
   const i = INVALIDATES_ORDER.indexOf(inv.toLowerCase());
   return i >= 0 ? i : inv === "none" || !inv ? INVALIDATES_ORDER.length + 1 : INVALIDATES_ORDER.length;
 }
@@ -109,7 +109,7 @@ export function invalidatesRank(inv: string): number {
  * and the contradictions a reader sees did not. What a reader sees now carries
  * its own term below, and the section weights only break ties.
  */
-export const INVALIDATES_WEIGHT: Record<string, number> = { departure: 2, knowledge: 1, particulars: 1, arrival: 2 };
+const INVALIDATES_WEIGHT: Record<string, number> = { departure: 2, knowledge: 1, particulars: 1, arrival: 2 };
 export const SCORE_MAX = 10;
 
 /**
@@ -120,7 +120,7 @@ export const SCORE_MAX = 10;
  * days" in the arithmetic section zeroed a real dose error on the pit chain,
  * so a span quoted from the outline keeps its severity.
  */
-export const HEDGED = /\b(roughly|approximately|about|around|nearly|almost|some|upwards of|maybe)\s+[\d,.]+|\bor so\b|\bgive or take\b/i;
+const HEDGED = /\b(roughly|approximately|about|around|nearly|almost|some|upwards of|maybe)\s+[\d,.]+|\bor so\b|\bgive or take\b/i;
 
 export type Scorable = { n: number; checkers: string[]; invalidates: string; result: string; evidence: string; span?: string };
 
@@ -167,7 +167,7 @@ const looseOf = (s: string) => s.toLowerCase().replace(/[*_`"“”'’]/g, "").
  * inference, and costs two: on the pit chain those were the sums and the
  * geometry that auto fixed while the name in two registries waited.
  */
-export function visibility(f: Scorable, ctx: ScoreContext): number {
+function visibility(f: Scorable, ctx: ScoreContext): number {
   const prose = ctx.prose, outline = ctx.outline, ledger = ctx.ledger;
   const span = f.span ?? "";
   const qs = quotesOf(f);
@@ -213,7 +213,7 @@ export function cluster(findings: Finding[], keepIf: number, scope = ""): Cluste
   return order(out);
 }
 
-export function order(cs: Cluster[]): Cluster[] {
+function order(cs: Cluster[]): Cluster[] {
   return [...cs].sort((a, b) => b.n - a.n || invalidatesRank(a.invalidates) - invalidatesRank(b.invalidates));
 }
 

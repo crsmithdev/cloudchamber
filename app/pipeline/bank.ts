@@ -14,7 +14,7 @@ import { INELIGIBLE_SQL, eligibleIds } from "./verdicts.ts";
 export type Segment = { source?: string | string[]; author?: string; genre?: string };
 
 /** A segment's sources as a list; one source and none are the same shape as many. */
-export const sourceIds = (source: Segment["source"]): string[] => (Array.isArray(source) ? source : source ? [source] : []);
+const sourceIds = (source: Segment["source"]): string[] => (Array.isArray(source) ? source : source ? [source] : []);
 
 /**
  * A source's display name, read off its own file: "Ellen Datlow - The Best

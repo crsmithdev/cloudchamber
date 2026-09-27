@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { drawNames, nextName, seedSlug } from "./names.ts";
+import { nextName, seedSlug } from "./names.ts";
 
 describe("draw names", () => {
   test("three salient seed words, in order", () => {
@@ -19,16 +19,5 @@ describe("draw names", () => {
     expect(nextName(["weapon-forged-stolen-5"], seed)).toBe("weapon-forged-stolen-6");
     // and another seed's names are none of its business
     expect(nextName(["the-fog", "the-fog-2"], seed)).toBe("weapon-forged-stolen");
-  });
-
-  test("draws sharing a seed are numbered by creation", () => {
-    const names = drawNames([
-      { id: "c", seed_text: "Survivors bury their guilt under concrete.", created_at: "2026-09-05T03:00:00Z" },
-      { id: "a", seed_text: "Survivors bury their guilt under concrete.", created_at: "2026-09-05T01:00:00Z" },
-      { id: "b", seed_text: "Another seed entirely, about fog.", created_at: "2026-09-05T02:00:00Z" },
-    ]);
-    expect(names.get("a")).toBe("survivors-guilt-concrete");
-    expect(names.get("c")).toBe("survivors-guilt-concrete-2");
-    expect(names.get("b")).toBe("another-entirely");
   });
 });

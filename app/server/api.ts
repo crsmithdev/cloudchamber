@@ -6,7 +6,7 @@
 import Fastify, { type FastifyInstance, type FastifyReply } from "fastify";
 import type { Db } from "../pipeline/store/db.ts";
 import { newDrawId, Pipeline, seedAndSegment, type DrawOpts } from "../pipeline/draw.ts";
-import { KINDS, latest, latestAll, passedStories, record, type Kind, type Method } from "../pipeline/verdicts.ts";
+import { KINDS, latestAll, passedStories, record, type Kind, type Method } from "../pipeline/verdicts.ts";
 import { renderStory } from "../pipeline/drafts.ts";
 import { status } from "../pipeline/status.ts";
 import { gateCommand, type GateArgs, type GateResult } from "../pipeline/gate.ts";
@@ -22,8 +22,8 @@ import { Drafting } from "../pipeline/drafting.ts";
 import { loadSetting } from "../pipeline/settings.ts";
 import { loadDraftConfig, profileNames } from "../pipeline/draftconfig.ts";
 
-export type ItemOrder = "source" | "suspects" | "shuffle";
-export type ItemFilter = { kind: Kind; source?: string; author?: string; genre?: string; cell?: string; verdict?: "unreviewed" | "keep" | "pass"; artifact?: boolean; suspect?: boolean; order?: ItemOrder; seed?: number; limit?: number; offset?: number };
+type ItemOrder = "source" | "suspects" | "shuffle";
+type ItemFilter = { kind: Kind; source?: string; author?: string; genre?: string; cell?: string; verdict?: "unreviewed" | "keep" | "pass"; artifact?: boolean; suspect?: boolean; order?: ItemOrder; seed?: number; limit?: number; offset?: number };
 
 /** A stable pseudo-random key per id, so a shuffled listing pages consistently under one seed. */
 function shuffleKey(id: string, seed: number): number {
@@ -33,7 +33,7 @@ function shuffleKey(id: string, seed: number): number {
 }
 
 /** Passages of a passed story are hidden everywhere; the story row is where they come back. */
-export function listItems(db: Db, f: ItemFilter) {
+function listItems(db: Db, f: ItemFilter) {
   const passed = f.kind === "example" ? passedStories(db) : new Set<string>();
   const rows = f.kind === "example"
     ? (db.query(`SELECT p.id, p.text, p.words, p.voice, p.mode, p.voice || '/' || p.mode AS cell, p.suspect, s.title, s.author, s.genre, s.source_id AS source, s.id AS story_id

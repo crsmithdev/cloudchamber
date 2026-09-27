@@ -37,7 +37,7 @@ import type { Axis, Pass, Run, Side } from "./pool.ts";
 export const JUDGEMENT_LOG = join(BANK, "judgements.jsonl");
 
 /** Which half of a run a pass belongs to: the arms against each other, or one arm against itself; or drafts ranked for best of N. */
-export type PairKind = "comparison" | "floor" | "rank";
+type PairKind = "comparison" | "floor" | "rank";
 
 /** One judge pass over one pair, as the log keeps it. */
 export type Judgement = {
@@ -82,15 +82,6 @@ export type JudgementInput = Omit<Judgement, "id" | "at">;
 
 const idOf = (j: JudgementInput, at: string) =>
   createHash("sha1").update([j.experiment, j.kind, j.ours, j.source, j.judge, j.pass, j.beat ?? "", at].join("|")).digest("hex").slice(0, 16);
-
-/** Append one pass. Returns the row as it was written. */
-export function recordJudgement(input: JudgementInput, log: string = JUDGEMENT_LOG): Judgement {
-  const at = now();
-  const row: Judgement = { id: idOf(input, at), ...input, at };
-  mkdirSync(dirname(log), { recursive: true });
-  appendFileSync(log, JSON.stringify(row) + "\n");
-  return row;
-}
 
 /** Append a run of passes in one write, so a crash cannot split a pair across two runs of the file. */
 export function recordJudgements(inputs: JudgementInput[], log: string = JUDGEMENT_LOG): Judgement[] {
@@ -154,16 +145,6 @@ export function experiments(rows: Judgement[]): { id: string; brief: string; lev
     by.set(r.experiment, e);
   }
   return [...by.values()].sort((a, b) => b.at.localeCompare(a.at));
-}
-
-/** The clauses a panel has already ruled on: what a later session checks before proposing one again. */
-export function ruledOn(rows: Judgement[]): string[] {
-  return [...new Set(rows.filter((r) => r.kind === "comparison").map((r) => r.arm))].sort();
-}
-
-/** Filter logged passes for one pair and convert them to runs. */
-export function pairRuns(rows: Judgement[], ours: string, source: string): Run[] {
-  return asRuns(rows.filter((r) => r.ours === ours && r.source === source));
 }
 
 /**

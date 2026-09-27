@@ -114,8 +114,8 @@ table.
 
 ## Pooling a panel
 
-`evals/tally.py <judge json>... [--floor <within-arm json>...]` pools the runs
-of a panel. Each judge is weighted by how little it takes the story it read
-first, which on 22 September was three passes in four; a judge that always
-takes the first read counts for nothing. `--floor` takes the runs of two drafts
-by one code, which is the floor the comparison has to clear.
+`cloudchamber lab compare` pools the runs of a panel, by the rules in
+`app/pipeline/lab/pool.ts`. Each judge is weighted by how little it takes the
+story it read first, which on 22 September was three passes in four; a judge
+that always takes the first read counts for nothing. The first arm's drafts,
+judged against each other, are the floor the comparison has to clear.
