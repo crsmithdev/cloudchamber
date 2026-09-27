@@ -65,6 +65,9 @@ export type Judgement = {
   axes: Partial<Record<Axis, Side>>;
   scores: Partial<Record<Axis, { ours: number; source: number }>>;
   overall: Side | "?";
+  /** The judge's sentence of evidence per axis and its three sentences on what the weaker story needs. They name the stories Story One and Story Two in the reading order: ours is Story One unless `flipped`. Absent on rows before 27 September. */
+  why?: Partial<Record<Axis, string>>;
+  needs?: string;
   /** What the call cost and how long it took, as the provider reported them. */
   cost_usd: number | null;
   ms: number | null;
@@ -161,4 +164,29 @@ export function ruledOn(rows: Judgement[]): string[] {
 /** Filter logged passes for one pair and convert them to runs. */
 export function pairRuns(rows: Judgement[], ours: string, source: string): Run[] {
   return asRuns(rows.filter((r) => r.ours === ours && r.source === source));
+}
+
+/**
+ * The judges' commentary on one experiment, pass by pass: which story was read
+ * first, each axis's call with its sentence of evidence, and what the weaker
+ * story needs. `axis` keeps one axis and drops the needs.
+ */
+export function formatNotes(rows: Judgement[], id: string, axis?: Axis): string {
+  const mine = rows.filter((r) => r.experiment === id && r.complete);
+  if (!mine.length) return `no complete passes in experiment ${id}`;
+  if (!mine.some((r) => r.why || r.needs)) return `experiment ${id} was logged before the commentary was kept`;
+  const out: string[] = [];
+  for (const r of mine) {
+    const one = r.flipped ? r.source : r.ours;
+    const two = r.flipped ? r.ours : r.source;
+    out.push(`== ${r.judge} pass ${r.pass}: Story One is ${one === r.ours ? "ours" : "the source"} (${one}), Story Two ${two === r.ours ? "ours" : "the source"} (${two}); overall ${r.overall}`);
+    const axes = axis ? [axis] : (Object.keys(r.why ?? {}) as Axis[]);
+    for (const a of axes) {
+      const s = r.scores[a];
+      out.push(`${a}: ${r.axes[a] ?? "?"}${s ? ` (ours ${s.ours}, source ${s.source})` : ""} ${r.why?.[a] ?? ""}`.trimEnd());
+    }
+    if (!axis && r.needs) out.push(`needs: ${r.needs}`);
+    out.push("");
+  }
+  return out.join("\n").trimEnd();
 }

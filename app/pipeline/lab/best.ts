@@ -123,7 +123,7 @@ export async function best(d: Drafting, drawId: string, o: BestOpts = {}): Promi
   const rows: JudgementInput[] = results.map((r) => ({
     experiment, brief: drawId, level: "L2", kind: "rank", arm: r.ours, against: r.source, ours: r.ours, source: r.source,
     judge: r.judge, pass: r.pass, flipped: r.flipped, complete: r.complete, followed_order: r.followed_order,
-    axes: r.parsed.axes, scores: r.parsed.scores, overall: r.parsed.overall, cost_usd: r.cost_usd, ms: r.ms, version,
+    axes: r.parsed.axes, scores: r.parsed.scores, overall: r.parsed.overall, why: r.parsed.why, needs: r.parsed.needs, cost_usd: r.cost_usd, ms: r.ms, version,
     ...(r.error ? { error: r.error } : {}),
   }));
   const logged = recordJudgements(rows, o.log ?? JUDGEMENT_LOG);

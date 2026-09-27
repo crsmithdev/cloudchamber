@@ -224,6 +224,8 @@ export async function compare(d: Drafting, o: CompareOpts): Promise<CompareResul
     axes: r.parsed.axes,
     scores: r.parsed.scores,
     overall: r.parsed.overall,
+    why: r.parsed.why,
+    needs: r.parsed.needs,
     cost_usd: r.cost_usd,
     ms: r.ms,
     version,

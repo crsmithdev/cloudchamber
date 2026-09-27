@@ -23,7 +23,22 @@ describe("reading a judge's reply, against judge.py", () => {
       expect(got.whys).toEqual(r.expect.whys);
       expect(got.needs).toBe(r.expect.needs);
       expect(complete(got)).toBe(r.expect.complete);
+      // the per-axis why is the same sentences, keyed by the axis each follows
+      if (Object.keys(got.why).length === r.expect.whys.length) expect(Object.values(got.why)).toEqual(r.expect.whys);
     }
+  });
+
+  test("a why belongs to the axis before it, and an axis with no why has none", () => {
+    const raw = `<verdict>
+<axis name="hook" one="4" two="2">One</axis><why>the teeth</why>
+<axis name="people" one="3" two="5">Two</axis>
+<axis name="ending" one="4" two="4">Tie</axis><why>both land</why>
+<overall>One</overall>
+<needs>more people</needs>
+</verdict>`;
+    const got = parseVerdict(raw, false);
+    expect(got.why).toEqual({ hook: "the teeth", ending: "both land" });
+    expect(got.needs).toBe("more people");
   });
 
   test("both reading orders are covered, and all three judge families", () => {

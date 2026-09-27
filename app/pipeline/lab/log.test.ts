@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { asRuns, experiment, experiments, readJudgements, recordJudgement, recordJudgements, ruledOn, type JudgementInput } from "./log.ts";
+import { asRuns, experiment, experiments, formatNotes, readJudgements, recordJudgement, recordJudgements, ruledOn, type JudgementInput } from "./log.ts";
 import { fmt2, pool, verdict, type Run } from "./pool.ts";
 import fixture from "./pool.fixture.json";
 
@@ -107,5 +107,25 @@ describe("the log itself", () => {
     // the two experiments land in the same second here, so compare as a set rather than on the newest-first order
     expect(experiments(rows).map((e) => `${e.id}:${e.passes}`).sort()).toEqual(["e1:2", "e2:1"]);
     expect(ruledOn(rows)).toEqual(["cut", "pres"]);
+  });
+
+  test("the notes name the reading order and give each axis its sentence", () => {
+    const log = logFile();
+    recordJudgements([
+      row({ why: { hook: "Story One opens on the teeth." }, needs: "Story Two needs a hook." }),
+      row({ pass: 2, flipped: true, overall: "source", why: { hook: "Story One opens on a lecture." }, needs: "" }),
+    ], log);
+    const notes = formatNotes(readJudgements(log), "e1");
+    expect(notes).toContain("pass 1: Story One is ours (cut1), Story Two the source (fix1); overall ours");
+    expect(notes).toContain("pass 2: Story One is the source (fix1), Story Two ours (cut1)");
+    expect(notes).toContain("hook: ours (ours 4, source 3) Story One opens on the teeth.");
+    expect(notes).toContain("needs: Story Two needs a hook.");
+    expect(formatNotes(readJudgements(log), "e1", "hook")).not.toContain("needs:");
+  });
+
+  test("an experiment logged before the commentary was kept says so", () => {
+    const log = logFile();
+    recordJudgements([row()], log);
+    expect(formatNotes(readJudgements(log), "e1")).toBe("experiment e1 was logged before the commentary was kept");
   });
 });

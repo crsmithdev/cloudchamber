@@ -69,7 +69,7 @@ export async function runPass(ask: PassAsk, prompt: string, o: CallOpts = {}): P
   const f = o.fetch ?? fetch;
   const done = o.done ?? complete;
   const started = Date.now();
-  let parsed: Parsed = { axes: {}, scores: {}, whys: [], overall: "?", needs: "", raw: "" };
+  let parsed: Parsed = { axes: {}, scores: {}, whys: [], why: {}, overall: "?", needs: "", raw: "" };
   let cost: number | null = null;
   let error: string | undefined;
   const tries = o.tries ?? 3;

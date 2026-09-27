@@ -71,6 +71,8 @@ export type Parsed = {
   axes: Partial<Record<Axis, Side>>;
   scores: Partial<Record<Axis, { ours: number; source: number }>>;
   whys: string[];
+  /** Each axis's one sentence of evidence, by axis. It names the stories Story One and Story Two, in the reading order. */
+  why: Partial<Record<Axis, string>>;
   overall: Side | "?";
   needs: string;
   raw: string;
@@ -83,7 +85,9 @@ const SCORE_RE = /(one|two)="(\d)"/g;
 export function parseVerdict(out: string, flipped: boolean): Parsed {
   const axes: Parsed["axes"] = {};
   const scores: Parsed["scores"] = {};
-  for (const m of out.matchAll(AXIS_RE)) {
+  const why: Parsed["why"] = {};
+  const matches = [...out.matchAll(AXIS_RE)];
+  for (const [i, m] of matches.entries()) {
     const name = m[1] as Axis;
     axes[name] = side(m[3]!, flipped);
     const got: Record<string, number> = {};
@@ -93,6 +97,9 @@ export function parseVerdict(out: string, flipped: boolean): Parsed {
         ? { ours: got.two!, source: got.one! }
         : { ours: got.one!, source: got.two! };
     }
+    const tail = out.slice(m.index! + m[0].length, matches[i + 1]?.index ?? out.length);
+    const w = /<why>([\s\S]*?)<\/why>/.exec(tail);
+    if (w) why[name] = w[1]!.trim();
   }
   const ov = /<overall>\s*(\w+)/.exec(out);
   const needs = /<needs>([\s\S]*?)<\/needs>/.exec(out);
@@ -100,6 +107,7 @@ export function parseVerdict(out: string, flipped: boolean): Parsed {
     axes,
     scores,
     whys: [...out.matchAll(/<why>([\s\S]*?)<\/why>/g)].map((m) => m[1]!.trim()),
+    why,
     overall: ov ? side(ov[1]!, flipped) : "?",
     needs: needs ? needs[1]!.trim() : "",
     raw: out,

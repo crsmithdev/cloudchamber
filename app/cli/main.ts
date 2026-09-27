@@ -43,6 +43,9 @@ const DOC = `cloudchamber — the one command the skill and the UI drive.
        judge pairs across arms matched by source (or a draw against a transcript) with the OpenRouter panel,
        log each pass to bank/judgements.jsonl, and report the score gaps; the first arm is the control,
        and its drafts judged against each other are the floor
+   cloudchamber lab notes [<experiment>] [--axis A]
+       the judges' commentary on an experiment (the newest when none is named): each pass's reading order,
+       each axis's call with its sentence of evidence, and what the weaker story needs
    cloudchamber lab canon <draw>...
        the canon guard: read each draft's final text with the bind's prompt, read-only, and count the
        contradictions that survive into it, per beat; the reading goes on a reference draw of its own
@@ -73,7 +76,8 @@ import { Drafting } from "../pipeline/drafting.ts";
 import { best } from "../pipeline/lab/best.ts";
 import { compare, formatComparison, resolveDrawId } from "../pipeline/lab/compare.ts";
 import { referenceBind } from "../pipeline/lab/canon.ts";
-import { GAP_MARGIN, fmt2 } from "../pipeline/lab/pool.ts";
+import { AXES, GAP_MARGIN, fmt2, type Axis } from "../pipeline/lab/pool.ts";
+import { experiments, formatNotes, readJudgements } from "../pipeline/lab/log.ts";
 import { writeReport } from "../pipeline/report.ts";
 import { gateCommand, isGateAction, type GateArgs } from "../pipeline/gate.ts";
 import type { CheckResult } from "../pipeline/check.ts";
@@ -254,6 +258,7 @@ async function main() {
           concurrency: { type: "string" },
           arm: { type: "string", multiple: true },
           judges: { type: "string" },
+          axis: { type: "string" },
         },
       });
       const [sub, drawId] = positionals;
@@ -270,6 +275,7 @@ async function main() {
         for (const s of r.standings) console.log(`${s.id.padEnd(22)} ${gap(s.score)}  ${r.drafts.map((id) => (id === s.id ? "  -  " : gap(s.against[id]))).join(" ")}`);
         console.log(`\n${r.winner ? `winner ${r.winner}: its score gap against every other draft is over ${GAP_MARGIN}` : "no clear winner: the top draft is inside the margin against at least one other"}`);
         console.log(`experiment ${r.experiment} · $${r.cost_usd.toFixed(2)} · drafting ${Math.round(r.ms.draft / 1000)} s · judging ${Math.round(r.ms.judge / 1000)} s${r.failed ? ` · ${r.failed} passes failed` : ""}`);
+        console.log(`cloudchamber lab notes ${r.experiment}`);
         if (r.winner) console.log(`cloudchamber story ${r.winner}  ·  cloudchamber gate ${r.winner} keep`);
       } else if (sub === "compare") {
         const rawArms = values.arm ?? [];
@@ -286,6 +292,16 @@ async function main() {
           say: (line) => console.error(line),
         });
         console.log(formatComparison(r));
+        console.log(`cloudchamber lab notes ${r.experiment}`);
+      } else if (sub === "notes") {
+        const rows = readJudgements();
+        const id = drawId ?? experiments(rows)[0]?.id;
+        if (!id) usage();
+        if (values.axis && !AXES.includes(values.axis as Axis)) {
+          console.error(`--axis is one of ${AXES.join(", ")}`);
+          process.exit(1);
+        }
+        console.log(formatNotes(rows, id!, values.axis as Axis | undefined));
       } else if (sub === "canon") {
         const ids = positionals.slice(1);
         if (!ids.length) usage();
