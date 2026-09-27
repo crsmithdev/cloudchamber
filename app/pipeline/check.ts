@@ -25,7 +25,7 @@ import { chainOf, type Chain } from "./chain.ts";
 import { clusterSamples } from "./sampled.ts";
 import { BriefSession } from "./briefsession.ts";
 import type { LedgerMeta } from "./artifacts.ts";
-import { RUN } from "./config.ts";
+import { RUN, type CheckStageName } from "./config.ts";
 
 export const PREMISES_PATH = resolve(import.meta.dir, "premises.md");
 export const CHECKERS = ["derivation", "ledger", "structure", "resemblance", "claims", "reader"] as const;
@@ -226,11 +226,11 @@ export function parseVerdicts(text: string, n: number): { answer: "keep" | "drop
 }
 
 /** S concurrent samples of one checker; the parsed value goes on each step, the findings are clustered. */
-async function sampled(session: BriefSession, stage: any, prompt: string, s: { samples: number; keep_if: number }, checker: string,
-  parse: (text: string) => any, store?: (step: StepRow, value: any, sample: number) => void): Promise<{ checker: string; clusters: Cluster[]; firstStep: StepRow; samples: number }> {
+async function sampled<T>(session: BriefSession, stage: CheckStageName, prompt: string, s: { samples: number; keep_if: number }, checker: string,
+  parse: (text: string) => T, store?: (step: StepRow, value: T, sample: number) => void): Promise<{ checker: string; clusters: Cluster[]; firstStep: StepRow; samples: number }> {
   const results = await session.samples(stage, prompt, parse, s.samples);
   for (const r of results) store?.(r.step, r.value, r.sample);
-  return { checker, clusters: clusterSamples(results, (v) => (v.findings ?? []) as Finding[], s.keep_if, session.drawId), firstStep: results[0].step, samples: results.length };
+  return { checker, clusters: clusterSamples(results, (v) => (v as { findings?: Finding[] }).findings ?? [], s.keep_if, session.drawId), firstStep: results[0].step, samples: results.length };
 }
 
 const RESULTS = new Set(["supported", "contradicted", "unverifiable"]);
@@ -239,32 +239,48 @@ const RESULTS = new Set(["supported", "contradicted", "unverifiable"]);
 const claimMeta = (v: { span: string; result: string; evidence: string; invalidates: string; replacement: string; patch: string }, pass: string, authority: ClaimsAuthority, extra: Record<string, unknown> = {}) =>
   ({ pass, span: v.span, result: v.result, evidence: v.evidence, invalidates: v.invalidates, replacement: v.replacement, patch: v.patch, authority, ...extra });
 
-async function runClaims(session: BriefSession, authority: ClaimsAuthority, reference: string, pass: string, chain: Chain) {
-  const p = session.p, drawId = session.drawId;
+type Claim = { span: string; statement: string };
+/** A claim's verdict: fresh, or `cached` from the chain claim it repeats, with the draw that verified it. */
+type Verified = { span: string; statement: string; result: string; evidence: string; invalidates: string; replacement: string; patch: string; draw?: string; cached?: boolean };
+
+/** The claims an extract call listed. */
+const claimsIn = (t: string): Claim[] =>
+  tags(t, "claim").map((c) => ({ span: tag(c, "span") ?? "", statement: tag(c, "statement") ?? "" })).filter((c) => c.span && c.statement);
+
+/**
+ * Each claim verified against the authority. A claim already verified anywhere
+ * in this chain against the same authority is not verified again: the
+ * reference does not change, so the verdict cannot. This was 12 calls a round,
+ * every round. A fresh verdict is stored on its verify step; a cached one
+ * comes back marked. Under a check pass the verify steps carry the pass; a
+ * screen's claims carry `source: "screen"`.
+ */
+async function verifyClaims(p: Pipeline, drawId: string, extract: StepRow, claims: Claim[], authority: ClaimsAuthority, reference: string, pass: string, chain: Chain, screen: boolean): Promise<Verified[]> {
   const tpl = CLAIMS_PROMPTS[authority];
-  const { step, value: claims } = await session.call("check-claims-extract", fill(tpl.extract, {}), (t) =>
-    tags(t, "claim").map((c) => ({ span: tag(c, "span") ?? "", statement: tag(c, "statement") ?? "" })).filter((c) => c.span && c.statement));
-  // a claim already verified anywhere in this chain against the same authority is not re-verified:
-  // the distillate does not change, so the verdict cannot. This was 12 calls a round, every round.
-  const priorClaims = chain.claims(authority);
-  const verified = await Promise.all(claims.map((c) => {
-    const known = priorClaims.find((v) => normalise(v.statement) === normalise(c.statement));
-    if (known) return Promise.resolve({ ...known, cached: true });
-    const prompt = fill(tpl.verify, { reference, span: c.span, statement: c.statement });
-    return p.invoke(drawId, step.id, "check-claims-verify", prompt, (t) => {
+  const prior = chain.claims(authority);
+  return Promise.all(claims.map((c) => {
+    const known = prior.find((v) => normalise(v.statement) === normalise(c.statement));
+    if (known) return Promise.resolve<Verified>({ ...known, cached: true });
+    return p.invoke(drawId, extract.id, "check-claims-verify", fill(tpl.verify, { reference, span: c.span, statement: c.statement }), (t) => {
       const f = parseFindings(t, "claims", 1)[0];
       if (!f) throw new Error("no <finding> tag");
       const result = f.result.toLowerCase().trim();
       if (!RESULTS.has(result)) throw new Error(`result must be supported | contradicted | unverifiable, got ${f.result}`);
       return { ...f, result, span: f.span || c.span, statement: f.statement || c.statement };
       // the web is the authority only under `world`; every other authority reads the reference in the prompt
-    }, { tools: authority === "world" ? undefined : "", pass }).then((r) => {
-      p.artifact(r.step, "claim", r.value.statement, claimMeta(r.value, pass, authority));
+    }, { tools: authority === "world" ? undefined : "", ...(screen ? {} : { pass }) }).then((r) => {
+      p.artifact(r.step, "claim", r.value.statement, claimMeta(r.value, pass, authority, screen ? { source: "screen" } : {}));
       return r.value;
     });
   }));
+}
+
+async function runClaims(session: BriefSession, authority: ClaimsAuthority, reference: string, pass: string, chain: Chain) {
+  const p = session.p, drawId = session.drawId;
+  const { step, value: claims } = await session.call("check-claims-extract", fill(CLAIMS_PROMPTS[authority].extract, {}), claimsIn);
+  const verified = await verifyClaims(p, drawId, step, claims, authority, reference, pass, chain, false);
   // the cached ones still belong to this pass, so the pane and the export show the whole set
-  for (const v of verified as any[]) if (v.cached) p.artifact(step, "claim", v.statement, claimMeta(v, pass, authority, { cached_from: v.draw }));
+  for (const v of verified) if (v.cached) p.artifact(step, "claim", v.statement, claimMeta(v, pass, authority, { cached_from: v.draw }));
   const contradicted = verified.filter((f) => f.result === "contradicted");
   const clusters: Cluster[] = contradicted.map((f) => ({
     id: findingId("claims", f.span, drawId), checkers: ["claims"], samples: [1], n: 1, span: f.span, statement: f.statement, result: f.result,
@@ -287,30 +303,13 @@ export async function screenClaims(p: Pipeline, drawId: string, scenes: { beat: 
   const authority: ClaimsAuthority | null = setting.claims;
   if (!authority || !scenes.length) return [];
   const reference = authority === "setting" ? distillate(setting) : "";
-  const tpl = CLAIMS_PROMPTS[authority];
   const story = scenes.map((s) => s.text).join("\n\n");
-  const { step, value: claims } = await p.invoke(drawId, parent, "check-claims-extract", fill(tpl.extract, {}), (t) =>
-    tags(t, "claim").map((c) => ({ span: tag(c, "span") ?? "", statement: tag(c, "statement") ?? "" })).filter((c) => c.span && c.statement),
-    { context: story });
+  const { step, value: claims } = await p.invoke(drawId, parent, "check-claims-extract", fill(CLAIMS_PROMPTS[authority].extract, {}), claimsIn, { context: story });
   // a claim this chain already verified against the same authority keeps its verdict, as at the gate
-  const prior = chain.claims(authority);
-  const verified = await Promise.all(claims.map((c) => {
-    const known = prior.find((v) => normalise(v.statement) === normalise(c.statement));
-    if (known) return Promise.resolve({ ...known, cached: true } as any);
-    return p.invoke(drawId, step.id, "check-claims-verify", fill(tpl.verify, { reference, span: c.span, statement: c.statement }), (t) => {
-      const f = parseFindings(t, "claims", 1)[0];
-      if (!f) throw new Error("no <finding> tag");
-      const result = f.result.toLowerCase().trim();
-      if (!RESULTS.has(result)) throw new Error(`result must be supported | contradicted | unverifiable, got ${f.result}`);
-      return { ...f, result, span: f.span || c.span, statement: f.statement || c.statement };
-    }, { tools: authority === "world" ? undefined : "" }).then((r) => {
-      p.artifact(r.step, "claim", r.value.statement, claimMeta(r.value, pass, authority, { source: "screen" }));
-      return r.value;
-    });
-  }));
+  const verified = await verifyClaims(p, drawId, step, claims, authority, reference, pass, chain, true);
   const beatOf = (span: string) => scenes.find((s) => normalise(s.text).includes(normalise(span)))?.beat ?? scenes[0].beat;
   const flags: Cluster[] = [];
-  for (const f of verified.filter((v: any) => v.result === "contradicted")) {
+  for (const f of verified.filter((v) => v.result === "contradicted")) {
     const beat = beatOf(f.span);
     const c: Cluster = {
       id: findingId("claims", f.span, `${drawId}/${beat}`), checkers: ["claims"], samples: [1], n: 1, span: f.span, statement: f.statement,
