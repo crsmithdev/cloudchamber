@@ -6,7 +6,7 @@ import { DEFAULT_DB, SCHEMA } from "../paths.ts";
 export type Db = Database;
 
 /** Bump with every change to an existing table, and mirror it in extract/store.py. */
-export const SCHEMA_VERSION = 15;
+export const SCHEMA_VERSION = 16;
 
 export function openDb(path: string = DEFAULT_DB): Db {
   if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
@@ -77,6 +77,22 @@ function requireCurrent(db: Db, path: string) {
     db.exec("ALTER TABLE draws ADD COLUMN hold_back TEXT");
     db.exec("ALTER TABLE draws ADD COLUMN hold_undo TEXT");
     db.exec("PRAGMA user_version = 15");
+  }
+  // 15 → 16 (2026-09-27): the check pass a step belongs to. A pass id is the time it began, so each earlier check step
+  // takes the latest of its draw's passes that began at or before it. A pass that failed partway left no pass of its own,
+  // and its steps join the pass before it, which is where the old reading by position put them too.
+  if (userVersion(db) === 15) {
+    db.exec("ALTER TABLE steps ADD COLUMN pass TEXT");
+    db.exec(`WITH passes AS (
+        SELECT DISTINCT s.draw_id, json_extract(a.meta, '$.pass') AS pass
+        FROM artifacts a JOIN steps s ON s.id = a.step_id
+        WHERE json_extract(a.meta, '$.pass') IS NOT NULL
+          AND (a.kind = 'pass'
+            OR (a.kind = 'ledger' AND coalesce(json_extract(a.meta, '$.ledger_only'), 0) = 0)
+            OR (a.kind IN ('finding', 'profile') AND json_extract(a.meta, '$.source') = 'check')))
+      UPDATE steps SET pass = (SELECT max(p.pass) FROM passes p WHERE p.draw_id = steps.draw_id AND p.pass <= steps.started_at)
+      WHERE stage LIKE 'check-%'`);
+    db.exec("PRAGMA user_version = 16");
     return;
   }
   throw new Error(

@@ -58,7 +58,7 @@ export type DrawRow = {
 export type StepRow = {
   id: string; draw_id: string | null; parent_id: string | null; stage: string; model: string; system_prompt: string;
   prompt: string; raw_response: string | null; parsed: string | null; status: string; fail_reason: string | null;
-  attempt: number; tools: string; usage: string | null; version: string; pid: number | null; started_at: string; ended_at: string | null; error: string | null;
+  attempt: number; tools: string; usage: string | null; version: string; pid: number | null; pass: string | null; started_at: string; ended_at: string | null; error: string | null;
 };
 
 export class StepFailure extends Error {
@@ -103,7 +103,8 @@ const darknessLine = (d?: Darkness) => (d ? ` ${TEMPLATES.darknessAsk[d]}` : "")
  * tools it may use, and the text that leads its system prompt so a run of calls
  * reads it from the cache (ADR-0010).
  */
-export type InvokeOpts = { storyId?: string | null; tools?: string; context?: string; session?: SessionAsk };
+/** `pass` is the check pass a call belongs to, stored on its step. */
+export type InvokeOpts = { storyId?: string | null; tools?: string; context?: string; session?: SessionAsk; pass?: string };
 
 export class Pipeline {
   stages: Record<StageName, StageConfig>;
@@ -133,14 +134,14 @@ export class Pipeline {
 
   // --- steps -----------------------------------------------------------------
 
-  private insertStep(draw: string | null, parent: string | null, stage: string, model: string, system: string, prompt: string, attempt: number, storyId: string | null = null, tools = ""): StepRow {
+  private insertStep(draw: string | null, parent: string | null, stage: string, model: string, system: string, prompt: string, attempt: number, storyId: string | null = null, tools = "", pass: string | null = null): StepRow {
     const row: StepRow = {
       id: `${stage}-${id(4)}`, draw_id: draw, parent_id: parent, stage, model, system_prompt: system, prompt,
-      raw_response: null, parsed: null, status: "running", fail_reason: null, attempt, tools, usage: null, version: treeVersion(), pid: process.pid, started_at: now(), ended_at: null, error: null,
+      raw_response: null, parsed: null, status: "running", fail_reason: null, attempt, tools, usage: null, version: treeVersion(), pid: process.pid, pass, started_at: now(), ended_at: null, error: null,
     };
-    this.db.query(`INSERT INTO steps (id, draw_id, story_id, parent_id, stage, model, system_prompt, prompt, status, attempt, tools, version, pid, started_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'running', ?, ?, ?, ?, ?)`)
-      .run(row.id, draw, storyId, parent, stage, model, system, prompt, attempt, tools, row.version, row.pid, row.started_at);
+    this.db.query(`INSERT INTO steps (id, draw_id, story_id, parent_id, stage, model, system_prompt, prompt, status, attempt, tools, version, pid, pass, started_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'running', ?, ?, ?, ?, ?, ?)`)
+      .run(row.id, draw, storyId, parent, stage, model, system, prompt, attempt, tools, row.version, row.pid, pass, row.started_at);
     return row;
   }
 
@@ -169,12 +170,12 @@ export class Pipeline {
    * opens with the same text reads it back, whatever stage line follows.
    */
   async invoke<T>(draw: string | null, parent: string | null, stage: StageName, prompt: string, parse: (text: string) => T, opts: InvokeOpts = {}): Promise<{ step: StepRow; value: T; session?: string }> {
-    const { storyId = null, tools, context, session } = opts;
+    const { storyId = null, tools, context, session, pass = null } = opts;
     const cfg = this.stageFor(stage, draw);
     const allowed = tools ?? cfg.tools ?? "";
     const system = context ? `${context}\n\n${cfg.system}` : cfg.system;
     const attempt = async (model: string, n: number): Promise<{ step: StepRow; value?: T; session?: string; outcome: "ok" | "shape" | "refusal" | "error" }> => {
-      const step = this.insertStep(draw, parent, stage, model, system, prompt, n, storyId, allowed);
+      const step = this.insertStep(draw, parent, stage, model, system, prompt, n, storyId, allowed, pass);
       // a call that throws (no claude on PATH, a spawn that fails) is an error result, so the step does not stay running
       const r = await this.model.call(stage, system, prompt, model, allowed, cfg.effort, session)
         .catch((e: unknown): ModelResult => ({ text: "", stop: "error", raw: "", model, durationMs: 0, error: String((e as Error)?.message ?? e) }));

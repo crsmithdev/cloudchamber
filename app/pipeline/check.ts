@@ -106,7 +106,7 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
   // and the verify pass gets the same one: asked again, the chain would answer with the null it cached before the extraction
   const extracting = !chain.ledger() && enabled.includes("ledger");
   // every call of the pass reads the brief from one cached system prompt; the session holds it and the lead (ADR-0010)
-  const session = new BriefSession(p, drawId, parts, extracting ? "ledger-extract" : "check-derivation");
+  const session = new BriefSession(p, drawId, parts, extracting ? "ledger-extract" : "check-derivation", pass);
   const ledger: Promise<string | null> = chain.ledger() ? Promise.resolve(chain.ledger())
     : extracting ? extractLedger(session, { pass, sample: 1, pinned: true }) : Promise.resolve(null);
 
@@ -258,7 +258,7 @@ async function runClaims(session: BriefSession, authority: ClaimsAuthority, refe
       if (!RESULTS.has(result)) throw new Error(`result must be supported | contradicted | unverifiable, got ${f.result}`);
       return { ...f, result, span: f.span || c.span, statement: f.statement || c.statement };
       // the web is the authority only under `world`; every other authority reads the reference in the prompt
-    }, { tools: authority === "world" ? undefined : "" }).then((r) => {
+    }, { tools: authority === "world" ? undefined : "", pass }).then((r) => {
       p.artifact(r.step, "claim", r.value.statement, claimMeta(r.value, pass, authority));
       return r.value;
     });

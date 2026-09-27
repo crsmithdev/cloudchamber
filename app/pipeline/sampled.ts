@@ -25,13 +25,15 @@ export type SampleAsk<T> = {
   before?: (sample: number) => Promise<void> | void;
   /** Fork every sample from one session, which holds the text the ask points at (model.ts). */
   session?: SessionAsk;
+  /** The check pass the samples belong to, stored on each step. */
+  pass?: string;
 };
 
 /** Run the ask `samples` times at once, and return each sample's step and parsed value. */
 export async function runSamples<T>(p: Pipeline, ask: SampleAsk<T>): Promise<Sample<T>[]> {
   return samples(ask.samples, async (n) => {
     await ask.before?.(n);
-    return p.invoke(ask.draw, ask.parent, ask.stage, ask.prompt, (t) => ask.parse(t, n), { context: ask.context, session: ask.session });
+    return p.invoke(ask.draw, ask.parent, ask.stage, ask.prompt, (t) => ask.parse(t, n), { context: ask.context, session: ask.session, pass: ask.pass });
   });
 }
 

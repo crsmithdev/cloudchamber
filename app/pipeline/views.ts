@@ -44,7 +44,8 @@ export function drawExamples(db: Db, exampleIds: string): DrawExample[] {
 export class Views {
   /**
    * The check summary a list row shows for each round of a chain, memoised on
-   * what can change it: the draw's status and the number of finding verdicts.
+   * what can change it: the draw's status, its latest check pass and the number
+   * of finding verdicts. A re-check between two reads can leave the status as it was.
    * A read of one chain is about 4 ms on the Linux filesystem and 45 ms on the
    * Windows mount, and a list holds every round of every chain.
    */
@@ -54,7 +55,8 @@ export class Views {
 
   private checkSummary(r: DrawRow, stage: Tab, verdicts: number): FindingsSummary | null {
     if (stage === "ideate" || r.status === "done") return null;
-    const key = `${r.id}|${r.status}|${verdicts}`;
+    const { pass } = this.p.db.query("SELECT max(pass) AS pass FROM steps WHERE draw_id = ?").get(r.id) as { pass: string | null };
+    const key = `${r.id}|${r.status}|${pass}|${verdicts}`;
     if (this.summaries.has(key)) return this.summaries.get(key)!;
     const out = this.drafting.findings(r.id).summary;
     // one entry per draw: the key carries what invalidates it, so the old ones are dead

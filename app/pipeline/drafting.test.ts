@@ -1408,6 +1408,21 @@ describe("the verify pass", () => {
     expect(() => parseVerdicts(`<verdict n="2"><answer>keep</answer></verdict>`, 2)).toThrow(/missing <verdict n="1">/);
   });
 
+  test("the findings under the bar come from the latest pass's own steps, not the latest steps of the stage", async () => {
+    const { p, d, draw } = await drawn();
+    await d.check(draw.id);
+    const pass = chainOf(p, draw.id).pass()!;
+    expect(p.steps(draw.id).filter((s) => s.stage === "check-ledger").every((s) => s.pass === pass)).toBe(true);
+    // a later pass died after its ledger samples: its steps are the newest of the stage, and it left no pass behind
+    for (let i = 0; i < 3; i++) {
+      const step = p.recordStep(draw.id, null, "check-ledger", "copied", { findings: [{ span: "a span no pass reported", statement: "lost", result: "contradicts:x", evidence: "x", invalidates: "departure", replacement: "none" }] });
+      p.db.query("UPDATE steps SET pass = ? WHERE id = ?").run(`${pass}-lost`, step.id);
+    }
+    expect(chainOf(p, draw.id).pass()).toBe(pass);
+    expect(d.findings(draw.id, { all: true }).findings.some((f) => f.span === "a span no pass reported")).toBe(false);
+    expect(d.findings(draw.id, { all: true }).findings.some((f) => f.span === SPAN_C)).toBe(true);
+  });
+
   test("a reported finding the verify pass drops goes under the bar with the reason, and the gate does not see it", async () => {
     const script = draftScript({
       // A and B are reported, C is under the bar; each of two readings reads all three, and one drop is enough

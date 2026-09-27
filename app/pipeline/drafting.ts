@@ -236,7 +236,7 @@ export class Drafting {
    */
   private promote(drawId: string, f: FindingView): FindingView {
     if (f.artifact_id) return f;
-    const steps = this.p.steps(drawId).filter((s) => s.stage === `check-${f.checkers[0]}` && s.status === "done");
+    const steps = this.p.steps(drawId).filter((s) => s.stage === `check-${f.checkers[0]}` && s.status === "done" && s.pass === f.pass);
     const step = steps.at(-1);
     if (!step) return f;
     const { artifact_id: _a, decision: _d, note: _n, score: _s, samples_run: _r, reported: _rep, ...meta } = f;

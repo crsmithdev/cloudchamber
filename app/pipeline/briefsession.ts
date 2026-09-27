@@ -28,8 +28,8 @@ export class BriefSession {
   readonly brief: string;
   private lead: Promise<void>;
 
-  /** `leads` is the stage whose first call goes ahead of the rest to fill the cache. */
-  constructor(readonly p: Pipeline, readonly drawId: string, private parts: BriefParts, private leads: StageName) {
+  /** `leads` is the stage whose first call goes ahead of the rest to fill the cache; `pass` is the check pass every call belongs to. */
+  constructor(readonly p: Pipeline, readonly drawId: string, private parts: BriefParts, private leads: StageName, readonly pass?: string) {
     this.brief = briefBlock(parts);
     this.lead = Bun.sleep(p.cacheLeadMs);
   }
@@ -42,14 +42,14 @@ export class BriefSession {
   /** One call on the brief. */
   async call<T>(stage: StageName, prompt: string, parse: (text: string) => T, opts: { parent?: string | null; tools?: string } = {}): Promise<{ step: StepRow; value: T }> {
     await this.held(stage);
-    return this.p.invoke(this.drawId, opts.parent ?? this.parts.outlineStepId, stage, prompt, parse, { context: this.brief, tools: opts.tools });
+    return this.p.invoke(this.drawId, opts.parent ?? this.parts.outlineStepId, stage, prompt, parse, { context: this.brief, tools: opts.tools, pass: this.pass });
   }
 
   /** The same ask, read `samples` times, for a checker that reports by recurrence. */
   samples<T>(stage: StageName, prompt: string, parse: (text: string, sample: number) => T, samples: number): Promise<Sample<T>[]> {
     return runSamples(this.p, {
       draw: this.drawId, parent: this.parts.outlineStepId, stage, prompt, parse, samples,
-      context: this.brief, before: (n) => this.held(stage, n),
+      context: this.brief, pass: this.pass, before: (n) => this.held(stage, n),
     });
   }
 }

@@ -166,15 +166,13 @@ export class Chain {
       const pass = this.pass();
       const recorded = ofKind(this.artifacts(), "pass").find((a) => a.content === pass && a.meta.samples);
       if (recorded) return { claims: 1, ...recorded.meta.samples };
-      // a pass stored before the counts were recorded: the steps averaged over every pass
-      const passes = Math.max(1, this.passes().length);
+      // a pass stored before the counts were recorded: its steps, counted
       const out: Record<string, number> = { claims: 1 };
-      for (const s of this.steps().filter((x) => x.status === "done")) {
+      for (const s of this.steps().filter((x) => x.status === "done" && x.pass === pass)) {
         const checker = checkerOf(s.stage);
         if (!checker || checker === "claims") continue;
         out[checker] = (out[checker] ?? 0) + 1;
       }
-      for (const k of Object.keys(out)) if (k !== "claims") out[k] = Math.max(1, Math.round(out[k] / passes));
       return out;
     });
   }
@@ -346,15 +344,13 @@ export class Chain {
     return this.once("subThreshold", () => {
       const pass = this.pass();
       if (!pass) return [];
-      const per = this.samples();
       const reported = this.reported();
       const perChecker: Cluster[] = [];
       const stages = [...new Set(this.steps().filter((s) => checkerOf(s.stage)).map((s) => s.stage))];
       for (const stage of stages) {
         const checker = checkerOf(stage)!;
-        if (checker === "claims" || !per[checker]) continue;
-        // the latest pass ran the last `samples` steps of this stage
-        const steps = this.steps().filter((s) => s.stage === stage && s.status === "done" && s.parsed).slice(-per[checker]);
+        if (checker === "claims") continue;
+        const steps = this.steps().filter((s) => s.stage === stage && s.status === "done" && s.parsed && s.pass === pass);
         const findings: Finding[] = [];
         steps.forEach((step, i) => {
           const parsed = JSON.parse(step.parsed!) as { findings?: Finding[] };
