@@ -49,8 +49,8 @@ export const FAULT_LINE: Record<Fault, string> = { long: LENGTH_LINE, numerals: 
 /**
  * A screen rule is one row: the question, which answer is the flag, which
  * beats it is asked of, whether the flag sends the beat back for a register
- * rewrite on its own, and the line a rewrite carries. The prompt text is in
- * prompts.ts under the same names.
+ * rewrite on its own, and the line a rewrite carries. structureScreen asks
+ * them; the question text is in prompts.ts, grouped by the position that asks it.
  */
 export type ScreenRule = { name: string; flag: "present" | "absent"; asked: "every" | "first" | "not-last" | "last" | "paying" | "moved"; register?: boolean; line: string };
 export const STRUCTURE_RULES: ScreenRule[] = [
@@ -204,19 +204,31 @@ const cleanWhen = (w: string | null) => (w ?? "").replace(/<\/?[a-z_]+>/gi, "").
 const whenKey = (w: string) => w.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 export const movedIn = (b: Beat, prev?: Beat) => !!b.when && !!prev?.when && whenKey(b.when) !== whenKey(prev.when);
 
-/** `paid` is the beat asked whether a presence arrived and a cost was paid: the last beat, or under a shaped template the one before it. */
-export function structurePrompt(b: Beat, scene: string, last: boolean, M = Number.MAX_SAFE_INTEGER, paid = last, first = b.n === 1, prev?: Beat): string {
-  const later = b.withheld.filter((w) => w.until > b.n);
-  return fill("screenStructure", {
-    n: String(b.n), job: b.job, withheld: later.length ? later.map((w) => `${w.item} — ${w.until > M ? "never revealed" : `beat ${w.until}`}`).join("\n") : "none", scene,
-    fifth: fill(last ? "screenResolvesEverything" : "screenResolved", {}), first: first ? fill("screenFirstBeat", {}) : "", last: paid ? fill("screenLastBeat", {}) : "",
-    moved: movedIn(b, prev) ? fill("screenTimeMoved", { prev: prev!.when, when: b.when }) : "",
-  });
-}
+/** Where a beat stands in the schedule, which decides the rules the structure screen asks of it. */
+type Position = { first: boolean; last: boolean; paying: boolean; moved: boolean };
+const ASKED: Record<ScreenRule["asked"], (at: Position) => boolean> = {
+  every: () => true, first: (at) => at.first, last: (at) => at.last, "not-last": (at) => !at.last, paying: (at) => at.paying, moved: (at) => at.moved,
+};
 
-/** The questions the structure screen asks of beat k. */
-export const structureQuestions = (last: boolean, paid = last, first = false, moved = false) =>
-  STRUCTURE_RULES.filter((r) => r.asked === "every" || (r.asked === "first" && first) || (r.asked === "last" && last) || (r.asked === "not-last" && !last) || (r.asked === "paying" && paid) || (r.asked === "moved" && moved)).map((r) => r.name);
+/**
+ * The structure screen of beat k: the names of the rules it asks and the prompt
+ * that asks them, both from the beat's one position. The paying beat is asked
+ * whether a presence arrived and a cost was paid: the beat the schedule marks,
+ * else under a shaped template the one before the last, which is the aftermath;
+ * under `auto`, the last.
+ */
+export function structureScreen(s: Schedule, k: number, scene: string, template: string): { prompt: string; names: string[] } {
+  const M = s.beats.length, b = s.beats[k - 1]!, prev = s.beats[k - 2];
+  const paying = template === "auto" || M < 2 ? M : s.beats.find((x) => x.pays)?.n ?? M - 1;
+  const at: Position = { first: k === 1, last: k === M, paying: k === paying, moved: movedIn(b, prev) };
+  const later = b.withheld.filter((w) => w.until > b.n);
+  const prompt = fill("screenStructure", {
+    n: String(b.n), job: b.job, withheld: later.length ? later.map((w) => `${w.item} — ${w.until > M ? "never revealed" : `beat ${w.until}`}`).join("\n") : "none", scene,
+    fifth: fill(at.last ? "screenResolvesEverything" : "screenResolved", {}), first: at.first ? fill("screenFirstBeat", {}) : "", last: at.paying ? fill("screenLastBeat", {}) : "",
+    moved: at.moved ? fill("screenTimeMoved", { prev: prev!.when, when: b.when }) : "",
+  });
+  return { prompt, names: STRUCTURE_RULES.filter((r) => ASKED[r.asked](at)).map((r) => r.name) };
+}
 
 /** The flags an answer set raises. The theme may be stated once, on the last beat, the way a narrated story closes. */
 export const flagsOf = (answers: Record<string, Answer>, last = false) =>

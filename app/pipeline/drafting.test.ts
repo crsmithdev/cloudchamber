@@ -5,7 +5,7 @@ import { FakeModel, tag } from "./model.ts";
 import { BODY_LINE, COST_LINE, Drafting, LENGTH_LINE, NUMERAL_LINE, PRESENCE_LINE, parseConflicts, rewritePlan } from "./drafting.ts";
 import type { PdfPrinter } from "./report.ts";
 import { EVENT_LINE, HOOK_LINE, THEME_LINE, VOICES_LINE } from "./write.ts";
-import { movedIn, parseSchedule, scenePrompt, structurePrompt, structureQuestions } from "./write.ts";
+import { movedIn, parseSchedule, scenePrompt, STRUCTURE_RULES, structureScreen } from "./write.ts";
 import { checkersNext, NOT_IN_PROSE, parseVerdicts } from "./check.ts";
 import { settingsFixture } from "./settings.fixture.ts";
 import { LISTS, loadSetting } from "./settings.ts";
@@ -911,8 +911,8 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
       { item: "who sent the second pass", until: 9 },
       { item: "the name on the band", until: 9 },
     ]);
-    expect(structurePrompt(s.beats[0], "scene", false, 8)).toContain("what brought them across — never revealed");
-    expect(structurePrompt(s.beats[0], "scene", false, 8)).toContain("whether the reductions have a floor — beat 7");
+    expect(structureScreen(s, 1, "scene", "auto").prompt).toContain("what brought them across — never revealed");
+    expect(structureScreen(s, 1, "scene", "auto").prompt).toContain("whether the reductions have a floor — beat 7");
     expect(() => parseSchedule(text.replace("the name on the band", " — "), cfg)).toThrow(/withheld line without an item/);
   });
 
@@ -930,14 +930,32 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(strayed.beats[4].when).toBe("day four, ship-year 400");
     // beat 4 leaves the present for the recursion and beat 5 comes back; beat 3 repeats beat 2's time and beat 6 only repunctuates it
     expect(s.beats.map((b, i) => movedIn(b, s.beats[i - 1]))).toEqual([false, false, false, true, true, false, false, false]);
-    expect(structureQuestions(false, false, false, true)).toContain("time-unplaced");
-    expect(structureQuestions(false, false, false, false)).not.toContain("time-unplaced");
-    const moved = structurePrompt(s.beats[3], "scene", false, 8, false, false, s.beats[2]);
-    expect(moved).toContain("time-unplaced:");
-    expect(moved).toContain("that one was day one, ship-year 400, this one is ship-year 393, below the line");
-    expect(structurePrompt(s.beats[2], "scene", false, 8, false, false, s.beats[1])).not.toContain("time-unplaced:");
+    const moved = structureScreen(s, 4, "scene", "auto");
+    expect(moved.names).toContain("time-unplaced");
+    expect(moved.prompt).toContain("time-unplaced:");
+    expect(moved.prompt).toContain("that one was day one, ship-year 400, this one is ship-year 393, below the line");
+    expect(structureScreen(s, 3, "scene", "auto").names).not.toContain("time-unplaced");
+    expect(structureScreen(s, 3, "scene", "auto").prompt).not.toContain("time-unplaced:");
     // a schedule written before <when> existed says nothing and constrains nothing
-    expect(structurePrompt(s.beats[7], "scene", true, 8, false, false, s.beats[6])).not.toContain("time-unplaced:");
+    expect(structureScreen(s, 8, "scene", "auto").prompt).not.toContain("time-unplaced:");
+  });
+
+  test("the structure screen asks in its prompt exactly the rules it names, at every beat and under either template", () => {
+    const cfg = loadDraftConfig().config;
+    const text = `<form>tense: past\nperson: first\nchronology: linear\ncontainer: prose</form>` + Array.from({ length: 8 }, (_, i) => {
+      const n = i + 1;
+      return `<beat n="${n}" words="625"><job>Beat ${n}.</job><when>${n === 4 ? "years before" : "that night"}</when><known>Thing ${n}.</known><withheld>none</withheld><stakes>x</stakes><absorbs>none</absorbs>${n === 5 ? "<pays>yes</pays>" : ""}</beat>`;
+    }).join("");
+    const s = parseSchedule(text, cfg);
+    const asked = (prompt: string) => STRUCTURE_RULES.map((r) => r.name).filter((name) => new RegExp(`^${name}:`, "m").test(prompt));
+    for (const template of ["auto", "signal"]) for (const b of s.beats) {
+      const { prompt, names } = structureScreen(s, b.n, "scene", template);
+      expect(asked(prompt).sort()).toEqual([...names].sort());
+    }
+    // the paying beat: the marked one under a shaped template, the last under auto
+    expect(structureScreen(s, 5, "scene", "signal").names).toContain("cost-paid");
+    expect(structureScreen(s, 8, "scene", "signal").names).not.toContain("cost-paid");
+    expect(structureScreen(s, 8, "scene", "auto").names).toContain("cost-paid");
   });
 
   test("the scene ask carries the beat's time, and says to place the listener only when it moves", () => {

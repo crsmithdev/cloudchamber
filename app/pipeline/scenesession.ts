@@ -32,7 +32,7 @@ import { loadLexicon, restated, slopScreen } from "./slop.ts";
 import { atFault, listenScreen, loadNarrationPool, type Fault } from "./listen.ts";
 import { parseQuestions, screenClaims } from "./check.ts";
 import {
-  FAULT_LINE, flagsOf, movedIn, sceneContext, scenePrompt, structurePrompt, structureQuestions,
+  FAULT_LINE, flagsOf, sceneContext, scenePrompt, structureScreen,
   type Beat, type Schedule, type Scene,
 } from "./write.ts";
 
@@ -285,16 +285,11 @@ export class SceneSession {
     const { enabled } = this.cfg.screens;
     const s = this.schedule;
     const M = s.beats.length;
-    // the beat the schedule marked as paying, else the shaped default: the cost lands before the last beat, which is the aftermath
-    const marked = s.beats.find((b) => b.pays)?.n;
-    const paidBeat = this.cfg.structure.template === "auto" || M < 2 ? M : marked ?? M - 1;
 
     if (enabled.includes("structure")) await Promise.all((opts.structure ?? beats).map(async (k) => {
-      const scene = scenes.find((x) => x.beat === k)!, b = s.beats[k - 1];
+      const scene = scenes.find((x) => x.beat === k)!;
       const { samples: n, keep_if } = samplesFor(this.cfg.screens, "structure");
-      const prev = s.beats[k - 2];
-      const names = structureQuestions(k === M, k === paidBeat, k === 1, movedIn(b, prev));
-      const prompt = structurePrompt(b, scene.text, k === M, M, k === paidBeat, k === 1, prev);
+      const { prompt, names } = structureScreen(s, k, scene.text, this.cfg.structure.template);
       const rs = await runSamples(this.p, { draw: this.drawId, parent: scene.step_id, stage: "screen-structure", prompt, samples: n, parse: (t) => parseQuestions(t, names) });
       const answers = voteAnswers(rs, names, keep_if);
       const flags = flagsOf(answers, k === M);
