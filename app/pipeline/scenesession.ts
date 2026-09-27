@@ -39,6 +39,13 @@ import {
 /** The fewest binds a base session pays for: the base costs about what four forks save (bindBase). */
 const BASE_MIN_BINDS = 5;
 
+/** A beat written again under a constraints block, marked as a rewrite, with the flag it answers when there is one. */
+type Rewrite = { beat: number; kind: "rewrite"; constraints?: string; finding?: string };
+/** A beat whose faulted sentences are swapped in place under the listen lines. */
+type Edit = { beat: number; kind: "edit"; lines: string[]; fault: { long: boolean; numerals: boolean } };
+/** One change `revise` makes to a stored beat. The caller chooses the kind. */
+export type Change = Rewrite | Edit;
+
 /** Where the deterministic screens read their pools from; a test points them at fixtures. */
 export type ScreenPaths = { lexiconPath?: string; narrationDir?: string };
 
@@ -216,6 +223,51 @@ export class SceneSession {
     return { beat: k, text: out.text, artifact_id, step_id: step.id };
   }
 
+  /**
+   * Change stored beats and hold the story to the ledger again. Edits go first,
+   * in place; then rewrites in beat order, each from the text before it as it
+   * now stands. A rewrite or a numeral edit can change a fact, so that beat is
+   * bound to the one before it, and the beat after it, which read the old text,
+   * is bound to the new one unless it changed too. A split sentence changes no
+   * fact and binds nothing. All binds run at once, then the screens: every
+   * screen over a rewrite and the neighbour it rebinds, the deterministic ones
+   * over an edit and its neighbour, since a split or a rounded figure moves no
+   * structure answer. The claims screen is the caller's.
+   */
+  async revise(changes: Change[]): Promise<void> {
+    const M = this.schedule.beats.length;
+    const facts = new Set<number>(), local = new Set<number>(), full = new Set<number>();
+
+    await Promise.all(changes.filter((c): c is Edit => c.kind === "edit").map(async (c) => {
+      const scene = this.scenes().find((s) => s.beat === c.beat)!;
+      if (await this.edit(scene, c.lines, c.fault) === scene) return;
+      local.add(c.beat);
+      if (c.fault.numerals) facts.add(c.beat);
+    }));
+    for (const c of changes.filter((c): c is Rewrite => c.kind === "rewrite").sort((a, b) => a.beat - b.beat)) {
+      const before = this.scenes().filter((s) => s.beat < c.beat).map((s) => s.text);
+      await this.write(this.schedule.beats[c.beat - 1], this.cfg.scenes.order === "sequential" ? before : [], { constraints: c.constraints, rewrite: { finding: c.finding } });
+      facts.add(c.beat);
+      full.add(c.beat);
+    }
+
+    const scenes = this.scenes();
+    const at = (k: number) => scenes.find((s) => s.beat === k);
+    const binding = new Map<number, Scene | undefined>();
+    for (const k of facts) {
+      binding.set(k, at(k - 1));
+      if (k < M && !facts.has(k + 1)) {
+        binding.set(k + 1, at(k));
+        (full.has(k) ? full : local).add(k + 1);
+      }
+    }
+    const base = await this.bindBase(scenes, binding.size);
+    await Promise.all([...binding].map(([k, prev]) => this.bind(at(k)!, prev, base)));
+
+    const beats = [...new Set([...full, ...local])].sort((a, b) => a - b);
+    if (beats.length) await this.screen(this.scenes(), beats, { claims: false, structure: [...full] });
+  }
+
   // --- screens ----------------------------------------------------------------
 
   /** The claims a scene makes about its setting: the checkers read the brief, and a scene invents past it. */
@@ -227,8 +279,8 @@ export class SceneSession {
     }
   }
 
-  /** Every enabled screen over `scenes`; `beats` narrows the per-beat ones after a rewrite. */
-  async screen(scenes: Scene[], beats: number[] = scenes.map((x) => x.beat), opts: { claims?: boolean } = {}): Promise<void> {
+  /** Every enabled screen over `scenes`; `beats` narrows the per-beat ones after a rewrite, and `structure` narrows the structure screen further. */
+  async screen(scenes: Scene[], beats: number[] = scenes.map((x) => x.beat), opts: { claims?: boolean; structure?: number[] } = {}): Promise<void> {
     const { enabled } = this.cfg.screens;
     const s = this.schedule;
     const M = s.beats.length;
@@ -236,7 +288,7 @@ export class SceneSession {
     const marked = s.beats.find((b) => b.pays)?.n;
     const paidBeat = this.cfg.structure.template === "auto" || M < 2 ? M : marked ?? M - 1;
 
-    if (enabled.includes("structure")) await Promise.all(beats.map(async (k) => {
+    if (enabled.includes("structure")) await Promise.all((opts.structure ?? beats).map(async (k) => {
       const scene = scenes.find((x) => x.beat === k)!, b = s.beats[k - 1];
       const { samples: n, keep_if } = samplesFor(this.cfg.screens, "structure");
       const prev = s.beats[k - 2];
