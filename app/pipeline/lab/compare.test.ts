@@ -19,6 +19,17 @@ const judgeSays = (answer: string) =>
     json: async () => ({ choices: [{ message: { content: reply(answer) } }], usage: { cost: 0.01 } }),
   })) as unknown as typeof fetch;
 
+/** A judge that prefers whichever story contains `text`, in either reading order. */
+const judgeFavours = (text: string) =>
+  (async (_url: string, init: { body: string }) => {
+    const prompt = JSON.parse(init.body).messages[1].content as string;
+    const one = prompt.slice(prompt.indexOf("<story_one>"), prompt.indexOf("</story_one>")).includes(text);
+    const answer = one ? "One" : "Two";
+    const content = AXES.map((a) => `<axis name="${a}" one="${one ? 4 : 2}" two="${one ? 2 : 4}">${answer}</axis><why>because</why>`).join("") +
+      `<overall>${answer}</overall><needs>three sentences here</needs>`;
+    return { json: async () => ({ choices: [{ message: { content } }], usage: { cost: 0.01 } }) };
+  }) as unknown as typeof fetch;
+
 const scratchLog = () => join(mkdtempSync(join(tmpdir(), "cc-compare-")), "judgements.jsonl");
 
 describe("compare runner", () => {
@@ -131,5 +142,39 @@ describe("compare runner", () => {
     expect(formatted).toContain("draw-cmp-2 v ref");
     expect(formatted).toContain("draw-cmp-1 v draw-cmp-2");
     expect(formatted).toContain("verdict:");
+  });
+
+  test("the gap reads the second arm against the first, and a transcript is the source in either place", async () => {
+    const { db, dir } = fixture();
+    const tmpNarr = mkdtempSync(join(tmpdir(), "cc-narr-"));
+    writeFileSync(join(tmpNarr, "ref.json"), JSON.stringify({ snippets: [{ text: "The reference story text." }] }));
+    const p = new Pipeline(db, new FakeModel({}), { briefsDir: dir });
+    for (const id of ["draw-ctl", "draw-trt"]) {
+      p.db.query(`INSERT INTO draws (id, name, genre, mode, seed_mode, seed_text, example_ids, sampling, status, created_at)
+                  VALUES (?, 'test', 'horror', 'manual', 'drawn', 'seed', '[]', 'listen', 'drafted', 'now')`).run(id);
+      const stOut = p.recordStep(id, null, "outline", "deterministic");
+      p.artifact(stOut, "ledger", "ledger text", { pass: "p1", sample: 1 });
+      const stSch = p.recordStep(id, stOut.id, "schedule", "deterministic");
+      const stSc = p.recordStep(id, stSch.id, "scene", "deterministic");
+      p.artifact(stSc, "scene", `Story text for ${id}.`, { beat: 1, words: 5, cap: 10, warnings: [] });
+    }
+    const d = new Drafting(p);
+    const run = (arms: string[][], favours: string) =>
+      compare(d, { arms, passes: 2, judges: ["test-judge"], log: scratchLog(), narrationDir: tmpNarr, call: { fetch: judgeFavours(favours), key: "test-key" } });
+
+    const better = await run([["draw-ctl"], ["draw-trt"]], "draw-trt");
+    expect(better.comparison.gap).toBeGreaterThan(0);
+    expect(better.comparison.verdict).toBe("clears margin");
+    expect(formatComparison(better)).toContain("draw-trt v draw-ctl");
+
+    const worse = await run([["draw-ctl"], ["draw-trt"]], "draw-ctl");
+    expect(worse.comparison.gap).toBeLessThan(0);
+    expect(worse.comparison.verdict).toBe("falls below -GAP_MARGIN: the change loses");
+
+    for (const arms of [[["draw-ctl"], ["ref"]], [["ref"], ["draw-ctl"]]]) {
+      const r = await run(arms, "draw-ctl");
+      expect(r.comparison.gap).toBeGreaterThan(0);
+      expect(formatComparison(r)).toContain("draw-ctl v ref");
+    }
   });
 });

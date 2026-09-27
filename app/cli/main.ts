@@ -42,7 +42,8 @@ const DOC = `cloudchamber — the one command the skill and the UI drive.
    cloudchamber lab compare --arm <draws> --arm <draws> [--passes 8] [--concurrency 12] [--judges M,...]
        judge pairs across arms matched by source (or a draw against a transcript) with the OpenRouter panel,
        log each pass to bank/judgements.jsonl, and report the score gaps; the first arm is the control,
-       and its drafts judged against each other are the floor
+       and its drafts judged against each other are the floor; a gap above zero favours the second arm,
+       or the draw when the other arm is a transcript
    cloudchamber lab notes [<experiment>] [--axis A]
        the judges' commentary on an experiment (the newest when none is named): each pass's reading order,
        each axis's call with its sentence of evidence, and what the weaker story needs

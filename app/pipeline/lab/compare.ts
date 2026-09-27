@@ -135,7 +135,10 @@ export async function compare(d: Drafting, o: CompareOpts): Promise<CompareResul
   let lineage: Lineage | undefined;
   try { lineage = Lineage.all(d.p.db); } catch {}
 
-  const compPairs = pairArms(armA, armB, (id) => sourceOf(lineage, id));
+  // the gap is ours minus source: ours is the second arm, the change, unless that arm is a transcript
+  const isTranscript = (id: string) => findNarrationPath(id, o.narrationDir) !== null;
+  const compPairs = pairArms(armA, armB, (id) => sourceOf(lineage, id))
+    .map(([a, b]): [string, string] => (isTranscript(b) ? [a, b] : [b, a]));
   if (!compPairs.length) throw new Error("no comparison pairs could be formed between arms");
 
   // the first arm is the control: its drafts against each other are the floor, the spread the guard reads a change against
