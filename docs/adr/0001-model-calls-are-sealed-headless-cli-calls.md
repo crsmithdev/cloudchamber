@@ -10,3 +10,7 @@ Every stage calls the model by spawning `claude -p` with `CLAUDECODE` unset, `--
 ## Consequences
 
 `--setting-sources ""` also drops the configured default model, so every stage must name its model in `stages.toml`. The CLI decides where cache breakpoints go; see ADR-0010.
+
+## Amendment (2026-09-27): session calls
+
+Since 46c3057 a call can belong to a session. It then drops `--no-session-persistence`, and a later call adds `--resume <id> --fork-session`. The sequential scenes of a draft and the ledger binds that fork from one base session use this, so each call reads the story so far from the cache and does not send it again. The call is still a sealed `claude -p` subprocess with the same flags otherwise, and `FakeModel` still stands in for it at the same seam.

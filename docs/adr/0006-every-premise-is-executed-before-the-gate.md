@@ -5,3 +5,7 @@ A draw executes all five premises as vignettes before it stops, and the operator
 ## Consequences
 
 Five execute calls a draw, most of which are discarded. `--auto` is a mechanical stand-in for the operator, not a judge.
+
+## Amendment (2026-09-27): an auto draw executes one premise
+
+Since c7a443d a draw in `auto` mode executes only the premise its gate will take: the lowest stated probability. The rule reads the probability, which the premises step states, and never a vignette, so the other four executes were paid for and never read. A manual draw still executes all five, and the operator still chooses among vignettes.
