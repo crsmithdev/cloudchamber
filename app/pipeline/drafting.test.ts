@@ -1151,6 +1151,16 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(art.meta).toMatchObject({ rounds: 2, best: r.best.id });
   });
 
+  test("auto is offered while a finding reaches the floor, and not once the loop would stop at once", async () => {
+    const script = draftScript({ "check-ledger": [...ledgerSamples(), ...cleanSamples(), ...cleanSamples()], "check-derivation": [...derivationSamples(), ...cleanSamples(), ...cleanSamples()] });
+    const { p, d, draw } = await drawn(script);
+    await d.check(draw.id);
+    expect(d.autoIdle(draw.id)).toBeNull();
+    const r = await d.autoRounds(draw.id);
+    expect(p.draw(r.id).status).toBe("awaiting_check_gate");
+    expect(d.autoIdle(r.id)).toMatch(/^no open finding scores 7 or more/);
+  });
+
   test("the reader check asks once a chain, has its own verify, and leaves its questions to a person", async () => {
     // a span no contradiction checker flags, so the question stands alone
     const question = `<finding><span>context for Test the first thing: scene one.</span><statement>Why does the director keep the relic when he could sell it?</statement><result>unanswered</result><evidence>none</evidence><invalidates>knowledge</invalidates><replacement>The director cannot sell a relic the order holds.</replacement><patch>none</patch></finding><examined>why he keeps it</examined>`;

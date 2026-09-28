@@ -380,6 +380,32 @@ export class Drafting {
    * `left_open` counts findings at or above the floor that a person still has
    * to rule on at the gate.
    */
+  // a finding the verify pass dropped is stored under the bar and open: not auto's either
+  private autoOpen(id: string): GateFinding[] {
+    return this.findings(id).findings.filter((f) => f.decision === "open" && f.reported);
+  }
+
+  /**
+   * Why an auto run on this brief would stop before its first call, or null.
+   * At the gate the pass is already there: when no open finding reaches the
+   * floor and the pass ran `CLEAN_SAMPLES` samples, the loop stops on `floor`
+   * at once, so the page offers no run.
+   */
+  autoIdle(drawId: string): string | null {
+    const draw = this.p.draw(drawId);
+    if (draw.status !== "awaiting_check_gate") return null;
+    const cfg = this.resolved(draw).config;
+    const chain = chainOf(this.p, drawId);
+    const gatePass = chain.pass();
+    if (!gatePass) return null;
+    const floor = cfg.repair.stop_score;
+    if (this.autoOpen(drawId).some((f) => f.score >= floor && f.auto_eligible)) return null;
+    if (Math.max(0, ...Object.values(chain.samples())) < CLEAN_SAMPLES) return null;
+    const claimed = this.p.artifacts(drawId).some((a) => a.kind === "claim" && a.meta.pass === gatePass);
+    if (cfg.checks.enabled.includes("claims") && this.p.loadDrawSetting(draw).setting?.claims && !claimed) return null;
+    return `no open finding scores ${floor} or more, and the pass already ran ${CLEAN_SAMPLES} samples: auto repair would stop at once`;
+  }
+
   async autoRounds(drawId: string, opts: { cfg?: DraftConfig; note?: string } = {}): Promise<AutoResult> {
     const draw = this.must(drawId, "auto");
     const cfg = opts.cfg ?? this.resolved(draw).config;
@@ -395,8 +421,7 @@ export class Drafting {
     let accept: GateFinding[] = [];
     let before: { id: string; open: GateFinding[] } | null = null;
     for (;;) {
-      // a finding the verify pass dropped is stored under the bar and open: not auto's either
-      const open = this.findings(id).findings.filter((f) => f.decision === "open" && f.reported);
+      const open = this.autoOpen(id);
       accept = open.filter((f) => f.score >= floor && f.auto_eligible);
       const calls = chainOf(this.p, id).calls();
       let row = rounds.find((r) => r.id === id);

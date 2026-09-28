@@ -83,7 +83,10 @@ export class Views {
   draw(id: string) {
     const row = this.p.draw(id);
     const lineage = Lineage.all(this.p.db);
-    const draw = { ...row, ...lifecycleView({ ...row, referenced_by: lineage.referencedBy(row.id) }), superseded: lineage.superseded(row.id) };
+    const view = lifecycleView({ ...row, referenced_by: lineage.referencedBy(row.id) });
+    // the status allows auto at the gate; the findings can still leave it nothing to do
+    const actions = { ...view.actions, auto: view.actions.auto ?? this.drafting.autoIdle(id) };
+    const draw = { ...row, ...view, actions, superseded: lineage.superseded(row.id) };
     const steps: StepSummary[] = this.p.steps(id).map(({ prompt, raw_response, parsed, ...s }) =>
       ({ ...s, tab: stageTab(s.stage), prompt_chars: prompt.length, raw_chars: raw_response?.length ?? 0, parsed_chars: parsed?.length ?? 0 }));
     // what a check would run on this draw now, and the repair settings it would run under: the page states neither itself
