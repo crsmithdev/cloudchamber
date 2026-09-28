@@ -1,7 +1,7 @@
 # Cloud Chamber, for Gemini
 
-Read `CLAUDE.md` first. Its rules hold for you too: the corpus, `docs/knobs.md`,
-the specs and prompt accretion.
+Read `CLAUDE.md` first. Its rules hold for you too: the corpus, `docs/knobs.md`
+and the specs.
 
 @[CLAUDE.md](CLAUDE.md)
 

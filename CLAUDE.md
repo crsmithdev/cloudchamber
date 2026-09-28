@@ -22,26 +22,3 @@ Code reads it only through `CORPUS` and the paths under it in
 The specs in `docs/specs/` are the design of record for the ideation and
 drafting pipelines. `CONTEXT.md` is the glossary of the domain's terms, and
 `docs/adr/` records the decisions that are hard to reverse.
-
-## Prompt accretion
-
-This rule covers prompt text only. Code that measures prompts, such as a log,
-a lab case or a stored arm, is outside it.
-
-A measured failure invites one more clause in the prompt. One more clause is
-sometimes right, but frequent use is a code smell.
-
-The pipeline can state one constraint at four moments: the schedule plans it and
-the register shapes it, both in `app/pipeline/prompts.ts`; the screen question
-detects it and the rewrite line repairs it, both in `app/pipeline/write.ts`.
-Before you add a clause, find which of the four already states the property.
-Keep the constraint at the layer that enforces it, and let the other layers
-point at that layer.
-
-Add a clause only when no layer states the property. Name the layer you chose in
-the commit.
-
-Test a removal the same way as an addition: arms from `cloudchamber branch`,
-judged by the panel in `app/pipeline/lab/`, read by the score gap in
-`lab/pool.ts`. A gap inside the margin means the panel cannot tell the arms
-apart. It does not prove that the clause does no work.

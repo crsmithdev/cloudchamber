@@ -243,9 +243,13 @@ Match the brief against the list. For each list entry the brief matches, output 
 
 Extract only claims about the actual world that carry a quantity or a rule a published source could confirm or deny: a price, a rate, a count, a date, a duration, a distance, a procedure, a statute, a relation between two named places. That a place, institution, product or person exists is not a claim. Skip everything the story invents. Each claim goes in a <claim> tag containing <span> (verbatim quote, under ${RUN.spanWords} words) and <statement> (the claim as one checkable sentence). At most 12 claims. Under 500 words.`,
 
-  claimsExtractSetting: `Above is a story brief: a seed, a premise, an outline in four sections, three vignettes and an ending.
+  claimsExtractSetting: `<setting>
+{reference}
+</setting>
 
-Extract only claims about the setting the story is set in, that carry a quantity or a rule the setting itself settles: a price, a rate, a count, a date, a duration, a term of service, an office, a rite, an instrument, or a relation between two bodies. That a place, institution or person exists is not a claim. Skip what the story invents for itself alone, and skip anything that would hold in any world. Each claim goes in a <claim> tag containing <span> (verbatim quote, under ${RUN.spanWords} words) and <statement> (the claim as one checkable sentence). At most 12 claims. Under 500 words.`,
+Above is a story brief: a seed, a premise, an outline in four sections, three vignettes and an ending. The setting it is set in is the block just above.
+
+Extract the claims the brief makes that a line of the setting settles, for or against: a price, a rate, a count, a date, a duration, a term of service, an office, a rite, an instrument, a relation between two bodies, where a place is, or how a person gets from one place to another. That a place, institution or person exists is not a claim. Skip what the story invents for itself alone, and skip anything that would hold in any world. Each claim goes in a <claim> tag containing <span> (verbatim quote, under ${RUN.spanWords} words) and <statement> (the claim as one checkable sentence that names its subject by the setting's name for it, not by the brief's shorthand, such as "the Gate" or "the doors"). At most 12 claims. Under 500 words.`,
 
   claimsVerifyWorld: `Claim from a story, quoted: "{span}"
 As a checkable sentence: {statement}

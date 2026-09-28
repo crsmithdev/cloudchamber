@@ -294,9 +294,13 @@ async function confirmClaim(p: Pipeline, drawId: string, verify: StepRow, v: Ver
   return r.value.yes ? v : { ...v, result: "unverifiable", replacement: "none", patch: "", confirm: r.value.why };
 }
 
+// the setting extractor reads the setting, so it pulls the claims the setting settles and not the ones it guesses at
+const extractPrompt = (authority: ClaimsAuthority, reference: string) =>
+  fill(CLAIMS_PROMPTS[authority].extract, authority === "setting" ? { reference } : {});
+
 async function runClaims(session: BriefSession, authority: ClaimsAuthority, reference: string, pass: string, chain: Chain) {
   const p = session.p, drawId = session.drawId;
-  const { step, value: claims } = await session.call("check-claims-extract", fill(CLAIMS_PROMPTS[authority].extract, {}), claimsIn);
+  const { step, value: claims } = await session.call("check-claims-extract", extractPrompt(authority, reference), claimsIn);
   const verified = await verifyClaims(p, drawId, step, claims, authority, reference, pass, chain, false);
   // the cached ones still belong to this pass, so the pane and the export show the whole set
   for (const v of verified) if (v.cached) p.artifact(step, "claim", v.statement, claimMeta(v, pass, authority, { cached_from: v.draw }));
@@ -323,7 +327,7 @@ export async function screenClaims(p: Pipeline, drawId: string, scenes: { beat: 
   if (!authority || !scenes.length) return [];
   const reference = authority === "setting" ? distillate(setting) : "";
   const story = scenes.map((s) => s.text).join("\n\n");
-  const { step, value: claims } = await p.invoke(drawId, parent, "check-claims-extract", fill(CLAIMS_PROMPTS[authority].extract, {}), claimsIn, { context: story });
+  const { step, value: claims } = await p.invoke(drawId, parent, "check-claims-extract", extractPrompt(authority, reference), claimsIn, { context: story });
   // a claim this chain already verified against the same authority keeps its verdict, as at the gate
   const verified = await verifyClaims(p, drawId, step, claims, authority, reference, pass, chain, true);
   const beatOf = (span: string) => scenes.find((s) => normalise(s.text).includes(normalise(span)))?.beat ?? scenes[0].beat;

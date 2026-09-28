@@ -450,7 +450,10 @@ describe("claims", () => {
     const { p, d, draw, model } = await drawn(draftScript({ outline: () => ["departure", "particulars", "knowledge", "arrival"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n") + "\n<job>Test the first thing: scene one.</job>\n<job>Test a second thing: scene two.</job>" }), { id: "basin", dir: sdir, claims: "setting" });
     const r = await d.check(draw.id);
     expect(r.claims).toBe("setting");
-    expect(model.calls.find((c) => c.stage === "check-claims-extract")!.prompt).toContain("claims about the setting the story is set in");
+    // the extractor reads the setting too, so it pulls the claims the setting settles
+    const extract = model.calls.find((c) => c.stage === "check-claims-extract")!.prompt;
+    expect(extract).toContain("claims the brief makes that a line of the setting settles");
+    expect(extract).toContain("The Basin Recorder — indexes a deed");
     const verify = model.calls.filter((c) => c.stage === "check-claims-verify");
     expect(verify).toHaveLength(2);
     expect(verify.every((c) => c.tools === "")).toBe(true);
