@@ -382,6 +382,44 @@ Rewrite it in a <vignette> tag so that every line of the constraints holds, keep
 
 Rewrite the ending in an <ending> tag so that every line of the constraints holds, keeping its people, place, form and length. Change only the sentences that state a fact a constraint corrects, and within such a sentence change only the words that state that fact; every other word, name, number, date, time and place stays as written, even where a constraint mentions it. Add no name, number, date or time that is not already in it or in a constraint, and add a sentence only when a constraint cannot hold without one. Under ${RUN.endingWords} words. Output only the tag.`,
 
+  reviseVignette: `Below is a ${RUN.vignetteWords}-word vignette from a story and the author's instructions for it.
+
+<vignette>
+{vignette}
+</vignette>
+
+<instructions>
+{instructions}
+</instructions>
+
+{constraints}
+
+{ledger}
+
+{settled}
+
+Rewrite it in a <vignette> tag so that it carries out every instruction{constraintLine}. Change what the instructions ask for and what has to change with it; everything else stays as written, with its people, place, form and length. Add no name, number, date or time that is not already in it, in an instruction or in a constraint. Under ${RUN.vignetteWords + 50} words. Output only the tag.`,
+
+  reviseEnding: `Below is a story's derived structure, the ending written from it, and the author's instructions for the ending.
+
+{outline}
+
+<ending>
+{ending}
+</ending>
+
+<instructions>
+{instructions}
+</instructions>
+
+{constraints}
+
+{ledger}
+
+{settled}
+
+Rewrite the ending in an <ending> tag so that it carries out every instruction{constraintLine}. Change what the instructions ask for and what has to change with it; everything else stays as written, with its people, place, form and length. Add no name, number, date or time that is not already in it, in an instruction or in a constraint. Under ${RUN.endingWords} words. Output only the tag.`,
+
   schedule: `Below is a story brief: a seed, a premise, an outline in four sections, three vignettes and an ending. Below that, the story's configuration.
 
 {brief}
@@ -394,6 +432,20 @@ ending: {endingLine}
 </config>
 
 {shape}Derive the story's schedule, which settles what the reader knows at each point and what is still withheld. Output a <form> tag with four lines: tense, person, chronology, container. Then one <beat n="K" words="N"> tag per beat containing <job> (one sentence, what the beat does and where it is set), <when> (one short phrase placing the beat in the chronology the <form> declares, in the story's own reckoning: the day, the hour or the year, and the strand when there is more than one), <known> (what the reader knows by its end, one or two sentences), <withheld> (each thing still withheld after this beat, with the beat number that reveals it, one per line as \`item — beat N\`; the line \`none\` when nothing is), <stakes> (one sentence), <set_piece> (the one moment or image of this beat a listener would retell, one sentence; or none), <absorbs> (chosen | context-1 | context-2 | ending | none: the brief vignette this beat takes its material from, if any; each may be named by at most one beat), and <pays>yes</pays> on the one beat where the withheld thing comes in with nothing between it and a person, does harm, and a named person pays a cost that cannot be got back, if the shape asks for one. A <cast> tag before the beats when the shape asks for one. Output only the tags. Under 1100 words.`,
+
+  scheduleReplan: `<instructions>
+{instructions}
+</instructions>
+
+The author has read a draft of this story and gives the instructions above. The schedule carries them out.{kept}
+
+`,
+
+  scheduleKept: ` Beats 1 to {last} of the draft's schedule below are written and stay as they are: repeat their entries word for word, and plan from beat {from} on.
+
+<written>
+{written}
+</written>`,
 
   scheduleTold: `The story is told afterward, by its narrator, to a listener. Beat 1 is the worst moment of the story, shown before anything is explained, and beat 2 backs up to the beginning; from there the beats run in order. Every beat has a set piece a listener will retell. Something comes into the same place as the narrator with nothing between them, and does harm there, and it costs the narrator or someone beside them; the beat before the last is where the cost is paid, and that beat is marked <pays>yes</pays>. The last beat is the aftermath, back at the ordinary, with one thing that has not gone away. The brief's ending is material for the beat before the last, not for the last.
 

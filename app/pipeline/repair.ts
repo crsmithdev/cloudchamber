@@ -20,7 +20,7 @@ import { chainOf, type FindingView, type Settled } from "./chain.ts";
 import { quoted, quotesOf, same } from "./recur.ts";
 
 /** What a repair needs of an accepted finding: where it is, what it says, what replaces it, and the patch when the fix is the span alone. */
-export type Accepted = Pick<FindingView, "id" | "span" | "statement" | "result" | "invalidates" | "replacement" | "patch">;
+export type Accepted = Pick<FindingView, "id" | "span" | "statement" | "result" | "invalidates" | "replacement" | "patch" | "parts">;
 const hasPatch = (f: Pick<Accepted, "patch">): boolean => !!f.patch.trim();
 
 // as loose as the checker that quoted it, so a span the verify pass kept is found here too
@@ -97,8 +97,11 @@ function localPatch(f: Accepted, passages: string[]): boolean {
   return ![...before].some((n) => !after.has(n) && rest.has(n));
 }
 
-/** A passage a repair may rewrite: its role and its text, with whatever else the caller carries (a Part, in the repair). */
-export type Passage = { role: PartRole; text: string };
+/** A passage a repair may rewrite: its role, the name an operator's instruction gives it (its role, or "context 2"), and its text, with whatever else the caller carries (a Part, in the repair). */
+export type Passage = { role: PartRole; key?: string; text: string };
+
+/** Whether an accepted finding goes to a passage: an operator's instruction goes where it names, a checker's where its span lands. */
+const goesTo = (f: Accepted, x: Passage, text: string) => f.parts ? f.parts.includes(x.key ?? x.role) : landsIn(f, text);
 /** The passage as the accepted findings place themselves in it: the text with its patches in, what landed, what constrains a rewrite, and whether one runs. */
 export type Placed<P extends Passage = Passage> = P & { applied: Accepted[]; constraints: Accepted[]; rewrite: boolean };
 
@@ -123,8 +126,8 @@ export function place<P extends Passage>(accepted: Accepted[], passages: P[]): P
   // row's constraint ("every haul, including number 219's") made Ruth number 219
   return passages.map((x, i) => {
     const extra = x.role === "ending" ? movesEnding : [];
-    const own = usable.filter((f) => landsIn(f, texts[i]));
-    return { ...x, text: patched[i].text, applied: patched[i].applied, constraints: [...own, ...extra.filter((f) => !own.includes(f))], rewrite: unpatchable.some((f) => landsIn(f, texts[i])) || extra.length > 0 };
+    const own = usable.filter((f) => goesTo(f, x, texts[i]));
+    return { ...x, text: patched[i].text, applied: patched[i].applied, constraints: [...own, ...extra.filter((f) => !own.includes(f))], rewrite: unpatchable.some((f) => goesTo(f, x, texts[i])) || extra.length > 0 };
   });
 }
 
@@ -154,7 +157,8 @@ export async function repair(p: Pipeline, drawId: string, accepted: Accepted[]):
 async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof briefParts>, accepted: Accepted[]) {
   const src = partsOf(p, parts.draw.id);
   const contexts = partsIn(src, "context");
-  const [vignette, ending, ...placedContexts] = place(accepted, [partOf(src, "vignette")!, partOf(src, "ending")!, ...contexts]);
+  const keyed = [{ ...partOf(src, "vignette")!, key: "vignette" }, { ...partOf(src, "ending")!, key: "ending" }, ...contexts.map((c) => ({ ...c, key: `context ${c.index}` }))];
+  const [vignette, ending, ...placedContexts] = place(accepted, keyed);
   const chain = chainOf(p, parts.draw.id);
   // the accepted set of this round is not the whole record: every earlier round's fix still holds.
   // A fix this round re-opens is this round's constraint, not also a settled line the repair must keep
@@ -170,7 +174,15 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
     const slice = p.settingFor(stage, setting)?.slice;
     return slice ? `${slice}\n\n${ask}` : ask;
   };
-  const passageAsk = (x: Placed) => rewriteAsk("execute", fill("repairVignette", { ledger, settled, vignette: x.text, constraints: constraintsBlock(x.constraints) }));
+  // a passage an operator's instruction goes to is revised under the revise ask: the repair ask changes only the words a fact needs
+  const split = (x: Placed) => ({ instructions: x.constraints.filter((f) => f.parts), fixes: x.constraints.filter((f) => !f.parts) });
+  const reviseFill = (x: Placed) => {
+    const { instructions, fixes } = split(x);
+    return { instructions: instructions.map((f) => `- ${f.replacement}`).join("\n"), constraints: fixes.length ? constraintsBlock(fixes) : "", constraintLine: fixes.length ? " and every line of the constraints holds" : "" };
+  };
+  const passageAsk = (x: Placed) => rewriteAsk("execute", split(x).instructions.length
+    ? fill("reviseVignette", { ledger, settled, vignette: x.text, ...reviseFill(x) })
+    : fill("repairVignette", { ledger, settled, vignette: x.text, constraints: constraintsBlock(x.constraints) }));
   // one part of the repaired brief: rewritten from itself under its constraints when a finding lands in it, carried otherwise
   const revise = (x: Placed<Part>, o: { parent: string | null; rewrite: StageName; carry: StageName; prompt: (x: Placed) => string; meta?: Record<string, unknown>; previous?: string }) =>
     revisePart(p, {
@@ -197,7 +209,9 @@ async function develop(p: Pipeline, newId: string, parts: ReturnType<typeof brie
     ...placedContexts.map((x, i) => revise(x, { parent: outlineStep.id, rewrite: "repair-context", carry: "context", prompt: passageAsk, meta: { index: i + 1, job: x.meta.job } })),
     revise(ending, {
       parent: outlineStep.id, rewrite: "repair-ending", carry: "repair-ending", previous: parts.ending,
-      prompt: (x) => rewriteAsk("ending", fill("repairEnding", { ledger, settled, outline, ending: x.text, constraints: constraintsBlock(x.constraints) })),
+      prompt: (x) => rewriteAsk("ending", split(x).instructions.length
+        ? fill("reviseEnding", { ledger, settled, outline, ending: x.text, ...reviseFill(x) })
+        : fill("repairEnding", { ledger, settled, outline, ending: x.text, constraints: constraintsBlock(x.constraints) })),
     }),
   ]);
 

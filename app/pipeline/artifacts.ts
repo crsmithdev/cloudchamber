@@ -12,16 +12,18 @@ import type { Answer } from "./check.ts";
 import type { Beat } from "./write.ts";
 
 /** A finding as a check or screen stores it; `dropped` is the verify pass's reason for taking it off the reported list. */
-export type FindingMeta = Omit<Cluster, "reported"> & { pass: string; source: "check" | "screen"; screen?: string; beat?: number; sub_threshold?: boolean; dropped?: string };
+export type FindingMeta = Omit<Cluster, "reported"> & { pass: string; source: "check" | "screen" | "operator"; screen?: string; beat?: number; sub_threshold?: boolean; dropped?: string } & OperatorMeta;
+/** What an operator's instruction carries beyond a finding: the parts of the brief it is for, and whether it is a fact the ledger takes or a direction it does not. */
+export type OperatorMeta = { parts?: string[]; kind?: "fact" | "direction" };
 type ProfileMeta = { pass: string; source: "check" | "screen"; sample?: number; checker?: string; screen?: string; beat?: number; answers?: Record<string, Answer>; flags?: string[]; samples?: number; [k: string]: unknown };
-export type SceneMeta = { beat: number; words: number; cap: number; warnings: string[]; rewrite?: boolean; rewrite_finding?: string; patched?: string[]; edited?: string[]; copied_from?: string };
+export type SceneMeta = { beat: number; words: number; cap: number; warnings: string[]; rewrite?: boolean; rewrite_finding?: string; instruction?: string; patched?: string[]; edited?: string[]; copied_from?: string };
 type PassMeta = { pass: string; samples?: Record<string, number> };
 export type LedgerMeta = { pass: string; sample: number; pinned?: boolean; ledger_only?: boolean };
 type ScheduleMeta = { form: Record<string, string>; beats: Beat[]; words: number };
 /** What a part of a brief carries: its candidate or job, where it came from, what landed in it. */
 type PartMeta = {
   index?: number; probability?: number; premise?: string; job?: string; jobs?: string[]; words?: number | Record<string, number>; warnings?: string[];
-  forked_from?: string; copied_from?: string; rewritten_from?: string; patched?: string[]; previous?: string; copied?: boolean;
+  forked_from?: string; edited_from?: string; copied_from?: string; rewritten_from?: string; patched?: string[]; previous?: string; copied?: boolean;
   constraints?: string[]; accepted?: string[];
 };
 type ClaimMeta = { pass: string; span: string; result: string; evidence: string; invalidates: string; replacement: string; patch: string; authority: string; cached_from?: string };

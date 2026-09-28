@@ -10,7 +10,7 @@
  * for it and prints what it returned.
  */
 import { newDrawId, type Pipeline } from "./draw.ts";
-import type { Drafting } from "./drafting.ts";
+import type { Drafting, Instruction } from "./drafting.ts";
 import type { Overrides } from "./draftconfig.ts";
 import { ACTIONS, type Action } from "./lifecycle.ts";
 import { DISMISS_REASONS, isDismissReason, type DismissReason } from "./verdicts.ts";
@@ -22,6 +22,9 @@ export const isGateAction = (s: string): s is GateAction => (GATE_ACTIONS as rea
 /** What the commands take between them. Each one asks for what it needs and refuses what it lacks. */
 export type GateArgs = {
   step_id?: string; note?: string; findings?: string[]; finding?: string; beat?: number;
+  beats?: number[]; instruction?: string;                               // rewrite: several beats, and the operator's words for them
+  instructions?: Instruction[];                                         // accept: the operator's instructions, repaired with the findings
+  premise?: string;                                                     // fork: the candidate's premise as the operator edited it
   reason?: DismissReason;                                               // dismiss
   checks?: string[]; samples?: number;                                  // check
   auto?: boolean; profile?: string; overrides?: Overrides;              // draft
@@ -58,15 +61,15 @@ export function gateCommand(p: Pipeline, d: Drafting, id: string, action: string
     case "choose": return cmd(true, id, p.choose(id, need(a.step_id, "step_id")));
     case "fork": {
       const forkId = newDrawId();
-      return cmd(true, forkId, p.fork(id, need(a.step_id, "step_id"), forkId));
+      return cmd(true, forkId, p.fork(id, need(a.step_id, "step_id"), forkId, a.premise));
     }
     case "flag": return cmd(false, id, p.flag(id, note));
     case "archive": return cmd(false, id, p.archive(id, true));
     case "unarchive": return cmd(false, id, p.archive(id, false));
     case "accept": {
-      const findings = need(a.findings, "findings");
-      if (!findings.length) throw new Error("findings required");
-      return cmd(true, id, d.accept(id, findings, { note }));
+      const findings = a.findings ?? [];
+      if (!findings.length && !a.instructions?.length) throw new Error("findings required");
+      return cmd(true, id, d.accept(id, findings, { note, instructions: a.instructions }));
     }
     case "auto": return cmd(true, id, d.autoRounds(id, { note: note || undefined }));
     // a dismissal answers with the finding, and leaves the pane where it stands
@@ -76,11 +79,11 @@ export function gateCommand(p: Pipeline, d: Drafting, id: string, action: string
     }
     case "hold": return cmd(false, id, d.hold(id));
     case "keep": return cmd(false, id, d.keep(id, note));
-    case "rewrite": return cmd(true, id, d.rewrite(id, Number(need(a.beat, "beat")), a.finding));
+    case "rewrite": return cmd(true, id, d.rewrite(id, a.beats?.length ? a.beats.map(Number) : [Number(need(a.beat, "beat"))], { finding: a.finding, instruction: a.instruction }));
     case "check": return cmd(true, id, d.check(id, { checks: a.checks, samples: a.samples }));
     case "draft": return cmd(true, id, d.draft(id, { auto: !!a.auto, profile: a.profile, overrides: a.overrides }));
     // the branch is the draw to show next, as a fork is
-    case "branch": return cmd(true, null, d.branch(id, { atBeat: a.at_beat, profile: a.profile, overrides: a.overrides, models: a.models }));
+    case "branch": return cmd(true, null, d.branch(id, { atBeat: a.at_beat, profile: a.profile, overrides: a.overrides, models: a.models, instruction: a.instruction }));
     // a deleted draw is nothing to show next
     case "delete": p.delete(id); return cmd(false, null, { deleted: id });
   }

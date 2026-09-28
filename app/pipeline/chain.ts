@@ -25,7 +25,8 @@ import type { SlopReport } from "./slop.ts";
 import type { ListenReport } from "./listen.ts";
 export type FindingView = FindingMeta & { artifact_id: string; decision: "accepted" | "dismissed" | "open"; note: string; reason: DismissReason | null; score: number; samples_run: number; reported: boolean; relitigates?: Settled };
 /** A finding accepted somewhere in this repair chain, and where. */
-export type Settled = { finding: string; draw: string; round: number; replacement: string; span: string; statement: string };
+/** A fix accepted in some round of the chain. `kind` is set on an operator's instruction; a direction is kept true by every repair but is not a ledger or outline line. */
+export type Settled = { finding: string; draw: string; round: number; replacement: string; span: string; statement: string; kind?: "fact" | "direction" };
 export type CachedClaim = { statement: string; span: string; result: string; evidence: string; invalidates: string; replacement: string; patch: string; draw: string };
 
 /** The model family of a model id: the second token of claude-<family>-... */
@@ -189,10 +190,10 @@ export class Chain {
       const out: Settled[] = [];
       [...this.ids].reverse().forEach((draw, i) => {
         for (const f of this.findingArtifacts(draw)) {
-          if (f.source !== "check" || this.decision(f.id).decision !== "accepted") continue;
+          if (f.source === "screen" || this.decision(f.id).decision !== "accepted") continue;
           if (!f.replacement.trim() || f.replacement.trim().toLowerCase() === "none") continue;
           if (out.some((o) => same(o, f))) continue;
-          out.push({ finding: f.id, draw, round: i + 1, replacement: f.replacement, span: f.span, statement: f.statement });
+          out.push({ finding: f.id, draw, round: i + 1, replacement: f.replacement, span: f.span, statement: f.statement, ...(f.kind ? { kind: f.kind } : {}) });
         }
       });
       return out;
@@ -234,7 +235,7 @@ export class Chain {
     return this.once("ledger", () => {
       // the oldest brief of the chain that has one, and its first: the contract before any amendment
       const base = [...this.ids].reverse().map((id) => this.ledgers(id)[0]?.content).find(Boolean) ?? null;
-      return base === null ? null : amended(base, this.settled());
+      return base === null ? null : amended(base, this.facts());
     });
   }
 
@@ -247,8 +248,11 @@ export class Chain {
    * year's survey to match.
    */
   outline(): string {
-    return this.once("outline", () => amended([...this.artifacts(this.root)].reverse().find((a) => a.kind === "outline")?.content ?? "", this.settled()));
+    return this.once("outline", () => amended([...this.artifacts(this.root)].reverse().find((a) => a.kind === "outline")?.content ?? "", this.facts()));
   }
+
+  /** The settled lines the contract takes: every one but an operator's direction. */
+  private facts(): Settled[] { return this.settled().filter((sc) => sc.kind !== "direction"); }
 
   /**
    * The profile each profile-only checker produced anywhere in this repair chain,
@@ -313,8 +317,9 @@ export class Chain {
    * paraphrases its constraints, so matching against the replacement decays from
    * 31% of findings at 0.5 overlap to 9% at 0.7 and answers nothing.
    */
-  relitigated(f: { span: string; statement: string }): Settled | undefined {
-    return this.settled().find((sc) => same(f, sc));
+  relitigated(f: { id?: string; span: string; statement: string }): Settled | undefined {
+    // a finding does not re-open itself: on a repaired brief the accepted ones are among the settled
+    return this.settled().find((sc) => sc.finding !== f.id && same(f, sc));
   }
 
   withScore(f: FindingMeta & { artifact_id: string }, reported: boolean): FindingView {
@@ -328,7 +333,8 @@ export class Chain {
     return this.once("reported", () => {
       const pass = this.pass();
       if (!pass) return [];
-      return this.findingArtifacts().filter((f) => f.source === "check" && f.pass === pass)
+      // an operator's instruction is accepted as it is written, beside the pass it was given at
+      return this.findingArtifacts().filter((f) => f.source !== "screen" && f.pass === pass)
         .map((f) => this.withScore(f, !f.sub_threshold))
         .sort((a, b) => b.score - a.score);
     });

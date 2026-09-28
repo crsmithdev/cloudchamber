@@ -7,6 +7,7 @@ import { join } from "node:path";
 import type { Pipeline } from "./draw.ts";
 import { BRIEFS, DRAFTS } from "./paths.ts";
 import { chainOf, type FindingView } from "./chain.ts";
+import { ofKind } from "./artifacts.ts";
 import { words } from "./model.ts";
 import { toToml, type Resolved } from "./draftconfig.ts";
 import type { Beat, Profile, Scene } from "./write.ts";
@@ -22,12 +23,30 @@ export type DraftView = {
   slop: SlopReport | null;
   listen: ListenReport | null;
   judge: string | null;
+  directions: Direction[];
 };
+
+/** An instruction the operator gave at gate 2, with the beats it was given for. */
+export type Direction = { text: string; beats: number[] };
+
+/**
+ * Every instruction this draw's scenes were rewritten under, oldest first, each
+ * with its beats. A scene written under one keeps it in its meta through a
+ * patch or a branch copy, so a later rewrite of the beat can carry it.
+ */
+export function directionsOf(p: Pipeline, drawId: string): Direction[] {
+  const out = new Map<string, Set<number>>();
+  for (const a of ofKind(p.artifacts(drawId), "scene")) {
+    if (!a.meta.instruction) continue;
+    out.set(a.meta.instruction, (out.get(a.meta.instruction) ?? new Set()).add(a.meta.beat));
+  }
+  return [...out].map(([text, beats]) => ({ text, beats: [...beats].sort((x, y) => x - y) }));
+}
 
 /** The draft as the chain reads it: the latest schedule, the scenes as they stand, each beat's latest screen pass. */
 export function draftView(p: Pipeline, drawId: string): DraftView {
   const chain = chainOf(p, drawId);
-  return { schedule: chain.schedule(), scenes: chain.scenes(), profiles: chain.screenProfiles(), screenFindings: chain.screenFindings(), slop: chain.slop(), listen: chain.listen(), judge: chain.judge() };
+  return { schedule: chain.schedule(), scenes: chain.scenes(), profiles: chain.screenProfiles(), screenFindings: chain.screenFindings(), slop: chain.slop(), listen: chain.listen(), judge: chain.judge(), directions: directionsOf(p, drawId) };
 }
 
 export function renderStory(v: DraftView, withFlags = true): string {

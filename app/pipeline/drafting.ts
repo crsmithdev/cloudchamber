@@ -19,25 +19,27 @@ import { act, commit, must, type Action, type Status } from "./lifecycle.ts";
 import { loadDraftConfig, type DraftConfig, type Overrides, type Resolved } from "./draftconfig.ts";
 import { extractLedger, runCheck, STRUCTURE_QUESTIONS, type CheckResult } from "./check.ts";
 import { constraintsBlock, repair } from "./repair.ts";
-import { briefBlock, briefParts, passId } from "./briefparts.ts";
+import { briefBlock, briefParts, partsIn, partsOf, passId } from "./briefparts.ts";
 import { chainOf, type Chain, type FindingView } from "./chain.ts";
 import { BriefSession } from "./briefsession.ts";
 import { faultsOver, type Fault } from "./listen.ts";
 import { ofKind } from "./artifacts.ts";
 import { FAULT_LINE, linesOf, runSchedule } from "./write.ts";
 import { SceneSession, type Change, type ScreenPaths } from "./scenesession.ts";
-import { draftView, exportDraft, renderStory, type DraftView } from "./drafts.ts";
+import { directionsOf, draftView, exportDraft, renderStory, type DraftView } from "./drafts.ts";
 import { tag } from "./model.ts";
 import { defaultPrinter, noPdf, writeReport, type PdfPrinter } from "./report.ts";
 import { fill } from "./prompts.ts";
-import { SCORE_MAX, cost, same } from "./recur.ts";
+import { SCORE_MAX, cost, findingId, same } from "./recur.ts";
 
 /** One brief of an auto run: its last check pass's open findings and their total, what auto accepted on it, and how many passes it had. */
 export type AutoRound = { round: number; id: string; open: number; total: number; accepted: number; calls: number; passes: number };
 export type AutoResult = { id: string; rounds: AutoRound[]; best: AutoRound; stopped: "floor" | "cap" | "patience" | "stalled"; floor: number; calls: number; left_open: number };
+/** An operator's instruction on a brief at gate 1: what should change, the parts it is for ("vignette", "ending", "context 1"), and whether the ledger takes it as a fact. */
+export type Instruction = { text: string; parts: string[]; kind: "fact" | "direction" };
 export type DraftOpts = { profile?: string; overrides?: Overrides; auto?: boolean };
 /** A branch takes the source's drafting configuration unless it names its own, and the beat to write from. */
-export type BranchOpts = { atBeat?: number; profile?: string; overrides?: Overrides; models?: Record<string, string> };
+export type BranchOpts = { atBeat?: number; profile?: string; overrides?: Overrides; models?: Record<string, string>; instruction?: string };
 /** A finding as the gate reads it: `auto_eligible` says whether the auto rule would consider it, whatever it scores. */
 export type GateFinding = FindingView & { auto_eligible: boolean; cost: number };
 /** The latest pass in four numbers, for a list row. */
@@ -176,7 +178,8 @@ export class Drafting {
     const offList = (f: FindingView) => !f.reported && f.decision === "open";
     const shown = opts.all ? all : all.filter((f) => !offList(f));
     const off = all.filter(offList);
-    const rep = all.filter((f) => f.reported);
+    // an operator's instruction is not a checker's report: the counts and the total score are the checks'
+    const rep = all.filter((f) => f.reported && f.source !== "operator");
     const summary: FindingsSummary | null = !pass && !rep.length ? null
       : { pass, reported: rep.length, accepted: rep.filter((f) => f.decision === "accepted").length, open: rep.filter((f) => f.decision === "open").length, total: rep.reduce((n, f) => n + f.score, 0) };
     return {
@@ -203,11 +206,18 @@ export class Drafting {
   // --- gate 1 ----------------------------------------------------------------
 
   /** Accept findings by id and run the repair, then the re-check. Returns the repaired draw. */
-  async accept(drawId: string, ids: string[], opts: { method?: "gate" | "draw"; note?: string; checks?: string[] } = {}): Promise<DrawRow> {
+  async accept(drawId: string, ids: string[], opts: { method?: "gate" | "draw"; note?: string; checks?: string[]; instructions?: Instruction[] } = {}): Promise<DrawRow> {
     const draw = this.must(drawId, "accept");
     const chain = chainOf(this.p, drawId);
+    const instructions = opts.instructions ?? [];
+    if (!ids.length && !instructions.length) throw new Error("findings or instructions required");
+    // every id is looked up before an instruction is stored, so a stale id leaves nothing behind
+    for (const id of ids) this.finding(chain, id);
+    for (const ins of instructions) ids = [...ids, this.instruct(drawId, chain, ins)];
+    // read again: the chain caches its findings, and the instructions are findings now
+    const now = chainOf(this.p, drawId);
     for (const id of ids) {
-      const f = this.promote(drawId, this.finding(chain, id));
+      const f = this.promote(drawId, this.finding(now, id));
       record(this.p.db, { kind: "finding", target_id: f.id, verdict: "keep", method: opts.method ?? "gate", note: opts.note ?? "" });
     }
     // read back once the verdicts are down: the whole accepted set of this pass, the ones just promoted included
@@ -218,6 +228,29 @@ export class Drafting {
     // the new round is a brief nobody has checked: a check that fails leaves it there
     await this.recheck(next.id, cfg, { back: "done", checks: opts.checks, ...FULL_PASS });
     return this.p.draw(next.id);
+  }
+
+  /**
+   * Store an operator's instruction as a finding of the latest pass, which the
+   * accept that follows repairs like any other. It has no span: the repair
+   * sends it to the parts it names, under the revise ask.
+   */
+  private instruct(drawId: string, chain: Chain, ins: Instruction): string {
+    const text = ins.text.trim();
+    if (!text) throw new Error("instruction text required");
+    if (ins.kind !== "fact" && ins.kind !== "direction") throw new Error("instruction kind must be fact | direction");
+    const names = ["vignette", "ending", ...partsIn(partsOf(this.p, drawId), "context").map((c) => `context ${c.index}`)];
+    if (!ins.parts.length) throw new Error("instruction parts required");
+    for (const x of ins.parts) if (!names.includes(x)) throw new Error(`instruction part must be ${names.join(" | ")}, got ${x}`);
+    const pass = chain.pass();
+    if (!pass) throw new Error(`draw ${drawId}: no check pass`);
+    const id = findingId("operator", text, drawId);
+    const step = this.p.recordStep(drawId, null, "instruction", "operator", { text, parts: ins.parts, kind: ins.kind });
+    this.p.artifact(step, "finding", text, {
+      id, checkers: ["operator"], samples: [1], n: 1, span: "", statement: text, result: "", evidence: "", invalidates: "", replacement: text, patch: "",
+      pass, source: "operator", parts: ins.parts, kind: ins.kind,
+    });
+    return id;
   }
 
   dismiss(drawId: string, id: string, note = "", method: "gate" | "draw" = "gate", reason?: DismissReason): FindingView {
@@ -300,8 +333,8 @@ export class Drafting {
    * branch and are held still — they carry the source's screen answers already,
    * and a second rewrite of them would move the material the branch pins.
    */
-  private async scenes(session: SceneSession, cfg: DraftConfig, from: number): Promise<void> {
-    const scenes = await session.all(from);
+  private async scenes(session: SceneSession, cfg: DraftConfig, from: number, instruction?: string): Promise<void> {
+    const scenes = await session.all(from, instruction);
     await session.screen(scenes, scenes.filter((x) => x.beat >= from).map((x) => x.beat), { claims: false });
     // one rewrite of each beat the screens flag: the register lines only under a shaped template, the ceilings always
     await this.registerRewrites(session.drawId, cfg, from);
@@ -326,9 +359,15 @@ export class Drafting {
     // the source's drafting configuration unless this branch names another: what is under test is the only thing that moves
     const resolved = this.resolved(src, opts);
     commit(this.p.db, { id: newId, links: { draft_config: JSON.stringify(resolved) } });
+    const instruction = opts.instruction?.trim() || undefined;
     await act(this.p.db, { id: newId, during: "drafting", back: "failed" }, async () => {
+      // under an instruction the branch plans the story again from `from`, and writes every beat from there under it
+      if (instruction) {
+        const parts = briefParts(this.p, newId);
+        await runSchedule(this.p, newId, parts, briefBlock(parts), resolved.config, { instruction, from, schedule: chainOf(this.p, newId).schedule()! });
+      }
       const session = SceneSession.resume(this.p, newId, resolved.config, passId(), this.screenPaths());
-      await this.scenes(session, resolved.config, from);
+      await this.scenes(session, resolved.config, from, instruction);
     }, () => ({ id: newId, status: "awaiting_draft_gate" }));
     await writeReport(this.p, newId, this.opts.outputDir, noPdf);
     return this.p.draw(newId);
@@ -497,33 +536,48 @@ export class Drafting {
 
   // --- gate 2 ----------------------------------------------------------------
 
-  async rewrite(drawId: string, k: number, findingId?: string): Promise<DrawRow> {
+  /**
+   * Write beats again at gate 2, in beat order. Each beat carries its open flags,
+   * its structure lines, every instruction given for it before, and the
+   * operator's `instruction` when there is one. A rewrite named for one finding
+   * is that finding alone, on its one beat.
+   */
+  async rewrite(drawId: string, beats: number[], o: { finding?: string; instruction?: string } = {}): Promise<DrawRow> {
     const draw = this.must(drawId, "rewrite");
     const cfg = this.resolved(draw).config;
     const v = draftView(this.p, drawId);
     if (!v.schedule) throw new Error(`draw ${drawId}: no schedule`);
     const M = v.schedule.beats.length;
-    if (!(k >= 1 && k <= M)) throw new Error(`beat ${k} is not in 1..${M}`);
-    // a flag a person dismissed, or one already patched in place, is not a constraint on the rewrite
-    const flags = v.screenFindings.filter((f) => f.beat === k && f.decision === "open");
-    const chosen = findingId ? flags.filter((f) => f.id === findingId) : flags;
-    if (findingId && !chosen.length) throw new Error(`beat ${k}: no screen finding ${findingId} that is open`);
-    // the beat's structure flags are constraints too, each as the line its rule carries; a rewrite named for one finding is that finding alone
-    const structural = findingId ? [] : linesOf(v.profiles.find((pr) => pr.beat === k)?.flags ?? []).map((replacement) => ({ replacement }));
-    const constraints = chosen.length || structural.length ? constraintsBlock([...chosen, ...structural]) : undefined;
+    if (!beats.length) throw new Error("beat required");
+    for (const k of beats) if (!(Number.isInteger(k) && k >= 1 && k <= M)) throw new Error(`beat ${k} is not in 1..${M}`);
+    if (o.finding && beats.length > 1) throw new Error("a rewrite for one finding takes one beat");
+    const instruction = o.instruction?.trim() || undefined;
+    const changes = [...new Set(beats)].map((k): Change => {
+      // a flag a person dismissed, or one already patched in place, is not a constraint on the rewrite
+      const flags = v.screenFindings.filter((f) => f.beat === k && f.decision === "open");
+      const chosen = o.finding ? flags.filter((f) => f.id === o.finding) : flags;
+      if (o.finding && !chosen.length) throw new Error(`beat ${k}: no screen finding ${o.finding} that is open`);
+      // the beat's structure flags are constraints too, each as the line its rule carries; a rewrite named for one finding is that finding alone
+      const structural = o.finding ? [] : linesOf(v.profiles.find((pr) => pr.beat === k)?.flags ?? []).map((replacement) => ({ replacement }));
+      // an instruction given for this beat before still holds: a rewrite for a flag must not undo it
+      const earlier = v.directions.filter((x) => x.beats.includes(k) && x.text !== instruction).map((x) => ({ replacement: x.text }));
+      const lines = [...chosen, ...structural, ...earlier, ...(instruction ? [{ replacement: instruction }] : [])];
+      return { beat: k, kind: "rewrite", constraints: lines.length ? constraintsBlock(lines) : undefined, finding: o.finding, instruction };
+    });
     await act(this.p.db, { id: drawId, during: "drafting", back: "awaiting_draft_gate" },
-      () => this.regenerate(drawId, k, cfg, constraints, findingId),
+      () => this.regenerate(drawId, changes, cfg),
       () => ({ id: drawId, status: "awaiting_draft_gate" }));
     // HTML only: the PDF print is up to 60 s and no model reads it, so gate 2 starts it instead (`keep`)
     await writeReport(this.p, drawId, this.opts.outputDir, noPdf);
     return this.p.draw(drawId);
   }
 
-  /** Write beat k again under the constraints and hold the story to the ledger again. The caller holds the status. */
-  private async regenerate(drawId: string, k: number, cfg: DraftConfig, constraints?: string, findingId?: string): Promise<void> {
+  /** Write the beats again and hold the story to the ledger again. The caller holds the status. */
+  private async regenerate(drawId: string, changes: Change[], cfg: DraftConfig): Promise<void> {
     const session = SceneSession.resume(this.p, drawId, cfg, passId(), this.screenPaths());
-    await session.revise([{ beat: k, kind: "rewrite", constraints, finding: findingId }]);
-    await session.screenClaims(session.scenes().filter((s) => s.beat === k || s.beat === k + 1));
+    await session.revise(changes);
+    const touched = new Set(changes.flatMap((c) => [c.beat, c.beat + 1]));
+    await session.screenClaims(session.scenes().filter((s) => touched.has(s.beat)));
   }
 
   /**
@@ -553,11 +607,13 @@ export class Drafting {
       for (const [k, o] of due) done.set(k, new Set([...(done.get(k) ?? []), ...owedLines(o)]));
 
       const session = SceneSession.resume(this.p, drawId, cfg, passId(), this.screenPaths());
+      const directions = directionsOf(this.p, drawId);
       // a beat owed only the listen lines is edited in place, sentence by sentence, under fix = "edit"
       const editing = cfg.screens.listen?.fix === "edit";
       await session.revise(due.map(([k, o]): Change => editing && !o.register.length
         ? { beat: k, kind: "edit", faults: o.faults }
-        : { beat: k, kind: "rewrite", constraints: constraintsBlock(owedLines(o).map((replacement) => ({ replacement }))) }));
+        // an instruction the beat was written under holds through the rewrite the screens ask for
+        : { beat: k, kind: "rewrite", constraints: constraintsBlock([...owedLines(o), ...directions.filter((x) => x.beats.includes(k)).map((x) => x.text)].map((replacement) => ({ replacement }))) }));
     }
   }
 
@@ -566,7 +622,7 @@ export class Drafting {
     record(this.p.db, { kind: "draft", target_id: drawId, verdict: "keep", method: "gate", note });
     const resolved = this.resolved(draw);
     const gate2 = ofKind(this.p.artifacts(drawId), "scene").filter((a) => a.meta.rewrite)
-      .map((a) => `rewrite ${a.meta.beat}${a.meta.rewrite_finding ? ` ${a.meta.rewrite_finding}` : ""}`);
+      .map((a) => `rewrite ${a.meta.beat}${a.meta.rewrite_finding ? ` ${a.meta.rewrite_finding}` : ""}${a.meta.instruction ? `: ${a.meta.instruction}` : ""}`);
     const dir = exportDraft(this.p, drawId, resolved, gate2, this.opts.draftsDir, this.p.briefsDir);
     commit(this.p.db, { id: drawId, status: "drafted", ended: true });
     // the one place the PDF is worth printing, and it is not waited on: the route says to run

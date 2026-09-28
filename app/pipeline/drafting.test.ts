@@ -292,6 +292,39 @@ describe("check and gate 1", () => {
     expect(model.calls.find((c) => c.stage === "repair-context")!.prompt).toContain("The first context holds.");
   });
 
+  test("an operator's instructions go to the parts they name under the revise ask; a fact joins the ledger, a direction does not", async () => {
+    const script = draftScript({ "check-ledger": [...cleanSamples(), ...cleanSamples()], "check-derivation": [...cleanSamples(), ...cleanSamples()] });
+    const { p, d, draw, model } = await drawn(script);
+    await d.check(draw.id);
+    const DIR = "The ending leaves the safe open; the weight stays on the pier.";
+    const FACT = "The weights were last certified before the war.";
+    await expect(d.accept(draw.id, [], { instructions: [{ text: DIR, parts: ["coda"], kind: "direction" }] })).rejects.toThrow(/part must be vignette \| ending \| context 1 \| context 2, got coda/);
+    await expect(d.accept(draw.id, [])).rejects.toThrow(/findings or instructions required/);
+    await expect(d.accept(draw.id, ["f-nosuch"], { instructions: [{ text: DIR, parts: ["ending"], kind: "direction" }] })).rejects.toThrow(/no reported finding f-nosuch/);
+    expect(p.artifacts(draw.id).filter((a) => a.kind === "finding")).toHaveLength(0);   // a refused accept stores nothing
+    const next = await d.accept(draw.id, [], { instructions: [{ text: DIR, parts: ["ending"], kind: "direction" }, { text: FACT, parts: ["context 1"], kind: "fact" }] });
+    const by = (stage: string) => p.steps(next.id).filter((s) => s.stage === stage);
+    // the vignette and context 2 are carried; the ending and context 1 are rewritten
+    expect(by("repair-vignette").map((s) => s.model)).toEqual(["copied"]);
+    expect(by("repair-context")).toHaveLength(1);
+    expect(by("context").map((s) => s.model)).toEqual(["copied"]);
+    expect(by("repair-ending")[0].model).not.toBe("copied");
+    const ending = model.calls.find((c) => c.stage === "repair-ending")!.prompt;
+    expect(ending).toContain(`<instructions>\n- ${DIR}\n</instructions>`);
+    expect(ending).toContain("carries out every instruction.");
+    expect(ending).not.toContain("Change only the sentences that state a fact");
+    expect(ending).not.toContain(`- ${FACT}\n</instructions>`);                // the fact reaches the ending as a ledger amendment, not as an instruction for it
+    expect(model.calls.find((c) => c.stage === "repair-context")!.prompt).toContain(`<instructions>\n- ${FACT}\n</instructions>`);
+    // both are accepted findings of the round they were given on, and both are settled for every later round
+    const mine = d.findings(draw.id).findings.filter((f) => f.source === "operator");
+    expect(mine.map((f) => [f.statement, f.decision, f.parts, f.kind]).sort()).toEqual([[DIR, "accepted", ["ending"], "direction"], [FACT, "accepted", ["context 1"], "fact"]].sort());
+    const chain = chainOf(p, next.id);
+    expect(chain.settled().map((sc) => [sc.replacement, sc.kind])).toEqual([[DIR, "direction"], [FACT, "fact"]]);
+    expect(chain.ledger()).toContain(FACT);
+    expect(chain.ledger()).not.toContain(DIR);
+    expect(chain.outline()).not.toContain(DIR);
+  });
+
   test("a fix accepted in an earlier round is carried into every later repair and is not re-argued", async () => {
     // A is accepted in round 1 and reported again by every re-check; auto's floor stop re-checks once more
     const script = draftScript({
@@ -535,7 +568,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     // the draft and every register rewrite inside it wrote the HTML and printed nothing
     expect(readFileSync(join(OUTPUT, draw.id, "report.html"), "utf8")).toContain("<h2>The story</h2>");
     expect(calls).toBe(0);
-    await d.rewrite(draw.id, 1);
+    await d.rewrite(draw.id, [1]);
     expect(calls).toBe(0);
     d.keep(draw.id);
     await printed;
@@ -1042,7 +1075,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     const flag = d.view(draw.id).screenFindings.find((f) => f.decision === "open")!;
     expect(flag.beat).toBe(4);
     const slopBefore = d.view(draw.id).slop!.words;
-    const out = await d.rewrite(draw.id, 4, flag.id);
+    const out = await d.rewrite(draw.id, [4], { finding: flag.id });
     expect(out.status).toBe("awaiting_draft_gate");
     // the deterministic reports are the draft as it stands, not the pre-rewrite measurement
     expect(p.steps(draw.id).filter((s) => s.stage === "screen-slop")).toHaveLength(2);
@@ -1064,11 +1097,11 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     const rewrites = p.artifacts(draw.id).filter((a) => a.kind === "scene" && a.meta.rewrite).map((a) => a.meta);
     expect(rewrites.map((m) => [m.beat, m.rewrite_finding])).toEqual([[4, flag.id]]);   // the gate-2 record is on the scene
     expect(p.draw(draw.id).flag_note).toBe("");
-    await expect(d.rewrite(draw.id, 9)).rejects.toThrow(/beat 9 is not in 1\.\.8/);
-    await expect(d.rewrite(draw.id, 2, "f-nope")).rejects.toThrow(/no screen finding f-nope/);
+    await expect(d.rewrite(draw.id, [9])).rejects.toThrow(/beat 9 is not in 1\.\.8/);
+    await expect(d.rewrite(draw.id, [2], { finding: "f-nope" })).rejects.toThrow(/no screen finding f-nope/);
     // rewriting the last beat re-screens it alone
     const b2 = model.calls.length;
-    await d.rewrite(draw.id, 8);
+    await d.rewrite(draw.id, [8]);
     expect(model.calls.slice(b2).map((c) => c.stage).sort()).toEqual(["scene", "screen-ledger", "screen-ledger", "screen-ledger", "screen-structure"]);
   });
 
@@ -1078,16 +1111,42 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     await d.draft(draw.id);
     // the fixture states the theme on beat 5 and names no body on beat 2; neither is a finding, both are flags the gate can now act on
     expect(d.view(draw.id).profiles.find((x) => x.beat === 5)!.flags).toEqual(["theme-stated"]);
-    await d.rewrite(draw.id, 5);
+    await d.rewrite(draw.id, [5]);
     const five = model.calls.filter((c) => c.stage === "scene").at(-1)!;
     expect(five.prompt).toContain("Write beat 5 of the story");
     expect(five.prompt).toContain(`<constraints>\n- ${THEME_LINE}\n</constraints>`);
-    await d.rewrite(draw.id, 2);
+    await d.rewrite(draw.id, [2]);
     expect(model.calls.filter((c) => c.stage === "scene").at(-1)!.prompt).toContain(`- ${BODY_LINE}`);
     // named for the ledger finding on beat 4, the rewrite carries that finding and nothing structural
     const flag = d.view(draw.id).screenFindings.find((f) => f.beat === 4 && f.decision === "open")!;
-    await d.rewrite(draw.id, 4, flag.id);
+    await d.rewrite(draw.id, [4], { finding: flag.id });
     expect(model.calls.filter((c) => c.stage === "scene").at(-1)!.prompt).toContain("<constraints>\n- 1,106 died.\n</constraints>");
+  });
+
+  test("rewrite with an instruction writes each named beat under it, and a later rewrite of one of them carries it", async () => {
+    const { p, d, draw, model } = await drawn();
+    await d.check(draw.id);
+    await d.draft(draw.id);
+    const TOM = "Tom blames Ada before he blames the scale, and never says so outright.";
+    const before = model.calls.length;
+    await d.rewrite(draw.id, [6, 3], { instruction: `  ${TOM}  ` });
+    const scenes = model.calls.slice(before).filter((c) => c.stage === "scene");
+    // in beat order, each under the instruction as its last line
+    expect(scenes.map((c) => /Write beat (\d+)/.exec(c.prompt)![1])).toEqual(["3", "6"]);
+    for (const c of scenes) expect(c.prompt).toContain(`- ${TOM}\n</constraints>`);
+    expect(d.view(draw.id).directions).toEqual([{ text: TOM, beats: [3, 6] }]);
+    // the rewrite records it, and a ledger patch of the rewritten scene keeps it
+    expect(p.artifacts(draw.id).filter((a) => a.kind === "scene" && a.meta.rewrite).map((a) => [a.meta.beat, a.meta.instruction])).toEqual([[3, TOM], [6, TOM]]);
+    // a rewrite of beat 6 for its flags keeps the instruction; beat 5 was never given it
+    await d.rewrite(draw.id, [6]);
+    expect(model.calls.filter((c) => c.stage === "scene").at(-1)!.prompt).toContain(`- ${TOM}`);
+    await d.rewrite(draw.id, [5]);
+    expect(model.calls.filter((c) => c.stage === "scene").at(-1)!.prompt).not.toContain(TOM);
+    await expect(d.rewrite(draw.id, [])).rejects.toThrow(/beat required/);
+    await expect(d.rewrite(draw.id, [2, 3], { finding: "f-x" })).rejects.toThrow(/one beat/);
+    // the kept draft's trail names the instruction
+    const { dir } = d.keep(draw.id);
+    expect(readFileSync(join(dir, "trail.md"), "utf8")).toContain(`- rewrite 3: ${TOM}`);
   });
 
   test("a flag's own patch lands as the scene is written, costs no model call, and settles the flag", async () => {
@@ -1115,7 +1174,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     d.dismiss(draw.id, a.id, "she can fire it");
     d.dismiss(draw.id, b.id, "deliberate seam");
     await d.draft(draw.id);
-    await d.rewrite(draw.id, 4);
+    await d.rewrite(draw.id, [4]);
     const { draw: kept, dir: out } = d.keep(draw.id, "good enough");
     expect(kept.status).toBe("drafted");
     expect(out).toBe(join(dir, "drafts", draw.id));
@@ -1832,7 +1891,7 @@ describe("the claims screen", () => {
 
     // a gate-2 rewrite still screens claims, over the beats it re-screens only, so beat 1's flag stays one flag
     for (const n of [1, 2]) {
-      await d.rewrite(draw.id, 2);
+      await d.rewrite(draw.id, [2]);
       expect(extracts).toBe(2 + n);
       const afterClaims = d.view(draw.id).screenFindings.filter((f) => f.screen === "claims");
       expect(afterClaims.filter((f) => f.beat === 1)).toMatchObject([{ span: "s1w7 s1w8" }]);

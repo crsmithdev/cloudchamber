@@ -25,7 +25,7 @@ import { RUN } from "./config.ts";
 import { samplesFor } from "./draftconfig.ts";
 import { clusterSamples, runSamples, voteAnswers } from "./sampled.ts";
 import { findingId, parseFindings } from "./recur.ts";
-import { applyPatches } from "./repair.ts";
+import { applyPatches, constraintsBlock } from "./repair.ts";
 import { record } from "./verdicts.ts";
 import { eligiblePassages } from "./bank.ts";
 import { loadLexicon, restated, slopScreen } from "./slop.ts";
@@ -39,8 +39,8 @@ import {
 /** The fewest binds a base session pays for: the base costs about what four forks save (bindBase). */
 const BASE_MIN_BINDS = 5;
 
-/** A beat written again under a constraints block, marked as a rewrite, with the flag it answers when there is one. */
-type Rewrite = { beat: number; kind: "rewrite"; constraints?: string; finding?: string };
+/** A beat written again under a constraints block, marked as a rewrite, with the flag or the operator's instruction it answers when there is one. */
+type Rewrite = { beat: number; kind: "rewrite"; constraints?: string; finding?: string; instruction?: string };
 /** A beat whose faulted sentences are swapped in place under the listen lines. */
 type Edit = { beat: number; kind: "edit"; faults: Fault[] };
 /** One change `revise` makes to a stored beat. The caller chooses the kind. */
@@ -108,8 +108,8 @@ export class SceneSession {
 
   // --- writing ----------------------------------------------------------------
 
-  /** One beat. `rewrite` marks a gate-2 rewrite, with the flag it answers when there is one. */
-  async write(b: Beat, soFar: string[], opts: { constraints?: string; rewrite?: { finding?: string }; session?: SessionAsk } = {}): Promise<Scene & { session?: string }> {
+  /** One beat. `rewrite` marks a gate-2 rewrite, with the flag it answers when there is one; `instruction` is the operator's, when the beat is written under one. */
+  async write(b: Beat, soFar: string[], opts: { constraints?: string; rewrite?: { finding?: string }; instruction?: string; session?: SessionAsk } = {}): Promise<Scene & { session?: string }> {
     const prompt = scenePrompt(this.parts, this.schedule, b, soFar, opts.constraints, this.cfg.structure);
     const { step, value, session } = await this.p.invoke(this.drawId, this.parent, "scene", prompt, (t) => need(t, "scene"), { context: this.context, session: opts.session });
     const n = words(value);
@@ -117,6 +117,7 @@ export class SceneSession {
       beat: b.n, words: n, cap: b.words,
       warnings: n > b.words * (1 + RUN.sceneCapSlack) ? ["over_cap"] : [],
       ...(opts.rewrite ? { rewrite: true, ...(opts.rewrite.finding ? { rewrite_finding: opts.rewrite.finding } : {}) } : {}),
+      ...(opts.instruction ? { instruction: opts.instruction } : {}),
     });
     return { beat: b.n, text: value, artifact_id, step_id: step.id, ...(session ? { session } : {}) };
   }
@@ -132,18 +133,20 @@ export class SceneSession {
    * not sent again in the ask (model.ts). Only the first beat carries the
    * stored scenes under `from` in its ask.
    */
-  async all(from = 1): Promise<Scene[]> {
+  async all(from = 1, instruction?: string): Promise<Scene[]> {
+    // an operator's instruction for a re-planned branch holds in every beat it writes
+    const under = instruction ? { constraints: constraintsBlock([{ replacement: instruction }]), instruction } : {};
     const done = from > 1 ? this.scenes().filter((x) => x.beat < from) : [];
     const todo = this.schedule.beats.filter((b) => b.n >= from);
     if (this.cfg.scenes.order === "parallel") {
-      const raw = await Promise.all(todo.map((b) => this.write(b, [])));
+      const raw = await Promise.all(todo.map((b) => this.write(b, [], under)));
       const base = await this.bindBase([...done, ...raw], raw.length);
       return [...done, ...await Promise.all(raw.map((sc, i) => this.bind(sc, i ? raw[i - 1] : done.at(-1), base)))];
     }
     const raw: Scene[] = [];
     let session: string | undefined;
     for (const b of todo) {
-      const { session: next, ...scene } = await this.write(b, session ? [] : done.map((x) => x.text), { session: session ? { resume: session } : {} });
+      const { session: next, ...scene } = await this.write(b, session ? [] : done.map((x) => x.text), { ...under, session: session ? { resume: session } : {} });
       raw.push(scene);
       session = next;
     }
@@ -247,7 +250,7 @@ export class SceneSession {
     }));
     for (const c of changes.filter((c): c is Rewrite => c.kind === "rewrite").sort((a, b) => a.beat - b.beat)) {
       const before = this.scenes().filter((s) => s.beat < c.beat).map((s) => s.text);
-      await this.write(this.schedule.beats[c.beat - 1], this.cfg.scenes.order === "sequential" ? before : [], { constraints: c.constraints, rewrite: { finding: c.finding } });
+      await this.write(this.schedule.beats[c.beat - 1], this.cfg.scenes.order === "sequential" ? before : [], { constraints: c.constraints, rewrite: { finding: c.finding }, instruction: c.instruction });
       facts.add(c.beat);
       full.add(c.beat);
     }

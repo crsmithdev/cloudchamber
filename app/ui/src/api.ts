@@ -30,6 +30,8 @@ import type { StepRow } from "../../pipeline/draw.ts";
 import type { Artifact } from "../../pipeline/artifacts.ts";
 import type { Origin } from "../../pipeline/stage.ts";
 import type { GateResult } from "../../pipeline/gate.ts";
+import type { Instruction } from "../../pipeline/drafting.ts";
+export type { Instruction };
 
 export type { AutoResult, DraftConfig, Artifact, Origin, GateResult, DrawDetail };
 export type Draw = DrawListRow;
@@ -81,7 +83,7 @@ export const api = {
   like: (id: string) => j<Like>(`/api/draws/${id}/like`),
   deleteDraw: (id: string) => j<GateResult>(`/api/draws/${id}`, { method: "DELETE", body: "{}" }),
   startDraw: (b: Record<string, string | undefined | Record<string, string>>) => j<{ id: string }>("/api/draws", { method: "POST", body: JSON.stringify(b) }),
-  gate: (id: string, b: { action: string; step_id?: string; note?: string; findings?: string[]; finding?: string; beat?: number }) => j<GateResult>(`/api/draws/${id}/gate`, { method: "POST", body: JSON.stringify(b) }),
+  gate: (id: string, b: { action: string; step_id?: string; note?: string; findings?: string[]; finding?: string; beat?: number; beats?: number[]; instruction?: string; instructions?: Instruction[]; premise?: string; at_beat?: number }) => j<GateResult>(`/api/draws/${id}/gate`, { method: "POST", body: JSON.stringify(b) }),
   check: (id: string) => j<GateResult>(`/api/draws/${id}/check`, { method: "POST", body: "{}" }),
   draft: (id: string, b: { auto?: boolean; profile?: string; overrides?: Record<string, string | number>; models?: Record<string, string> }) => j<GateResult>(`/api/draws/${id}/draft`, { method: "POST", body: JSON.stringify(b) }),
   step: (id: string) => j<{ step: FullStep; artifacts: Artifact[] }>(`/api/steps/${id}`),

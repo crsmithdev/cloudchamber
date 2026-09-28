@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { api, type AutoResult, type Draw, type DrawBase, type CheckSummary, type DraftConfigView, type Finding, type Findings, type Listen, type Story, type Step } from "./api.ts";
+import { api, type Instruction, type AutoResult, type Draw, type DrawBase, type CheckSummary, type DraftConfigView, type Finding, type Findings, type Listen, type Story, type Step } from "./api.ts";
 import { BriefFiles, DrawAside, Md, RowHead, SeedNote, StepView, boldLabels, firstParagraph, DrawNotes, inFlight, isWorking, label, stageName, stageNames, type Detail } from "./Draws.tsx";
-import { ArchivedToggle, Bar, Btn, Caret as Chevron, Facts, Field, Head, Icon, Keys, Mark, ModelPicks, Seg, lastSelected, markFor, onEnter, rowKeys, secs, usePoll, useRememberSelected, useRowsFromPage, useAddressBar } from "./ui.tsx";
+import { ArchivedToggle, Bar, Btn, Caret as Chevron, Chip, Facts, Field, Head, Icon, Keys, Mark, ModelPicks, Seg, lastSelected, markFor, onEnter, rowKeys, secs, usePoll, useRememberSelected, useRowsFromPage, useAddressBar } from "./ui.tsx";
 
 /**
  * Develop a brief: the stages after a brief (docs/specs/2026-09-05-drafting-pipeline.md).
@@ -619,6 +619,9 @@ function GateOne({ d, clean, onAct, onDraft, aside }: { d: Detail; clean: boolea
   const [showAll, setShowAll] = useState(false);
   // a dismissal adds no step, so the list also reloads on demand: without this it kept showing the finding as open
   const [ruled, setRuled] = useState(0);
+  // instructions written here go to the server with the next accept, as findings accepted on this round
+  const [pending, setPending] = useState<Instruction[]>([]);
+  const [draft, setDraft] = useState<Instruction>({ text: "", parts: [], kind: "direction" });
   const id = d.draw.id;
   useEffect(() => {
     api
@@ -633,6 +636,15 @@ function GateOne({ d, clean, onAct, onDraft, aside }: { d: Detail; clean: boolea
       (r) => r?.draw ?? undefined,
     );
   const accepted = f?.findings.filter((x) => x.decision === "accepted") ?? [];
+  const partNames = ["vignette", "ending", ...d.parts.contexts.map((c) => `context ${c.index}`)];
+  const addInstruction = () => {
+    setPending((xs) => [...xs, { ...draft, text: draft.text.trim() }]);
+    setDraft({ text: "", parts: [], kind: draft.kind });
+  };
+  const repairNow = () => {
+    gate("accept", { findings: [...sel], instructions: pending });
+    setPending([]);
+  };
   const repaired = d.draw.status === "repaired";
   const meta = d.parts.outline?.meta ?? {};
   const constraints: string[] = meta.constraints ?? [];
@@ -650,7 +662,7 @@ function GateOne({ d, clean, onAct, onDraft, aside }: { d: Detail; clean: boolea
   const checkSteps = d.steps.filter((s) => s.stage.startsWith("check-") && s.status === "done");
   const checkSecs = checkSteps.reduce((n, s) => n + Number(secs(s.started_at, s.ended_at)), 0);
   // nothing open on the list, nothing that would undo a fix, nothing accepted: the repair strip has no work
-  const nothingToRule = !!f && !listed.some((x) => x.decision === "open") && !reopened.some((x) => x.decision === "open") && !accepted.length;
+  const nothingToRule = !!f && !listed.some((x) => x.decision === "open") && !reopened.some((x) => x.decision === "open") && !accepted.length && !pending.length;
   // the keys act on the focused finding: accept toggles its selection, dismiss rules on it
   const findingsEl = React.useRef<HTMLDivElement>(null);
   useRowsFromPage(findingsEl);
@@ -670,6 +682,7 @@ function GateOne({ d, clean, onAct, onDraft, aside }: { d: Detail; clean: boolea
       if (!repaired && byId(fid)?.decision === "open") gate("dismiss", { finding: fid, reason: r });
     }])),
     n: () => document.querySelector<HTMLInputElement>(".controls input[type=text]")?.focus(),
+    i: () => document.getElementById("instruction")?.focus(),
   });
   // the open list and the list that undoes an earlier fix are the same row
   const row = (x: Finding) => (
@@ -696,11 +709,11 @@ function GateOne({ d, clean, onAct, onDraft, aside }: { d: Detail; clean: boolea
         <div className="controls" role="group" aria-label="Repair">
           <Btn
             variant="keep"
-            disabled={!sel.size && !accepted.length}
-            onClick={() => gate("accept", { findings: [...sel] })}
-            title="Accept the selected findings. The brief is repaired into a new draw under their replacements and re-checked."
+            disabled={!sel.size && !accepted.length && !pending.length}
+            onClick={repairNow}
+            title="Accept the selected findings and your instructions. The brief is repaired into a new draw under them and re-checked."
           >
-            repair {sel.size || accepted.length} and re-check
+            repair {(sel.size || accepted.length) + pending.length} and re-check
           </Btn>
           <span className="group">
             <Btn
@@ -719,6 +732,42 @@ function GateOne({ d, clean, onAct, onDraft, aside }: { d: Detail; clean: boolea
               clear
             </Btn>
           </span>
+        </div>
+      )}
+      {!repaired && (
+        <div className="mt-3 max-w-[48rem]" role="group" aria-label="Instruction">
+          <Head note="what should change, in your own words; tick the parts it is for. It is repaired with the findings you select">instruction</Head>
+          <textarea
+            id="instruction"
+            className="mt-1 font-serif text-prose"
+            rows={3}
+            placeholder="for example: the ending leaves the safe open, and the weight stays on the pier"
+            aria-label="Instruction for the brief"
+            value={draft.text}
+            onChange={(e) => setDraft({ ...draft, text: e.target.value })}
+          />
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <span className="head">for</span>
+            <span className="chips" role="group" aria-label="Parts the instruction is for">
+              {partNames.map((x) => (
+                <Chip key={x} pressed={draft.parts.includes(x)} onClick={() => setDraft({ ...draft, parts: draft.parts.includes(x) ? draft.parts.filter((y) => y !== x) : [...draft.parts, x] })}>
+                  {x}
+                </Chip>
+              ))}
+            </span>
+            <Seg
+              label="Kind"
+              value={draft.kind}
+              options={["direction", "fact"]}
+              onChange={(k) => setDraft({ ...draft, kind: k as Instruction["kind"] })}
+            />
+            <span className="text-dim">{draft.kind === "fact" ? "also a ledger line: the check and the draft are held to it" : "kept true by every later repair; not a ledger line"}</span>
+            <span className="ml-auto">
+              <Btn variant="keep" disabled={!draft.text.trim() || !draft.parts.length} onClick={addInstruction} title="Add it to the repair. Nothing runs until you repair.">
+                add
+              </Btn>
+            </span>
+          </div>
         </div>
       )}
       {repaired && (
@@ -749,7 +798,7 @@ function GateOne({ d, clean, onAct, onDraft, aside }: { d: Detail; clean: boolea
                 {!repaired && !nothingToRule && (
                   <>
                     {" · "}
-                    <Keys keys={[["↓", "move"], ["a", "accept"], ["d", "dismiss"], ["1–4", "dismiss with a reason"], ["n", "note"]]} />
+                    <Keys keys={[["↓", "move"], ["a", "accept"], ["d", "dismiss"], ["1–4", "dismiss with a reason"], ["n", "note"], ["i", "instruction"]]} />
                   </>
                 )}
               </>
@@ -762,6 +811,27 @@ function GateOne({ d, clean, onAct, onDraft, aside }: { d: Detail; clean: boolea
               {f.off_list.dropped
                 ? `Nothing to fix: the verify pass dropped ${f.off_list.dropped} finding${f.off_list.dropped > 1 ? "s" : ""} as invisible to a reader of the vignettes and the ending. Show them to read why, or draft the brief.`
                 : "Nothing to fix: nothing recurred in enough samples to report. What each checker examined is listed beside. Draft the brief."}
+            </div>
+          )}
+          {pending.length > 0 && (
+            <div className="findings mt-1">
+              {pending.map((x, i) => (
+                <div key={i} className="finding sel">
+                  <div className="line">
+                    <span className="num w-6 font-semibold text-gold">you</span>
+                    <span className="text-dim">
+                      for <b className="font-normal text-ink">{x.parts.join(", ")}</b> · {x.kind}
+                    </span>
+                    <Mark state="held" title="to be accepted" />
+                    <span className="acts">
+                      <button className="link text-dim" onClick={() => setPending((xs) => xs.filter((_, j) => j !== i))}>
+                        remove
+                      </button>
+                    </span>
+                  </div>
+                  <div className="mt-0.5 font-serif text-prose">{x.text}</div>
+                </div>
+              ))}
             </div>
           )}
           {f && (listed.length > 0 || reopened.length > 0) && (
@@ -928,6 +998,20 @@ function GateOne({ d, clean, onAct, onDraft, aside }: { d: Detail; clean: boolea
 function FindingRow({ f, S, scoreMax, selected, onToggle, onDismiss, readOnly }: { f: Finding; S: number; scoreMax: number; selected: boolean; onToggle: () => void; onDismiss: (reason?: DismissReason) => void; readOnly: boolean }) {
   const acc = f.decision === "accepted" || selected;
   const cls = "finding" + (acc ? " sel" : "") + (f.decision === "dismissed" ? " old" : "");
+  if (f.source === "operator")
+    return (
+      <div className={cls} data-row={f.id} tabIndex={0}>
+        <div className="line">
+          <span className="num w-6 font-semibold text-gold">you</span>
+          <span className="text-dim">
+            for <b className="font-normal text-ink">{(f.parts ?? []).join(", ")}</b> · {f.kind}
+          </span>
+          <Mark state={f.decision === "accepted" ? "held" : ""} title={f.decision} />
+          <span className="acts">{f.decision === "accepted" && <span className="text-keep">accepted{f.note ? ` · ${f.note}` : ""}</span>}</span>
+        </div>
+        <div className="mt-0.5 font-serif text-prose">{f.statement}</div>
+      </div>
+    );
   return (
     <div className={cls} data-row={f.id} tabIndex={0} aria-selected={selected}>
       <div className="line">
@@ -1276,6 +1360,10 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
   const [note, setNote] = useState("");
   const [k, setK] = useState(1);
   const [view, setView] = useState<"story" | "schedule">("story");
+  const [instruction, setInstruction] = useState("");
+  // the beats an instruction goes to: the scene in view until the operator ticks others
+  const [picked, setPicked] = useState<number[] | null>(null);
+  const [how, setHow] = useState<"rewrite" | "replan">("rewrite");
   const id = d.draw.id;
   useEffect(() => {
     api
@@ -1294,11 +1382,20 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
   const keys = rowKeys({
     Enter: (b) => goBeat(Number(b)),
     n: () => document.querySelector<HTMLInputElement>(".controls input[type=text]")?.focus(),
+    i: () => document.getElementById("instruction")?.focus(),
   });
   if (!s) return <span className="text-dim">loading the story…</span>;
   const gating = d.draw.actions.keep === null;
   const gate = (action: string, extra: Record<string, unknown> = {}) => onAct(() => api.gate(id, { action, note, ...extra }));
   const M = s.scenes.length;
+  const beats = picked ?? [k];
+  const toggleBeat = (b: number) => setPicked(beats.includes(b) ? beats.filter((x) => x !== b) : [...beats, b].sort((x, y) => x - y));
+  const instruct = () => {
+    // a re-plan is a branch from the first ticked beat: this draft stays as it is
+    gate(how === "rewrite" ? "rewrite" : "branch", how === "rewrite" ? { beats, instruction } : { at_beat: beats[0], instruction });
+    setInstruction("");
+    setPicked(null);
+  };
   const flagsFor = (beat: number) => ({ ledger: s.screenFindings.filter((f) => f.beat === beat), structure: s.profiles.find((p) => p.beat === beat) });
   const wordsOf = (t: string) => t.split(/\s+/).filter(Boolean).length;
   const words = s.scenes.reduce((a, x) => a + wordsOf(x.text), 0);
@@ -1340,6 +1437,63 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
               {view === "schedule" ? "story" : "schedule"}
             </Btn>
           </span>
+        </div>
+      )}
+      {gating && (
+        <div className="mt-3 max-w-[48rem]" role="group" aria-label="Instruction">
+          <Head note={how === "rewrite" ? "each beat you tick is written again under it, in beat order, with its own flags; a later rewrite of the beat carries it" : "a branch plans the story again from the first beat you tick, under the instruction, and writes every beat from there; this draft stays as it is"}>instruction</Head>
+          <textarea
+            id="instruction"
+            className="mt-1 font-serif text-prose"
+            rows={3}
+            placeholder="what should change, in your own words"
+            aria-label="Instruction for the rewrite"
+            value={instruction}
+            onChange={(e) => setInstruction(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && instruction.trim() && beats.length) instruct();
+            }}
+          />
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <span className="head">beats</span>
+            <span className="chips" role="group" aria-label="Beats to rewrite">
+              {s.scenes.map((x) => (
+                <Chip key={x.beat} className="num" pressed={beats.includes(x.beat)} onClick={() => toggleBeat(x.beat)}>
+                  {x.beat}
+                </Chip>
+              ))}
+            </span>
+            <Seg label="How" value={how === "rewrite" ? "rewrite these" : `re-plan from ${beats[0] ?? 1}`} options={["rewrite these", `re-plan from ${beats[0] ?? 1}`]} onChange={(v) => setHow(v === "rewrite these" ? "rewrite" : "replan")} />
+            <span className="end ml-auto">
+              <Btn
+                variant="art"
+                disabled={!instruction.trim() || !beats.length}
+                onClick={instruct}
+                title={
+                  how === "rewrite"
+                    ? "Write the ticked beats again under the instruction, then screen them and the beat after each again."
+                    : `A new draft, branched from this one: beats before ${beats[0] ?? 1} are carried word for word, the schedule is planned again from beat ${beats[0] ?? 1} under the instruction, and every beat from there is written under it. This draft stays as it is.`
+                }
+              >
+                {how === "rewrite" ? `rewrite ${beats.length === 1 ? `beat ${beats[0]}` : `${beats.length} beats`}` : `branch and re-plan from ${beats[0] ?? 1}`}
+              </Btn>
+            </span>
+          </div>
+        </div>
+      )}
+      {s.directions.length > 0 && (
+        <div className="mt-4 max-w-[48rem]">
+          <Head note="the instructions this draft was rewritten under; a later rewrite of one of their beats carries them">directions</Head>
+          <table className="mt-1">
+            <tbody>
+              {s.directions.map((x) => (
+                <tr key={x.text}>
+                  <td className="num w-28 text-dim">beat{x.beats.length > 1 ? "s" : ""} {x.beats.join(", ")}</td>
+                  <td>{x.text}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
       {!gating && (
@@ -1469,7 +1623,7 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
           <Head
             note={
               <>
-                {words.toLocaleString()} words · {s.screenFindings.length} ledger flags · {nStructure} structure flags · <Keys keys={[["↓", "move"], ["⏎", "open"], ...(gating ? ([["n", "note"]] as [string, string][]) : [])]} />
+                {words.toLocaleString()} words · {s.screenFindings.length} ledger flags · {nStructure} structure flags · <Keys keys={[["↓", "move"], ["⏎", "open"], ...(gating ? ([["n", "note"], ["i", "instruction"]] as [string, string][]) : [])]} />
               </>
             }
           >

@@ -64,6 +64,31 @@ describe("branch a draft", () => {
     expect(copied).toHaveLength(4);
   });
 
+  test("with an instruction it plans the schedule again from the beat under it, keeps the written entries, and writes every beat from there under it", async () => {
+    const { p, d, draw, model } = await drawn();
+    await d.check(draw.id);
+    await d.draft(draw.id, { overrides: OVERRIDES });
+    const before = model.calls.length;
+    const src = chainOf(p, draw.id).schedule()!;
+    const TOM = "Tom never raises his voice; he asks what has gone out of the scale.";
+
+    const b = await d.branch(draw.id, { atBeat: 5, instruction: TOM });
+    expect(b.status).toBe("awaiting_draft_gate");
+    const ask = model.calls.slice(before).find((c: any) => c.stage === "schedule")!.prompt;
+    expect(ask).toContain(`<instructions>\n- ${TOM}\n</instructions>`);
+    expect(ask).toContain("Beats 1 to 4 of the draft's schedule below are written and stay as they are");
+    expect(ask).toContain(`<written>\n${src.raw}\n</written>`);
+    // the written beats keep their entries and the form whatever the reply said
+    const sched = chainOf(p, b.id).schedule()!;
+    expect(sched.beats.slice(0, 4)).toEqual(src.beats.slice(0, 4));
+    expect(sched.form).toEqual(src.form);
+    // beats 5..8 are written under the instruction, and the draft lists it as a direction for them
+    const written = model.calls.slice(before).filter((c: any) => c.stage === "scene");
+    expect(written.map((c: any) => /Write beat (\d+)/.exec(c.prompt)![1])).toEqual(["5", "6", "7", "8"]);
+    for (const c of written) expect(c.prompt).toContain(`<constraints>\n- ${TOM}\n</constraints>`);
+    expect(d.view(b.id).directions).toEqual([{ text: TOM, beats: [5, 6, 7, 8] }]);
+  });
+
   test("the carried beats are not screened or rewritten again; the written ones are", async () => {
     const { p, d, draw, model } = await drawn();
     await d.check(draw.id);

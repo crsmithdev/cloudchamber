@@ -91,10 +91,10 @@ describe("a failed action puts the draw back where it stood", () => {
     });
     const { d, p, draw, model, dir } = await drawn(script);
     await d.draft(draw.id);
-    await d.rewrite(draw.id, 3);
+    await d.rewrite(draw.id, [3]);
     const scene = (model as any).script.scene;
     (model as any).script.scene = [];
-    await expect(d.rewrite(draw.id, 4)).rejects.toThrow(/scene failed/);
+    await expect(d.rewrite(draw.id, [4])).rejects.toThrow(/scene failed/);
     expect(p.draw(draw.id)).toMatchObject({ status: "awaiting_draft_gate", error: expect.stringMatching(/^scene failed/) });
     (model as any).script.scene = scene;
     p.flag(draw.id, "scene 4 reads oddly");

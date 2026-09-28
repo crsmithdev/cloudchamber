@@ -29,17 +29,18 @@ may read directly is `corpus/examples/*.md` (verbatim passages by source) and
 ./cloudchamber setting lint <id>           check a setting file; one finding per line, exit 1
 ./cloudchamber setting sources <id>        every kept entry beside the reference file it came from
 ./cloudchamber distill <id> [--map|--reduce]   build a setting's five lists from its reference/
-./cloudchamber gate <draw> choose <execute-step> | fork <execute-step> | flag | archive | unarchive [--note "..."]
+./cloudchamber gate <draw> choose <execute-step> | fork <execute-step> [--premise "edited"] | flag | archive | unarchive [--note "..."]
 ./cloudchamber draws [--archived]          list draws
 ./cloudchamber draw-show <draw>            steps and artifacts
 ./cloudchamber candidates <draw>           the five candidates in full
 ./cloudchamber brief <draw>                print the brief
 ./cloudchamber check <draw> [--checks a,b] [--samples N]   run the checkers over a brief; stops at gate 1
 ./cloudchamber findings <draw> [--examined] [--all]   the latest check's findings, by score
-./cloudchamber gate <draw> accept <finding>... | auto | dismiss <finding> | hold [--note "..."]
+./cloudchamber gate <draw> accept [<finding>...] [--instruction "..." --parts ending,"context 1" --kind fact|direction] | auto | dismiss <finding> | hold [--note "..."]
 ./cloudchamber draft <draw> [--auto] [--profile P] [--words N] [--beats N] [--tense T] [--person P] [--chronology C] [--container C] [--order sequential|parallel]
 ./cloudchamber story <draw>                the draft with its screen flags inline
-./cloudchamber gate <draw> keep | rewrite <k> [--finding ID] [--note "..."]
+./cloudchamber gate <draw> keep | rewrite <k>[,k...] [--finding ID] [--instruction "..."] [--note "..."]
+./cloudchamber branch <draw> [--at-beat K] [--instruction "..."]   re-plan from K under an instruction
 ./cloudchamber verdict <example|theme|brief|story> <id> <keep|pass> [--artifact] [--note "..."]
                                            a passed story hides every passage of it
 ./cloudchamber serve [--port 3002]         the UI: browse, ideate, check, write

@@ -163,9 +163,36 @@ describe("draw graph", () => {
     expect(trail).toContain("(forked)");
     expect(trail).toContain(`${draw.id}, its candidate 2`);
     // the source draw knows which candidates are developed and refuses to develop one twice
-    expect(p.forks(draw.id)).toEqual([{ id: fork.id, status: "done", step_id: cs[1].step_id, index: 2 }]);
+    expect(p.forks(draw.id)).toEqual([{ id: fork.id, status: "done", step_id: cs[1].step_id, index: 2, edited: false }]);
     await expect(p.fork(draw.id, cs[1].step_id)).rejects.toThrow(/already developed/);
     await expect(p.fork(draw.id, cs[0].step_id)).rejects.toThrow(/itself developed/);
+  });
+
+  test("fork with an edited premise writes the vignette again from the edit, from any candidate", async () => {
+    const { db, dir } = fixture();
+    const { p, model } = pipe(db, dir, script({ outline: [outline(), outline(), outline()], ending: Array(3).fill("<ending>The last beat.</ending>") }));
+    const draw = await p.start({ mode: "manual", genre: "horror", seed: { mode: "typed", text: "a typed seed" } });
+    const cs = p.candidates(draw.id);
+    await p.choose(draw.id, cs[0].step_id);
+    const EDIT = "A harbour weighbridge reads every boat light by the same amount, and the clerk must decide whether the scale or the sea has changed.";
+    // the chosen candidate forks when its premise is edited; the same text is no edit
+    await expect(p.fork(draw.id, cs[0].step_id, undefined, ` ${cs[0].premise} `)).rejects.toThrow(/itself developed/);
+    const before = model.calls.length;
+    const fork = await p.fork(draw.id, cs[0].step_id, undefined, EDIT);
+    expect(fork.status).toBe("done");
+    const execute = p.steps(fork.id).find((s) => s.stage === "execute")!;
+    expect(execute.model).not.toBe("copied");
+    expect(fork.chosen_step).toBe(execute.id);
+    const ask = model.calls.slice(before).find((c) => c.stage === "execute")!.prompt;
+    expect(ask).toContain(EDIT);
+    expect(ask).not.toContain(cs[0].premise);
+    const v = p.artifacts(fork.id).find((a) => a.kind === "vignette" && a.step_id === execute.id)!;
+    expect(v.meta).toMatchObject({ premise: EDIT, edited_from: cs[0].premise, forked_from: cs[0].step_id, index: cs[0].index });
+    expect(model.calls.slice(before).find((c) => c.stage === "outline")!.prompt).toContain(EDIT);
+    // an edited fork does not count as the candidate developed: the plain fork is still open, and a second edit is too
+    expect(p.forks(draw.id)).toEqual([{ id: fork.id, status: "done", step_id: cs[0].step_id, index: cs[0].index, edited: true }]);
+    await p.fork(draw.id, cs[1].step_id, undefined, `${EDIT} Twice.`);
+    expect(p.forks(draw.id)).toHaveLength(2);
   });
 
   test("like starts another draw on the same options and leaves the first open", async () => {

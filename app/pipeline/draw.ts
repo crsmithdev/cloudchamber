@@ -20,7 +20,7 @@ import { treeVersion } from "./version.ts";
 import { nextName } from "./names.ts";
 import type { Db } from "./store/db.ts";
 import { writeBrief } from "./brief.ts";
-import { act, must } from "./lifecycle.ts";
+import { act, commit, must } from "./lifecycle.ts";
 import { Lineage } from "./lineage.ts";
 import { lengthWarnings } from "./briefparts.ts";
 import { ofKind, readArtifacts, writeArtifact, type Artifact, type Kind, type MetaByKind } from "./artifacts.ts";
@@ -148,7 +148,7 @@ export class Pipeline {
    * A step that made no model call: a brief piece carried over by a repair, or
    * a deterministic screen. `model` names what stood in for the call.
    */
-  recordStep(draw: string, parent: string | null, stage: StageName | "screen-slop" | "screen-restated" | "screen-listen", model: "copied" | "deterministic" | "patched", parsed: unknown = null): StepRow {
+  recordStep(draw: string, parent: string | null, stage: StageName | "screen-slop" | "screen-restated" | "screen-listen" | "instruction", model: "copied" | "deterministic" | "patched" | "operator", parsed: unknown = null): StepRow {
     const row = this.insertStep(draw, parent, stage, model, "", "", 1);
     this.finishStep(row, { status: "done", parsed: parsed === null ? null : JSON.stringify(parsed) });
     return row;
@@ -358,9 +358,7 @@ export class Pipeline {
     if (draw.status !== "failed") throw new Error(`draw ${drawId} is ${draw.status}; only a failed draw, or an auto draw at the gate, resumes`);
     const steps = this.steps(drawId).filter((s) => s.stage === "premises");
     const setting = draw.setting ? loadChecked(draw.setting, this.settingsDir) : undefined;
-    const ids = JSON.parse(draw.example_ids) as string[];
-    const texts = new Map((this.db.query(`SELECT id, text FROM passages WHERE id IN (${ids.map(() => "?").join(",")})`).all(...ids) as { id: string; text: string }[]).map((r) => [r.id, r.text]));
-    const examples = ids.map((id) => texts.get(id)!);
+    const examples = this.examplesOf(draw);
     const dark = darknessLine((draw.darkness ?? undefined) as Darkness | undefined);
     const done = steps.find((s) => s.status === "done");
     await act(this.db, { id: drawId, during: "running", back: "failed" }, async () => {
@@ -473,28 +471,55 @@ export class Pipeline {
       .run(newId, this.nameFor(src.seed_text), src.setting, src.genre, src.mode, src.segment, src.seed_mode, src.seed_text, src.seed_theme_id, src.example_ids, src.sampling, src.darkness, src.models, gateMethod, ...vals, now());
   }
 
-  async fork(drawId: string, executeStepId: string, newId: string = newDrawId()): Promise<DrawRow> {
+  /** The draw's six example passages, in the order it drew them. */
+  private examplesOf(draw: DrawRow): string[] {
+    const ids = JSON.parse(draw.example_ids) as string[];
+    const texts = new Map((this.db.query(`SELECT id, text FROM passages WHERE id IN (${ids.map(() => "?").join(",")})`).all(...ids) as { id: string; text: string }[]).map((r) => [r.id, r.text]));
+    return ids.map((id) => texts.get(id)!);
+  }
+
+  /**
+   * Develop a candidate as a draw of its own. With `premise`, the operator's
+   * edit of the candidate's premise, the fork writes the vignette again from
+   * the edited text; an edited premise is a new idea, so the candidate may be
+   * the one this draw chose, or one already forked.
+   */
+  async fork(drawId: string, executeStepId: string, newId: string = newDrawId(), premise?: string): Promise<DrawRow> {
     const src = this.draw(drawId);
     must(src, "fork");
-    if (executeStepId === src.chosen_step) throw new Error(`draw ${drawId} was itself developed from that candidate`);
     const c = this.candidates(drawId).find((x) => x.step_id === executeStepId);
     if (!c) throw new Error(`draw ${drawId}: no execute step ${executeStepId}`);
-    const already = this.forks(drawId).find((f) => f.step_id === executeStepId);
-    if (already) throw new Error(`draw ${drawId}: candidate #${c.index} is already developed as ${already.id}`);
+    const edited = premise?.trim() && premise.trim() !== c.premise.trim() ? premise.trim() : undefined;
+    if (!edited && executeStepId === src.chosen_step) throw new Error(`draw ${drawId} was itself developed from that candidate`);
+    const already = this.forks(drawId).find((f) => f.step_id === executeStepId && !f.edited);
+    if (!edited && already) throw new Error(`draw ${drawId}: candidate #${c.index} is already developed as ${already.id}`);
     this.copyDraw(src, newId, { forked_from: drawId }, "manual");
-    const step = this.recordStep(newId, null, "execute", "copied", c.premise);
-    this.artifact(step, "vignette", c.vignette, { index: c.index, probability: c.probability, premise: c.premise, warnings: c.warnings, forked_from: executeStepId });
-    await act(this.db, { id: newId, during: "running", back: "failed", set: { chosen_step: step.id } },
-      () => this.develop(newId, { step_id: step.id, premise: c.premise, vignette: c.vignette }),
-      () => ({ id: newId, status: "done", ended: true }));
+    const meta = { index: c.index, probability: c.probability, forked_from: executeStepId };
+    await act(this.db, { id: newId, during: "running", back: "failed" }, async () => {
+      let step: StepRow, vignette: string;
+      if (edited) {
+        const { setting } = this.loadDrawSetting(src);
+        const ask = fill("executeAsk", { seed: src.seed_text, premise: edited, darkness: darknessLine((src.darkness ?? undefined) as Darkness | undefined) });
+        const r = await this.invoke(newId, null, "execute", compose(this.examplesOf(src).join("\n\n"), ask, this.settingFor("execute", setting)), (text) => need(text, "vignette"));
+        // the stated probability is the source premise's: the edit was never asked for one
+        this.artifact(r.step, "vignette", r.value, { ...meta, premise: edited, edited_from: c.premise, warnings: lengthWarnings("vignette", r.value) });
+        [step, vignette] = [r.step, r.value];
+      } else {
+        step = this.recordStep(newId, null, "execute", "copied", c.premise);
+        this.artifact(step, "vignette", c.vignette, { ...meta, premise: c.premise, warnings: c.warnings });
+        vignette = c.vignette;
+      }
+      commit(this.db, { id: newId, links: { chosen_step: step.id } });
+      await this.develop(newId, { step_id: step.id, premise: edited ?? c.premise, vignette });
+    }, () => ({ id: newId, status: "done", ended: true }));
     return this.draw(newId);
   }
 
   /** The draws forked off this one, each with the execute step of the candidate it develops. */
-  forks(drawId: string): { id: string; status: string; step_id: string; index: number }[] {
+  forks(drawId: string): { id: string; status: string; step_id: string; index: number; edited: boolean }[] {
     const forks = this.db.query("SELECT id, status FROM draws WHERE forked_from = ? ORDER BY created_at").all(drawId) as { id: string; status: string }[];
     return forks.flatMap((d) => ofKind(this.artifacts(d.id), "vignette").filter((a) => a.stage === "execute")
-      .map((a) => ({ id: d.id, status: d.status, step_id: a.meta.forked_from!, index: a.meta.index! })));
+      .map((a) => ({ id: d.id, status: d.status, step_id: a.meta.forked_from!, index: a.meta.index!, edited: !!a.meta.edited_from })));
   }
 
   /** Hide a draw from the lists, or put it back. Nothing else about it changes, and it stays reachable by id. */

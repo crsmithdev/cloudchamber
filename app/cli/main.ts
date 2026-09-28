@@ -18,7 +18,7 @@ const DOC = `cloudchamber — the one command the skill and the UI drive.
    cloudchamber setting lint <id>              check a setting file; exit 1 with one finding per line
    cloudchamber setting sources <id>           every kept entry beside the reference file it came from
    cloudchamber distill <id> [--map|--reduce]  build a setting's five lists from its reference/, in two passes
-   cloudchamber gate <draw> choose <execute-step> | fork <execute-step> | flag | archive | unarchive  [--note "..."]
+   cloudchamber gate <draw> choose <execute-step> | fork <execute-step> [--premise "edited"] | flag | archive | unarchive  [--note "..."]
    cloudchamber delete <draw>                  remove a draw that never produced a brief
    cloudchamber themes [--only SRC ...] [--limit N]   draft themes for stories not yet drafted
    cloudchamber draws [--archived]              list draws, archived ones included with the flag
@@ -27,15 +27,16 @@ const DOC = `cloudchamber — the one command the skill and the UI drive.
    cloudchamber brief <draw>                   print the brief
    cloudchamber check <draw> [--checks a,b] [--samples N]   run the checkers over a brief; stops at gate 1
    cloudchamber findings <draw> [--examined] [--all]   the findings of the latest check, by score
-   cloudchamber gate <draw> accept <finding>... | auto | dismiss <finding> [--reason false-positive|real-bad-fix|duplicate|trivial] | hold | keep | rewrite <k> [--finding ID]  [--note "..."]
+   cloudchamber gate <draw> accept [<finding>...] [--instruction "..." --parts ending,"context 1" --kind fact|direction] | auto | dismiss <finding> [--reason false-positive|real-bad-fix|duplicate|trivial] | hold | keep | rewrite <k>[,k...] [--finding ID] [--instruction "..."]  [--note "..."]
        auto repairs round after round, accepting what scores repair.stop_score or more,
        until nothing reaches the floor, the rounds run out, or the total stops falling
    cloudchamber draft <draw> [--auto] [--profile P] [--words N] [--beats N] [--tense T] [--person P] [--chronology C] [--container C] [--order O] [--models G=M,...]
      --models sets the model per stage or group (prose, judgement, corpus) for the draw and the draws made from it, e.g. judgement=claude-sonnet-5
-   cloudchamber branch <draw> [--at-beat K] [--profile P] [--models G=M,...]
+   cloudchamber branch <draw> [--at-beat K] [--profile P] [--models G=M,...] [--instruction "..."]
        develop an existing draft as a draw of its own: the brief, the ledger, the schedule and the
        beats under K are carried over word for word, and the beats from K on are written again.
        With no --at-beat the schedule alone is carried: two arms drafted from one plan.
+       --instruction plans the schedule again from K under it, and writes every beat from K under it.
    cloudchamber lab best <draw> [--n 3] [--passes 8] [--concurrency 12]
        draft the brief until there are N drafts (the draw counts if it is drafted), judge every pair
        with the OpenRouter panel, log each pass to bank/judgements.jsonl, and rank the drafts by score gap
@@ -179,16 +180,17 @@ async function main() {
       break;
     }
     case "gate": {
-      const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, options: { note: { type: "string", default: "" }, finding: { type: "string" }, reason: { type: "string" } } });
+      const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, options: { note: { type: "string", default: "" }, finding: { type: "string" }, reason: { type: "string" }, instruction: { type: "string" }, parts: { type: "string" }, kind: { type: "string", default: "direction" }, premise: { type: "string" } } });
       const [drawId, action, ...args] = positionals;
       const p = pipeline(), d = drafting();
       if (!drawId || !action) usage();
       if (!isGateAction(action!)) usage();
       // the positionals each action reads; the command itself refuses what is missing
-      if ((action === "accept" || action === "dismiss" || action === "rewrite") && !args.length) usage();
+      if ((action === "dismiss" || action === "rewrite" || (action === "accept" && !values.instruction)) && !args.length) usage();
       const gateArgs: GateArgs = {
         note: values.note, finding: action === "dismiss" ? args[0] : values.finding, reason: values.reason as GateArgs["reason"],
-        step_id: args[0], findings: args, beat: action === "rewrite" ? Number(args[0]) : undefined,
+        step_id: args[0], findings: args, beats: action === "rewrite" ? args[0].split(",").map(Number) : undefined, instruction: values.instruction, premise: values.premise,
+        instructions: action === "accept" && values.instruction ? [{ text: values.instruction, parts: (values.parts ?? "").split(",").map((x) => x.trim()).filter(Boolean), kind: values.kind as "fact" | "direction" }] : undefined,
       };
       // the CLI waits for the work whether or not it runs on: there is nothing else to go back to
       const out = await gateCommand(p, d, drawId!, action!, gateArgs).done;
@@ -237,7 +239,7 @@ async function main() {
     case "branch": {
       const { values, positionals } = parseArgs({
         args: rest, allowPositionals: true,
-        options: { "at-beat": { type: "string" }, profile: { type: "string" }, models: { type: "string" } },
+        options: { "at-beat": { type: "string" }, profile: { type: "string" }, models: { type: "string" }, instruction: { type: "string" } },
       });
       const [drawId] = positionals;
       if (!drawId) usage();
@@ -245,6 +247,7 @@ async function main() {
         at_beat: values["at-beat"] ? Number(values["at-beat"]) : undefined,
         profile: values.profile,
         models: values.models ? parseModels(values.models) : undefined,
+        instruction: values.instruction,
       }).done as DrawRow;
       console.log(JSON.stringify(draw, null, 2));
       console.log(`\nbranched ${drawId} at ${draw.branch_at}  ·  cloudchamber story ${draw.id}  ·  cloudchamber gate ${draw.id} keep | rewrite <k>`);

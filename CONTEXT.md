@@ -198,6 +198,13 @@ One repair and the check pass that follows it, in auto repair.
 **Carry**:
 Taking a part of the brief into the repair unchanged, or with only its patches applied.
 
+**Instruction**:
+What the operator says should change, in their own words, for the brief parts or the draft beats they name. At gate 1 it is a finding the operator writes, a *fact* the ledger takes or a *direction* it does not; at gate 2 it is a constraint on each beat it names.
+_Avoid_: note (a note is a log entry), prompt, feedback
+
+**Direction**:
+An instruction the pipeline keeps true without making it a ledger line: at gate 1, a settled line only; at gate 2, every instruction a draft's scenes were written under, which a later rewrite of the beat carries.
+
 **Patch**:
 A finding's span rewritten in place, no longer than the span, applied without a model call.
 

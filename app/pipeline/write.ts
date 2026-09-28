@@ -127,7 +127,10 @@ export function parseSchedule(text: string, cfg: DraftConfig): Schedule {
   return { form, beats, raw: text.trim() };
 }
 
-function schedulePrompt(brief: string, cfg: DraftConfig): string {
+/** An operator's instruction for a schedule planned again from beat `from`, against the schedule the draft had. */
+export type Replan = { instruction: string; from: number; schedule: Schedule };
+
+function schedulePrompt(brief: string, cfg: DraftConfig, replan?: Replan): string {
   const { count, min, max, words_min, words_max } = cfg.beats;
   const beatsLine = `${count === "auto" ? `between ${min} and ${max}` : `exactly ${count}`}, each between ${words_min} and ${words_max} words, caps summing to about ${cfg.length.words}`;
   const fixed = (Object.keys(FORM_VALUES) as FormAxis[]).filter((a) => cfg.form[a] !== "auto");
@@ -139,13 +142,23 @@ function schedulePrompt(brief: string, cfg: DraftConfig): string {
   const endingLine = cfg.form.ending === "brief" ? "the brief's ending is the last beat, in place" : "the schedule may derive the ending";
   // the told template asks for the narrated shape: a cold open, set pieces, an arrival, a cost, an aftermath; signal for the mission shape
   const shape: TemplateName | undefined = SHAPE_TEMPLATE[cfg.structure.template];
-  return fill("schedule", { brief, words: String(cfg.length.words), beatsLine, formLines, endingLine, shape: shape ? fill(shape, {}) : "" });
+  const kept = replan && replan.from > 1 ? fill("scheduleKept", { last: String(replan.from - 1), from: String(replan.from), written: replan.schedule.raw }) : "";
+  const asked = replan ? fill("scheduleReplan", { instructions: `- ${replan.instruction}`, kept }) : "";
+  return fill("schedule", { brief, words: String(cfg.length.words), beatsLine, formLines, endingLine, shape: asked + (shape ? fill(shape, {}) : "") });
 }
 
-export async function runSchedule(p: Pipeline, drawId: string, parts: BriefParts, brief: string, cfg: DraftConfig): Promise<{ step: StepRow; schedule: Schedule }> {
-  const { step, value } = await p.invoke(drawId, parts.outlineStepId, "schedule", schedulePrompt(brief, cfg), (t) => parseSchedule(t, cfg));
-  p.artifact(step, "schedule", value.raw, { form: value.form, beats: value.beats, words: value.beats.reduce((a, b) => a + b.words, 0) });
-  return { step, schedule: value };
+/**
+ * The schedule, derived from the brief. Under `replan` it is planned again
+ * under the operator's instruction; the beats under `from` are written, so
+ * their entries and the form are the old schedule's whatever the reply says.
+ */
+export async function runSchedule(p: Pipeline, drawId: string, parts: BriefParts, brief: string, cfg: DraftConfig, replan?: Replan): Promise<{ step: StepRow; schedule: Schedule }> {
+  const { step, value } = await p.invoke(drawId, parts.outlineStepId, "schedule", schedulePrompt(brief, cfg, replan), (t) => parseSchedule(t, cfg));
+  const schedule = replan && replan.from > 1
+    ? { ...value, form: replan.schedule.form, beats: [...replan.schedule.beats.filter((b) => b.n < replan.from), ...value.beats.filter((b) => b.n >= replan.from)] }
+    : value;
+  p.artifact(step, "schedule", value.raw, { form: schedule.form, beats: schedule.beats, words: schedule.beats.reduce((a, b) => a + b.words, 0) });
+  return { step, schedule };
 }
 
 // --- scenes -----------------------------------------------------------------------

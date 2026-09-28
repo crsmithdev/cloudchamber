@@ -303,6 +303,11 @@ describe("api: check, gate 1, draft, gate 2", () => {
     const rw = await j2("POST", `/api/draws/${d2.id}/gate`, { action: "rewrite", beat: 3 });
     expect(rw.code).toBe(202);
     for (let i = 0; i < 200 && p2.draw(d2.id).status !== "awaiting_draft_gate"; i++) await Bun.sleep(10);
+    // several beats under one instruction: the story lists it with its beats
+    const told = await j2("POST", `/api/draws/${d2.id}/gate`, { action: "rewrite", beats: [4, 2], instruction: "Tom never raises his voice." });
+    expect(told.code).toBe(202);
+    for (let i = 0; i < 200 && p2.draw(d2.id).status !== "awaiting_draft_gate"; i++) await Bun.sleep(10);
+    expect((await j2("GET", `/api/draws/${d2.id}/story`)).body.directions).toEqual([{ text: "Tom never raises his voice.", beats: [2, 4] }]);
     const kept = await j2("POST", `/api/draws/${d2.id}/gate`, { action: "keep", note: "ship it" });
     expect(kept.code).toBe(200);
     expect(kept.body.payload.draw.status).toBe("drafted");

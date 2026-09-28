@@ -239,11 +239,11 @@ export function Draws({ status, selected, like, step: stepId }: { status: Status
   };
   // superseded by a redraw is old; superseded by its own repair is a draw that went on to check
   const redrawn = (r: DrawBase) => r.superseded?.how === "redrawn";
-  const gate = async (action: string, step_id?: string) => {
+  const gate = async (action: string, step_id?: string, premise?: string) => {
     if (!d) return;
     setErr("");
     try {
-      const r = await api.gate(d.draw.id, { action, step_id, note });
+      const r = await api.gate(d.draw.id, { action, step_id, note, premise });
       setNote("");
       if (r.draw && r.draw !== d.draw.id) location.hash = `#draw/${r.draw}`;
       else loadDetail(d.draw.id);
@@ -397,7 +397,7 @@ export function Draws({ status, selected, like, step: stepId }: { status: Status
                 <DrawBody
                   d={d}
                   onChoose={(id) => gate("choose", id)}
-                  onFork={(id) => gate("fork", id)}
+                  onFork={(id, premise) => gate("fork", id, premise)}
                   onVerdict={verdict}
                   aside={
                     <DrawAside
@@ -477,6 +477,7 @@ const STAGE: Record<string, { name: string; does: string }> = {
   scene: { name: "write scene", does: "Writes one beat of the schedule as a scene. A rewrite of a scene adds one more run." },
   "screen-ledger": { name: "screen facts", does: "Checks one scene against the ledger of settled facts and flags each contradiction with a replacement." },
   "screen-structure": { name: "screen structure", does: "Asks one scene the present-or-absent questions that mark a weak draft, each answered with a quote." },
+  instruction: { name: "your instruction", does: "An instruction you gave at gate 1, stored as a finding and accepted with the others. No model call." },
   "screen-slop": { name: "count slop", does: "Counts overused words, not-X-but-Y turns, repeated trigrams and paragraph shape against the passage pool. No model call." },
 };
 export const stageName = (stage: string) => STAGE[stage]?.name ?? stage;
@@ -655,13 +656,16 @@ function DrawBody({
 }: {
   d: Detail;
   onChoose: (stepId: string) => void;
-  onFork: (stepId: string) => void;
+  onFork: (stepId: string, premise?: string) => void;
   onVerdict: (e: Example, v: "keep" | "pass", artifact?: boolean, note?: string) => void;
   aside: React.ReactNode;
 }) {
   const [openVig, setOpenVig] = useState<string | null>(d.draw.chosen_step);
   const [openEx, setOpenEx] = useState<string | null>(null);
   const [exNote, setExNote] = useState<Record<string, string>>({});
+  // the candidate whose premise is being edited, and the edit
+  const [editing, setEditing] = useState<string | null>(null);
+  const [edit, setEdit] = useState("");
   const cands = d.candidates;
   const maxP = Math.max(...cands.map((c) => c.probability), 0.01);
   const gating = d.draw.actions.choose === null;
@@ -677,7 +681,7 @@ function DrawBody({
       const c = cands.find((x) => x.step_id === id);
       if (!c || runningExec.has(id)) return;
       if (gating) onChoose(id);
-      else if (forkable && id !== d.draw.chosen_step && !d.forks.some((f) => f.step_id === id)) onFork(id);
+      else if (forkable && id !== d.draw.chosen_step && !d.forks.some((f) => f.step_id === id && !f.edited)) onFork(id);
     },
     n: () => document.querySelector<HTMLInputElement>("input[name=gate-note]")?.focus(),
   });
@@ -722,7 +726,9 @@ function DrawBody({
               <tbody>
                 {cands.map((c) => {
                   const chosen = c.step_id === d.draw.chosen_step;
-                  const fork = d.forks.find((f) => f.step_id === c.step_id);
+                  // a fork from an edited premise is a new idea: the candidate itself stays open
+                  const fork = d.forks.find((f) => f.step_id === c.step_id && !f.edited);
+                  const edits = d.forks.filter((f) => f.step_id === c.step_id && f.edited);
                   const isOpen = openVig === c.step_id;
                   const writing = runningExec.has(c.step_id);
                   return (
@@ -771,8 +777,53 @@ function DrawBody({
                               </button>
                             </div>
                           )}
+                          {forkable && !writing && (
+                            <div className="mt-1">
+                              <button
+                                className="link"
+                                aria-expanded={editing === c.step_id}
+                                title="Edit this premise and develop the edit as a draw of its own. The vignette is written again from your text; this draw is left as it is."
+                                onClick={() => {
+                                  setEditing(editing === c.step_id ? null : c.step_id);
+                                  setEdit(c.premise);
+                                }}
+                              >
+                                edit &amp; fork
+                              </button>
+                            </div>
+                          )}
+                          {edits.map((f) => (
+                            <div key={f.id} className="mt-1">
+                              <a className="link num" href={`#check/${f.id}`} title="A draw developed from an edit of this premise.">
+                                edited <Icon name="arrow_forward" />
+                              </a>
+                            </div>
+                          ))}
                         </td>
                       </tr>
+                      {editing === c.step_id && (
+                        <tr className="spans">
+                          <td colSpan={6}>
+                            <Head note="the vignette is written again from this text, then the outline, the contexts and the ending: 5 model calls">edit the premise</Head>
+                            <textarea className="mt-1 font-serif text-prose" rows={Math.max(4, Math.ceil(edit.length / 100))} aria-label="Edited premise" value={edit} onChange={(e) => setEdit(e.target.value)} />
+                            <div className="mt-2 flex gap-2">
+                              <Btn
+                                variant="primary"
+                                disabled={!edit.trim() || edit.trim() === c.premise.trim()}
+                                onClick={() => {
+                                  onFork(c.step_id, edit);
+                                  setEditing(null);
+                                }}
+                              >
+                                fork with this premise
+                              </Btn>
+                              <Btn variant="quiet" onClick={() => setEditing(null)}>
+                                cancel
+                              </Btn>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
                       {isOpen && (
                         <tr className="spans">
                           <td colSpan={6}>

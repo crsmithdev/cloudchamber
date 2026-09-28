@@ -27,7 +27,11 @@
 > - **The gate (REQ 35).** Once a candidate is chosen, any of the other four can
 >   be developed as a fork: a draw of its own with the same seed, examples,
 >   setting, domains and sampling, carrying the candidate's premise and vignette
->   across as a copied execute step and linked by `forked_from`.
+>   across as a copied execute step and linked by `forked_from`. A fork can
+  take the operator's edit of the premise (`fork <step> --premise "..."`):
+  the execute call runs again on the edited text, the vignette records the
+  original under `edited_from`, and the candidate stays open, since an edited
+  premise is a new idea. The chosen candidate can be forked this way too.
 > - **Rejecting (US 23, REQ 35).** There is no reject, and no `rejected` status
 >   is written any more. A draw nobody chooses from simply stays at the gate;
 >   archive takes it out of the way and it stays choosable. What reject was for

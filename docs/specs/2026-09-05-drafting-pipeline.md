@@ -271,6 +271,9 @@ stages are the next landing, not this one.
 29. WHEN any check, repair, schedule, scene or screen prompt template is scanned THE template SHALL contain none of *reason*, *reasoning*, *think*, *chain of thought*, and SHALL contain a stated word cap.
 30. WHEN `bun test` runs THE suite SHALL make no `claude` subprocess call and SHALL cover every criterion above that names an observable output, through the fake model and the CLI or HTTP API.
 31. WHEN `cloudchamber findings`, `cloudchamber story` or the draw JSON is rendered THE output SHALL carry the line `checked on <model family>; judge and generator share a family` whenever every check step's model is in the same family as the generation steps' model.
+32. WHEN `cloudchamber gate <draw> accept [<finding-id>...] --instruction "..." --parts <part>,... --kind fact|direction` runs in `awaiting_check_gate` THE system SHALL store the instruction as a `finding` artifact with `source: "operator"`, no span, its `parts` and its `kind`, on the latest pass; accept it with the named findings; send it to the parts it names; and rewrite each such part under the revise ask. A `fact` SHALL amend the pinned ledger and the outline; a `direction` SHALL be a settled line only.
+33. WHEN `cloudchamber gate <draw> rewrite <k>[,k...] --instruction "..."` runs in `awaiting_draft_gate` THE system SHALL rewrite each named beat in beat order under its open flags, its structure lines, every instruction given for it before, and the new instruction, and record the instruction on the scene. A later rewrite of the beat, the gate's or the screens', SHALL carry it.
+34. WHEN `cloudchamber branch <draw> --at-beat K --instruction "..."` runs THE system SHALL ask for the schedule again with the instruction and, for K > 1, the draft's schedule with beats 1..K−1 to keep; keep those entries and the form whatever the reply says; and write every beat from K under the instruction.
 
 ## Implementation Decisions
 
