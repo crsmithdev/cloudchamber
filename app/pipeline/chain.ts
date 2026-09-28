@@ -13,7 +13,7 @@
  * times.
  */
 import type { DrawRow, Pipeline, StepRow } from "./draw.ts";
-import { latestAll, type Latest } from "./verdicts.ts";
+import { latestAll, type DismissReason, type Latest } from "./verdicts.ts";
 import { cluster, excludeDismissed, merge, normalise, same, score, type Cluster, type Finding, type ScoreContext } from "./recur.ts";
 import { briefParts, prose } from "./briefparts.ts";
 import { checkerOf } from "./config.ts";
@@ -23,7 +23,7 @@ import type { Profile, Scene, Schedule } from "./write.ts";
 import type { AutoResult } from "./drafting.ts";
 import type { SlopReport } from "./slop.ts";
 import type { ListenReport } from "./listen.ts";
-export type FindingView = FindingMeta & { artifact_id: string; decision: "accepted" | "dismissed" | "open"; note: string; score: number; samples_run: number; reported: boolean; relitigates?: Settled };
+export type FindingView = FindingMeta & { artifact_id: string; decision: "accepted" | "dismissed" | "open"; note: string; reason: DismissReason | null; score: number; samples_run: number; reported: boolean; relitigates?: Settled };
 /** A finding accepted somewhere in this repair chain, and where. */
 export type Settled = { finding: string; draw: string; round: number; replacement: string; span: string; statement: string };
 export type CachedClaim = { statement: string; span: string; result: string; evidence: string; invalidates: string; replacement: string; patch: string; draw: string };
@@ -58,10 +58,10 @@ export class Chain {
   artifacts(id: string = this.drawId): Artifact[] { return this.once(`artifacts:${id}`, () => this.p.artifacts(id)); }
   steps(id: string = this.drawId): StepRow[] { return this.once(`steps:${id}`, () => this.p.steps(id)); }
   /** The gate decision on a finding: every finding verdict is read in one query. */
-  decision(findingId: string): { decision: "accepted" | "dismissed" | "open"; note: string } {
+  decision(findingId: string): { decision: "accepted" | "dismissed" | "open"; note: string; reason: DismissReason | null } {
     this.verdicts ??= latestAll(this.p.db, "finding");
     const l = this.verdicts.get(findingId);
-    return l ? { decision: l.verdict === "keep" ? "accepted" : "dismissed", note: l.note } : { decision: "open", note: "" };
+    return l ? { decision: l.verdict === "keep" ? "accepted" : "dismissed", note: l.note, reason: l.reason } : { decision: "open", note: "", reason: null };
   }
 
   /** The first draw of the chain. */
@@ -200,11 +200,11 @@ export class Chain {
   }
 
   /** Findings dismissed on this draw or any brief it repairs; a re-check does not raise them again. */
-  dismissed(): { span: string; statement: string }[] {
+  dismissed(): { span: string; statement: string; result: string; invalidates: string }[] {
     return this.once("dismissed", () => {
-      const out: { span: string; statement: string }[] = [];
+      const out: { span: string; statement: string; result: string; invalidates: string }[] = [];
       for (const id of this.ids) {
-        for (const f of this.findingArtifacts(id)) if (f.source === "check" && this.decision(f.id).decision === "dismissed") out.push({ span: f.span, statement: f.statement });
+        for (const f of this.findingArtifacts(id)) if (f.source === "check" && this.decision(f.id).decision === "dismissed") out.push({ span: f.span, statement: f.statement, result: f.result, invalidates: f.invalidates });
       }
       return out;
     });

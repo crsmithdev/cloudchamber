@@ -7,7 +7,8 @@
  * Tokens are the lowercase [a-z0-9]+ runs of a string; overlap is
  * |A ∩ B| / min(|A|, |B|) over the token sets. A finding joins the first
  * cluster whose first member's span overlaps its span at 0.5, or whose
- * statement overlaps at 0.6.
+ * statement overlaps at 0.6. Two reader's questions also join when they break
+ * the same section and ask the same leading clause (`sameQuestion`).
  */
 import { createHash } from "node:crypto";
 import { tag, tags } from "./model.ts";
@@ -53,8 +54,32 @@ export function overlap(a: string, b: string): number {
   return shared / Math.max(1, Math.min(A.size, B.size));
 }
 
-export function same(a: { span: string; statement: string }, b: { span: string; statement: string }): boolean {
-  return overlap(a.span, b.span) >= SPAN_OVERLAP || overlap(a.statement, b.statement) >= STATEMENT_OVERLAP;
+type Comparable = { span: string; statement: string; result?: string; invalidates?: string };
+
+export function same(a: Comparable, b: Comparable): boolean {
+  return overlap(a.span, b.span) >= SPAN_OVERLAP || overlap(a.statement, b.statement) >= STATEMENT_OVERLAP || sameQuestion(a, b);
+}
+
+const QUESTION_OVERLAP = 0.75;
+const STOPWORDS = new Set("a an the of to in on at by for from with and or but is are was were be been being does do did can could would should will has have had it its s his her their he she they them him as into out up this that these those there".split(" "));
+
+/**
+ * Two reader's questions ask the same thing when they break the same section
+ * and their leading clauses, up to the first comma, "and" or question mark,
+ * share 0.75 of their content words. The reader quotes a different span for
+ * one question in each sample: "Whose suit is the crew winching out of the
+ * silt" and "Whose suit is this recovery crew lifting out of the silt" were two
+ * findings on draw 20260928000554-01c5. The question word stays in, so "how"
+ * and "whose" never meet.
+ */
+export function sameQuestion(a: Comparable, b: Comparable): boolean {
+  if (a.result?.trim().toLowerCase() !== "unanswered" || b.result?.trim().toLowerCase() !== "unanswered") return false;
+  if ((a.invalidates ?? "").toLowerCase() !== (b.invalidates ?? "").toLowerCase()) return false;
+  const lead = (s: string) => new Set([...toks(s.split(/,|\?|\band\b/i)[0] ?? "")].filter((t) => !STOPWORDS.has(t)));
+  const A = lead(a.statement), B = lead(b.statement);
+  let shared = 0;
+  for (const t of A) if (B.has(t)) shared++;
+  return shared / Math.max(1, Math.min(A.size, B.size)) >= QUESTION_OVERLAP;
 }
 
 export const normalise = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
@@ -111,6 +136,14 @@ function invalidatesRank(inv: string): number {
  */
 const INVALIDATES_WEIGHT: Record<string, number> = { departure: 2, knowledge: 1, particulars: 1, arrival: 2 };
 export const SCORE_MAX = 10;
+
+/**
+ * What a finding would cost the story if it stands: the weight of the outline
+ * section it breaks. The score says how sure the checks are; the cost says how
+ * much it matters. A reader's question quotes no evidence and scores 1 or 2
+ * whatever it breaks, so the gate lists by cost first.
+ */
+export const cost = (invalidates: string): number => INVALIDATES_WEIGHT[invalidates.toLowerCase()] ?? 0;
 
 /**
  * A hedge immediately before a number, or a trailing "or so", marks a
@@ -182,7 +215,7 @@ export function score(f: Scorable, samples: number, ctx?: ScoreContext): number 
   const recurrence = f.n >= samples ? 3 : f.n === samples - 1 ? 2 : 1;
   const crossChecker = f.checkers.length > 1 ? 2 : 0;
   const inv = f.invalidates.toLowerCase();
-  const weight = INVALIDATES_WEIGHT[inv] ?? 0;
+  const weight = cost(inv);
   const inOutline = !!f.span && !!ctx?.outline && normalise(ctx.outline).includes(normalise(f.span));
   const severity = inv === "particulars" && !inOutline && HEDGED.test(f.span ?? "") ? 0 : weight;
   const r = f.result.toLowerCase().trim();
@@ -231,6 +264,6 @@ export function merge(all: Cluster[]): Cluster[] {
 }
 
 /** Drop clusters that overlap a dismissed finding by the same rule. */
-export function excludeDismissed<T extends { span: string; statement: string }>(cs: T[], dismissed: { span: string; statement: string }[]): T[] {
+export function excludeDismissed<T extends Comparable>(cs: T[], dismissed: Comparable[]): T[] {
   return cs.filter((c) => !dismissed.some((d) => same(c, d)));
 }

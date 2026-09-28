@@ -38,7 +38,7 @@ export type DrawBase = DrawDetail["draw"];
 /** What a round of a repair chain shows in the list. Null until the server has computed it. */
 export type CheckSummary = FindingsSummary;
 export type Finding = GateFinding;
-type Claim = { statement: string; span: string; result: string; evidence: string; authority: string };
+type Claim = { statement: string; span: string; result: string; evidence: string; authority: string; confirm?: string };
 /** A check's profile of a brief, as the page reads it: structure answers, or the resemblance matches and the nearest story. */
 type Profile = {
   checker?: string;

@@ -2,7 +2,7 @@ import stagesToml from "./stages.toml";
 import genresToml from "./genres.toml";
 
 type GenStageName = "themes" | "redundancy" | "distill-map" | "distill" | "premises" | "execute" | "outline" | "context" | "ending";
-export type CheckStageName = "ledger-extract" | "check-derivation" | "check-ledger" | "check-verify" | "check-structure" | "check-resemblance" | "check-reader" | "check-claims-extract" | "check-claims-verify";
+export type CheckStageName = "ledger-extract" | "check-derivation" | "check-ledger" | "check-verify" | "check-structure" | "check-resemblance" | "check-reader" | "check-claims-extract" | "check-claims-verify" | "check-claims-confirm";
 type DraftStageName = "reconcile" | "repair-vignette" | "repair-context" | "repair-outline" | "repair-ending" | "schedule" | "scene" | "scene-edit" | "screen-ledger" | "screen-structure" | "reference-bind";
 export type StageName = GenStageName | CheckStageName | DraftStageName;
 /** `tools` is the comma-separated list a call may use; absent or empty means `--tools ""`. */
@@ -61,6 +61,7 @@ const STAGE_TABLE: Readonly<Record<string, StageFacts>> = {
   "check-reader": { tab: "check", group: "judgement", checker: "reader" },
   "check-claims-extract": { tab: "check", group: "judgement", checker: "claims" },
   "check-claims-verify": { tab: "check", group: "judgement", checker: "claims" },
+  "check-claims-confirm": { tab: "check", group: "judgement", checker: "claims" },
   reconcile: { tab: "check", group: "judgement" },
   "repair-vignette": { tab: "check", group: "prose", role: "vignette" },
   "repair-context": { tab: "check", group: "prose", role: "context" },

@@ -18,6 +18,11 @@ import { pipelineVersion } from "./version.ts";
 export type Kind = "example" | "theme" | "brief" | "story" | "finding" | "draft";
 export type Method = "queue" | "browse" | "gate" | "cli" | "draw";
 
+/** Why a finding was dismissed. A finding with a real defect and a bad fix is not a false positive. */
+export const DISMISS_REASONS = ["false-positive", "real-bad-fix", "duplicate", "trivial"] as const;
+export type DismissReason = (typeof DISMISS_REASONS)[number];
+export const isDismissReason = (s: unknown): s is DismissReason => (DISMISS_REASONS as readonly unknown[]).includes(s);
+
 export type Verdict = {
   id: string;
   kind: Kind;
@@ -30,11 +35,13 @@ export type Verdict = {
   by: string;
   pipeline_version: string;
   inherited_from?: string;
+  /** Why a finding was dismissed: the label that measures each checker's precision. */
+  reason?: DismissReason;
   snapshot?: { story_id: string; text: string };
 };
 
 export type VerdictInput = Pick<Verdict, "kind" | "target_id" | "verdict" | "method"> &
-  Partial<Pick<Verdict, "artifact" | "note" | "by" | "inherited_from" | "snapshot">>;
+  Partial<Pick<Verdict, "artifact" | "note" | "by" | "inherited_from" | "reason" | "snapshot">>;
 
 export const KINDS = new Set<Kind>(["example", "theme", "brief", "story", "finding", "draft"]);
 const METHODS = new Set<Method>(["queue", "browse", "gate", "cli", "draw"]);
@@ -55,14 +62,15 @@ export function validateLine(raw: string, lineNo: number): Verdict {
   if (typeof v.note !== "string") throw bad("note must be a string");
   if (!METHODS.has(v.method as Method)) throw bad(`bad method ${JSON.stringify(v.method)}`);
   for (const k of ["at", "by", "pipeline_version"]) if (typeof v[k] !== "string") throw bad(`missing ${k}`);
+  if (v.reason !== undefined && !isDismissReason(v.reason)) throw bad(`bad reason ${JSON.stringify(v.reason)}`);
   return v as Verdict;
 }
 
 function insert(db: Db, v: Verdict) {
   db.query(
-    `INSERT OR REPLACE INTO verdicts (id, kind, target_id, verdict, artifact, note, method, at, by, pipeline_version, inherited_from)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  ).run(v.id, v.kind, v.target_id, v.verdict, v.artifact ? 1 : 0, v.note, v.method, v.at, v.by, v.pipeline_version, v.inherited_from ?? null);
+    `INSERT OR REPLACE INTO verdicts (id, kind, target_id, verdict, artifact, note, method, at, by, pipeline_version, inherited_from, reason)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(v.id, v.kind, v.target_id, v.verdict, v.artifact ? 1 : 0, v.note, v.method, v.at, v.by, v.pipeline_version, v.inherited_from ?? null, v.reason ?? null);
 }
 
 /** Append one verdict to the log and the table. Never modifies an existing line. */
@@ -84,6 +92,7 @@ export function record(db: Db, input: VerdictInput, log: string = VERDICT_LOG): 
     by: input.by ?? process.env.USER ?? "chris",
     pipeline_version: pipelineVersion(),
     ...(input.inherited_from ? { inherited_from: input.inherited_from } : {}),
+    ...(input.reason ? { reason: input.reason } : {}),
     ...(snapshot ? { snapshot } : {}),
   };
   mkdirSync(dirname(log), { recursive: true });
@@ -111,17 +120,17 @@ export function replay(db: Db, log: string = VERDICT_LOG): number {
   return all.length;
 }
 
-export type Latest = { verdict: "keep" | "pass"; artifact: boolean; note: string; at: string; inherited_from: string | null } | null;
+export type Latest = { verdict: "keep" | "pass"; artifact: boolean; note: string; at: string; inherited_from: string | null; reason: DismissReason | null } | null;
 
 export function latest(db: Db, kind: Kind, target: string): Latest {
-  const r = db.query("SELECT verdict, artifact, note, at, inherited_from FROM verdicts WHERE kind = ? AND target_id = ? ORDER BY at DESC, rowid DESC LIMIT 1").get(kind, target) as any;
+  const r = db.query("SELECT verdict, artifact, note, at, inherited_from, reason FROM verdicts WHERE kind = ? AND target_id = ? ORDER BY at DESC, rowid DESC LIMIT 1").get(kind, target) as any;
   return r ? { ...r, artifact: !!r.artifact } : null;
 }
 
 /** `latest` for every target of `kind` in one query: rows in log order, so the last one written wins. */
 export function latestAll(db: Db, kind: Kind): Map<string, Latest> {
   const out = new Map<string, Latest>();
-  for (const r of db.query("SELECT target_id, verdict, artifact, note, at, inherited_from FROM verdicts WHERE kind = ? ORDER BY at, rowid").all(kind) as any[]) {
+  for (const r of db.query("SELECT target_id, verdict, artifact, note, at, inherited_from, reason FROM verdicts WHERE kind = ? ORDER BY at, rowid").all(kind) as any[]) {
     const { target_id, ...v } = r;
     out.set(target_id, { ...v, artifact: !!v.artifact });
   }

@@ -14,7 +14,7 @@
 import { writeBrief } from "./brief.ts";
 import { newDrawId, type DrawRow, type Pipeline } from "./draw.ts";
 import { copyBrief, copyDraft } from "./branch.ts";
-import { record } from "./verdicts.ts";
+import { record, type DismissReason } from "./verdicts.ts";
 import { act, commit, must, type Action, type Status } from "./lifecycle.ts";
 import { loadDraftConfig, type DraftConfig, type Overrides, type Resolved } from "./draftconfig.ts";
 import { extractLedger, runCheck, STRUCTURE_QUESTIONS, type CheckResult } from "./check.ts";
@@ -30,7 +30,7 @@ import { draftView, exportDraft, renderStory, type DraftView } from "./drafts.ts
 import { tag } from "./model.ts";
 import { defaultPrinter, noPdf, writeReport, type PdfPrinter } from "./report.ts";
 import { fill } from "./prompts.ts";
-import { SCORE_MAX, same } from "./recur.ts";
+import { SCORE_MAX, cost, same } from "./recur.ts";
 
 /** One brief of an auto run: its last check pass's open findings and their total, what auto accepted on it, and how many passes it had. */
 export type AutoRound = { round: number; id: string; open: number; total: number; accepted: number; calls: number; passes: number };
@@ -39,7 +39,7 @@ export type DraftOpts = { profile?: string; overrides?: Overrides; auto?: boolea
 /** A branch takes the source's drafting configuration unless it names its own, and the beat to write from. */
 export type BranchOpts = { atBeat?: number; profile?: string; overrides?: Overrides; models?: Record<string, string> };
 /** A finding as the gate reads it: `auto_eligible` says whether the auto rule would consider it, whatever it scores. */
-export type GateFinding = FindingView & { auto_eligible: boolean };
+export type GateFinding = FindingView & { auto_eligible: boolean; cost: number };
 /** The latest pass in four numbers, for a list row. */
 export type FindingsSummary = { pass: string | null; reported: number; accepted: number; open: number; total: number };
 /**
@@ -172,7 +172,7 @@ export class Drafting {
     const examined = steps.map((s, i) => ({ stage: s.stage, sample: i + 1, examined: String((JSON.parse(s.parsed ?? "{}") as any).examined ?? "") })).filter((x) => x.examined);
     // the gate lists what it will act on: a finding the verify pass dropped is withheld
     // until it is asked for, and stays in the list once it has been ruled on
-    const all: GateFinding[] = chain.findings(opts.all).map((f) => ({ ...f, auto_eligible: autoEligible(f) }));
+    const all: GateFinding[] = chain.findings(opts.all).map((f) => ({ ...f, auto_eligible: autoEligible(f), cost: cost(f.invalidates) }));
     const offList = (f: FindingView) => !f.reported && f.decision === "open";
     const shown = opts.all ? all : all.filter((f) => !offList(f));
     const off = all.filter(offList);
@@ -181,7 +181,8 @@ export class Drafting {
       : { pass, reported: rep.length, accepted: rep.filter((f) => f.decision === "accepted").length, open: rep.filter((f) => f.decision === "open").length, total: rep.reduce((n, f) => n + f.score, 0) };
     return {
       pass, findings: shown,
-      listed: shown.filter((f) => !f.relitigates && !offList(f)), reopened: shown.filter((f) => !!f.relitigates), left: shown.filter((f) => !f.relitigates && offList(f)), summary,
+      // a person reads what it breaks first and how sure the checks are second; auto reads `findings`, by score alone
+      listed: shown.filter((f) => !f.relitigates && !offList(f)).sort((a, b) => b.cost - a.cost || b.score - a.score), reopened: shown.filter((f) => !!f.relitigates), left: shown.filter((f) => !f.relitigates && offList(f)), summary,
       // dropped: the verify pass took it off the list and said why. rare: seen in too few samples,
       // which only the reconstruction behind `all` can count, so it is null without it.
       off_list: { dropped: off.filter((f) => !!f.dropped).length, rare: opts.all ? off.filter((f) => !f.dropped).length : null },
@@ -219,14 +220,14 @@ export class Drafting {
     return this.p.draw(next.id);
   }
 
-  dismiss(drawId: string, id: string, note = "", method: "gate" | "draw" = "gate"): FindingView {
+  dismiss(drawId: string, id: string, note = "", method: "gate" | "draw" = "gate", reason?: DismissReason): FindingView {
     this.must(drawId, "dismiss");
-    return this.dismissFound(drawId, this.finding(chainOf(this.p, drawId), id), note, method);
+    return this.dismissFound(drawId, this.finding(chainOf(this.p, drawId), id), note, method, reason);
   }
-  private dismissFound(drawId: string, f: FindingView, note: string, method: "gate" | "draw"): FindingView {
+  private dismissFound(drawId: string, f: FindingView, note: string, method: "gate" | "draw", reason?: DismissReason): FindingView {
     this.promote(drawId, f);
-    record(this.p.db, { kind: "finding", target_id: f.id, verdict: "pass", method, note });
-    return { ...f, decision: "dismissed", note };
+    record(this.p.db, { kind: "finding", target_id: f.id, verdict: "pass", method, note, reason });
+    return { ...f, decision: "dismissed", note, reason: reason ?? null };
   }
 
   /**

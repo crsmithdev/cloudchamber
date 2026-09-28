@@ -665,11 +665,15 @@ function GateOne({ d, clean, onAct, onDraft, aside }: { d: Detail; clean: boolea
     d: (fid) => {
       if (!repaired && byId(fid)?.decision === "open") gate("dismiss", { finding: fid });
     },
+    // 1 to 4 dismiss with a reason, in the order the row lists them
+    ...Object.fromEntries(DISMISS_REASONS.map((r, i) => [String(i + 1), (fid: string) => {
+      if (!repaired && byId(fid)?.decision === "open") gate("dismiss", { finding: fid, reason: r });
+    }])),
     n: () => document.querySelector<HTMLInputElement>(".controls input[type=text]")?.focus(),
   });
   // the open list and the list that undoes an earlier fix are the same row
   const row = (x: Finding) => (
-    <FindingRow key={x.id} f={x} S={x.samples_run ?? S} scoreMax={f!.score_max} selected={sel.has(x.id)} onToggle={() => toggle(x.id)} onDismiss={() => gate("dismiss", { finding: x.id })} readOnly={repaired} />
+    <FindingRow key={x.id} f={x} S={x.samples_run ?? S} scoreMax={f!.score_max} selected={sel.has(x.id)} onToggle={() => toggle(x.id)} onDismiss={(reason) => gate("dismiss", { finding: x.id, reason })} readOnly={repaired} />
   );
   const S = f?.findings[0]?.samples_run ?? 3;
   return (
@@ -733,7 +737,7 @@ function GateOne({ d, clean, onAct, onDraft, aside }: { d: Detail; clean: boolea
               <>
                 {f ? `${f.summary?.reported ?? 0} reported${f.off_list.dropped ? ` · ${f.off_list.dropped} the verify pass dropped` : ""}${f.off_list.rare ? ` · ${f.off_list.rare} too rare to report` : ""}` : "…"}
                 {f?.pass ? ` · checked ${f.pass.slice(0, 16).replace("T", " ")}` : ""}
-                {checkSteps.length ? ` · ${checkSteps.length} checker calls · ${checkSecs} s` : ""} · highest score first · duplicates merged across checkers ·{" "}
+                {checkSteps.length ? ` · ${checkSteps.length} checker calls · ${checkSecs} s` : ""} · what it breaks first, then score · duplicates merged across checkers ·{" "}
                 <button
                   className="link"
                   aria-pressed={showAll}
@@ -745,7 +749,7 @@ function GateOne({ d, clean, onAct, onDraft, aside }: { d: Detail; clean: boolea
                 {!repaired && !nothingToRule && (
                   <>
                     {" · "}
-                    <Keys keys={[["↓", "move"], ["a", "accept"], ["d", "dismiss"], ["n", "note"]]} />
+                    <Keys keys={[["↓", "move"], ["a", "accept"], ["d", "dismiss"], ["1–4", "dismiss with a reason"], ["n", "note"]]} />
                   </>
                 )}
               </>
@@ -795,7 +799,7 @@ function GateOne({ d, clean, onAct, onDraft, aside }: { d: Detail; clean: boolea
                 className="mt-6"
                 note={
                   f.claims.length
-                    ? `${f.claims.length} verified · ${f.claims.filter((c) => c.result === "supported").length} supported · ${f.claims.filter((c) => c.result === "contradicted").length} contradicted · ${f.claims[0].authority === "world" ? "the web, on sonnet" : f.claims[0].authority === "setting" ? "the setting file" : "the setting's reference files"}`
+                    ? `${f.claims.length} verified · ${f.claims.filter((c) => c.result === "supported").length} supported · ${f.claims.filter((c) => c.result === "contradicted").length} contradicted · ${f.claims.filter((c) => c.result === "unverifiable").length} unverifiable · ${f.claims[0].authority === "world" ? "the web, on sonnet" : f.claims[0].authority === "setting" ? "the setting file" : "the setting's reference files"}`
                     : "not run: the setting names no source to check claims against"
                 }
               >
@@ -809,10 +813,13 @@ function GateOne({ d, clean, onAct, onDraft, aside }: { d: Detail; clean: boolea
                         <td className="w-4">
                           <Mark state={c.result === "supported" ? "held" : c.result === "contradicted" ? "fail" : ""} />
                         </td>
-                        <td className={"num w-28 " + (c.result === "supported" ? "text-keep" : c.result === "contradicted" ? "text-pass" : "text-dim")}>{c.result}</td>
+                        <td className={"num w-28 " + (c.result === "supported" ? "text-keep" : c.result === "contradicted" ? "text-pass" : "text-dim")} title={RESULT_DEF[c.result]?.[1]}>
+                          {c.result}
+                        </td>
                         <td>
                           {c.statement}
                           <div className="mt-1 text-dim">{c.evidence}</div>
+                          {c.confirm && <div className="mt-1 text-dim" title="A second reading asked whether the cited line gives a different value for the same thing. It said no, so the claim is unverifiable, not wrong.">second reading: {c.confirm}</div>}
                         </td>
                       </tr>
                     ))}
@@ -918,13 +925,13 @@ function GateOne({ d, clean, onAct, onDraft, aside }: { d: Detail; clean: boolea
 
 /** A finding as a row: score, recurrence as marks, the job it breaks, the checkers, then the span, the statement and the ledger of result, evidence and replacement. */
 /** A finding: the values on one ruled line, then the span, the statement and the ledger at full width. */
-function FindingRow({ f, S, scoreMax, selected, onToggle, onDismiss, readOnly }: { f: Finding; S: number; scoreMax: number; selected: boolean; onToggle: () => void; onDismiss: () => void; readOnly: boolean }) {
+function FindingRow({ f, S, scoreMax, selected, onToggle, onDismiss, readOnly }: { f: Finding; S: number; scoreMax: number; selected: boolean; onToggle: () => void; onDismiss: (reason?: DismissReason) => void; readOnly: boolean }) {
   const acc = f.decision === "accepted" || selected;
   const cls = "finding" + (acc ? " sel" : "") + (f.decision === "dismissed" ? " old" : "");
   return (
     <div className={cls} data-row={f.id} tabIndex={0} aria-selected={selected}>
       <div className="line">
-        <span className="num w-6 font-semibold" title={`score ${f.score} of ${scoreMax}: recurrence, a second checker, what it invalidates, the kind of result, and whether it quotes evidence`}>
+        <span className="num w-6 font-semibold" title={`score ${f.score} of ${scoreMax}: how sure the checks are. Recurrence, a second checker, what it invalidates, the kind of result, and whether it quotes evidence. A reader's question quotes no evidence and scores low whatever it breaks, so the list reads what it breaks first.`}>
           {f.score}
         </span>
         <span className="whitespace-nowrap" title={`recurred in ${f.n} of ${S} samples`}>
@@ -937,10 +944,17 @@ function FindingRow({ f, S, scoreMax, selected, onToggle, onDismiss, readOnly }:
             {f.n}/{S}
           </span>
         </span>
-        <span className="text-dim">
+        <span className="text-dim" title={SECTION_DEF[f.invalidates] ?? `The outline section "${f.invalidates}" would have to change.`}>
           breaks <b className={"font-normal " + (f.invalidates === "none" ? "" : "text-ink")}>{f.invalidates === "none" ? "no section" : f.invalidates}</b>
         </span>
-        <span className="text-dim">{f.checkers.join(" · ")}</span>
+        <span className="text-dim">
+          {f.checkers.map((c, i) => (
+            <React.Fragment key={c}>
+              {i > 0 && " · "}
+              <span title={CHECKER_DEF[c]?.[1]}>{CHECKER_DEF[c]?.[0] ?? c}</span>
+            </React.Fragment>
+          ))}
+        </span>
         {f.dropped && (
           <span className="text-dim" title={f.dropped}>
             dropped: {f.dropped}
@@ -956,7 +970,9 @@ function FindingRow({ f, S, scoreMax, selected, onToggle, onDismiss, readOnly }:
           {f.decision === "accepted" ? (
             <span className="text-keep">accepted{f.note ? ` · ${f.note}` : ""}</span>
           ) : f.decision === "dismissed" ? (
-            <span className="text-dim">dismissed{f.note ? ` · ${f.note}` : ""}</span>
+            <span className="text-dim" title={f.reason ? DISMISS_DEF[f.reason][1] : undefined}>
+              dismissed{f.reason ? ` · ${DISMISS_DEF[f.reason][0]}` : ""}{f.note ? ` · ${f.note}` : ""}
+            </span>
           ) : readOnly ? (
             <span className="text-dim">open</span>
           ) : (
@@ -964,9 +980,19 @@ function FindingRow({ f, S, scoreMax, selected, onToggle, onDismiss, readOnly }:
               <Btn variant={selected ? "keep" : undefined} pressed={selected} onClick={onToggle}>
                 {selected ? "selected" : "accept"}
               </Btn>
-              <button className="link" onClick={onDismiss}>
-                dismiss
-              </button>
+              <span className="text-dim">
+                <button className="link" onClick={() => onDismiss()} title="Dismiss with no reason. A reason counts toward each checker's precision.">
+                  dismiss
+                </button>
+                {DISMISS_REASONS.map((r, i) => (
+                  <React.Fragment key={r}>
+                    {i === 0 ? ": " : " · "}
+                    <button className="link" onClick={() => onDismiss(r)} title={`${DISMISS_DEF[r][1]} (key ${i + 1})`}>
+                      {DISMISS_DEF[r][0]}
+                    </button>
+                  </React.Fragment>
+                ))}
+              </span>
             </>
           )}
         </span>
@@ -975,7 +1001,9 @@ function FindingRow({ f, S, scoreMax, selected, onToggle, onDismiss, readOnly }:
       <div className="mt-0.5">{f.statement}</div>
       <div className="kv">
         <b>result</b>
-        <span className="font-mono">{f.result}</span>
+        <span title={RESULT_DEF[resultKind(f.result)]?.[1]}>
+          {RESULT_DEF[resultKind(f.result)]?.[0] ?? <span className="font-mono">{f.result}</span>}
+        </span>
         <b>evidence</b>
         <span>{f.evidence}</span>
         <b>replacement</b>
@@ -992,6 +1020,41 @@ function FindingRow({ f, S, scoreMax, selected, onToggle, onDismiss, readOnly }:
     </div>
   );
 }
+
+/** Each checker's display name and what it does (app/pipeline/prompts.ts). */
+const CHECKER_DEF: Record<string, [string, string]> = {
+  derivation: ["derivation", "Checks each assertion in the vignettes and the ending against the one departure the outline derives everything from, and does each sum whose figures the brief states."],
+  ledger: ["ledger", "Checks each vignette and the ending against the pinned ledger of settled facts, and against each other, pairwise. The ledger wins where they disagree."],
+  claims: ["claims", "Extracts claims about the actual world or the setting and verifies each against the authority the setting names. A contradicted claim gets a second reading against the line it cites."],
+  reader: ["reader's question", "A plot hole: a question a reader of the vignettes and the ending asks and the story never answers. It quotes no evidence, so it scores low; auto never accepts it."],
+};
+/** What each result means (app/pipeline/prompts.ts, findingShape). A contradicts:<quote> result reads as contradicts. */
+const RESULT_DEF: Record<string, [string, string]> = {
+  contradicts: ["contradicts", "The span and a second quote from the brief state different values for one thing."],
+  contradicted: ["contradicted", "The authority states a different value for the same thing."],
+  underived: ["underived", "The span asserts something that does not follow from the departure the outline states."],
+  unanswered: ["unanswered", "The story raises the question and nothing in the vignettes or the ending answers it."],
+  unverifiable: ["unverifiable", "The authority does not settle the claim. Not wrong, only unchecked."],
+  supported: ["supported", "The authority confirms the claim."],
+};
+const resultKind = (r: string) => (/^contradicts:/i.test(r.trim()) ? "contradicts" : r.trim().toLowerCase());
+/** The outline section a finding would force to change (app/pipeline/prompts.ts, the outline's sections). */
+const SECTION_DEF: Record<string, string> = {
+  departure: "The one thing not true of the actual world, and what the story derives from it. Worth 2 to the score and the order.",
+  arrival: "What arrives, and what it costs one person. Worth 2 to the score and the order.",
+  knowledge: "Who knows what, and from when. Worth 1 to the score and the order.",
+  particulars: "The names, places, dates, counts and sums the prose must not drift from. Worth 1 to the score and the order.",
+  none: "No outline section has to change: the fix is local to the prose.",
+};
+const DISMISS_REASONS = ["false-positive", "real-bad-fix", "duplicate", "trivial"] as const;
+type DismissReason = (typeof DISMISS_REASONS)[number];
+/** Each reason's label and what it tells the precision count (bank/verdicts.jsonl). */
+const DISMISS_DEF: Record<DismissReason, [string, string]> = {
+  "false-positive": ["wrong", "The finding is not true of the brief: the checker misread it."],
+  "real-bad-fix": ["bad fix", "The finding is real, but the replacement would make things worse. Fix it by hand."],
+  duplicate: ["duplicate", "Another finding on the list says the same thing."],
+  trivial: ["trivial", "True, but no reader would notice or care."],
+};
 
 /** The questions as the checker is asked them (app/pipeline/prompts.ts, checkStructure); the server names which it asks and in what order. */
 const STRUCTURE_DEF: Record<string, string> = {

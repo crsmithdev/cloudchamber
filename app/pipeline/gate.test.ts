@@ -11,6 +11,7 @@ describe("the gate commands", () => {
     expect(() => gateCommand(p, d, draw.id, "choose")).toThrow(/step_id required/);
     expect(() => gateCommand(p, d, draw.id, "accept")).toThrow(/findings required/);
     expect(() => gateCommand(p, d, draw.id, "dismiss")).toThrow(/finding required/);
+    expect(() => gateCommand(p, d, draw.id, "dismiss", { finding: "f-x", reason: "boring" as never })).toThrow(/reason must be false-positive/);
     expect(() => gateCommand(p, d, draw.id, "rewrite")).toThrow(/beat required/);
     expect(() => gateCommand(p, d, draw.id, "sing")).toThrow(/action must be/);
     // a status that forbids it, and a draw that is never deletable once it has a chosen candidate

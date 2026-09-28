@@ -143,6 +143,7 @@ stages.toml: the model each stage calls, the one it falls back to on a refusal, 
 | `check-reader` | claude-opus-5 → claude-sonnet-5 |
 | `check-claims-extract` | claude-opus-5 → claude-sonnet-5 |
 | `check-claims-verify` | claude-sonnet-5 → claude-opus-5 · tools WebSearch,WebFetch |
+| `check-claims-confirm` | claude-sonnet-5 → claude-opus-5 |
 | `reconcile` | claude-opus-5 → claude-sonnet-5 |
 | `repair-vignette` | claude-opus-5 → claude-sonnet-5 |
 | `repair-context` | claude-opus-5 → claude-sonnet-5 |

@@ -13,6 +13,7 @@ import { newDrawId, type Pipeline } from "./draw.ts";
 import type { Drafting } from "./drafting.ts";
 import type { Overrides } from "./draftconfig.ts";
 import { ACTIONS, type Action } from "./lifecycle.ts";
+import { DISMISS_REASONS, isDismissReason, type DismissReason } from "./verdicts.ts";
 
 export const GATE_ACTIONS = ACTIONS;
 export type GateAction = Action;
@@ -21,6 +22,7 @@ export const isGateAction = (s: string): s is GateAction => (GATE_ACTIONS as rea
 /** What the commands take between them. Each one asks for what it needs and refuses what it lacks. */
 export type GateArgs = {
   step_id?: string; note?: string; findings?: string[]; finding?: string; beat?: number;
+  reason?: DismissReason;                                               // dismiss
   checks?: string[]; samples?: number;                                  // check
   auto?: boolean; profile?: string; overrides?: Overrides;              // draft
   at_beat?: number;                                                     // branch
@@ -68,7 +70,10 @@ export function gateCommand(p: Pipeline, d: Drafting, id: string, action: string
     }
     case "auto": return cmd(true, id, d.autoRounds(id, { note: note || undefined }));
     // a dismissal answers with the finding, and leaves the pane where it stands
-    case "dismiss": return cmd(false, null, d.dismiss(id, need(a.finding, "finding"), note));
+    case "dismiss": {
+      if (a.reason !== undefined && !isDismissReason(a.reason)) throw new Error(`reason must be ${DISMISS_REASONS.join(" | ")}`);
+      return cmd(false, null, d.dismiss(id, need(a.finding, "finding"), note, "gate", a.reason));
+    }
     case "hold": return cmd(false, id, d.hold(id));
     case "keep": return cmd(false, id, d.keep(id, note));
     case "rewrite": return cmd(true, id, d.rewrite(id, Number(need(a.beat, "beat")), a.finding));

@@ -241,7 +241,7 @@ const claimMeta = (v: { span: string; result: string; evidence: string; invalida
 
 type Claim = { span: string; statement: string };
 /** A claim's verdict: fresh, or `cached` from the chain claim it repeats, with the draw that verified it. */
-type Verified = { span: string; statement: string; result: string; evidence: string; invalidates: string; replacement: string; patch: string; draw?: string; cached?: boolean };
+type Verified = { span: string; statement: string; result: string; evidence: string; invalidates: string; replacement: string; patch: string; draw?: string; cached?: boolean; confirm?: string };
 
 /** The claims an extract call listed. */
 const claimsIn = (t: string): Claim[] =>
@@ -268,11 +268,30 @@ async function verifyClaims(p: Pipeline, drawId: string, extract: StepRow, claim
       if (!RESULTS.has(result)) throw new Error(`result must be supported | contradicted | unverifiable, got ${f.result}`);
       return { ...f, result, span: f.span || c.span, statement: f.statement || c.statement };
       // the web is the authority only under `world`; every other authority reads the reference in the prompt
-    }, { tools: authority === "world" ? undefined : "", ...(screen ? {} : { pass }) }).then((r) => {
-      p.artifact(r.step, "claim", r.value.statement, claimMeta(r.value, pass, authority, screen ? { source: "screen" } : {}));
-      return r.value;
+    }, { tools: authority === "world" ? undefined : "", ...(screen ? {} : { pass }) }).then(async (r) => {
+      const v: Verified = r.value.result === "contradicted" ? await confirmClaim(p, drawId, r.step, r.value, screen ? null : pass) : r.value;
+      p.artifact(r.step, "claim", v.statement, claimMeta(v, pass, authority, { ...(screen ? { source: "screen" } : {}), ...(v.confirm ? { confirm: v.confirm } : {}) }));
+      return v;
     });
   }));
+}
+
+/**
+ * A second reading of a contradicted claim: does the line cited against it
+ * state a different value for the same thing? The verify prompt already says
+ * a claim the setting does not settle is unverifiable, and one reading still
+ * called invented detail contradicted: on draw 20260928000554-01c5 two of
+ * three claims cited a line about something else (the year orichalcum was
+ * found, against a claim about when production began). A "no" makes the
+ * claim unverifiable, and the reason stays on the claim.
+ */
+async function confirmClaim(p: Pipeline, drawId: string, verify: StepRow, v: Verified, pass: string | null): Promise<Verified> {
+  const r = await p.invoke(drawId, verify.id, "check-claims-confirm", fill("claimsConfirm", { span: v.span, statement: v.statement, evidence: v.evidence }), (t) => {
+    const answer = tag(t, "answer");
+    if (answer === null) throw new Error("no <answer>");
+    return { yes: /^\s*yes\b/i.test(answer), why: tag(t, "why") ?? "" };
+  }, { tools: "", ...(pass ? { pass } : {}) });
+  return r.value.yes ? v : { ...v, result: "unverifiable", replacement: "none", patch: "", confirm: r.value.why };
 }
 
 async function runClaims(session: BriefSession, authority: ClaimsAuthority, reference: string, pass: string, chain: Chain) {

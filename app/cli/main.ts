@@ -27,7 +27,7 @@ const DOC = `cloudchamber — the one command the skill and the UI drive.
    cloudchamber brief <draw>                   print the brief
    cloudchamber check <draw> [--checks a,b] [--samples N]   run the checkers over a brief; stops at gate 1
    cloudchamber findings <draw> [--examined] [--all]   the findings of the latest check, by score
-   cloudchamber gate <draw> accept <finding>... | auto | dismiss <finding> | hold | keep | rewrite <k> [--finding ID]  [--note "..."]
+   cloudchamber gate <draw> accept <finding>... | auto | dismiss <finding> [--reason false-positive|real-bad-fix|duplicate|trivial] | hold | keep | rewrite <k> [--finding ID]  [--note "..."]
        auto repairs round after round, accepting what scores repair.stop_score or more,
        until nothing reaches the floor, the rounds run out, or the total stops falling
    cloudchamber draft <draw> [--auto] [--profile P] [--words N] [--beats N] [--tense T] [--person P] [--chronology C] [--container C] [--order O] [--models G=M,...]
@@ -179,7 +179,7 @@ async function main() {
       break;
     }
     case "gate": {
-      const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, options: { note: { type: "string", default: "" }, finding: { type: "string" } } });
+      const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, options: { note: { type: "string", default: "" }, finding: { type: "string" }, reason: { type: "string" } } });
       const [drawId, action, ...args] = positionals;
       const p = pipeline(), d = drafting();
       if (!drawId || !action) usage();
@@ -187,7 +187,7 @@ async function main() {
       // the positionals each action reads; the command itself refuses what is missing
       if ((action === "accept" || action === "dismiss" || action === "rewrite") && !args.length) usage();
       const gateArgs: GateArgs = {
-        note: values.note, finding: action === "dismiss" ? args[0] : values.finding,
+        note: values.note, finding: action === "dismiss" ? args[0] : values.finding, reason: values.reason as GateArgs["reason"],
         step_id: args[0], findings: args, beat: action === "rewrite" ? Number(args[0]) : undefined,
       };
       // the CLI waits for the work whether or not it runs on: there is nothing else to go back to

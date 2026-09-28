@@ -50,6 +50,25 @@ describe("recurrence", () => {
     expect(excludeDismissed(cs, [{ span: "director fires the reliquary", statement: "" }]).map((c) => c.span)).toEqual(["tears on the silk"]);
   });
 
+  test("reader's questions join on the section and the leading clause, whatever the span", () => {
+    // the six questions of draw 20260928000554-01c5: only the two about the suit in the silt ask one thing
+    const q = (sample: number, span: string, statement: string, invalidates: string) => f("reader", sample, span, statement, { result: "unanswered", evidence: "none", invalidates });
+    const qs = [
+      q(1, "the crew winches the greaves", "Whose suit is the crew winching out of the silt, and does the missing wearer ever matter to anything that follows?", "particulars"),
+      q(1, "a ping from two hundred and ten feet", "How did a signal leave her from two hundred and ten feet under the Necropolis, and how would relief ever reach coordinates that deep?", "particulars"),
+      q(1, "he opens the gorget", "How can an unarmed sixty-eight-year-old clerk in a cave open sealed, pressurised chambers that the story says are opened only at Castel Sant'Angelo?", "particulars"),
+      q(2, "seven chambers lifted from No Man's Land", "Whose suit is this recovery crew lifting out of the silt, and how did a wearer's seven chambers end up in No Man's Land with no wearer?", "particulars"),
+      q(2, "the rod was an assay", "How does Aude know that the priest's rod was an assay and that only nine candidates in all Christendom answered it?", "knowledge"),
+      q(2, "she lets him unbolt her", "How did an armed Paladin come to be sitting in his chamber letting an unarmed heretic unbolt her sealed armour chamber by chamber?", "arrival"),
+    ];
+    const cs = cluster(qs, 1);
+    expect(cs).toHaveLength(5);
+    expect(cs.find((c) => c.statement.startsWith("Whose"))!.samples).toEqual([1, 2]);
+    // the same leading clause under another section is another question, and a contradiction never joins by question
+    expect(cluster([qs[0], { ...qs[3], invalidates: "knowledge" }], 1)).toHaveLength(2);
+    expect(cluster([qs[0], { ...qs[3], result: "contradicts:x" }], 1)).toHaveLength(2);
+  });
+
   test("a patch counts only when every sample of the cluster offered the same one", () => {
     const withPatch = (sample: number, patch: string) => f("ledger", sample, "the twelfth relic", "named twice", { patch });
     expect(cluster([withPatch(1, "the Bruges clavicle"), withPatch(2, "the Bruges clavicle")], 2)[0].patch).toBe("the Bruges clavicle");

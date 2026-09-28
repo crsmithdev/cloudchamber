@@ -131,6 +131,7 @@ export function draftScript(over: Record<string, any> = {}) {
     "check-reader": () => `<examined>why the director fires it: the outline and the vignette say</examined>`,
     "check-claims-extract": () => claimsExtract(),
     "check-claims-verify": claimVerify,
+    "check-claims-confirm": () => "<answer>yes</answer><why>The cited line gives another value for the same thing.</why>",
     reconcile: () => "<conflicts></conflicts>",
     // repairs edit in place: the rewrite keeps the passage it was given
     "repair-context": (p: string) => `<vignette>rewritten context ${tag(p, "constraints")?.split("\n")[0] ?? ""} ${tag(p, "vignette") ?? ""}</vignette>`,

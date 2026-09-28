@@ -6,7 +6,7 @@ import { DEFAULT_DB, SCHEMA } from "../paths.ts";
 export type Db = Database;
 
 /** Bump with every change to an existing table, and mirror it in extract/store.py. */
-export const SCHEMA_VERSION = 16;
+export const SCHEMA_VERSION = 17;
 
 export function openDb(path: string = DEFAULT_DB): Db {
   if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
@@ -93,6 +93,11 @@ function requireCurrent(db: Db, path: string) {
       UPDATE steps SET pass = (SELECT max(p.pass) FROM passes p WHERE p.draw_id = steps.draw_id AND p.pass <= steps.started_at)
       WHERE stage LIKE 'check-%'`);
     db.exec("PRAGMA user_version = 16");
+  }
+  // 16 → 17 (2026-09-27): why a finding was dismissed, so each checker's precision can be counted
+  if (userVersion(db) === 16) {
+    db.exec("ALTER TABLE verdicts ADD COLUMN reason TEXT");
+    db.exec("PRAGMA user_version = 17");
     return;
   }
   throw new Error(

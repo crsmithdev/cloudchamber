@@ -95,7 +95,8 @@ CREATE TABLE IF NOT EXISTS verdicts (                -- replay of bank/verdicts.
   at               TEXT NOT NULL,
   by               TEXT NOT NULL,
   pipeline_version TEXT NOT NULL,
-  inherited_from   TEXT
+  inherited_from   TEXT,
+  reason           TEXT                            -- a dismissal's reason: false-positive | real-bad-fix | duplicate | trivial
 );
 CREATE INDEX IF NOT EXISTS verdicts_target ON verdicts(kind, target_id, at);
 

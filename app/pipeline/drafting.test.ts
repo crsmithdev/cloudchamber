@@ -64,14 +64,17 @@ describe("check and gate 1", () => {
     await d.check(draw.id);
     const f = d.findings(draw.id);
     const [a, b] = f.findings;
-    expect(f.listed.map((x) => x.id)).toEqual([a.id, b.id]);
+    // the list reads what a finding breaks first, then the score; the full list stays in score order for auto
+    const byCost = [...f.findings].sort((x, y) => y.cost - x.cost || y.score - x.score);
+    expect(f.listed.map((x) => x.id)).toEqual(byCost.map((x) => x.id));
+    expect(f.findings.map((x) => x.cost)).toEqual(f.findings.map((x) => ({ departure: 2, arrival: 2, knowledge: 1, particulars: 1 } as Record<string, number>)[x.invalidates] ?? 0));
     expect([f.reopened, f.left]).toEqual([[], []]);
     expect(f.findings.every((x) => x.auto_eligible)).toBe(true);
     expect(f.summary).toEqual({ pass: f.pass, reported: 2, accepted: 0, open: 2, total: a.score + b.score });
     // a dismissed finding stays on the list, ruled on; the summary counts it out of open
     d.dismiss(draw.id, b.id, "deliberate");
     const g = d.findings(draw.id);
-    expect(g.listed.map((x) => [x.id, x.decision])).toEqual([[a.id, "open"], [b.id, "dismissed"]]);
+    expect(g.listed.map((x) => [x.id, x.decision])).toEqual(byCost.map((x) => [x.id, x.id === b.id ? "dismissed" : "open"]));
     expect(g.summary).toMatchObject({ reported: 2, accepted: 0, open: 1 });
     // what left the list is there only when asked for, under its own head, and the auto rule does not consider it
     expect(d.findings(draw.id, { all: true }).left.map((x) => [x.reported, x.decision])).toEqual([[false, "open"]]);
@@ -81,9 +84,11 @@ describe("check and gate 1", () => {
     const { p, d, draw, model } = await drawn(draftScript({ "check-ledger": [...ledgerSamples(), ...ledgerSamples()], "check-derivation": [...derivationSamples(), ...derivationSamples()] }));
     await d.check(draw.id);
     const [a, b] = d.findings(draw.id).findings;
-    const dis = d.dismiss(draw.id, b.id, "the seam is deliberate");
-    expect(dis.decision).toBe("dismissed");
-    expect(latest(p.db, "finding", b.id)).toMatchObject({ verdict: "pass", note: "the seam is deliberate" });
+    const dis = d.dismiss(draw.id, b.id, "the seam is deliberate", "gate", "false-positive");
+    expect(dis).toMatchObject({ decision: "dismissed", reason: "false-positive" });
+    expect(latest(p.db, "finding", b.id)).toMatchObject({ verdict: "pass", note: "the seam is deliberate", reason: "false-positive" });
+    expect(d.findings(draw.id).findings.find((x) => x.id === b.id)!.reason).toBe("false-positive");
+    expect(readLog(VERDICT_LOG).find((v) => v.target_id === b.id)!.reason).toBe("false-positive");
     expect(d.hold(draw.id).status).toBe("awaiting_check_gate");
     await d.check(draw.id);
     const again = d.findings(draw.id).findings;
@@ -405,9 +410,13 @@ describe("claims", () => {
     const { p, d, draw, model } = await drawn(draftScript({ outline: () => ["departure", "particulars", "knowledge", "arrival"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n") + "\n<job>Test the first thing: scene one.</job>\n<job>Test a second thing: scene two.</job>" }), { id: "basin", dir: sdir, claims: "world" });
     const r = await d.check(draw.id);
     expect(r.claims).toBe("world");
-    expect(stagesOf(model, /claims/)).toEqual(["check-claims-extract", "check-claims-verify", "check-claims-verify"]);
+    // the contradicted claim gets a second reading, against the cited line alone and with no search
+    expect(stagesOf(model, /claims/)).toEqual(["check-claims-extract", "check-claims-verify", "check-claims-verify", "check-claims-confirm"]);
     const verify = model.calls.filter((c) => c.stage === "check-claims-verify");
     expect(verify.every((c) => c.tools === "WebSearch,WebFetch" && c.model === loadStages()["check-claims-verify"].model)).toBe(true);
+    const confirm = model.calls.find((c) => c.stage === "check-claims-confirm")!;
+    expect(confirm.tools).toBe("");
+    expect(confirm.prompt).toContain("\"2,032 km by road\"");
     expect(p.steps(draw.id).filter((s) => s.stage === "check-claims-verify").every((s) => s.tools === "WebSearch,WebFetch")).toBe(true);
     expect(model.calls.find((c) => c.stage === "check-claims-extract")!.tools).toBe("");
     expect(model.calls.find((c) => c.stage === "check-claims-extract")!.prompt).toContain("That a place, institution, product or person exists is not a claim");
@@ -418,6 +427,21 @@ describe("claims", () => {
     expect(claims[0].evidence).toContain("https://example.org/distance");
     expect((f.claims as any[]).map((c) => c.result).sort()).toEqual(["contradicted", "supported"]);
     expect(f.judge).toBeNull();     // sonnet verified; not every judge shares the generator's family
+  });
+
+  test("claims: a contradiction whose cited line gives no other value for the same thing is unverifiable, not a finding", async () => {
+    const { dir } = fixture();
+    const sdir = settingsFixture(dir);
+    const { p, d, draw } = await drawn(draftScript({
+      outline: () => ["departure", "particulars", "knowledge", "arrival"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n") + "\n<job>Test the first thing: scene one.</job>\n<job>Test a second thing: scene two.</job>",
+      "check-claims-confirm": () => "<answer>no</answer><why>The line gives the distance by road, not the one the claim states.</why>",
+    }), { id: "basin", dir: sdir, claims: "world" });
+    await d.check(draw.id);
+    const f = d.findings(draw.id);
+    expect(f.findings.filter((x) => x.checkers.includes("claims"))).toHaveLength(0);
+    expect((f.claims as any[]).map((c) => c.result).sort()).toEqual(["supported", "unverifiable"]);
+    const art = p.artifacts(draw.id).find((a) => a.kind === "claim" && a.meta.result === "unverifiable")!;
+    expect(art.meta).toMatchObject({ confirm: "The line gives the distance by road, not the one the claim states.", replacement: "none" });
   });
 
   test("claims: setting verifies against the whole distillate, every list, and asks for claims about the setting", async () => {

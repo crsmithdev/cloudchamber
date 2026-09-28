@@ -259,6 +259,14 @@ As a checkable sentence: {statement}
 
 Find the line in the reference material above that confirms or denies it. Output a <finding> tag containing <span> (the quote above, verbatim), <statement> (the sentence above), <result> (supported | contradicted | unverifiable), <evidence> (the file name and one quoted line from it, or none), <invalidates> (none), <replacement> (if contradicted, one positive sentence that would hold, keeping what the span reports and changing only the figure or the rule that conflicts; otherwise none). Under 120 words.`,
 
+  claimsConfirm: `Claim from a story, quoted: "{span}"
+As a checkable sentence: {statement}
+
+This line was cited to show the claim is wrong:
+{evidence}
+
+Does the cited line state a different value for the same thing the claim states: another figure, date, name, order or rule for the same subject? A line about something else, or one silent on the point the claim makes, does not. Output an <answer> tag (yes or no), then a <why> tag, one sentence. Under 60 words.`,
+
   claimsVerifySetting: `<setting>
 {reference}
 </setting>
