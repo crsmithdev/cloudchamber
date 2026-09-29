@@ -1,0 +1,844 @@
+{
+ "status": {
+  "passages": 4082,
+  "eligible": 4079,
+  "suspect": 842,
+  "stories": 619,
+  "sources": 30,
+  "waiting": {
+   "ideate": 4,
+   "check": 3,
+   "write": 1
+  },
+  "per_source": [
+   {
+    "source": "chiang-stories-of-your-life",
+    "n": 143
+   },
+   {
+    "source": "datlow-01",
+    "n": 184
+   },
+   {
+    "source": "datlow-02",
+    "n": 130
+   },
+   {
+    "source": "datlow-03",
+    "n": 147
+   },
+   {
+    "source": "datlow-04",
+    "n": 141
+   },
+   {
+    "source": "datlow-05",
+    "n": 144
+   },
+   {
+    "source": "datlow-06",
+    "n": 143
+   },
+   {
+    "source": "datlow-07",
+    "n": 133
+   },
+   {
+    "source": "datlow-08",
+    "n": 112
+   },
+   {
+    "source": "datlow-09",
+    "n": 143
+   },
+   {
+    "source": "datlow-12",
+    "n": 163
+   },
+   {
+    "source": "datlow-13",
+    "n": 141
+   },
+   {
+    "source": "datlow-14",
+    "n": 142
+   },
+   {
+    "source": "datlow-15",
+    "n": 143
+   },
+   {
+    "source": "datlow-16",
+    "n": 119
+   },
+   {
+    "source": "datlow-17",
+    "n": 115
+   },
+   {
+    "source": "datlow-body-shocks",
+    "n": 135
+   },
+   {
+    "source": "datlow-darkness-two-decades-of-modern-horror",
+    "n": 173
+   },
+   {
+    "source": "evenson-contagion",
+    "n": 47
+   },
+   {
+    "source": "evenson-good-night-sleep-tight",
+    "n": 80
+   },
+   {
+    "source": "evenson-solution",
+    "n": 4
+   },
+   {
+    "source": "evenson-the-glassy-burning-floor-of-hell",
+    "n": 83
+   },
+   {
+    "source": "king-skeleton-crew",
+    "n": 194
+   },
+   {
+    "source": "langan-lost-in-the-dark",
+    "n": 108
+   },
+   {
+    "source": "langan-sefira",
+    "n": 108
+   },
+   {
+    "source": "langan-the-fisherman",
+    "n": 80
+   },
+   {
+    "source": "langan-the-wide-carnivorous-sky",
+    "n": 117
+   },
+   {
+    "source": "scp",
+    "n": 543
+   },
+   {
+    "source": "watts-blindsight",
+    "n": 66
+   },
+   {
+    "source": "watts-echopraxia",
+    "n": 101
+   }
+  ]
+ },
+ "cells": [
+  {
+   "cell": "informational/mixed",
+   "n": 421
+  },
+  {
+   "cell": "informational/narrative",
+   "n": 258
+  },
+  {
+   "cell": "informational/non-narrative",
+   "n": 454
+  },
+  {
+   "cell": "involved/mixed",
+   "n": 624
+  },
+  {
+   "cell": "involved/narrative",
+   "n": 548
+  },
+  {
+   "cell": "involved/non-narrative",
+   "n": 585
+  },
+  {
+   "cell": "mixed/mixed",
+   "n": 486
+  },
+  {
+   "cell": "mixed/narrative",
+   "n": 433
+  },
+  {
+   "cell": "mixed/non-narrative",
+   "n": 273
+  }
+ ],
+ "draws": [
+  {
+   "id": "20260929135622-2dae",
+   "name": "affair-arranges-childs",
+   "status": "awaiting_gate",
+   "stage": "ideate",
+   "genre": "horror",
+   "sampling": "tail",
+   "created": "2026-09-29T13:56:22Z",
+   "open": null,
+   "seed": "An affair arranges the dead child's play date, and the survivor is left to circle the unfinished house until the ground itself herds her inside.",
+   "flagged": false
+  },
+  {
+   "id": "20260928060317-4377",
+   "name": "learns-fixed-anyway",
+   "status": "awaiting_gate",
+   "stage": "ideate",
+   "genre": "horror and scifi",
+   "sampling": "tail",
+   "created": "2026-09-28T06:03:17Z",
+   "open": null,
+   "seed": "A man who learns his life is fixed goes back anyway, and the journey teaches him that the only thing he can still change is what he knows.",
+   "flagged": false
+  },
+  {
+   "id": "ref-20260927003844-1b09-muj3s8th",
+   "name": "humanitys-earth-years-32",
+   "status": "done",
+   "stage": "check",
+   "genre": "hard scifi",
+   "sampling": "standard",
+   "created": "2026-09-27T00:51:34Z",
+   "open": null,
+   "seed": "Humanity's Last Ark Left Earth 400 Years Ago. Something Was Hiding Among Us",
+   "flagged": false
+  },
+  {
+   "id": "ref-20260924223235-3cee-muj3pbtv",
+   "name": "humanitys-earth-years-31",
+   "status": "done",
+   "stage": "check",
+   "genre": "hard scifi",
+   "sampling": "standard",
+   "created": "2026-09-27T00:49:18Z",
+   "open": null,
+   "seed": "Humanity's Last Ark Left Earth 400 Years Ago. Something Was Hiding Among Us",
+   "flagged": false
+  },
+  {
+   "id": "20260926153929-5ae2",
+   "name": "something-building-dyson-19",
+   "status": "awaiting_check_gate",
+   "stage": "check",
+   "genre": "hard scifi, told the way a long narrated channel tells it: one specialist who reads the anomaly first, a crew of four or five, a mission sent to touch the thing, a contact in the flesh, a cost, a return",
+   "sampling": "standard",
+   "created": "2026-09-26T15:39:29Z",
+   "open": 5,
+   "seed": "Something Is Building a Dyson Sphere Around Our Sun. It Isn't Human",
+   "flagged": false
+  },
+  {
+   "id": "20260922154740-35c1",
+   "name": "county-agricultural-extension-2",
+   "status": "awaiting_draft_gate",
+   "stage": "write",
+   "genre": "quiet horror and folk horror",
+   "sampling": "tail",
+   "created": "2026-09-22T15:47:40Z",
+   "open": 0,
+   "seed": "A county agricultural extension office in 1987 produced a series of instructional videotapes for local farmers; the last tape in the series teaches a procedure nobody requested.",
+   "flagged": false
+  },
+  {
+   "id": "20260921145735-c933",
+   "name": "disturbing-story-large-50",
+   "status": "drafted",
+   "stage": "write",
+   "genre": "horror and scifi and cosmic horror and body horror and hard scifi",
+   "sampling": "tail",
+   "created": "2026-09-21T14:57:35Z",
+   "open": 0,
+   "seed": "a disturbing story about a large, bottomless hole suddenly opening up in a city, and a small team of scientists and engineers study and explore it as it causes increasing destruciton and death",
+   "flagged": false
+  },
+  {
+   "id": "20260921145530-5e18",
+   "name": "disturbing-story-large-49",
+   "status": "awaiting_gate",
+   "stage": "ideate",
+   "genre": "horror and scifi and cosmic horror and body horror and hard scifi",
+   "sampling": "tail",
+   "created": "2026-09-21T14:55:30Z",
+   "open": null,
+   "seed": "a disturbing story about a large, bottomless hole suddenly opening up in a city, and a small team of scientists and engineers study and explore it as it causes increasing destruciton and death",
+   "flagged": false
+  },
+  {
+   "id": "20260921144658-e221",
+   "name": "disturbing-story-large-46",
+   "status": "awaiting_gate",
+   "stage": "ideate",
+   "genre": "horror and scifi and cosmic horror and body horror and hard scifi",
+   "sampling": "tail",
+   "created": "2026-09-21T14:46:58Z",
+   "open": null,
+   "seed": "a disturbing story about a large, bottomless hole suddenly opening up in a city",
+   "flagged": false
+  },
+  {
+   "id": "20260919145407-9cac",
+   "name": "beyond-event-horizon-8",
+   "status": "drafted",
+   "stage": "write",
+   "genre": "hard scifi",
+   "sampling": "standard",
+   "created": "2026-09-19T14:54:07Z",
+   "open": 1,
+   "seed": "They Sent Us Beyond the Event Horizon. Only I Returned",
+   "flagged": false
+  },
+  {
+   "id": "20260919144906-190d",
+   "name": "beyond-event-horizon-7",
+   "status": "repaired",
+   "stage": "check",
+   "genre": "hard scifi",
+   "sampling": "standard",
+   "created": "2026-09-19T14:49:06Z",
+   "open": 0,
+   "seed": "They Sent Us Beyond the Event Horizon. Only I Returned",
+   "flagged": false
+  },
+  {
+   "id": "20260918213337-0217",
+   "name": "beyond-event-horizon-5",
+   "status": "drafted",
+   "stage": "write",
+   "genre": "hard scifi",
+   "sampling": "standard",
+   "created": "2026-09-18T21:33:37Z",
+   "open": 0,
+   "seed": "They Sent Us Beyond the Event Horizon. Only I Returned",
+   "flagged": false
+  },
+  {
+   "id": "20260918212628-6185",
+   "name": "beyond-event-horizon-4",
+   "status": "repaired",
+   "stage": "check",
+   "genre": "hard scifi",
+   "sampling": "standard",
+   "created": "2026-09-18T21:26:28Z",
+   "open": 0,
+   "seed": "They Sent Us Beyond the Event Horizon. Only I Returned",
+   "flagged": false
+  },
+  {
+   "id": "20260918211712-a26b",
+   "name": "beyond-event-horizon-3",
+   "status": "repaired",
+   "stage": "check",
+   "genre": "hard scifi",
+   "sampling": "standard",
+   "created": "2026-09-18T21:17:12Z",
+   "open": 0,
+   "seed": "They Sent Us Beyond the Event Horizon. Only I Returned",
+   "flagged": false
+  },
+  {
+   "id": "20260918211156-4ffb",
+   "name": "beyond-event-horizon-2",
+   "status": "repaired",
+   "stage": "check",
+   "genre": "hard scifi",
+   "sampling": "standard",
+   "created": "2026-09-18T21:11:56Z",
+   "open": 0,
+   "seed": "They Sent Us Beyond the Event Horizon. Only I Returned",
+   "flagged": false
+  }
+ ],
+ "ideate": {
+  "id": "20260929135622-2dae",
+  "name": "affair-arranges-childs",
+  "seed": "An affair arranges the dead child's play date, and the survivor is left to circle the unfinished house until the ground itself herds her inside.",
+  "genre": "horror",
+  "sampling": "tail",
+  "created": "2026-09-29T13:56:22Z",
+  "model": "claude-opus-5",
+  "calls": 6,
+  "cost": 0.57,
+  "secs": 43,
+  "steps": [
+   {
+    "stage": "premises",
+    "n": 0,
+    "started": "2026-09-29T13:56:22Z",
+    "secs": 24,
+    "status": "done"
+   },
+   {
+    "stage": "execute",
+    "n": 1,
+    "started": "2026-09-29T13:56:46Z",
+    "secs": 20,
+    "status": "done"
+   },
+   {
+    "stage": "execute",
+    "n": 2,
+    "started": "2026-09-29T13:56:46Z",
+    "secs": 21,
+    "status": "done"
+   },
+   {
+    "stage": "execute",
+    "n": 3,
+    "started": "2026-09-29T13:56:46Z",
+    "secs": 21,
+    "status": "done"
+   },
+   {
+    "stage": "execute",
+    "n": 4,
+    "started": "2026-09-29T13:56:46Z",
+    "secs": 21,
+    "status": "done"
+   },
+   {
+    "stage": "execute",
+    "n": 5,
+    "started": "2026-09-29T13:56:46Z",
+    "secs": 19,
+    "status": "done"
+   }
+  ],
+  "candidates": [
+   {
+    "index": 1,
+    "p": 0.02,
+    "premise": "Two men who met at grief counseling, each having lost the same son by different mothers, discover their affair is the child's doing—he arranged it the way children arrange dolls, to get his parents in one room. He books the play date through a contractor's scheduling app. One man walks out of the framed house; the other spends eleven days circling it in widening arcs that the soil narrows behind him, topsoil swelling like a tongue, gravel drifting, until the lot is a bowl and the bowl has one exit and the exit is upstairs.",
+    "vignette": "Day six, and the arc he walks has gone from two hundred feet to maybe one-forty, though Martin has stopped trusting the numbers his legs report. He paces it out heel to toe some mornings. The tape measure is in the truck and the truck is up on the berm now, which was not a berm on Tuesday.\n\nThe house stands in its studs. Yellow pine, gone gray on the weather side. Through it he can see the whole shape of what was supposed to be: kitchen, breakfast nook, the window where Dana wanted the sink so she could watch a yard. The stairs are framed and sheathed and they go up into nothing, into air, into the second floor that is only joists and sky.\n\nColin left on day one. Walked down the drive with his hands in his jacket and did not look back and Martin understood, watching him go, that Colin had been the one who was allowed to leave. That this had been decided elsewhere. Their son had sat in two houses on two ends of a county and had wanted, the way a child wants, both his fathers in the same room, and had gotten patient about it in the way only the dead can afford. The app pinged them both. *Site walkthrough, 9:00 AM, 4412 Hollow Run.* Neither of them had scheduled it. Neither …",
+    "words": 453
+   },
+   {
+    "index": 2,
+    "p": 0.03,
+    "premise": "A surveying error: the subdivision was platted over a child's grave, and the county's software now lists the boy as a parcel owner. His mother's affair partner, a title clerk, tries to quietly clear the deed and instead schedules something—the forms require a \"site visit with the minor stakeholder.\" The visit occurs. Afterward only she remains, walking the perimeter of Lot 14's skeleton frame, and the earth beneath her heels re-grades itself each night, contour lines migrating on the plat map, funneling her toward a threshold that was never framed for a door.",
+    "vignette": "The plat map is printed at 1:100 and Yolanda has it laminated now, because of the dew.\n\nLot 14's contour lines have moved again. She knows the old shape by heart—two lazy parentheses cupping the northeast corner, a half-foot rise where the footing drain was supposed to daylight. This morning the parentheses have closed. They make an O, and the O is not centered on the survey monument. It is centered on her.\n\nShe walks the perimeter because walking the perimeter is what a title clerk does. Boundary by inspection. Adverse possession runs on open, notorious, continuous use, and she has been continuous for eleven days.\n\nThe frame stands stud-bare, roof trusses stacked in the mud like the ribs of something butchered before it could be assembled. No sheathing. No doors. That's the part she keeps returning to: there is no door because the framers never got a door schedule, because the permit stalled, because the parcel had two owners of record and one of them was eight years old and had been eight years old since 1974.\n\nShe had only meant to fix it. Quitclaim, notarize, record, done—a favor done in the dark for a woman she was not supposed to love, whose living son had drowned in June and whose other son, the first one, the one nobody had told Yolanda about, was apparently a line item. The …",
+    "words": 443
+   },
+   {
+    "index": 3,
+    "p": 0.03,
+    "premise": "Told entirely in the drywall. A framing crew's unfinished spec home keeps its own records: shims, pencil marks, a stud scrawled with two names and a date. A woman comes weekly to walk the muddy perimeter—her boy died the summer the slab was poured, and her husband's mistress brought a nephew here to play, once, and only the mistress drove home. The house knows the mother is circling. It has been withholding its stairs for years, waiting. Each rain, the grade rises an inch. Each rain, the lot gets smaller and the doorway gets nearer.",
+    "vignette": "The sixty-third rain comes down all Thursday and the grade rises its inch.\n\nWe hold the count in our shims. Seventeen of them under the east sill plate, cedar, driven by a man who whistled nothing in particular and set his nail gun on the deck between shots. He wrote KELLY + D. 6/14 on stud twenty-two because the crew took lunch and he was young and the marker was in his nail bag. The Kelly never came here. She exists in us only as four letters and a plus sign, weathered to the color of tea.\n\nThe woman comes on Sundays.\n\nShe makes her circuit at the fence line, or what was the fence line when the survey stakes still stood. Mud to the ankle now. She has stopped noticing that the walk takes less time than it used to. In the first year it was eleven minutes. This spring it was seven. Today she comes around the north side and the doorway is simply there, off her left shoulder, where before it was a distance.\n\nWe have the pencil marks. Every riser, every rough opening, every 16 O.C. tick along the plates. We have the framer's arithmetic for a staircase written on the subfloor in carpenter's lead: 13 R @ 7 3/8. The stringers were cut. The stringers were delivered. We did not permit them. They sit in …",
+    "words": 440
+   },
+   {
+    "index": 4,
+    "p": 0.04,
+    "premise": "The dead boy's mother and her lover keep the play date on the calendar—six years running, a standing appointment with an empty backyard. This year the other child arrives: a neighbor's toddler, delivered by a mother who cannot say why she came. The two women watch from the unfinished house next door, the one that never got siding, while the toddler plays with someone. Afterward the survivor cannot leave the property. Every direction she walks, the graded dirt tilts, subtly, patiently, until she is facing the doorway again. The house is not finished because it is still deciding on her dimensions.",
+    "vignette": "The toddler's name was Aurelie and her mother's name was something Dana never caught, because the woman stood in the doorway of the unfinished house saying *I don't know, I don't know why* in the tone people use for directions they've forgotten.\n\nThey watched through the studs. Tyvek on the north wall only; the rest open to the weather since 2019, when the builder went under and the lot went quiet and Dana's son went into the ground four hundred feet east. The framing made the backyard into panels. In one panel Aurelie crouched over the sandbox. In the next panel she held out a plastic shovel to the air beside her and waited, patient, the way you wait for a slow friend, and then she laughed at something and set the shovel down where a hand would be.\n\nMarguerite's fingers closed on Dana's forearm. Six years of the third Saturday in September, six years of two folding chairs and a thermos and nobody coming, and Marguerite's grip said *see*, said *I told you it wasn't morbid*, said the thing they'd never once said aloud: that keeping the appointment was the only marriage either of them had left.\n\n\"Say hello for me,\" Dana said, to no one, and her voice came out of her wrong, came out small.\n\nAurelie's mother took Aurelie home at four. Marguerite went at four-twenty, kissed …",
+    "words": 437
+   },
+   {
+    "index": 5,
+    "p": 0.05,
+    "premise": "The dead girl leaves a voicemail arranging a play date with her mother's lover's living daughter. The lover attends as chaperone; the mother refuses. Both children come back, in a sense—one wearing the other's laugh. The mother, who stayed home, finds her yard has begun subdividing: stakes and string appear overnight, a foundation cures, studs rise. She paces the emerging house's footprint, unable to cross the sill line, while the grass dies inward in a spiral. The play date is at her address now. She is the only one who hasn't arrived.",
+    "vignette": "The stakes came up on a Tuesday. Not driven — surfaced, the way a splinter works out of a palm over days, orange plastic ribbon already tied, already weather-faded.\n\nDana counted them from the kitchen window while the coffee went cold. Fourteen. By Thursday there was string, and the string described a rectangle she recognized before she let herself recognize it: the footprint of the house Marcus had drawn on a napkin in July, three bedrooms, the little bumped-out breakfast nook where the morning light would come in. He'd drawn it for both girls. A room for Junie, a room for Clara, and a door between them we can't lock, he'd said, laughing, and Dana had laughed too, and that was the last week anyone laughed at anything.\n\nThe concrete came Friday. Nobody poured it. It was simply cured by dawn, cool and pale, the trowel-swirls set in it like the inside of an ear.\n\nShe walked it. That was what she did now — out the back door at six and around, the whole perimeter, the way you'd walk a grave you couldn't bring yourself to kneel at. At the front she stopped. Always at the front, where the sill line lay, a four-inch band of poured concrete no different from any other part of it, and her foot would come forward and set down on the same side …",
+    "words": 439
+   }
+  ],
+  "examples": [
+   {
+    "title": "Bloom",
+    "author": "John Langan",
+    "cell": "involved/narrative",
+    "words": 305
+   },
+   {
+    "title": "The Ballad of Ballard and Sandrine",
+    "author": "Peter Straub",
+    "cell": "involved/mixed",
+    "words": 329
+   },
+   {
+    "title": "Frontier Death Song",
+    "author": "",
+    "cell": "informational/narrative",
+    "words": 269
+   },
+   {
+    "title": "City of the Dog",
+    "author": "John Langan",
+    "cell": "involved/non-narrative",
+    "words": 153
+   },
+   {
+    "title": "Watson's Boy",
+    "author": "Brian Evenson",
+    "cell": "mixed/mixed",
+    "words": 159
+   },
+   {
+    "title": "Magdala Amygdala",
+    "author": "",
+    "cell": "informational/non-narrative",
+    "words": 277
+   }
+  ]
+ },
+ "check": {
+  "id": "20260926153929-5ae2",
+  "name": "something-building-dyson-19",
+  "seed": "Something Is Building a Dyson Sphere Around Our Sun. It Isn't Human",
+  "created": "2026-09-26T15:39:29Z",
+  "summary": {
+   "pass": "2026-09-26T15:39:29.456Z-00f",
+   "reported": 5,
+   "accepted": 0,
+   "open": 5,
+   "total": 24
+  },
+  "dropped": 8,
+  "findings": [
+   {
+    "checkers": [
+     "derivation",
+     "ledger"
+    ],
+    "n": 2,
+    "samples": 2,
+    "span": "interface contact at 14:22:06 UTC, Halvorsen and Ilse and Ito and Adeyemi entering the bay at 14:37:14, the burn window read back at 14:40:02",
+    "statement": "The other four crew reached the interface bay fifteen minutes and eight seconds after Toussaint's contact began, and the burn window was spoken nearly eighteen minutes in.",
+    "result": "contradicts:Toussaint had been at the interface for nine minutes.",
+    "evidence": "14:37:14 − 14:22:06 = 15 min 08 s elapsed when the four arrive, and 14:40:02 − 14:22:06 = 17 min 56 s at readback, against the stated nine minutes of contact (and the ending's \"contact beginning at 14:22:06 and ending at 14:31:06\").",
+    "invalidates": "particulars",
+    "replacement": "The other four entered the interface bay at 14:28:06 UTC and the burn window was read back at 14:30:41 UTC, both inside the nine minutes of contact.",
+    "score": 10,
+    "decision": "open"
+   },
+   {
+    "checkers": [
+     "ledger"
+    ],
+    "n": 2,
+    "samples": 2,
+    "span": "that forty-one photometric anomalies, spread across a decade and across instruments that had never been cross-calibrated against each other, formed a *sequence*",
+    "statement": "The preprint refereed in March 2044 already correlates the full set of forty-one anomalies.",
+    "result": "contradicted",
+    "evidence": "Ledger: \"2045–2055: the decade of anomalous transits Halvorsen correlates; forty-one photometric anomalies across twelve years of public survey data\" and \"2044: builders begin construction.\"",
+    "invalidates": "particulars",
+    "replacement": "The preprint rejected in March 2044 argued from a smaller set of early anomalies; the forty-one Halvorsen correlates fall in 2045–2055.",
+    "score": 7,
+    "decision": "open"
+   },
+   {
+    "checkers": [
+     "reader"
+    ],
+    "n": 2,
+    "samples": 2,
+    "span": "Ito had taped the edge when they entered, and the weave was already a hand's width past the tape.",
+    "statement": "If the lattice is growing shut across the only bay they entered by, how do the four of them get out in time to fly the burn?",
+    "result": "unanswered",
+    "evidence": "none",
+    "invalidates": "arrival",
+    "replacement": "The weave closes a bay mouth at roughly a hand's width per hour and does not resist cutting; Ito's saw reopens the aperture on the way out, and the delay costs them nothing but the taped margin.",
+    "score": 3,
+    "decision": "open"
+   },
+   {
+    "checkers": [
+     "reader"
+    ],
+    "n": 2,
+    "samples": 2,
+    "span": "She had gone in to establish the burn window and she had not come back to her own face",
+    "statement": "Why does the burn window have to be read by putting a pilot's hands into an alien interface instead of being computed aboard the ship?",
+    "result": "unanswered",
+    "evidence": "none",
+    "invalidates": "arrival",
+    "replacement": "The lattice's own accretion changes the segment's mass and the ship's docked trajectory faster than *Perihelion* can solve for it, so the only source of a survivable return window is the structure's internal schedule, which is legible nowhere but at the inner node.",
+    "score": 3,
+    "decision": "open"
+   },
+   {
+    "checkers": [
+     "reader"
+    ],
+    "n": 2,
+    "samples": 2,
+    "span": "In 2056 she was still at the institute and still right about the window. The *Perihelion* launched in June.",
+    "statement": "What changed between the unfundable 2044 rejection and a crewed mission twelve years later?",
+    "result": "unanswered",
+    "evidence": "institutions ignore it until the dimming crosses into the visible, at which point the evidence is no longer interpretive",
+    "invalidates": "none",
+    "replacement": "By late 2055 the sun had lost 0.4% of its integrated flux and the dimming was visible to the naked eye, which ended the argument about interpretation and started the argument about who would go.",
+    "score": 1,
+    "decision": "open"
+   }
+  ],
+  "parts": {
+   "vignette": "The proxy had no face, so it used Halvorsen's.\n\nNot the face he wore now — the one from the Palomar parking lot, 2044, sodium light, a woman handing him back his rejected preprint with an apology he hadn't deserved. He felt the memory surface the way a splinter surfaces, and then he felt it *turn*, and the woman's mouth …",
+   "outline": "## departure\n\n**The one departure:** A non-human intelligence is building a shell around our sun, and its interface with us works by rearranging the listener's own memories into speech — meaning every message it sends is composed of material private to the receiver.\n\nEverything the story asserts follows from that second clause, which is not a separate invention but the …",
+   "contexts": "",
+   "ending": "The burn window Toussaint gave them was correct to the second. Ito flew it. Nobody said anything about her voice on the loop, how ordinary it had been, how exactly hers.\n\nThey unsealed the accounts once, at aphelion, at Ito's insistence, because that was what protocol said and Ito had become a man who did what protocol said. Four envelopes …"
+  }
+ },
+ "write": {
+  "id": "20260922154740-35c1",
+  "name": "county-agricultural-extension-2",
+  "seed": "A county agricultural extension office in 1987 produced a series of instructional videotapes for local farmers; the last tape in the series teaches a procedure nobody requested.",
+  "created": "2026-09-22T15:47:40Z",
+  "form": {
+   "tense": "present",
+   "person": "first person, Lyle Haskett narrating",
+   "chronology": "linear",
+   "container": "document"
+  },
+  "beats": [
+   {
+    "n": 1,
+    "words": 400,
+    "job": "The camera records Tape 12. Walt teaches the five steps on the east line and grafts Bev Sorensen to a cedar post while fourteen-year-old Lyle keeps her in the middle third of the frame.",
+    "when": "April 11, 1987, afternoon, Haskett place, east line",
+    "stakes": "Bev is bound to the cedar for good, and the boy who filmed it learns that a steady picture is the job.",
+    "withheld": 6
+   },
+   {
+    "n": 2,
+    "words": 400,
+    "job": "Lyle finds Janet rooted at the fourth post and puts off facing the tape he tells himself he didn't make. Then he brings her coffee, hears her pass on Walt's message about March, and admits he hasn't watched the unlabelled tapes.",
+    "when": "March 6, 2009, dawn, about 6:15 a.m., east line",
+    "stakes": "Janet can never walk back to the house, and Lyle's refusal to admit he held the camera leaves her alone out there with only her voice.",
+    "withheld": 5
+   },
+   {
+    "n": 3,
+    "words": 600,
+    "job": "Lyle watches Tapes 14 and 15, which show Dana and then his own empty chair. He counts the whole line west, finds the corner post hollow and warm, and hears Janet name his hands on her. Back in the kitchen he labels Tape 16 and sits in the frame.",
+    "when": "March 6, 2009, afternoon into dark, farmhouse and east line",
+    "stakes": "Lyle has kept quiet since 1987, and that silence now puts Dana and then himself on the line.",
+    "withheld": 0
+   }
+  ],
+  "scenes": [
+   {
+    "beat": 1,
+    "words": 444,
+    "text": "My father holds the slate up himself: BRULE CO. AG EXTENSION. TAPE 12. 4/11/87. HASKETT PLACE, EAST LINE. Then he steps back into frame and waits for my nod.\n\n\"Step one,\" he tells the lens. \"Choose your post while the ground's still soft. Cedar or locust. Set it before the frost goes out.\" He puts a hand on the corner post, then on the one west of it. \"These went in March. You can see the soil's still working.\"\n\nThe JVC brace digs into my shoulder. I'm fourteen, and all I care about is keeping the picture from shaking.\n\n\"Step two. Choose your scion.\"\n\nBev Sorensen steps into the middle third in her church coat. She's been his assistant since before I was old enough to drive the truck. She smiles at the lens because he tells her to. Then she keeps smiling, because he never tells her to stop.\n\n\"Step three. The cut.\"\n\nHe takes off her coat and folds it over the fence wire. He turns her wrists up the way he'd hold a whip of Haralson, and he runs the knife along each one, shallow and clean. *Don't follow the hands, Lyle.* I don't. His hands come in from the edges of the frame and go back out, and Bev stays centered, looking at me.\n\nWhat runs out of her isn't red for long.\n\n\"Step four. The binding.\" He brings her wrists back to the cedar where he's already notched it, and I understand the notches were cut to fit her. Baling twine, three turns and a half hitch. He works the grafting wax in with his thumb until the twine doesn't show. Then he kneels, pulls the soil up over her shoes, and tamps it down with the flat of his hand. He always says a sloppy job invites rot.\n\n\"Walt,\" Bev says. She's still smiling. \"It's cold down there.\"\n\n\"It will be for a while.\" He stands and brushes off his knees. \"Step five is the waiting. The union takes by the second spring. If it doesn't take, you make a fresh cut. Nobody wants that, not the post and not the scion.\" He looks straight down the lens, at the farm bureau men, at the county, at me.\n\nThe cedar smells like Christmas. The welt on my shoulder will last a week.\n\nWest of Bev, the posts he set in March stand bare in …"
+   },
+   {
+    "beat": 2,
+    "words": 402,
+    "text": "March 6, 2009. Twenty-two years later the frost still hasn't gone out, and the east line is gray in the first light, around a quarter past six.\n\nI've come out because the bed was empty. That's what I tell myself.\n\nJanet is at the fourth post, past Bev, past the Kleins' boy, past a post I don't remember. Her feet are gone below the ankle. Somebody tamped the soil around them neat, the flat of a hand all the way around. It's a good job. Her wrists are bound to the cedar with baling twine, three turns and a half hitch, and the wax is worked in until the twine doesn't show. Sap is coming out amber and slow where …"
+   },
+   {
+    "beat": 3,
+    "words": 584,
+    "text": "I watch them that afternoon, one after the other, in order, the way my father would want it done.\n\nTape 14 is the county road at night, filmed from the ditch below the Klein mailbox. Dana Klein walks her dog past the east line like she does every Thursday. She doesn't look at the posts. The picture never shakes, and she never leaves the middle third. At the end of her drive she stops and looks east for a long time, toward where Travis went. Then she goes inside. The date in the corner is next week.\n\nTape 15 is our kitchen, filmed from the doorway. It shows the table, the coffee maker, and the chair I'm sitting in to …"
+   }
+  ],
+  "flags": [
+   {
+    "beat": 2,
+    "screen": "restated",
+    "span": "Her wrists are bound to the cedar with baling twine, three turns and a half hitch, and the wax is worked in until the twine doesn't show.",
+    "statement": "beat 2 says again what beat 1 said",
+    "decision": "open"
+   },
+   {
+    "beat": 2,
+    "screen": "restated",
+    "span": "The union takes by the second spring.",
+    "statement": "beat 2 says again what beat 1 said",
+    "decision": "open"
+   },
+   {
+    "beat": 3,
+    "screen": "ledger",
+    "span": "I felt you touch my wrists before he cut.",
+    "statement": "The scene has Lyle touch Janet's wrists before the cut, but the ledger says the sap on the grip came from his palm after he touched her wrists, and the sap only weeps from the cuts.",
+    "decision": "accepted"
+   },
+   {
+    "beat": 3,
+    "screen": "ledger",
+    "span": "Past the last one, at twenty-two, the ground is humped and split open.",
+    "statement": "The scene puts the new growth past the last post, at number twenty-two, but four scions and eighteen bare posts make twenty-two, so the last bare post is itself number twenty-two.",
+    "decision": "accepted"
+   },
+   {
+    "beat": 3,
+    "screen": "restated",
+    "span": "The union takes by the second spring.",
+    "statement": "beat 3 says again what beat 1 said",
+    "decision": "open"
+   }
+  ],
+  "trigrams": [
+   {
+    "trigram": "takes by the",
+    "count": 3
+   },
+   {
+    "trigram": "the east line",
+    "count": 3
+   },
+   {
+    "trigram": "the middle third",
+    "count": 3
+   },
+   {
+    "trigram": "the second spring",
+    "count": 3
+   },
+   {
+    "trigram": "the union takes",
+    "count": 3
+   }
+  ],
+  "stats": null,
+  "total": 1764
+ },
+ "passages": [
+  {
+   "id": "e3b24dde21fd",
+   "title": "SCP-1733",
+   "author": "bbaztek",
+   "source": "scp",
+   "cell": "informational/non-narrative",
+   "words": 173,
+   "suspect": [],
+   "text": "Item #: SCP-1733 Object Class: Safe Special Containment Procedures: The DVR containing SCP-1733 is to be kept in a secure video archive at Site-[REDACTED]. Playback of SCP-1733 is strictly forbidden unless required for research. Personnel must contact Dr. Geller for permission to study SCP-1733. Description: SCP-1733 is a digital recording of the 2010-2011 NBA season opening game played at the …"
+  },
+  {
+   "id": "e61d1793c0e6",
+   "title": "SCP-2718",
+   "author": "Michael Atreus",
+   "source": "scp",
+   "cell": "informational/mixed",
+   "words": 219,
+   "suspect": [],
+   "text": "Item #: SCP- Object Class: Special Containment Procedures: SCP- is a DAMMERUNG class cognitohazard. All personnel, regardless of clearance, are forbidden to expose themselves to the Description of this article under any circumstances. Do not tamper with this warning without DAMMERUNG clearance. Do not discuss the existence of this article with any person. No disciplinary action will be necessary, provided …"
+  },
+  {
+   "id": "5c48ceb45e8f",
+   "title": "SCP-2951",
+   "author": "djkaktus",
+   "source": "scp",
+   "cell": "informational/non-narrative",
+   "words": 151,
+   "suspect": [],
+   "text": "Special Containment Procedures: Access to the Lemon Quarry is prohibited to unauthorized personnel, and Foundation personnel posing as local law enforcement are to maintain a perimeter around the site. Individuals who breach the perimeter are to be administered a suitable amnestic and turned over to the local authorities. Exploratory missions into SCP-2951 are currently forbidden. Description: SCP-2951 is an abandoned …"
+  },
+  {
+   "id": "7c5e36b03854",
+   "title": "SCP-3625",
+   "author": "djkaktus",
+   "source": "scp",
+   "cell": "informational/non-narrative",
+   "words": 274,
+   "suspect": [],
+   "text": "Special Containment Procedures: SCP-3625 is currently contained at Site-81 within a modified anomalous electronic containment unit surrounded by a Faraday cage. Resources are to be designated for the purpose of devising new containment protocols for SCP-3625's influence. Information security personnel are to make every attempt to minimize this influence. While SCP-3625 is contained within a Safe-class containment unit, its anomalous …"
+  },
+  {
+   "id": "27acb80c3fc9",
+   "title": "SCP-3929",
+   "author": "djkaktus",
+   "source": "scp",
+   "cell": "informational/non-narrative",
+   "words": 300,
+   "suspect": [],
+   "text": "Item #: SCP-3929 Object Class: Safe Special Containment Procedures: The entire known supply of SCP-3929 is contained in a secure container at Site-81. Testing of SCP-3929 cannot take place without the authorization of the current SCP-3929 research head, currently Dr. G. McElroy, the Site-81 Containment Research Head. Description: SCP-3929 is the group designation for a supply of roughly one-hundred twenty …"
+  },
+  {
+   "id": "49a12ca7800e",
+   "title": "SCP-4489",
+   "author": "djkaktus",
+   "source": "scp",
+   "cell": "informational/non-narrative",
+   "words": 214,
+   "suspect": [],
+   "text": "Special Containment Procedures: SCP-4489 is contained within a low-security item locker at Site-81. Access to SCP-4489 is to be granted only with permission from the Site-81 research authority. Description: SCP-4489 is a small, carved wooden statue of a cartoon hobo. Individuals exposed to SCP-4489 in close proximity will gradually begin to express feelings of guilt, often as a result of …"
+  },
+  {
+   "id": "01df18b2e05a",
+   "title": "SCP-4935",
+   "author": "djkaktus",
+   "source": "scp",
+   "cell": "informational/non-narrative",
+   "words": 257,
+   "suspect": [],
+   "text": "Special Containment Procedures: The access point to SCP-4935 is to be sealed and guarded when not in use. Access to SCP-4935 is forbidden unless authorized. Authorization is to be given only by the Site-77 Director of Containment, and only for the purposes of continued research into the nature of SCP-4935. Description: SCP-4935 is the group designation for two phenomena. The …"
+  },
+  {
+   "id": "5f7d6b51c014",
+   "title": "SCP-527",
+   "author": "djkaktus",
+   "source": "scp",
+   "cell": "informational/non-narrative",
+   "words": 163,
+   "suspect": [],
+   "text": "Special Containment Procedures: SCP-527 is to be contained within a standard humanoid domicile at Site-19. No other containment procedures are necessary. Description: SCP-527 is a male humanoid, 1.67m in height, which is biologically non-anomalous, with the exception of its head, which is that of a Puntius semifasciolatus, or gold barb fish. SCP-527 displays no other anomalous qualities. The head of …"
+  },
+  {
+   "id": "48aec33ab0c8",
+   "title": "SCP-9138",
+   "author": "whenwerewe",
+   "source": "scp",
+   "cell": "informational/non-narrative",
+   "words": 383,
+   "suspect": [],
+   "text": "SCP-9138: *https://scp-wiki.wikidot.com/whenwerewe Here's my page! Item #: SCP-9138 Object Class: Euclid Special Containment Procedures: The honoured dead are to be exhumed and disposed of in ritually unclean locations as available. Oracles, sibyls, mediums, and other classes of necromancer are to be amnesticised in order to maintain informational security. Furthermore, Foundation front agencies are to promote deurbanisation and lower population density, …"
+  },
+  {
+   "id": "bf156f663070",
+   "title": "SCP-9935",
+   "author": "djkaktus",
+   "source": "scp",
+   "cell": "informational/mixed",
+   "words": 343,
+   "suspect": [],
+   "text": "Department Head Research Head Assigned Task Force Structures, Constructs, and Patterns Dr. Constance Evermore Dr. Claire Higgins Delta-23 \"Batboys\" Special Containment Procedures: SCP-9935 is contained at its time and place of origin, at the site of Bruce Park in Indianapolis, Indiana, USA circa 1889 - near the corner of East 22nd St. and North College Avenue in the modern day. …"
+  },
+  {
+   "id": "156a5735970e",
+   "title": "SCP-4971",
+   "author": "djkaktus",
+   "source": "scp",
+   "cell": "informational/non-narrative",
+   "words": 372,
+   "suspect": [],
+   "text": "J. Karlyle Aktus William Decker ACB Sa-9 Special Containment Procedures: The entirety of the SouthWood Park Mall has been closed and all entrances have been barricaded. Armored Command Battalion Saito-9 (ACB Sa-9) has established an encampment of the structure (Observational Site-81-3). In the event that any entity emerges from within SCP-4971 without the express authorization of Commander Lana Grey, ACB …"
+  },
+  {
+   "id": "f1ecb4fd05d6",
+   "title": "SCP-1730",
+   "author": "djkaktus",
+   "source": "scp",
+   "cell": "mixed/non-narrative",
+   "words": 204,
+   "suspect": [],
+   "text": "GENERAL NOTICE Site 13 has experienced a gross breach of containment systems. [COGNITOHAZARD EXPUNGED] has breached containment during testing. On-Site nuclear device is non-responsive. Thresher Protocol has been activated. Life Support Systems: Online ● Electrical Systems: Offline ● Fire Control Systems: Offline ● Flood Control Systems: Offline ● Reactor Status: Critical ● Euclid Class Containment Status: Critical ● Keter Class …"
+  },
+  {
+   "id": "2da82d4b3e03",
+   "title": "SCP-6765",
+   "author": "djkaktus",
+   "source": "scp",
+   "cell": "informational/non-narrative",
+   "words": 232,
+   "suspect": [],
+   "text": "RAISA FILE MAINTENANCE MEMORANDUM: Due to the SCP-6765 \"HERITAGE\" Event, many of the descriptions of entities or locations in this document are obsolete. Please see Addendum 6765.10 for more information. Description: SCP-6765 is the group designation for a structure complex of antediluvian origin located beneath Aksayqin Lake in Hotan Prefecture, Xinjiang, and several anomalous entities and artifacts contained therein. This …"
+  },
+  {
+   "id": "f7c557ee1de3",
+   "title": "SCP-8980",
+   "author": "Yossipossi",
+   "source": "scp",
+   "cell": "informational/non-narrative",
+   "words": 288,
+   "suspect": [],
+   "text": "Improper Usage of Redaction — usage of redactions to cover a photographed anomaly's eyes have not been in standard practice since 1992. Inappropriate Photograph — when an anomaly is currently or formerly employed by the SCP Foundation, their research profile photograph (RPP) should be used unless otherwise necessary. This policy was introduced in 2005. SCP-8980's RPP was publicly available at …"
+  }
+ ],
+ "passagesTotal": 543
+}

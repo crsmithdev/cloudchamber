@@ -22,6 +22,24 @@
         "value": "instrument sans",
         "createdAt": "2026-09-16T03:28:23.852Z",
         "reason": "spec docs/specs/2026-09-15-ui-redesign.md stack table pins Instrument Sans, Newsreader and IBM Plex Mono as the three registers"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "docs/redesign/timetable/style.css"
+        ],
+        "createdAt": "2026-09-29T20:26:49.243Z",
+        "reason": "agent triage: the heavy black rule between the list pane and the main pane is a column divider, not a card accent"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "docs/redesign/standard/style.css"
+        ],
+        "createdAt": "2026-09-29T20:26:49.256Z",
+        "reason": "agent triage: a neutral grey quote rule on a blockquote, not a coloured card accent"
       }
     ]
   }
