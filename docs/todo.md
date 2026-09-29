@@ -22,3 +22,13 @@ updated: 2026-09-29
 priority: medium
 labels: [ir]
 ---
+
+## 3. Decide IR spec §15.9 (gate 1 into the IR): shape A or B, auto amend, T3′, reader check, T4 timing; then T1 (L2 at the plan gate)
+---
+id: 3
+status: open
+created: 2026-09-29
+updated: 2026-09-29
+priority: medium
+labels: [ir]
+---
