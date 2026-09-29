@@ -19,16 +19,15 @@ import type { DrawRow } from "./draw.ts";
 import { now } from "./paths.ts";
 import { stageTab, type Tab } from "./config.ts";
 
-// `awaiting_plan_gate` is the IR gate (docs/specs/2026-09-28-story-ir.md §6, §13.3, S3): it sits where a
-// plan is lowered and statically checked, after the schedule and before any scene is drafted. It follows
-// `awaiting_draft_gate`'s pattern (a stop with an auto rule) but is not wired to any action or screen yet:
-// nothing commits a draw to it and no `WHEN` entry names it. `planGateAuto` (`ir/gate.ts`) is its auto rule.
+// `awaiting_plan_gate` is the IR gate (docs/specs/2026-09-28-story-ir.md §6, S3): after the schedule and its
+// plan check, before any scene. A draft asked to (`plan`) stops there; its actions fix the plan, plan it
+// again, or write the scenes.
 export const STATUSES = ["running", "awaiting_gate", "done", "checking", "awaiting_check_gate", "repairing", "repaired", "awaiting_plan_gate", "drafting", "awaiting_draft_gate", "drafted", "failed"] as const;
 export type Status = (typeof STATUSES)[number];
 // the tab a stage belongs in is a fact about the stage: config.ts holds the table, and this re-export keeps one import for the page
 export { stageTab, type Tab };
 
-export const ACTIONS = ["choose", "fork", "flag", "archive", "unarchive", "delete", "check", "auto", "accept", "dismiss", "hold", "draft", "branch", "rewrite", "keep"] as const;
+export const ACTIONS = ["choose", "fork", "flag", "archive", "unarchive", "delete", "check", "auto", "accept", "dismiss", "hold", "draft", "branch", "rewrite", "keep", "apply", "replan", "write"] as const;
 export type Action = (typeof ACTIONS)[number];
 
 const RUNNING = new Set<string>(["running", "checking", "repairing", "drafting"]);
@@ -43,6 +42,8 @@ const WHEN: Partial<Record<Action, string[]>> = {
   check: AT_BRIEF, auto: AT_BRIEF, draft: AT_BRIEF,
   accept: ["awaiting_check_gate"], dismiss: ["awaiting_check_gate"], hold: ["awaiting_check_gate"],
   rewrite: ["awaiting_draft_gate"], keep: ["awaiting_draft_gate"],
+  // the plan gate: fix the plan, plan it again, or write the scenes from it
+  apply: ["awaiting_plan_gate"], replan: ["awaiting_plan_gate"], write: ["awaiting_plan_gate"],
   // a branch develops a draft, so there has to be one; a draft still being written has no settled scenes to carry
   branch: ["awaiting_draft_gate", "drafted"],
 };

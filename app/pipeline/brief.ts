@@ -31,7 +31,8 @@ export function writeBrief(db: Db, drawId: string, base: string = BRIEFS, settle
   const executed = new Map(ofKind(arts, "vignette").filter((a) => a.stage === "execute").map((a) => [a.meta.index, a]));
   const cands = ofKind(arts, "premise").sort((x, y) => (x.meta.index ?? 0) - (y.meta.index ?? 0));
   const modelByStage = new Map<string, string>();
-  for (const s of steps) if (s.status === "done" && (s.model !== "patched" || !modelByStage.has(s.stage))) modelByStage.set(s.stage, s.model);
+  // a patched or operator-written step made no call: the model is the one that wrote the stage before it
+  for (const s of steps) if (s.status === "done" && ((s.model !== "patched" && s.model !== "operator") || !modelByStage.has(s.stage))) modelByStage.set(s.stage, s.model);
   const refusals = steps.filter((s) => s.fail_reason === "refusal").map((s) => `${s.stage} on ${s.model}`);
   const forked: string[] = draw.forked_from ? ["## forked_from", "", `${draw.forked_from}, its candidate ${chosen?.meta.index ?? "?"}`, ""] : [];
   const branched: string[] = draw.branched_from ? ["## branched_from", "", `${draw.branched_from}, after its step ${draw.branch_at}`, ""] : [];

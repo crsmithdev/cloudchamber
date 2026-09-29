@@ -20,7 +20,7 @@ describe("the rules", () => {
       awaiting_check_gate: ["fork", "flag", "archive", "unarchive", "check", "auto", "accept", "dismiss", "hold", "draft"],
       repairing: ["fork", "flag", "archive", "unarchive"],
       repaired: ["fork", "flag", "archive", "unarchive"],
-      awaiting_plan_gate: ["fork", "flag", "archive", "unarchive"],
+      awaiting_plan_gate: ["fork", "flag", "archive", "unarchive", "apply", "replan", "write"],
       drafting: ["fork", "flag", "archive", "unarchive"],
       awaiting_draft_gate: ["fork", "flag", "archive", "unarchive", "branch", "rewrite", "keep"],
       drafted: ["fork", "flag", "archive", "unarchive", "branch"],

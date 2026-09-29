@@ -441,6 +441,17 @@
   .plan-beats > tbody > tr.old > td {
     opacity: 0.35;
   }
+  /* the plan gate: a beat's line that a click rewrites, and one rewritten and not yet applied */
+  .editable {
+    cursor: text;
+    border-radius: 2px;
+  }
+  .editable:hover {
+    background: color-mix(in srgb, var(--color-art) 6%, transparent);
+  }
+  .editable.edited {
+    background: color-mix(in srgb, var(--color-art) 12%, transparent);
+  }
   /* every number and identifier is the mono, in any pane */
   .num {
     font-family: var(--font-mono);

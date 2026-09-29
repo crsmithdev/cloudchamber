@@ -5,6 +5,7 @@ import { PLAN_SPAN, draftScript, drawn, finding, planSymbols } from "../drafting
 import { chainOf } from "../chain.ts";
 import { draftView, renderStory } from "../drafts.ts";
 import { PLAN_CAP } from "./s2.ts";
+import { editBeat } from "../drafting.ts";
 
 /**
  * The plan check at gate 2 (docs/specs/2026-09-28-story-ir.md §14.5, S3′): a
@@ -103,5 +104,72 @@ describe("the plan check at gate 2", () => {
     expect(chainOf(p, drafted.id).planFindings().filter((f) => f.screen === "plan-ledger")).toHaveLength(PLAN_CAP);
     expect(d.view(drafted.id).planCapped).toBe(true);
     expect(d.story(drafted.id)).toContain(`[plan] the plan reading returned its maximum of ${PLAN_CAP} findings; the list may be short`);
+  });
+});
+
+/** The plan gate (docs/specs/2026-09-28-story-ir.md §6, S3): a draft asked to stops after its plan is checked, before any scene. */
+describe("the plan gate", () => {
+  const stages = (model: any, from: number) => model.calls.slice(from).map((c: any) => c.stage);
+
+  test("a draft under `plan` stops with the plan checked and no scene; write takes it to gate 2 without checking again", async () => {
+    const { p, d, draw, model } = await drawn();
+    const at = await d.draft(draw.id, { plan: true });
+    expect(at.status).toBe("awaiting_plan_gate");
+    expect(stages(model, 0)).not.toContain("scene");
+    expect(chainOf(p, at.id).planFindings().map((f) => f.screen)).toContain("plan-ledger");
+    const before = model.calls.length;
+    const written = await d.writeScenes(at.id);
+    expect(written.status).toBe("awaiting_draft_gate");
+    expect(stages(model, before)).toContain("scene");
+    expect(stages(model, before).filter((s: string) => s.startsWith("ir-"))).toEqual([]);
+    await expect(d.applyPlan(at.id, { findings: [] })).rejects.toThrow(/awaiting_draft_gate/);
+  });
+
+  test("apply puts the operator's note, or the finding's patch, in the plan, settles the finding, and checks the new plan", async () => {
+    const { p, d, draw, model } = await drawn();
+    const at = await d.draft(draw.id, { plan: true });
+    const pf = chainOf(p, at.id).planFindings().find((f) => f.screen === "plan-ledger")!;
+    // the fixture's finding has no patch: without a note there is nothing to put in its place
+    await expect(d.applyPlan(at.id, { findings: [pf.id] })).rejects.toThrow(/has no patch/);
+    const before = model.calls.length;
+    const NOTE = "Beat 2 keeps the reliquary in the director's office.";
+    const after = await d.applyPlan(at.id, { findings: [pf.id], notes: { [pf.id]: NOTE } });
+    expect(after.status).toBe("awaiting_plan_gate");
+    const chain = chainOf(p, at.id);
+    expect(chain.schedule()!.raw).toContain(NOTE);
+    expect(chain.schedule()!.raw).not.toContain(PLAN_SPAN);
+    expect(chain.schedule()!.beats[1]!.job).toContain(NOTE);
+    expect(stages(model, before)).toEqual(expect.arrayContaining(["ir-symbolize", "ir-plan-ledger"]));
+    expect(stages(model, before)).not.toContain("schedule");
+    // the finding is settled, and the scenes are written from the plan as it now stands
+    expect(chain.decision(pf.id).decision).toBe("accepted");
+    await d.writeScenes(at.id);
+    const beat2 = model.calls.filter((c: any) => c.stage === "scene").find((c: any) => /Write beat 2 /.test(c.prompt))!;
+    expect(beat2.prompt).toContain(NOTE);
+  });
+
+  test("an edit replaces one field of one beat; replan plans again from a beat; both leave the draw at the plan gate", async () => {
+    const { p, d, draw, model } = await drawn();
+    const at = await d.draft(draw.id, { plan: true });
+    await d.applyPlan(at.id, { edits: [{ beat: 3, field: "when", text: "the third morning" }] });
+    expect(chainOf(p, at.id).schedule()!.beats[2]!.when).toBe("the third morning");
+    await expect(d.applyPlan(at.id, { edits: [{ beat: 99, field: "job", text: "x" }] })).rejects.toThrow(/no beat 99/);
+    await expect(d.applyPlan(at.id, {})).rejects.toThrow(/nothing to apply/);
+    const before = model.calls.length;
+    const re = await d.replan(at.id, 4, "The director is absent from beat 4 on.");
+    expect(re.status).toBe("awaiting_plan_gate");
+    expect(stages(model, before)).toEqual(expect.arrayContaining(["schedule", "ir-plan-ledger"]));
+    // the beats under 4 are the edited plan's: the replan keeps them
+    expect(chainOf(p, at.id).schedule()!.beats[2]!.when).toBe("the third morning");
+  });
+});
+
+describe("editBeat", () => {
+  const RAW = `<form>tense: past</form>\n<beat n="1" words="500">\n<job>One.</job>\n<when>dawn</when>\n</beat>\n<beat n="2" words="500">\n<job>Two.</job>\n<when>noon</when>\n</beat>`;
+  test("replaces the field in the named beat only, and adds one the beat lacks", () => {
+    const out = editBeat(RAW, { beat: 2, field: "when", text: "dusk $1" });
+    expect(out).toContain(`<beat n="1" words="500">\n<job>One.</job>\n<when>dawn</when>`);
+    expect(out).toContain("<when>dusk $1</when>");
+    expect(editBeat(RAW, { beat: 1, field: "stakes", text: "x" })).toContain(`<when>dawn</when>\n<stakes>x</stakes>\n</beat>`);
   });
 });

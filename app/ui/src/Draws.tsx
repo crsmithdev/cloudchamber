@@ -11,6 +11,7 @@ const LABEL: Record<string, string> = {
   awaiting_gate: "choose a premise",
   done: "brief",
   awaiting_check_gate: "review findings",
+  awaiting_plan_gate: "review plan",
   awaiting_draft_gate: "review draft",
   checking: "checking",
   repairing: "repairing",

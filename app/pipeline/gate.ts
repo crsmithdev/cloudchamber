@@ -10,7 +10,7 @@
  * for it and prints what it returned.
  */
 import { newDrawId, type Pipeline } from "./draw.ts";
-import type { Drafting, Instruction } from "./drafting.ts";
+import type { Drafting, Instruction, PlanEdit } from "./drafting.ts";
 import type { Overrides } from "./draftconfig.ts";
 import { ACTIONS, type Action } from "./lifecycle.ts";
 import { DISMISS_REASONS, isDismissReason, type DismissReason } from "./verdicts.ts";
@@ -27,8 +27,9 @@ export type GateArgs = {
   premise?: string;                                                     // fork: the candidate's premise as the operator edited it
   reason?: DismissReason;                                               // dismiss
   checks?: string[]; samples?: number;                                  // check
-  auto?: boolean; profile?: string; overrides?: Overrides;              // draft
-  at_beat?: number;                                                     // branch
+  auto?: boolean; plan?: boolean; profile?: string; overrides?: Overrides; // draft: `plan` stops it at the plan gate
+  at_beat?: number;                                                     // branch, replan
+  edits?: PlanEdit[];                                                   // apply: fields of beats the operator rewrote at the plan gate
   models?: Record<string, string>;                                      // any action: {stage or group: model}, set on the draw before it runs
 };
 
@@ -79,9 +80,12 @@ export function gateCommand(p: Pipeline, d: Drafting, id: string, action: string
     }
     case "hold": return cmd(false, id, d.hold(id));
     case "keep": return cmd(false, id, d.keep(id, note));
+    case "apply": return cmd(true, id, d.applyPlan(id, { findings: a.findings, notes: a.notes, edits: a.edits }));
+    case "replan": return cmd(true, id, d.replan(id, Number(need(a.at_beat, "at_beat")), need(a.instruction, "instruction")));
+    case "write": return cmd(true, id, d.writeScenes(id));
     case "rewrite": return cmd(true, id, d.rewrite(id, a.beats?.length ? a.beats.map(Number) : [Number(need(a.beat, "beat"))], { findings: a.findings, notes: a.notes, instruction: a.instruction }));
     case "check": return cmd(true, id, d.check(id, { checks: a.checks, samples: a.samples }));
-    case "draft": return cmd(true, id, d.draft(id, { auto: !!a.auto, profile: a.profile, overrides: a.overrides }));
+    case "draft": return cmd(true, id, d.draft(id, { auto: !!a.auto, plan: !!a.plan, profile: a.profile, overrides: a.overrides }));
     // the branch is the draw to show next, as a fork is
     case "branch": return cmd(true, null, d.branch(id, { atBeat: a.at_beat, profile: a.profile, overrides: a.overrides, models: a.models, instruction: a.instruction }));
     // a deleted draw is nothing to show next

@@ -266,6 +266,8 @@ export function Develop({ stage, selected, step: stepId }: { stage: "check" | "w
                   })
                 }
               />
+            ) : stage === "write" && d.draw.status === "awaiting_plan_gate" ? (
+              <PlanGate d={d} onAct={act} aside={aside} />
             ) : stage === "write" ? (
               <StoryPane d={d} onAct={act} aside={aside} />
             ) : d.draw.status === "awaiting_check_gate" || d.draw.status === "repaired" ? (
@@ -1238,12 +1240,13 @@ function Profiles({ f }: { f: Findings }) {
 
 const AXES: Record<string, string[]> = { tense: ["past", "present"], person: ["first", "second", "third"], chronology: ["linear", "nonlinear"], container: ["prose", "document", "interleaved"] };
 
-function DraftSettings({ d, onClose, onDraft }: { d: Detail; onClose: () => void; onDraft: (b: { auto?: boolean; profile?: string; overrides?: Record<string, string | number>; models?: Record<string, string> }) => void }) {
+function DraftSettings({ d, onClose, onDraft }: { d: Detail; onClose: () => void; onDraft: (b: { auto?: boolean; plan?: boolean; profile?: string; overrides?: Record<string, string | number>; models?: Record<string, string> }) => void }) {
   const [cfg, setCfg] = useState<DraftConfigView | null>(null);
   const [profile, setProfile] = useState<string>("");
   const [models, setModels] = useState<Record<string, string>>({});
   const [v, setV] = useState<Record<string, string>>({});
   const [auto, setAuto] = useState(false);
+  const [plan, setPlan] = useState(false);
   useEffect(() => {
     api.draftConfig().then(setCfg);
   }, []);
@@ -1344,8 +1347,11 @@ function DraftSettings({ d, onClose, onDraft }: { d: Detail; onClose: () => void
           <Seg label="Check" value={auto ? "auto" : "skip"} options={["skip", "auto"]} onChange={(x) => setAuto(x === "auto")} />
         </Field>
       )}
+      <Field label="Plan" help="Stop at the plan: plan the draft and check the plan, then wait before any scene. You fix the plan, plan it again from a beat, or write the draft from it.">
+        <Seg label="Plan" value={plan ? "stop at the plan" : "write through"} options={["write through", "stop at the plan"]} onChange={(x) => setPlan(x === "stop at the plan")} />
+      </Field>
       <div className="actions">
-        <Btn variant="primary" pad onClick={() => onDraft({ auto, profile: profile || undefined, overrides: Object.keys(overrides).length ? overrides : undefined, models: Object.keys(models).length ? models : undefined })}>
+        <Btn variant="primary" pad onClick={() => onDraft({ auto, plan: plan || undefined, profile: profile || undefined, overrides: Object.keys(overrides).length ? overrides : undefined, models: Object.keys(models).length ? models : undefined })}>
           draft
         </Btn>
       </div>
@@ -1804,7 +1810,7 @@ function linkSyms(text: string, syms: Sym[], onSym: (id: string) => void): React
 }
 
 /** One flag or plan finding at gate 2: a box to tick while it is open, and a note under it once ticked. */
-function FlagRow({ f, ticks, setTicks, gating, rewritten, syms, onSym }: { f: Flag; ticks: Ticks; setTicks: (t: Ticks) => void; gating: boolean; rewritten: string[]; syms: Sym[]; onSym: (id: string) => void }) {
+function FlagRow({ f, ticks, setTicks, gating, rewritten, syms, onSym, fixing }: { f: Flag; ticks: Ticks; setTicks: (t: Ticks) => void; gating: boolean; rewritten: string[]; syms: Sym[]; onSym: (id: string) => void; fixing?: boolean }) {
   const open = f.decision === "open";
   const on = f.id in ticks;
   const plan = f.source === "plan";
@@ -1819,7 +1825,7 @@ function FlagRow({ f, ticks, setTicks, gating, rewritten, syms, onSym }: { f: Fl
   return (
     <>
       <tr className={(open ? "" : "old") + (on ? " ticked" : "")}>
-        <td className="w-8">{gating && open && <input type="checkbox" checked={on} onChange={(e) => tick(e.target.checked)} aria-label={`Tick this ${kind} flag for the rewrite`} />}</td>
+        <td className="w-8">{gating && open && <input type="checkbox" checked={on} onChange={(e) => tick(e.target.checked)} aria-label={fixing ? `Tick this ${kind} finding to put its fix in the plan` : `Tick this ${kind} flag for the rewrite`} />}</td>
         <td className={"w-24 " + (plan ? "text-running" : kind === "ledger" ? "text-art" : "text-mute")}>
           {kind}
           {!plan && n > 1 && (
@@ -1848,9 +1854,9 @@ function FlagRow({ f, ticks, setTicks, gating, rewritten, syms, onSym }: { f: Fl
                 <span>{f.replacement}</span>
               </>
             )}
-            {!plan && f.patch && (
+            {(!plan || fixing) && f.patch && !/^none\.?$/i.test(f.patch.trim()) && (
               <>
-                <b>patch</b>
+                <b>{plan ? "fix" : "patch"}</b>
                 <span>{f.patch}</span>
               </>
             )}
@@ -1862,7 +1868,7 @@ function FlagRow({ f, ticks, setTicks, gating, rewritten, syms, onSym }: { f: Fl
           <td></td>
           <td className="text-dim">note</td>
           <td>
-            <input type="text" className="w-full" autoFocus value={ticks[f.id]} placeholder="optional: how to fix it, in your own words" aria-label="Note on this flag" onChange={(e) => setTicks({ ...ticks, [f.id]: e.target.value })} />
+            <input type="text" className="w-full" autoFocus value={ticks[f.id]} placeholder={fixing ? (f.patch && !/^none\.?$/i.test(f.patch.trim()) ? "optional: the words to put in the plan instead of the fix above" : "required: the words to put in the plan for the span quoted") : "optional: how to fix it, in your own words"} aria-label="Note on this flag" onChange={(e) => setTicks({ ...ticks, [f.id]: e.target.value })} />
           </td>
         </tr>
       )}
@@ -1912,7 +1918,7 @@ function FlagTable({ fs, structure, ...row }: { fs: Flag[]; structure?: Story["p
 }
 
 /** The plan the scenes were written from: the plan check's findings, the withholding, and each beat as planned with its findings. */
-function PlanView({ s, ticks, setTicks, gating, sym, onSym }: { s: Story; ticks: Ticks; setTicks: (t: Ticks) => void; gating: boolean; sym: string | null; onSym: (id: string) => void }) {
+function PlanView({ s, ticks, setTicks, gating, sym, onSym, edits, setEdits }: { s: Story; ticks: Ticks; setTicks: (t: Ticks) => void; gating: boolean; sym: string | null; onSym: (id: string) => void; edits?: Edits; setEdits?: (e: Edits) => void }) {
   const sched = s.schedule!;
   const M = sched.beats.length;
   // one row per withheld item: first beat that lists it, and the beat that reveals it
@@ -1939,10 +1945,17 @@ function PlanView({ s, ticks, setTicks, gating, sym, onSym }: { s: Story; ticks:
     const text = [b.job, b.known, b.stakes, b.set_piece, ...s.planFindings.filter((f) => f.beat === b.n).map((f) => f.evidence)].join(" ").toLowerCase();
     return words.some((w) => text.includes(w));
   };
-  const row = { ticks, setTicks, gating, rewritten: s.rewrittenUnder, syms: s.symbols, onSym };
+  const row = { ticks, setTicks, gating, rewritten: s.rewrittenUnder, syms: s.symbols, onSym, fixing: !!setEdits };
+  // at the plan gate a beat's fields can be rewritten in place; elsewhere they are read-only
+  const field = (b: (typeof sched.beats)[number], f: EditField, value: string, className?: string) =>
+    setEdits ? (
+      <EditText value={value} edit={edits?.[`${b.n}.${f}`]} className={className} label={`beat ${b.n} ${f}`} onEdit={(t) => setEdits(Object.fromEntries(Object.entries({ ...edits, [`${b.n}.${f}`]: t }).filter(([, v]) => v !== undefined)) as Edits)} />
+    ) : (
+      <span className={className}>{value}</span>
+    );
   return (
     <>
-      <Head note="the schedule read against the ledger before a scene was written; read-only unless a finding is ticked for a rewrite">plan check</Head>
+      <Head note={setEdits ? "the schedule read against the ledger; tick a finding to put its fix in the plan, or click a beat's text to rewrite it" : "the schedule read against the ledger before a scene was written; read-only unless a finding is ticked for a rewrite"}>plan check</Head>
       <div className="mt-1 flex flex-wrap gap-x-4 text-mute">
         {s.planFindings.length || s.symbols.length ? (
           <>
@@ -2032,19 +2045,19 @@ function PlanView({ s, ticks, setTicks, gating, sym, onSym }: { s: Story; ticks:
                   {b.pays && <div className="text-art">pays</div>}
                 </td>
                 <td>
-                  <div className="num text-mute">{b.when}</div>
-                  <div className="serif-cell">{b.job}</div>
+                  <div className="num text-mute">{field(b, "when", b.when || (setEdits ? "no time" : ""))}</div>
+                  <div className="serif-cell">{field(b, "job", b.job)}</div>
                   <div className="kv">
                     <b>known</b>
-                    <span>{b.known}</span>
+                    {field(b, "known", b.known)}
                     <b>withheld</b>
                     <span>{b.withheld.length ? b.withheld.map((w) => `${w.item} → ${w.until > M ? "never" : w.until}`).join(" · ") : "nothing"}</span>
                     <b>stakes</b>
-                    <span>{b.stakes}</span>
-                    {b.set_piece && b.set_piece !== "none" && (
+                    {field(b, "stakes", b.stakes)}
+                    {((b.set_piece && b.set_piece !== "none") || setEdits) && (
                       <>
                         <b>set piece</b>
-                        <span>{b.set_piece}</span>
+                        {field(b, "set_piece", b.set_piece && b.set_piece !== "none" ? b.set_piece : "none")}
                       </>
                     )}
                   </div>
@@ -2060,6 +2073,144 @@ function PlanView({ s, ticks, setTicks, gating, sym, onSym }: { s: Story; ticks:
         {Object.entries(sched.form)
           .map(([a, x]) => `${a} ${x}`)
           .join(" · ")}
+      </div>
+    </>
+  );
+}
+
+type EditField = "job" | "when" | "known" | "stakes" | "set_piece";
+/** A beat's fields rewritten at the plan gate, keyed "beat.field". */
+type Edits = Record<string, string>;
+
+/** Text that turns into a box on a click; a change back to the original drops the edit. */
+function EditText({ value, edit, onEdit, className, label }: { value: string; edit?: string; onEdit: (t: string | undefined) => void; className?: string; label: string }) {
+  const [open, setOpen] = useState(false);
+  if (open)
+    return (
+      <textarea
+        className="w-full font-serif text-prose"
+        rows={Math.max(2, Math.ceil((edit ?? value).length / 90))}
+        defaultValue={edit ?? value}
+        aria-label={`Edit ${label}`}
+        autoFocus
+        onBlur={(e) => {
+          const t = e.target.value.trim();
+          onEdit(t && t !== value.trim() ? t : undefined);
+          setOpen(false);
+        }}
+      />
+    );
+  return (
+    <span className={`${className ?? ""} editable${edit !== undefined ? " edited" : ""}`} role="button" tabIndex={0} title="Click to rewrite this line of the plan" onClick={() => setOpen(true)} onKeyDown={(e) => e.key === "Enter" && setOpen(true)}>
+      {edit ?? value}
+    </span>
+  );
+}
+
+/**
+ * The plan gate (docs/specs/2026-09-28-story-ir.md §6, S3): the plan and its
+ * check before any scene. Ticked findings put their fix in the plan (the note,
+ * or the finding's own patch), edited lines replace the beat's, and the plan
+ * is checked again; a re-plan plans it again from a beat; write drafts it.
+ */
+function PlanGate({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<any>, go?: (r: any) => string | undefined) => void; aside: React.ReactNode }) {
+  const [s, setS] = useState<Story | null>(null);
+  const [ticks, setTicks] = useState<Ticks>({});
+  const [edits, setEdits] = useState<Edits>({});
+  const [sym, setSym] = useState<string | null>(null);
+  const [from, setFrom] = useState(1);
+  const [instruction, setInstruction] = useState("");
+  const id = d.draw.id;
+  useEffect(() => {
+    api
+      .story(id)
+      .then(setS)
+      .catch(() => {});
+  }, [id, d.steps.length]);
+  if (!s || !s.schedule) return <span className="text-dim">loading the plan…</span>;
+  const gating = d.draw.actions.apply === null;
+  const gate = (action: string, extra: Record<string, unknown> = {}) => onAct(() => api.gate(id, { action, ...extra }));
+  const nTicked = Object.keys(ticks).length;
+  const nEdits = Object.keys(edits).length;
+  // a ticked finding needs a fix to put in: its note, or its own patch
+  const noFix = Object.entries(ticks).filter(([fid, note]) => {
+    const f = s.planFindings.find((x) => x.id === fid);
+    return !note.trim() && (!f?.patch?.trim() || /^none\.?$/i.test(f.patch.trim()));
+  }).length;
+  const apply = () => {
+    const notes = Object.fromEntries(Object.entries(ticks).filter(([, v]) => v.trim()));
+    const list = Object.entries(edits).map(([k, text]) => ({ beat: Number(k.split(".")[0]), field: k.split(".")[1], text }));
+    gate("apply", { findings: Object.keys(ticks), notes, edits: list });
+    setTicks({});
+    setEdits({});
+  };
+  const onSym = (x: string) => setSym(x);
+  const M = s.schedule.beats.length;
+  return (
+    <>
+      {gating && (
+        <div className="controls" role="group" aria-label="Plan gate">
+          <Btn variant="primary" onClick={() => gate("write")} disabled={nTicked + nEdits > 0} title={nTicked + nEdits ? "Apply or clear the ticked findings and edits first." : "Write every scene from this plan, screen them, and stop at gate 2."}>
+            write the draft
+          </Btn>
+          <span className="text-mute">{M} beats · no scene written yet</span>
+        </div>
+      )}
+      {gating && (
+        <div className="mt-3 max-w-[48rem]" role="group" aria-label="Fix the plan">
+          <Head note="fix the plan before any prose: the fixes go into the schedule word for word, and the plan is checked again (about $0.45)">plan</Head>
+          <div className="mt-1 text-mute">
+            {nTicked ? `${nTicked} finding${nTicked > 1 ? "s" : ""} ticked` : "nothing ticked"}
+            {nEdits ? ` · ${nEdits} line${nEdits > 1 ? "s" : ""} edited` : ""}
+            {noFix ? <span className="text-art"> · {noFix} without a fix: write one in its note</span> : ""}
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <Btn variant="art" disabled={!(nTicked + nEdits) || noFix > 0} onClick={apply} title="Put each ticked finding's fix and each edited line in the plan, then check the plan again.">
+              apply{nTicked ? ` ${nTicked} fix${nTicked > 1 ? "es" : ""}` : ""}
+              {nEdits ? ` · ${nEdits} edit${nEdits > 1 ? "s" : ""}` : ""}
+            </Btn>
+            {nTicked + nEdits > 0 && (
+              <Btn variant="quiet" onClick={() => (setTicks({}), setEdits({}))}>
+                clear
+              </Btn>
+            )}
+          </div>
+          <textarea
+            className="mt-3 font-serif text-prose"
+            rows={2}
+            placeholder="or plan it again: what should change, in your own words"
+            aria-label="Instruction for a re-plan"
+            value={instruction}
+            onChange={(e) => setInstruction(e.target.value)}
+          />
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <span className="head">from beat</span>
+            <span className="chips" role="group" aria-label="Re-plan from beat">
+              {s.schedule.beats.map((b) => (
+                <Chip key={b.n} className="num" pressed={from === b.n} onClick={() => setFrom(b.n)}>
+                  {b.n}
+                </Chip>
+              ))}
+            </span>
+            <Btn
+              variant="quiet"
+              disabled={!instruction.trim()}
+              onClick={() => (gate("replan", { at_beat: from, instruction }), setInstruction(""))}
+              title={`Plan the schedule again from beat ${from} under the instruction; beats before it stay as they are. The new plan is checked again.`}
+            >
+              re-plan from {from}
+            </Btn>
+          </div>
+        </div>
+      )}
+      <div className="drawbody wide mt-4">
+        <div className="min-w-0">
+          <PlanView s={s} ticks={ticks} setTicks={setTicks} gating={gating} sym={sym} onSym={onSym} edits={edits} setEdits={gating ? setEdits : undefined} />
+        </div>
+        <div className="aside min-w-0">
+          <SymbolTable s={s} sym={sym} setSym={setSym} />
+          <div className="mt-6">{aside}</div>
+        </div>
       </div>
     </>
   );

@@ -28,9 +28,14 @@ const DOC = `cloudchamber — the one command the skill and the UI drive.
    cloudchamber check <draw> [--checks a,b] [--samples N]   run the checkers over a brief; stops at gate 1
    cloudchamber findings <draw> [--examined] [--all]   the findings of the latest check, by score
    cloudchamber gate <draw> accept [<finding>...] [--instruction "..." --parts ending,"context 1" --kind fact|direction] | auto | dismiss <finding> [--reason false-positive|real-bad-fix|duplicate|trivial] | hold | keep | rewrite <k>[,k...] [--finding ID[,ID...]] [--instruction "..."]  [--note "..."]
+   cloudchamber gate <draw> apply [--finding ID[,ID...]] [--fix "..."] [--edit "K field text"]... | replan <k> --instruction "..." | write
+       the plan gate: apply puts each ticked plan finding's patch in the plan (--fix is the operator's own text
+       for a single --finding) and each --edit's text in beat K's field (job, when, known, stakes, set_piece), then
+       checks the plan again; replan plans it again from beat K; write writes the scenes and stops at gate 2
        auto repairs round after round, accepting what scores repair.stop_score or more,
        until nothing reaches the floor, the rounds run out, or the total stops falling
-   cloudchamber draft <draw> [--auto] [--profile P] [--words N] [--beats N] [--tense T] [--person P] [--chronology C] [--container C] [--order O] [--models G=M,...]
+   cloudchamber draft <draw> [--auto] [--plan] [--profile P] [--words N] [--beats N] [--tense T] [--person P] [--chronology C] [--container C] [--order O] [--models G=M,...]
+     --plan stops the draft at the plan gate with its plan checked, before any scene is written
      --models sets the model per stage or group (prose, judgement, corpus) for the draw and the draws made from it, e.g. judgement=claude-sonnet-5
    cloudchamber branch <draw> [--at-beat K] [--profile P] [--models G=M,...] [--instruction "..."]
        develop an existing draft as a draw of its own: the brief, the ledger, the schedule and the
@@ -84,6 +89,14 @@ import { writeReport } from "../pipeline/report.ts";
 import { gateCommand, isGateAction, type GateArgs } from "../pipeline/gate.ts";
 import type { CheckResult } from "../pipeline/check.ts";
 import type { Overrides } from "../pipeline/draftconfig.ts";
+import type { PlanEdit } from "../pipeline/drafting.ts";
+
+/** "K field text": one field of one beat, as --edit gives it. */
+function parseEdit(x: string): PlanEdit {
+  const m = /^(\d+)\s+(job|when|known|stakes|set_piece)\s+([\s\S]+)$/.exec(x.trim());
+  if (!m) throw new Error(`--edit "${x}": expected "K field text", field one of job, when, known, stakes, set_piece`);
+  return { beat: Number(m[1]), field: m[2] as PlanEdit["field"], text: m[3]! };
+}
 
 const [cmd, ...rest] = process.argv.slice(2);
 
@@ -97,6 +110,18 @@ async function main() {
   const db = openDb();
   const pipeline = () => new Pipeline(db, new ClaudeCli());
   const drafting = () => new Drafting(pipeline());
+  // the plan gate: each beat's job and time, then the plan check's findings, open ones with what apply would put in
+  const printPlan = (drawId: string) => {
+    const v = drafting().view(drawId);
+    for (const b of v.schedule?.beats ?? []) console.log(`${String(b.n).padStart(2)}  ${b.when ? `[${b.when}] ` : ""}${b.job}`);
+    console.log(`\nplan check: ${v.planFindings.length} findings${v.planCapped ? " (capped)" : ""} · ${v.symbols.length} symbols`);
+    for (const f of v.planFindings) {
+      console.log(`\n${f.id}  ${f.screen}${f.beat ? ` beat ${f.beat}` : ""}  ${f.decision}${f.note ? `: ${f.note}` : ""}`);
+      console.log(`  ${f.statement}`);
+      if (f.decision === "open" && f.beat) console.log(`  span: ${f.span}\n  patch: ${f.patch && !/^none\.?$/i.test(f.patch) ? f.patch : "none (give --fix, --edit the beat, or replan)"}`);
+    }
+    console.log(`\ncloudchamber gate ${drawId} apply --finding ID[,ID] [--fix "..."] [--edit "K field text"] | replan <k> --instruction "..." | write`);
+  };
   const printFindings = (drawId: string, examined = false, all = false) => {
     const f = drafting().findings(drawId, { all });
     if (!f.pass) { console.log("no check has run"); return; }
@@ -180,22 +205,27 @@ async function main() {
       break;
     }
     case "gate": {
-      const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, options: { note: { type: "string", default: "" }, finding: { type: "string" }, reason: { type: "string" }, instruction: { type: "string" }, parts: { type: "string" }, kind: { type: "string", default: "direction" }, premise: { type: "string" } } });
+      const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, options: { note: { type: "string", default: "" }, finding: { type: "string" }, reason: { type: "string" }, instruction: { type: "string" }, parts: { type: "string" }, kind: { type: "string", default: "direction" }, premise: { type: "string" }, fix: { type: "string" }, edit: { type: "string", multiple: true } } });
       const [drawId, action, ...args] = positionals;
       const p = pipeline(), d = drafting();
       if (!drawId || !action) usage();
       if (!isGateAction(action!)) usage();
       // the positionals each action reads; the command itself refuses what is missing
-      if ((action === "dismiss" || action === "rewrite" || (action === "accept" && !values.instruction)) && !args.length) usage();
+      if ((action === "dismiss" || action === "rewrite" || action === "replan" || (action === "accept" && !values.instruction)) && !args.length) usage();
+      const ticked = values.finding?.split(",").map((x) => x.trim()).filter(Boolean);
+      if (values.fix && ticked?.length !== 1) usage();
       const gateArgs: GateArgs = {
         note: values.note, finding: action === "dismiss" ? args[0] : values.finding, reason: values.reason as GateArgs["reason"],
-        step_id: args[0], findings: action === "rewrite" ? values.finding?.split(",") : args, beats: action === "rewrite" ? args[0].split(",").map(Number) : undefined, instruction: values.instruction, premise: values.premise,
+        step_id: args[0], findings: action === "rewrite" || action === "apply" ? ticked : args,
+        notes: action === "apply" && values.fix ? { [ticked![0]!]: values.fix } : undefined, at_beat: action === "replan" ? Number(args[0]) : undefined,
+        edits: action === "apply" ? (values.edit ?? []).map(parseEdit) : undefined, beats: action === "rewrite" ? args[0].split(",").map(Number) : undefined, instruction: values.instruction, premise: values.premise,
         instructions: action === "accept" && values.instruction ? [{ text: values.instruction, parts: (values.parts ?? "").split(",").map((x) => x.trim()).filter(Boolean), kind: values.kind as "fact" | "direction" }] : undefined,
       };
       // the CLI waits for the work whether or not it runs on: there is nothing else to go back to
       const out = await gateCommand(p, d, drawId!, action!, gateArgs).done;
       console.log(JSON.stringify(out, null, 2));
       if (action === "accept") { console.log(`\nrepaired brief ${(out as any).id}; re-check findings:`); printFindings((out as any).id); }
+      if (action === "apply" || action === "replan") printPlan(drawId!);
       if (action === "auto") {
         const r = out as any;
         console.log(`\nstopped on ${r.stopped} · floor ${r.floor} · ${r.rounds.length} round${r.rounds.length > 1 ? "s" : ""} · ${r.calls} calls`);
@@ -224,16 +254,17 @@ async function main() {
     case "draft": {
       const { values, positionals } = parseArgs({
         args: rest, allowPositionals: true,
-        options: { auto: { type: "boolean", default: false }, profile: { type: "string" }, words: { type: "string" }, beats: { type: "string" }, tense: { type: "string" }, person: { type: "string" }, chronology: { type: "string" }, container: { type: "string" }, order: { type: "string" }, models: { type: "string" } },
+        options: { auto: { type: "boolean", default: false }, plan: { type: "boolean", default: false }, profile: { type: "string" }, words: { type: "string" }, beats: { type: "string" }, tense: { type: "string" }, person: { type: "string" }, chronology: { type: "string" }, container: { type: "string" }, order: { type: "string" }, models: { type: "string" } },
       });
       const [drawId] = positionals;
       if (!drawId) usage();
       const map: Record<string, string> = { words: "length.words", beats: "beats.count", tense: "form.tense", person: "form.person", chronology: "form.chronology", container: "form.container", order: "scenes.order" };
       const overrides: Overrides = {};
       for (const [flag, key] of Object.entries(map)) if ((values as any)[flag] !== undefined) overrides[key] = (values as any)[flag];
-      const draw = await gateCommand(pipeline(), drafting(), drawId!, "draft", { auto: values.auto, profile: values.profile, overrides: Object.keys(overrides).length ? overrides : undefined, models: values.models ? parseModels(values.models) : undefined }).done as DrawRow;
+      const draw = await gateCommand(pipeline(), drafting(), drawId!, "draft", { auto: values.auto, plan: values.plan, profile: values.profile, overrides: Object.keys(overrides).length ? overrides : undefined, models: values.models ? parseModels(values.models) : undefined }).done as DrawRow;
       console.log(JSON.stringify(draw, null, 2));
-      console.log(`\ncloudchamber story ${draw.id}  ·  cloudchamber gate ${draw.id} keep | rewrite <k> [--finding ID]`);
+      if (draw.status === "awaiting_plan_gate") printPlan(draw.id);
+      else console.log(`\ncloudchamber story ${draw.id}  ·  cloudchamber gate ${draw.id} keep | rewrite <k> [--finding ID]`);
       break;
     }
     case "branch": {

@@ -24,7 +24,7 @@ import { chainOf, type Chain, type FindingView } from "./chain.ts";
 import { BriefSession } from "./briefsession.ts";
 import { faultsOver, type Fault } from "./listen.ts";
 import { ofKind } from "./artifacts.ts";
-import { FAULT_LINE, linesOf, runSchedule, type Schedule } from "./write.ts";
+import { FAULT_LINE, linesOf, parseSchedule, runSchedule, type Schedule } from "./write.ts";
 import { planCheck, type PlanCheck } from "./ir/s2.ts";
 import { SceneSession, type Change, type ScreenPaths } from "./scenesession.ts";
 import { directionsOf, draftView, exportDraft, renderStory, type DraftView } from "./drafts.ts";
@@ -38,7 +38,8 @@ export type AutoRound = { round: number; id: string; open: number; total: number
 export type AutoResult = { id: string; rounds: AutoRound[]; best: AutoRound; stopped: "floor" | "cap" | "patience" | "stalled"; floor: number; calls: number; left_open: number };
 /** An operator's instruction on a brief at gate 1: what should change, the parts it is for ("vignette", "ending", "context 1"), and whether the ledger takes it as a fact. */
 export type Instruction = { text: string; parts: string[]; kind: "fact" | "direction" };
-export type DraftOpts = { profile?: string; overrides?: Overrides; auto?: boolean };
+/** `plan` stops the draft at the plan gate, with the plan checked, before any scene is written. */
+export type DraftOpts = { profile?: string; overrides?: Overrides; auto?: boolean; plan?: boolean };
 /** A branch takes the source's drafting configuration unless it names its own, and the beat to write from. */
 export type BranchOpts = { atBeat?: number; profile?: string; overrides?: Overrides; models?: Record<string, string>; instruction?: string };
 /** A finding as the gate reads it: `auto_eligible` says whether the auto rule would consider it, whatever it scores. */
@@ -123,6 +124,20 @@ function withPlan(r: Resolved): Resolved {
   const on = r.config.screens.enabled;
   if (on.includes("plan") || r.overridden.includes("screens.enabled")) return r;
   return { ...r, config: { ...r.config, screens: { ...r.config.screens, enabled: ["plan", ...on] } } };
+}
+
+/** One field of one beat, as the operator writes it at the plan gate. */
+export type PlanEdit = { beat: number; field: "job" | "when" | "known" | "stakes" | "set_piece"; text: string };
+
+/** The schedule with one beat's field replaced, or added when the beat has none; every other line stays as it was. */
+export function editBeat(raw: string, e: PlanEdit): string {
+  const beat = new RegExp(`(<beat\\s+n="${e.beat}"\\s+words="\\d+"\\s*>)([\\s\\S]*?)(</beat>)`, "i").exec(raw);
+  if (!beat) throw new Error(`no beat ${e.beat} in the plan`);
+  const field = new RegExp(`<${e.field}>[\\s\\S]*?</${e.field}>`, "i");
+  const line = `<${e.field}>${e.text.trim()}</${e.field}>`;
+  // a beat without the field gets it, last: the parser reads fields by tag, not by place
+  const body = field.test(beat[2]) ? beat[2].replace(field, () => line) : `${beat[2].replace(/\s*$/, "")}\n${line}\n`;
+  return raw.slice(0, beat.index) + beat[1] + body + beat[3] + raw.slice(beat.index + beat[0].length);
 }
 
 export class Drafting {
@@ -303,24 +318,101 @@ export class Drafting {
     }
     if (chainOf(this.p, drawId).findings().some((f) => f.decision === "accepted")) throw new Error("accepted findings pending repair");
     const id = drawId;
-    await act(this.p.db, { id, during: "drafting", back: this.p.draw(id).status as Status }, () => this.write(id, resolved.config),
-      () => ({ id, status: "awaiting_draft_gate" }));
+    const stopped = await act(this.p.db, { id, during: "drafting", back: this.p.draw(id).status as Status }, () => this.write(id, resolved.config, !!opts.plan),
+      (atGate) => ({ id, status: atGate ? "awaiting_plan_gate" : "awaiting_draft_gate" }));
     // HTML only: the PDF print is up to 60 s and no model reads it, so gate 2 starts it instead (`keep`)
-    await writeReport(this.p, drawId, this.opts.outputDir, noPdf);
+    if (!stopped) await writeReport(this.p, drawId, this.opts.outputDir, noPdf);
     return this.p.draw(drawId);
   }
 
-  /** A whole draft from the brief: the schedule, then every scene. */
-  private async write(id: string, cfg: DraftConfig): Promise<void> {
+  /**
+   * A whole draft from the brief: the schedule, then every scene. Under `stop`
+   * it ends at the plan gate instead, with the plan checked; otherwise the plan
+   * is checked beside the scenes. True when it stopped at the plan gate.
+   */
+  private async write(id: string, cfg: DraftConfig, stop: boolean): Promise<boolean> {
     const parts = briefParts(this.p, id);
     const ledger = await this.ensureLedger(id);
     const { step, schedule } = await runSchedule(this.p, id, parts, briefBlock(parts), cfg);
     const pass = passId();
+    if (stop) {
+      await planCheck(this.p, id, step.id, ledger, schedule, pass);
+      return true;
+    }
     // the plan check runs beside the scenes: it is read at gate 2 and gates nothing, so the scenes do not wait for it
     const plan = this.planCheck(id, step.id, ledger, schedule, cfg, pass);
     const session = new SceneSession({ p: this.p, drawId: id, parent: step.id, parts, ledger, schedule, cfg, pass, paths: this.screenPaths() });
     await this.scenes(session, cfg, 1);
     await plan;
+    return false;
+  }
+
+  // --- the plan gate (docs/specs/2026-09-28-story-ir.md §6, S3) --------------
+
+  /**
+   * Fix the plan before a scene is written: each ticked plan finding's span in
+   * the schedule is replaced by the operator's note on it, or by the finding's
+   * own patch, and each edit replaces one field of one beat. The new schedule
+   * is parsed as a model's would be, and checked again.
+   */
+  async applyPlan(drawId: string, o: { findings?: string[]; notes?: Record<string, string>; edits?: PlanEdit[] }): Promise<DrawRow> {
+    const draw = this.must(drawId, "apply");
+    const cfg = this.resolved(draw).config;
+    const chain = chainOf(this.p, drawId);
+    const was = chain.schedule()!;
+    const open = chain.planFindings().filter((f) => f.decision === "open");
+    let raw = was.raw;
+    const applied: string[] = [];
+    for (const id of o.findings ?? []) {
+      const f = open.find((x) => x.id === id);
+      if (!f) throw new Error(`no open plan finding ${id}`);
+      const text = o.notes?.[id]?.trim() || (/^none\.?$/i.test(f.patch.trim()) ? "" : f.patch.trim());
+      if (!text) throw new Error(`plan finding ${id} has no patch: write the fix as its note, edit the beat, or re-plan`);
+      const n = raw.split(f.span).length - 1;
+      if (n !== 1) throw new Error(`plan finding ${id}: its span is in the plan ${n} times, not once`);
+      raw = raw.replace(f.span, text);
+      applied.push(id);
+    }
+    for (const e of o.edits ?? []) raw = editBeat(raw, e);
+    if (raw === was.raw) throw new Error("nothing to apply");
+    const schedule = parseSchedule(raw, cfg);
+    await act(this.p.db, { id: drawId, during: "drafting", back: "awaiting_plan_gate" }, async () => {
+      const step = this.p.recordStep(drawId, chain.latest("schedule")!.step_id, "schedule", "operator", { applied, edits: o.edits ?? [] });
+      this.p.artifact(step, "schedule", schedule.raw, { form: schedule.form, beats: schedule.beats, words: schedule.beats.reduce((a, b) => a + b.words, 0) });
+      for (const id of applied) record(this.p.db, { kind: "finding", target_id: id, verdict: "keep", method: "gate", note: "applied to the plan" });
+      await planCheck(this.p, drawId, step.id, chain.ledger() ?? "", schedule, passId());
+    }, () => ({ id: drawId, status: "awaiting_plan_gate" }));
+    return this.p.draw(drawId);
+  }
+
+  /** Plan the schedule again from beat `from` under the operator's instruction, and check the new plan. */
+  async replan(drawId: string, from: number, instruction: string): Promise<DrawRow> {
+    const draw = this.must(drawId, "replan");
+    const cfg = this.resolved(draw).config;
+    const chain = chainOf(this.p, drawId);
+    const was = chain.schedule()!;
+    if (!(Number.isInteger(from) && from >= 1 && from <= was.beats.length)) throw new Error(`beat ${from} is not in 1..${was.beats.length}`);
+    if (!instruction.trim()) throw new Error("instruction required");
+    await act(this.p.db, { id: drawId, during: "drafting", back: "awaiting_plan_gate" }, async () => {
+      const parts = briefParts(this.p, drawId);
+      const { step, schedule } = await runSchedule(this.p, drawId, parts, briefBlock(parts), cfg, { instruction: instruction.trim(), from, schedule: was });
+      await planCheck(this.p, drawId, step.id, chain.ledger() ?? "", schedule, passId());
+    }, () => ({ id: drawId, status: "awaiting_plan_gate" }));
+    return this.p.draw(drawId);
+  }
+
+  /** Write every scene from the plan as it stands at the gate; the plan was checked there, so it is not checked again. */
+  async writeScenes(drawId: string): Promise<DrawRow> {
+    const draw = this.must(drawId, "write");
+    const cfg = this.resolved(draw).config;
+    await act(this.p.db, { id: drawId, during: "drafting", back: "awaiting_plan_gate" }, async () => {
+      const chain = chainOf(this.p, drawId);
+      const parts = briefParts(this.p, drawId);
+      const session = new SceneSession({ p: this.p, drawId, parent: chain.latest("schedule")!.step_id, parts, ledger: chain.ledger() ?? "", schedule: chain.schedule()!, cfg, pass: passId(), paths: this.screenPaths() });
+      await this.scenes(session, cfg, 1);
+    }, () => ({ id: drawId, status: "awaiting_draft_gate" }));
+    await writeReport(this.p, drawId, this.opts.outputDir, noPdf);
+    return this.p.draw(drawId);
   }
 
   /**
@@ -348,7 +440,7 @@ export class Drafting {
     this.p.artifact(oStep, "brief", writeBrief(this.p.db, newId, this.p.briefsDir), {});
     const resolved = this.resolved(src, opts);
     commit(this.p.db, { id: newId, links: { draft_config: JSON.stringify(resolved) } });
-    await act(this.p.db, { id: newId, during: "drafting", back: "failed" }, () => this.write(newId, resolved.config),
+    await act(this.p.db, { id: newId, during: "drafting", back: "failed" }, () => this.write(newId, resolved.config, false),
       () => ({ id: newId, status: "awaiting_draft_gate" }));
     await writeReport(this.p, newId, this.opts.outputDir, noPdf);
     return this.p.draw(newId);
