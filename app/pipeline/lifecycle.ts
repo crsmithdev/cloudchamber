@@ -42,8 +42,8 @@ const WHEN: Partial<Record<Action, string[]>> = {
   check: AT_BRIEF, auto: AT_BRIEF, draft: AT_BRIEF,
   accept: ["awaiting_check_gate"], dismiss: ["awaiting_check_gate"], hold: ["awaiting_check_gate"],
   rewrite: ["awaiting_draft_gate"], keep: ["awaiting_draft_gate"],
-  // the plan gate: fix the plan, plan it again, or write the scenes from it
-  apply: ["awaiting_plan_gate"], replan: ["awaiting_plan_gate"], write: ["awaiting_plan_gate"],
+  // the plan gate: fix the plan, plan it again, or write the scenes from it; at gate 2 a plan fix writes the beats it changed again
+  apply: ["awaiting_plan_gate", "awaiting_draft_gate"], replan: ["awaiting_plan_gate"], write: ["awaiting_plan_gate"],
   // a branch develops a draft, so there has to be one; a draft still being written has no settled scenes to carry
   branch: ["awaiting_draft_gate", "drafted"],
 };

@@ -350,10 +350,14 @@ export class Drafting {
   // --- the plan gate (docs/specs/2026-09-28-story-ir.md §6, S3) --------------
 
   /**
-   * Fix the plan before a scene is written: each ticked plan finding's span in
-   * the schedule is replaced by the operator's note on it, or by the finding's
-   * own patch, and each edit replaces one field of one beat. The new schedule
-   * is parsed as a model's would be, and checked again.
+   * Fix the plan: each ticked plan finding's span in the schedule is replaced
+   * by the operator's note on it, or by the finding's own patch, and each edit
+   * replaces one field of one beat. The new schedule is parsed as a model's
+   * would be, and checked again. At the plan gate no scene exists yet. At gate
+   * 2 (S5, §9) only the beats whose plan changed are written again, each under
+   * the ticked findings on it and the instructions it was written under, and
+   * the beat after each is screened again; a replan would write every beat
+   * from the first change.
    */
   async applyPlan(drawId: string, o: { findings?: string[]; notes?: Record<string, string>; edits?: PlanEdit[] }): Promise<DrawRow> {
     const draw = this.must(drawId, "apply");
@@ -376,12 +380,29 @@ export class Drafting {
     for (const e of o.edits ?? []) raw = editBeat(raw, e);
     if (raw === was.raw) throw new Error("nothing to apply");
     const schedule = parseSchedule(raw, cfg);
-    await act(this.p.db, { id: drawId, during: "drafting", back: "awaiting_plan_gate" }, async () => {
+    const at = draw.status as Status;
+    // a beat's plan changed when any of its parsed fields did; beats are numbered 1..M in both
+    const changed = schedule.beats.filter((b, i) => JSON.stringify(b) !== JSON.stringify(was.beats[i])).map((b) => b.n);
+    await act(this.p.db, { id: drawId, during: "drafting", back: at }, async () => {
       const step = this.p.recordStep(drawId, chain.latest("schedule")!.step_id, "schedule", "operator", { applied, edits: o.edits ?? [] });
       this.p.artifact(step, "schedule", schedule.raw, { form: schedule.form, beats: schedule.beats, words: schedule.beats.reduce((a, b) => a + b.words, 0) });
       for (const id of applied) record(this.p.db, { kind: "finding", target_id: id, verdict: "keep", method: "gate", note: "applied to the plan" });
-      await planCheck(this.p, drawId, step.id, chain.ledger() ?? "", schedule, passId());
-    }, () => ({ id: drawId, status: "awaiting_plan_gate" }));
+      const check = planCheck(this.p, drawId, step.id, chain.ledger() ?? "", schedule, passId());
+      if (at === "awaiting_draft_gate" && changed.length) {
+        const directions = directionsOf(this.p, drawId);
+        const changes = changed.map((k): Change => {
+          const mine = open.filter((f) => f.beat === k && applied.includes(f.id));
+          const lines = [...mine.flatMap((f) => [f, ...(o.notes?.[f.id]?.trim() ? [{ replacement: o.notes[f.id]!.trim() }] : [])]), ...directions.filter((x) => x.beats.includes(k)).map((x) => ({ replacement: x.text }))];
+          return { beat: k, kind: "rewrite", constraints: lines.length ? constraintsBlock(lines) : undefined, findings: mine.map((f) => f.id) };
+        });
+        const session = new SceneSession({ p: this.p, drawId, parent: step.id, parts: briefParts(this.p, drawId), ledger: chain.ledger() ?? "", schedule, cfg, pass: passId(), paths: this.screenPaths() });
+        await session.revise(changes);
+        const touched = new Set(changed.flatMap((k) => [k, k + 1]));
+        await session.screenClaims(session.scenes().filter((x) => touched.has(x.beat)));
+      }
+      await check;
+    }, () => ({ id: drawId, status: at }));
+    if (at === "awaiting_draft_gate") await writeReport(this.p, drawId, this.opts.outputDir, noPdf);
     return this.p.draw(drawId);
   }
 

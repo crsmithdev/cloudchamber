@@ -6,6 +6,7 @@ import { chainOf } from "../chain.ts";
 import { draftView, renderStory } from "../drafts.ts";
 import { PLAN_CAP } from "./s2.ts";
 import { editBeat } from "../drafting.ts";
+import { ofKind } from "../artifacts.ts";
 
 /**
  * The plan check at gate 2 (docs/specs/2026-09-28-story-ir.md §14.5, S3′): a
@@ -122,7 +123,28 @@ describe("the plan gate", () => {
     expect(written.status).toBe("awaiting_draft_gate");
     expect(stages(model, before)).toContain("scene");
     expect(stages(model, before).filter((s: string) => s.startsWith("ir-"))).toEqual([]);
-    await expect(d.applyPlan(at.id, { findings: [] })).rejects.toThrow(/awaiting_draft_gate/);
+    await expect(d.replan(at.id, 1, "x")).rejects.toThrow(/awaiting_draft_gate/);
+  });
+
+  test("at gate 2, apply fixes the plan and writes again only the beats whose plan changed", async () => {
+    const { p, d, draw, model } = await drawn();
+    const at = await d.draft(draw.id);
+    expect(at.status).toBe("awaiting_draft_gate");
+    const pf = chainOf(p, at.id).planFindings().find((f) => f.screen === "plan-ledger")!;
+    const before = model.calls.length;
+    const NOTE = "Beat 2 keeps the reliquary in the director's office.";
+    const after = await d.applyPlan(at.id, { findings: [pf.id], notes: { [pf.id]: NOTE }, edits: [{ beat: 3, field: "stakes", text: "The office stays shut." }] });
+    expect(after.status).toBe("awaiting_draft_gate");
+    const scenes = model.calls.slice(before).filter((c: any) => c.stage === "scene");
+    // beats 2 and 3 changed; beat 1 and the beats after 3 stand
+    expect(scenes.map((c: any) => Number(/Write beat (\d+) /.exec(c.prompt)?.[1])).sort()).toEqual([2, 3]);
+    expect(scenes.find((c: any) => /Write beat 2 /.test(c.prompt))!.prompt).toContain(NOTE);
+    expect(stages(model, before)).not.toContain("schedule");
+    const chain = chainOf(p, at.id);
+    expect(chain.decision(pf.id).decision).toBe("accepted");
+    // the rewrite of beat 2 is under the finding: gate 2 reads it as rewritten under it
+    const beat2 = ofKind(p.artifacts(at.id), "scene").filter((a) => a.meta.beat === 2).at(-1)!;
+    expect(beat2.meta).toMatchObject({ rewrite: true, rewrite_finding: pf.id });
   });
 
   test("apply puts the operator's note, or the finding's patch, in the plan, settles the finding, and checks the new plan", async () => {

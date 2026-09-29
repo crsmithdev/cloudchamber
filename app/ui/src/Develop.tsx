@@ -1372,7 +1372,9 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
   // beats picked by hand: a beat with no ticked flag is written again under all of its own
   const [picked, setPicked] = useState<number[]>([]);
   const [sym, setSym] = useState<string | null>(null);
-  const [how, setHow] = useState<"rewrite" | "replan">("rewrite");
+  const [how, setHow] = useState<"rewrite" | "replan" | "plan">("rewrite");
+  // under "fix the plan": a beat's lines rewritten in the plan view
+  const [edits, setEdits] = useState<Edits>({});
   const id = d.draw.id;
   useEffect(() => {
     api
@@ -1408,6 +1410,21 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
   };
   const nTicked = Object.keys(ticks).length;
   const nNotes = Object.values(ticks).filter((v) => v.trim()).length;
+  const nEdits = Object.keys(edits).length;
+  // "fix the plan" takes plan findings only, each with a fix: its note, or its own patch
+  const notPlan = Object.keys(ticks).filter((fid) => !s.planFindings.some((f) => f.id === fid)).length;
+  const noFix = Object.entries(ticks).filter(([fid, v]) => {
+    const f = s.planFindings.find((x) => x.id === fid);
+    return f && !v.trim() && (!f.patch?.trim() || /^none\.?$/i.test(f.patch.trim()));
+  }).length;
+  const fixPlan = () => {
+    const notes = Object.fromEntries(Object.entries(ticks).filter(([, v]) => v.trim()));
+    const list = Object.entries(edits).map(([k, text]) => ({ beat: Number(k.split(".")[0]), field: k.split(".")[1], text }));
+    gate("apply", { findings: Object.keys(ticks), notes, edits: list });
+    setTicks({});
+    setEdits({});
+    setPicked([]);
+  };
   const instruct = () => {
     const notes = Object.fromEntries(Object.entries(ticks).filter(([, v]) => v.trim()));
     // a re-plan is a branch from the first beat: this draft stays as it is
@@ -1453,15 +1470,29 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
             note={
               how === "rewrite"
                 ? "tick flags in the story or the plan: each goes to its beat with your note under it. A beat picked with nothing ticked carries all of its own flags. The instruction goes to every beat"
-                : "a branch plans the story again from the first beat, under the instruction, and writes every beat from there; this draft stays as it is"
+                : how === "plan"
+                  ? "tick plan findings to put their fix in the plan, or click a beat's line in the plan to rewrite it; the plan is checked again, and only the beats whose plan changed are written again"
+                  : "a branch plans the story again from the first beat, under the instruction, and writes every beat from there; this draft stays as it is"
             }
           >
             rewrite
           </Head>
           <div className="mt-1 text-mute">
-            {nTicked ? `${nTicked} flag${nTicked > 1 ? "s" : ""} ticked on beat${beats.length > 1 ? "s" : ""} ${beats.join(", ")}` : beats.length ? `beat${beats.length > 1 ? "s" : ""} ${beats.join(", ")}, under all of their own flags` : "nothing ticked"}
-            {nNotes ? ` · ${nNotes} with a note` : ""}
+            {how === "plan" ? (
+              <>
+                {nTicked ? `${nTicked} finding${nTicked > 1 ? "s" : ""} ticked` : "nothing ticked"}
+                {nEdits ? ` · ${nEdits} line${nEdits > 1 ? "s" : ""} edited` : ""}
+                {notPlan ? <span className="text-art"> · {notPlan} ticked flag{notPlan > 1 ? "s are" : " is"} not on the plan: clear {notPlan > 1 ? "them" : "it"} or rewrite instead</span> : ""}
+                {noFix ? <span className="text-art"> · {noFix} without a fix: write one in its note</span> : ""}
+              </>
+            ) : (
+              <>
+                {nTicked ? `${nTicked} flag${nTicked > 1 ? "s" : ""} ticked on beat${beats.length > 1 ? "s" : ""} ${beats.join(", ")}` : beats.length ? `beat${beats.length > 1 ? "s" : ""} ${beats.join(", ")}, under all of their own flags` : "nothing ticked"}
+                {nNotes ? ` · ${nNotes} with a note` : ""}
+              </>
+            )}
           </div>
+          {how !== "plan" && (
           <textarea
             id="instruction"
             className="mt-2 font-serif text-prose"
@@ -1474,9 +1505,10 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && beats.length && (how === "rewrite" || instruction.trim())) instruct();
             }}
           />
+          )}
           <div className="mt-2 flex flex-wrap items-center gap-3">
-            <span className="head">beats</span>
-            <span className="chips" role="group" aria-label="Beats to rewrite">
+            {how !== "plan" && <span className="head">beats</span>}
+            <span className="chips" role="group" aria-label="Beats to rewrite" hidden={how === "plan"}>
               {s.scenes.map((x) => (
                 <Chip key={x.beat} className="num" pressed={beats.includes(x.beat)} onClick={() => toggleBeat(x.beat)} title={tickedOn(x.beat) ? `${tickedOn(x.beat)} flag(s) ticked; click to clear them` : undefined}>
                   {x.beat}
@@ -1484,8 +1516,24 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
                 </Chip>
               ))}
             </span>
-            <Seg label="How" value={how === "rewrite" ? "rewrite these" : `re-plan from ${beats[0] ?? 1}`} options={["rewrite these", `re-plan from ${beats[0] ?? 1}`]} onChange={(v) => setHow(v === "rewrite these" ? "rewrite" : "replan")} />
+            <Seg
+              label="How"
+              value={how === "rewrite" ? "rewrite these" : how === "plan" ? "fix the plan" : `re-plan from ${beats[0] ?? 1}`}
+              options={["rewrite these", "fix the plan", `re-plan from ${beats[0] ?? 1}`]}
+              onChange={(v) => {
+                const next = v === "rewrite these" ? "rewrite" : v === "fix the plan" ? "plan" : "replan";
+                setHow(next);
+                if (next === "plan") setView("plan");
+                else setEdits({});
+              }}
+            />
             <span className="end ml-auto">
+              {how === "plan" ? (
+                <Btn variant="art" disabled={!(nTicked + nEdits) || notPlan > 0 || noFix > 0} onClick={fixPlan} title="Put each ticked finding's fix and each edited line in the plan, check the plan again, and write again only the beats whose plan changed.">
+                  fix the plan{nTicked ? ` · ${nTicked} fix${nTicked > 1 ? "es" : ""}` : ""}
+                  {nEdits ? ` · ${nEdits} edit${nEdits > 1 ? "s" : ""}` : ""}
+                </Btn>
+              ) : (
               <Btn
                 variant="art"
                 disabled={!beats.length || (how === "replan" && !instruction.trim())}
@@ -1498,6 +1546,7 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
               >
                 {how === "rewrite" ? `rewrite ${beats.length === 1 ? `beat ${beats[0]}` : `${beats.length} beats`}${nTicked ? ` · ${nTicked} flag${nTicked > 1 ? "s" : ""}` : ""}` : `branch and re-plan from ${beats[0] ?? 1}`}
               </Btn>
+              )}
             </span>
           </div>
         </div>
@@ -1556,7 +1605,7 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
       <div className="drawbody wide">
         <div className="min-w-0">
           {view === "plan" && s.schedule ? (
-            <PlanView s={s} ticks={ticks} setTicks={setTicks} gating={gating} sym={sym} onSym={onSym} />
+            <PlanView s={s} ticks={ticks} setTicks={setTicks} gating={gating} sym={sym} onSym={onSym} edits={edits} setEdits={gating && how === "plan" ? setEdits : undefined} />
           ) : (
             s.scenes.map((sc) => {
               const fl = flagsFor(sc.beat),

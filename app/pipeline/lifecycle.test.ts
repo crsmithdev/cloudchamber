@@ -22,7 +22,7 @@ describe("the rules", () => {
       repaired: ["fork", "flag", "archive", "unarchive"],
       awaiting_plan_gate: ["fork", "flag", "archive", "unarchive", "apply", "replan", "write"],
       drafting: ["fork", "flag", "archive", "unarchive"],
-      awaiting_draft_gate: ["fork", "flag", "archive", "unarchive", "branch", "rewrite", "keep"],
+      awaiting_draft_gate: ["fork", "flag", "archive", "unarchive", "branch", "rewrite", "keep", "apply"],
       drafted: ["fork", "flag", "archive", "unarchive", "branch"],
       failed: ["fork", "flag", "archive", "unarchive"],
     };

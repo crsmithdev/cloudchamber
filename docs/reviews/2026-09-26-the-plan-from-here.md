@@ -17,6 +17,7 @@ from a design to a landed plan check, `f0f90fd`:
 | S1′ schedule linter, S2′ symbols and the plan against the ledger | landed; L4 named the delegation 5 of 5, recall 28 of 30 (`evals/20260928-ir-s2prime.md`) |
 | S3′ plan findings at gate 2 | landed, on by default (`screens.enabled` lists `plan`), about $0.45 a draft |
 | Gate 2 ticks | landed: each flag has a checkbox and a note, one rewrite sends the ticked flags, and a plan view shows the schedule, its findings and the symbol table |
+| S5 a plan fix at gate 2 | landed: `apply` at gate 2 writes again only the beats whose plan changed (IR spec §14.10); the rest of §9 waits on `uses` and `exit` |
 | S3 the plan gate | landed, opt in: `draft --plan` (or "stop at the plan" in the draft form) stops at `awaiting_plan_gate`; apply fixes and edits, re-plan from a beat, or write (IR spec §14.9) |
 
 Step 2 is done (`46c3057`); steps 1, 3 and 4 are open: the store and git hold
