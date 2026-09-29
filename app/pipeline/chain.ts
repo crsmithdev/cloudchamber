@@ -207,7 +207,8 @@ export class Chain {
       const out: Settled[] = [];
       [...this.ids].reverse().forEach((draw, i) => {
         for (const f of this.findingArtifacts(draw)) {
-          if (f.source === "screen" || this.decision(f.id).decision !== "accepted") continue;
+          // a screen flag or a plan finding settled at gate 2 is a fix to the draft, not to the brief
+          if (f.source === "screen" || f.source === "plan" || this.decision(f.id).decision !== "accepted") continue;
           if (!f.replacement.trim() || f.replacement.trim().toLowerCase() === "none") continue;
           if (out.some((o) => same(o, f))) continue;
           out.push({ finding: f.id, draw, round: i + 1, replacement: f.replacement, span: f.span, statement: f.statement, ...(f.kind ? { kind: f.kind } : {}) });

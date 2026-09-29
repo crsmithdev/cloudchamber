@@ -114,6 +114,17 @@ export function parseConflicts(block: string): { a: number; b: number; why: stri
   return out;
 }
 
+/**
+ * A config pinned before the plan check existed gets it: the plan check writes
+ * no prose, so a branch keeps the arms comparable. A config that chose its
+ * screens keeps its choice.
+ */
+function withPlan(r: Resolved): Resolved {
+  const on = r.config.screens.enabled;
+  if (on.includes("plan") || r.overridden.includes("screens.enabled")) return r;
+  return { ...r, config: { ...r.config, screens: { ...r.config.screens, enabled: ["plan", ...on] } } };
+}
+
 export class Drafting {
   constructor(public p: Pipeline, public opts: { draftsDir?: string; lexiconPath?: string; premisesPath?: string; narrationDir?: string; outputDir?: string; printPdf?: PdfPrinter } = {}) {}
 
@@ -129,7 +140,7 @@ export class Drafting {
     return d;
   }
   private resolved(draw: DrawRow, opts: DraftOpts = {}): Resolved {
-    if (draw.draft_config && !opts.profile && !opts.overrides) return JSON.parse(draw.draft_config) as Resolved;
+    if (draw.draft_config && !opts.profile && !opts.overrides) return withPlan(JSON.parse(draw.draft_config) as Resolved);
     return loadDraftConfig(opts.profile, opts.overrides ?? {});
   }
 
@@ -379,13 +390,17 @@ export class Drafting {
     await act(this.p.db, { id: newId, during: "drafting", back: "failed" }, async () => {
       // under an instruction the branch plans the story again from `from`, and writes every beat from there under it
       const pass = passId();
-      let plan: Promise<PlanCheck | null> = Promise.resolve(null);
+      const ledger = chainOf(this.p, newId).ledger() ?? "";
+      let plan: Promise<PlanCheck | null>;
       if (instruction) {
         const parts = briefParts(this.p, newId);
-        const ledger = chainOf(this.p, newId).ledger() ?? "";
         const { step, schedule } = await runSchedule(this.p, newId, parts, briefBlock(parts), resolved.config, { instruction, from, schedule: chainOf(this.p, newId).schedule()! });
         // a replanned schedule is a new plan: checked again, beside the scenes
         plan = this.planCheck(newId, step.id, ledger, schedule, resolved.config, pass);
+      } else {
+        // a carried schedule is checked on this draw too: the source's plan findings are the source's, and it may have had none
+        const carried = chainOf(this.p, newId).latest("schedule")!;
+        plan = this.planCheck(newId, carried.step_id, ledger, chainOf(this.p, newId).schedule()!, resolved.config, pass);
       }
       const session = SceneSession.resume(this.p, newId, resolved.config, pass, this.screenPaths());
       await this.scenes(session, resolved.config, from, instruction);
@@ -593,6 +608,8 @@ export class Drafting {
     await act(this.p.db, { id: drawId, during: "drafting", back: "awaiting_draft_gate" },
       () => this.regenerate(drawId, changes, cfg),
       () => ({ id: drawId, status: "awaiting_draft_gate" }));
+    // a plan finding is on the schedule, not on a scene, so no new screen pass replaces it: the rewrite settles it
+    for (const f of open) if (f.source === "plan" && ticked.includes(f.id)) record(this.p.db, { kind: "finding", target_id: f.id, verdict: "keep", method: "draw", note: "rewritten under it" });
     // HTML only: the PDF print is up to 60 s and no model reads it, so gate 2 starts it instead (`keep`)
     await writeReport(this.p, drawId, this.opts.outputDir, noPdf);
     return this.p.draw(drawId);

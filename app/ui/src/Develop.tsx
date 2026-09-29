@@ -1827,7 +1827,7 @@ function FlagRow({ f, ticks, setTicks, gating, rewritten, syms, onSym }: { f: Fl
               {f.n} of {n} samples
             </div>
           )}
-          {f.decision === "accepted" && <div className="num text-keep">patched</div>}
+          {f.decision === "accepted" && !rewritten.includes(f.id) && <div className="num text-keep">patched</div>}
           {f.decision === "dismissed" && <div className="num text-dim">dismissed</div>}
           {rewritten.includes(f.id) && <div className="num text-dim">rewritten under it</div>}
         </td>

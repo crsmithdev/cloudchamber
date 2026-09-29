@@ -212,4 +212,22 @@ describe("a sibling under a named profile", () => {
     expect(s.draft_config).not.toBe(p.draw(draw.id).draft_config);
     expect(JSON.parse(s.draft_config!).overridden).toContain("beats.count");
   });
+  test("a branch of a draft configured before the plan check gets it; a config that chose its screens keeps them", async () => {
+    const { p, d, draw, model } = await drawn();
+    await d.check(draw.id);
+    await d.draft(draw.id, { overrides: OVERRIDES });
+    // the config as a draft pinned it before the plan check existed
+    const old = JSON.parse(p.draw(draw.id).draft_config!);
+    old.config.screens.enabled = old.config.screens.enabled.filter((x: string) => x !== "plan");
+    p.db.query("UPDATE draws SET draft_config = ? WHERE id = ?").run(JSON.stringify(old), draw.id);
+    let before = model.calls.length;
+    const b = await d.branch(draw.id);
+    expect(stagesOf(model, before, /^ir-plan-ledger$/)).toEqual(["ir-plan-ledger"]);
+    expect(JSON.parse(p.draw(b.id).draft_config!).config.screens.enabled[0]).toBe("plan");
+    // chosen without it: the choice holds
+    p.db.query("UPDATE draws SET draft_config = ? WHERE id = ?").run(JSON.stringify({ ...old, overridden: [...old.overridden, "screens.enabled"] }), draw.id);
+    before = model.calls.length;
+    await d.branch(draw.id);
+    expect(stagesOf(model, before, /^ir-/)).toEqual([]);
+  });
 });

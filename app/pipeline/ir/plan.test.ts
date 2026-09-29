@@ -58,7 +58,7 @@ describe("the plan check at gate 2", () => {
   });
 
   test("the view carries the symbol table, and a ticked plan finding is its beat's constraint at a rewrite", async () => {
-    const { d, draw, model } = await drawn();
+    const { p, d, draw, model } = await drawn();
     const drafted = await d.draft(draw.id);
     const v = d.view(drafted.id);
     expect(v.symbols.length).toBeGreaterThan(0);
@@ -69,6 +69,11 @@ describe("the plan check at gate 2", () => {
     const scene = model.calls.slice(before).find((c) => c.stage === "scene")!;
     expect(scene.prompt).toContain("<constraints>\n- The reliquary stays in the director's office.\n</constraints>");
     expect(d.view(drafted.id).rewrittenUnder).toEqual([pf.id]);
+    // the rewrite settles it, and a settled plan finding is not a brief fix that later rounds must keep
+    const after = d.view(drafted.id).planFindings.find((f) => f.id === pf.id)!;
+    expect([after.decision, after.note]).toEqual(["accepted", "rewritten under it"]);
+    expect(chainOf(p, drafted.id).settled()).toEqual([]);
+    await expect(d.rewrite(drafted.id, [2], { findings: [pf.id] })).rejects.toThrow(/no open flag/);
   });
 
   test("a symbolise call that fails leaves the $0 findings and the draft", async () => {
