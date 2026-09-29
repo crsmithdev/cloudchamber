@@ -129,6 +129,23 @@ export class Chain {
       .sort((a, b) => a.beat! - b.beat! || b.score - a.score));
   }
 
+  /**
+   * The plan check's findings (docs/specs/2026-09-28-story-ir.md §14.5, S3′):
+   * the latest plan pass on this draw, the draft-wide ones (the calendar, a
+   * membership question) first, then by beat. Read-only at gate 2: they are
+   * `source: "plan"`, so `screenFindings` never lists them and no action takes
+   * one.
+   */
+  planFindings(): FindingView[] {
+    return this.once("planFindings", () => {
+      const all = this.findingArtifacts().filter((f) => f.source === "plan");
+      const pass = all.map((f) => f.pass).sort().at(-1);
+      return all.filter((f) => f.pass === pass)
+        .map((f) => ({ ...f, ...this.decision(f.id), samples_run: 1, score: 0, reported: true }))
+        .sort((a, b) => (a.beat ?? 0) - (b.beat ?? 0));
+    });
+  }
+
   /** The latest slop report, or null. */
   slop(): SlopReport | null { const a = this.latest("slop"); return a ? (JSON.parse(a.content) as SlopReport) : null; }
   /** The latest listenability report, or null. */

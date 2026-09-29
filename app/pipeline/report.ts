@@ -16,6 +16,7 @@ import type { Pipeline, StepRow } from "./draw.ts";
 import { OUTPUT, ROOT } from "./paths.ts";
 import { chainOf, NO_CALL, type FindingView } from "./chain.ts";
 import { briefParts } from "./briefparts.ts";
+import { PLAN_CAP } from "./ir/s2.ts";
 import { draftView } from "./drafts.ts";
 import { ofKind } from "./artifacts.ts";
 import { toToml, type Resolved } from "./draftconfig.ts";
@@ -149,6 +150,7 @@ export function renderReport(p: Pipeline, drawId: string): string {
     ["read aloud", v.listen ? `${n(v.listen.minutes)} min` : "—"],
     ["repair rounds", String(rounds.length)], ["corrections accepted", String(settled.length)],
     ["screen flags open", `${openBy("ledger")} ledger · ${openBy("restated")} restated · ${structureFlags} structure`],
+    ["plan findings", v.planFindings.length ? `${v.planFindings.length}${v.planFindings.some((f) => f.question) ? ` · ${v.planFindings.filter((f) => f.question).length} questions` : ""}` : "none"],
     ["model calls", n(cost.calls)], ["cost at list", cost.priced ? `${usd(cost.cost)}${cost.priced < cost.calls ? "*" : ""}` : "not recorded"],
     ["seed to gate 2", `${minutes(root.created_at, ended)} min`],
   ];
@@ -215,6 +217,15 @@ export function renderReport(p: Pipeline, drawId: string): string {
       <tbody>${v.schedule.beats.map((b) => `<tr><td class="num">${b.n}${b.pays ? ` <span class="pill chosen">pays</span>` : ""}</td><td class="r num">${n(b.words)}</td><td>${esc(b.when || "—")}</td><td>${esc(b.job)}</td><td>${b.withheld.length ? b.withheld.map((w) => `${esc(w.item)} <span class="dim">until ${w.until}</span>`).join("<br>") : "—"}</td></tr>`).join("")}</tbody></table>
     </section>` : "";
 
+  const plan = v.planFindings.length || v.planCapped ? `
+    <section class="break">
+      <h2>The plan against the ledger</h2>
+      <p class="lead">Before any scene was written, the schedule was read against the pinned ledger: a static pass over its dates and withheld items, a symbol table lowered from the ledger, and one reading of the plan against that table. Informational: a person reads these at gate 2, and nothing acts on them. A question is a thing the ledger leaves unsettled, not a contradiction.</p>
+      <table class="grid"><thead><tr><th>kind</th><th class="r">beat</th><th>finding</th><th>evidence</th><th>would hold instead</th></tr></thead>
+      <tbody>${v.planFindings.map((f) => `<tr><td><span class="k">${esc((f.screen ?? "plan").replace(/^plan-/, ""))}</span>${f.question ? ` <span class="pill">question</span>` : ""}</td><td class="r num">${f.beat ?? "—"}</td><td>${esc(f.statement)}</td><td class="dim">${esc(f.evidence)}</td><td>${esc(f.replacement || "—")}</td></tr>`).join("")}</tbody></table>
+      ${v.planCapped ? `<p class="lead">The plan reading returned its maximum of ${PLAN_CAP} findings; the list may be short.</p>` : ""}
+    </section>` : "";
+
   const screens = `
     <section class="break">
       <h2>Writing and screening, beat by beat</h2>
@@ -269,7 +280,7 @@ export function renderReport(p: Pipeline, drawId: string): string {
     <h2>The story</h2>
     ${v.scenes.map((s) => `<div class="beat"><div class="beatno">${s.beat}</div>${prose(s.text)}</div>`).join(`<div class="sep">*</div>`)}
   </section>
-  ${origin}${brief}${checks}${schedule}${screens}${spend}
+  ${origin}${brief}${checks}${schedule}${plan}${screens}${spend}
 </main></body></html>
 `;
 }

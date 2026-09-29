@@ -88,6 +88,20 @@ export const sceneFor = (prompt: string, over: Record<number, number> = { 2: 700
 
 export const SCENE_3_PATCH = "Scene 3 opens on the 3rd";
 
+/** The plan check's symbol table: the fixture ledger's three lines, a body, and a vote whose named voter belongs to another body. */
+export const planSymbols = () => `<symbols>
+<sym id="board" kind="body" from="ledger:detail" seats="12">the board of twelve</sym>
+<sym id="director" kind="person" from="ledger:possession" member_of="order">the director holds the order</sym>
+<sym id="fire" kind="time" from="ledger:time" day="1" date="the 3rd">the fire was on the 3rd</sym>
+<sym id="dead" kind="count" from="ledger:detail" total="1106">1,106 dead</sym>
+<sym id="vote" kind="count" from="ledger:detail" body="board" yes="7" no="5" total="12" named_yes="director" named_no="none">the board votes seven to five</sym>
+</symbols>`;
+export const PLAN_SPAN = "Beat 2 does its thing in the archive.";
+/** One plan finding on beat 2, and one the table has no value for, which the check must not store. */
+export const planFindings = () =>
+  finding(PLAN_SPAN, "beat 2 puts the reliquary in the archive", "2", "The reliquary stays in the director's office.", "director — the director holds the order", "contradicted")
+  + finding("Beat 5 does its thing in the archive.", "beat 5 names a clerk the table does not know", "5", "none", "no symbol names a clerk", "unverifiable");
+
 /** Beat 3 carries a patchable flag; beat 4 one the fix is too big for, so `patch` must skip it. */
 const screenLedger = (prompt: string) => {
   const n = Number(fromAsk(prompt, /<scene n="(\d+)">/, "the scene number"));
@@ -139,6 +153,9 @@ export function draftScript(over: Record<string, any> = {}) {
     "repair-outline": () => ["departure", "particulars", "knowledge", "arrival"].map((n) => `<section name="${n}">Repaired ${n} body.</section>`).join("\n"),
     "repair-ending": (p: string) => `<ending>${tag(p, "ending") ?? ""} Only the assembler fires the reliquary.</ending>`,
     schedule: () => schedule(),
+    // the plan check (S3′): a symbol table with a delegate from another body, and one plan finding on beat 2 plus one the table has no value for
+    "ir-symbolize": () => planSymbols(),
+    "ir-plan-ledger": () => planFindings(),
     scene: (p: string) => sceneFor(p),
     "screen-ledger": screenLedger,
     "screen-structure": screenStructure,

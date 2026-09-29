@@ -1075,7 +1075,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     const flag = d.view(draw.id).screenFindings.find((f) => f.decision === "open")!;
     expect(flag.beat).toBe(4);
     const slopBefore = d.view(draw.id).slop!.words;
-    const out = await d.rewrite(draw.id, [4], { finding: flag.id });
+    const out = await d.rewrite(draw.id, [4], { findings: [flag.id] });
     expect(out.status).toBe("awaiting_draft_gate");
     // the deterministic reports are the draft as it stands, not the pre-rewrite measurement
     expect(p.steps(draw.id).filter((s) => s.stage === "screen-slop")).toHaveLength(2);
@@ -1098,7 +1098,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(rewrites.map((m) => [m.beat, m.rewrite_finding])).toEqual([[4, flag.id]]);   // the gate-2 record is on the scene
     expect(p.draw(draw.id).flag_note).toBe("");
     await expect(d.rewrite(draw.id, [9])).rejects.toThrow(/beat 9 is not in 1\.\.8/);
-    await expect(d.rewrite(draw.id, [2], { finding: "f-nope" })).rejects.toThrow(/no screen finding f-nope/);
+    await expect(d.rewrite(draw.id, [2], { findings: ["f-nope"] })).rejects.toThrow(/no open flag f-nope on beat 2/);
     // rewriting the last beat re-screens it alone
     const b2 = model.calls.length;
     await d.rewrite(draw.id, [8]);
@@ -1119,8 +1119,30 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(model.calls.filter((c) => c.stage === "scene").at(-1)!.prompt).toContain(`- ${BODY_LINE}`);
     // named for the ledger finding on beat 4, the rewrite carries that finding and nothing structural
     const flag = d.view(draw.id).screenFindings.find((f) => f.beat === 4 && f.decision === "open")!;
-    await d.rewrite(draw.id, [4], { finding: flag.id });
+    await d.rewrite(draw.id, [4], { findings: [flag.id] });
     expect(model.calls.filter((c) => c.stage === "scene").at(-1)!.prompt).toContain("<constraints>\n- 1,106 died.\n</constraints>");
+  });
+
+  test("ticked flags are a beat's only flags, each followed by its note; a beat named with none ticked carries all of its own", async () => {
+    const { p, d, draw, model } = await drawn();
+    await d.check(draw.id);
+    await d.draft(draw.id);
+    const flag = d.view(draw.id).screenFindings.find((f) => f.beat === 4 && f.decision === "open")!;
+    const before = model.calls.length;
+    await d.rewrite(draw.id, [5, 4], { findings: [flag.id], notes: { [flag.id]: "  The count is read aloud by the clerk.  " } });
+    const scenes = model.calls.slice(before).filter((c) => c.stage === "scene");
+    expect(scenes.map((c) => /Write beat (\d+)/.exec(c.prompt)![1])).toEqual(["4", "5"]);
+    expect(scenes[0]!.prompt).toContain("<constraints>\n- 1,106 died.\n- The count is read aloud by the clerk.\n</constraints>");
+    expect(scenes[1]!.prompt).toContain(`<constraints>\n- ${THEME_LINE}\n</constraints>`);   // beat 5: nothing ticked, so its structure line
+    const meta = p.artifacts(draw.id).filter((a) => a.kind === "scene" && a.meta.rewrite).map((a) => [a.meta.beat, a.meta.rewrite_finding]);
+    expect(meta).toEqual([[4, flag.id], [5, undefined]]);
+    expect(d.view(draw.id).rewrittenUnder).toEqual([flag.id]);
+    // a patch of the rewritten scene drops the gate-2 record from its meta; the mark stays on the flag
+    const four = d.view(draw.id).scenes.find((sc) => sc.beat === 4)!;
+    const step = p.recordStep(draw.id, four.step_id, "scene", "patched");
+    p.artifact(step, "scene", four.text + " patched", { beat: 4, words: 1, cap: 1, warnings: [], patched: ["f-y"] });
+    expect(d.view(draw.id).scenes.find((sc) => sc.beat === 4)!.text).toEndWith(" patched");
+    expect(d.view(draw.id).rewrittenUnder).toEqual([flag.id]);
   });
 
   test("rewrite with an instruction writes each named beat under it, and a later rewrite of one of them carries it", async () => {
@@ -1143,7 +1165,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     await d.rewrite(draw.id, [5]);
     expect(model.calls.filter((c) => c.stage === "scene").at(-1)!.prompt).not.toContain(TOM);
     await expect(d.rewrite(draw.id, [])).rejects.toThrow(/beat required/);
-    await expect(d.rewrite(draw.id, [2, 3], { finding: "f-x" })).rejects.toThrow(/one beat/);
+    await expect(d.rewrite(draw.id, [2, 3], { findings: ["f-x"] })).rejects.toThrow(/no open flag f-x/);
     // the kept draft's trail names the instruction
     const { dir } = d.keep(draw.id);
     expect(readFileSync(join(dir, "trail.md"), "utf8")).toContain(`- rewrite 3: ${TOM}`);

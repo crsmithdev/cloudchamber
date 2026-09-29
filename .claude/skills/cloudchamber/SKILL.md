@@ -39,7 +39,7 @@ may read directly is `corpus/examples/*.md` (verbatim passages by source) and
 ./cloudchamber gate <draw> accept [<finding>...] [--instruction "..." --parts ending,"context 1" --kind fact|direction] | auto | dismiss <finding> | hold [--note "..."]
 ./cloudchamber draft <draw> [--auto] [--profile P] [--words N] [--beats N] [--tense T] [--person P] [--chronology C] [--container C] [--order sequential|parallel]
 ./cloudchamber story <draw>                the draft with its screen flags inline
-./cloudchamber gate <draw> keep | rewrite <k>[,k...] [--finding ID] [--instruction "..."] [--note "..."]
+./cloudchamber gate <draw> keep | rewrite <k>[,k...] [--finding ID[,ID...]] [--instruction "..."] [--note "..."]
 ./cloudchamber branch <draw> [--at-beat K] [--instruction "..."]   re-plan from K under an instruction
 ./cloudchamber verdict <example|theme|brief|story> <id> <keep|pass> [--artifact] [--note "..."]
                                            a passed story hides every passage of it

@@ -19,7 +19,11 @@ import type { DrawRow } from "./draw.ts";
 import { now } from "./paths.ts";
 import { stageTab, type Tab } from "./config.ts";
 
-export const STATUSES = ["running", "awaiting_gate", "done", "checking", "awaiting_check_gate", "repairing", "repaired", "drafting", "awaiting_draft_gate", "drafted", "failed"] as const;
+// `awaiting_plan_gate` is the IR gate (docs/specs/2026-09-28-story-ir.md §6, §13.3, S3): it sits where a
+// plan is lowered and statically checked, after the schedule and before any scene is drafted. It follows
+// `awaiting_draft_gate`'s pattern (a stop with an auto rule) but is not wired to any action or screen yet:
+// nothing commits a draw to it and no `WHEN` entry names it. `planGateAuto` (`ir/gate.ts`) is its auto rule.
+export const STATUSES = ["running", "awaiting_gate", "done", "checking", "awaiting_check_gate", "repairing", "repaired", "awaiting_plan_gate", "drafting", "awaiting_draft_gate", "drafted", "failed"] as const;
 export type Status = (typeof STATUSES)[number];
 // the tab a stage belongs in is a fact about the stage: config.ts holds the table, and this re-export keeps one import for the page
 export { stageTab, type Tab };
@@ -28,9 +32,9 @@ export const ACTIONS = ["choose", "fork", "flag", "archive", "unarchive", "delet
 export type Action = (typeof ACTIONS)[number];
 
 const RUNNING = new Set<string>(["running", "checking", "repairing", "drafting"]);
-const GATES = new Set<string>(["awaiting_gate", "awaiting_check_gate", "awaiting_draft_gate"]);
+const GATES = new Set<string>(["awaiting_gate", "awaiting_check_gate", "awaiting_plan_gate", "awaiting_draft_gate"]);
 const CHECK = new Set<string>(["done", "checking", "awaiting_check_gate", "repairing", "repaired"]);
-const WRITE = new Set<string>(["drafting", "awaiting_draft_gate", "drafted"]);
+const WRITE = new Set<string>(["awaiting_plan_gate", "drafting", "awaiting_draft_gate", "drafted"]);
 
 const AT_BRIEF = ["done", "awaiting_check_gate"];
 /** The statuses each action is allowed at; an action missing here is allowed at any. */
@@ -76,7 +80,7 @@ export function tabOf(draw: Pick<DrawRow, "status" | "chosen_step" | "repaired_f
 
 /** The tab where a draw at this status waits for a person: at a gate, or a brief nobody has checked. */
 export function waitsIn(status: string): Tab | null {
-  return status === "awaiting_gate" ? "ideate" : status === "done" || status === "awaiting_check_gate" ? "check" : status === "awaiting_draft_gate" ? "write" : null;
+  return status === "awaiting_gate" ? "ideate" : status === "done" || status === "awaiting_check_gate" ? "check" : status === "awaiting_plan_gate" || status === "awaiting_draft_gate" ? "write" : null;
 }
 
 export type LifecycleView = { stage: Tab; running: boolean; at_gate: boolean; actions: Record<Action, string | null> };

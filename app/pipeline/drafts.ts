@@ -14,12 +14,20 @@ import type { Beat, Profile, Scene } from "./write.ts";
 import type { SlopReport } from "./slop.ts";
 import type { ListenReport } from "./listen.ts";
 import { pipelineVersion } from "./version.ts";
+import { PLAN_CAP, type Sym } from "./ir/s2.ts";
 
 export type DraftView = {
   schedule: { form: Record<string, string>; beats: Beat[]; raw: string } | null;
   scenes: Scene[];
   profiles: Profile[];
   screenFindings: FindingView[];
+  /** The plan check's findings, read-only (spec 2026-09-28-story-ir §14.5, S3′); `planCapped` when L4 returned its maximum and the list may be short. */
+  planFindings: FindingView[];
+  planCapped: boolean;
+  /** The symbol table the plan check read the schedule against: the draw's latest L1 reading, or none. */
+  symbols: Sym[];
+  /** The flags the scenes as they stand were rewritten under, ticked at gate 2. */
+  rewrittenUnder: string[];
   slop: SlopReport | null;
   listen: ListenReport | null;
   judge: string | null;
@@ -46,11 +54,27 @@ export function directionsOf(p: Pipeline, drawId: string): Direction[] {
 /** The draft as the chain reads it: the latest schedule, the scenes as they stand, each beat's latest screen pass. */
 export function draftView(p: Pipeline, drawId: string): DraftView {
   const chain = chainOf(p, drawId);
-  return { schedule: chain.schedule(), scenes: chain.scenes(), profiles: chain.screenProfiles(), screenFindings: chain.screenFindings(), slop: chain.slop(), listen: chain.listen(), judge: chain.judge(), directions: directionsOf(p, drawId) };
+  const planFindings = chain.planFindings();
+  const scenes = chain.scenes();
+  const l1 = chain.steps().filter((s) => s.stage === "ir-symbolize" && s.status === "done" && s.parsed).at(-1);
+  // every scene written under a ticked flag, not only the scenes as they stand: a patch after the rewrite drops the mark
+  const rewrittenUnder = [...new Set(ofKind(p.artifacts(drawId), "scene").flatMap((a) => (a.meta.rewrite_finding ?? "").split(", ").filter(Boolean)))];
+  return { schedule: chain.schedule(), scenes, profiles: chain.screenProfiles(), screenFindings: chain.screenFindings(), planFindings, planCapped: planFindings.filter((f) => f.screen === "plan-ledger").length >= PLAN_CAP, symbols: l1 ? (JSON.parse(l1.parsed!) as Sym[]) : [], rewrittenUnder, slop: chain.slop(), listen: chain.listen(), judge: chain.judge(), directions: directionsOf(p, drawId) };
 }
+
+/** One line for a plan finding, as the story and the export print it: its kind, its beat if it has one, the finding, and the fix where L4 gave one. */
+export const planLine = (f: FindingView): string =>
+  `[${f.screen}${f.beat ? ` beat ${f.beat}` : ""}${f.question ? ", a question" : ""}] ${f.statement}${f.replacement ? ` → ${f.replacement}` : ""}`;
+const CAP_LINE = `[plan] the plan reading returned its maximum of ${PLAN_CAP} findings; the list may be short`;
 
 export function renderStory(v: DraftView, withFlags = true): string {
   const out: string[] = [];
+  if (withFlags) {
+    // the plan findings with no beat lead the story; a beat's own follow its scene
+    for (const f of v.planFindings.filter((f) => !f.beat)) out.push(planLine(f));
+    if (v.planCapped) out.push(CAP_LINE);
+    if (out.length) out.push("");
+  }
   v.scenes.forEach((s, i) => {
     if (i) out.push("", "* * *", "");
     out.push(s.text.trim());
@@ -58,6 +82,7 @@ export function renderStory(v: DraftView, withFlags = true): string {
     for (const f of v.screenFindings.filter((f) => f.beat === s.beat)) out.push("", `[screen-${f.screen} beat ${s.beat}] ${f.span} → ${f.replacement}`);
     const pr = v.profiles.find((x) => x.beat === s.beat);
     if (pr) for (const q of pr.flags) out.push("", `[screen-structure beat ${s.beat}] ${q}: ${pr.answers[q].quote}`);
+    for (const f of v.planFindings.filter((f) => f.beat === s.beat)) out.push("", planLine(f));
   });
   if (withFlags && v.judge) out.push("", v.judge);
   return out.join("\n") + "\n";
@@ -79,11 +104,17 @@ function renderFindings(p: Pipeline, drawId: string, v: DraftView): string {
   out.push("## Check", "");
   if (!checks.length) out.push("none reported", "");
   for (const f of checks) out.push(`- **${f.id}** ${f.checkers.join("+")} ×${f.n} [${f.invalidates}] ${f.decision}${f.note ? `: ${f.note}` : ""}`, `  span: ${f.span}`, `  ${f.statement}`, `  evidence: ${f.evidence}`, `  replacement: ${f.replacement}`, "");
+  out.push("## Plan", "", "The schedule read against the pinned ledger before any scene was written. Informational: nothing acts on these.", "");
+  if (!v.planFindings.length) out.push("- none", "");
+  for (const f of v.planFindings) out.push(`- ${planLine(f).slice(1).replace("] ", ": ")}`);
+  if (v.planCapped) out.push(`- ${CAP_LINE.slice("[plan] ".length)}`);
+  if (v.planFindings.length) out.push("");
   out.push("## Screens", "");
   for (const s of v.scenes) {
     const fs = v.screenFindings.filter((f) => f.beat === s.beat), pr = v.profiles.find((x) => x.beat === s.beat);
     out.push(`### Beat ${s.beat}`, "");
-    for (const f of fs) out.push(`- ledger: ${f.span} → ${f.replacement}`);
+    // each flag under the screen that raised it: a restated flag is not a ledger flag
+    for (const f of fs) out.push(`- ${f.screen}: ${f.span} → ${f.replacement}`);
     for (const q of pr?.flags ?? []) out.push(`- structure ${q}: ${pr!.answers[q].quote}`);
     if (!fs.length && !pr?.flags.length) out.push("- none");
     out.push("");
@@ -123,7 +154,8 @@ export function exportDraft(p: Pipeline, drawId: string, resolved: Resolved, gat
     `config: ${resolved.profile ? `profile ${resolved.profile}` : "defaults"}${resolved.overridden.length ? ` · overridden ${resolved.overridden.join(", ")}` : ""}`, "",
     "### models", "", ...[...models].filter(([s]) => /^(check|repair|schedule|scene|screen)/.test(s)).map(([s, m]) => `- ${s}: ${m}`), "",
     "### scenes", "", ...v.scenes.map((s) => `- beat ${s.beat}: ${words(s.text)} words`), "",
-    `screen flags: ${v.screenFindings.length} ledger, ${v.profiles.reduce((a, x) => a + x.flags.length, 0)} structure`, "",
+    `screen flags: ${v.screenFindings.length} ledger, ${v.profiles.reduce((a, x) => a + x.flags.length, 0)} structure`,
+    `plan findings: ${v.planFindings.length}${v.planFindings.some((f) => f.question) ? ` (${v.planFindings.filter((f) => f.question).length} questions)` : ""}`, "",
     ...(v.listen ? [`narration: about ${v.listen.minutes} min at ${v.listen.pool_wpm} wpm`, ""] : []),
     "### gate 2", "", ...(gate2.length ? gate2.map((g) => `- ${g}`) : ["- keep"]), "",
     ...(v.judge ? [v.judge, ""] : []),

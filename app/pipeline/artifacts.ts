@@ -11,12 +11,18 @@ import type { Cluster } from "./recur.ts";
 import type { Answer } from "./check.ts";
 import type { Beat } from "./write.ts";
 
-/** A finding as a check or screen stores it; `dropped` is the verify pass's reason for taking it off the reported list. */
-export type FindingMeta = Omit<Cluster, "reported"> & { pass: string; source: "check" | "screen" | "operator"; screen?: string; beat?: number; sub_threshold?: boolean; dropped?: string } & OperatorMeta;
+/**
+ * A finding as a check, a screen or the plan check stores it; `dropped` is the
+ * verify pass's reason for taking it off the reported list. A `plan` finding
+ * is raised on the schedule before any scene exists (docs/specs/2026-09-28-story-ir.md
+ * §14.5, S3′); `question` marks one the ledger under-specifies rather than
+ * contradicts, for a person to answer.
+ */
+export type FindingMeta = Omit<Cluster, "reported"> & { pass: string; source: "check" | "screen" | "operator" | "plan"; screen?: string; beat?: number; sub_threshold?: boolean; dropped?: string; question?: boolean } & OperatorMeta;
 /** What an operator's instruction carries beyond a finding: the parts of the brief it is for, and whether it is a fact the ledger takes or a direction it does not. */
 export type OperatorMeta = { parts?: string[]; kind?: "fact" | "direction" };
 type ProfileMeta = { pass: string; source: "check" | "screen"; sample?: number; checker?: string; screen?: string; beat?: number; answers?: Record<string, Answer>; flags?: string[]; samples?: number; [k: string]: unknown };
-export type SceneMeta = { beat: number; words: number; cap: number; warnings: string[]; rewrite?: boolean; rewrite_finding?: string; instruction?: string; patched?: string[]; edited?: string[]; copied_from?: string };
+export type SceneMeta = { beat: number; words: number; cap: number; warnings: string[]; rewrite?: boolean; rewrite_finding?: string /* the ids of the flags ticked for it, comma-separated */; instruction?: string; patched?: string[]; edited?: string[]; copied_from?: string };
 type PassMeta = { pass: string; samples?: Record<string, number> };
 export type LedgerMeta = { pass: string; sample: number; pinned?: boolean; ledger_only?: boolean };
 type ScheduleMeta = { form: Record<string, string>; beats: Beat[]; words: number };

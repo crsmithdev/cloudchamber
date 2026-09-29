@@ -239,9 +239,9 @@ const RESULTS = new Set(["supported", "contradicted", "unverifiable"]);
 const claimMeta = (v: { span: string; result: string; evidence: string; invalidates: string; replacement: string; patch: string }, pass: string, authority: ClaimsAuthority, extra: Record<string, unknown> = {}) =>
   ({ pass, span: v.span, result: v.result, evidence: v.evidence, invalidates: v.invalidates, replacement: v.replacement, patch: v.patch, authority, ...extra });
 
-type Claim = { span: string; statement: string };
+export type Claim = { span: string; statement: string };
 /** A claim's verdict: fresh, or `cached` from the chain claim it repeats, with the draw that verified it. */
-type Verified = { span: string; statement: string; result: string; evidence: string; invalidates: string; replacement: string; patch: string; draw?: string; cached?: boolean; confirm?: string };
+export type Verified = { span: string; statement: string; result: string; evidence: string; invalidates: string; replacement: string; patch: string; draw?: string; cached?: boolean; confirm?: string };
 
 /** The claims an extract call listed. */
 const claimsIn = (t: string): Claim[] =>
@@ -254,8 +254,11 @@ const claimsIn = (t: string): Claim[] =>
  * every round. A fresh verdict is stored on its verify step; a cached one
  * comes back marked. Under a check pass the verify steps carry the pass; a
  * screen's claims carry `source: "screen"`.
+ *
+ * Exported for the story IR's L2 resolve (`ir/s2.ts`, docs/specs/2026-09-28-story-ir.md
+ * §4.2): "reuse `verifyClaims` with the chain cache, one call per symbol per chain."
  */
-async function verifyClaims(p: Pipeline, drawId: string, extract: StepRow, claims: Claim[], authority: ClaimsAuthority, reference: string, pass: string, chain: Chain, screen: boolean): Promise<Verified[]> {
+export async function verifyClaims(p: Pipeline, drawId: string, extract: StepRow, claims: Claim[], authority: ClaimsAuthority, reference: string, pass: string, chain: Chain, screen: boolean): Promise<Verified[]> {
   const tpl = CLAIMS_PROMPTS[authority];
   const prior = chain.claims(authority);
   return Promise.all(claims.map((c) => {

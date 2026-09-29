@@ -27,7 +27,7 @@ const DOC = `cloudchamber — the one command the skill and the UI drive.
    cloudchamber brief <draw>                   print the brief
    cloudchamber check <draw> [--checks a,b] [--samples N]   run the checkers over a brief; stops at gate 1
    cloudchamber findings <draw> [--examined] [--all]   the findings of the latest check, by score
-   cloudchamber gate <draw> accept [<finding>...] [--instruction "..." --parts ending,"context 1" --kind fact|direction] | auto | dismiss <finding> [--reason false-positive|real-bad-fix|duplicate|trivial] | hold | keep | rewrite <k>[,k...] [--finding ID] [--instruction "..."]  [--note "..."]
+   cloudchamber gate <draw> accept [<finding>...] [--instruction "..." --parts ending,"context 1" --kind fact|direction] | auto | dismiss <finding> [--reason false-positive|real-bad-fix|duplicate|trivial] | hold | keep | rewrite <k>[,k...] [--finding ID[,ID...]] [--instruction "..."]  [--note "..."]
        auto repairs round after round, accepting what scores repair.stop_score or more,
        until nothing reaches the floor, the rounds run out, or the total stops falling
    cloudchamber draft <draw> [--auto] [--profile P] [--words N] [--beats N] [--tense T] [--person P] [--chronology C] [--container C] [--order O] [--models G=M,...]
@@ -189,7 +189,7 @@ async function main() {
       if ((action === "dismiss" || action === "rewrite" || (action === "accept" && !values.instruction)) && !args.length) usage();
       const gateArgs: GateArgs = {
         note: values.note, finding: action === "dismiss" ? args[0] : values.finding, reason: values.reason as GateArgs["reason"],
-        step_id: args[0], findings: args, beats: action === "rewrite" ? args[0].split(",").map(Number) : undefined, instruction: values.instruction, premise: values.premise,
+        step_id: args[0], findings: action === "rewrite" ? values.finding?.split(",") : args, beats: action === "rewrite" ? args[0].split(",").map(Number) : undefined, instruction: values.instruction, premise: values.premise,
         instructions: action === "accept" && values.instruction ? [{ text: values.instruction, parts: (values.parts ?? "").split(",").map((x) => x.trim()).filter(Boolean), kind: values.kind as "fact" | "direction" }] : undefined,
       };
       // the CLI waits for the work whether or not it runs on: there is nothing else to go back to

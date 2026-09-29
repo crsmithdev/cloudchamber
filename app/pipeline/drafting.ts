@@ -24,7 +24,8 @@ import { chainOf, type Chain, type FindingView } from "./chain.ts";
 import { BriefSession } from "./briefsession.ts";
 import { faultsOver, type Fault } from "./listen.ts";
 import { ofKind } from "./artifacts.ts";
-import { FAULT_LINE, linesOf, runSchedule } from "./write.ts";
+import { FAULT_LINE, linesOf, runSchedule, type Schedule } from "./write.ts";
+import { planCheck, type PlanCheck } from "./ir/s2.ts";
 import { SceneSession, type Change, type ScreenPaths } from "./scenesession.ts";
 import { directionsOf, draftView, exportDraft, renderStory, type DraftView } from "./drafts.ts";
 import { tag } from "./model.ts";
@@ -303,8 +304,23 @@ export class Drafting {
     const parts = briefParts(this.p, id);
     const ledger = await this.ensureLedger(id);
     const { step, schedule } = await runSchedule(this.p, id, parts, briefBlock(parts), cfg);
-    const session = new SceneSession({ p: this.p, drawId: id, parent: step.id, parts, ledger, schedule, cfg, pass: passId(), paths: this.screenPaths() });
+    const pass = passId();
+    // the plan check runs beside the scenes: it is read at gate 2 and gates nothing, so the scenes do not wait for it
+    const plan = this.planCheck(id, step.id, ledger, schedule, cfg, pass);
+    const session = new SceneSession({ p: this.p, drawId: id, parent: step.id, parts, ledger, schedule, cfg, pass, paths: this.screenPaths() });
     await this.scenes(session, cfg, 1);
+    await plan;
+  }
+
+  /**
+   * The plan check (docs/specs/2026-09-28-story-ir.md §14.5, S3′): the schedule
+   * against the pinned ledger, stored as `plan` findings for gate 2. Under
+   * `screens.enabled` as `plan`; a failed model call leaves its step and the
+   * draft goes on.
+   */
+  private planCheck(drawId: string, parent: string, ledger: string, schedule: Schedule, cfg: DraftConfig, pass: string): Promise<PlanCheck | null> {
+    if (!cfg.screens.enabled.includes("plan")) return Promise.resolve(null);
+    return planCheck(this.p, drawId, parent, ledger, schedule, pass);
   }
 
   /**
@@ -362,12 +378,18 @@ export class Drafting {
     const instruction = opts.instruction?.trim() || undefined;
     await act(this.p.db, { id: newId, during: "drafting", back: "failed" }, async () => {
       // under an instruction the branch plans the story again from `from`, and writes every beat from there under it
+      const pass = passId();
+      let plan: Promise<PlanCheck | null> = Promise.resolve(null);
       if (instruction) {
         const parts = briefParts(this.p, newId);
-        await runSchedule(this.p, newId, parts, briefBlock(parts), resolved.config, { instruction, from, schedule: chainOf(this.p, newId).schedule()! });
+        const ledger = chainOf(this.p, newId).ledger() ?? "";
+        const { step, schedule } = await runSchedule(this.p, newId, parts, briefBlock(parts), resolved.config, { instruction, from, schedule: chainOf(this.p, newId).schedule()! });
+        // a replanned schedule is a new plan: checked again, beside the scenes
+        plan = this.planCheck(newId, step.id, ledger, schedule, resolved.config, pass);
       }
-      const session = SceneSession.resume(this.p, newId, resolved.config, passId(), this.screenPaths());
+      const session = SceneSession.resume(this.p, newId, resolved.config, pass, this.screenPaths());
       await this.scenes(session, resolved.config, from, instruction);
+      await plan;
     }, () => ({ id: newId, status: "awaiting_draft_gate" }));
     await writeReport(this.p, newId, this.opts.outputDir, noPdf);
     return this.p.draw(newId);
@@ -537,12 +559,14 @@ export class Drafting {
   // --- gate 2 ----------------------------------------------------------------
 
   /**
-   * Write beats again at gate 2, in beat order. Each beat carries its open flags,
-   * its structure lines, every instruction given for it before, and the
-   * operator's `instruction` when there is one. A rewrite named for one finding
-   * is that finding alone, on its one beat.
+   * Write beats again at gate 2, in beat order. A beat the operator ticked
+   * flags on carries those flags alone, each followed by the operator's note
+   * on it; a beat named without ticked flags carries every open flag and its
+   * structure lines. Either way it carries every instruction given for it
+   * before, and the operator's `instruction` when there is one. A ticked flag
+   * is a screen flag or a plan finding.
    */
-  async rewrite(drawId: string, beats: number[], o: { finding?: string; instruction?: string } = {}): Promise<DrawRow> {
+  async rewrite(drawId: string, beats: number[], o: { findings?: string[]; notes?: Record<string, string>; instruction?: string } = {}): Promise<DrawRow> {
     const draw = this.must(drawId, "rewrite");
     const cfg = this.resolved(draw).config;
     const v = draftView(this.p, drawId);
@@ -550,19 +574,21 @@ export class Drafting {
     const M = v.schedule.beats.length;
     if (!beats.length) throw new Error("beat required");
     for (const k of beats) if (!(Number.isInteger(k) && k >= 1 && k <= M)) throw new Error(`beat ${k} is not in 1..${M}`);
-    if (o.finding && beats.length > 1) throw new Error("a rewrite for one finding takes one beat");
+    // a flag a person dismissed, or one already patched in place, is not a constraint on the rewrite
+    const open = [...v.screenFindings, ...v.planFindings].filter((f) => f.decision === "open" && f.beat !== undefined && beats.includes(f.beat));
+    const ticked = o.findings ?? [];
+    for (const id of ticked) if (!open.some((f) => f.id === id)) throw new Error(`no open flag ${id} on beat ${beats.join(", ")}`);
     const instruction = o.instruction?.trim() || undefined;
     const changes = [...new Set(beats)].map((k): Change => {
-      // a flag a person dismissed, or one already patched in place, is not a constraint on the rewrite
-      const flags = v.screenFindings.filter((f) => f.beat === k && f.decision === "open");
-      const chosen = o.finding ? flags.filter((f) => f.id === o.finding) : flags;
-      if (o.finding && !chosen.length) throw new Error(`beat ${k}: no screen finding ${o.finding} that is open`);
-      // the beat's structure flags are constraints too, each as the line its rule carries; a rewrite named for one finding is that finding alone
-      const structural = o.finding ? [] : linesOf(v.profiles.find((pr) => pr.beat === k)?.flags ?? []).map((replacement) => ({ replacement }));
+      const mine = open.filter((f) => f.beat === k && ticked.includes(f.id));
+      const note = (id: string) => o.notes?.[id]?.trim();
+      const chosen = mine.length
+        ? mine.flatMap((f) => [f, ...(note(f.id) ? [{ replacement: note(f.id)! }] : [])])
+        : [...open.filter((f) => f.beat === k && f.source === "screen"), ...linesOf(v.profiles.find((pr) => pr.beat === k)?.flags ?? []).map((replacement) => ({ replacement }))];
       // an instruction given for this beat before still holds: a rewrite for a flag must not undo it
       const earlier = v.directions.filter((x) => x.beats.includes(k) && x.text !== instruction).map((x) => ({ replacement: x.text }));
-      const lines = [...chosen, ...structural, ...earlier, ...(instruction ? [{ replacement: instruction }] : [])];
-      return { beat: k, kind: "rewrite", constraints: lines.length ? constraintsBlock(lines) : undefined, finding: o.finding, instruction };
+      const lines = [...chosen, ...earlier, ...(instruction ? [{ replacement: instruction }] : [])];
+      return { beat: k, kind: "rewrite", constraints: lines.length ? constraintsBlock(lines) : undefined, findings: mine.map((f) => f.id), instruction };
     });
     await act(this.p.db, { id: drawId, during: "drafting", back: "awaiting_draft_gate" },
       () => this.regenerate(drawId, changes, cfg),

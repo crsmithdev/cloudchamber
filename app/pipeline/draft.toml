@@ -40,7 +40,8 @@ samples = 1
 samples = 1
 
 [screens]
-enabled = ["ledger", "structure", "slop", "listen", "claims"]   # claims runs only under a setting that declares an authority
+enabled = ["plan", "ledger", "structure", "slop", "listen", "claims"]   # claims runs only under a setting that declares an authority;
+                         # plan reads the schedule against the ledger beside the scenes, about $0.46 a draft (spec 2026-09-28-story-ir §14.5)
 samples = 1              # four calls a scene was most of gate 2; the flags are read, not counted
 keep_if = 1
 slop_baseline = "pool"

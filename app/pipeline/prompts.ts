@@ -251,6 +251,42 @@ Above is a story brief: a seed, a premise, an outline in four sections, three vi
 
 Extract the claims the brief makes that a line of the setting settles, for or against: a price, a rate, a count, a date, a duration, a term of service, an office, a rite, an instrument, a relation between two bodies, where a place is, or how a person gets from one place to another. That a place, institution or person exists is not a claim. Skip what the story invents for itself alone, and skip anything that would hold in any world. Each claim goes in a <claim> tag containing <span> (verbatim quote, under ${RUN.spanWords} words) and <statement> (the claim as one checkable sentence that names its subject by the setting's name for it, not by the brief's shorthand, such as "the Gate" or "the doors"). At most 12 claims. Under 500 words.`,
 
+  // --- story IR lowering (docs/specs/2026-09-28-story-ir.md §4.2, S2) ------------------
+
+  irSymbolize: `A story's pinned ledger: one line per settled fact, category-prefixed.
+
+<ledger>
+{ledger}
+</ledger>
+
+Read it and emit one <sym> tag per entity or fact it settles: a person, an object, a body (a council, a guild, a crew), a place, or a fact. Each tag carries: id="" (a short lowercase identifier, dotted for a property of something: suit.third), kind="person|object|body|place|fact|time|count", from="ledger:<category>" (the ledger category the line came from; add "; setting:<area>" too when the fact is the kind a setting states for or against — a body, an instrument, a place, an event, a term, a rite). Add any other attribute the line states a value for: a count, a role, a custody, a shift size. A person or an object that the ledger places in a body — a seat-holder, a delegate, an officer, a member, a thing a body holds — carries member_of="" with that body's symbol id. The tag's content is the line itself, close enough to quote.
+
+Two kinds need special care.
+
+Every place the ledger writes a calendar date beside a day number or an hour — a start, an end, an arrival, a completion — emit its own <sym kind="time" id="day.N"> (N the day number) carrying day="N", date="" (the calendar date exactly as the ledger writes it) and hour="" (when the ledger gives one). Emit a date only where the ledger writes one; never a date you compute from a count of days. One ledger can pin the same day more than once, in more than one place and more than one wording; emit a symbol for each statement, not one merged answer.
+
+Every vote or tally the ledger states — emit a <sym kind="count" id="..."> carrying body="" (the symbol id of the body that votes), yes="" and no="" (the two sides), total="" (a sum the ledger states outright), named_yes="" and named_no="" (the symbol ids of the persons the ledger names on each side, comma-separated, or none), unnamed_yes="" and unnamed_no="" (how many on each side it counts without naming), using only the attributes the ledger actually gives a value for. A "N of M remain" line is a count too, with remaining="" and of="", not a vote.
+
+Output only the <sym> tags, wrapped in one <symbols> tag. Under 1400 words.`,
+
+  irPlanLedger: `Above is a story's symbol table: typed entities and facts lowered from its ledger.
+
+<symbols>
+{symbols}
+</symbols>
+
+Below is the beat-by-beat plan for the same story.
+
+<plan>
+{plan}
+</plan>
+
+The symbol table is fixed: a symbol's stated value overrides anything a beat implies otherwise. For each beat, check every value its <uses> line names against the symbol table, and check whether the beat's <job>, <known>, <stakes> or <exit> line asserts something about a symbol that conflicts with the symbol's stated value: a headcount, a name, a location, a role, a custody, who sits where, who is joined by what means. Report each conflict. A thing the symbol table has no value for is not a finding: report only a conflict with a stated value. Do not report dates, day numbers, hours or anything about the calendar: a separate check reads those.
+
+Each finding goes in a <finding> tag containing: <span> (a verbatim quote from the plan, under 40 words), <statement> (what the span asserts, one sentence), <result>contradicted</result>, <evidence> (the symbol id and the value it conflicts with), <invalidates> (the beat number the span is in), <replacement> (one sentence in the plan's own register that would hold in its place), <patch> (the span rewritten so the finding no longer holds, ready to stand in its place word for word; or none when the fix needs more than that span).
+
+At most {cap} findings, the gravest first. Under 1200 words in total.`,
+
   claimsVerifyWorld: `Claim from a story, quoted: "{span}"
 As a checkable sentence: {statement}
 

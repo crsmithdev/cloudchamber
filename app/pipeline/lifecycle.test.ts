@@ -20,6 +20,7 @@ describe("the rules", () => {
       awaiting_check_gate: ["fork", "flag", "archive", "unarchive", "check", "auto", "accept", "dismiss", "hold", "draft"],
       repairing: ["fork", "flag", "archive", "unarchive"],
       repaired: ["fork", "flag", "archive", "unarchive"],
+      awaiting_plan_gate: ["fork", "flag", "archive", "unarchive"],
       drafting: ["fork", "flag", "archive", "unarchive"],
       awaiting_draft_gate: ["fork", "flag", "archive", "unarchive", "branch", "rewrite", "keep"],
       drafted: ["fork", "flag", "archive", "unarchive", "branch"],
@@ -42,11 +43,12 @@ describe("the rules", () => {
   test("the view the UI reads: tab, running, waiting at a gate, and every action", () => {
     expect(lifecycleView(draw("checking"))).toMatchObject({ stage: "check", running: true, at_gate: false });
     expect(lifecycleView(draw("awaiting_draft_gate"))).toMatchObject({ stage: "write", running: false, at_gate: true });
+    expect(lifecycleView(draw("awaiting_plan_gate"))).toMatchObject({ stage: "write", running: false, at_gate: true });
     const v = lifecycleView(draw("awaiting_gate", { chosen_step: null }));
     expect([v.stage, v.at_gate, v.actions.choose, v.actions.delete]).toEqual(["ideate", true, null, null]);
     expect(Object.keys(v.actions).sort()).toEqual([...ACTIONS].sort());
     expect(tabOf({ status: "failed", chosen_step: null, repaired_from: "r" })).toBe("check");
-    expect(["awaiting_gate", "done", "awaiting_check_gate", "awaiting_draft_gate", "checking"].map(waitsIn)).toEqual(["ideate", "check", "check", "write", null]);
+    expect(["awaiting_gate", "done", "awaiting_check_gate", "awaiting_plan_gate", "awaiting_draft_gate", "checking"].map(waitsIn)).toEqual(["ideate", "check", "check", "write", "write", null]);
   });
 
   test("every stage is placed in a tab, or placed outside every tab as a stage no draw runs", () => {

@@ -143,6 +143,17 @@ model = "claude-opus-5"
 fallback = "claude-sonnet-5"
 system = "You derive a story's schedule from its plan. Output only the tags asked for."
 
+# story IR lowering (docs/specs/2026-09-28-story-ir.md, S2): L1 symbolise and L4 plan-vs-ledger.
+[ir-symbolize]
+model = "claude-opus-5"
+fallback = "claude-sonnet-5"
+system = "You read a story's ledger and emit its typed symbols. Output only the tags asked for."
+
+[ir-plan-ledger]
+model = "claude-opus-5"
+fallback = "claude-sonnet-5"
+system = "You read a story's symbol table and its plan and report where the plan conflicts with the table. Output only the tags asked for."
+
 [scene]
 model = "claude-opus-5"
 fallback = "claude-sonnet-5"

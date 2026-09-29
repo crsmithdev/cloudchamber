@@ -22,7 +22,7 @@ export const isGateAction = (s: string): s is GateAction => (GATE_ACTIONS as rea
 /** What the commands take between them. Each one asks for what it needs and refuses what it lacks. */
 export type GateArgs = {
   step_id?: string; note?: string; findings?: string[]; finding?: string; beat?: number;
-  beats?: number[]; instruction?: string;                               // rewrite: several beats, and the operator's words for them
+  beats?: number[]; instruction?: string; notes?: Record<string, string>; // rewrite: several beats, the flags ticked (`findings`) with a note on each, and the operator's words for them
   instructions?: Instruction[];                                         // accept: the operator's instructions, repaired with the findings
   premise?: string;                                                     // fork: the candidate's premise as the operator edited it
   reason?: DismissReason;                                               // dismiss
@@ -79,7 +79,7 @@ export function gateCommand(p: Pipeline, d: Drafting, id: string, action: string
     }
     case "hold": return cmd(false, id, d.hold(id));
     case "keep": return cmd(false, id, d.keep(id, note));
-    case "rewrite": return cmd(true, id, d.rewrite(id, a.beats?.length ? a.beats.map(Number) : [Number(need(a.beat, "beat"))], { finding: a.finding, instruction: a.instruction }));
+    case "rewrite": return cmd(true, id, d.rewrite(id, a.beats?.length ? a.beats.map(Number) : [Number(need(a.beat, "beat"))], { findings: a.findings, notes: a.notes, instruction: a.instruction }));
     case "check": return cmd(true, id, d.check(id, { checks: a.checks, samples: a.samples }));
     case "draft": return cmd(true, id, d.draft(id, { auto: !!a.auto, profile: a.profile, overrides: a.overrides }));
     // the branch is the draw to show next, as a fork is

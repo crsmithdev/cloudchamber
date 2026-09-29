@@ -40,7 +40,7 @@ import {
 const BASE_MIN_BINDS = 5;
 
 /** A beat written again under a constraints block, marked as a rewrite, with the flag or the operator's instruction it answers when there is one. */
-type Rewrite = { beat: number; kind: "rewrite"; constraints?: string; finding?: string; instruction?: string };
+type Rewrite = { beat: number; kind: "rewrite"; constraints?: string; findings?: string[]; instruction?: string };
 /** A beat whose faulted sentences are swapped in place under the listen lines. */
 type Edit = { beat: number; kind: "edit"; faults: Fault[] };
 /** One change `revise` makes to a stored beat. The caller chooses the kind. */
@@ -109,14 +109,14 @@ export class SceneSession {
   // --- writing ----------------------------------------------------------------
 
   /** One beat. `rewrite` marks a gate-2 rewrite, with the flag it answers when there is one; `instruction` is the operator's, when the beat is written under one. */
-  async write(b: Beat, soFar: string[], opts: { constraints?: string; rewrite?: { finding?: string }; instruction?: string; session?: SessionAsk } = {}): Promise<Scene & { session?: string }> {
+  async write(b: Beat, soFar: string[], opts: { constraints?: string; rewrite?: { findings?: string[] }; instruction?: string; session?: SessionAsk } = {}): Promise<Scene & { session?: string }> {
     const prompt = scenePrompt(this.parts, this.schedule, b, soFar, opts.constraints, this.cfg.structure);
     const { step, value, session } = await this.p.invoke(this.drawId, this.parent, "scene", prompt, (t) => need(t, "scene"), { context: this.context, session: opts.session });
     const n = words(value);
     const artifact_id = this.p.artifact(step, "scene", value, {
       beat: b.n, words: n, cap: b.words,
       warnings: n > b.words * (1 + RUN.sceneCapSlack) ? ["over_cap"] : [],
-      ...(opts.rewrite ? { rewrite: true, ...(opts.rewrite.finding ? { rewrite_finding: opts.rewrite.finding } : {}) } : {}),
+      ...(opts.rewrite ? { rewrite: true, ...(opts.rewrite.findings?.length ? { rewrite_finding: opts.rewrite.findings.join(", ") } : {}) } : {}),
       ...(opts.instruction ? { instruction: opts.instruction } : {}),
     });
     return { beat: b.n, text: value, artifact_id, step_id: step.id, ...(session ? { session } : {}) };
@@ -250,7 +250,7 @@ export class SceneSession {
     }));
     for (const c of changes.filter((c): c is Rewrite => c.kind === "rewrite").sort((a, b) => a.beat - b.beat)) {
       const before = this.scenes().filter((s) => s.beat < c.beat).map((s) => s.text);
-      await this.write(this.schedule.beats[c.beat - 1], this.cfg.scenes.order === "sequential" ? before : [], { constraints: c.constraints, rewrite: { finding: c.finding }, instruction: c.instruction });
+      await this.write(this.schedule.beats[c.beat - 1], this.cfg.scenes.order === "sequential" ? before : [], { constraints: c.constraints, rewrite: { findings: c.findings }, instruction: c.instruction });
       facts.add(c.beat);
       full.add(c.beat);
     }

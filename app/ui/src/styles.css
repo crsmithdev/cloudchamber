@@ -425,6 +425,22 @@
   .finding.old > * {
     opacity: 0.65;
   }
+  /* gate 2: a flag ticked for a rewrite, and the note under it */
+  .flags input[type="checkbox"] {
+    accent-color: var(--color-art);
+    width: 15px;
+    height: 15px;
+    margin-top: 0.2rem;
+  }
+  .flags tr.ticked > td {
+    background: color-mix(in srgb, var(--color-art) 8%, transparent);
+  }
+  .flags tr.old > td {
+    opacity: 0.6;
+  }
+  .plan-beats > tbody > tr.old > td {
+    opacity: 0.35;
+  }
   /* every number and identifier is the mono, in any pane */
   .num {
     font-family: var(--font-mono);

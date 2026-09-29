@@ -1359,10 +1359,13 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
   const [s, setS] = useState<Story | null>(null);
   const [note, setNote] = useState("");
   const [k, setK] = useState(1);
-  const [view, setView] = useState<"story" | "schedule">("story");
+  const [view, setView] = useState<"story" | "plan">("story");
   const [instruction, setInstruction] = useState("");
-  // the beats an instruction goes to: the scene in view until the operator ticks others
-  const [picked, setPicked] = useState<number[] | null>(null);
+  // the flags ticked for a rewrite, each with the operator's note on it
+  const [ticks, setTicks] = useState<Ticks>({});
+  // beats picked by hand: a beat with no ticked flag is written again under all of its own
+  const [picked, setPicked] = useState<number[]>([]);
+  const [sym, setSym] = useState<string | null>(null);
   const [how, setHow] = useState<"rewrite" | "replan">("rewrite");
   const id = d.draw.id;
   useEffect(() => {
@@ -1388,15 +1391,30 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
   const gating = d.draw.actions.keep === null;
   const gate = (action: string, extra: Record<string, unknown> = {}) => onAct(() => api.gate(id, { action, note, ...extra }));
   const M = s.scenes.length;
-  const beats = picked ?? [k];
-  const toggleBeat = (b: number) => setPicked(beats.includes(b) ? beats.filter((x) => x !== b) : [...beats, b].sort((x, y) => x - y));
-  const instruct = () => {
-    // a re-plan is a branch from the first ticked beat: this draft stays as it is
-    gate(how === "rewrite" ? "rewrite" : "branch", how === "rewrite" ? { beats, instruction } : { at_beat: beats[0], instruction });
-    setInstruction("");
-    setPicked(null);
+  const flags = [...s.screenFindings, ...s.planFindings];
+  const beatOf = (id: string) => flags.find((f) => f.id === id)?.beat;
+  const tickedOn = (b: number) => Object.keys(ticks).filter((id) => beatOf(id) === b).length;
+  const beats = [...new Set([...Object.keys(ticks).map(beatOf).filter((b): b is number => b !== undefined), ...picked])].sort((x, y) => x - y);
+  // a beat's chip picks it; on a beat with ticked flags it clears them
+  const toggleBeat = (b: number) => {
+    if (tickedOn(b)) setTicks(Object.fromEntries(Object.entries(ticks).filter(([id]) => beatOf(id) !== b)));
+    setPicked(picked.includes(b) || tickedOn(b) ? picked.filter((x) => x !== b) : [...picked, b]);
   };
-  const flagsFor = (beat: number) => ({ ledger: s.screenFindings.filter((f) => f.beat === beat), structure: s.profiles.find((p) => p.beat === beat) });
+  const nTicked = Object.keys(ticks).length;
+  const nNotes = Object.values(ticks).filter((v) => v.trim()).length;
+  const instruct = () => {
+    const notes = Object.fromEntries(Object.entries(ticks).filter(([, v]) => v.trim()));
+    // a re-plan is a branch from the first beat: this draft stays as it is
+    gate(how === "rewrite" ? "rewrite" : "branch", how === "rewrite" ? { beats, findings: Object.keys(ticks), notes, instruction } : { at_beat: beats[0], instruction });
+    setInstruction("");
+    setTicks({});
+    setPicked([]);
+  };
+  const flagsFor = (beat: number) => ({ ledger: s.screenFindings.filter((f) => f.beat === beat), plan: s.planFindings.filter((f) => f.beat === beat), structure: s.profiles.find((p) => p.beat === beat) });
+  const onSym = (id: string) => {
+    setView("plan");
+    setSym(id);
+  };
   const wordsOf = (t: string) => t.split(/\s+/).filter(Boolean).length;
   const words = s.scenes.reduce((a, x) => a + wordsOf(x.text), 0);
   const cfg = d.draw.draft_config ? JSON.parse(d.draw.draft_config) : null;
@@ -1414,52 +1432,49 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
           <Btn variant="primary" onClick={() => gate("keep")} title={`Keep the story. It is exported to drafts/${id}/ with its schedule, findings, configuration and trail.`}>
             keep and export
           </Btn>
-          <span className="group">
-            <Btn variant="art" onClick={() => gate("rewrite", { beat: k })} title="Regenerate one scene from its beat under its flags' replacements, then screen it and the next scene again.">
-              rewrite scene
-            </Btn>
-            <select className="sel" style={{ minWidth: "4rem", padding: "0.15rem 1.6rem 0.2rem 0.5rem" }} aria-label="Scene to rewrite" value={k} onChange={(e) => setK(Number(e.target.value))}>
-              {s.scenes.map((x) => (
-                <option key={x.beat} value={x.beat}>
-                  {x.beat}
-                </option>
-              ))}
-            </select>
-            <span className="text-dim">
-              then screens scene {k}
-              {k < M ? ` and ${k + 1}` : ""} again
-            </span>
-          </span>
           <input type="text" placeholder="note for the log" aria-label="Gate note" value={note} onChange={(e) => setNote(e.target.value)} />
           <span className="end">
             {report}
-            <Btn variant="quiet" pressed={view === "schedule"} onClick={() => setView(view === "schedule" ? "story" : "schedule")}>
-              {view === "schedule" ? "story" : "schedule"}
+            <Btn variant="quiet" pressed={view === "plan"} onClick={() => setView(view === "plan" ? "story" : "plan")} title="The plan the scenes were written from: each beat's schedule, the plan check's findings and the symbol table it read.">
+              {view === "plan" ? "story" : "plan"}
             </Btn>
           </span>
         </div>
       )}
       {gating && (
-        <div className="mt-3 max-w-[48rem]" role="group" aria-label="Instruction">
-          <Head note={how === "rewrite" ? "each beat you tick is written again under it, in beat order, with its own flags; a later rewrite of the beat carries it" : "a branch plans the story again from the first beat you tick, under the instruction, and writes every beat from there; this draft stays as it is"}>instruction</Head>
+        <div className="mt-3 max-w-[48rem]" role="group" aria-label="Rewrite">
+          <Head
+            note={
+              how === "rewrite"
+                ? "tick flags in the story or the plan: each goes to its beat with your note under it. A beat picked with nothing ticked carries all of its own flags. The instruction goes to every beat"
+                : "a branch plans the story again from the first beat, under the instruction, and writes every beat from there; this draft stays as it is"
+            }
+          >
+            rewrite
+          </Head>
+          <div className="mt-1 text-mute">
+            {nTicked ? `${nTicked} flag${nTicked > 1 ? "s" : ""} ticked on beat${beats.length > 1 ? "s" : ""} ${beats.join(", ")}` : beats.length ? `beat${beats.length > 1 ? "s" : ""} ${beats.join(", ")}, under all of their own flags` : "nothing ticked"}
+            {nNotes ? ` · ${nNotes} with a note` : ""}
+          </div>
           <textarea
             id="instruction"
-            className="mt-1 font-serif text-prose"
-            rows={3}
-            placeholder="what should change, in your own words"
+            className="mt-2 font-serif text-prose"
+            rows={2}
+            placeholder="optional: what should change, in your own words"
             aria-label="Instruction for the rewrite"
             value={instruction}
             onChange={(e) => setInstruction(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && instruction.trim() && beats.length) instruct();
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && beats.length && (how === "rewrite" || instruction.trim())) instruct();
             }}
           />
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <span className="head">beats</span>
             <span className="chips" role="group" aria-label="Beats to rewrite">
               {s.scenes.map((x) => (
-                <Chip key={x.beat} className="num" pressed={beats.includes(x.beat)} onClick={() => toggleBeat(x.beat)}>
+                <Chip key={x.beat} className="num" pressed={beats.includes(x.beat)} onClick={() => toggleBeat(x.beat)} title={tickedOn(x.beat) ? `${tickedOn(x.beat)} flag(s) ticked; click to clear them` : undefined}>
                   {x.beat}
+                  {tickedOn(x.beat) ? <b className="ml-1 font-medium text-art">✓{tickedOn(x.beat)}</b> : null}
                 </Chip>
               ))}
             </span>
@@ -1467,15 +1482,15 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
             <span className="end ml-auto">
               <Btn
                 variant="art"
-                disabled={!instruction.trim() || !beats.length}
+                disabled={!beats.length || (how === "replan" && !instruction.trim())}
                 onClick={instruct}
                 title={
                   how === "rewrite"
-                    ? "Write the ticked beats again under the instruction, then screen them and the beat after each again."
-                    : `A new draft, branched from this one: beats before ${beats[0] ?? 1} are carried word for word, the schedule is planned again from beat ${beats[0] ?? 1} under the instruction, and every beat from there is written under it. This draft stays as it is.`
+                    ? "Write these beats again, in beat order, then screen each and the beat after it again."
+                    : `A new draft, branched from this one: beats before ${beats[0] ?? 1} are carried word for word, the schedule is planned again from beat ${beats[0] ?? 1} under the instruction, and every beat from there is written under it. Ticked flags are not carried. This draft stays as it is.`
                 }
               >
-                {how === "rewrite" ? `rewrite ${beats.length === 1 ? `beat ${beats[0]}` : `${beats.length} beats`}` : `branch and re-plan from ${beats[0] ?? 1}`}
+                {how === "rewrite" ? `rewrite ${beats.length === 1 ? `beat ${beats[0]}` : `${beats.length} beats`}${nTicked ? ` · ${nTicked} flag${nTicked > 1 ? "s" : ""}` : ""}` : `branch and re-plan from ${beats[0] ?? 1}`}
               </Btn>
             </span>
           </div>
@@ -1511,8 +1526,8 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
           </span>
           <span className="end">
             {report}
-            <Btn variant="quiet" pressed={view === "schedule"} onClick={() => setView(view === "schedule" ? "story" : "schedule")}>
-              {view === "schedule" ? "story" : "schedule"}
+            <Btn variant="quiet" pressed={view === "plan"} onClick={() => setView(view === "plan" ? "story" : "plan")} title="The plan the scenes were written from: each beat's schedule, the plan check's findings and the symbol table it read.">
+              {view === "plan" ? "story" : "plan"}
             </Btn>
           </span>
         </div>
@@ -1534,15 +1549,15 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
       />
       <div className="drawbody wide">
         <div className="min-w-0">
-          {view === "schedule" && s.schedule ? (
-            <ScheduleView s={s} />
+          {view === "plan" && s.schedule ? (
+            <PlanView s={s} ticks={ticks} setTicks={setTicks} gating={gating} sym={sym} onSym={onSym} />
           ) : (
             s.scenes.map((sc) => {
               const fl = flagsFor(sc.beat),
                 beat = s.schedule?.beats[sc.beat - 1];
               const n = wordsOf(sc.text);
               const over = beat ? n > beat.words * 1.1 : false;
-              const nf = fl.ledger.length + (fl.structure?.flags.length ?? 0);
+              const nOpen = [...fl.ledger, ...fl.plan].filter((f) => f.decision === "open").length + (fl.structure?.flags.length ?? 0);
               return (
                 <div key={sc.beat} className="mb-6 max-w-[66ch]" id={`beat-${sc.beat}`}>
                   <Head
@@ -1553,72 +1568,28 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
                           {beat ? ` / ${beat.words}` : ""}
                           {over ? " · over the word cap" : ""}
                         </span>
-                        {beat && beat.absorbs !== "none" && <> · absorbs {beat.absorbs}</>} · <span className="text-mute">{nf ? `${nf} flag${nf > 1 ? "s" : ""}` : "no flags"}</span>
+                        {beat && beat.absorbs !== "none" && <> · absorbs {beat.absorbs}</>} · <span className="text-mute">{nOpen ? `${nOpen} open` : "nothing open"}</span>
+                        {fl.plan.length > 0 && <span className="text-running"> · {fl.plan.length} plan</span>}
                       </>
                     }
                   >
                     beat {sc.beat}
                   </Head>
                   <Md className="mt-2" text={sc.text} />
-                  {fl.ledger.length > 0 || fl.structure?.flags.length ? (
-                    <table className="mt-3">
-                      <tbody>
-                        {fl.ledger.map((f) => (
-                          <tr key={f.id} className={f.decision === "accepted" ? "old" : ""}>
-                            <td className="w-28 text-art">
-                              ledger
-                              {Math.max(...f.samples, f.n) > 1 && (
-                                <div className="text-dim">
-                                  {f.n} of {Math.max(...f.samples, f.n)} samples
-                                </div>
-                              )}
-                            </td>
-                            <td>
-                              <div className="quote">{f.span}</div>
-                              <div className="kv">
-                                <b>replacement</b>
-                                <span>{f.replacement}</span>
-                                {f.patch && (
-                                  <>
-                                    <b>patch</b>
-                                    <span>{f.patch}</span>
-                                  </>
-                                )}
-                              </div>
-                            </td>
-                            <td className="text-right whitespace-nowrap">
-                              {gating && f.decision === "open" && (
-                                <Btn variant="art" onClick={() => gate("rewrite", { beat: sc.beat, finding: f.id })}>
-                                  rewrite with this
-                                </Btn>
-                              )}
-                              {f.decision === "accepted" && <span className="num text-keep">patched</span>}
-                            </td>
-                          </tr>
-                        ))}
-                        {fl.structure?.flags.map((q) => (
-                          <tr key={q}>
-                            <td className="w-28 text-art">
-                              structure
-                              <div className="text-dim">
-                                {q} · {fl.structure!.answers[q].answer}
-                              </div>
-                            </td>
-                            <td>
-                              <div className="quote">{fl.structure!.answers[q].quote}</div>
-                            </td>
-                            <td></td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  ) : null}
+                  <FlagTable fs={[...fl.ledger, ...fl.plan]} structure={fl.structure} ticks={ticks} setTicks={setTicks} gating={gating} rewritten={s.rewrittenUnder} syms={s.symbols} onSym={onSym} />
                 </div>
               );
             })
           )}
         </div>
         <div className="aside min-w-0">
+          {view === "plan" ? (
+            <>
+              <SymbolTable s={s} sym={sym} setSym={setSym} />
+              <div className="mt-6">{aside}</div>
+            </>
+          ) : (
+          <>
           <div className="mb-6">{aside}</div>
           <Head
             note={
@@ -1656,6 +1627,11 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
                           <Mark state="fail" small />{" "}
                         </React.Fragment>
                       ))}
+                      {fl.plan.map((f) => (
+                        <React.Fragment key={f.id}>
+                          <Mark state="run" small />{" "}
+                        </React.Fragment>
+                      ))}
                       {fl.structure?.flags.map((q) => (
                         <React.Fragment key={q}>
                           <Mark state="art" small />{" "}
@@ -1668,8 +1644,10 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
             </tbody>
           </table>
           <div className="mt-2 text-dim">
-            <Mark state="fail" small /> ledger flag &nbsp; <Mark state="art" small /> structure flag
+            <Mark state="fail" small /> ledger flag &nbsp; <Mark state="run" small /> plan finding &nbsp; <Mark state="art" small /> structure flag
           </div>
+          </>
+          )}
           {s.profiles.length > 0 && (
             <>
               <Head className="mt-6" note="present across the draft · a tell, not a score">
@@ -1801,7 +1779,140 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
   );
 }
 
-function ScheduleView({ s }: { s: Story }) {
+type Ticks = Record<string, string>;
+type Flag = Story["screenFindings"][number];
+type Sym = Story["symbols"][number];
+
+/** Text with each symbol id it names made a link to the symbol table. */
+function linkSyms(text: string, syms: Sym[], onSym: (id: string) => void): React.ReactNode {
+  if (!syms.length) return text;
+  const ids = syms.map((x) => x.id).sort((a, b) => b.length - a.length);
+  const re = new RegExp(`(?<=^|[\\s(,;])(${ids.map((x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})(?=[\\s:,;)]|$)`, "g");
+  const out: React.ReactNode[] = [];
+  let last = 0;
+  for (const m of text.matchAll(re)) {
+    out.push(text.slice(last, m.index));
+    out.push(
+      <button key={m.index} type="button" className="link mono text-gold" onClick={() => onSym(m[1]!)} title="Show it in the symbol table">
+        {m[1]}
+      </button>,
+    );
+    last = m.index! + m[1]!.length;
+  }
+  out.push(text.slice(last));
+  return out;
+}
+
+/** One flag or plan finding at gate 2: a box to tick while it is open, and a note under it once ticked. */
+function FlagRow({ f, ticks, setTicks, gating, rewritten, syms, onSym }: { f: Flag; ticks: Ticks; setTicks: (t: Ticks) => void; gating: boolean; rewritten: string[]; syms: Sym[]; onSym: (id: string) => void }) {
+  const open = f.decision === "open";
+  const on = f.id in ticks;
+  const plan = f.source === "plan";
+  const kind = plan ? "plan" : (f.screen ?? "ledger");
+  const tick = (v: boolean) => {
+    const next = { ...ticks };
+    if (v) next[f.id] = "";
+    else delete next[f.id];
+    setTicks(next);
+  };
+  const n = Math.max(...f.samples, f.n);
+  return (
+    <>
+      <tr className={(open ? "" : "old") + (on ? " ticked" : "")}>
+        <td className="w-8">{gating && open && <input type="checkbox" checked={on} onChange={(e) => tick(e.target.checked)} aria-label={`Tick this ${kind} flag for the rewrite`} />}</td>
+        <td className={"w-24 " + (plan ? "text-running" : kind === "ledger" ? "text-art" : "text-mute")}>
+          {kind}
+          {!plan && n > 1 && (
+            <div className="text-dim">
+              {f.n} of {n} samples
+            </div>
+          )}
+          {f.decision === "accepted" && <div className="num text-keep">patched</div>}
+          {f.decision === "dismissed" && <div className="num text-dim">dismissed</div>}
+          {rewritten.includes(f.id) && <div className="num text-dim">rewritten under it</div>}
+        </td>
+        <td>
+          <div className="quote">{unquote(f.span)}</div>
+          <div className="kv">
+            {plan && (
+              <>
+                <b>plan says</b>
+                <span>{f.statement}</span>
+                <b>table</b>
+                <span>{linkSyms(f.evidence, syms, onSym)}</span>
+              </>
+            )}
+            {f.replacement && (
+              <>
+                <b>must hold</b>
+                <span>{f.replacement}</span>
+              </>
+            )}
+            {!plan && f.patch && (
+              <>
+                <b>patch</b>
+                <span>{f.patch}</span>
+              </>
+            )}
+          </div>
+        </td>
+      </tr>
+      {on && (
+        <tr className="ticked">
+          <td></td>
+          <td className="text-dim">note</td>
+          <td>
+            <input type="text" className="w-full" autoFocus value={ticks[f.id]} placeholder="optional: how to fix it, in your own words" aria-label="Note on this flag" onChange={(e) => setTicks({ ...ticks, [f.id]: e.target.value })} />
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
+/** A beat's flags: the open ones first, the lines a beat says again folded under one row, then its structure flags. */
+function FlagTable({ fs, structure, ...row }: { fs: Flag[]; structure?: Story["profiles"][number] } & Omit<React.ComponentProps<typeof FlagRow>, "f">) {
+  const [unfold, setUnfold] = useState(false);
+  const main = fs.filter((f) => f.screen !== "restated").sort((a, b) => (a.decision === "open" ? 0 : 1) - (b.decision === "open" ? 0 : 1));
+  const restated = fs.filter((f) => f.screen === "restated");
+  const shown = unfold || restated.some((f) => f.id in row.ticks);
+  if (!fs.length && !structure?.flags.length) return null;
+  return (
+    <table className="flags mt-3">
+      <tbody>
+        {main.map((f) => (
+          <FlagRow key={f.id} f={f} {...row} />
+        ))}
+        {restated.length > 0 && (
+          <tr className="pick" onClick={() => setUnfold(!shown)}>
+            <td className="w-8 text-dim">{shown ? "▾" : "▸"}</td>
+            <td colSpan={2} className="text-dim">
+              {restated.length} restated line{restated.length > 1 ? "s" : ""}: a sentence this beat says again
+            </td>
+          </tr>
+        )}
+        {shown && restated.map((f) => <FlagRow key={f.id} f={f} {...row} />)}
+        {structure?.flags.map((q) => (
+          <tr key={q}>
+            <td className="w-8"></td>
+            <td className="w-24 text-art">
+              structure
+              <div className="text-dim">
+                {q} · {structure.answers[q].answer}
+              </div>
+            </td>
+            <td>
+              <div className="quote">{unquote(structure.answers[q].quote)}</div>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+/** The plan the scenes were written from: the plan check's findings, the withholding, and each beat as planned with its findings. */
+function PlanView({ s, ticks, setTicks, gating, sym, onSym }: { s: Story; ticks: Ticks; setTicks: (t: Ticks) => void; gating: boolean; sym: string | null; onSym: (id: string) => void }) {
   const sched = s.schedule!;
   const M = sched.beats.length;
   // one row per withheld item: first beat that lists it, and the beat that reveals it
@@ -1819,8 +1930,62 @@ function ScheduleView({ s }: { s: Story }) {
       .find((x) => x.beat === beat)
       ?.text.split(/\s+/)
       .filter(Boolean).length ?? 0;
+  const count = (screen: string) => s.planFindings.filter((f) => f.screen === screen).length;
+  const wide = s.planFindings.filter((f) => f.beat === undefined);
+  // a symbol picked in the table: the beats that name it, by its id's words and the capitalised names in its text
+  const picked = s.symbols.find((x) => x.id === sym);
+  const words = picked ? [...picked.id.split("."), ...(picked.text.match(/\b\p{Lu}\p{Ll}{3,}/gu) ?? []).slice(0, 2)].map((w) => w.toLowerCase()).filter((w) => w.length > 3) : [];
+  const names = (b: (typeof sched.beats)[number]) => {
+    const text = [b.job, b.known, b.stakes, b.set_piece, ...s.planFindings.filter((f) => f.beat === b.n).map((f) => f.evidence)].join(" ").toLowerCase();
+    return words.some((w) => text.includes(w));
+  };
+  const row = { ticks, setTicks, gating, rewritten: s.rewrittenUnder, syms: s.symbols, onSym };
   return (
     <>
+      <Head note="the schedule read against the ledger before a scene was written; read-only unless a finding is ticked for a rewrite">plan check</Head>
+      <div className="mt-1 flex flex-wrap gap-x-4 text-mute">
+        {s.planFindings.length || s.symbols.length ? (
+          <>
+            <span>
+              <b className="font-medium text-ink">{count("plan-ledger")}</b> against the ledger
+            </span>
+            <span>
+              <b className="font-medium text-ink">{count("plan-static")}</b> linter
+            </span>
+            <span>
+              <b className="font-medium text-ink">{count("plan-calendar")}</b> calendar
+            </span>
+            <span>
+              <b className="font-medium text-ink">{count("plan-membership")}</b> membership
+            </span>
+            <span>
+              <b className="font-medium text-ink">{s.symbols.length}</b> symbols
+            </span>
+            {s.planCapped && <span className="text-art">the reading returned its maximum; the list may be short</span>}
+          </>
+        ) : (
+          <span>no plan check ran on this draft</span>
+        )}
+      </div>
+      {wide.length > 0 && (
+        <table className="flags mt-2">
+          <tbody>
+            {wide.map((f) => (
+              <tr key={f.id}>
+                <td className="w-24 text-running">
+                  {f.screen?.replace("plan-", "")}
+                  {f.question && <div className="text-dim">a question</div>}
+                </td>
+                <td>
+                  {f.statement}
+                  <div className="text-dim">{linkSyms(f.evidence, s.symbols, onSym)}</div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      <div className="mt-6">
       <Head note="what stays hidden until which beat · shaded is withheld, the gold cell is the beat that reveals it">withholding</Head>
       <div className="mt-2 overflow-x-auto">
         <div className="chart" style={{ gridTemplateColumns: `minmax(0, 2fr) repeat(${M}, minmax(0, 1fr))` }}>
@@ -1845,56 +2010,114 @@ function ScheduleView({ s }: { s: Story }) {
           ))}
         </div>
       </div>
-      <div className="mt-2 text-dim">
-        form as derived:{" "}
-        {Object.entries(sched.form)
-          .map(([a, x]) => `${a} ${x}`)
-          .join(" · ")}
       </div>
-      <Head className="mt-6" note="job · known by its end · withheld after it · cap and words written">
+      <Head className="mt-6" note={picked ? `beats that name ${picked.id} · the rest are dimmed` : "job · known by its end · withheld after it · stakes · set piece · the plan check's findings"}>
         beats
       </Head>
-      <table className="mt-1">
-        <thead>
-          <tr>
-            <th className="head w-8">#</th>
-            <th className="head w-24">words</th>
-            <th className="head w-20"></th>
-            <th className="head">beat</th>
-          </tr>
-        </thead>
+      <table className="plan-beats mt-1">
         <tbody>
           {sched.beats.map((b) => {
             const n = wordsOf(b.n);
             const pct = Math.min(100, Math.round((n / b.words) * 100));
+            const pf = s.planFindings.filter((f) => f.beat === b.n);
             return (
-              <tr key={b.n}>
-                <td className="num font-semibold">{b.n}</td>
-                <td className="num">
-                  {n} <span className="text-dim">/ {b.words}</span>
-                  {n > b.words * 1.1 ? <div className="text-art">over the word cap</div> : null}
-                  {b.absorbs !== "none" && <div className="text-mute">absorbs {b.absorbs}</div>}
-                </td>
-                <td className="pt-4">
+              <tr key={b.n} id={`plan-${b.n}`} className={picked && !names(b) ? "old" : ""}>
+                <td className="num w-8 font-semibold">{b.n}</td>
+                <td className="w-28">
+                  <span className="num">
+                    {n} <span className="text-dim">/ {b.words}</span>
+                  </span>
                   <Bar pct={pct} over={n > b.words * 1.1} />
+                  {b.absorbs !== "none" && <div className="text-mute">absorbs {b.absorbs}</div>}
+                  {b.pays && <div className="text-art">pays</div>}
                 </td>
                 <td>
+                  <div className="num text-mute">{b.when}</div>
                   <div className="serif-cell">{b.job}</div>
                   <div className="kv">
                     <b>known</b>
                     <span>{b.known}</span>
                     <b>withheld</b>
-                    <span>{b.withheld.length ? b.withheld.map((w) => `${w.item} → ${w.until}`).join(" · ") : "nothing"}</span>
+                    <span>{b.withheld.length ? b.withheld.map((w) => `${w.item} → ${w.until > M ? "never" : w.until}`).join(" · ") : "nothing"}</span>
                     <b>stakes</b>
                     <span>{b.stakes}</span>
+                    {b.set_piece && b.set_piece !== "none" && (
+                      <>
+                        <b>set piece</b>
+                        <span>{b.set_piece}</span>
+                      </>
+                    )}
                   </div>
+                  {pf.length > 0 && <FlagTable fs={pf} {...row} />}
                 </td>
               </tr>
             );
           })}
         </tbody>
       </table>
+      <div className="mt-2 text-dim">
+        form as derived:{" "}
+        {Object.entries(sched.form)
+          .map(([a, x]) => `${a} ${x}`)
+          .join(" · ")}
+      </div>
     </>
   );
 }
 
+const SYM_KINDS = ["person", "body", "place", "object", "time", "count", "fact"];
+
+/** The plan check's symbol table: the ledger as typed entities and facts, by kind; a click shows the beats that name one. */
+function SymbolTable({ s, sym, setSym }: { s: Story; sym: string | null; setSym: (id: string | null) => void }) {
+  const [q, setQ] = useState("");
+  const hits = (id: string) => s.planFindings.filter((f) => f.evidence.split(/[\s:,;()]+/).includes(id)).length;
+  const kinds = [...SYM_KINDS, ...new Set(s.symbols.map((x) => x.kind).filter((k) => !SYM_KINDS.includes(k)))];
+  const match = (x: Sym) => !q || `${x.id} ${x.text}`.toLowerCase().includes(q.toLowerCase());
+  useEffect(() => {
+    if (sym) document.getElementById(`sym-${sym}`)?.scrollIntoView({ block: "nearest" });
+  }, [sym]);
+  return (
+    <>
+      <Head note={s.symbols.length ? `${s.symbols.length} · the ledger as the plan check read it` : "none: no plan check ran"}>symbols</Head>
+      {s.symbols.length > 0 && <input type="text" className="mt-1 w-full" placeholder="filter symbols" aria-label="Filter symbols" value={q} onChange={(e) => setQ(e.target.value)} />}
+      {kinds.map((k) => {
+        const xs = s.symbols.filter((x) => x.kind === k && match(x));
+        if (!xs.length) return null;
+        return (
+          <div key={k} className="mt-3">
+            <div className="head">
+              {k} · {xs.length}
+            </div>
+            <table className="mt-1">
+              <tbody>
+                {xs.map((x) => {
+                  const h = hits(x.id);
+                  const attrs = Object.entries(x.attrs).filter(([a]) => !["id", "kind", "from"].includes(a));
+                  return (
+                    <tr key={x.id} id={`sym-${x.id}`} className={"pick" + (sym === x.id ? " sel" : "")} tabIndex={0} onClick={() => setSym(sym === x.id ? null : x.id)} onKeyDown={(e) => e.key === "Enter" && setSym(sym === x.id ? null : x.id)}>
+                      <td>
+                        <span className="num text-gold">{x.id}</span>
+                        {h > 0 && <span className="num text-running"> · {h} finding{h > 1 ? "s" : ""}</span>}
+                        <div className="text-mute">{x.text}</div>
+                        {attrs.length > 0 && (
+                          <div className="chips mt-1">
+                            {attrs.map(([a, v]) => (
+                              <span key={a} className="chip num">
+                                {a}={v}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <div className="num text-dim">{x.from}</div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        );
+      })}
+    </>
+  );
+}
