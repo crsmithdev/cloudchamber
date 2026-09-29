@@ -20,10 +20,10 @@
 import type { Pipeline, StepRow } from "../draw.ts";
 import { fill } from "../prompts.ts";
 import { tags } from "../model.ts";
-import { verifyClaims, type Claim, type Verified } from "../check.ts";
+import { readClaims, verifyClaims, type Claim, type Verified } from "../check.ts";
 import { distillate, type Setting } from "../settings.ts";
-import type { Chain } from "../chain.ts";
-import { findingId, parseFindings, type Finding } from "../recur.ts";
+import { chainOf, type Chain } from "../chain.ts";
+import { findingId, normalise, parseFindings, type Finding } from "../recur.ts";
 import type { Schedule } from "../write.ts";
 import type { FindingMeta } from "../artifacts.ts";
 import { lintS1, parseWhen, serial } from "./s1.ts";
@@ -191,7 +191,7 @@ export async function l4PlanVsLedger(p: Pipeline, drawId: string, parent: string
 
 // --- the plan check: S1 + L1 + L3 + L4, stored for gate 2 ---------------------------------
 
-export type PlanCheck = { stored: number; questions: number; capped: boolean; l1: "done" | "failed"; l4: "done" | "failed" | "skipped" };
+export type PlanCheck = { stored: number; questions: number; capped: boolean; l1: "done" | "failed"; l4: "done" | "failed" | "skipped"; claims: "done" | "failed" | "skipped" };
 
 /**
  * The plan check (docs/specs/2026-09-28-story-ir.md §14.5, S3′): S1 on the
@@ -209,7 +209,7 @@ export type PlanCheck = { stored: number; questions: number; capped: boolean; l1
  * `question`, since the ledger under-specifies it rather than contradicts it.
  */
 export async function planCheck(p: Pipeline, drawId: string, parent: string, ledger: string, schedule: Schedule, pass: string): Promise<PlanCheck> {
-  const out: PlanCheck = { stored: 0, questions: 0, capped: false, l1: "failed", l4: "skipped" };
+  const out: PlanCheck = { stored: 0, questions: 0, capped: false, l1: "failed", l4: "skipped", claims: "skipped" };
   const whenOf = (beat: number | null) => schedule.beats.find((b) => b.n === beat)?.when ?? "";
   const store = (step: StepRow, screen: string, f: { beat: number | null; span: string; statement: string; evidence: string; replacement?: string; patch?: string; question?: boolean }) => {
     const span = f.span || f.statement;
@@ -223,6 +223,13 @@ export async function planCheck(p: Pipeline, drawId: string, parent: string, led
     if (f.question) out.questions++;
   };
 
+  // the claims the plan makes about the setting (§15, T1′): gate 1's claims check, on the plan's text instead of the brief's.
+  // Beside L1 and L4, and its own failure only. Under `world` verify searches the web, so it stays at gate 1 and on the scenes.
+  const claims = planClaims(p, drawId, parent, schedule, pass).then((fs) => {
+    out.claims = "done";
+    for (const f of fs) store(f.step, "plan-claims", f);
+  }, () => { out.claims = "failed"; });
+
   // S1, $0, on its own step: the findings stand when L1 fails
   const s1 = lintS1(schedule);
   const staticStep = p.recordStep(drawId, parent, "ir-static", "deterministic", { s1: s1.length });
@@ -234,6 +241,7 @@ export async function planCheck(p: Pipeline, drawId: string, parent: string, led
     l1 = await l1Symbolize(p, drawId, parent, ledger, pass);
     out.l1 = "done";
   } catch {
+    await claims;
     return out;
   }
 
@@ -255,6 +263,24 @@ export async function planCheck(p: Pipeline, drawId: string, parent: string, led
   } catch {
     out.l4 = "failed";
   }
+  await claims;
   return out;
+}
+
+/**
+ * The plan's contradicted claims about the setting, each on the beat whose
+ * field quotes its span. The text sent is each beat's fields as the schedule
+ * holds them, so a span is a string of the schedule and `apply` can replace it.
+ */
+async function planClaims(p: Pipeline, drawId: string, parent: string, schedule: Schedule, pass: string) {
+  const { setting } = p.loadDrawSetting(p.draw(drawId));
+  if (setting?.claims !== "setting") return [];
+  const fields = schedule.beats.flatMap((b) => [b.when, b.job, b.known, b.stakes, b.set_piece].filter(Boolean).map((text) => ({ beat: b.n, text })));
+  const read = await readClaims(p, drawId, fields.map((f) => f.text).join("\n\n"), setting, pass, chainOf(p, drawId), parent);
+  if (!read) return [];
+  return read.verified.filter((v) => v.result === "contradicted").map((v) => ({
+    step: read.step, beat: fields.find((f) => normalise(f.text).includes(normalise(v.span)))?.beat ?? null,
+    span: v.span, statement: v.statement, evidence: v.evidence, replacement: v.replacement, patch: v.patch ?? "",
+  }));
 }
 

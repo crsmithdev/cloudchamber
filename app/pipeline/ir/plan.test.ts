@@ -7,6 +7,8 @@ import { draftView, renderStory } from "../drafts.ts";
 import { PLAN_CAP } from "./s2.ts";
 import { editBeat } from "../drafting.ts";
 import { ofKind } from "../artifacts.ts";
+import { fixture } from "../drafting.fixture.ts";
+import { settingsFixture } from "../settings.fixture.ts";
 
 /**
  * The plan check at gate 2 (docs/specs/2026-09-28-story-ir.md §14.5, S3′): a
@@ -183,6 +185,36 @@ describe("the plan gate", () => {
     expect(stages(model, before)).toEqual(expect.arrayContaining(["schedule", "ir-plan-ledger"]));
     // the beats under 4 are the edited plan's: the replan keeps them
     expect(chainOf(p, at.id).schedule()!.beats[2]!.when).toBe("the third morning");
+  });
+});
+
+describe("the plan's claims about the setting (T1′)", () => {
+  const CLAIM = "The archive in beat 2 lies beyond the gate.";
+  const script = () => draftScript({
+    "check-claims-extract": () => `<claim><span>${PLAN_SPAN}</span><statement>${CLAIM}</statement></claim>`,
+    "check-claims-verify": () => finding(PLAN_SPAN, CLAIM, "none", "Beat 2 does its thing in the chapel.", "the setting · \"the archive stands inside the gate\"", "contradicted"),
+  });
+
+  test("under a setting that is its own authority, a contradicted claim in the plan is a plan finding on its beat, and apply can take its fix", async () => {
+    const sdir = settingsFixture(fixture().dir);
+    const { p, d, draw, model } = await drawn(script(), { id: "basin", dir: sdir, claims: "setting" });
+    const at = await d.draft(draw.id, { plan: true });
+    const extract = model.calls.find((c: any) => c.stage === "check-claims-extract")!;
+    expect(extract.system + extract.prompt).toContain(PLAN_SPAN);
+    const f = chainOf(p, at.id).planFindings().find((x) => x.screen === "plan-claims")!;
+    expect(f).toMatchObject({ beat: 2, span: PLAN_SPAN, source: "plan", replacement: "Beat 2 does its thing in the chapel." });
+    await d.applyPlan(at.id, { findings: [f.id], notes: { [f.id]: "Beat 2 does its thing in the chapel." } });
+    expect(chainOf(p, at.id).schedule()!.raw).toContain("in the chapel");
+  });
+
+  test("without a setting, or under `world`, the plan check reads no claims", async () => {
+    const { d, draw, model } = await drawn(script());
+    await d.draft(draw.id, { plan: true });
+    expect(model.calls.some((c: any) => c.stage.startsWith("check-claims"))).toBe(false);
+    const sdir = settingsFixture(fixture().dir);
+    const w = await drawn(script(), { id: "basin", dir: sdir, claims: "world" });
+    await w.d.draft(w.draw.id, { plan: true });
+    expect(w.model.calls.some((c: any) => c.stage.startsWith("check-claims"))).toBe(false);
   });
 });
 

@@ -6,6 +6,28 @@ goals. Revision 2, the red-teamed order of phases A to F, is in git at
 `5ecdc97`; revision 3 cut it down to four steps and three rules, and
 revision 4 adds the story IR's work after them.
 
+## Revision 5
+
+29 September. Gate 1 folds into the plan gate: IR spec §15, shape A,
+accepted by Chris, then red-teamed (§15.11). ADR-0014 is proposed until T3.
+
+| # | Step | Decides it | Cost |
+|---|---|---|---|
+| T1 | ~~L2, each symbol against the setting, with `amend`~~. Killed before it was built: on `b82d` it kept 0 of the 4 facts gate 1 contradicted. | measured | $4.04, spent |
+| T1′ | **The plan's claims.** The plan check runs gate 1's claims extract and verify on the schedule's beat fields; a contradicted claim is a plan finding that `apply` can take. Built. | step 5's reading, on setting draws | about $1.1 a plan check |
+| 5 | **Read the plan findings**, as below; it now also decides T1′. | Chris | $0 |
+| T2 | The plan gate is the default stop. First decide what `--auto` does when its rule fails: S1′ alone would stop about 29% of unattended drafts. | Chris uses the gate, or not, for two weeks | $0 |
+| T3, T3′ | Retire gate 1; measure the prose-against-prose loss first if Chris reads T3′ as no replay | as §15.8 | $6 for T3′ |
+| T4 | The declared ledger, after step 5 | by ear | about $12 |
+
+Decisions taken with shape A: `--auto` applies no fix of its own; the
+reader check moves to the plan gate with a five-draw kill; T4 waits on
+step 5. T3′ against rule 3 is still Chris's.
+
+Found on the way: the confirm step (28 Sep) now demotes the mark fact of
+`4797` at every layer. Whether gate 1 today still keeps the facts it kept
+on 28 Sep is unknown; finding out is a check replay.
+
 ## Revision 4
 
 Since revision 3, the story IR (`docs/specs/2026-09-28-story-ir.md`) went

@@ -1810,12 +1810,12 @@ describe("the claims screen", () => {
     const flags = ofKind(p.artifacts(draw.id), "finding").filter((a) => a.meta.screen === "claims");
     expect(flags).toHaveLength(1);
     expect(flags[0].meta).toMatchObject({ beat: 3, invalidates: "3", source: "screen", screen: "claims", span: "s3w7 s3w8" });
-    // the extract ran once at the gate and once over the scenes
-    expect(extracts).toBe(2);
+    // the extract ran once at the gate, once on the plan (T1′) and once over the scenes
+    expect(extracts).toBe(3);
     const steps = p.steps(draw.id).filter((s) => s.stage === "check-claims-extract");
-    expect(steps).toHaveLength(2);
-    expect(steps[1].prompt).not.toContain("<vignette");      // the scenes, not the brief
-    expect(steps[1].system_prompt).toContain("s3w7");
+    expect(steps).toHaveLength(3);
+    const scenes = steps.find((s) => s.system_prompt?.includes("s3w7"))!;
+    expect(scenes.prompt).not.toContain("<vignette");      // the scenes, not the brief
   });
 
   test("a draw with no setting runs no claims screen", async () => {
@@ -1897,7 +1897,7 @@ describe("the claims screen", () => {
     await d.draft(draw.id, { profile: "listen", overrides: { "beats.min": 8, "screens.listen.long_share_max": 1 } });
 
     // Claims extraction ran only once during drafting (at the end of scenes), not during first pass or rewrites
-    expect(extracts).toBe(2); // 1 during check, 1 during draft
+    expect(extracts).toBe(3); // 1 during check, 1 on the plan, 1 over the scenes
 
     const chain = chainOf(p, draw.id);
     // Beat 2 was rewritten, so its screen pass is newer than beat 1's screen pass:
@@ -1914,7 +1914,7 @@ describe("the claims screen", () => {
     // a gate-2 rewrite still screens claims, over the beats it re-screens only, so beat 1's flag stays one flag
     for (const n of [1, 2]) {
       await d.rewrite(draw.id, [2]);
-      expect(extracts).toBe(2 + n);
+      expect(extracts).toBe(3 + n);
       const afterClaims = d.view(draw.id).screenFindings.filter((f) => f.screen === "claims");
       expect(afterClaims.filter((f) => f.beat === 1)).toMatchObject([{ span: "s1w7 s1w8" }]);
       expect(new Set(afterClaims.map((f) => f.id)).size).toBe(afterClaims.length);

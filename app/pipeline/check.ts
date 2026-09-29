@@ -316,6 +316,19 @@ async function runClaims(session: BriefSession, authority: ClaimsAuthority, refe
 }
 
 /**
+ * Extract the claims a text makes about the setting or the world, and verify
+ * each one; a claim this chain already verified keeps its verdict. Null when
+ * the setting names no authority or there is no text.
+ */
+export async function readClaims(p: Pipeline, drawId: string, text: string, setting: Setting, pass: string, chain: Chain, parent: string | null): Promise<{ step: StepRow; verified: Verified[] } | null> {
+  const authority: ClaimsAuthority | null = setting.claims;
+  if (!authority || !text.trim()) return null;
+  const reference = authority === "setting" ? distillate(setting) : "";
+  const { step, value: claims } = await p.invoke(drawId, parent, "check-claims-extract", extractPrompt(authority, reference), claimsIn, { context: text });
+  return { step, verified: await verifyClaims(p, drawId, step, claims, authority, reference, pass, chain, true) };
+}
+
+/**
  * The claims a draft makes about its setting, checked after it is written.
  * The checkers read the brief, and a scene invents past it: on one draft of a
  * setting that declares an authority, twelve claims came out of the scenes,
@@ -326,13 +339,9 @@ async function runClaims(session: BriefSession, authority: ClaimsAuthority, refe
  * it, for `rewrite k` to answer.
  */
 export async function screenClaims(p: Pipeline, drawId: string, scenes: { beat: number; text: string }[], setting: Setting, pass: string, chain: Chain, parent: string | null): Promise<Cluster[]> {
-  const authority: ClaimsAuthority | null = setting.claims;
-  if (!authority || !scenes.length) return [];
-  const reference = authority === "setting" ? distillate(setting) : "";
-  const story = scenes.map((s) => s.text).join("\n\n");
-  const { step, value: claims } = await p.invoke(drawId, parent, "check-claims-extract", extractPrompt(authority, reference), claimsIn, { context: story });
-  // a claim this chain already verified against the same authority keeps its verdict, as at the gate
-  const verified = await verifyClaims(p, drawId, step, claims, authority, reference, pass, chain, true);
+  const read = await readClaims(p, drawId, scenes.map((s) => s.text).join("\n\n"), setting, pass, chain, parent);
+  if (!read) return [];
+  const { step, verified } = read;
   const beatOf = (span: string) => scenes.find((s) => normalise(s.text).includes(normalise(span)))?.beat ?? scenes[0].beat;
   const flags: Cluster[] = [];
   for (const f of verified.filter((v) => v.result === "contradicted")) {

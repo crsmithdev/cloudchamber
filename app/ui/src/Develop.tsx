@@ -2011,6 +2011,11 @@ function PlanView({ s, ticks, setTicks, gating, sym, onSym, edits, setEdits }: {
             <span>
               <b className="font-medium text-ink">{count("plan-ledger")}</b> against the ledger
             </span>
+            {count("plan-claims") > 0 && (
+              <span>
+                <b className="font-medium text-ink">{count("plan-claims")}</b> against the setting
+              </span>
+            )}
             <span>
               <b className="font-medium text-ink">{count("plan-static")}</b> linter
             </span>
