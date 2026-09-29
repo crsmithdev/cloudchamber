@@ -31,7 +31,7 @@ Three rules replace the guards of revision 2:
 | G1 idea to drafted story | 59–67 min for a claims chain; the bind is 72% of draft time |
 | G4, G5 repeated work, Claude $ | draft −56%. Check: claims calls halved by C2 (`6a8540f`); a 4400 replay is $4.5–11 |
 | G6 judge $ | −17% (GLM dropped); the rest accepted unmet |
-| Principle 3 | drafts lose to Void of Fears on hook −0.59, presence −0.32, momentum −0.24 (`evals/20260926-where-drafts-lose.md`). No person has heard a draft beside a channel story |
+| Principle 3 | drafts lose to channel F on hook −0.59, presence −0.32, momentum −0.24 (`evals/20260926-where-drafts-lose.md`). No person has heard a draft beside a channel story |
 
 Landed from revision 2: A1 to A5, C2, F1, step 4 dropped, reader check on by
 default.
@@ -40,7 +40,7 @@ default.
 
 | # | Step | Decides it | Cost |
 |---|---|---|---|
-| 1 | **Chris listens.** `cloudchamber listen` on draft `20260924223235-3cee` (unrestricted, listen profile) and one Void of Fears story. Mark where attention goes, and where it goes away. | Chris | $0, a person's hour |
+| 1 | **Chris listens.** `cloudchamber listen` on draft `20260924223235-3cee` (unrestricted, listen profile) and one channel F story. Mark where attention goes, and where it goes away. | Chris | $0, a person's hour |
 | 2 | **Bind at once** (`feature/bind-at-once-main`). One draft of `3cee` with `cloudchamber branch`; time and cost against `663a`'s split; one `lab canon` reading of it and of `3cee`'s stored draft. It lands unless canon doubles or the time does not fall. A scene now reads the unbound text of the beats before it, so canon is the one guard. | canon, time | ~$12 |
 | 3 | **One change for the axis step 1 names** (hook unless the listen says otherwise). Three layers already state hook: `hook-late` (`write.ts:56`) is a screen, a register line and a rewrite line. First find, from the stored steps of `3cee`, why they do not fix the opening. Then change the one layer the accretion rule names. Two drafts, and Chris hears the first two minutes of each against `3cee`'s. The panel at 8 passes a pair checks for a large loss. | Chris; the panel against a loss above 0.5 | ~$30 |
 | 4 | **G1 once**, read from step 3's drafts, with nothing else running. | — | $0 |

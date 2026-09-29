@@ -258,7 +258,7 @@ about $0.72 at 8.
 |---|---|---|
 | G1 | unrestricted: about 2 min ideate, 2–10 min check, 25–42 min draft. Claims chain with two repair rounds: 77 min | first step to last step of the chain |
 | G2 | about 45 min for a writer change: parallel drafts, then GLM | `lab best` `ms.draft` + `ms.judge` |
-| G3 | the score gaps of 24 September against Void of Fears and Vox Mortis | the same pairs, panel and passes |
+| G3 | the score gaps of 24 September against channel F and channel V | the same pairs, panel and passes |
 | G4 | in the draft `9c02`: 113 claims calls, 5 rebinds and 5 structure screens replaced before anything read them. In the check chain `4400` → `350a`: a claims extraction and verify on every pass over text that changed by 2 or 3 sentences, and two second clean passes | calls whose answer a later call replaces before anything reads it, plus claims calls over text a pass has already checked |
 | G5 | $12–14 a listen draft unrestricted; $20–22 under claims; $36.57 for the claims chain, of which $16.03 is ideation, checks and repair | `usage.cost_usd` |
 | G6 | the rule in force: 3 judges, 8 passes a judge, about $0.72 a pair | `cost_usd` a judged pair |

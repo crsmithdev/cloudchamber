@@ -48,7 +48,7 @@ Two consequences follow:
 
 | # | Step | Serves | Cost |
 | --- | --- | --- | --- |
-| 1 | Done: `evals/20260924-against-the-channels.md`. No change detectable since 20 September; Trench Crusade leads Vox Mortis by +2.6 on the text. | 1 | $3.39 |
+| 1 | Done: `evals/20260924-against-the-channels.md`. No change detectable since 20 September; setting A leads channel V by +2.6 on the text. | 1 | $3.39 |
 | 2 | Land `lab best` and the score gap. | 1, 2 | none |
 | 3 | Make best of 3 the default way to draft a real story. Chris reads the winner. | 1 | about $2 a story, and 3 × 40 minutes of subscription |
 | 4 | Fold judging against a source transcript into `lab`, so the scratch script goes. | 2 | none |
@@ -73,7 +73,7 @@ provenance timeline, the constraints table and the template system.
 ## Open questions
 
 - **The panel is a proxy.** It prefers our drafts to the narrated channels by a
-  wide margin (+0.1 to +0.7 against Void of Fears). No person has yet heard a
+  wide margin (+0.1 to +0.7 against channel F). No person has yet heard a
   draft and a channel story side by side to check that. The plan has no step
   for it.
 - **The score gap was chosen after the data was seen**, on one experiment. Each
@@ -81,6 +81,6 @@ provenance timeline, the constraints table and the template system.
 - **Best of N sets its own margin.** `GAP_MARGIN` is 0.15. Against a source,
   four passes a judge spread by up to 0.50 between halves, so one pair needs
   eight. The margin is not yet tested against a person's choice.
-- **Text, not audio.** Against Vox Mortis the panel reads a transcript of an
+- **Text, not audio.** Against channel V the panel reads a transcript of an
   audio production. The +2.6 says our text is ahead, not that our story is the
   better listen.

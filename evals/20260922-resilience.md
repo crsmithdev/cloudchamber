@@ -7,8 +7,8 @@ question: does each change do what it claims, and does the whole pipeline
 still reach parity?
 
 Same seed and source as `evals/20260922-draft-efficiency.md`: *I Survived a
-Plane Crash. We Didn't Crash on Earth*, against `vs-hIS0zHK8` (Void of
-Fears). Everything ran on copies of the store in scratch.
+Plane Crash. We Didn't Crash on Earth*, against `vs-hIS0zHK8` (channel
+F). Everything ran on copies of the store in scratch.
 
 ## Resume, on the real failures of the night
 

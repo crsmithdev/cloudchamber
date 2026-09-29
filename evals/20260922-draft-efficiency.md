@@ -6,7 +6,7 @@ the CLI caches it, and `sceneSignal` asks for the numbers a person would say
 aloud, not the exact number. The question: does the draft cost less, and does
 it lose anything with the judges?
 
-Seed typed from a Void of Fears title, *I Survived a Plane Crash. We Didn't
+Seed typed from a channel F title, *I Survived a Plane Crash. We Didn't
 Crash on Earth*; source `vs-hIS0zHK8` (6,785 words of narration).
 
 ## Method

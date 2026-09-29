@@ -40,10 +40,10 @@ judge can be removed while preserving reading directions.
 | `20260924-vof-before-after` | 3cee vs vs-hIS0zHK8 | comparison | 12 | +0.44 (+) | +0.05 (inside) ✗ | +0.50 (+) ✓ | +0.77 (+) ✓ |
 | `20260924-vof-before-after` | 686f vs vs-hIS0zHK8 | comparison | 12 | +0.09 (inside) | −0.41 (−) ✗ | +0.28 (+) ✗ | +0.41 (+) ✗ |
 | `20260924-vof-before-after` | b7e7 vs vs-hIS0zHK8 | comparison | 12 | +0.67 (+) | +0.09 (inside) ✗ | +0.84 (+) ✓ | +1.06 (+) ✓ |
-| `20260924-tc-vs-vox-mortis` | f20a vs N3-KWeuzKko | comparison | 12 | +2.58 (+) | +2.27 (+) ✓ | +2.69 (+) ✓ | +2.80 (+) ✓ |
-| `20260924-tc-vs-vox-mortis` | 9c02 vs N3-KWeuzKko | comparison | 12 | +2.70 (+) | +2.45 (+) ✓ | +2.70 (+) ✓ | +2.94 (+) ✓ |
-| `20260924-tc-vs-vox-mortis` | de03 vs N3-KWeuzKko | comparison | 12 | +2.60 (+) | +2.31 (+) ✓ | +2.70 (+) ✓ | +2.80 (+) ✓ |
-| `20260924-tc-vs-vox-mortis` | 9c02 vs n6Oe2iRVRnA | comparison | 12 | +2.76 (+) | +2.47 (+) ✓ | +2.73 (+) ✓ | +3.08 (+) ✓ |
+| `20260924-sa-vs-channel-v` | f20a vs N3-KWeuzKko | comparison | 12 | +2.58 (+) | +2.27 (+) ✓ | +2.69 (+) ✓ | +2.80 (+) ✓ |
+| `20260924-sa-vs-channel-v` | 9c02 vs N3-KWeuzKko | comparison | 12 | +2.70 (+) | +2.45 (+) ✓ | +2.70 (+) ✓ | +2.94 (+) ✓ |
+| `20260924-sa-vs-channel-v` | de03 vs N3-KWeuzKko | comparison | 12 | +2.60 (+) | +2.31 (+) ✓ | +2.70 (+) ✓ | +2.80 (+) ✓ |
+| `20260924-sa-vs-channel-v` | 9c02 vs n6Oe2iRVRnA | comparison | 12 | +2.76 (+) | +2.47 (+) ✓ | +2.73 (+) ✓ | +3.08 (+) ✓ |
 
 ## Experiment means
 
@@ -53,12 +53,12 @@ For experiments with multiple arm pairs:
 |---|---|---|---|---|---|
 | `20260924-register-cut-x24` | 360 | −0.25 (−) | −0.22 (−) ✓ | −0.26 (−) ✓ | −0.27 (−) ✓ |
 | `20260924-vof-before-after` | 96 | +0.37 (+) | −0.06 (inside) ✗ | +0.50 (+) ✓ | +0.68 (+) ✓ |
-| `20260924-tc-vs-vox-mortis` | 48 | +2.66 (+) | +2.38 (+) ✓ | +2.71 (+) ✓ | +2.90 (+) ✓ |
+| `20260924-sa-vs-channel-v` | 48 | +2.66 (+) | +2.38 (+) ✓ | +2.71 (+) ✓ | +2.90 (+) ✓ |
 
 ## Verdicts per judge
 
 | Judge | Match rate | Can judge go? | Rationale |
 |---|---|---|---|
 | **Gemini 3.1 Pro** | 15 / 21 groups (71%) | **No** | In `20260924-vof-before-after`, removing Gemini changes the side of 6 of 8 groups. `f8ab` flips from positive (+0.31) to negative (−0.17). Three pairs move from inside the margin to negative (`c933`, `d0fd`, `686f`), and two positive pairs drop into the margin (`3cee`, `b7e7`). |
-| **GLM-4.7** | 18 / 21 groups (86%) | **No under strict per-pair test; Yes under experiment-mean reading** | On all 24-pass runs (8 groups) and all Vox Mortis runs (4 groups), GLM-4.7 matches on 12 of 12 groups. On 4-pass Void of Fears runs, 5 pairs keep side `+`, while 3 pairs (`c933`, `d0fd`, `686f`) move from inside the margin to `+` because Gemini gives strong positive scores. Read as an experiment mean over Void of Fears, the reading holds side `+` (+0.37 with all judges vs +0.50 without GLM). |
-| **GPT-5.1** | 18 / 21 groups (86%) | **No** | Matches on 18 of 21 groups. Like GLM-4.7, its absence shifts the three inside-margin Void of Fears pairs to positive (+0.28 to +0.44). |
+| **GLM-4.7** | 18 / 21 groups (86%) | **No under strict per-pair test; Yes under experiment-mean reading** | On all 24-pass runs (8 groups) and all channel V runs (4 groups), GLM-4.7 matches on 12 of 12 groups. On 4-pass channel F runs, 5 pairs keep side `+`, while 3 pairs (`c933`, `d0fd`, `686f`) move from inside the margin to `+` because Gemini gives strong positive scores. Read as an experiment mean over channel F, the reading holds side `+` (+0.37 with all judges vs +0.50 without GLM). |
+| **GPT-5.1** | 18 / 21 groups (86%) | **No** | Matches on 18 of 21 groups. Like GLM-4.7, its absence shifts the three inside-margin channel F pairs to positive (+0.28 to +0.44). |

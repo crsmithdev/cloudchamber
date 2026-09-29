@@ -59,7 +59,7 @@ describe("recurrence", () => {
       q(1, "he opens the gorget", "How can an unarmed sixty-eight-year-old clerk in a cave open sealed, pressurised chambers that the story says are opened only at Castel Sant'Angelo?", "particulars"),
       q(2, "seven chambers lifted from No Man's Land", "Whose suit is this recovery crew lifting out of the silt, and how did a wearer's seven chambers end up in No Man's Land with no wearer?", "particulars"),
       q(2, "the rod was an assay", "How does Aude know that the priest's rod was an assay and that only nine candidates in all Christendom answered it?", "knowledge"),
-      q(2, "she lets him unbolt her", "How did an armed Paladin come to be sitting in his chamber letting an unarmed heretic unbolt her sealed armour chamber by chamber?", "arrival"),
+      q(2, "she lets him unbolt her", "How did an armed Knight come to be sitting in his chamber letting an unarmed prisoner unbolt her sealed armour chamber by chamber?", "arrival"),
     ];
     const cs = cluster(qs, 1);
     expect(cs).toHaveLength(5);

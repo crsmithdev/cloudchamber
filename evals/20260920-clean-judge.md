@@ -20,13 +20,13 @@ same three order-swapped passes. Nine passes cost about $0.70 a draft.
 
 | run | draw | template | source | notes read | clean |
 |---|---|---|---|---|---|
-| 1 | `70ac` | told | Void of Fears `vs-hIS0zHK8` | 5/9 | **7/9** |
-| 2 | `2f03` | signal, plain | Void Signal `Ap5gN19SWc0` | 9/9 | 9/9 |
-| 3 | `f1a4` | signal, steered | Void Signal `Ap5gN19SWc0` | 8/9 | **9/9** |
-| 4 | `b6bb` | listen, plain | Void Signal `Ap5gN19SWc0` | 3/9 below | **7/9** |
-| 5 | `f8ab` | listen, shaped | Void Signal `1a-yLGuSlM0` | 5/9 | **8/9** |
-| 6 | `c621` | listen, numeral budget | Galactic Horrors `yqo8nPLaV0k` | 9/9 | 9/9 |
-| 7 | `d83e` | listen, hard presence | Void Signal `1a-yLGuSlM0` | 8/9 | **9/9** |
+| 1 | `70ac` | told | channel F `vs-hIS0zHK8` | 5/9 | **7/9** |
+| 2 | `2f03` | signal, plain | channel S `Ap5gN19SWc0` | 9/9 | 9/9 |
+| 3 | `f1a4` | signal, steered | channel S `Ap5gN19SWc0` | 8/9 | **9/9** |
+| 4 | `b6bb` | listen, plain | channel S `Ap5gN19SWc0` | 3/9 below | **7/9** |
+| 5 | `f8ab` | listen, shaped | channel S `1a-yLGuSlM0` | 5/9 | **8/9** |
+| 6 | `c621` | listen, numeral budget | channel G `yqo8nPLaV0k` | 9/9 | 9/9 |
+| 7 | `d83e` | listen, hard presence | channel S `1a-yLGuSlM0` | 8/9 | **9/9** |
 
 47 of 63 becomes **58 of 63**, with two ties. Every draft now reaches
 parity, including the plain `listen` draft that was the one failure. By

@@ -204,8 +204,8 @@ describe("arm pooling of stored runs", () => {
     expect(fmt2(newResult.gap - oldResult.gap)).toBe("-0.10");
   });
 
-  test("tc-vs-vox-mortis re-pools to its published numbers", () => {
-    const rows = allRows.filter((r) => r.experiment === "20260924-tc-vs-vox-mortis");
+  test("sa-vs-channel-v re-pools to its published numbers", () => {
+    const rows = allRows.filter((r) => r.experiment === "20260924-sa-vs-channel-v");
     const tcPairs = [
       ["20260924224048-f20a", "N3-KWeuzKko"],
       ["20260924224759-9c02", "N3-KWeuzKko"],

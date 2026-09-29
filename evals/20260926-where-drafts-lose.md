@@ -5,7 +5,7 @@ draft against a channel transcript in `bank/judgements.jsonl`, pooled by axis
 as the score gap (our score minus the story's, 1–5 scale). Both reading orders
 are pooled; read one order at a time, the gap swings by a point or more.
 
-## Void of Fears (`vs-hIS0zHK8`): 8 drafts, 96 passes
+## channel F (`vs-hIS0zHK8`): 8 drafts, 96 passes
 
 | Axis | Mean gap | Share of passes lost |
 |---|---|---|
@@ -18,7 +18,7 @@ are pooled; read one order at a time, the gap swings by a point or more.
 | feeling | +1.18 | 14% |
 | cost | +1.26 | 3% |
 
-## Vox Mortis: 3 drafts, 48 passes, two stories
+## channel V: 3 drafts, 48 passes, two stories
 
 Every axis is won by +2.1 to +3.5, and no pass is lost. It cannot tell a
 better draft from a good one.

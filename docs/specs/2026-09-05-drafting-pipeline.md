@@ -770,7 +770,7 @@ edit, from inside the worktree, and the turn reports what ran.
 
 A second shaped template, `signal`, for the long narrated channels whose
 stories follow one specialist close, in the third person, with an
-ensemble, a mission and a return (Void Signal). `[profiles.signal]` in
+ensemble, a mission and a return (channel S). `[profiles.signal]` in
 `draft.toml`: 10,000 words, 10 to 14 beats of at most 1,100, third past,
 linear, prose, open ending, `structure.template = "signal"`. The schedule
 ask carries `scheduleSignal`: the noticing at an odd hour, the ensemble
