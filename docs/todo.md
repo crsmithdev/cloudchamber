@@ -26,6 +26,20 @@ labels: [ir]
 ## 3. Decide IR spec §15.9 (gate 1 into the IR): shape A or B, auto amend, T3′, reader check, T4 timing; then T1 (L2 at the plan gate)
 ---
 id: 3
+status: done
+created: 2026-09-29
+updated: 2026-09-29
+priority: medium
+labels: [ir]
+---
+
+### Notes
+
+- 2026-09-29 10:07: Shape A accepted; red-teamed; L2 killed at 0 of 4; T1′ (claims on the plan) landed in 8089752
+
+## 4. T2 prerequisite: decide what --auto does when the plan-gate rule fails (S1′ alone stops about 29% of unattended drafts); and whether T3′ ($6) is a check replay under rule 3
+---
+id: 4
 status: open
 created: 2026-09-29
 updated: 2026-09-29
