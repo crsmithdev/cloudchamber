@@ -18,8 +18,8 @@ from a design to a landed plan check, `f0f90fd`:
 | S3′ plan findings at gate 2 | landed, on by default (`screens.enabled` lists `plan`), about $0.45 a draft |
 | Gate 2 ticks | landed: each flag has a checkbox and a note, one rewrite sends the ticked flags, and a plan view shows the schedule, its findings and the symbol table |
 
-Steps 1 to 4 below are still open: the store and git hold no listen, and
-`feature/bind-at-once-main` is not merged. Steps 5 to 9 are new. They
+Step 2 is done (`46c3057`); steps 1, 3 and 4 are open: the store and git hold
+no listen, and step 3 waits on it. Steps 5 to 9 are new. They
 follow the three rules: steps 5 and 9 cost $0, and steps 6 to 8 are small
 code changes decided by reading the code and one run. Steps 6 to 8 are done.
 
@@ -59,7 +59,7 @@ default.
 | # | Step | Decides it | Cost |
 |---|---|---|---|
 | 1 | **Chris listens.** `cloudchamber listen` on draft `20260924223235-3cee` (unrestricted, listen profile) and one channel F story. Mark where attention goes, and where it goes away. | Chris | $0, a person's hour |
-| 2 | **Bind at once** (`feature/bind-at-once-main`). One draft of `3cee` with `cloudchamber branch`; time and cost against `663a`'s split; one `lab canon` reading of it and of `3cee`'s stored draft. It lands unless canon doubles or the time does not fall. A scene now reads the unbound text of the beats before it, so canon is the one guard. | canon, time | ~$12 |
+| 2 | **Bind at once.** Done in `46c3057` (26 Sep), on main with its sessions, low effort and edits in place: measured on `3cee` (branch `1b09`), the draft took 10.0 min and $3.22 against 29.5 min and $8.02, canon 0.83 a beat for both, panel gap +0.09 within margin. `e177cd8` gave rewrites the same rule. `feature/bind-at-once-main` is superseded and not merged. | canon, time | done |
 | 3 | **One change for the axis step 1 names** (hook unless the listen says otherwise). Three layers already state hook: `hook-late` (`write.ts:56`) is a screen, a register line and a rewrite line. First find, from the stored steps of `3cee`, why they do not fix the opening. Then change the one layer the accretion rule names. Two drafts, and Chris hears the first two minutes of each against `3cee`'s. The panel at 8 passes a pair checks for a large loss. | Chris; the panel against a loss above 0.5 | ~$30 |
 | 4 | **G1 once**, read from step 3's drafts, with nothing else running. | — | $0 |
 | 5 | **Read the plan findings (S3′'s own test).** On the next five drafts, Chris reads each plan finding at gate 2 and marks it real or not. The findings are already there; the reading is the cost. Kill: fewer than half real over five drafts turns `plan` off in `draft.toml`. | Chris | $0, the plan check's ~$0.45 a draft |
