@@ -23,6 +23,10 @@ priority: medium
 labels: [ir]
 ---
 
+### Notes
+
+- 2026-09-29 16:54: 7fdc63f: mark each finding real / not real at the plan gate (chips, or gate <draw> mark --finding ID --real|--not-real); stored as reading artifacts
+
 ## 3. Decide IR spec §15.9 (gate 1 into the IR): shape A or B, auto amend, T3′, reader check, T4 timing; then T1 (L2 at the plan gate)
 ---
 id: 3
@@ -40,6 +44,20 @@ labels: [ir]
 ## 4. T2 prerequisite: decide what --auto does when the plan-gate rule fails (S1′ alone stops about 29% of unattended drafts); and whether T3′ ($6) is a check replay under rule 3
 ---
 id: 4
+status: done
+created: 2026-09-29
+updated: 2026-09-29
+priority: medium
+labels: [ir]
+---
+
+### Notes
+
+- 2026-09-29 16:54: 7fdc63f: --auto passes the plan gate and its findings show at gate 2 (option b); Chris skipped T3′
+
+## 5. T3: retire gate 1's code; first decide where the brief's structure, resemblance and reader checks go, since a manual draw no longer runs them (IR spec §15.12)
+---
+id: 5
 status: open
 created: 2026-09-29
 updated: 2026-09-29
