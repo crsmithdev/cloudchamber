@@ -29,6 +29,7 @@ export type GateArgs = {
   checks?: string[]; samples?: number;                                  // check
   auto?: boolean; plan?: boolean; profile?: string; overrides?: Overrides; // draft: `plan` stops it at the plan gate
   at_beat?: number;                                                     // branch, replan
+  real?: boolean;                                                       // mark: the finding read as real, or not, replan
   edits?: PlanEdit[];                                                   // apply: fields of beats the operator rewrote at the plan gate
   models?: Record<string, string>;                                      // any action: {stage or group: model}, set on the draw before it runs
 };
@@ -41,6 +42,9 @@ export type GateCommand = { action: GateAction; draw: string | null; running: bo
 
 /** The answer an adapter gives back: which draw to show, whether work is still running, and the payload. */
 export type GateResult = { draw: string | null; running: boolean; payload: unknown };
+
+/** A manual draw drafts on from its brief and stops at the plan gate; an auto draw stops at its brief as before. */
+const toPlan = (d: Drafting, id: string) => (d.p.draw(id).mode === "manual" ? d.draft(id, { plan: true }) : d.p.draw(id));
 
 const need = <T>(v: T | undefined, what: string): T => {
   if (v === undefined || v === null || v === "") throw new Error(`${what} required`);
@@ -59,10 +63,11 @@ export function gateCommand(p: Pipeline, d: Drafting, id: string, action: string
   const cmd = (running: boolean, draw: string | null, done: unknown): GateCommand =>
     ({ action: action as GateAction, draw, running, done: Promise.resolve(done) });
   switch (action) {
-    case "choose": return cmd(true, id, p.choose(id, need(a.step_id, "step_id")));
+    // a person's draw goes on from its brief to the plan gate: gate 1 is not a stop (docs/specs/2026-09-28-story-ir.md §15, T2)
+    case "choose": return cmd(true, id, p.choose(id, need(a.step_id, "step_id")).then(() => toPlan(d, id)));
     case "fork": {
       const forkId = newDrawId();
-      return cmd(true, forkId, p.fork(id, need(a.step_id, "step_id"), forkId, a.premise));
+      return cmd(true, forkId, p.fork(id, need(a.step_id, "step_id"), forkId, a.premise).then(() => toPlan(d, forkId)));
     }
     case "flag": return cmd(false, id, p.flag(id, note));
     case "archive": return cmd(false, id, p.archive(id, true));
@@ -81,7 +86,11 @@ export function gateCommand(p: Pipeline, d: Drafting, id: string, action: string
     case "hold": return cmd(false, id, d.hold(id));
     case "keep": return cmd(false, id, d.keep(id, note));
     case "apply": return cmd(true, id, d.applyPlan(id, { findings: a.findings, notes: a.notes, edits: a.edits }));
-    case "replan": return cmd(true, id, d.replan(id, Number(need(a.at_beat, "at_beat")), need(a.instruction, "instruction")));
+    case "replan": return cmd(true, id, d.replan(id, Number(need(a.at_beat, "at_beat")), a.instruction ?? "", { profile: a.profile, overrides: a.overrides }));
+    case "mark": {
+      if (typeof a.real !== "boolean") throw new Error("real required: true or false");
+      return cmd(false, null, d.mark(id, need(a.finding, "finding"), a.real, note));
+    }
     case "write": return cmd(true, id, d.writeScenes(id));
     case "rewrite": return cmd(true, id, d.rewrite(id, a.beats?.length ? a.beats.map(Number) : [Number(need(a.beat, "beat"))], { findings: a.findings, notes: a.notes, instruction: a.instruction }));
     case "check": return cmd(true, id, d.check(id, { checks: a.checks, samples: a.samples }));

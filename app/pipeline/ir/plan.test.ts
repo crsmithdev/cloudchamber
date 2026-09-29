@@ -9,6 +9,8 @@ import { editBeat } from "../drafting.ts";
 import { ofKind } from "../artifacts.ts";
 import { fixture } from "../drafting.fixture.ts";
 import { settingsFixture } from "../settings.fixture.ts";
+import { gateCommand } from "../gate.ts";
+import { draftView as viewOf } from "../drafts.ts";
 
 /**
  * The plan check at gate 2 (docs/specs/2026-09-28-story-ir.md §14.5, S3′): a
@@ -215,6 +217,54 @@ describe("the plan's claims about the setting (T1′)", () => {
     const w = await drawn(script(), { id: "basin", dir: sdir, claims: "world" });
     await w.d.draft(w.draw.id, { plan: true });
     expect(w.model.calls.some((c: any) => c.stage.startsWith("check-claims"))).toBe(false);
+  });
+});
+
+describe("no gate 1 stop for a person's draw (T2)", () => {
+  test("a manual choose builds the brief and drafts on to the plan gate, with no check", async () => {
+    const { p, d, draw, model } = await drawn(draftScript(), undefined, "manual");
+    expect(p.draw(draw.id).status).toBe("awaiting_gate");
+    const step = p.candidates(draw.id)[0]!.step_id;
+    const out = (await gateCommand(p, d, draw.id, "choose", { step_id: step }).done) as { status: string };
+    expect(out.status).toBe("awaiting_plan_gate");
+    expect(model.calls.some((c: any) => c.stage.startsWith("check-") && !c.stage.startsWith("check-claims"))).toBe(false);
+    expect(model.calls.map((c: any) => c.stage)).toEqual(expect.arrayContaining(["schedule", "ir-symbolize", "ir-plan-ledger"]));
+    expect(model.calls.some((c: any) => c.stage === "scene")).toBe(false);
+  });
+
+  test("an auto draw still stops at its brief", async () => {
+    const { p, draw } = await drawn();
+    expect(p.draw(draw.id).status).toBe("done");
+  });
+});
+
+describe("reading a plan finding (step 5)", () => {
+  test("mark records real or not beside the finding; the finding stays open; the view shows the reading", async () => {
+    const { p, d, draw } = await drawn();
+    const at = await d.draft(draw.id, { plan: true });
+    const f = chainOf(p, at.id).planFindings()[0]!;
+    await gateCommand(p, d, at.id, "mark", { finding: f.id, real: false }).done;
+    expect(viewOf(p, at.id).readings[f.id]).toBe("not real");
+    await gateCommand(p, d, at.id, "mark", { finding: f.id, real: true }).done;
+    expect(viewOf(p, at.id).readings[f.id]).toBe("real");
+    expect(chainOf(p, at.id).decision(f.id).decision).toBe("open");
+    expect(() => gateCommand(p, d, at.id, "mark", { finding: f.id })).toThrow(/real required/);
+    expect(() => gateCommand(p, d, at.id, "mark", { finding: "f-nope", real: true })).toThrow(/no plan finding/);
+  });
+});
+
+describe("re-plan under other settings", () => {
+  test("a profile or an override plans again from beat 1 under the new configuration; from another beat it is refused", async () => {
+    const { p, d, draw, model } = await drawn();
+    const at = await d.draft(draw.id, { plan: true });
+    await expect(d.replan(at.id, 2, "", { overrides: { "scenes.order": "parallel" } })).rejects.toThrow(/from beat 1/);
+    const before = model.calls.length;
+    const re = await d.replan(at.id, 1, "", { overrides: { "scenes.order": "parallel" } });
+    expect(re.status).toBe("awaiting_plan_gate");
+    expect(JSON.parse(p.draw(at.id).draft_config!).config.scenes.order).toBe("parallel");
+    const sched = model.calls.slice(before).find((c: any) => c.stage === "schedule")!;
+    expect(sched.prompt).not.toMatch(/kept word for word|beats 1 to/i);
+    await expect(d.replan(at.id, 1, "")).rejects.toThrow(/instruction required/);
   });
 });
 

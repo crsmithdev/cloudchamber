@@ -8,6 +8,7 @@ import { Pipeline } from "../pipeline/draw.ts";
 import { loadDraftConfig } from "../pipeline/draftconfig.ts";
 import { buildApi, Jobs } from "./api.ts";
 import { OUTPUT } from "../pipeline/paths.ts";
+import { draftScript } from "../pipeline/drafting.fixture.ts";
 import { settingsFixture } from "../pipeline/settings.fixture.ts";
 
 const CELLS = ["informational", "mixed", "involved"].flatMap((v) => ["non-narrative", "mixed", "narrative"].map((m) => [v, m]));
@@ -22,7 +23,10 @@ async function setup() {
   const ins = db.query("INSERT INTO passages (id, story_id, text, words, stratum, position, seed, first_seen, voice, mode) VALUES (?, ?, ?, 200, 0, 0, 0, 'now', ?, ?)");
   CELLS.forEach(([v, m], i) => { ins.run(`a${i}`, "scp/a", `passage a${i}`, v, m); ins.run(`b${i}`, "d1/b", `passage b${i}`, v, m); });
   db.exec(`INSERT INTO themes (id, text, attestation, stories, drafted_at) VALUES ('t1', 'A theme.', 1, '["scp/a"]', 'now')`);
+  // a person's choose drafts on to the plan gate: the plan stages come from the drafting fixture
+  const plan: Record<string, any> = draftScript();
   const model = new FakeModel({
+    ...Object.fromEntries(["ledger-extract", "schedule", "ir-symbolize", "ir-plan-ledger"].map((k) => [k, plan[k]])),
     premises: () => premises, execute: (p: string) => `<vignette>${/Premise: (P\d)/.exec(p)?.[1]} ${"w ".repeat(400)}</vignette>`,
     outline: () => outline,
     context: () => "<vignette>ctx</vignette>", ending: () => "<ending>end</ending>",
@@ -143,9 +147,10 @@ describe("api", () => {
     expect(flag.body.payload.flagged).toBe(1);
     const chosen = await j("POST", `/api/draws/${id}/gate`, { action: "choose", step_id: r.body.candidates[1].step_id });
     expect(chosen.code).toBe(202);
-    for (let i = 0; i < 50 && pipeline.draw(id).status !== "done"; i++) await Bun.sleep(10);
+    for (let i = 0; i < 100 && pipeline.draw(id).status !== "awaiting_plan_gate"; i++) await Bun.sleep(10);
     const done = await j("GET", `/api/draws/${id}`);
-    expect(done.body.draw.status).toBe("done");
+    // no gate 1 stop: the brief is built, then planned and checked, and the draw waits at the plan gate
+    expect(done.body.draw.status).toBe("awaiting_plan_gate");
     expect(done.body.draw.gate_method).toBe("manual");
     // the brief exists now, so a check would run the four that need no setting; claims is out, the draw is unrestricted
     expect(done.body.checks_next).toEqual(["ledger", "structure", "resemblance", "reader"]);

@@ -1240,13 +1240,15 @@ function Profiles({ f }: { f: Findings }) {
 
 const AXES: Record<string, string[]> = { tense: ["past", "present"], person: ["first", "second", "third"], chronology: ["linear", "nonlinear"], container: ["prose", "document", "interleaved"] };
 
-function DraftSettings({ d, onClose, onDraft }: { d: Detail; onClose: () => void; onDraft: (b: { auto?: boolean; plan?: boolean; profile?: string; overrides?: Record<string, string | number>; models?: Record<string, string> }) => void }) {
+/** The drafting settings. `again`: at the plan gate, where the settings plan the draft again from its first beat. */
+function DraftSettings({ d, onClose, onDraft, again }: { d: Detail; onClose: () => void; onDraft: (b: { auto?: boolean; plan?: boolean; profile?: string; overrides?: Record<string, string | number>; models?: Record<string, string> }) => void; again?: boolean }) {
   const [cfg, setCfg] = useState<DraftConfigView | null>(null);
   const [profile, setProfile] = useState<string>("");
   const [models, setModels] = useState<Record<string, string>>({});
   const [v, setV] = useState<Record<string, string>>({});
   const [auto, setAuto] = useState(false);
-  const [plan, setPlan] = useState(false);
+  // a person's draft stops at the plan by default (docs/specs/2026-09-28-story-ir.md §15, T2)
+  const [plan, setPlan] = useState(true);
   useEffect(() => {
     api.draftConfig().then(setCfg);
   }, []);
@@ -1339,7 +1341,7 @@ function DraftSettings({ d, onClose, onDraft }: { d: Detail; onClose: () => void
       <Field label="Scenes" help="Sequential carries the text so far into each scene call. Parallel writes all beats at once from the schedule alone.">
         <Seg label="Scene order" value={val("scenes.order")} options={["sequential", "parallel"]} onChange={set("scenes.order")} />
       </Field>
-      {!checked && (
+      {!checked && !again && (
         <Field
           label="Check"
           help="This brief has not been checked. Skip drafts it as it stands (one ledger extraction supplies the ledger). Auto runs the check, accepts what recurred in every sample with evidence, dismisses the rest, repairs once and re-checks, then drafts and stops for you to review the draft."
@@ -1347,12 +1349,14 @@ function DraftSettings({ d, onClose, onDraft }: { d: Detail; onClose: () => void
           <Seg label="Check" value={auto ? "auto" : "skip"} options={["skip", "auto"]} onChange={(x) => setAuto(x === "auto")} />
         </Field>
       )}
-      <Field label="Plan" help="Stop at the plan: plan the draft and check the plan, then wait before any scene. You fix the plan, plan it again from a beat, or write the draft from it.">
-        <Seg label="Plan" value={plan ? "stop at the plan" : "write through"} options={["write through", "stop at the plan"]} onChange={(x) => setPlan(x === "stop at the plan")} />
-      </Field>
+      {!again && (
+        <Field label="Plan" help="Stop at the plan: plan the draft and check the plan, then wait before any scene. You fix the plan, plan it again from a beat, or write the draft from it.">
+          <Seg label="Plan" value={plan ? "stop at the plan" : "write through"} options={["write through", "stop at the plan"]} onChange={(x) => setPlan(x === "stop at the plan")} />
+        </Field>
+      )}
       <div className="actions">
         <Btn variant="primary" pad onClick={() => onDraft({ auto, plan: plan || undefined, profile: profile || undefined, overrides: Object.keys(overrides).length ? overrides : undefined, models: Object.keys(models).length ? models : undefined })}>
-          draft
+          {again ? "plan again under these settings" : "draft"}
         </Btn>
       </div>
     </div>
@@ -1376,6 +1380,7 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
   // under "fix the plan": a beat's lines rewritten in the plan view
   const [edits, setEdits] = useState<Edits>({});
   const id = d.draw.id;
+  const marks = useMarks(id, s);
   useEffect(() => {
     api
       .story(id)
@@ -1605,7 +1610,7 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
       <div className="drawbody wide">
         <div className="min-w-0">
           {view === "plan" && s.schedule ? (
-            <PlanView s={s} ticks={ticks} setTicks={setTicks} gating={gating} sym={sym} onSym={onSym} edits={edits} setEdits={gating && how === "plan" ? setEdits : undefined} />
+            <PlanView s={s} ticks={ticks} setTicks={setTicks} gating={gating} sym={sym} onSym={onSym} edits={edits} setEdits={gating && how === "plan" ? setEdits : undefined} {...marks} />
           ) : (
             s.scenes.map((sc) => {
               const fl = flagsFor(sc.beat),
@@ -1631,7 +1636,7 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
                     beat {sc.beat}
                   </Head>
                   <Md className="mt-2" text={sc.text} />
-                  <FlagTable fs={[...fl.ledger, ...fl.plan]} structure={fl.structure} ticks={ticks} setTicks={setTicks} gating={gating} rewritten={s.rewrittenUnder} syms={s.symbols} onSym={onSym} />
+                  <FlagTable fs={[...fl.ledger, ...fl.plan]} structure={fl.structure} ticks={ticks} setTicks={setTicks} gating={gating} rewritten={s.rewrittenUnder} syms={s.symbols} onSym={onSym} {...marks} />
                 </div>
               );
             })
@@ -1858,8 +1863,22 @@ function linkSyms(text: string, syms: Sym[], onSym: (id: string) => void): React
   return out;
 }
 
+/** A person's reading of each plan finding: real, or not (plan step 5). */
+type Readings = Record<string, "real" | "not real">;
+
+/** The readings as stored, with the ones made on this page over them: a mark writes no step, so the story is not fetched again. */
+function useMarks(id: string, s: Story | null) {
+  const [mine, setMine] = useState<Readings>({});
+  const readings = { ...(s?.readings ?? {}), ...mine };
+  const onMark = (fid: string, real: boolean) => {
+    setMine({ ...mine, [fid]: real ? "real" : "not real" });
+    api.gate(id, { action: "mark", finding: fid, real }).catch(() => setMine(({ [fid]: _, ...rest }) => rest));
+  };
+  return { readings, onMark };
+}
+
 /** One flag or plan finding at gate 2: a box to tick while it is open, and a note under it once ticked. */
-function FlagRow({ f, ticks, setTicks, gating, rewritten, syms, onSym, fixing }: { f: Flag; ticks: Ticks; setTicks: (t: Ticks) => void; gating: boolean; rewritten: string[]; syms: Sym[]; onSym: (id: string) => void; fixing?: boolean }) {
+function FlagRow({ f, ticks, setTicks, gating, rewritten, syms, onSym, fixing, readings, onMark }: { f: Flag; ticks: Ticks; setTicks: (t: Ticks) => void; gating: boolean; rewritten: string[]; syms: Sym[]; onSym: (id: string) => void; fixing?: boolean; readings?: Readings; onMark?: (id: string, real: boolean) => void }) {
   const open = f.decision === "open";
   const on = f.id in ticks;
   const plan = f.source === "plan";
@@ -1885,6 +1904,15 @@ function FlagRow({ f, ticks, setTicks, gating, rewritten, syms, onSym, fixing }:
           {f.decision === "accepted" && !rewritten.includes(f.id) && <div className="num text-keep">patched</div>}
           {f.decision === "dismissed" && <div className="num text-dim">dismissed</div>}
           {rewritten.includes(f.id) && <div className="num text-dim">rewritten under it</div>}
+          {plan && onMark && (
+            <div className="mt-1 flex gap-1" role="group" aria-label="Your reading of this plan finding">
+              {(["real", "not real"] as const).map((r) => (
+                <Chip key={r} pressed={readings?.[f.id] === r} onClick={() => onMark(f.id, r === "real")} title={r === "real" ? "This names a real problem in the plan." : "This names no real problem in the plan."}>
+                  {r}
+                </Chip>
+              ))}
+            </div>
+          )}
         </td>
         <td>
           <div className="quote">{unquote(f.span)}</div>
@@ -1967,7 +1995,7 @@ function FlagTable({ fs, structure, ...row }: { fs: Flag[]; structure?: Story["p
 }
 
 /** The plan the scenes were written from: the plan check's findings, the withholding, and each beat as planned with its findings. */
-function PlanView({ s, ticks, setTicks, gating, sym, onSym, edits, setEdits }: { s: Story; ticks: Ticks; setTicks: (t: Ticks) => void; gating: boolean; sym: string | null; onSym: (id: string) => void; edits?: Edits; setEdits?: (e: Edits) => void }) {
+function PlanView({ s, ticks, setTicks, gating, sym, onSym, edits, setEdits, readings, onMark }: { s: Story; ticks: Ticks; setTicks: (t: Ticks) => void; gating: boolean; sym: string | null; onSym: (id: string) => void; edits?: Edits; setEdits?: (e: Edits) => void; readings?: Readings; onMark?: (id: string, real: boolean) => void }) {
   const sched = s.schedule!;
   const M = sched.beats.length;
   // one row per withheld item: first beat that lists it, and the beat that reveals it
@@ -1994,7 +2022,7 @@ function PlanView({ s, ticks, setTicks, gating, sym, onSym, edits, setEdits }: {
     const text = [b.job, b.known, b.stakes, b.set_piece, ...s.planFindings.filter((f) => f.beat === b.n).map((f) => f.evidence)].join(" ").toLowerCase();
     return words.some((w) => text.includes(w));
   };
-  const row = { ticks, setTicks, gating, rewritten: s.rewrittenUnder, syms: s.symbols, onSym, fixing: !!setEdits };
+  const row = { ticks, setTicks, gating, rewritten: s.rewrittenUnder, syms: s.symbols, onSym, fixing: !!setEdits, readings, onMark };
   // at the plan gate a beat's fields can be rewritten in place; elsewhere they are read-only
   const field = (b: (typeof sched.beats)[number], f: EditField, value: string, className?: string) =>
     setEdits ? (
@@ -2174,7 +2202,9 @@ function PlanGate({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<an
   const [sym, setSym] = useState<string | null>(null);
   const [from, setFrom] = useState(1);
   const [instruction, setInstruction] = useState("");
+  const [settings, setSettings] = useState(false);
   const id = d.draw.id;
+  const marks = useMarks(id, s);
   useEffect(() => {
     api
       .story(id)
@@ -2200,6 +2230,18 @@ function PlanGate({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<an
   };
   const onSym = (x: string) => setSym(x);
   const M = s.schedule.beats.length;
+  if (settings)
+    return (
+      <DraftSettings
+        d={d}
+        again
+        onClose={() => setSettings(false)}
+        onDraft={(b) => {
+          setSettings(false);
+          gate("replan", { at_beat: 1, profile: b.profile, overrides: b.overrides, models: b.models });
+        }}
+      />
+    );
   return (
     <>
       {gating && (
@@ -2208,6 +2250,11 @@ function PlanGate({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<an
             write the draft
           </Btn>
           <span className="text-mute">{M} beats · no scene written yet</span>
+          <span className="end">
+            <Btn variant="quiet" onClick={() => setSettings(true)} title="The length, the beats, the form and the profile. New settings plan the draft again from its first beat.">
+              settings
+            </Btn>
+          </span>
         </div>
       )}
       {gating && (
@@ -2259,7 +2306,7 @@ function PlanGate({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<an
       )}
       <div className="drawbody wide mt-4">
         <div className="min-w-0">
-          <PlanView s={s} ticks={ticks} setTicks={setTicks} gating={gating} sym={sym} onSym={onSym} edits={edits} setEdits={gating ? setEdits : undefined} />
+          <PlanView s={s} ticks={ticks} setTicks={setTicks} gating={gating} sym={sym} onSym={onSym} edits={edits} setEdits={gating ? setEdits : undefined} {...marks} />
         </div>
         <div className="aside min-w-0">
           <SymbolTable s={s} sym={sym} setSym={setSym} />

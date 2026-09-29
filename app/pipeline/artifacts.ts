@@ -41,10 +41,13 @@ type BriefMeta = { repaired_from?: string };
 /** A draft-wide screen report; its content is the report's JSON. */
 type ReportMeta = { pass: string; source: "screen"; screen: string };
 
+/** A person's reading of a plan finding (plan step 5); the content is "real" or "not real". On the finding's own step; the latest per finding holds. */
+type ReadingMeta = { finding: string; real: boolean; note: string; at: string };
+
 export type MetaByKind = {
   finding: FindingMeta; profile: ProfileMeta; scene: SceneMeta; pass: PassMeta; ledger: LedgerMeta; schedule: ScheduleMeta;
   vignette: PartMeta; outline: PartMeta; ending: PartMeta; job: PartMeta; claim: ClaimMeta; auto: AutoMeta;
-  premise: PremiseMeta; brief: BriefMeta; slop: ReportMeta; listen: ReportMeta;
+  premise: PremiseMeta; brief: BriefMeta; slop: ReportMeta; listen: ReportMeta; reading: ReadingMeta;
 };
 export type Kind = keyof MetaByKind;
 type Meta = Record<string, any>;

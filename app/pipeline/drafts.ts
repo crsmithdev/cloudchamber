@@ -24,6 +24,8 @@ export type DraftView = {
   /** The plan check's findings, read-only (spec 2026-09-28-story-ir §14.5, S3′); `planCapped` when L4 returned its maximum and the list may be short. */
   planFindings: FindingView[];
   planCapped: boolean;
+  /** A person's reading of each plan finding read so far (plan step 5): real, or not. */
+  readings: Record<string, "real" | "not real">;
   /** The symbol table the plan check read the schedule against: the draw's latest L1 reading, or none. */
   symbols: Sym[];
   /** The flags the scenes as they stand were rewritten under, ticked at gate 2. */
@@ -59,7 +61,10 @@ export function draftView(p: Pipeline, drawId: string): DraftView {
   const l1 = chain.steps().filter((s) => s.stage === "ir-symbolize" && s.status === "done" && s.parsed).at(-1);
   // every scene written under a ticked flag, not only the scenes as they stand: a patch after the rewrite drops the mark
   const rewrittenUnder = [...new Set(ofKind(p.artifacts(drawId), "scene").flatMap((a) => (a.meta.rewrite_finding ?? "").split(", ").filter(Boolean)))];
-  return { schedule: chain.schedule(), scenes, profiles: chain.screenProfiles(), screenFindings: chain.screenFindings(), planFindings, planCapped: planFindings.filter((f) => f.screen === "plan-ledger").length >= PLAN_CAP, symbols: l1 ? (JSON.parse(l1.parsed!) as Sym[]) : [], rewrittenUnder, slop: chain.slop(), listen: chain.listen(), judge: chain.judge(), directions: directionsOf(p, drawId) };
+  // the latest reading of each finding: artifacts come oldest first
+  const readings: Record<string, "real" | "not real"> = {};
+  for (const a of ofKind(p.artifacts(drawId), "reading")) readings[a.meta.finding] = a.meta.real ? "real" : "not real";
+  return { schedule: chain.schedule(), scenes, profiles: chain.screenProfiles(), screenFindings: chain.screenFindings(), planFindings, planCapped: planFindings.filter((f) => f.screen === "plan-ledger").length >= PLAN_CAP, readings, symbols: l1 ? (JSON.parse(l1.parsed!) as Sym[]) : [], rewrittenUnder, slop: chain.slop(), listen: chain.listen(), judge: chain.judge(), directions: directionsOf(p, drawId) };
 }
 
 /** One line for a plan finding, as the story and the export print it: its kind, its beat if it has one, the finding, and the fix where L4 gave one. */

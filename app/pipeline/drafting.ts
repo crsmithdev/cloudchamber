@@ -26,6 +26,7 @@ import { faultsOver, type Fault } from "./listen.ts";
 import { ofKind } from "./artifacts.ts";
 import { FAULT_LINE, linesOf, parseSchedule, runSchedule, type Schedule } from "./write.ts";
 import { planCheck, type PlanCheck } from "./ir/s2.ts";
+import { now } from "./paths.ts";
 import { SceneSession, type Change, type ScreenPaths } from "./scenesession.ts";
 import { directionsOf, draftView, exportDraft, renderStory, type DraftView } from "./drafts.ts";
 import { tag } from "./model.ts";
@@ -406,20 +407,46 @@ export class Drafting {
     return this.p.draw(drawId);
   }
 
-  /** Plan the schedule again from beat `from` under the operator's instruction, and check the new plan. */
-  async replan(drawId: string, from: number, instruction: string): Promise<DrawRow> {
+  /**
+   * Plan the schedule again from beat `from` under the operator's instruction,
+   * and check the new plan. Under other drafting settings (a profile or
+   * overrides) the whole plan is made again from the first beat, since the
+   * settings can change the beat count and the length; the instruction is
+   * then optional.
+   */
+  async replan(drawId: string, from: number, instruction: string, settings: { profile?: string; overrides?: Overrides } = {}): Promise<DrawRow> {
     const draw = this.must(drawId, "replan");
-    const cfg = this.resolved(draw).config;
+    const resettle = !!(settings.profile || (settings.overrides && Object.keys(settings.overrides).length));
+    const cfg = this.resolved(draw, resettle ? settings : {}).config;
     const chain = chainOf(this.p, drawId);
     const was = chain.schedule()!;
     if (!(Number.isInteger(from) && from >= 1 && from <= was.beats.length)) throw new Error(`beat ${from} is not in 1..${was.beats.length}`);
-    if (!instruction.trim()) throw new Error("instruction required");
+    if (resettle && from !== 1) throw new Error("other settings plan again from beat 1");
+    if (!resettle && !instruction.trim()) throw new Error("instruction required");
+    if (resettle) this.configure(drawId, settings);
     await act(this.p.db, { id: drawId, during: "drafting", back: "awaiting_plan_gate" }, async () => {
       const parts = briefParts(this.p, drawId);
-      const { step, schedule } = await runSchedule(this.p, drawId, parts, briefBlock(parts), cfg, { instruction: instruction.trim(), from, schedule: was });
+      const replan = instruction.trim() ? { instruction: instruction.trim(), from, schedule: was } : undefined;
+      const { step, schedule } = await runSchedule(this.p, drawId, parts, briefBlock(parts), cfg, replan);
       await planCheck(this.p, drawId, step.id, chain.ledger() ?? "", schedule, passId());
     }, () => ({ id: drawId, status: "awaiting_plan_gate" }));
     return this.p.draw(drawId);
+  }
+
+  /**
+   * Record a person's reading of a plan finding: real or not (plan step 5).
+   * The reading is an artifact on the finding's step, not a verdict, so it
+   * does not settle the finding: a real finding stays open until a fix is
+   * applied or a rewrite runs under it.
+   */
+  mark(drawId: string, findingId: string, real: boolean, note = ""): { finding: string; real: boolean } {
+    this.must(drawId, "mark");
+    const f = chainOf(this.p, drawId).planFindings().find((x) => x.id === findingId);
+    if (!f) throw new Error(`no plan finding ${findingId} on draw ${drawId}`);
+    const stepId = this.p.artifacts(drawId).find((a) => a.id === f.artifact_id)!.step_id;
+    const step = this.p.steps(drawId).find((s) => s.id === stepId)!;
+    this.p.artifact(step, "reading", real ? "real" : "not real", { finding: findingId, real, note, at: now() });
+    return { finding: findingId, real };
   }
 
   /** Write every scene from the plan as it stands at the gate; the plan was checked there, so it is not checked again. */

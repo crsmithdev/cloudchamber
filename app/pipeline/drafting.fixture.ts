@@ -178,7 +178,7 @@ export function fixture() {
   return { db, dir };
 }
 
-export async function drawn(script = draftScript(), setting?: { id: string; dir: string; claims?: string }) {
+export async function drawn(script = draftScript(), setting?: { id: string; dir: string; claims?: string }, mode: "auto" | "manual" = "auto") {
   const { db, dir } = fixture();
   const model = new FakeModel(script);
   const p = new Pipeline(db, model, { rng: () => 0.001, briefsDir: join(dir, "briefs"), settingsDir: setting?.dir, backoffMs: [0, 0, 0], cacheLeadMs: 0 });
@@ -187,7 +187,7 @@ export async function drawn(script = draftScript(), setting?: { id: string; dir:
     const text = readFileSync(path, "utf8");
     writeFileSync(path, setting.claims ? text.replace("claims: setting", `claims: ${setting.claims}`) : text.replace("claims: setting\n", ""));
   }
-  const draw = await p.start({ mode: "auto", genre: "horror", setting: setting?.id, seed: { mode: "typed", text: "a typed seed" } });
+  const draw = await p.start({ mode, genre: "horror", setting: setting?.id, seed: { mode: "typed", text: "a typed seed" } });
   const d = new Drafting(p, {
     printPdf: noPdf,   // a fixture never spawns a browser
     draftsDir: join(dir, "drafts") });

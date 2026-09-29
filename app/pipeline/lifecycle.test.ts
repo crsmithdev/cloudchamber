@@ -20,10 +20,10 @@ describe("the rules", () => {
       awaiting_check_gate: ["fork", "flag", "archive", "unarchive", "check", "auto", "accept", "dismiss", "hold", "draft"],
       repairing: ["fork", "flag", "archive", "unarchive"],
       repaired: ["fork", "flag", "archive", "unarchive"],
-      awaiting_plan_gate: ["fork", "flag", "archive", "unarchive", "apply", "replan", "write"],
+      awaiting_plan_gate: ["fork", "flag", "archive", "unarchive", "apply", "replan", "write", "mark"],
       drafting: ["fork", "flag", "archive", "unarchive"],
-      awaiting_draft_gate: ["fork", "flag", "archive", "unarchive", "branch", "rewrite", "keep", "apply"],
-      drafted: ["fork", "flag", "archive", "unarchive", "branch"],
+      awaiting_draft_gate: ["fork", "flag", "archive", "unarchive", "branch", "rewrite", "keep", "apply", "mark"],
+      drafted: ["fork", "flag", "archive", "unarchive", "branch", "mark"],
       failed: ["fork", "flag", "archive", "unarchive"],
     };
     expect(Object.keys(table).sort()).toEqual([...STATUSES].sort());

@@ -15,14 +15,14 @@ accepted by Chris, then red-teamed (§15.11). ADR-0014 is proposed until T3.
 |---|---|---|---|
 | T1 | ~~L2, each symbol against the setting, with `amend`~~. Killed before it was built: on `b82d` it kept 0 of the 4 facts gate 1 contradicted. | measured | $4.04, spent |
 | T1′ | **The plan's claims.** The plan check runs gate 1's claims extract and verify on the schedule's beat fields; a contradicted claim is a plan finding that `apply` can take. Built. | step 5's reading, on setting draws | about $1.1 a plan check |
-| 5 | **Read the plan findings**, as below; it now also decides T1′. | Chris | $0 |
-| T2 | The plan gate is the default stop. First decide what `--auto` does when its rule fails: S1′ alone would stop about 29% of unattended drafts. | Chris uses the gate, or not, for two weeks | $0 |
-| T3, T3′ | Retire gate 1; measure the prose-against-prose loss first if Chris reads T3′ as no replay | as §15.8 | $6 for T3′ |
+| 5 | **Read the plan findings**, as below; it now also decides T1′. Each plan finding has a "real" and a "not real" mark, stored as a `reading`, so the reading is in the store. | Chris | $0 |
+| T2 | **The plan gate is the only stop before gate 2.** Built (§15.12): a person's choose or fork drafts on to the plan gate, and gate 1 does not stop them. `--auto` passes the plan gate and its findings show at gate 2. | Chris uses the gate, or not, for two weeks | $0 |
+| T3 | Retire gate 1's code. T3′ is skipped by Chris's decision: the prose-against-prose loss is accepted | as §15.8 | $0 |
 | T4 | The declared ledger, after step 5 | by ear | about $12 |
 
 Decisions taken with shape A: `--auto` applies no fix of its own; the
 reader check moves to the plan gate with a five-draw kill; T4 waits on
-step 5. T3′ against rule 3 is still Chris's.
+step 5. Chris skipped T3′ on 29 Sep.
 
 Found on the way: the confirm step (28 Sep) now demotes the mark fact of
 `4797` at every layer. Whether gate 1 today still keeps the facts it kept
