@@ -1,9 +1,27 @@
 # The plan from here
 
-26 September, revision 3. This plan replaces the order of
+28 September, revision 4. This plan replaces the order of
 `2026-09-24-the-plan-by-goal.md`. That plan keeps its principles and its
 goals. Revision 2, the red-teamed order of phases A to F, is in git at
-`5ecdc97`; this revision cuts it down.
+`5ecdc97`; revision 3 cut it down to four steps and three rules, and
+revision 4 adds the story IR's work after them.
+
+## Revision 4
+
+Since revision 3, the story IR (`docs/specs/2026-09-28-story-ir.md`) went
+from a design to a landed plan check, `f0f90fd`:
+
+| Stage | State |
+|---|---|
+| S0, the beat's slice in the scene ask | killed by its own rule (`evals/20260928-ir-s0.md`) |
+| S1′ schedule linter, S2′ symbols and the plan against the ledger | landed; L4 named the delegation 5 of 5, recall 28 of 30 (`evals/20260928-ir-s2prime.md`) |
+| S3′ plan findings at gate 2 | landed, on by default (`screens.enabled` lists `plan`), about $0.45 a draft |
+| Gate 2 ticks | landed: each flag has a checkbox and a note, one rewrite sends the ticked flags, and a plan view shows the schedule, its findings and the symbol table |
+
+Steps 1 to 4 below are still open: the store and git hold no listen, and
+`feature/bind-at-once-main` is not merged. Steps 5 to 9 are new. They
+follow the three rules: steps 5 and 9 cost $0, and steps 6 to 8 are small
+code changes decided by reading the code and one run.
 
 ## Why revision 3
 
@@ -44,8 +62,14 @@ default.
 | 2 | **Bind at once** (`feature/bind-at-once-main`). One draft of `3cee` with `cloudchamber branch`; time and cost against `663a`'s split; one `lab canon` reading of it and of `3cee`'s stored draft. It lands unless canon doubles or the time does not fall. A scene now reads the unbound text of the beats before it, so canon is the one guard. | canon, time | ~$12 |
 | 3 | **One change for the axis step 1 names** (hook unless the listen says otherwise). Three layers already state hook: `hook-late` (`write.ts:56`) is a screen, a register line and a rewrite line. First find, from the stored steps of `3cee`, why they do not fix the opening. Then change the one layer the accretion rule names. Two drafts, and Chris hears the first two minutes of each against `3cee`'s. The panel at 8 passes a pair checks for a large loss. | Chris; the panel against a loss above 0.5 | ~$30 |
 | 4 | **G1 once**, read from step 3's drafts, with nothing else running. | — | $0 |
+| 5 | **Read the plan findings (S3′'s own test).** On the next five drafts, Chris reads each plan finding at gate 2 and marks it real or not. The findings are already there; the reading is the cost. Kill: fewer than half real over five drafts turns `plan` off in `draft.toml`. | Chris | $0, the plan check's ~$0.45 a draft |
+| 6 | **A plan finding is settled when a scene is rewritten under it.** Now it stays open after the rewrite, so gate 2 shows it again. Suggestion: the rewrite records a `keep` verdict on each ticked plan finding with `method: "rewrite"`, and `chain.settled()` (`chain.ts:210`) skips every finding that is not `source: "check"`, not only `screen`. Without the second half, an accepted plan finding would enter the fixes that later repair rounds must keep. One test: rewrite under a plan finding; the finding reads settled; `settled()` stays empty. | code, one test | $0 |
+| 7 | **Re-check the plan before a rewrite writes prose.** On draw `7715` a ticked plan finding moved a wounded man to the eleventh yard, and the scene kept the schedule's 02:05. The ledger's pace (a yard every 19 minutes from 00:55) puts the eleventh yard near 04:24, so the bind patched the hour after the rewrite. The patch was right; the defect was in the plan, and it was found only once prose existed. Suggestion: when a rewrite carries plan findings, apply each finding's `replacement` to its beat's schedule entry, run L3 and L4 on that revised plan (about $0.40), and show any new finding in the rewrite panel before a scene is written. This is the IR's claim at its smallest: fix the plan, check the plan, then write. Decide it on `7715` beat 4: does L4 on the revised plan name the hour? | one run on `7715` | ~$0.40, then ~$0.40 a rewrite with plan findings |
+| 8 | **A sibling gets the plan check.** `branch` copies its source's config (`drafting.ts:338`), so a draft configured before `f0f90fd` never runs `plan`, and neither do its siblings. The copy keeps two arms comparable, and `branch --profile P` already builds a fresh config. Suggestion: when the copied config lacks `plan`, add it. The plan check writes no prose and changes no scene, so the arms stay comparable. About ten lines in `resolved()` and one test. | code, one test | $0 |
+| 9 | **S0′, classify the kept findings** (IR spec §12.6): the share of gate 1 that a type checker on the plan would take. Under half keeps §12 a design. | reading | $0 |
 
-Total: about $42 and two listening sessions.
+Total: about $42 and two listening sessions for steps 1 to 4; about $1
+and five readings at gate 2 for steps 5 to 9.
 
 ## Dropped from revision 2
 
