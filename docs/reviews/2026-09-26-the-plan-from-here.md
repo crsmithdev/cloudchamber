@@ -73,6 +73,37 @@ default.
 Total: about $42 and two listening sessions for steps 1 to 4; about $1
 and five readings at gate 2 for steps 5 to 9.
 
+## S4 and S6: the cases, not run
+
+The IR's last two stages (spec §13.3) are written down here and not run.
+
+**S4, the conformance screen (about $25).** It asks a scene against its
+beat's slice of the IR, beside or in place of the bind's read against the
+ledger. Its case rests on the plan findings being real: a slice is only
+worth checking a scene against if the plan it comes from is right. Step 5,
+Chris reading five drafts' plan findings, measures that at $0. S0′ does
+not bear on it: it shows gate 1's findings are typed or slice-shaped, not
+that scenes drift from their slice. Decision: wait for step 5. Run S4 if
+at least half the plan findings read real, and if a draft shows a scene
+that breaks its beat's plan where the bind said nothing.
+
+**S6, parallel beats (about $30 with the panel, about $10 by ear alone).**
+`scenes.order = "parallel"` exists (`scenesession.ts:141`) and no draw has
+run it. It writes every beat at once from the schedule, with no story so
+far. The gain is wall time. On `e6f0` and `b82d` the first-pass scenes
+take 6.4 min in sequence, and the longest single scene 49 s, so parallel
+saves about 5.5 min of a 9 to 16 minute draft. The risk is continuity: a beat
+that does not read the one before it can repeat it or miss its hand-off.
+No measurement bears on that. S0 bears on a nearby claim and does not
+help: a beat's slice of the plan in the ask did not hold the writer to the
+facts (ledger flags fell 0.39 to 0.44 a beat on one draft, under the 0.6
+bar, and rose on the other), so the IR is not yet a substitute for the
+prose so far. Decision: not
+now. It becomes worth two drafts, the same brief in each order, heard by
+Chris, when G1's wall time is the constraint again and step 1's listen has
+said what the ear hears. Kill: a loss the ear hears, or above 0.5 on the
+panel.
+
 ## Dropped from revision 2
 
 | Step | Why |
