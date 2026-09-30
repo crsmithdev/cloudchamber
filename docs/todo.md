@@ -13,6 +13,10 @@ priority: medium
 labels: [ui]
 ---
 
+### Notes
+
+- 2026-09-29 18:22: 29 Sep, live on 3007, b82d: the How control mounts once about 0.94 s after load and never moves or remounts (MutationObserver in an iframe over 8 s); a synthetic click at mount sticks. Not layout shift and not a remount. Not reproduced with real input: the MCP tab reports visibilityState hidden, so timing is throttled. Next: reproduce by hand with DevTools Performance recording the first click.
+
 ## 2. Plan step 5: read the plan findings on the next five drafts; S4 runs only if at least half read real
 ---
 id: 2
@@ -58,6 +62,16 @@ labels: [ir]
 ## 5. T3: retire gate 1's code; first decide where the brief's structure, resemblance and reader checks go, since a manual draw no longer runs them (IR spec §15.12)
 ---
 id: 5
+status: open
+created: 2026-09-29
+updated: 2026-09-29
+priority: medium
+labels: [ir]
+---
+
+## 6. repair.ts: strip span and patch placement (place, applyPatches, localPatch, settled spans); since T3 only span-less operator instructions reach repair
+---
+id: 6
 status: open
 created: 2026-09-29
 updated: 2026-09-29
