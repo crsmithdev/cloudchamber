@@ -62,12 +62,16 @@ labels: [ir]
 ## 5. T3: retire gate 1's code; first decide where the brief's structure, resemblance and reader checks go, since a manual draw no longer runs them (IR spec §15.12)
 ---
 id: 5
-status: open
+status: done
 created: 2026-09-29
 updated: 2026-09-29
 priority: medium
 labels: [ir]
 ---
+
+### Notes
+
+- 2026-09-29 18:39: 6f96094: the brief's structure, resemblance and reader checks run in draft beside the schedule and show at the plan gate
 
 ## 6. repair.ts: strip span and patch placement (place, applyPatches, localPatch, settled spans); since T3 only span-less operator instructions reach repair
 ---
