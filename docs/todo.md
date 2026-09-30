@@ -135,9 +135,13 @@ labels: [plan]
 ## 10. evals/20260928-ir-harness.ts does not build: it imports l5Link, which ir/s2.ts no longer exports (already broken before 8ee09a4)
 ---
 id: 10
-status: open
+status: done
 created: 2026-09-29
-updated: 2026-09-29
+updated: 2026-09-30
 priority: medium
 labels: [ir, evals]
 ---
+
+### Notes
+
+- 2026-09-30 08:55: The harness is a record of a run on ir-s1 at cea5888. It builds there (checked); on main its old arm needs gate 1, which 6f96094 removed. evals/20260928-ir-harness.md says how to run it again.
