@@ -16,6 +16,7 @@ labels: [ui]
 ### Notes
 
 - 2026-09-29 18:22: 29 Sep, live on 3007, b82d: the How control mounts once about 0.94 s after load and never moves or remounts (MutationObserver in an iframe over 8 s); a synthetic click at mount sticks. Not layout shift and not a remount. Not reproduced with real input: the MCP tab reports visibilityState hidden, so timing is throttled. Next: reproduce by hand with DevTools Performance recording the first click.
+- 2026-09-29 20:41: 29 Sep, headless Chromium (Playwright, visible page, real mouse events) on a DB copy served from HEAD b647ea8 on 3014: a click on How at 0.2, 0.5, 1, 1.5, 2, 3 and 4 s after load registers every time (b82d). The How group mounts once at 0.4-0.9 s at the same place, and no remount or scroll follows over 7 s, whether the page opens at #go/<id>, #write/<id> or #write. Still not reproduced; the headless page rules out timer throttling. Left: your hand, with DevTools Performance recording. Code read: Develop's effect on 'current' calls setD(null), which unmounts gate 2, but 'current' is stable once the hash names the draw.
 
 ## 2. Plan step 5: read the plan findings on the next five drafts; S4 runs only if at least half read real
 ---
@@ -115,3 +116,17 @@ labels: [ir]
 ### Notes
 
 - 2026-09-29 20:25: Harmless, by design. SYM_RULES (prompts.ts:23) asks for '; setting:<area>' by the kind of fact (body, place, rite...), not by whether the draw has a setting. The only reader is settingEligible/l2Resolve in ir/s2.ts:78-100. Only evals/20260928-ir-harness.ts calls it (L2 is killed), and it returns at once when the setting has no claims authority. If L2 stays dead, the grammar clause and l2Resolve can go together.
+
+## 9. Plan step 3: one change for the hook; the diagnosis is done, the change and two drafts (~$30) wait on step 1's listen
+---
+id: 9
+status: open
+created: 2026-09-29
+updated: 2026-09-29
+priority: medium
+labels: [plan]
+---
+
+### Notes
+
+- 2026-09-29 20:41: Diagnosis from the stored steps of 3cee and 1b09 (29 Sep, $0): the hook-late screen question (prompts.ts:516-517, added for beat 1 at write.ts:240) ran and answered 'absent' on both drafts (screen-structure-00c0334d, screen-structure-3b4e47df). The first thing wrong comes at word 101 (3cee) and 83 (1b09), inside the 150-word window, after 80-100 words of time, place, routine and history. So the register flag (write.ts:63) queued no rewrite, and HOOK_LINE (write.ts:41) never reached a model. The layer to change is the screen question: it has two conditions ('in the first 150 words' and 'before routine, setting or history'), and the model resolves them in favour of the window. Suggested: flag when the first one or two sentences (about 40 words) give time, place, routine or history before anything is wrong; both stored openings would fire. Risks: HOOK_LINE also says 150 words (a rewrite under it may change little: the next layer); sceneSignal (prompts.ts:441) tells the first sentence to give time and place; the schedule put the worst moment at beat 3 under linear chronology. Judgements: 3cee lost hook to channel F 11 of 12 (vs-hIS0zHK8).
