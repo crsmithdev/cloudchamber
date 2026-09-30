@@ -18,7 +18,6 @@ const swap = (prompt: string) => [...prompt.matchAll(/<sentence>([\s\S]*?)<\/sen
 /** A drafted draw and a session over it; `after` lists the calls `revise` made. */
 async function revising() {
   const t = await drawn(draftScript({ scene: withFaults, "scene-edit": swap }));
-  await t.d.check(t.draw.id);
   // no ceiling sends a beat back while drafting: the test drives the changes itself
   await t.d.draft(t.draw.id, { overrides: { "screens.listen.numerals_max": 1000, "screens.listen.long_share_max": 1 } });
   const cfg = (JSON.parse(t.p.draw(t.draw.id).draft_config!) as Resolved).config;

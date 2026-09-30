@@ -1,15 +1,16 @@
 /**
  * The stages after a brief, and the two gates:
  *
- *   brief → check → GATE 1 (accept | dismiss | hold | flag | draft)
- *         → repair → check again → GATE 1
- *         → schedule → scene ×M, each bound to the ledger as written → screen ×M → GATE 2 (keep | rewrite k)
+ *   brief → draft: ledger ∥ structure, resemblance, reader ∥ schedule → plan check
+ *         → PLAN GATE (apply | replan | instruct | mark | write)
+ *         → scene ×M, each bound to the ledger as written → screen ×M → GATE 2 (keep | rewrite k)
  *         → drafts/<draw>/
  *
- * Statuses on the draw: done → awaiting_check_gate → repairing | drafting →
- * awaiting_draft_gate → drafted. A repaired brief is a new draw
- * (repaired_from) and the source becomes `repaired`. `--auto` works gate 1 by
- * the mechanical rule and stops at gate 2.
+ * Statuses on the draw: done → drafting → awaiting_plan_gate → drafting →
+ * awaiting_draft_gate → drafted. A draft not asked to stop passes the plan
+ * gate. An instruction on the brief's prose is a repair: a new draw
+ * (repaired_from), and the source becomes `repaired`. Gate 1 is gone (IR spec
+ * §15, T3); draws that stand at its statuses keep them and can still draft.
  */
 import { writeBrief } from "./brief.ts";
 import { newDrawId, type DrawRow, type Pipeline } from "./draw.ts";
@@ -40,11 +41,11 @@ export type AutoResult = { id: string; rounds: AutoRound[]; best: AutoRound; sto
 /** An operator's instruction on a brief at gate 1: what should change, the parts it is for ("vignette", "ending", "context 1"), and whether the ledger takes it as a fact. */
 export type Instruction = { text: string; parts: string[]; kind: "fact" | "direction" };
 /** `plan` stops the draft at the plan gate, with the plan checked, before any scene is written. */
-export type DraftOpts = { profile?: string; overrides?: Overrides; auto?: boolean; plan?: boolean };
+export type DraftOpts = { profile?: string; overrides?: Overrides; plan?: boolean };
 /** A branch takes the source's drafting configuration unless it names its own, and the beat to write from. */
 export type BranchOpts = { atBeat?: number; profile?: string; overrides?: Overrides; models?: Record<string, string>; instruction?: string };
-/** A finding as the gate reads it: `auto_eligible` says whether the auto rule would consider it, whatever it scores. */
-export type GateFinding = FindingView & { auto_eligible: boolean; cost: number };
+/** A finding as the gate reads it, with what it breaks. */
+export type GateFinding = FindingView & { cost: number };
 /** The latest pass in four numbers, for a list row. */
 export type FindingsSummary = { pass: string | null; reported: number; accepted: number; open: number; total: number };
 /**
@@ -60,22 +61,8 @@ export type FindingsView = {
   judge: string | null; score_max: number; structure: string[];
 };
 
-/**
- * An unattended repair needs a quote to work from, and only the three
- * checkers that report findings can supply one; structure and resemblance
- * store profiles. A finding failing either test is left for a person, whatever
- * it scores.
- */
-const AUTO_CHECKERS = ["derivation", "ledger", "claims"];
-/**
- * A floor stop needs this many clean samples in a row on one brief: one sample
- * set can miss what the next one finds. A pass after a repair, and auto's own
- * first pass, runs all of them at once, and reports a finding in 3 of the 4:
- * near the rate at which two sequential passes of two, each needing 2 of 2,
- * reported one. A first pass a person ran at the default 2 gets a second 2.
- */
-const CLEAN_SAMPLES = 4;
-const FULL_PASS = { samples: CLEAN_SAMPLES, keep_if: 3 };
+/** The checks that still read the brief: the rest of gate 1 went with T3 (IR spec §15.3). */
+const BRIEF_CHECKS = ["structure", "resemblance", "reader"];
 export { BODY_LINE, COST_LINE, LENGTH_LINE, NUMERAL_LINE, PRESENCE_LINE } from "./write.ts";
 
 /**
@@ -102,9 +89,6 @@ export function rewritePlan(profiles: { beat: number; flags: string[] }[], scene
 export type Owed = { register: string[]; faults: Fault[] };
 /** Every line a beat owes, register lines first. */
 const owedLines = (o: Owed) => [...o.register, ...o.faults.map((f) => FAULT_LINE[f])];
-const autoEligible = (f: FindingView) =>
-  f.checkers.some((c) => AUTO_CHECKERS.includes(c)) && !!f.evidence.trim() && f.evidence.trim().toLowerCase() !== "none"
-  && !f.relitigates;
 
 /** A <conflict> carries its two numbers as <a> and <b> children or as a and b attributes; either form is read. */
 export function parseConflicts(block: string): { a: number; b: number; why: string }[] {
@@ -173,26 +157,6 @@ export class Drafting {
     return resolved;
   }
 
-  async check(drawId: string, opts: { checks?: string[]; samples?: number; profile?: string; overrides?: Overrides } = {}): Promise<CheckResult> {
-    const draw = this.must(drawId, "check");
-    return this.recheck(drawId, this.resolved(draw, opts).config, { checks: opts.checks, samples: opts.samples });
-  }
-
-  /** A check pass under `checking`; the draw comes back to where it stood if the pass fails, and waits at gate 1 when it succeeds. */
-  private async recheck(drawId: string, cfg: DraftConfig, opts: { back?: Status; checks?: string[]; samples?: number; keep_if?: number; pass?: string } = {}): Promise<CheckResult> {
-    const back = opts.back ?? (this.p.draw(drawId).status as Status);
-    return act(this.p.db, { id: drawId, during: "checking", back },
-      () => runCheck(this.p, drawId, cfg, { checks: opts.checks, samples: opts.samples, keep_if: opts.keep_if, pass: opts.pass, premisesPath: this.opts.premisesPath }),
-      () => ({ id: drawId, status: "awaiting_check_gate" }));
-  }
-
-  /** A finding by id among what the gate can act on: the reported list first, the reconstruction under the bar only when it is not there. */
-  private finding(chain: Chain, id: string): FindingView {
-    const f = chain.reported().find((x) => x.id === id) ?? chain.subThreshold().find((x) => x.id === id);
-    if (!f) throw new Error(`draw ${chain.drawId}: no reported finding ${id}`);
-    return f;
-  }
-
   findings(drawId: string, opts: { all?: boolean } = {}): FindingsView {
     this.p.draw(drawId);
     const chain = chainOf(this.p, drawId);
@@ -202,7 +166,7 @@ export class Drafting {
     const examined = steps.map((s, i) => ({ stage: s.stage, sample: i + 1, examined: String((JSON.parse(s.parsed ?? "{}") as any).examined ?? "") })).filter((x) => x.examined);
     // the gate lists what it will act on: a finding the verify pass dropped is withheld
     // until it is asked for, and stays in the list once it has been ruled on
-    const all: GateFinding[] = chain.findings(opts.all).map((f) => ({ ...f, auto_eligible: autoEligible(f), cost: cost(f.invalidates) }));
+    const all: GateFinding[] = chain.findings(opts.all).map((f) => ({ ...f, cost: cost(f.invalidates) }));
     const offList = (f: FindingView) => !f.reported && f.decision === "open";
     const shown = opts.all ? all : all.filter((f) => !offList(f));
     const off = all.filter(offList);
@@ -231,92 +195,50 @@ export class Drafting {
     };
   }
 
-  // --- gate 1 ----------------------------------------------------------------
+  // --- the plan gate: the brief's prose ---------------------------------------
 
-  /** Accept findings by id and run the repair, then the re-check. Returns the repaired draw. */
-  async accept(drawId: string, ids: string[], opts: { method?: "gate" | "draw"; note?: string; checks?: string[]; instructions?: Instruction[] } = {}): Promise<DrawRow> {
-    const draw = this.must(drawId, "accept");
-    const chain = chainOf(this.p, drawId);
-    const instructions = opts.instructions ?? [];
-    if (!ids.length && !instructions.length) throw new Error("findings or instructions required");
-    // every id is looked up before an instruction is stored, so a stale id leaves nothing behind
-    for (const id of ids) this.finding(chain, id);
-    for (const ins of instructions) ids = [...ids, this.instruct(drawId, chain, ins)];
-    // read again: the chain caches its findings, and the instructions are findings now
-    const now = chainOf(this.p, drawId);
-    for (const id of ids) {
-      const f = this.promote(drawId, this.finding(now, id));
-      record(this.p.db, { kind: "finding", target_id: f.id, verdict: "keep", method: opts.method ?? "gate", note: opts.note ?? "" });
+  /**
+   * An operator's instructions on the brief's prose, at the plan gate. Each is
+   * stored as an accepted finding with no span; the repair writes the parts it
+   * names as a new draw in the chain (ADR-0009), and the new draw drafts on to
+   * the plan gate. A fix to the plan itself is `apply`, which makes no new draw.
+   */
+  async instruct(drawId: string, instructions: Instruction[], note = ""): Promise<DrawRow> {
+    const draw = this.must(drawId, "instruct");
+    if (!instructions.length) throw new Error("instructions required");
+    const names = ["vignette", "ending", ...partsIn(partsOf(this.p, drawId), "context").map((c) => `context ${c.index}`)];
+    for (const ins of instructions) {
+      if (!ins.text.trim()) throw new Error("instruction text required");
+      if (ins.kind !== "fact" && ins.kind !== "direction") throw new Error("instruction kind must be fact | direction");
+      if (!ins.parts.length) throw new Error("instruction parts required");
+      for (const x of ins.parts) if (!names.includes(x)) throw new Error(`instruction part must be ${names.join(" | ")}, got ${x}`);
     }
-    // read back once the verdicts are down: the whole accepted set of this pass, the ones just promoted included
-    const accepted = chainOf(this.p, drawId).findings(true).filter((f) => f.decision === "accepted");
-    const cfg = this.resolved(draw).config;
+    // an instruction belongs to a pass; a draw whose draft ran no brief checker has none, so the instructions open one
+    let pass = chainOf(this.p, drawId).pass();
+    const ids = instructions.map((ins) => {
+      const text = ins.text.trim();
+      const id = findingId("operator", text, drawId);
+      const step = this.p.recordStep(drawId, null, "instruction", "operator", { text, parts: ins.parts, kind: ins.kind });
+      if (!pass) { pass = passId(); this.p.artifact(step, "pass", pass, { pass, samples: {} }); }
+      this.p.artifact(step, "finding", text, {
+        id, checkers: ["operator"], samples: [1], n: 1, span: "", statement: text, result: "", evidence: "", invalidates: "", replacement: text, patch: "",
+        pass, source: "operator", parts: ins.parts, kind: ins.kind,
+      });
+      record(this.p.db, { kind: "finding", target_id: id, verdict: "keep", method: "gate", note });
+      return id;
+    });
+    const accepted = chainOf(this.p, drawId).findings().filter((f) => ids.includes(f.id));
     const next = await repair(this.p, drawId, accepted);
     if (draw.draft_config) commit(this.p.db, { id: next.id, links: { draft_config: draw.draft_config } });
-    // the new round is a brief nobody has checked: a check that fails leaves it there
-    await this.recheck(next.id, cfg, { back: "done", checks: opts.checks, ...FULL_PASS });
-    return this.p.draw(next.id);
+    return this.draft(next.id, { plan: true });
   }
-
-  /**
-   * Store an operator's instruction as a finding of the latest pass, which the
-   * accept that follows repairs like any other. It has no span: the repair
-   * sends it to the parts it names, under the revise ask.
-   */
-  private instruct(drawId: string, chain: Chain, ins: Instruction): string {
-    const text = ins.text.trim();
-    if (!text) throw new Error("instruction text required");
-    if (ins.kind !== "fact" && ins.kind !== "direction") throw new Error("instruction kind must be fact | direction");
-    const names = ["vignette", "ending", ...partsIn(partsOf(this.p, drawId), "context").map((c) => `context ${c.index}`)];
-    if (!ins.parts.length) throw new Error("instruction parts required");
-    for (const x of ins.parts) if (!names.includes(x)) throw new Error(`instruction part must be ${names.join(" | ")}, got ${x}`);
-    const pass = chain.pass();
-    if (!pass) throw new Error(`draw ${drawId}: no check pass`);
-    const id = findingId("operator", text, drawId);
-    const step = this.p.recordStep(drawId, null, "instruction", "operator", { text, parts: ins.parts, kind: ins.kind });
-    this.p.artifact(step, "finding", text, {
-      id, checkers: ["operator"], samples: [1], n: 1, span: "", statement: text, result: "", evidence: "", invalidates: "", replacement: text, patch: "",
-      pass, source: "operator", parts: ins.parts, kind: ins.kind,
-    });
-    return id;
-  }
-
-  dismiss(drawId: string, id: string, note = "", method: "gate" | "draw" = "gate", reason?: DismissReason): FindingView {
-    this.must(drawId, "dismiss");
-    return this.dismissFound(drawId, this.finding(chainOf(this.p, drawId), id), note, method, reason);
-  }
-  private dismissFound(drawId: string, f: FindingView, note: string, method: "gate" | "draw", reason?: DismissReason): FindingView {
-    this.promote(drawId, f);
-    record(this.p.db, { kind: "finding", target_id: f.id, verdict: "pass", method, note, reason });
-    return { ...f, decision: "dismissed", note, reason: reason ?? null };
-  }
-
-  /**
-   * A sub-threshold finding has no artifact until it is decided on. Storing it
-   * then keeps the record complete: the trail shows what the repair was given,
-   * and a re-check does not raise a dismissed one again.
-   */
-  private promote(drawId: string, f: FindingView): FindingView {
-    if (f.artifact_id) return f;
-    const steps = this.p.steps(drawId).filter((s) => s.stage === `check-${f.checkers[0]}` && s.status === "done" && s.pass === f.pass);
-    const step = steps.at(-1);
-    if (!step) return f;
-    const { artifact_id: _a, decision: _d, note: _n, score: _s, samples_run: _r, reported: _rep, ...meta } = f;
-    return { ...f, artifact_id: this.p.artifact(step, "finding", f.statement, { ...meta, sub_threshold: true }) };
-  }
-
-  hold(drawId: string): DrawRow { return this.must(drawId, "hold"); }
 
   // --- stages 3 to 5 ---------------------------------------------------------
 
   async draft(drawId: string, opts: DraftOpts = {}): Promise<DrawRow> {
-    let draw = this.must(drawId, "draft");
+    const draw = this.must(drawId, "draft");
     const resolved = this.resolved(draw, opts);
     commit(this.p.db, { id: drawId, links: { draft_config: JSON.stringify(resolved) } });
-    if (opts.auto) {
-      const next = await this.autoGate(drawId, resolved.config);
-      if (next !== drawId) { drawId = next; draw = this.p.draw(drawId); }
-    }
     if (chainOf(this.p, drawId).findings().some((f) => f.decision === "accepted")) throw new Error("accepted findings pending repair");
     const id = drawId;
     const stopped = await act(this.p.db, { id, during: "drafting", back: this.p.draw(id).status as Status }, () => this.write(id, resolved.config, !!opts.plan),
@@ -328,16 +250,20 @@ export class Drafting {
 
   /**
    * A whole draft from the brief: the schedule, then every scene. Under `stop`
-   * it ends at the plan gate instead, with the plan checked; otherwise the plan
-   * is checked beside the scenes. True when it stopped at the plan gate.
+   * it ends at the plan gate instead, with the plan checked and the brief's
+   * text checks beside it; otherwise the plan is checked beside the scenes.
+   * True when it stopped at the plan gate.
    */
   private async write(id: string, cfg: DraftConfig, stop: boolean): Promise<boolean> {
     const parts = briefParts(this.p, id);
+    // structure, resemblance and the reader read the brief as text and are shown at the plan gate (IR spec §15.3);
+    // runCheck runs each only where the chain has not had it, so a repaired brief runs none
+    const brief = stop ? runCheck(this.p, id, cfg, { checks: cfg.checks.enabled.filter((c) => BRIEF_CHECKS.includes(c)), premisesPath: this.opts.premisesPath }) : null;
     const ledger = await this.ensureLedger(id);
     const { step, schedule } = await runSchedule(this.p, id, parts, briefBlock(parts), cfg);
     const pass = passId();
     if (stop) {
-      await planCheck(this.p, id, step.id, ledger, schedule, pass);
+      await Promise.all([planCheck(this.p, id, step.id, ledger, schedule, pass), brief]);
       return true;
     }
     // the plan check runs beside the scenes: it is read at gate 2 and gates nothing, so the scenes do not wait for it
@@ -556,159 +482,6 @@ export class Drafting {
     if (have) return have;
     const parts = briefParts(this.p, drawId);
     return extractLedger(new BriefSession(this.p, drawId, parts, "ledger-extract"), { pass: passId(), sample: 1, ledger_only: true });
-  }
-
-  /**
-   * Repair rounds without a gate. Each round accepts every open reported
-   * finding scoring `repair.stop_score` or more that it can read a quote
-   * against, repairs and re-checks. It stops when no finding reaches the
-   * floor, when the rounds run out, or when the total open score has not
-   * fallen for `repair.patience` rounds — the loop does not converge on zero
-   * findings, so a round cap and a patience are what end it.
-   *
-   * What auto does not act on it leaves alone. A finding under the floor, one
-   * with no evidence to read it against, one that re-opens a settled fix, or
-   * one under `keep_if` stays open for a person: recorded as dismissed, it was
-   * excluded from every later pass, so a defect a later rewrite made real was
-   * never raised again. With two samples a lone debt-audit contradiction
-   * scored 7 and rewrote the pit chain's physics on one sample, and round 2
-   * accepted two lone findings that contradict each other; so a finding under
-   * `keep_if` is not auto's, and when a round accepts two or more fixes, one
-   * call reads them against each other and the lower-scoring side of every
-   * conflicting pair is dismissed before the repair.
-   *
-   * A repair that leaves the open set as it was, finding for finding by the
-   * cluster rule, has changed nothing the loop can act on: what is open now
-   * re-opens a settled fix or sits under the floor, and the next round would
-   * see the same. The Mission Control chain spent twenty calls on two such
-   * rounds before patience fired. That stop is `stalled`.
-   *
-   * The floor stop waits for `CLEAN_SAMPLES` clean samples in a row on the
-   * same brief, so a sample set that missed a defect does not end the chain. One row per brief: a re-check
-   * overwrites the brief's row, so every row holds its brief's last pass and
-   * the lowest total is a brief's, not a pass's.
-   *
-   * The round with the lowest total score is reported but not restored: an
-   * earlier round is superseded, and reviving it would leave the chain in two
-   * places at once. When `best` is not `last`, read the brief it names.
-   *
-   * Only a `floor` stop leaves nothing to do. Every other stop breaks after
-   * the last round has chosen what to accept and before it is applied, so
-   * `left_open` counts findings at or above the floor that a person still has
-   * to rule on at the gate.
-   */
-  // a finding the verify pass dropped is stored under the bar and open: not auto's either
-  private autoOpen(id: string): GateFinding[] {
-    return this.findings(id).findings.filter((f) => f.decision === "open" && f.reported);
-  }
-
-  /**
-   * Why an auto run on this brief would stop before its first call, or null.
-   * At the gate the pass is already there: when no open finding reaches the
-   * floor and the pass ran `CLEAN_SAMPLES` samples, the loop stops on `floor`
-   * at once, so the page offers no run.
-   */
-  autoIdle(drawId: string): string | null {
-    const draw = this.p.draw(drawId);
-    if (draw.status !== "awaiting_check_gate") return null;
-    const cfg = this.resolved(draw).config;
-    const chain = chainOf(this.p, drawId);
-    const gatePass = chain.pass();
-    if (!gatePass) return null;
-    const floor = cfg.repair.stop_score;
-    if (this.autoOpen(drawId).some((f) => f.score >= floor && f.auto_eligible)) return null;
-    if (Math.max(0, ...Object.values(chain.samples())) < CLEAN_SAMPLES) return null;
-    const claimed = this.p.artifacts(drawId).some((a) => a.kind === "claim" && a.meta.pass === gatePass);
-    if (cfg.checks.enabled.includes("claims") && this.p.loadDrawSetting(draw).setting?.claims && !claimed) return null;
-    return `no open finding scores ${floor} or more, and the pass already ran ${CLEAN_SAMPLES} samples: auto repair would stop at once`;
-  }
-
-  async autoRounds(drawId: string, opts: { cfg?: DraftConfig; note?: string } = {}): Promise<AutoResult> {
-    const draw = this.must(drawId, "auto");
-    const cfg = opts.cfg ?? this.resolved(draw).config;
-    const floor = cfg.repair.stop_score;
-    let id = drawId;
-    // a claims finding scores under the floor and only a person rules on it: auto's rounds run without claims,
-    // and claims run once on the brief auto stops on, into the pass the gate reads
-    const rounds_checks = cfg.checks.enabled.filter((c) => c !== "claims");
-    if (!chainOf(this.p, id).pass()) await this.recheck(id, cfg, { ...FULL_PASS, checks: rounds_checks });
-    const rounds: AutoRound[] = [];
-    let stopped: AutoResult["stopped"];
-    let clean = 0;
-    let accept: GateFinding[] = [];
-    let before: { id: string; open: GateFinding[] } | null = null;
-    for (;;) {
-      const open = this.autoOpen(id);
-      accept = open.filter((f) => f.score >= floor && f.auto_eligible);
-      const calls = chainOf(this.p, id).calls();
-      let row = rounds.find((r) => r.id === id);
-      if (!row) rounds.push((row = { round: rounds.length + 1, id, open: 0, total: 0, accepted: 0, calls, passes: 0 }));
-      Object.assign(row, { open: open.length, total: open.reduce((a, f) => a + f.score, 0), calls, passes: row.passes + 1 });
-      // the previous brief's repair changed nothing: the same findings, on a new brief
-      if (before && before.id !== id && open.length === before.open.length && open.every((f) => before!.open.some((o) => same(o, f)))) { stopped = "stalled"; break; }
-      before = { id, open };
-      if (!accept.length) {
-        // the samples this pass ran, as it recorded them
-        clean += Math.max(0, ...Object.values(chainOf(this.p, id).samples()));
-        if (clean >= CLEAN_SAMPLES) { stopped = "floor"; break; }
-        await this.recheck(id, cfg, { checks: rounds_checks }); continue;
-      }
-      clean = 0;
-      const best = Math.min(...rounds.map((r) => r.total));
-      const since = rounds.length - 1 - rounds.findIndex((r) => r.total === best);
-      // patience and the cap both stop before this round's accepted set is applied:
-      // the row claims no repair, and the findings stay open for the gate
-      if (since >= cfg.repair.patience) { stopped = "patience"; break; }
-      if (rounds.length > cfg.repair.rounds) { stopped = "cap"; break; }
-      accept = await this.reconcile(id, accept);
-      row.accepted = accept.length;
-      id = (await this.accept(id, accept.map((f) => f.id), { method: "draw", note: opts.note ?? "auto", checks: rounds_checks })).id;
-    }
-    const gatePass = chainOf(this.p, id).pass()!;
-    const claimed = this.p.artifacts(id).some((a) => a.kind === "claim" && a.meta.pass === gatePass);
-    if (cfg.checks.enabled.includes("claims") && this.p.loadDrawSetting(this.p.draw(id)).setting?.claims && !claimed)
-      await this.recheck(id, cfg, { checks: ["claims"], pass: gatePass });
-    const best = rounds.reduce((a, r) => (r.total < a.total ? r : a), rounds[0]);
-    // what the last round would have repaired had the loop gone on: the gate's work, not auto's
-    const result: AutoResult = { id, rounds, best, stopped, floor, calls: rounds.at(-1)!.calls, left_open: accept.length };
-    // the round table belongs to the brief auto stopped on, so the gate can show how it got there
-    const last = chainOf(this.p, id).lastStep();
-    if (last) this.p.artifact(last, "auto", JSON.stringify(result), { rounds: rounds.length, stopped, best: best.id });
-    return result;
-  }
-
-  /**
-   * The accepted set with every conflicting pair reduced to its higher-scoring
-   * side. One call, only when there are two or more fixes; `accept` is sorted
-   * by score, so on a tie the earlier one is kept.
-   */
-  private async reconcile<F extends FindingView>(drawId: string, accept: F[]): Promise<F[]> {
-    if (accept.length < 2) return accept;
-    const parent = chainOf(this.p, drawId).lastStep()?.id ?? null;
-    // the patch goes in too: on the pit chain a fix moved Ruth off the block and another patched the table for her being on it,
-    // and read as sentences the second was conditional on the first, so nothing conflicted
-    const fixes = accept.map((f, i) => `${i + 1}. ${f.replacement}${f.patch?.trim() ? `\n   patch: "${f.patch.trim()}"` : ""}`).join("\n");
-    const prompt = fill("reconcile", { fixes });
-    // the call is the start of the repair: while it runs the gate is closed, so no second accept, auto or draft starts
-    const { value: pairs } = await act(this.p.db, { id: drawId, during: "repairing", back: "awaiting_check_gate" }, () => this.p.invoke<{ a: number; b: number; why: string }[]>(drawId, parent, "reconcile", prompt, (t) => {
-      const block = tag(t, "conflicts");
-      if (block === null) throw new Error("no <conflicts> tag");
-      return parseConflicts(block).filter((x) => x.a >= 1 && x.a <= accept.length && x.b >= 1 && x.b <= accept.length && x.a !== x.b);
-    }), () => ({ id: drawId, status: "awaiting_check_gate" }));
-    const dropped = new Map<string, FindingView>();
-    for (const { a, b } of pairs) {
-      const [hi, lo] = a < b ? [a, b] : [b, a];
-      // the list is sorted by score, so the earlier index is the higher score or the tie-break
-      const keep = accept[hi - 1], drop = accept[lo - 1];
-      if (!dropped.has(keep.id) && !dropped.has(drop.id)) dropped.set(drop.id, keep);
-    }
-    for (const [id, keep] of dropped) this.dismissFound(drawId, accept.find((f) => f.id === id)!, `auto: conflicts with ${keep.id}`, "draw");
-    return accept.filter((f) => !dropped.has(f.id));
-  }
-
-  /** `draft --auto` works gate 1 by the same rule and drafts from where it stops. What auto left open stays open: a draft is blocked only by an accepted finding no repair has applied. */
-  private async autoGate(drawId: string, cfg: DraftConfig): Promise<string> {
-    return (await this.autoRounds(drawId, { cfg })).id;
   }
 
   // --- gate 2 ----------------------------------------------------------------

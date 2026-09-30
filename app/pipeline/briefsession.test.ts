@@ -17,10 +17,10 @@ describe("the brief session", () => {
   test("its calls send the brief as the system prompt, the same on every one", async () => {
     const { p, model, draw } = await drawn(draftScript({}));
     const parts = briefParts(p, draw.id);
-    const session = new BriefSession(p, draw.id, parts, "check-derivation");
+    const session = new BriefSession(p, draw.id, parts, "check-reader");
     model.calls.length = 0;
     await session.call("check-structure", "ask one", (t) => t);
-    await session.samples("check-derivation", "ask two", (t) => t, 2);
+    await session.samples("check-reader", "ask two", (t) => t, 2);
     expect(model.calls).toHaveLength(3);
     expect(model.calls[0].system).toContain('<vignette name="chosen">');
     expect(model.calls.every((c) => c.system === model.calls[0].system)).toBe(true);
@@ -36,7 +36,7 @@ describe("the brief session", () => {
     // the lead's own first call does not wait; another stage's does
     await (slow as never as { held: (s: string, n?: number) => Promise<void> }).held("ledger-extract", 1);
     expect(released).toBe(false);
-    await (slow as never as { held: (s: string, n?: number) => Promise<void> }).held("check-ledger", 1);
+    await (slow as never as { held: (s: string, n?: number) => Promise<void> }).held("check-structure", 1);
     expect(released).toBe(true);
   });
 });

@@ -59,8 +59,6 @@ export type Step = StepSummary;
 export type FullStep = StepRow;
 /** The draft defaults, plus the model each stage runs on, the groups a form sets at once, and the models it offers. */
 export type DraftConfigView = { defaults: DraftConfig; profiles: string[]; byProfile: Record<string, DraftConfig>; stages: Record<string, string>; groups: Record<string, string[]>; models: string[] };
-/** The repair settings a draw would run under: its own, or the defaults until it has its own. */
-export type Repair = DrawDetail["repair"];
 /** The part standing in each role of a brief now. The server decides which; the page only shows them. */
 export type Parts = DrawDetail["parts"];
 export type Candidate = DrawDetail["candidates"][number];
@@ -84,8 +82,7 @@ export const api = {
   deleteDraw: (id: string) => j<GateResult>(`/api/draws/${id}`, { method: "DELETE", body: "{}" }),
   startDraw: (b: Record<string, string | undefined | Record<string, string>>) => j<{ id: string }>("/api/draws", { method: "POST", body: JSON.stringify(b) }),
   gate: (id: string, b: { action: string; step_id?: string; note?: string; findings?: string[]; finding?: string; beat?: number; beats?: number[]; instruction?: string; notes?: Record<string, string>; instructions?: Instruction[]; premise?: string; at_beat?: number; edits?: { beat: number; field: string; text: string }[]; real?: boolean; profile?: string; overrides?: Record<string, string | number>; models?: Record<string, string> }) => j<GateResult>(`/api/draws/${id}/gate`, { method: "POST", body: JSON.stringify(b) }),
-  check: (id: string) => j<GateResult>(`/api/draws/${id}/check`, { method: "POST", body: "{}" }),
-  draft: (id: string, b: { auto?: boolean; plan?: boolean; profile?: string; overrides?: Record<string, string | number>; models?: Record<string, string> }) => j<GateResult>(`/api/draws/${id}/draft`, { method: "POST", body: JSON.stringify(b) }),
+  draft: (id: string, b: { plan?: boolean; profile?: string; overrides?: Record<string, string | number>; models?: Record<string, string> }) => j<GateResult>(`/api/draws/${id}/draft`, { method: "POST", body: JSON.stringify(b) }),
   step: (id: string) => j<{ step: FullStep; artifacts: Artifact[] }>(`/api/steps/${id}`),
   findings: (id: string, all = false) => j<Findings>(`/api/draws/${id}/findings${all ? "?all=true" : ""}`),
   story: (id: string) => j<Story>(`/api/draws/${id}/story`),

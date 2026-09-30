@@ -221,13 +221,14 @@ describe("the plan's claims about the setting (T1′)", () => {
 });
 
 describe("no gate 1 stop for a person's draw (T2)", () => {
-  test("a manual choose builds the brief and drafts on to the plan gate, with no check", async () => {
+  test("a manual choose builds the brief and drafts on to the plan gate, with no gate 1 check", async () => {
     const { p, d, draw, model } = await drawn(draftScript(), undefined, "manual");
     expect(p.draw(draw.id).status).toBe("awaiting_gate");
     const step = p.candidates(draw.id)[0]!.step_id;
     const out = (await gateCommand(p, d, draw.id, "choose", { step_id: step }).done) as { status: string };
     expect(out.status).toBe("awaiting_plan_gate");
-    expect(model.calls.some((c: any) => c.stage.startsWith("check-") && !c.stage.startsWith("check-claims"))).toBe(false);
+    // only the brief's text checks run, beside the schedule (T3); gate 1's ledger and derivation checkers are gone
+    expect([...new Set(model.calls.map((c: any) => c.stage).filter((s: string) => s.startsWith("check-")))].sort()).toEqual(["check-reader", "check-resemblance", "check-structure"]);
     expect(model.calls.map((c: any) => c.stage)).toEqual(expect.arrayContaining(["schedule", "ir-symbolize", "ir-plan-ledger"]));
     expect(model.calls.some((c: any) => c.stage === "scene")).toBe(false);
   });

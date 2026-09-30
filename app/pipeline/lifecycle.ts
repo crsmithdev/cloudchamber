@@ -27,7 +27,7 @@ export type Status = (typeof STATUSES)[number];
 // the tab a stage belongs in is a fact about the stage: config.ts holds the table, and this re-export keeps one import for the page
 export { stageTab, type Tab };
 
-export const ACTIONS = ["choose", "fork", "flag", "archive", "unarchive", "delete", "check", "auto", "accept", "dismiss", "hold", "draft", "branch", "rewrite", "keep", "apply", "replan", "write", "mark"] as const;
+export const ACTIONS = ["choose", "fork", "flag", "archive", "unarchive", "delete", "draft", "branch", "rewrite", "keep", "apply", "replan", "write", "mark", "instruct"] as const;
 export type Action = (typeof ACTIONS)[number];
 
 const RUNNING = new Set<string>(["running", "checking", "repairing", "drafting"]);
@@ -39,13 +39,15 @@ const AT_BRIEF = ["done", "awaiting_check_gate"];
 /** The statuses each action is allowed at; an action missing here is allowed at any. */
 const WHEN: Partial<Record<Action, string[]>> = {
   choose: ["awaiting_gate"],
-  check: AT_BRIEF, auto: AT_BRIEF, draft: AT_BRIEF,
-  accept: ["awaiting_check_gate"], dismiss: ["awaiting_check_gate"], hold: ["awaiting_check_gate"],
+  // gate 1 is gone (IR spec §15, T3): a draw that stands at its gate can still draft
+  draft: AT_BRIEF,
   rewrite: ["awaiting_draft_gate"], keep: ["awaiting_draft_gate"],
   // the plan gate: fix the plan, plan it again, or write the scenes from it; at gate 2 a plan fix writes the beats it changed again
   apply: ["awaiting_plan_gate", "awaiting_draft_gate"],
   // a person's reading of a plan finding, real or not: at either gate, and on a kept draft
   mark: ["awaiting_plan_gate", "awaiting_draft_gate", "drafted"], replan: ["awaiting_plan_gate"], write: ["awaiting_plan_gate"],
+  // an instruction on the brief's prose: a repair, then a draft to the plan gate again
+  instruct: ["awaiting_plan_gate"],
   // a branch develops a draft, so there has to be one; a draft still being written has no settled scenes to carry
   branch: ["awaiting_draft_gate", "drafted"],
 };

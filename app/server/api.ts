@@ -189,7 +189,6 @@ export function buildApi(db: Db, pipeline: Pipeline, opts: { logger?: boolean; d
     const { action, ...args } = req.body ?? ({} as any);
     return decide(req.params.id, action, args, reply);
   });
-  app.post<{ Params: { id: string }; Body: GateArgs }>("/api/draws/:id/check", (req, reply) => decide(req.params.id, "check", req.body ?? {}, reply));
   app.post<{ Params: { id: string }; Body: GateArgs }>("/api/draws/:id/draft", (req, reply) => decide(req.params.id, "draft", req.body ?? {}, reply));
   app.delete<{ Params: { id: string } }>("/api/draws/:id", (req, reply) => decide(req.params.id, "delete", {}, reply));
 

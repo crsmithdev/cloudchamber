@@ -1,16 +1,16 @@
 /**
- * Stage 1: the checkers. K checkers, each its own headless call, none seeing
- * another's output, each run S times; findings clustered by recurrence and
- * merged across checkers; dismissed findings excluded. Structure and
+ * The checks that read a brief as text, run by `draft` beside the schedule and
+ * shown at the plan gate (IR spec §15.3). Each checker is its own headless
+ * call, none seeing another's output, each run S times. Structure and
  * resemblance produce profiles, never findings, and run once for the whole
- * repair chain. Claims run only when the setting declares an authority.
+ * repair chain. The reader's questions are clustered by recurrence, and each
+ * one goes back to the model against the story; a question the story answers
+ * in a line it quotes is stored under the bar with the reason.
  *
- * Every finding, reported or under the bar, then goes back to the model once
- * with the brief, and only those a reader of the story would notice stay; the
- * rest are stored under the bar with the reason. A finding whose span is not
- * in a vignette or the ending is dropped before that call: the reader never
- * sees the outline, and on the pit chain the outline's own calendar sums were
- * most of what was left.
+ * Gate 1's ledger, derivation and claims checkers went with T3: the bind holds
+ * each scene to the ledger, and the plan check reads the plan's claims against
+ * the setting (T1′). `readClaims` and `screenClaims` are the claims calls those
+ * use.
  */
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -28,27 +28,23 @@ import type { LedgerMeta } from "./artifacts.ts";
 import { RUN, type CheckStageName } from "./config.ts";
 
 const PREMISES_PATH = resolve(import.meta.dir, "premises.md");
-const CHECKERS = ["derivation", "ledger", "structure", "resemblance", "claims", "reader"] as const;
+const CHECKERS = ["structure", "resemblance", "reader"] as const;
 export type Checker = (typeof CHECKERS)[number];
 export const STRUCTURE_QUESTIONS = ["threat", "category-violation", "agency", "obscurity", "thickening", "spectacle", "consequence"];
 
-export type CheckResult = { pass: string; findings: Cluster[]; claims: "off" | ClaimsAuthority };
+export type CheckResult = { pass: string; findings: Cluster[] };
 
 /**
- * The checkers a check pass would run on this draw now. Three of the five are
- * conditional: structure and resemblance profile the premise, which a repair
- * never changes, so they run once per chain; claims runs only when the setting
- * names an authority to check against. The page reads this rather than naming
- * the five itself.
+ * The checkers a brief pass would run on this draw now. Structure and
+ * resemblance profile the premise, which a repair never changes, so they run
+ * once per chain; the reader runs once, on the chain's first brief.
  */
 export function checkersNext(p: Pipeline, drawId: string, enabled: readonly string[], chain: Chain = chainOf(p, drawId)): Checker[] {
-  const setting = p.loadDrawSetting(p.draw(drawId)).setting;
   return (CHECKERS as readonly Checker[]).filter((c) => {
     if (!enabled.includes(c)) return false;
     if (c === "structure" || c === "resemblance") return !chain.profile(c);
-    if (c === "claims") return !!setting?.claims;
     // the reader's plot holes are the story's, and a repair rewrites two or three sentences: once, in round 1
-    if (c === "reader") return !p.draw(drawId).repaired_from;
+    if (c === "reader") return !p.draw(drawId).repaired_from && !chain.steps().some((s) => s.stage === "check-reader" && s.status === "done");
     return true;
   });
 }
@@ -89,35 +85,21 @@ export async function extractLedger(session: BriefSession, meta: LedgerMeta): Pr
 const isQuestion = (c: { checkers: string[] }) => c.checkers.every((x) => x === "reader");
 
 /** Run every enabled checker over the brief. The draw must hold a brief; status is the caller's. */
-export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, opts: { checks?: string[]; samples?: number; keep_if?: number; premisesPath?: string; pass?: string } = {}): Promise<CheckResult> {
+export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, opts: { checks?: string[]; premisesPath?: string } = {}): Promise<CheckResult> {
   const parts = briefParts(p, drawId);
   const chain = chainOf(p, drawId);
   const brief = briefBlock(parts);
-  // a pass joined late, as claims join the pass a gate reads, keeps its id and its record of samples
-  const pass = opts.pass ?? passId();
+  const pass = passId();
   const enabled = checkersNext(p, drawId, opts.checks ?? cfg.checks.enabled, chain);
-  const dismissed = chain.dismissed();
-  const shape = findingShape();
-  const S = (name: string) => opts.samples ? { samples: opts.samples, keep_if: Math.min(opts.keep_if ?? cfg.checks.keep_if, opts.samples) } : samplesFor(cfg.checks, name);
+  const S = (name: string) => samplesFor(cfg.checks, name);
   const perChecker: { checker: string; clusters: Cluster[]; firstStep: StepRow; samples?: number }[] = [];
-  // <examined> is the checker's own account of what it compared, kept for the reader; a reply without it, or one that opens it and never closes it (Sonnet 5, run 9), has still answered
-  const findingsOf = (checker: "derivation" | "ledger" | "reader") => (t: string) => ({ findings: parseFindings(t, checker, 0), examined: tag(t, "examined") ?? "" });
-  // the ledger is extracted once for the chain and pinned; every round is checked against it. It is read here once
-  // and the verify pass gets the same one: asked again, the chain would answer with the null it cached before the extraction
-  const extracting = !chain.ledger() && enabled.includes("ledger");
   // every call of the pass reads the brief from one cached system prompt; the session holds it and the lead (ADR-0010)
-  const session = new BriefSession(p, drawId, parts, extracting ? "ledger-extract" : "check-derivation", pass);
-  const ledger: Promise<string | null> = chain.ledger() ? Promise.resolve(chain.ledger())
-    : extracting ? extractLedger(session, { pass, sample: 1, pinned: true }) : Promise.resolve(null);
+  const session = new BriefSession(p, drawId, parts, enabled[0] ? `check-${enabled[0]}` : "check-reader", pass);
 
   const runs: Promise<unknown>[] = [];
-  if (enabled.includes("derivation")) runs.push(sampled(session, "check-derivation", fill("checkDerivation", { brief, findingShape: shape }), S("derivation"), "derivation",
-    (t) => ({ impossibility: tag(t, "impossibility"), ...findingsOf("derivation")(t) })).then((r) => { perChecker.push(r); }));
-  // the extraction runs beside the other checkers; only the ledger checker waits for it
-  if (enabled.includes("ledger")) runs.push(ledger.then((l) => sampled(session, "check-ledger", fill("checkLedger", { brief, ledger: fill("pinnedLedger", { ledger: l! }), findingShape: shape }), S("ledger"), "ledger", findingsOf("ledger")))
-    .then((r) => { perChecker.push(r); }));
-  if (enabled.includes("reader")) runs.push(sampled(session, "check-reader", fill("checkReader", { sections: RUN.coreJobs.join(" | ") }), S("reader"), "reader", findingsOf("reader"))
-    .then((r) => { perChecker.push(r); }));
+  // <examined> is the checker's own account of what it compared, kept for the reader; a reply without it has still answered
+  if (enabled.includes("reader")) runs.push(sampled(session, "check-reader", fill("checkReader", { sections: RUN.coreJobs.join(" | ") }), S("reader"), "reader",
+    (t) => ({ findings: parseFindings(t, "reader", 0), examined: tag(t, "examined") ?? "" })).then((r) => { perChecker.push(r); }));
   // structure and resemblance profile the premise, which a repair never changes: once per chain
   if (enabled.includes("structure")) runs.push(sampled(session, "check-structure", fill("checkStructure", { brief }), S("structure"), "structure", (t) => ({ answers: parseQuestions(t, STRUCTURE_QUESTIONS) }),
     (step, value, sample) => p.artifact(step, "profile", JSON.stringify(value.answers), { pass, sample, source: "check", checker: "structure", answers: value.answers })));
@@ -127,40 +109,24 @@ export async function runCheck(p: Pipeline, drawId: string, cfg: DraftConfig, op
     const matches = tags(t, "match").map((m) => ({ entry: tag(m, "entry") ?? "", span: tag(m, "span") ?? "" }));
     return { matches, nearest: { title: tag(nearest, "title") ?? "", author: tag(nearest, "author") ?? "", shared: tag(nearest, "shared") ?? "" } };
   }, (step, value, sample) => p.artifact(step, "profile", JSON.stringify(value), { pass, sample, source: "check", checker: "resemblance", ...value })));
-
-  let claims: CheckResult["claims"] = "off";
-  const { setting } = p.loadDrawSetting(parts.draw);
-  // the list already holds claims only when the setting names an authority
-  if (enabled.includes("claims") && setting?.claims) {
-    const authority = setting.claims;
-    claims = authority;
-    const reference = authority === "setting" ? distillate(setting) : "";
-    runs.push(runClaims(session, authority, reference, pass, chain).then((r) => { perChecker.push(r); }));
-  }
   await Promise.all(runs);
 
-  const reported = perChecker.flatMap((c) => c.clusters.filter((x) => x.reported));
-  // a reader's question and a contradiction on the same span stay two findings: one goes to a person, the other can go to auto
-  const byKind = (cs: Cluster[]) => [...merge(cs.filter((c) => !isQuestion(c))), ...merge(cs.filter(isQuestion))];
-  const merged = excludeDismissed(byKind(reported), dismissed);
-  // the clusters under keep_if, merged as the gate reads them back, so one verify call grades the whole list
-  const under = excludeDismissed(byKind(perChecker.flatMap((c) => c.clusters.filter((x) => !x.reported))), dismissed)
-    .filter((c) => !merged.some((m) => same(m, c) && isQuestion(m) === isQuestion(c)));
-  const dropped = await verifyFindings(session, parts, await ledger, [...merged, ...under]);
-  // a clean pass leaves no finding or profile behind, so the pass is marked on its own: the gate reads the latest pass, not the latest with findings
-  // with the samples each checker ran in this pass, which the score reads: an earlier pass may have run a different count.
-  // Marked only once the verify reading is in: a pass whose verify failed would otherwise read as clean
+  const questions = perChecker.flatMap((c) => c.clusters);
+  const merged = merge(questions.filter((x) => x.reported));
+  const under = merge(questions.filter((x) => !x.reported)).filter((c) => !merged.some((m) => same(m, c)));
+  const dropped = await verifyQuestions(session, parts, [...merged, ...under]);
+  // a clean pass leaves no finding behind, so the pass is marked on its own, with the samples each checker ran
   const samples = Object.fromEntries(perChecker.filter((c) => c.samples).map((c) => [c.checker, c.samples!]));
-  if (perChecker.length && !opts.pass) p.artifact(perChecker[0].firstStep, "pass", pass, { pass, samples });
+  if (perChecker.length) p.artifact(perChecker[0].firstStep, "pass", pass, { pass, samples });
   const store = (c: Cluster, extra: Record<string, unknown>) => {
     const owner = perChecker.find((x) => x.checker === c.checkers[0])!;
     const { reported: _r, ...meta } = c;
     p.artifact(owner.firstStep, "finding", c.statement, { ...meta, pass, source: "check", ...extra });
   };
   for (const c of merged) { const why = dropped.get(c.id); store(c, why ? { sub_threshold: true, dropped: why } : {}); }
-  // a finding under the bar is stored only when dropped, so the list read back later carries the reason
+  // a question under the bar is stored only when dropped, so the list read back later carries the reason
   for (const c of under) { const why = dropped.get(c.id); if (why) store(c, { sub_threshold: true, dropped: why }); }
-  return { pass, findings: merged.filter((c) => !dropped.has(c.id)), claims };
+  return { pass, findings: merged.filter((c) => !dropped.has(c.id)) };
 }
 
 /**
@@ -176,40 +142,24 @@ const VERIFY_READINGS = 2;
 export const NOT_IN_PROSE = "the span is not in a vignette or the ending, which is all a reader of the story sees";
 
 /**
- * The pairing step: a finding whose span is not in the prose is dropped with no
- * call, then one call reads every other finding back against the brief, and
- * one reads the reader's questions back against the story.
- * Returns the ids to drop, each with the reason. Claims have their own
- * verifier and are not read again.
+ * A question whose span is not in the prose is dropped with no call; one call
+ * per reading reads every other question back against the story. Returns the
+ * ids to drop, each with the reason.
  */
-async function verifyFindings(session: BriefSession, parts: BriefParts, ledger: string | null, all: Cluster[]): Promise<Map<string, string>> {
+async function verifyQuestions(session: BriefSession, parts: BriefParts, all: Cluster[]): Promise<Map<string, string>> {
   const out = new Map<string, string>();
-  const seen = prose(parts);
-  const subject: Cluster[] = [];
-  for (const c of all) {
-    if (c.checkers.length === 1 && c.checkers[0] === "claims") continue;
-    if (!quoted(seen, c.span, 1)) out.set(c.id, NOT_IN_PROSE); else subject.push(c);
-  }
-  // a reader's question is a gap, not a conflict: it has no second quote for checkVerify to hold it to, so it has its own question
-  const questions = subject.filter(isQuestion);
-  const conflicts = subject.filter((c) => !questions.includes(c));
-  // a question is dropped only on a line the story says: without the quote, a drop explained a plot hole away (plants 2026-09-26)
   const story = prose(parts);
-  // and not on the question's own span, which raises the question rather than answering it
+  const subject: Cluster[] = [];
+  for (const c of all) if (!quoted(story, c.span, 1)) out.set(c.id, NOT_IN_PROSE); else subject.push(c);
+  if (!subject.length) return out;
+  // a question is dropped only on a line the story says, and not on the question's own span: without the quote, a drop explained a plot hole away (plants 2026-09-26)
   const answered = (why: string, c: Cluster) => [...why.matchAll(/["“]([^"”]{12,})["”]/g)].some((m) => quoted(story, m[1]!) && !quoted(c.span, m[1]!));
-  const read = async (list: Cluster[], template: "checkVerify" | "readerVerify", extra: Record<string, string>, line: (c: Cluster) => string, holds: (why: string, c: Cluster) => boolean) => {
-    if (!list.length) return;
-    const findings = list.map((c, i) => `${i + 1}. span: "${c.span}"\n   ${line(c)}`).join("\n");
-    const prompt = fill(template, { findings, cap: String(50 + 40 * list.length), ...extra });
-    const readings = await Promise.all(Array.from({ length: VERIFY_READINGS }, () =>
-      session.call("check-verify", prompt, (t) => parseVerdicts(t, list.length)).then((r) => r.value)));
-    // dropped when any reading drops it; the first reading that drops it gives the reason
-    list.forEach((c, i) => { const drop = readings.map((r) => r[i]).find((v) => v.answer === "drop" && holds(v.why, c)); if (drop) out.set(c.id, drop.why); });
-  };
-  await Promise.all([
-    read(conflicts, "checkVerify", { ledger: ledger ? fill("pinnedLedger", { ledger }) : "" }, (c) => `statement: ${c.statement}\n   result: ${c.result}\n   evidence: ${c.evidence}`, () => true),
-    read(questions, "readerVerify", {}, (c) => `question: ${c.statement}`, answered),
-  ]);
+  const findings = subject.map((c, i) => `${i + 1}. span: "${c.span}"\n   question: ${c.statement}`).join("\n");
+  const prompt = fill("readerVerify", { findings, cap: String(50 + 40 * subject.length) });
+  const readings = await Promise.all(Array.from({ length: VERIFY_READINGS }, () =>
+    session.call("check-verify", prompt, (t) => parseVerdicts(t, subject.length)).then((r) => r.value)));
+  // dropped when any reading drops it; the first reading that drops it gives the reason
+  subject.forEach((c, i) => { const drop = readings.map((r) => r[i]).find((v) => v.answer === "drop" && answered(v.why, c)); if (drop) out.set(c.id, drop.why); });
   return out;
 }
 
@@ -300,20 +250,6 @@ async function confirmClaim(p: Pipeline, drawId: string, verify: StepRow, v: Ver
 // the setting extractor reads the setting, so it pulls the claims the setting settles and not the ones it guesses at
 const extractPrompt = (authority: ClaimsAuthority, reference: string) =>
   fill(CLAIMS_PROMPTS[authority].extract, authority === "setting" ? { reference } : {});
-
-async function runClaims(session: BriefSession, authority: ClaimsAuthority, reference: string, pass: string, chain: Chain) {
-  const p = session.p, drawId = session.drawId;
-  const { step, value: claims } = await session.call("check-claims-extract", extractPrompt(authority, reference), claimsIn);
-  const verified = await verifyClaims(p, drawId, step, claims, authority, reference, pass, chain, false);
-  // the cached ones still belong to this pass, so the pane and the export show the whole set
-  for (const v of verified) if (v.cached) p.artifact(step, "claim", v.statement, claimMeta(v, pass, authority, { cached_from: v.draw }));
-  const contradicted = verified.filter((f) => f.result === "contradicted");
-  const clusters: Cluster[] = contradicted.map((f) => ({
-    id: findingId("claims", f.span, drawId), checkers: ["claims"], samples: [1], n: 1, span: f.span, statement: f.statement, result: f.result,
-    evidence: f.evidence, invalidates: f.invalidates || "none", replacement: f.replacement, patch: f.patch ?? "", reported: true,
-  }));
-  return { checker: "claims", clusters, firstStep: step };
-}
 
 /**
  * Extract the claims a text makes about the setting or the world, and verify

@@ -10,7 +10,6 @@ import { draftScript, drawn } from "./drafting.fixture.ts";
 /** One drafted draw, as gate 2 leaves it. */
 async function drafted() {
   const { p, d, draw, db, dir } = await drawn(draftScript({}));
-  await d.check(draw.id);
   await d.draft(draw.id);
   return { p, d, draw, db, dir };
 }

@@ -1,8 +1,6 @@
 /**
- * Canned model responses for the checking and drafting stages, shaped as the
- * prompts ask. Three samples of the ledger checker carry two findings that
- * recur in all three, one in two, one in one; the derivation samples repeat
- * the top finding so the cross-checker merge has something to merge.
+ * Canned model responses for the brief's checks and the drafting stages,
+ * shaped as the prompts ask.
  */
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -14,33 +12,14 @@ import { Drafting } from "./drafting.ts";
 import { noPdf } from "./report.ts";
 
 export const SPAN_A = "The director fires the reliquary";
-export const SPAN_B = "the twelfth relic, the Verona clavicle";
-export const SPAN_C = "tears on the silk";
+const SPAN_B = "the twelfth relic, the Verona clavicle";
+const SPAN_C = "tears on the silk";
 
-/** The default evidence quotes the fixture ending, so a finding is grounded; A's span sits in the ending too, so A is what a reader sees. */
+/** The default evidence quotes the fixture ending, so a finding is grounded. */
 export const finding = (span: string, statement: string, invalidates: string, replacement: string, evidence = "and the count closes. The last beat.", result = `contradicts:${evidence}`, patch = "") =>
   `<finding><span>${span}</span><statement>${statement}</statement><result>${result}</result><evidence>${evidence}</evidence><invalidates>${invalidates}</invalidates><replacement>${replacement}</replacement>${patch ? `<patch>${patch}</patch>` : ""}</finding>`;
 
-export const A = (s = SPAN_A) => finding(s, "the director fires the reliquary herself", "departure", "Only the assembler can fire the reliquary.");
-// B and C quote the ledger, not the prose: a rule a reader does not see scores one where a line they do see scores two
-export const B = (s = SPAN_B) => finding(s, "the twelfth relic is named differently in the two vignettes", "particulars", "The twelfth relic is the Verona clavicle in every account.", "the fire was on the 3rd");
-const C = () => finding(SPAN_C, "the tears the outline cut are back", "knowledge", "The silk is dry.", "the director holds the order");
-
 export const LEDGER = "time: the fire was on the 3rd\ndetail: 1,106 dead\npossession: the director holds the order";
-
-/**
- * Ledger samples: A in all, B in all but the second, C in the second only. A
- * first pass runs three; a pass after a repair runs four, and the fourth
- * carries A and B, so B recurs 3 of 4 as it recurred 2 of 3.
- */
-export const ledgerSamples = (a = A(), b = B(), n = 3) => [
-  `<ledger>${LEDGER}</ledger>${a}${b}<examined>ledger×chosen\nledger×context-1\nchosen×ending</examined>`,
-  `<ledger>${LEDGER}</ledger>${a}${C()}<examined>ledger×chosen\nchosen×ending</examined>`,
-  `<ledger>${LEDGER}</ledger>${a}${b}<examined>ledger×chosen\nledger×ending</examined>`,
-  `<ledger>${LEDGER}</ledger>${a}${b}<examined>ledger×chosen\nchosen×ending</examined>`,
-].slice(0, n);
-export const derivationSamples = (a = A(), n = 3) => Array.from({ length: n }, () => `<impossibility>One reliquary that fires.</impossibility>${a}<examined>the director fires it\n1,106 = 12 × 92 + 2</examined>`);
-export const cleanSamples = (n = 4) => Array.from({ length: n }, () => `<ledger>${LEDGER}</ledger><impossibility>One reliquary.</impossibility><examined>everything checked, nothing found</examined>`);
 
 const STRUCTURE_Q = ["threat", "category-violation", "agency", "obscurity", "thickening", "spectacle", "consequence"];
 const structure = (present = ["threat", "agency", "consequence"]) => STRUCTURE_Q.map((q) => `<question name="${q}"><answer>${present.includes(q) ? "present" : "absent"}</answer><quote>a quote for ${q}</quote></question>`).join("");
@@ -123,22 +102,17 @@ export const screenStructure = (prompt: string) => {
 const ending = (span = SPAN_A) => `<ending>${span}, and the count closes. The last beat.</ending>`;
 export const vignette = (n: number, extra = "") => `<vignette>${extra ? extra + " " : ""}${Array.from({ length: 400 }, (_, i) => `w${n}_${i}`).join(" ")}</vignette>`;
 
-/** Every checker the fixtures script, derivation included, which draft.toml leaves off by default. */
-export const ALL_CHECKERS = "claims,derivation,ledger,structure,resemblance,reader";
-
-/** The script for a full draw plus check and draft. Queues are consumed in call order. */
+/** The script for a full draw and its draft. Queues are consumed in call order. */
 export function draftScript(over: Record<string, any> = {}) {
   return {
     premises: () => [0.05, 0.03, 0.08, 0.03, 0.06].map((p, i) => `<premise><text>Premise ${i + 1} text.</text><probability>${p}</probability></premise>`).join("\n"),
-    // the chosen vignette carries B and C, so every fixture span is in the prose a reader sees
+    // the chosen vignette ends on two fixed phrases a test can quote
     execute: (p: string) => vignette(Number(fromAsk(p, /Premise (\d)/, "the premise number"))).replace("</vignette>", ` ${SPAN_B}, ${SPAN_C}.</vignette>`),
     outline: () => ["departure", "particulars", "knowledge", "arrival"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n")
       + "\n<job>Test the first thing: scene one.</job>\n<job>Test a second thing: scene two.</job>",
     context: (p: string) => `<vignette>context for ${/Its job: (.*)/.exec(p)?.[1]}</vignette>`,
     ending: () => ending(),
     "ledger-extract": () => `<ledger>${LEDGER}</ledger>`,
-    "check-ledger": ledgerSamples(),
-    "check-derivation": derivationSamples(),
     "check-verify": (p: string) => Array.from({ length: (p.match(/^\d+\. span:/gm) ?? []).length }, (_, i) => `<verdict n="${i + 1}"><answer>keep</answer><why>holds</why></verdict>`).join(""),
     "check-structure": () => structure(),
     "check-resemblance": () => resemblance(),
@@ -146,7 +120,6 @@ export function draftScript(over: Record<string, any> = {}) {
     "check-claims-extract": () => claimsExtract(),
     "check-claims-verify": claimVerify,
     "check-claims-confirm": () => "<answer>yes</answer><why>The cited line gives another value for the same thing.</why>",
-    reconcile: () => "<conflicts></conflicts>",
     // repairs edit in place: the rewrite keeps the passage it was given
     "repair-context": (p: string) => `<vignette>rewritten context ${tag(p, "constraints")?.split("\n")[0] ?? ""} ${tag(p, "vignette") ?? ""}</vignette>`,
     "repair-vignette": (p: string) => `<vignette>rewritten vignette ${tag(p, "constraints")?.split("\n")[0] ?? ""} ${tag(p, "vignette") ?? ""}</vignette>`,
@@ -193,6 +166,6 @@ export async function drawn(script = draftScript(), setting?: { id: string; dir:
     draftsDir: join(dir, "drafts") });
   // the fixtures script three samples per checker and three per screen; pin that here so a
   // change to the defaults in draft.toml does not rewrite every assertion in this file
-  d.configure(draw.id, { overrides: { "checks.samples": 3, "checks.enabled": ALL_CHECKERS, "screens.samples": 3, "screens.keep_if": 2 } });
+  d.configure(draw.id, { overrides: { "checks.samples": 3, "screens.samples": 3, "screens.keep_if": 2 } });
   return { db, dir, model, p, d, draw };
 }

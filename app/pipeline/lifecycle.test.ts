@@ -5,7 +5,7 @@ import { ACTIONS, STATUSES, act, commit, lifecycleView, recoverInterrupted, stag
 import { STAGES } from "./config.ts";
 import { FakeModel } from "./model.ts";
 import { Pipeline } from "./draw.ts";
-import { cleanSamples, derivationSamples, draftScript, drawn, fixture, ledgerSamples } from "./drafting.fixture.ts";
+import { draftScript, drawn, fixture } from "./drafting.fixture.ts";
 
 const draw = (status: string, over: Record<string, unknown> = {}) => ({ id: "d", status, chosen_step: "s1", repaired_from: null, ...over });
 const allowed = (status: string) => ACTIONS.filter((a) => whyNot(draw(status), a) === null);
@@ -15,12 +15,13 @@ describe("the rules", () => {
     const table: Record<string, Action[]> = {
       running: ["fork", "flag", "archive", "unarchive"],
       awaiting_gate: ["choose", "flag", "archive", "unarchive"],
-      done: ["fork", "flag", "archive", "unarchive", "check", "auto", "draft"],
+      done: ["fork", "flag", "archive", "unarchive", "draft"],
       checking: ["fork", "flag", "archive", "unarchive"],
-      awaiting_check_gate: ["fork", "flag", "archive", "unarchive", "check", "auto", "accept", "dismiss", "hold", "draft"],
+      // gate 1 went with T3: a draw that stands at its gate can only draft on
+      awaiting_check_gate: ["fork", "flag", "archive", "unarchive", "draft"],
       repairing: ["fork", "flag", "archive", "unarchive"],
       repaired: ["fork", "flag", "archive", "unarchive"],
-      awaiting_plan_gate: ["fork", "flag", "archive", "unarchive", "apply", "replan", "write", "mark"],
+      awaiting_plan_gate: ["fork", "flag", "archive", "unarchive", "apply", "replan", "write", "mark", "instruct"],
       drafting: ["fork", "flag", "archive", "unarchive"],
       awaiting_draft_gate: ["fork", "flag", "archive", "unarchive", "branch", "rewrite", "keep", "apply", "mark"],
       drafted: ["fork", "flag", "archive", "unarchive", "branch", "mark"],
@@ -32,7 +33,7 @@ describe("the rules", () => {
   });
 
   test("a refusal says why, in the words the API returns", () => {
-    expect(whyNot(draw("awaiting_draft_gate"), "check")).toBe("draw d is awaiting_draft_gate, not done | awaiting_check_gate");
+    expect(whyNot(draw("awaiting_draft_gate"), "draft")).toBe("draw d is awaiting_draft_gate, not done | awaiting_check_gate");
     expect(whyNot(draw("awaiting_gate", { chosen_step: null }), "fork")).toBe("draw d is awaiting the gate; choose a candidate instead of forking");
     expect(whyNot(draw("failed", { chosen_step: null }), "fork")).toBe("draw d chose no candidate; there is nothing to fork from");
     expect(whyNot(draw("awaiting_gate", { chosen_step: null }), "delete")).toBeNull();
@@ -62,15 +63,14 @@ describe("the rules", () => {
 });
 
 describe("a failed action puts the draw back where it stood", () => {
-  test("a check that throws leaves the brief checkable with the reason, and the next success clears it", async () => {
-    const script = draftScript({ "check-ledger": [] });                         // exhausted: every ledger sample fails
+  test("a draft that throws leaves the brief draftable with the reason, and the next success clears it", async () => {
+    const script = draftScript({ "ledger-extract": [] });                       // exhausted: the ledger extraction fails
     const { d, p, draw, model } = await drawn(script);
-    await expect(d.check(draw.id)).rejects.toThrow(/check-ledger failed/);
-    expect(p.draw(draw.id)).toMatchObject({ status: "done", error: expect.stringMatching(/^check-ledger failed: error/) });
-    (model as any).script["check-ledger"] = ledgerSamples();
-    (model as any).script["check-derivation"] = derivationSamples();          // the failed pass spent these
-    await d.check(draw.id);
-    expect(p.draw(draw.id)).toMatchObject({ status: "awaiting_check_gate", error: null });
+    await expect(d.draft(draw.id)).rejects.toThrow(/ledger-extract failed/);
+    expect(p.draw(draw.id)).toMatchObject({ status: "done", error: expect.stringMatching(/^ledger-extract failed: error/) });
+    (model as any).script["ledger-extract"] = draftScript()["ledger-extract"];
+    await d.draft(draw.id);
+    expect(p.draw(draw.id)).toMatchObject({ status: "awaiting_draft_gate", error: null });
   });
 
   test("a choose that throws goes back to the gate, and a candidate can be chosen again", async () => {
@@ -87,11 +87,7 @@ describe("a failed action puts the draw back where it stood", () => {
   });
 
   test("a gate-2 rewrite that throws stays at gate 2; a flag afterwards keeps the rewrite record for keep", async () => {
-    const script = draftScript({
-      "check-ledger": [...ledgerSamples(), ...cleanSamples()],
-      "check-derivation": [...derivationSamples(), ...cleanSamples()],
-    });
-    const { d, p, draw, model, dir } = await drawn(script);
+    const { d, p, draw, model, dir } = await drawn();
     await d.draft(draw.id);
     await d.rewrite(draw.id, [3]);
     const scene = (model as any).script.scene;
@@ -122,54 +118,54 @@ const held = (db: Parameters<typeof act>[0], id: string, during: Status, back: S
 
 describe("recovery on start", () => {
   test("an interrupted step fails with the reason and its draw goes back where it stood", async () => {
-    const { p, d, draw } = await drawn(draftScript({ "check-ledger": [...ledgerSamples(), ...cleanSamples()], "check-derivation": [...derivationSamples(), ...cleanSamples()] }));
-    await d.check(draw.id);
-    // the process died mid-recheck: one step is left running and the draw at checking, with a pass behind it
-    const step = p.steps(draw.id).find((s) => s.stage === "check-ledger")!;
+    const { p, d, draw } = await drawn();
+    await d.draft(draw.id);
+    // the process died mid-rewrite: one step is left running and the draw at drafting, with a draft behind it
+    const step = p.steps(draw.id).find((s) => s.stage === "scene")!;
     p.db.query("UPDATE steps SET status = 'running', ended_at = NULL WHERE id = ?").run(step.id);
-    held(p.db, draw.id, "checking", "awaiting_check_gate");
+    held(p.db, draw.id, "drafting", "awaiting_draft_gate");
     // the step's process is gone, so recovery owns it
     p.db.query("UPDATE steps SET pid = NULL WHERE id = ?").run(step.id);
     expect(recoverInterrupted(p.db, "restart")).toEqual({ steps: 1, draws: [draw.id], left: 0 });
     expect(p.steps(draw.id).find((s) => s.id === step.id)).toMatchObject({ status: "failed", fail_reason: "error", error: "restart" });
-    expect(p.draw(draw.id)).toMatchObject({ status: "awaiting_check_gate", error: "restart" });
+    expect(p.draw(draw.id)).toMatchObject({ status: "awaiting_draft_gate", error: "restart" });
     // a second start finds nothing to do
     expect(recoverInterrupted(p.db, "restart")).toEqual({ steps: 0, draws: [], left: 0 });
   });
 
   test("a step whose process is still alive is left alone, and so is its draw", async () => {
-    const { p, d, draw } = await drawn(draftScript({ "check-ledger": [...ledgerSamples(), ...cleanSamples()], "check-derivation": [...derivationSamples(), ...cleanSamples()] }));
-    await d.check(draw.id);
-    const step = p.steps(draw.id).find((s) => s.stage === "check-ledger")!;
+    const { p, d, draw } = await drawn();
+    await d.draft(draw.id);
+    const step = p.steps(draw.id).find((s) => s.stage === "scene")!;
     // a CLI run holding the same store: the step is running and its process is this one, which is alive
     p.db.query("UPDATE steps SET status = 'running', ended_at = NULL, pid = ? WHERE id = ?").run(process.pid + 0, step.id);
-    held(p.db, draw.id, "checking", "awaiting_check_gate");
+    held(p.db, draw.id, "drafting", "awaiting_draft_gate");
 
     // `alive` ignores this very process, so stand in for another live one: pid 1 always exists
     p.db.query("UPDATE steps SET pid = 1 WHERE id = ?").run(step.id);
     expect(recoverInterrupted(p.db, "restart")).toEqual({ steps: 0, draws: [], left: 1 });
     expect(p.steps(draw.id).find((s) => s.id === step.id)).toMatchObject({ status: "running" });
-    expect(p.draw(draw.id).status).toBe("checking");
+    expect(p.draw(draw.id).status).toBe("drafting");
 
     // once that process is gone, the next start recovers it as before
     p.db.query("UPDATE steps SET pid = 0x7ffffff WHERE id = ?").run(step.id);
     expect(recoverInterrupted(p.db, "restart")).toEqual({ steps: 1, draws: [draw.id], left: 0 });
-    expect(p.draw(draw.id).status).toBe("awaiting_check_gate");
+    expect(p.draw(draw.id).status).toBe("awaiting_draft_gate");
   });
 
   test("one dead step does not drag down a draw another process is working on", async () => {
-    const { p, d, draw } = await drawn(draftScript({ "check-ledger": [...ledgerSamples(), ...cleanSamples()], "check-derivation": [...derivationSamples(), ...cleanSamples()] }));
-    await d.check(draw.id);
-    const [a, b] = p.steps(draw.id).filter((s) => s.stage === "check-ledger");
+    const { p, d, draw } = await drawn();
+    await d.draft(draw.id);
+    const [a, b] = p.steps(draw.id).filter((s) => s.stage === "scene");
     p.db.query("UPDATE steps SET status = 'running', ended_at = NULL, pid = 1 WHERE id = ?").run(a!.id);
     p.db.query("UPDATE steps SET status = 'running', ended_at = NULL, pid = 0x7ffffff WHERE id = ?").run(b!.id);
-    held(p.db, draw.id, "checking", "awaiting_check_gate");
+    held(p.db, draw.id, "drafting", "awaiting_draft_gate");
     const r = recoverInterrupted(p.db, "restart");
     // the abandoned step is failed, the live one is not, and the draw stays where the live process left it
     expect(r).toEqual({ steps: 1, draws: [], left: 1 });
     expect(p.steps(draw.id).find((s) => s.id === a!.id)!.status).toBe("running");
     expect(p.steps(draw.id).find((s) => s.id === b!.id)!.status).toBe("failed");
-    expect(p.draw(draw.id).status).toBe("checking");
+    expect(p.draw(draw.id).status).toBe("drafting");
   });
 
   test("a held draw goes back to the status its hold named, with the hold's undo links", async () => {

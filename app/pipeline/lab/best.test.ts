@@ -51,7 +51,6 @@ describe("best of N", () => {
     expect(whyNotBest({ n: 3, passes: 3, judges: ["j"] })).toMatch(/passes must be even/);
     expect(whyNotBest({ n: 3, passes: 24, judges: [] })).toBe("no judges");
     const { p, d, draw } = await drawn();
-    await d.check(draw.id);
     const draws = p.draws().length;
     await expect(best(d, draw.id, { passes: 5, call: { key: "k" } })).rejects.toThrow(/passes must be even/);
     expect(p.draws()).toHaveLength(draws);
@@ -59,7 +58,6 @@ describe("best of N", () => {
 
   test("a drafted source counts as one draft; siblings make up N, every pair is judged, and every pass is logged", async () => {
     const { p, d, draw } = await drawn();
-    await d.check(draw.id);
     await d.draft(draw.id, { overrides: OVERRIDES });
     const log = scratchLog();
     const r = await best(d, draw.id, { n: 3, passes: 4, judges: ["j1", "j2"], log, call: { key: "k", fetch: judgeSays("Tie") } });
@@ -80,7 +78,6 @@ describe("best of N", () => {
 
   test("an undrafted brief is drafted N times", async () => {
     const { d, draw } = await drawn();
-    await d.check(draw.id);
     d.configure(draw.id, { overrides: OVERRIDES });
     const r = await best(d, draw.id, { n: 2, passes: 2, judges: ["j"], log: scratchLog(), call: { key: "k", fetch: judgeSays("One") } });
     expect(r.drafts).toHaveLength(2);

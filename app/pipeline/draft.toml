@@ -28,10 +28,10 @@ template = "auto"       # auto | listen | told | signal: listen states what a li
 order = "sequential"    # sequential | parallel
 
 [checks]
-# derivation is off: on 39 stored passes of 24-26 Sep the ledger checker alone kept every finding both raised, and the
-# derivation-only findings were dropped or left open. Since 19 Sep auto accepted 11 derivation-only findings of 116.
-# Turn it back on for one run with --set checks.enabled=claims,derivation,ledger,structure,resemblance,reader
-enabled = ["claims", "ledger", "structure", "resemblance", "reader"]
+# the checks that read the brief as text, run by `draft` beside the schedule and shown at the plan gate. Gate 1's
+# ledger, derivation and claims checkers went with T3 (spec 2026-09-28-story-ir §15): the bind holds each scene to
+# the ledger, and the plan check reads the plan's claims against the setting
+enabled = ["structure", "resemblance", "reader"]
 samples = 2              # the score's recurrence term already separates 2 of 2 from 1 of 2
 keep_if = 2
 [checks.structure]

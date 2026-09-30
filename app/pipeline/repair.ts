@@ -139,8 +139,8 @@ const settledBlock = (settled: Settled[]) =>
 
 /**
  * Create the repaired draw and write its brief. Returns the new draw, a brief
- * nobody has checked yet. The source is marked repaired and superseded; the
- * caller runs the check. A repair that fails leaves the source at its gate.
+ * not yet drafted. The source is marked repaired and superseded; the caller
+ * drafts the new draw. A repair that fails leaves the source at the plan gate.
  */
 export async function repair(p: Pipeline, drawId: string, accepted: Accepted[]): Promise<DrawRow> {
   const parts = briefParts(p, drawId);
@@ -148,7 +148,7 @@ export async function repair(p: Pipeline, drawId: string, accepted: Accepted[]):
   const newId = newDrawId();
   p.copyDraw(src, newId, { repaired_from: drawId }, src.gate_method);
   // the new round and its source settle together: a crash between them left a chain with two tips
-  await act(p.db, [{ id: drawId, during: "repairing", back: "awaiting_check_gate" }, { id: newId, during: "running", back: "failed" }],
+  await act(p.db, [{ id: drawId, during: "repairing", back: "awaiting_plan_gate" }, { id: newId, during: "running", back: "failed" }],
     () => develop(p, newId, parts, accepted),
     () => [{ id: newId, status: "done", ended: true }, { id: drawId, status: "repaired", ended: true, links: { superseded_by: newId } }]);
   return p.draw(newId);

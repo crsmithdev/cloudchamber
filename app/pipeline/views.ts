@@ -10,11 +10,9 @@ import type { Drafting, FindingsSummary } from "./drafting.ts";
 import { latest } from "./verdicts.ts";
 import { originOf, type Origin } from "./stage.ts";
 import { chainOf } from "./chain.ts";
-import { checkersNext } from "./check.ts";
 import { partsView } from "./briefparts.ts";
 import { lifecycleView, stageTab, type LifecycleView, type Tab } from "./lifecycle.ts";
 import { Lineage, type Superseded } from "./lineage.ts";
-import { loadDraftConfig, type DraftConfig } from "./draftconfig.ts";
 
 /** A draw as the list shows it: the row, what the lifecycle allows, where it stands in its chain, and its latest check. */
 export type DrawListRow = DrawRow & LifecycleView & {
@@ -84,19 +82,14 @@ export class Views {
     const row = this.p.draw(id);
     const lineage = Lineage.all(this.p.db);
     const view = lifecycleView({ ...row, referenced_by: lineage.referencedBy(row.id) });
-    // the status allows auto at the gate; the findings can still leave it nothing to do
-    const actions = { ...view.actions, auto: view.actions.auto ?? this.drafting.autoIdle(id) };
-    const draw = { ...row, ...view, actions, superseded: lineage.superseded(row.id) };
+    const draw = { ...row, ...view, superseded: lineage.superseded(row.id) };
     const steps: StepSummary[] = this.p.steps(id).map(({ prompt, raw_response, parsed, ...s }) =>
       ({ ...s, tab: stageTab(s.stage), prompt_chars: prompt.length, raw_chars: raw_response?.length ?? 0, parsed_chars: parsed?.length ?? 0 }));
-    // what a check would run on this draw now, and the repair settings it would run under: the page states neither itself
-    const cfg = row.draft_config ? (JSON.parse(row.draft_config).config as DraftConfig) : loadDraftConfig().config;
     const chain = chainOf(this.p, id, lineage);
     return {
       draw, origin: originOf(this.p, id, lineage), steps, parts: partsView(this.p, id),
-      checks_next: row.chosen_step ? checkersNext(this.p, id, cfg.checks.enabled) : [], repair: cfg.repair,
-      // what the pane used to read off the artifact list itself: whether a check pass exists, and the auto run that ended here
-      checked: !!chain.pass(), auto: chain.auto(),
+      // the auto run that ended here, on a chain repaired before gate 1 was retired
+      auto: chain.auto(),
       artifacts: this.p.artifacts(id), candidates: this.p.candidates(id), examples: drawExamples(this.p.db, row.example_ids), forks: this.p.forks(id),
       report: this.reportExists(id),
     };

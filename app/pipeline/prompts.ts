@@ -191,27 +191,11 @@ Candidates:
 
 Quote every span from a vignette or the ending, never from the outline: the reader of the story sees only those. Report only a conflict that reader would see by comparing two quotes, or a line that breaks a rule the outline states in words. A conflict you find only by arithmetic beyond comparing two stated values, by counting weekdays, or by working out how liquid, light, an instrument or a body behaves is not a finding, and neither is a stated rule beside an exception the text marks, nor a figurative line read as literal fact. When the conflicting fact is also stated in a vignette or the ending, quote it from there. A result of contradicted or contradicts needs the span to assert the conflicting fact itself. A count, a duration or a detail the span does not state is not a contradiction: the span may be one of several, and what it leaves out is unverifiable. The replacement and the patch keep every event the span reports and change only the quantity, the timing or the mechanism that conflicts. Never turn an event into its absence. When the two quotes give one person, place, company or thing two names, or one quantity two values, the replacement names the one of the two that the rest of the brief supports, and never a third. The replacement states the corrected fact and nothing else: no place, count, cause or detail that neither quote states.`,
 
-  checkDerivation: `Above is a story brief: a seed, a premise, an outline in four sections, three vignettes and an ending. The departure section states the one thing in the story that is not true of the actual world and derives everything from it.
-
-State that departure, in an <impossibility> tag, one sentence. Then check every assertion in the vignettes and ending against that derivation, and do each sum whose figures a vignette or the ending states. Report each assertion that does not follow from the one impossibility, and each sum that does not add up. Report an assertion only when the outline states the rule it breaks, and a sum only when the brief states both figures: a consequence you work out yourself from physics, geometry or a unit is not a finding.
-
-{findingShape}
-
-After the findings, an <examined> tag listing each assertion and each sum checked, one per line, whether or not it produced a finding. At most 8 findings. Under 1000 words in total.`,
 
   ledgerExtract: `Above is a story brief: a seed, a premise, an outline in four sections, three vignettes and an ending.
 
 Extract from the outline every settled fact into a <ledger> tag, one per line, each line opening with its category: time (dates, durations, order), detail (names, quantities, appearance), knowledge (who knows what, and from when), possession (who holds what), world (rules), perspective. These lines are the contract the brief is held to for the rest of its life, so state each one so it can be read against prose by someone who has not seen this outline. Under 600 words. Output only the tag.`,
 
-  checkLedger: `Above is a story brief: a seed, a premise, an outline in four sections, three vignettes and an ending. Below is the ledger of its settled facts.
-
-{ledger}
-
-The ledger is fixed. It was settled for this brief and every repair of it, and where the prose and the ledger disagree it is the prose that is wrong. An amendment listed under the ledger overrides any earlier line it disagrees with, and that earlier line is void. Check each vignette and the ending against the ledger, and against each other, pairwise. Report each contradiction.
-
-{findingShape}
-
-After the findings, an <examined> tag naming each pair compared (ledger×chosen, ledger×context-1, chosen×ending, and so on). At most 8 findings. Under 1100 words in total.`,
 
   pinnedLedger: `<ledger>
 {ledger}
@@ -346,35 +330,7 @@ Otherwise keep it. A question the reader has to answer by a guess, by inference 
 
 Output one <verdict n="..."> tag per question, containing <answer>keep|drop</answer> (one of those two words and nothing else) and <why> (one sentence, carrying the quote in double quotes when the answer is drop). Under {cap} words.`,
 
-  checkVerify: `Above is a story brief. Below are the ledger of its settled facts, then the findings its checkers raised against it, numbered.
 
-{ledger}
-
-<findings>
-{findings}
-</findings>
-
-A reader of the story sees only the vignettes and the ending, reads them once and with attention, and never sees the outline. Read each finding back against the whole brief. Keep it only when the span asserts the fact the statement gives it, the evidence is a quote from the brief or the ledger that conflicts with that fact, and the conflict is one that reader would notice, or one that breaks a rule the outline states in words. The ledger restates the outline and can state a rule more strongly than the outline does; where the two differ, the outline holds.
-
-Drop it when any of these is true:
-- the span does not state the fact, or what it leaves out is stated elsewhere or left open;
-- the two quotes can both hold, and that includes a stated rule and an exception the text marks or explains;
-- the span is a character's loose, everyday wording of a fact the brief states exactly elsewhere;
-- the span is figurative (a simile, a metaphor, or a character's way of describing a feeling), and the rule it seems to break is about literal fact;
-- seeing the conflict needs any arithmetic beyond comparing two stated values or counting a day or two from a dated entry: a sum, a product, a division, a rate, a count of weekdays or a unit conversion;
-- seeing the conflict needs a physical inference about how liquid, blood, light, an instrument or a body behaves that the brief does not state in words;
-- the span hedges the fact it states, with words such as "on a good day", "about", "nearly" or "if";
-- the evidence is not in the brief or the ledger.
-
-Output one <verdict n="..."> tag per finding, containing <answer>keep|drop</answer> (one of those two words and nothing else) and <why> (one sentence). Under {cap} words.`,
-
-  reconcile: `Below are the fixes one repair round is about to apply to a story brief together, numbered.
-
-<fixes>
-{fixes}
-</fixes>
-
-Each fix is a sentence that must hold in the repaired brief, and a patch under it is text that will stand in the brief word for word. First output a <shared> tag: one line per quantity, date, count, position or rule that two or more fixes or patches give a value to, naming each fix's value ("gap reaches zero: fix 1 Day 19; fix 4 Day 16"). Then output a <conflicts> tag containing one <conflict> per pair whose values for one line differ, each with <a> and <b> (the two fix numbers from the list above, not the values) and <why> (one sentence). Output an empty <conflicts> tag when no line has two values. Under 250 words.`,
 
   constraints: `<constraints>
 {constraints}

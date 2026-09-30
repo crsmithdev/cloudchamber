@@ -23,10 +23,10 @@ async function setup() {
   const ins = db.query("INSERT INTO passages (id, story_id, text, words, stratum, position, seed, first_seen, voice, mode) VALUES (?, ?, ?, 200, 0, 0, 0, 'now', ?, ?)");
   CELLS.forEach(([v, m], i) => { ins.run(`a${i}`, "scp/a", `passage a${i}`, v, m); ins.run(`b${i}`, "d1/b", `passage b${i}`, v, m); });
   db.exec(`INSERT INTO themes (id, text, attestation, stories, drafted_at) VALUES ('t1', 'A theme.', 1, '["scp/a"]', 'now')`);
-  // a person's choose drafts on to the plan gate: the plan stages come from the drafting fixture
+  // a person's choose drafts on to the plan gate: the plan stages and the brief's text checks come from the drafting fixture
   const plan: Record<string, any> = draftScript();
   const model = new FakeModel({
-    ...Object.fromEntries(["ledger-extract", "schedule", "ir-symbolize", "ir-plan-ledger"].map((k) => [k, plan[k]])),
+    ...Object.fromEntries(["ledger-extract", "schedule", "ir-symbolize", "ir-plan-ledger", "check-structure", "check-resemblance", "check-reader", "check-verify"].map((k) => [k, plan[k]])),
     premises: () => premises, execute: (p: string) => `<vignette>${/Premise: (P\d)/.exec(p)?.[1]} ${"w ".repeat(400)}</vignette>`,
     outline: () => outline,
     context: () => "<vignette>ctx</vignette>", ending: () => "<ending>end</ending>",
@@ -139,9 +139,6 @@ describe("api", () => {
     expect(r.body.candidates.map((c: any) => c.probability)).toEqual([0.02, 0.03, 0.05, 0.06, 0.08]);
     // before the gate an executed vignette is a candidate, not a part, so the brief is empty and the page says so
     expect(r.body.parts).toEqual({ vignette: null, outline: null, contexts: [], ending: null });
-    // before the gate a check would run nothing, and the repair settings are the defaults until the draw has its own
-    expect(r.body.checks_next).toEqual([]);
-    expect(r.body.repair).toEqual({ rounds: 4, stop_score: 7, patience: 2 });
     expect(r.body.steps.map((s: any) => s.tab)).toEqual(["ideate", "ideate", "ideate", "ideate", "ideate", "ideate"]);
     const flag = await j("POST", `/api/draws/${id}/gate`, { action: "flag", note: "looks wrong" });
     expect(flag.body.payload.flagged).toBe(1);
@@ -152,8 +149,6 @@ describe("api", () => {
     // no gate 1 stop: the brief is built, then planned and checked, and the draw waits at the plan gate
     expect(done.body.draw.status).toBe("awaiting_plan_gate");
     expect(done.body.draw.gate_method).toBe("manual");
-    // the brief exists now, so a check would run the four that need no setting; claims is out, the draw is unrestricted
-    expect(done.body.checks_next).toEqual(["ledger", "structure", "resemblance", "reader"]);
     expect(done.body.artifacts.filter((a: any) => a.kind === "vignette")).toHaveLength(7);   // 5 executed + 2 context
     // the parts of the brief come by role, so the page never tells a context vignette from the chosen one itself
     const parts = done.body.parts;
@@ -165,7 +160,7 @@ describe("api", () => {
     expect(gateAgain.code).toBe(400);
     const listed = (await j("GET", "/api/draws")).body;
     expect(listed).toHaveLength(1);
-    expect(listed[0].check).toBeNull();   // a brief not yet checked has no summary
+    expect(listed[0].check).toMatchObject({ reported: 0, open: 0 });   // the brief's text checks ran beside the plan and raised nothing
     // a failed repair round has no check pass, so it has no summary: the row says so at once
     pipeline.db.query("INSERT INTO draws (id, genre, mode, seed_mode, seed_text, example_ids, status, repaired_from, created_at) VALUES ('failed-round', 'horror', 'manual', 'typed', 's', '[]', 'failed', ?, '2099-01-01T00:00:00Z')").run(id);
     const round = (await j("GET", "/api/draws")).body.find((r: any) => r.id === "failed-round");
@@ -252,8 +247,8 @@ describe("api", () => {
   });
 });
 
-describe("api: check, gate 1, draft, gate 2", () => {
-  test("check → findings → dismiss → draft → story → keep, through the routes", async () => {
+describe("api: draft, the plan gate, gate 2", () => {
+  test("draft → plan gate → instruct → write → story → keep, through the routes", async () => {
     const { draftScript } = await import("../pipeline/drafting.fixture.ts");
     const dir = mkdtempSync(join(tmpdir(), "cloudchamber-api-draft-"));
     const db = openDb(join(dir, "t.db"));
@@ -270,7 +265,7 @@ describe("api: check, gate 1, draft, gate 2", () => {
     const draw = await pipeline.start({ mode: "auto", genre: "horror", seed: { mode: "typed", text: "seed" } });
     expect((await j("POST", `/api/draws/${draw.id}/draft`, { auto: false })).code).toBe(202);   // allowed from done; runs in the background
     await wait(draw.id, "awaiting_draft_gate");
-    // a second draw goes through the check first
+    // a second draw stops at the plan gate first
     const model2 = new FakeModel(draftScript());
     const p2 = new Pipeline(db, model2, { briefsDir: join(dir, "briefs"), rng: () => 0.001, cacheLeadMs: 0 });
     const app2 = buildApi(db, p2, { drafting: new Drafting(p2, { draftsDir: join(dir, "drafts") }) });
@@ -278,56 +273,59 @@ describe("api: check, gate 1, draft, gate 2", () => {
     const d2 = await p2.start({ mode: "auto", genre: "horror", seed: { mode: "typed", text: "seed two" } });
     // the fixture scripts three samples per checker; pin that rather than track draft.toml
     p2.db.query("UPDATE draws SET draft_config = ? WHERE id = ?").run(JSON.stringify(loadDraftConfig(undefined, { "checks.samples": 3, "screens.samples": 3, "screens.keep_if": 2 })), d2.id);
-    const c = await j2("POST", `/api/draws/${d2.id}/check`, {});
-    expect(c.code).toBe(202);
-    for (let i = 0; i < 200 && p2.draw(d2.id).status !== "awaiting_check_gate"; i++) await Bun.sleep(10);
+    expect((await j2("POST", `/api/draws/${d2.id}/draft`, { plan: true, overrides: { "scenes.order": "parallel" } })).code).toBe(202);
+    for (let i = 0; i < 200 && p2.draw(d2.id).status !== "awaiting_plan_gate"; i++) await Bun.sleep(10);
+    expect(p2.draw(d2.id).status).toBe("awaiting_plan_gate");
+    // the brief's text checks ran beside the schedule, and their profiles are read from the findings route
     const f = await j2("GET", `/api/draws/${d2.id}/findings`);
     expect(f.code).toBe(200);
-    expect(f.body.findings).toHaveLength(2);
-    expect(f.body.judge).toBe("checked on opus; judge and generator share a family");
-    const dis = await j2("POST", `/api/draws/${d2.id}/gate`, { action: "dismiss", finding: f.body.findings[1].id, note: "fine" });
-    expect(dis.code).toBe(200);
-    // a dismissal answers with the finding and names no draw, so the pane stays where it is
-    expect([dis.body.draw, dis.body.running, dis.body.payload.decision]).toEqual([null, false, "dismissed"]);
-    expect((await j2("POST", `/api/draws/${d2.id}/gate`, { action: "accept" })).code).toBe(400);
-    // a status or id the method rejects comes back as a 400 at once, not a 202 for work that never runs
-    const stale = await j2("POST", `/api/draws/${d2.id}/gate`, { action: "accept", findings: ["f-nosuch"] });
-    expect([stale.code, stale.body.error]).toEqual([400, `draw ${d2.id}: no reported finding f-nosuch`]);
-    expect((await j2("POST", `/api/draws/${d2.id}/gate`, { action: "hold" })).body.payload.status).toBe("awaiting_check_gate");
-    expect((await j2("POST", `/api/draws/${d2.id}/draft`, { overrides: { "scenes.order": "parallel" } })).code).toBe(202);
-    for (let i = 0; i < 200 && p2.draw(d2.id).status !== "awaiting_draft_gate"; i++) await Bun.sleep(10);
-    expect(p2.draw(d2.id).status).toBe("awaiting_draft_gate");
-    const story = await j2("GET", `/api/draws/${d2.id}/story`);
+    expect(f.body.profiles.map((x: any) => x.checker).sort()).toEqual(["resemblance", "structure"]);
+    // gate 1 is gone: its route and its actions are refused
+    expect((await j2("POST", `/api/draws/${d2.id}/check`, {})).code).toBe(404);
+    expect((await j2("POST", `/api/draws/${d2.id}/gate`, { action: "accept", findings: ["f-x"] })).code).toBe(400);
+    // a status or an argument the method rejects comes back as a 400 at once, not a 202 for work that never runs
+    expect((await j2("POST", `/api/draws/${d2.id}/gate`, { action: "instruct" })).body.error).toBe("instructions required");
+    const bad = await j2("POST", `/api/draws/${d2.id}/gate`, { action: "instruct", instructions: [{ text: "x", parts: ["coda"], kind: "direction" }] });
+    expect([bad.code, bad.body.error]).toEqual([400, "instruction part must be vignette | ending | context 1 | context 2, got coda"]);
+    // an instruction on the brief's prose is a new draw, drafted on to the plan gate
+    const told2 = await j2("POST", `/api/draws/${d2.id}/gate`, { action: "instruct", instructions: [{ text: "The ending holds.", parts: ["ending"], kind: "direction" }] });
+    expect(told2.code).toBe(202);
+    for (let i = 0; i < 300 && !(p2.draw(d2.id).superseded_by && p2.draw(p2.draw(d2.id).superseded_by!).status === "awaiting_plan_gate"); i++) await Bun.sleep(10);
+    const n2 = p2.draw(d2.id).superseded_by!;
+    expect([p2.draw(d2.id).status, p2.draw(n2).status]).toEqual(["repaired", "awaiting_plan_gate"]);
+    expect((await j2("POST", `/api/draws/${n2}/gate`, { action: "write" })).code).toBe(202);
+    for (let i = 0; i < 200 && p2.draw(n2).status !== "awaiting_draft_gate"; i++) await Bun.sleep(10);
+    expect(p2.draw(n2).status).toBe("awaiting_draft_gate");
+    const story = await j2("GET", `/api/draws/${n2}/story`);
     expect(story.code).toBe(200);
     expect(story.body.text).toContain("Scene 1 opens.");
     expect(story.body.scenes).toHaveLength(8);
     expect(story.body.profiles.find((x: any) => x.beat === 5).flags).toEqual(["theme-stated"]);
-    expect((await j2("POST", `/api/draws/${d2.id}/gate`, { action: "auto" })).body.error).toBe(`draw ${d2.id} is awaiting_draft_gate, not done | awaiting_check_gate`);
-    expect((await j2("POST", `/api/draws/${d2.id}/check`, {})).code).toBe(400);
-    expect((await j2("POST", `/api/draws/${d2.id}/gate`, { action: "rewrite", beat: 99 })).body.error).toBe("beat 99 is not in 1..8");
-    const rw = await j2("POST", `/api/draws/${d2.id}/gate`, { action: "rewrite", beat: 3 });
+    expect((await j2("POST", `/api/draws/${n2}/gate`, { action: "write" })).body.error).toBe(`draw ${n2} is awaiting_draft_gate, not awaiting_plan_gate`);
+    expect((await j2("POST", `/api/draws/${n2}/gate`, { action: "rewrite", beat: 99 })).body.error).toBe("beat 99 is not in 1..8");
+    const rw = await j2("POST", `/api/draws/${n2}/gate`, { action: "rewrite", beat: 3 });
     expect(rw.code).toBe(202);
-    for (let i = 0; i < 200 && p2.draw(d2.id).status !== "awaiting_draft_gate"; i++) await Bun.sleep(10);
+    for (let i = 0; i < 200 && p2.draw(n2).status !== "awaiting_draft_gate"; i++) await Bun.sleep(10);
     // several beats under one instruction: the story lists it with its beats
-    const told = await j2("POST", `/api/draws/${d2.id}/gate`, { action: "rewrite", beats: [4, 2], instruction: "Tom never raises his voice." });
+    const told = await j2("POST", `/api/draws/${n2}/gate`, { action: "rewrite", beats: [4, 2], instruction: "Tom never raises his voice." });
     expect(told.code).toBe(202);
-    for (let i = 0; i < 200 && p2.draw(d2.id).status !== "awaiting_draft_gate"; i++) await Bun.sleep(10);
-    expect((await j2("GET", `/api/draws/${d2.id}/story`)).body.directions).toEqual([{ text: "Tom never raises his voice.", beats: [2, 4] }]);
-    const kept = await j2("POST", `/api/draws/${d2.id}/gate`, { action: "keep", note: "ship it" });
+    for (let i = 0; i < 200 && p2.draw(n2).status !== "awaiting_draft_gate"; i++) await Bun.sleep(10);
+    expect((await j2("GET", `/api/draws/${n2}/story`)).body.directions).toEqual([{ text: "Tom never raises his voice.", beats: [2, 4] }]);
+    const kept = await j2("POST", `/api/draws/${n2}/gate`, { action: "keep", note: "ship it" });
     expect(kept.code).toBe(200);
     expect(kept.body.payload.draw.status).toBe("drafted");
-    expect(kept.body.payload.dir).toBe(join(dir, "drafts", d2.id));
-    expect((await j2("GET", `/api/draws/${d2.id}`)).body.draw.status).toBe("drafted");
+    expect(kept.body.payload.dir).toBe(join(dir, "drafts", n2));
+    expect((await j2("GET", `/api/draws/${n2}`)).body.draw.status).toBe("drafted");
     // the report link: absent while no PDF is printed (tests set CLOUDCHAMBER_PDF=0), served once one is there
-    expect((await j2("GET", `/api/draws/${d2.id}`)).body.report).toBe(false);
-    expect((await j2("GET", `/api/draws/${d2.id}/report.pdf`)).code).toBe(404);
-    writeFileSync(join(OUTPUT, d2.id, "report.pdf"), "%PDF-1.4 fake");
-    expect((await j2("GET", `/api/draws/${d2.id}`)).body.report).toBe(true);
-    const pdf = await app2.inject({ method: "GET", url: `/api/draws/${d2.id}/report.pdf` });
+    expect((await j2("GET", `/api/draws/${n2}`)).body.report).toBe(false);
+    expect((await j2("GET", `/api/draws/${n2}/report.pdf`)).code).toBe(404);
+    writeFileSync(join(OUTPUT, n2, "report.pdf"), "%PDF-1.4 fake");
+    expect((await j2("GET", `/api/draws/${n2}`)).body.report).toBe(true);
+    const pdf = await app2.inject({ method: "GET", url: `/api/draws/${n2}/report.pdf` });
     expect([pdf.statusCode, pdf.headers["content-type"], pdf.body]).toEqual([200, "application/pdf", "%PDF-1.4 fake"]);
     expect((await j2("GET", `/api/draws/nosuch/report.pdf`)).code).toBe(404);
-    expect((await j2("POST", `/api/draws/${d2.id}/draft`, {})).code).toBe(400);
-    expect((await j2("POST", `/api/draws/${d2.id}/gate`, { action: "sing" })).code).toBe(400);
+    expect((await j2("POST", `/api/draws/${n2}/draft`, {})).code).toBe(400);
+    expect((await j2("POST", `/api/draws/${n2}/gate`, { action: "sing" })).code).toBe(400);
   });
 });
 

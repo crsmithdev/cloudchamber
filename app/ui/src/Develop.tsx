@@ -101,7 +101,7 @@ export function Develop({ stage, selected, step: stepId }: { stage: "check" | "w
   // a gate with no open finding and no repair pending has nothing to rule on: the next step is the draft
   // the list row carries the check summary; the draw detail does not, so a draw read from the detail alone is not clean
   const clean = (r: DrawBase & { check?: CheckSummary | null }) => !!r.check && r.at_gate && r.check.open === 0 && r.check.accepted === 0;
-  const statusLine = (r: DrawBase & { check?: CheckSummary | null }) => (r.status === "done" ? "unchecked" : clean(r) ? "checked · nothing to fix" : label(r.status));
+  const statusLine = (r: DrawBase & { check?: CheckSummary | null }) => (r.status === "done" ? "ready to draft" : clean(r) ? "checked · nothing to fix" : label(r.status));
   // the open row's one summary line; the step log is in the reading pane
   const summary = (r: Draw, detail: Detail | null) => {
     const running = detail?.steps.filter((s) => s.status === "running") ?? [];
@@ -153,7 +153,7 @@ export function Develop({ stage, selected, step: stepId }: { stage: "check" | "w
         <div className="listhead">
           <span className="head">
             {stage === "check"
-              ? `${heads.filter((r) => r.at_gate).length} to review · ${heads.filter((r) => r.status === "done").length} unchecked`
+              ? `${heads.filter((r) => r.at_gate).length} to review · ${heads.filter((r) => r.status === "done").length} to draft`
               : `${heads.filter((r) => r.at_gate).length} to review · ${heads.filter((r) => r.status === "drafted").length} kept`}
             {chains.some((c) => c.rounds.length > 1) && <span className="note"> · {chains.filter((c) => c.rounds.length > 1).length} repair chains</span>}
             <ArchivedToggle archived={archived} shown={showArchived} onToggle={() => setShowArchived((v) => !v)} />
@@ -209,21 +209,6 @@ export function Develop({ stage, selected, step: stepId }: { stage: "check" | "w
                     </span>
                   </div>
                   <div className="sd">{r.seed_text}</div>
-                  {stage === "check" && r.status === "done" && (
-                    <div className="acts" onClick={(e) => e.stopPropagation()}>
-                      <Btn
-                        title={`Run the checkers once (derivation, ledger, structure, resemblance${r.setting ? ", claims" : ""}) and stop for you to review the findings.`}
-                        onClick={() =>
-                          act(
-                            () => api.check(r.id),
-                            () => r.id,
-                          )
-                        }
-                      >
-                        check
-                      </Btn>
-                    </div>
-                  )}
                 </>
               )}
             </div>
@@ -271,9 +256,9 @@ export function Develop({ stage, selected, step: stepId }: { stage: "check" | "w
             ) : stage === "write" ? (
               <StoryPane d={d} onAct={act} aside={aside} />
             ) : d.draw.status === "awaiting_check_gate" || d.draw.status === "repaired" ? (
-              <GateOne d={d} clean={clean(listed(d.draw.id) ?? d.draw)} onAct={act} onDraft={() => setSettings(true)} aside={aside} />
+              <GateOne d={d} onAct={act} onDraft={() => setSettings(true)} aside={aside} />
             ) : d.draw.status === "done" ? (
-              <BriefReady d={d} onCheck={() => act(() => api.check(d.draw.id))} onAuto={() => act(() => api.gate(d.draw.id, { action: "auto" }))} onFlag={(note) => act(() => api.gate(d.draw.id, { action: "flag", note }))} onDraft={() => setSettings(true)} aside={aside} />
+              <BriefReady d={d} onFlag={(note) => act(() => api.gate(d.draw.id, { action: "flag", note }))} onDraft={() => setSettings(true)} aside={aside} />
             ) : (
               <Building d={d} aside={aside} />
             )}
@@ -419,100 +404,35 @@ function AutoRuns({ auto, id }: { auto: AutoResult; id: string }) {
 }
 
 /**
- * The check tab's controls, in the same places for every state of a brief: the actions on the left, the note and
- * the gate calls on the right. A control that does not apply to the state stays in its place, disabled, and its
- * tooltip says why.
+ * The check tab's controls: draft the brief, or flag it with a note. Gate 1 is gone (IR spec §15, T3): the brief's
+ * text checks run in the draft, and are read at the plan gate.
  */
-function CheckControls({
-  d,
-  note,
-  onNote,
-  onAuto,
-  onCheck,
-  onDraft,
-  onFlag,
-  onHold,
-  openFindings = 0,
-  pendingRepair = 0,
-  clean = false,
-}: {
-  d: Detail;
-  note: string;
-  onNote: (v: string) => void;
-  onAuto: () => void;
-  onCheck?: () => void;
-  onDraft: () => void;
-  onFlag?: () => void;
-  onHold?: () => void;
-  openFindings?: number;
-  pendingRepair?: number;
-  /** checked, with nothing to rule on: the draft is the one primary control */
-  clean?: boolean;
-}) {
-  const unchecked = d.draw.status === "done";
-  const atGate = d.draw.status === "awaiting_check_gate";
+function BriefControls({ d, onDraft, onFlag }: { d: Detail; onDraft: () => void; onFlag?: (note: string) => void }) {
+  const [note, setNote] = useState("");
   const a = d.draw.actions;
-  const replaced = "This brief was repaired into a new round. Work there.";
-  // a refused action says why: the server's reason, or on a superseded round where to work instead
-  const why = (reason: string | null) => (d.draw.status === "repaired" ? replaced : (reason ?? ""));
-  const repair = d.repair;
-  const checks = d.checks_next.join(", ");
   // the words a draft would run to, once the draw has settled a config of its own
   const drafted = d.draw.draft_config ? JSON.parse(d.draw.draft_config).config : null;
   return (
     <div className="controls" role="group" aria-label="Brief">
-      <Btn
-        variant={clean ? undefined : "primary"}
-        disabled={!!a.auto || (atGate && openFindings === 0)}
-        onClick={onAuto}
-        title={
-          !a.auto
-            ? `${unchecked ? `Check the brief (${checks}), then repair` : "Repair"} round after round without asking: accept every finding scoring ${repair.stop_score} or more, dismiss the rest, re-check, repeat. It stops when nothing reaches ${repair.stop_score}, after ${repair.rounds} rounds, or when the total score has not fallen for ${repair.patience} rounds.${atGate && !openFindings ? " No finding is open." : ""}`
-            : why(a.auto)
-        }
-      >
-        check – auto repair
-      </Btn>
-      {!a.auto && !(atGate && openFindings === 0) && (
-        <span className="num text-dim" title="What auto repair can spend before it stops on its own.">
-          up to {repair.rounds} rounds
-        </span>
-      )}
-      <Btn
-        disabled={!!a.check || atGate}
-        onClick={onCheck}
-        title={unchecked ? `Run the checkers once (${checks}) and stop for you to review the findings.` : atGate ? "Checked already: rule on the findings below, or auto repair them." : why(a.check)}
-      >
-        check
-      </Btn>
-      <Btn
-        variant={clean ? "primary" : undefined}
-        disabled={!!a.draft || pendingRepair > 0}
-        onClick={onDraft}
-        title={
-          a.draft ? why(a.draft) : pendingRepair ? "Accepted findings are waiting for their repair." : `Set up the draft and write the story from this brief as it stands${unchecked ? ", unchecked" : ""}.`
-        }
-      >
+      <Btn variant="primary" disabled={!!a.draft} onClick={onDraft} title={a.draft ?? "Set up the draft. It plans the story, checks the plan and the brief, and stops at the plan gate."}>
         draft{drafted ? ` · ${drafted.length.words} words` : ""} <Chevron open />
       </Btn>
-      <span className="end">
-        <input type="text" placeholder="note for the log" aria-label="Note for the log" value={note} onChange={(e) => onNote(e.target.value)} />
-        <Btn variant="art" disabled={!!a.flag || !onFlag} onClick={onFlag} title={a.flag ?? "Mark this brief as looking wrong, with the note. Nothing runs."}>
-          flag
-        </Btn>
-        <Btn variant="quiet" disabled={!!a.hold || !onHold} onClick={onHold} title={a.hold ? (unchecked ? "Nothing is checked yet." : why(a.hold)) : "Leave the findings open to review later. Nothing runs."}>
-          hold
-        </Btn>
-      </span>
+      {onFlag && (
+        <span className="end">
+          <input type="text" placeholder="note for the log" aria-label="Note for the log" value={note} onChange={(e) => setNote(e.target.value)} />
+          <Btn variant="art" disabled={!!a.flag} onClick={() => onFlag(note)} title={a.flag ?? "Mark this brief as looking wrong, with the note. Nothing runs."}>
+            flag
+          </Btn>
+        </span>
+      )}
     </div>
   );
 }
 
-function BriefReady({ d, onCheck, onAuto, onFlag, onDraft, aside }: { d: Detail; onCheck: () => void; onAuto: () => void; onFlag: (note: string) => void; onDraft: () => void; aside: React.ReactNode }) {
-  const [note, setNote] = useState("");
+function BriefReady({ d, onFlag, onDraft, aside }: { d: Detail; onFlag: (note: string) => void; onDraft: () => void; aside: React.ReactNode }) {
   return (
     <>
-      <CheckControls d={d} note={note} onNote={setNote} onAuto={onAuto} onCheck={onCheck} onFlag={() => onFlag(note)} onDraft={onDraft} />
+      <BriefControls d={d} onFlag={onFlag} onDraft={onDraft} />
       <div className="drawbody">
         <div className="max-w-[66rem]">
           <Head>seed</Head>
@@ -612,170 +532,37 @@ function Building({ d, aside }: { d: Detail; aside: React.ReactNode }) {
 
 // --- gate 1 ------------------------------------------------------------------
 
-function GateOne({ d, clean, onAct, onDraft, aside }: { d: Detail; clean: boolean; onAct: (fn: () => Promise<any>, go?: (r: any) => string | undefined) => void; onDraft: () => void; aside: React.ReactNode }) {
+/**
+ * A brief checked at gate 1 before T3 retired it (IR spec §15): its findings and decisions, read-only. A draw that
+ * stands at the gate can still draft; a repaired round points at the round that replaced it.
+ */
+function GateOne({ d, onAct, onDraft, aside }: { d: Detail; onAct: (fn: () => Promise<any>, go?: (r: any) => string | undefined) => void; onDraft: () => void; aside: React.ReactNode }) {
   const [f, setF] = useState<Findings | null>(null);
-  const [sel, setSel] = useState<Set<string>>(new Set());
-  const [note, setNote] = useState("");
   const [examined, setExamined] = useState(false);
-  const [floor, setFloor] = useState(d.repair.stop_score);
   const [showAll, setShowAll] = useState(false);
-  // a dismissal adds no step, so the list also reloads on demand: without this it kept showing the finding as open
-  const [ruled, setRuled] = useState(0);
-  // instructions written here go to the server with the next accept, as findings accepted on this round
-  const [pending, setPending] = useState<Instruction[]>([]);
-  const [draft, setDraft] = useState<Instruction>({ text: "", parts: [], kind: "direction" });
   const id = d.draw.id;
   useEffect(() => {
     api
       .findings(id, showAll)
       .then(setF)
       .catch(() => {});
-  }, [id, d.steps.length, showAll, ruled]);
-  // the command names the draw to show next; dismiss names none, so the pane stays where it is
-  const gate = (action: string, extra: Record<string, unknown> = {}) =>
-    onAct(
-      () => api.gate(id, { action, note, ...extra }).then((r) => { setRuled((n) => n + 1); return r; }),
-      (r) => r?.draw ?? undefined,
-    );
-  const accepted = f?.findings.filter((x) => x.decision === "accepted") ?? [];
-  const partNames = ["vignette", "ending", ...d.parts.contexts.map((c) => `context ${c.index}`)];
-  const addInstruction = () => {
-    setPending((xs) => [...xs, { ...draft, text: draft.text.trim() }]);
-    setDraft({ text: "", parts: [], kind: draft.kind });
-  };
-  const repairNow = () => {
-    gate("accept", { findings: [...sel], instructions: pending });
-    setPending([]);
-  };
+  }, [id, d.steps.length, showAll]);
   const repaired = d.draw.status === "repaired";
   const meta = d.parts.outline?.meta ?? {};
   const constraints: string[] = meta.constraints ?? [];
   const jobs: string[] = meta.jobs ?? [];
-  const toggle = (fid: string) =>
-    setSel((s) => {
-      const n = new Set(s);
-      n.has(fid) ? n.delete(fid) : n.add(fid);
-      return n;
-    });
-  // the partition is the server's; a bulk selector offers what the auto rule would consider, so "all" and auto agree
   const listed = f?.listed ?? [], reopened = f?.reopened ?? [], left = f?.left ?? [];
-  const selectable = listed.filter((x) => x.decision === "open" && x.auto_eligible);
-  const atFloor = selectable.filter((x) => x.score >= floor);
   const checkSteps = d.steps.filter((s) => s.stage.startsWith("check-") && s.status === "done");
   const checkSecs = checkSteps.reduce((n, s) => n + Number(secs(s.started_at, s.ended_at)), 0);
-  // nothing open on the list, nothing that would undo a fix, nothing accepted: the repair strip has no work
-  const nothingToRule = !!f && !listed.some((x) => x.decision === "open") && !reopened.some((x) => x.decision === "open") && !accepted.length && !pending.length;
-  // the keys act on the focused finding: accept toggles its selection, dismiss rules on it
-  const findingsEl = React.useRef<HTMLDivElement>(null);
-  useRowsFromPage(findingsEl);
-  const byId = (fid: string) => f?.findings.find((x) => x.id === fid);
-  const keys = rowKeys({
-    a: (fid) => {
-      if (!repaired && byId(fid)?.decision === "open") toggle(fid);
-    },
-    Enter: (fid) => {
-      if (!repaired && byId(fid)?.decision === "open") toggle(fid);
-    },
-    d: (fid) => {
-      if (!repaired && byId(fid)?.decision === "open") gate("dismiss", { finding: fid });
-    },
-    // 1 to 4 dismiss with a reason, in the order the row lists them
-    ...Object.fromEntries(DISMISS_REASONS.map((r, i) => [String(i + 1), (fid: string) => {
-      if (!repaired && byId(fid)?.decision === "open") gate("dismiss", { finding: fid, reason: r });
-    }])),
-    n: () => document.querySelector<HTMLInputElement>(".controls input[type=text]")?.focus(),
-    i: () => document.getElementById("instruction")?.focus(),
-  });
-  // the open list and the list that undoes an earlier fix are the same row
-  const row = (x: Finding) => (
-    <FindingRow key={x.id} f={x} S={x.samples_run ?? S} scoreMax={f!.score_max} selected={sel.has(x.id)} onToggle={() => toggle(x.id)} onDismiss={(reason) => gate("dismiss", { finding: x.id, reason })} readOnly={repaired} />
-  );
+  const row = (x: Finding) => <FindingRow key={x.id} f={x} S={x.samples_run ?? S} scoreMax={f!.score_max} />;
   const S = f?.findings[0]?.samples_run ?? 3;
   return (
     <>
-      {!repaired && (
-        <CheckControls
-          d={d}
-          note={note}
-          onNote={setNote}
-          onAuto={() => gate("auto")}
-          onDraft={onDraft}
-          onFlag={() => gate("flag")}
-          onHold={() => gate("hold")}
-          openFindings={selectable.length}
-          pendingRepair={accepted.length}
-          clean={clean || nothingToRule}
-        />
-      )}
-      {!repaired && !nothingToRule && (
-        <div className="controls" role="group" aria-label="Repair">
-          <Btn
-            variant="keep"
-            disabled={!sel.size && !accepted.length && !pending.length}
-            onClick={repairNow}
-            title="Accept the selected findings and your instructions. The brief is repaired into a new draw under them and re-checked."
-          >
-            repair {(sel.size || accepted.length) + pending.length} and re-check
-          </Btn>
-          <span className="group">
-            <Btn
-              variant="keep"
-              disabled={!selectable.length}
-              onClick={() => setSel(new Set(selectable.map((x) => x.id)))}
-              title="Select every open finding the auto rule would consider: reported, from a checker that quotes, with evidence, and not undoing a fix accepted in an earlier round."
-            >
-              all ({selectable.length})
-            </Btn>
-            <Btn variant="keep" disabled={!atFloor.length} onClick={() => setSel(new Set(atFloor.map((x) => x.id)))} title={`Select every reported finding scoring ${floor} or more.`}>
-              ≥ {floor} ({atFloor.length})
-            </Btn>
-            <input type="range" min={1} max={f?.score_max ?? floor} step={1} value={floor} aria-label="Score floor" onChange={(e) => setFloor(Number(e.target.value))} />
-            <Btn variant="quiet" disabled={!sel.size} onClick={() => setSel(new Set())} title="Clear the selection.">
-              clear
-            </Btn>
-          </span>
-        </div>
-      )}
-      {!repaired && (
-        <div className="mt-3 max-w-[48rem]" role="group" aria-label="Instruction">
-          <Head note="what should change, in your own words; tick the parts it is for. It is repaired with the findings you select">instruction</Head>
-          <textarea
-            id="instruction"
-            className="mt-1 font-serif text-prose"
-            rows={3}
-            placeholder="for example: the ending leaves the safe open, and the weight stays on the pier"
-            aria-label="Instruction for the brief"
-            value={draft.text}
-            onChange={(e) => setDraft({ ...draft, text: e.target.value })}
-          />
-          <div className="mt-2 flex flex-wrap items-center gap-3">
-            <span className="head">for</span>
-            <span className="chips" role="group" aria-label="Parts the instruction is for">
-              {partNames.map((x) => (
-                <Chip key={x} pressed={draft.parts.includes(x)} onClick={() => setDraft({ ...draft, parts: draft.parts.includes(x) ? draft.parts.filter((y) => y !== x) : [...draft.parts, x] })}>
-                  {x}
-                </Chip>
-              ))}
-            </span>
-            <Seg
-              label="Kind"
-              value={draft.kind}
-              options={["direction", "fact"]}
-              onChange={(k) => setDraft({ ...draft, kind: k as Instruction["kind"] })}
-            />
-            <span className="text-dim">{draft.kind === "fact" ? "also a ledger line: the check and the draft are held to it" : "kept true by every later repair; not a ledger line"}</span>
-            <span className="ml-auto">
-              <Btn variant="keep" disabled={!draft.text.trim() || !draft.parts.length} onClick={addInstruction} title="Add it to the repair. Nothing runs until you repair.">
-                add
-              </Btn>
-            </span>
-          </div>
-        </div>
-      )}
+      {!repaired && <BriefControls d={d} onDraft={onDraft} onFlag={(note) => onAct(() => api.gate(id, { action: "flag", note }))} />}
       {repaired && (
         <p className="seed">
           This brief was repaired into{" "}
-          <a href={`#check/${d.draw.superseded_by}`} className="num not-italic">
+          <a href={`#write/${d.draw.superseded_by}`} className="num not-italic">
             {d.draw.superseded_by}
           </a>
           ; its findings and their decisions are kept here for the record.
@@ -797,12 +584,6 @@ function GateOne({ d, clean, onAct, onDraft, aside }: { d: Detail; clean: boolea
                 >
                   {showAll ? "hide" : "show"} what left the list
                 </button>
-                {!repaired && !nothingToRule && (
-                  <>
-                    {" · "}
-                    <Keys keys={[["↓", "move"], ["a", "accept"], ["d", "dismiss"], ["1–4", "dismiss with a reason"], ["n", "note"], ["i", "instruction"]]} />
-                  </>
-                )}
               </>
             }
           >
@@ -815,39 +596,14 @@ function GateOne({ d, clean, onAct, onDraft, aside }: { d: Detail; clean: boolea
                 : "Nothing to fix: nothing recurred in enough samples to report. What each checker examined is listed beside. Draft the brief."}
             </div>
           )}
-          {pending.length > 0 && (
-            <div className="findings mt-1">
-              {pending.map((x, i) => (
-                <div key={i} className="finding sel">
-                  <div className="line">
-                    <span className="num w-6 font-semibold text-gold">you</span>
-                    <span className="text-dim">
-                      for <b className="font-normal text-ink">{x.parts.join(", ")}</b> · {x.kind}
-                    </span>
-                    <Mark state="held" title="to be accepted" />
-                    <span className="acts">
-                      <button className="link text-dim" onClick={() => setPending((xs) => xs.filter((_, j) => j !== i))}>
-                        remove
-                      </button>
-                    </span>
-                  </div>
-                  <div className="mt-0.5 font-serif text-prose">{x.text}</div>
-                </div>
-              ))}
-            </div>
-          )}
           {f && (listed.length > 0 || reopened.length > 0) && (
-            <div className="findings mt-1" ref={findingsEl} onKeyDown={keys}>
+            <div className="findings mt-1">
               {listed.map(row)}
               {reopened.length > 0 && (
                 <>
-                  <Head as="div" className="mt-5" note={`${reopened.length} finding${reopened.length > 1 ? "s" : ""} that would undo a fix you accepted · auto repair skips ${reopened.length > 1 ? "them" : "it"}`}>
+                  <Head as="div" className="mt-5" note={`${reopened.length} finding${reopened.length > 1 ? "s" : ""} that would undo a fix accepted in an earlier round`}>
                     undoes an earlier fix
                   </Head>
-                  <div className="mt-1 mb-2 max-w-[66ch] text-mute">
-                    A repair round is free to trade one fix for another, and the checkers then report the fix as the defect. Either the earlier decision was wrong, in which case accept this and say so in the note, or
-                    this is the loop arguing with itself, in which case dismiss it.
-                  </div>
                   {reopened.map(row)}
                 </>
               )}
@@ -855,12 +611,11 @@ function GateOne({ d, clean, onAct, onDraft, aside }: { d: Detail; clean: boolea
           )}
           {f && left.length > 0 && (
             <>
-              <Head as="div" className="mt-5" note={`${f.off_list.dropped} the verify pass dropped${f.off_list.rare ? ` · ${f.off_list.rare} seen in too few samples` : ""} · auto repair skips them`}>
+              <Head as="div" className="mt-5" note={`${f.off_list.dropped} the verify pass dropped${f.off_list.rare ? ` · ${f.off_list.rare} seen in too few samples` : ""}`}>
                 taken off the list
               </Head>
               <div className="mt-1 mb-2 max-w-[66ch] text-mute">
-                The verify pass keeps only what a reader of the vignettes and the ending would notice, and a finding seen in too few samples is not reported. Each of these is still open: accept one from its own
-                row if you disagree.
+                The verify pass kept only what a reader of the vignettes and the ending would notice, and a finding seen in too few samples was not reported.
               </div>
               <div className="findings">{left.map(row)}</div>
             </>
@@ -995,10 +750,9 @@ function GateOne({ d, clean, onAct, onDraft, aside }: { d: Detail; clean: boolea
   );
 }
 
-/** A finding as a row: score, recurrence as marks, the job it breaks, the checkers, then the span, the statement and the ledger of result, evidence and replacement. */
-/** A finding: the values on one ruled line, then the span, the statement and the ledger at full width. */
-function FindingRow({ f, S, scoreMax, selected, onToggle, onDismiss, readOnly }: { f: Finding; S: number; scoreMax: number; selected: boolean; onToggle: () => void; onDismiss: (reason?: DismissReason) => void; readOnly: boolean }) {
-  const acc = f.decision === "accepted" || selected;
+/** A gate 1 finding, read-only: the values on one ruled line, then the span, the statement and the ledger at full width. */
+function FindingRow({ f, S, scoreMax }: { f: Finding; S: number; scoreMax: number }) {
+  const acc = f.decision === "accepted";
   const cls = "finding" + (acc ? " sel" : "") + (f.decision === "dismissed" ? " old" : "");
   if (f.source === "operator")
     return (
@@ -1015,7 +769,7 @@ function FindingRow({ f, S, scoreMax, selected, onToggle, onDismiss, readOnly }:
       </div>
     );
   return (
-    <div className={cls} data-row={f.id} tabIndex={0} aria-selected={selected}>
+    <div className={cls} data-row={f.id} tabIndex={0}>
       <div className="line">
         <span className="num w-6 font-semibold" title={`score ${f.score} of ${scoreMax}: how sure the checks are. Recurrence, a second checker, what it invalidates, the kind of result, and whether it quotes evidence. A reader's question quotes no evidence and scores low whatever it breaks, so the list reads what it breaks first.`}>
           {f.score}
@@ -1059,27 +813,8 @@ function FindingRow({ f, S, scoreMax, selected, onToggle, onDismiss, readOnly }:
             <span className="text-dim" title={f.reason ? DISMISS_DEF[f.reason][1] : undefined}>
               dismissed{f.reason ? ` · ${DISMISS_DEF[f.reason][0]}` : ""}{f.note ? ` · ${f.note}` : ""}
             </span>
-          ) : readOnly ? (
-            <span className="text-dim">open</span>
           ) : (
-            <>
-              <Btn variant={selected ? "keep" : undefined} pressed={selected} onClick={onToggle}>
-                {selected ? "selected" : "accept"}
-              </Btn>
-              <span className="text-dim">
-                <button className="link" onClick={() => onDismiss()} title="Dismiss with no reason. A reason counts toward each checker's precision.">
-                  dismiss
-                </button>
-                {DISMISS_REASONS.map((r, i) => (
-                  <React.Fragment key={r}>
-                    {i === 0 ? ": " : " · "}
-                    <button className="link" onClick={() => onDismiss(r)} title={`${DISMISS_DEF[r][1]} (key ${i + 1})`}>
-                      {DISMISS_DEF[r][0]}
-                    </button>
-                  </React.Fragment>
-                ))}
-              </span>
-            </>
+            <span className="text-dim">open</span>
           )}
         </span>
       </div>
@@ -1097,7 +832,7 @@ function FindingRow({ f, S, scoreMax, selected, onToggle, onDismiss, readOnly }:
         {f.patch ? (
           <>
             <b>patch</b>
-            <span className="num text-keep" title="Accepting this substitutes the span for these words. Nothing is regenerated.">
+            <span className="num text-keep" title="Accepted, this substituted the span for these words. Nothing was regenerated.">
               {f.patch}
             </span>
           </>
@@ -1112,7 +847,7 @@ const CHECKER_DEF: Record<string, [string, string]> = {
   derivation: ["derivation", "Checks each assertion in the vignettes and the ending against the one departure the outline derives everything from, and does each sum whose figures the brief states."],
   ledger: ["ledger", "Checks each vignette and the ending against the pinned ledger of settled facts, and against each other, pairwise. The ledger wins where they disagree."],
   claims: ["claims", "Extracts claims about the actual world or the setting and verifies each against the authority the setting names. A contradicted claim gets a second reading against the line it cites."],
-  reader: ["reader's question", "A plot hole: a question a reader of the vignettes and the ending asks and the story never answers. It quotes no evidence, so it scores low; auto never accepts it."],
+  reader: ["reader's question", "A plot hole: a question a reader of the vignettes and the ending asks and the story never answers. It quotes no evidence, so it scores low."],
 };
 /** What each result means (app/pipeline/prompts.ts, findingShape). A contradicts:<quote> result reads as contradicts. */
 const RESULT_DEF: Record<string, [string, string]> = {
@@ -1132,8 +867,7 @@ const SECTION_DEF: Record<string, string> = {
   particulars: "The names, places, dates, counts and sums the prose must not drift from. Worth 1 to the score and the order.",
   none: "No outline section has to change: the fix is local to the prose.",
 };
-const DISMISS_REASONS = ["false-positive", "real-bad-fix", "duplicate", "trivial"] as const;
-type DismissReason = (typeof DISMISS_REASONS)[number];
+type DismissReason = "false-positive" | "real-bad-fix" | "duplicate" | "trivial";
 /** Each reason's label and what it tells the precision count (bank/verdicts.jsonl). */
 const DISMISS_DEF: Record<DismissReason, [string, string]> = {
   "false-positive": ["wrong", "The finding is not true of the brief: the checker misread it."],
@@ -1241,12 +975,11 @@ function Profiles({ f }: { f: Findings }) {
 const AXES: Record<string, string[]> = { tense: ["past", "present"], person: ["first", "second", "third"], chronology: ["linear", "nonlinear"], container: ["prose", "document", "interleaved"] };
 
 /** The drafting settings. `again`: at the plan gate, where the settings plan the draft again from its first beat. */
-function DraftSettings({ d, onClose, onDraft, again }: { d: Detail; onClose: () => void; onDraft: (b: { auto?: boolean; plan?: boolean; profile?: string; overrides?: Record<string, string | number>; models?: Record<string, string> }) => void; again?: boolean }) {
+function DraftSettings({ d, onClose, onDraft, again }: { d: Detail; onClose: () => void; onDraft: (b: { plan?: boolean; profile?: string; overrides?: Record<string, string | number>; models?: Record<string, string> }) => void; again?: boolean }) {
   const [cfg, setCfg] = useState<DraftConfigView | null>(null);
   const [profile, setProfile] = useState<string>("");
   const [models, setModels] = useState<Record<string, string>>({});
   const [v, setV] = useState<Record<string, string>>({});
-  const [auto, setAuto] = useState(false);
   // a person's draft stops at the plan by default (docs/specs/2026-09-28-story-ir.md §15, T2)
   const [plan, setPlan] = useState(true);
   useEffect(() => {
@@ -1277,7 +1010,6 @@ function DraftSettings({ d, onClose, onDraft, again }: { d: Detail; onClose: () 
   const set = (k: string) => (x: string) => setV({ ...v, [k]: x });
   const overrides: Record<string, string | number> = {};
   for (const [k, x] of Object.entries(v)) if (x !== base[k] && x !== "") overrides[k] = x;
-  const checked = d.checked;
   const num = (k: string, label: string, w = "4rem") => <input type="text" className="num" style={{ width: w }} aria-label={label} value={val(k)} onChange={(e) => set(k)(e.target.value)} />;
   return (
     <div className="form mt-4">
@@ -1341,21 +1073,13 @@ function DraftSettings({ d, onClose, onDraft, again }: { d: Detail; onClose: () 
       <Field label="Scenes" help="Sequential carries the text so far into each scene call. Parallel writes all beats at once from the schedule alone.">
         <Seg label="Scene order" value={val("scenes.order")} options={["sequential", "parallel"]} onChange={set("scenes.order")} />
       </Field>
-      {!checked && !again && (
-        <Field
-          label="Check"
-          help="This brief has not been checked. Skip drafts it as it stands (one ledger extraction supplies the ledger). Auto runs the check, accepts what recurred in every sample with evidence, dismisses the rest, repairs once and re-checks, then drafts and stops for you to review the draft."
-        >
-          <Seg label="Check" value={auto ? "auto" : "skip"} options={["skip", "auto"]} onChange={(x) => setAuto(x === "auto")} />
-        </Field>
-      )}
       {!again && (
         <Field label="Plan" help="Stop at the plan: plan the draft and check the plan, then wait before any scene. You fix the plan, plan it again from a beat, or write the draft from it.">
           <Seg label="Plan" value={plan ? "stop at the plan" : "write through"} options={["write through", "stop at the plan"]} onChange={(x) => setPlan(x === "stop at the plan")} />
         </Field>
       )}
       <div className="actions">
-        <Btn variant="primary" pad onClick={() => onDraft({ auto, plan: plan || undefined, profile: profile || undefined, overrides: Object.keys(overrides).length ? overrides : undefined, models: Object.keys(models).length ? models : undefined })}>
+        <Btn variant="primary" pad onClick={() => onDraft({ plan: plan || undefined, profile: profile || undefined, overrides: Object.keys(overrides).length ? overrides : undefined, models: Object.keys(models).length ? models : undefined })}>
           {again ? "plan again under these settings" : "draft"}
         </Btn>
       </div>
@@ -2203,6 +1927,9 @@ function PlanGate({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<an
   const [from, setFrom] = useState(1);
   const [instruction, setInstruction] = useState("");
   const [settings, setSettings] = useState(false);
+  // the brief's text checks ran in the draft (IR spec §15.3): the reader's questions and the profiles
+  const [f, setF] = useState<Findings | null>(null);
+  const [ins, setIns] = useState<Instruction>({ text: "", parts: [], kind: "direction" });
   const id = d.draw.id;
   const marks = useMarks(id, s);
   useEffect(() => {
@@ -2210,8 +1937,23 @@ function PlanGate({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<an
       .story(id)
       .then(setS)
       .catch(() => {});
+    api
+      .findings(id)
+      .then(setF)
+      .catch(() => {});
   }, [id, d.steps.length]);
   if (!s || !s.schedule) return <span className="text-dim">loading the plan…</span>;
+  const partNames = ["vignette", "ending", ...d.parts.contexts.map((c) => `context ${c.index}`)];
+  const questions = f?.listed.filter((x) => x.checkers.includes("reader")) ?? [];
+  // the repair makes a new draw and plans it again; this one is superseded, and the check tab links to the new one
+  const instruct = () =>
+    onAct(
+      () => api.gate(id, { action: "instruct", instructions: [{ ...ins, text: ins.text.trim() }] }),
+      () => {
+        location.hash = `#check/${id}`;
+        return undefined;
+      },
+    );
   const gating = d.draw.actions.apply === null;
   const gate = (action: string, extra: Record<string, unknown> = {}) => onAct(() => api.gate(id, { action, ...extra }));
   const nTicked = Object.keys(ticks).length;
@@ -2304,12 +2046,59 @@ function PlanGate({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<an
           </div>
         </div>
       )}
+      {gating && (
+        <div className="mt-5 max-w-[48rem]" role="group" aria-label="Instruction for the brief">
+          <Head note="what should change in the brief's prose, in your own words; tick the parts it is for. The brief is repaired into a new draw, which is planned again and stops here">brief</Head>
+          <textarea
+            className="mt-1 font-serif text-prose"
+            rows={2}
+            placeholder="for example: the ending leaves the safe open, and the weight stays on the pier"
+            aria-label="Instruction for the brief"
+            value={ins.text}
+            onChange={(e) => setIns({ ...ins, text: e.target.value })}
+          />
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <span className="head">for</span>
+            <span className="chips" role="group" aria-label="Parts the instruction is for">
+              {partNames.map((x) => (
+                <Chip key={x} pressed={ins.parts.includes(x)} onClick={() => setIns({ ...ins, parts: ins.parts.includes(x) ? ins.parts.filter((y) => y !== x) : [...ins.parts, x] })}>
+                  {x}
+                </Chip>
+              ))}
+            </span>
+            <Seg label="Kind" value={ins.kind} options={["direction", "fact"]} onChange={(k) => setIns({ ...ins, kind: k as Instruction["kind"] })} />
+            <Btn variant="quiet" disabled={!ins.text.trim() || !ins.parts.length} onClick={instruct} title={ins.kind === "fact" ? "Rewrite the parts under it; it also becomes a ledger line the plan and the scenes are held to." : "Rewrite the parts under it; every later repair keeps it true."}>
+              rewrite the brief
+            </Btn>
+          </div>
+        </div>
+      )}
       <div className="drawbody wide mt-4">
         <div className="min-w-0">
           <PlanView s={s} ticks={ticks} setTicks={setTicks} gating={gating} sym={sym} onSym={onSym} edits={edits} setEdits={gating ? setEdits : undefined} {...marks} />
         </div>
         <div className="aside min-w-0">
           <SymbolTable s={s} sym={sym} setSym={setSym} />
+          {questions.length > 0 && (
+            <>
+              <Head className="mt-6" note="plot holes the reader check found in the brief; nothing acts on them">
+                reader's questions
+              </Head>
+              <ul className="mt-1">
+                {questions.map((q) => (
+                  <li key={q.id} className="mt-2">
+                    {q.statement}
+                    <div className="text-dim">“{q.span}”</div>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          {f && (
+            <div className="mt-6">
+              <Profiles f={f} />
+            </div>
+          )}
           <div className="mt-6">{aside}</div>
         </div>
       </div>

@@ -12,7 +12,6 @@ const stagesOf = (model: any, from: number, re: RegExp) => model.calls.slice(fro
 describe("branch a draft", () => {
   test("with no beat it carries the brief and the schedule, derives no plan of its own, and writes every scene again", async () => {
     const { p, d, draw, model } = await drawn();
-    await d.check(draw.id);
     await d.draft(draw.id, { overrides: OVERRIDES });
     const before = model.calls.length;
     const src = scenesOf(p, draw.id);
@@ -42,7 +41,6 @@ describe("branch a draft", () => {
 
   test("at a beat it carries the scenes under it word for word, and the beat it writes reads them as the story so far", async () => {
     const { p, d, draw, model } = await drawn();
-    await d.check(draw.id);
     await d.draft(draw.id, { overrides: OVERRIDES });
     const before = model.calls.length;
     const src = scenesOf(p, draw.id);
@@ -66,7 +64,6 @@ describe("branch a draft", () => {
 
   test("with an instruction it plans the schedule again from the beat under it, keeps the written entries, and writes every beat from there under it", async () => {
     const { p, d, draw, model } = await drawn();
-    await d.check(draw.id);
     await d.draft(draw.id, { overrides: OVERRIDES });
     const before = model.calls.length;
     const src = chainOf(p, draw.id).schedule()!;
@@ -91,7 +88,6 @@ describe("branch a draft", () => {
 
   test("the carried beats are not screened or rewritten again; the written ones are", async () => {
     const { p, d, draw, model } = await drawn();
-    await d.check(draw.id);
     await d.draft(draw.id, { overrides: OVERRIDES });
     const before = model.calls.length;
 
@@ -106,7 +102,6 @@ describe("branch a draft", () => {
 
   test("the brief, the pinned ledger and the jobs are carried with no call, and the source is left as it stands", async () => {
     const { p, d, draw, model } = await drawn();
-    await d.check(draw.id);
     await d.draft(draw.id, { overrides: OVERRIDES });
     const srcSteps = p.steps(draw.id).length;
     const before = model.calls.length;
@@ -128,7 +123,6 @@ describe("branch a draft", () => {
 
   test("a branch is a draw the lineage follows back to the one that ran the premises", async () => {
     const { p, d, draw } = await drawn();
-    await d.check(draw.id);
     await d.draft(draw.id, { overrides: OVERRIDES });
     const b = await d.branch(draw.id, { atBeat: 3 });
 
@@ -144,7 +138,6 @@ describe("branch a draft", () => {
 
   test("models named on a branch run its scenes and are not written to the draw it develops", async () => {
     const { p, d, draw } = await drawn();
-    await d.check(draw.id);
     await d.draft(draw.id, { overrides: OVERRIDES });
 
     const b = await d.branch(draw.id, { models: { scene: "claude-sonnet-5" } });
@@ -157,8 +150,7 @@ describe("branch a draft", () => {
 
   test("a draw with no draft, and a beat outside the schedule, are refused before anything is written", async () => {
     const { p, d, draw } = await drawn();
-    await d.check(draw.id);
-    await expect(d.branch(draw.id)).rejects.toThrow(/is awaiting_check_gate, not awaiting_draft_gate \| drafted/);
+    await expect(d.branch(draw.id)).rejects.toThrow(/is done, not awaiting_draft_gate \| drafted/);
 
     await d.draft(draw.id, { overrides: OVERRIDES });
     const draws = p.draws().length;
@@ -171,7 +163,6 @@ describe("branch a draft", () => {
 describe("a sibling draft", () => {
   test("carries the brief and the ledger, derives its own schedule, and writes every scene; the source is left as it stands", async () => {
     const { p, d, draw, model } = await drawn();
-    await d.check(draw.id);
     await d.draft(draw.id, { overrides: OVERRIDES });
     const srcSteps = p.steps(draw.id).length;
     const before = model.calls.length;
@@ -195,18 +186,16 @@ describe("a sibling draft", () => {
 
   test("a brief that was never drafted can have siblings too", async () => {
     const { p, d, draw } = await drawn();
-    await d.check(draw.id);
     d.configure(draw.id, { overrides: OVERRIDES });
     const s = await d.sibling(draw.id);
     expect(scenesOf(p, s.id).map((x) => x.beat)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
-    expect(p.draw(draw.id).status).toBe("awaiting_check_gate");
+    expect(p.draw(draw.id).status).toBe("done");
   });
 });
 
 describe("a sibling under a named profile", () => {
   test("resolves the configuration again instead of carrying the source's", async () => {
     const { p, d, draw } = await drawn();
-    await d.check(draw.id);
     d.configure(draw.id, { overrides: OVERRIDES });
     const s = await d.sibling(draw.id, { overrides: { ...OVERRIDES, "beats.count": 8 } });
     expect(s.draft_config).not.toBe(p.draw(draw.id).draft_config);
@@ -214,7 +203,6 @@ describe("a sibling under a named profile", () => {
   });
   test("a branch of a draft configured before the plan check gets it; a config that chose its screens keeps them", async () => {
     const { p, d, draw, model } = await drawn();
-    await d.check(draw.id);
     await d.draft(draw.id, { overrides: OVERRIDES });
     // the config as a draft pinned it before the plan check existed
     const old = JSON.parse(p.draw(draw.id).draft_config!);

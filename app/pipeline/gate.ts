@@ -13,7 +13,6 @@ import { newDrawId, type Pipeline } from "./draw.ts";
 import type { Drafting, Instruction, PlanEdit } from "./drafting.ts";
 import type { Overrides } from "./draftconfig.ts";
 import { ACTIONS, type Action } from "./lifecycle.ts";
-import { DISMISS_REASONS, isDismissReason, type DismissReason } from "./verdicts.ts";
 
 export const GATE_ACTIONS = ACTIONS;
 export type GateAction = Action;
@@ -23,11 +22,9 @@ export const isGateAction = (s: string): s is GateAction => (GATE_ACTIONS as rea
 export type GateArgs = {
   step_id?: string; note?: string; findings?: string[]; finding?: string; beat?: number;
   beats?: number[]; instruction?: string; notes?: Record<string, string>; // rewrite: several beats, the flags ticked (`findings`) with a note on each, and the operator's words for them
-  instructions?: Instruction[];                                         // accept: the operator's instructions, repaired with the findings
+  instructions?: Instruction[];                                         // instruct: the operator's instructions on the brief's prose
   premise?: string;                                                     // fork: the candidate's premise as the operator edited it
-  reason?: DismissReason;                                               // dismiss
-  checks?: string[]; samples?: number;                                  // check
-  auto?: boolean; plan?: boolean; profile?: string; overrides?: Overrides; // draft: `plan` stops it at the plan gate
+  plan?: boolean; profile?: string; overrides?: Overrides; // draft: `plan` stops it at the plan gate
   at_beat?: number;                                                     // branch, replan
   real?: boolean;                                                       // mark: the finding read as real, or not, replan
   edits?: PlanEdit[];                                                   // apply: fields of beats the operator rewrote at the plan gate
@@ -72,18 +69,6 @@ export function gateCommand(p: Pipeline, d: Drafting, id: string, action: string
     case "flag": return cmd(false, id, p.flag(id, note));
     case "archive": return cmd(false, id, p.archive(id, true));
     case "unarchive": return cmd(false, id, p.archive(id, false));
-    case "accept": {
-      const findings = a.findings ?? [];
-      if (!findings.length && !a.instructions?.length) throw new Error("findings required");
-      return cmd(true, id, d.accept(id, findings, { note, instructions: a.instructions }));
-    }
-    case "auto": return cmd(true, id, d.autoRounds(id, { note: note || undefined }));
-    // a dismissal answers with the finding, and leaves the pane where it stands
-    case "dismiss": {
-      if (a.reason !== undefined && !isDismissReason(a.reason)) throw new Error(`reason must be ${DISMISS_REASONS.join(" | ")}`);
-      return cmd(false, null, d.dismiss(id, need(a.finding, "finding"), note, "gate", a.reason));
-    }
-    case "hold": return cmd(false, id, d.hold(id));
     case "keep": return cmd(false, id, d.keep(id, note));
     case "apply": return cmd(true, id, d.applyPlan(id, { findings: a.findings, notes: a.notes, edits: a.edits }));
     case "replan": return cmd(true, id, d.replan(id, Number(need(a.at_beat, "at_beat")), a.instruction ?? "", { profile: a.profile, overrides: a.overrides }));
@@ -93,8 +78,9 @@ export function gateCommand(p: Pipeline, d: Drafting, id: string, action: string
     }
     case "write": return cmd(true, id, d.writeScenes(id));
     case "rewrite": return cmd(true, id, d.rewrite(id, a.beats?.length ? a.beats.map(Number) : [Number(need(a.beat, "beat"))], { findings: a.findings, notes: a.notes, instruction: a.instruction }));
-    case "check": return cmd(true, id, d.check(id, { checks: a.checks, samples: a.samples }));
-    case "draft": return cmd(true, id, d.draft(id, { auto: !!a.auto, plan: !!a.plan, profile: a.profile, overrides: a.overrides }));
+    case "draft": return cmd(true, id, d.draft(id, { plan: !!a.plan, profile: a.profile, overrides: a.overrides }));
+    // the repair makes a new draw, which drafts on to the plan gate: that draw is the one to show once it runs
+    case "instruct": return cmd(true, id, d.instruct(id, need(a.instructions?.length ? a.instructions : undefined, "instructions"), note));
     // the branch is the draw to show next, as a fork is
     case "branch": return cmd(true, null, d.branch(id, { atBeat: a.at_beat, profile: a.profile, overrides: a.overrides, models: a.models, instruction: a.instruction }));
     // a deleted draw is nothing to show next

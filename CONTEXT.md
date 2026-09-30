@@ -109,7 +109,7 @@ _Avoid_: scene (a scene belongs to a draft), sketch
 A premise together with its executed vignette, as shown at the gate.
 
 **Gate**:
-A point where the draw stops for the operator. The **gate** proper is where a candidate is chosen; **gate 1** is where findings on a brief are acted on; **gate 2** is where a draft is kept or rewritten.
+A point where the draw stops for the operator. The **gate** proper is where a candidate is chosen; the **plan gate** is where the plan is fixed, planned again or written, and the brief's prose is instructed; **gate 2** is where a draft is kept or rewritten. **Gate 1**, where findings on a brief were acted on, was retired on 29 September 2026 (ADR-0014); the draws that stand at it keep their findings, read-only.
 _Avoid_: checkpoint, review step
 
 **Auto**:
@@ -140,11 +140,11 @@ The one thing about the outline that a context vignette tests.
 ## Checking
 
 **Check** / **Check pass**:
-One run of every enabled checker over one brief.
+One run of every enabled checker over one brief. Since ADR-0014 the draft runs it beside the schedule, and the plan gate shows it.
 _Avoid_: pass alone (a pass is a verdict)
 
 **Checker**:
-One kind of check: *derivation*, *ledger*, *claims*, *structure* or *resemblance*.
+One kind of check: *structure*, *resemblance* or the *reader*. Gate 1 also ran *derivation*, *ledger* and *claims* on the brief; the bind holds each scene to the ledger, and the plan check reads the plan's claims against the setting.
 
 **Sample**:
 One of the independent runs of a checker in a pass.
@@ -161,7 +161,7 @@ A finding's weight, 0 to 10, from its recurrence, the checkers that agree, what 
 _Avoid_: severity, confidence
 
 **Floor**:
-The score at or above which auto repair acts on a finding.
+The score at or above which auto repair acted on a finding, before gate 1 was retired.
 
 **Invalidates**:
 The outline section that would have to change if a finding stands.
@@ -181,29 +181,29 @@ A checker's description of a brief that is never a finding: the structure answer
 _Avoid_: using profile for a drafting profile outside the configuration
 
 **Accept** / **Dismiss** / **Hold**:
-The operator's actions on findings at gate 1: repair it, drop it with a note, or leave it open.
+The operator's actions on findings at gate 1, before it was retired: repair it, drop it with a note, or leave it open.
 
 ## Repair
 
 **Repair**:
-Rewriting the parts of a brief that accepted findings touch, as a new draw that points back to the one it repairs.
+Rewriting the parts of a brief that accepted findings touch, as a new draw that points back to the one it repairs. Since ADR-0014 only an instruction at the plan gate makes one.
 _Avoid_: fix, edit, revision
 
 **Chain**:
 A brief and every repair made from it, from the **root** to the **tip**.
 
 **Round**:
-One repair and the check pass that follows it, in auto repair.
+One repair and the check pass that followed it, in auto repair, before gate 1 was retired.
 
 **Carry**:
 Taking a part of the brief into the repair unchanged, or with only its patches applied.
 
 **Instruction**:
-What the operator says should change, in their own words, for the brief parts or the draft beats they name. At gate 1 it is a finding the operator writes, a *fact* the ledger takes or a *direction* it does not; at gate 2 it is a constraint on each beat it names.
+What the operator says should change, in their own words, for the brief parts or the draft beats they name. At the plan gate it is a finding the operator writes on the brief's prose, a *fact* the ledger takes or a *direction* it does not; at gate 2 it is a constraint on each beat it names.
 _Avoid_: note (a note is a log entry), prompt, feedback
 
 **Direction**:
-An instruction the pipeline keeps true without making it a ledger line: at gate 1, a settled line only; at gate 2, every instruction a draft's scenes were written under, which a later rewrite of the beat carries.
+An instruction the pipeline keeps true without making it a ledger line: on the brief, a settled line only; at gate 2, every instruction a draft's scenes were written under, which a later rewrite of the beat carries.
 
 **Patch**:
 A finding's span rewritten in place, no longer than the span, applied without a model call.
