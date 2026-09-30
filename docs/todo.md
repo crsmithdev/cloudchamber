@@ -165,3 +165,13 @@ updated: 2026-09-30
 priority: medium
 labels: [ui]
 ---
+
+## 13. UI: a sibling draw (ref-, copied brief) cannot be drafted: no chosen_step, so the strip stays at premises and the brief stop with its draft button is inert
+---
+id: 13
+status: open
+created: 2026-09-30
+updated: 2026-09-30
+priority: medium
+labels: [ui, bug]
+---
