@@ -185,3 +185,13 @@ updated: 2026-09-30
 priority: medium
 labels: [evals]
 ---
+
+## 15. Clarity and momentum plan, steps 1-3: length 7k v 10k, a rule budget, an escalation rule; each an A/B on three briefs; runs only if step 0 confirms
+---
+id: 15
+status: open
+created: 2026-09-30
+updated: 2026-09-30
+priority: medium
+labels: [evals]
+---
