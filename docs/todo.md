@@ -82,3 +82,13 @@ updated: 2026-09-29
 priority: medium
 labels: [ir]
 ---
+
+## 7. T4 kill rule: two drafts of one declared brief, judged by ear (about $12); kill if the ending is flatter or outline shape failures pass one in five (0 of 2 so far)
+---
+id: 7
+status: open
+created: 2026-09-29
+updated: 2026-09-29
+priority: medium
+labels: [ir]
+---
