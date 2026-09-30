@@ -21,7 +21,7 @@ import { copyBrief } from "../app/pipeline/branch.ts";
 import { commit } from "../app/pipeline/lifecycle.ts";
 import { chainOf } from "../app/pipeline/chain.ts";
 import { lintS1 } from "../app/pipeline/ir/s1.ts";
-import { l1Symbolize, l2Resolve, l3Calendar, l4PlanVsLedger, l5Link } from "../app/pipeline/ir/s2.ts";
+import { l1Symbolize, l3Calendar, l4PlanVsLedger, l5Link } from "../app/pipeline/ir/s2.ts";
 
 const out = process.argv[2];
 if (!out) throw new Error("usage: bun evals/20260928-ir-harness.ts <out.json>");
@@ -69,14 +69,12 @@ async function runNew(srcId: string, model: string) {
   const ledger = srcChain.ledger() ?? "";
   const schedule = srcChain.schedule();
   if (!schedule) throw new Error(`${srcId}: no schedule`);
-  const { setting } = p.loadDrawSetting(p.draw(srcId));
   const copy = copySource(srcId);
   p.setModels(copy.id, { "ir-symbolize": model, "ir-plan-ledger": model, "check-claims-verify": model, "check-claims-confirm": model });
 
   const t0 = Date.now();
   const s1 = lintS1(schedule);
-  const { step: l1step, symbols: rawSymbols } = await l1Symbolize(p, copy.id, copy.outlineStepId, ledger, "harness");
-  const symbols = await l2Resolve(p, copy.id, l1step, rawSymbols, setting ?? { claims: null } as any, "harness", chainOf(p, copy.id));
+  const { step: l1step, symbols } = await l1Symbolize(p, copy.id, copy.outlineStepId, ledger, "harness");
   const l3 = l3Calendar(symbols);
   const { findings: l4 } = await l4PlanVsLedger(p, copy.id, l1step.id, symbols, schedule, "harness");
   l5Link(schedule); // $0, data only; not scored

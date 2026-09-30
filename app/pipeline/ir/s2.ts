@@ -1,18 +1,16 @@
 /**
  * S2: symbols and resolution (docs/specs/2026-09-28-story-ir.md §4.2, §5,
- * §13.3). Five lowering passes over a stored ledger, setting and schedule:
+ * §13.3). Four lowering passes over a stored ledger and schedule (L2, each
+ * symbol against the setting, was killed in §15.11):
  *
  *   L1 symbolise  one model call, the ledger to typed `<sym>` tags
- *   L2 resolve    each symbol whose `from` names the setting, verified once
- *                 per chain, reusing `verifyClaims` (check.ts) and its cache
  *   L3 calendar   deterministic: day/date/hour and vote-count arithmetic
  *                 over L1's `time` and `count` symbols
  *   L4 plan       one model call, the schedule's raw text against the symbol
  *                 table, in the fixed `<finding>` shape
  *   L5 link       deterministic: entry(k) = exit(k-1), a table, no findings
  *
- * Real model calls only in L1 and L4; L2's calls are `check-claims-verify`,
- * cached by the chain the way a check pass already is. Nothing here writes a
+ * Real model calls only in L1 and L4. Nothing here writes a
  * new artifact kind: `artifacts.ts`'s `Kind` union is fixed (§13.1 treats the
  * `schedule` and `finding` shapes as given), and S2 is a standalone read —
  * the caller decides what, if anything, to persist.
@@ -20,15 +18,14 @@
 import type { Pipeline, StepRow } from "../draw.ts";
 import { fill } from "../prompts.ts";
 import { tags } from "../model.ts";
-import { readClaims, verifyClaims, type Claim, type Verified } from "../check.ts";
-import { distillate, type Setting } from "../settings.ts";
-import { chainOf, type Chain } from "../chain.ts";
+import { readClaims } from "../check.ts";
+import { chainOf } from "../chain.ts";
 import { findingId, normalise, parseFindings, type Finding } from "../recur.ts";
 import type { Schedule } from "../write.ts";
 import type { FindingMeta } from "../artifacts.ts";
 import { lintS1, parseWhen, serial } from "./s1.ts";
 
-export type Sym = { id: string; kind: string; from: string; attrs: Record<string, string>; text: string; resolved?: "SUPPORTED" | "CONTRADICTED" | "SILENT" };
+export type Sym = { id: string; kind: string; from: string; attrs: Record<string, string>; text: string };
 
 function attrsOf(raw: string): Record<string, string> {
   const out: Record<string, string> = {};
@@ -70,33 +67,6 @@ export async function l1Symbolize(p: Pipeline, drawId: string, parent: string | 
     return syms;
   }, { pass });
   return { step, symbols: value };
-}
-
-// --- L2 resolve -----------------------------------------------------------------
-
-/** A symbol whose provenance names the setting: `from="ledger:detail; setting:bodies/Armoury"`. */
-const settingEligible = (s: Sym) => /\bsetting:/i.test(s.from);
-
-/**
- * Every setting-eligible symbol verified once per chain, reusing `verifyClaims`
- * and its cache (`check.ts:258` at the time this was written) — the fix for
- * the wording-sensitivity bug in §4.2: one verdict per symbol, not one per the
- * sentence a checker or a screen happened to quote.
- */
-export async function l2Resolve(p: Pipeline, drawId: string, extract: StepRow, symbols: Sym[], setting: Setting, pass: string, chain: Chain): Promise<Sym[]> {
-  const eligible = symbols.filter(settingEligible);
-  if (!eligible.length || !setting.claims) return symbols;
-  const authority = setting.claims;
-  const reference = authority === "setting" ? distillate(setting) : "";
-  const claims: Claim[] = eligible.map((s) => ({ span: s.text, statement: s.text }));
-  const verified: Verified[] = await verifyClaims(p, drawId, extract, claims, authority, reference, pass, chain, true);
-  const byStatement = new Map(verified.map((v) => [v.statement, v]));
-  const resolvedOf = (r: string): Sym["resolved"] => (r === "contradicted" ? "CONTRADICTED" : r === "supported" ? "SUPPORTED" : "SILENT");
-  return symbols.map((s) => {
-    if (!settingEligible(s)) return s;
-    const v = byStatement.get(s.text);
-    return v ? { ...s, resolved: resolvedOf(v.result) } : s;
-  });
 }
 
 // --- L3 calendar and typed counts -----------------------------------------------

@@ -18,9 +18,9 @@ export function checkTemplate(name: string, text: string): void {
  * The <sym> grammar the outline declares its particulars and knowledge in (IR
  * spec §15.8, T4): L1's, worded for a writer instead of a reader of a ledger,
  * so that L3 and L4 read a declared table as they read a lowered one. L1's own
- * prompt stays as it was: it still lowers the ledger of a brief with no table.
+ * prompt still lowers the ledger of a brief with no table.
  */
-const SYM_RULES = `A symbol is a person, an object, a body (a council, a guild, a crew), a place, or a fact. Each tag carries: id="" (a short lowercase identifier, dotted for a property of something: suit.third), kind="person|object|body|place|fact|time|count", from="ledger:<category>" (the category the fact belongs to: time, detail, knowledge, possession, world or perspective; add "; setting:<area>" too when the fact is the kind a setting states for or against — a body, an instrument, a place, an event, a term, a rite). Add any other attribute the section states a value for: a count, a role, a custody, a shift size. A person or an object that the section places in a body — a seat-holder, a delegate, an officer, a member, a thing a body holds — carries member_of="" with that body's symbol id. The tag's content is the fact as one sentence that someone who has not seen the rest can read against prose.
+const SYM_RULES = `A symbol is a person, an object, a body (a council, a guild, a crew), a place, or a fact. Each tag carries: id="" (a short lowercase identifier, dotted for a property of something: suit.third), kind="person|object|body|place|fact|time|count", from="ledger:<category>" (the category the fact belongs to: time, detail, knowledge, possession, world or perspective). Add any other attribute the section states a value for: a count, a role, a custody, a shift size. A person or an object that the section places in a body — a seat-holder, a delegate, an officer, a member, a thing a body holds — carries member_of="" with that body's symbol id. The tag's content is the fact as one sentence that someone who has not seen the rest can read against prose.
 
 Two kinds need special care.
 
@@ -259,7 +259,7 @@ Extract the claims the brief makes that a line of the setting settles, for or ag
 {ledger}
 </ledger>
 
-Read it and emit one <sym> tag per entity or fact it settles: a person, an object, a body (a council, a guild, a crew), a place, or a fact. Each tag carries: id="" (a short lowercase identifier, dotted for a property of something: suit.third), kind="person|object|body|place|fact|time|count", from="ledger:<category>" (the ledger category the line came from; add "; setting:<area>" too when the fact is the kind a setting states for or against — a body, an instrument, a place, an event, a term, a rite). Add any other attribute the line states a value for: a count, a role, a custody, a shift size. A person or an object that the ledger places in a body — a seat-holder, a delegate, an officer, a member, a thing a body holds — carries member_of="" with that body's symbol id. The tag's content is the line itself, close enough to quote.
+Read it and emit one <sym> tag per entity or fact it settles: a person, an object, a body (a council, a guild, a crew), a place, or a fact. Each tag carries: id="" (a short lowercase identifier, dotted for a property of something: suit.third), kind="person|object|body|place|fact|time|count", from="ledger:<category>" (the ledger category the line came from). Add any other attribute the line states a value for: a count, a role, a custody, a shift size. A person or an object that the ledger places in a body — a seat-holder, a delegate, an officer, a member, a thing a body holds — carries member_of="" with that body's symbol id. The tag's content is the line itself, close enough to quote.
 
 Two kinds need special care.
 
