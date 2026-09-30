@@ -145,3 +145,11 @@ this symbol, `e33a` on the two `CONTRADICTED` symbols alone.
   reads would cost roughly what this harness already spent, again.
 - Tuning L1's prompt to fix the vote miss: the follow-up above is not applied
   here, so the reported vote result is the prompt's first, untuned attempt.
+
+## Running it again
+
+The script does not build on `main`, and nothing on `main` runs it. It ran on
+the `ir-s1` branch at `cea5888`. Its old arm calls gate 1 (`d.check`), which
+`6f96094` removed, and its new arm imports `l5Link` and `l2Resolve`, which
+`ir/s2.ts` on `main` does not export. To run it again, check out `cea5888`
+in a worktree and run it there against a copy of the store.
