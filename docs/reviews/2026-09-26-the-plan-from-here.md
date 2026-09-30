@@ -18,7 +18,7 @@ accepted by Chris, then red-teamed (§15.11). ADR-0014 is proposed until T3.
 | 5 | **Read the plan findings**, as below; it now also decides T1′. Each plan finding has a "real" and a "not real" mark, stored as a `reading`, so the reading is in the store. | Chris | $0 |
 | T2 | **The plan gate is the only stop before gate 2.** Built (§15.12): a person's choose or fork drafts on to the plan gate, and gate 1 does not stop them. `--auto` passes the plan gate and its findings show at gate 2. | Chris uses the gate, or not, for two weeks | $0 |
 | T3 | Retire gate 1's code. T3′ is skipped by Chris's decision: the prose-against-prose loss is accepted | as §15.8 | $0 |
-| T4 | **The declared ledger.** Built before step 5, at Chris's "proceed" (§15.14): the outline declares `particulars` and `knowledge` as `<sym>` tags, and a new brief makes no `ledger-extract` or L1 call. 0 of 2 outlines failed shape. | by ear: two drafts of one brief, still to run | about $12 |
+| T4 | **The declared ledger.** Built before step 5, at Chris's "proceed" (§15.14): the outline declares `particulars` and `knowledge` as `<sym>` tags, and a new brief makes no `ledger-extract` or L1 call. 0 of 2 outlines failed shape. Kept: Chris heard the two drafts of draw `2dae` on 29 Sep and did not hear a flatter ending (#7). | by ear: done | about $9, spent |
 
 Decisions taken with shape A: `--auto` applies no fix of its own; the
 reader check moves to the plan gate with a five-draw kill; T4 waits on
@@ -26,7 +26,7 @@ step 5. Chris skipped T3′ on 29 Sep.
 
 Found on the way: the confirm step (28 Sep) now demotes the mark fact of
 `4797` at every layer. Whether gate 1 today still keeps the facts it kept
-on 28 Sep is unknown; finding out is a check replay.
+on 28 Sep is unknown; finding out is a check replay. T3 retired gate 1, so the replay is moot.
 
 ## Revision 4
 
