@@ -90,7 +90,7 @@ labels: [ir]
 ## 7. T4 kill rule: two drafts of one declared brief, judged by ear (about $12); kill if the ending is flatter or outline shape failures pass one in five (0 of 2 so far)
 ---
 id: 7
-status: open
+status: done
 created: 2026-09-29
 updated: 2026-09-29
 priority: medium
@@ -100,3 +100,4 @@ labels: [ir]
 ### Notes
 
 - 2026-09-29 20:02: 30 Sep: both drafts are written, on DB copies, from one candidate (2dae, execute-a79422be). Before T4 (a410812, prose outline): .worktrees/ear-pre/output/20260929135622-2dae/report.html. T4 (declared outline, 49 symbols): .worktrees/ear-t4/output/20260929135622-2dae/report.html. Both at gate 2. About $9 spent. Waits on Chris's ear; then remove both worktrees and scratchpad pre.db and t4.db.
+- 2026-09-29 20:24: Kept T4. Ear test on draw 2dae: 0 of 2 outline shape failures; the T4 ending is more restrained (it stops on the climb, before the fall) and loses the Colin aftermath, but Chris judged it not flatter. One sample each, so sampling noise is not ruled out.
