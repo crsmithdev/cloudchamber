@@ -175,3 +175,13 @@ updated: 2026-09-30
 priority: medium
 labels: [ui, bug]
 ---
+
+## 14. Clarity and momentum plan, step 0: draw and judge two more channel F titles to confirm the gap (docs/reviews/2026-09-30-the-plan-for-clarity-and-momentum.md)
+---
+id: 14
+status: open
+created: 2026-09-30
+updated: 2026-09-30
+priority: medium
+labels: [evals]
+---
