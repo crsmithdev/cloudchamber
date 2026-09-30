@@ -116,6 +116,7 @@ labels: [ir]
 ### Notes
 
 - 2026-09-29 20:25: Harmless, by design. SYM_RULES (prompts.ts:23) asks for '; setting:<area>' by the kind of fact (body, place, rite...), not by whether the draw has a setting. The only reader is settingEligible/l2Resolve in ir/s2.ts:78-100. Only evals/20260928-ir-harness.ts calls it (L2 is killed), and it returns at once when the setting has no claims authority. If L2 stays dead, the grammar clause and l2Resolve can go together.
+- 2026-09-29 20:47: 29 Sep: done anyway in 8ee09a4. l2Resolve and the setting: clause in both grammars are deleted. Live outline on a copy of 2dae: 50 <sym> tags, 0 with setting:, the shape check passed, $0.19.
 
 ## 9. Plan step 3: one change for the hook; the diagnosis is done, the change and two drafts (~$30) wait on step 1's listen
 ---
@@ -130,3 +131,13 @@ labels: [plan]
 ### Notes
 
 - 2026-09-29 20:41: Diagnosis from the stored steps of 3cee and 1b09 (29 Sep, $0): the hook-late screen question (prompts.ts:516-517, added for beat 1 at write.ts:240) ran and answered 'absent' on both drafts (screen-structure-00c0334d, screen-structure-3b4e47df). The first thing wrong comes at word 101 (3cee) and 83 (1b09), inside the 150-word window, after 80-100 words of time, place, routine and history. So the register flag (write.ts:63) queued no rewrite, and HOOK_LINE (write.ts:41) never reached a model. The layer to change is the screen question: it has two conditions ('in the first 150 words' and 'before routine, setting or history'), and the model resolves them in favour of the window. Suggested: flag when the first one or two sentences (about 40 words) give time, place, routine or history before anything is wrong; both stored openings would fire. Risks: HOOK_LINE also says 150 words (a rewrite under it may change little: the next layer); sceneSignal (prompts.ts:441) tells the first sentence to give time and place; the schedule put the worst moment at beat 3 under linear chronology. Judgements: 3cee lost hook to channel F 11 of 12 (vs-hIS0zHK8).
+
+## 10. evals/20260928-ir-harness.ts does not build: it imports l5Link, which ir/s2.ts no longer exports (already broken before 8ee09a4)
+---
+id: 10
+status: open
+created: 2026-09-29
+updated: 2026-09-29
+priority: medium
+labels: [ir, evals]
+---
