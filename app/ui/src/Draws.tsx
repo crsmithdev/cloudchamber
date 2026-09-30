@@ -420,7 +420,7 @@ export function Draws({ status, selected, like, step: stepId }: { status: Status
                           ? [
                               [
                                 redrawn(d.draw) ? "superseded by" : "repaired in",
-                                <a href={redrawn(d.draw) ? `#draw/${d.draw.superseded_by}` : `#check/${d.draw.superseded_by}`} className="num">
+                                <a href={redrawn(d.draw) ? `#draw/${d.draw.superseded_by}` : `#write/${d.draw.superseded_by}`} className="num">
                                   {d.draw.superseded_by}
                                 </a>,
                               ] as Row,
@@ -757,12 +757,12 @@ function DrawBody({
                             </Btn>
                           )}
                           {chosen && (
-                            <a className="link num" href={`#check/${d.draw.id}`}>
+                            <a className="link num" href={`#write/${d.draw.id}`}>
                               in check <Icon name="arrow_forward" />
                             </a>
                           )}
                           {fork && (
-                            <a className="link num" href={`#check/${fork.id}`}>
+                            <a className="link num" href={`#write/${fork.id}`}>
                               in check <Icon name="arrow_forward" />
                             </a>
                           )}
@@ -795,7 +795,7 @@ function DrawBody({
                           )}
                           {edits.map((f) => (
                             <div key={f.id} className="mt-1">
-                              <a className="link num" href={`#check/${f.id}`} title="A draw developed from an edit of this premise.">
+                              <a className="link num" href={`#write/${f.id}`} title="A draw developed from an edit of this premise.">
                                 edited <Icon name="arrow_forward" />
                               </a>
                             </div>

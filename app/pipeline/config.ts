@@ -38,7 +38,7 @@ export type PartRole = "vignette" | "outline" | "context" | "ending" | "job";
  * reader that asks for `context` finds the rewritten one too; reading `context`
  * alone lost it, and the next repair wrote both contexts afresh under new jobs.
  */
-export type Tab = "ideate" | "check" | "write";
+export type Tab = "ideate" | "write";
 type StageFacts = { tab: Tab | null; group?: "prose" | "judgement" | "corpus"; role?: PartRole; checker?: string; call?: false };
 
 const STAGE_TABLE: Readonly<Record<string, StageFacts>> = {
@@ -54,21 +54,21 @@ const STAGE_TABLE: Readonly<Record<string, StageFacts>> = {
   ending: { tab: "ideate", group: "prose", role: "ending" },
   jobs: { tab: "ideate", role: "job", call: false },
 
-  "ledger-extract": { tab: "check", group: "judgement" },
-  "check-derivation": { tab: "check", group: "judgement", checker: "derivation" },
-  "check-ledger": { tab: "check", group: "judgement", checker: "ledger" },
-  "check-verify": { tab: "check", group: "judgement" },
-  "check-structure": { tab: "check", group: "judgement", checker: "structure" },
-  "check-resemblance": { tab: "check", group: "judgement", checker: "resemblance" },
-  "check-reader": { tab: "check", group: "judgement", checker: "reader" },
-  "check-claims-extract": { tab: "check", group: "judgement", checker: "claims" },
-  "check-claims-verify": { tab: "check", group: "judgement", checker: "claims" },
-  "check-claims-confirm": { tab: "check", group: "judgement", checker: "claims" },
-  reconcile: { tab: "check", group: "judgement" },
-  "repair-vignette": { tab: "check", group: "prose", role: "vignette" },
-  "repair-context": { tab: "check", group: "prose", role: "context" },
-  "repair-outline": { tab: "check", group: "prose", role: "outline" },
-  "repair-ending": { tab: "check", group: "prose", role: "ending" },
+  "ledger-extract": { tab: "write", group: "judgement" },
+  "check-derivation": { tab: "write", group: "judgement", checker: "derivation" },
+  "check-ledger": { tab: "write", group: "judgement", checker: "ledger" },
+  "check-verify": { tab: "write", group: "judgement" },
+  "check-structure": { tab: "write", group: "judgement", checker: "structure" },
+  "check-resemblance": { tab: "write", group: "judgement", checker: "resemblance" },
+  "check-reader": { tab: "write", group: "judgement", checker: "reader" },
+  "check-claims-extract": { tab: "write", group: "judgement", checker: "claims" },
+  "check-claims-verify": { tab: "write", group: "judgement", checker: "claims" },
+  "check-claims-confirm": { tab: "write", group: "judgement", checker: "claims" },
+  reconcile: { tab: "write", group: "judgement" },
+  "repair-vignette": { tab: "write", group: "prose", role: "vignette" },
+  "repair-context": { tab: "write", group: "prose", role: "context" },
+  "repair-outline": { tab: "write", group: "prose", role: "outline" },
+  "repair-ending": { tab: "write", group: "prose", role: "ending" },
 
   schedule: { tab: "write", group: "prose" },
   scene: { tab: "write", group: "prose" },

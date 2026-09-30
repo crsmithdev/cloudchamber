@@ -43,7 +43,7 @@ may read directly is `corpus/examples/*.md` (verbatim passages by source) and
 ./cloudchamber branch <draw> [--at-beat K] [--instruction "..."]   re-plan from K under an instruction
 ./cloudchamber verdict <example|theme|brief|story> <id> <keep|pass> [--artifact] [--note "..."]
                                            a passed story hides every passage of it
-./cloudchamber serve [--port 3002]         the UI: browse, ideate, check, write
+./cloudchamber serve [--port 3002]         the UI: browse, ideate, write
 ```
 
 Extraction with no `--only` reads the dev subset from `sources/manifest.toml`.

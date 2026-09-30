@@ -77,14 +77,15 @@ Browse is the only pure judgement surface. Extraction happens outside the UI.
 
 ## Capabilities and Constraints
 
-Four tabs, fixed: browse, ideate, check, write. `app/pipeline/lifecycle.ts`
+Three tabs: browse, ideate, write. `app/pipeline/lifecycle.ts`
 decides where a draw appears, whether it is running, whether it waits at a
 gate, and which actions it allows; the API sends those answers and the UI
 keeps no status rules of its own.
 
-Red-teaming is not a coming stage. The six checkers — `derivation`, `ledger`,
-`structure`, `resemblance`, `claims-extract`, `claims-verify` — plus the repair
-rounds and gate 1 are the red team, and they shipped as the check tab.
+Red-teaming is not a coming stage. It shipped as the check tab, with gate 1
+and its checkers. T3 retired gate 1 (ADR-0014), and on 30 Sep 2026 the check
+tab went too: the brief's checks now run in the draft and are read at the plan
+gate, in the write tab.
 
 There is no separate story stage. The write tab produces the story.
 

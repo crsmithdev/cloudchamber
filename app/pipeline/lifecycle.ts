@@ -10,9 +10,9 @@
  * is only for a draw whose own creation failed: a draw's first run, a fork, a
  * branch, or a repair's new round, none of which had a status to go back to.
  *
- * The tabs follow docs/specs/2026-09-10-four-tabs.md: every draw is in ideate for
- * ever, and also in check from the moment a candidate is chosen, and in write
- * from the moment it has a schedule.
+ * The tabs follow docs/specs/2026-09-10-four-tabs.md, less the check tab: every
+ * draw is in ideate for ever, and also in write from the moment a candidate is
+ * chosen.
  */
 import type { Db } from "./store/db.ts";
 import type { DrawRow } from "./draw.ts";
@@ -32,8 +32,7 @@ export type Action = (typeof ACTIONS)[number];
 
 const RUNNING = new Set<string>(["running", "checking", "repairing", "drafting"]);
 const GATES = new Set<string>(["awaiting_gate", "awaiting_check_gate", "awaiting_plan_gate", "awaiting_draft_gate"]);
-const CHECK = new Set<string>(["done", "checking", "awaiting_check_gate", "repairing", "repaired"]);
-const WRITE = new Set<string>(["awaiting_plan_gate", "drafting", "awaiting_draft_gate", "drafted"]);
+const WRITE = new Set<string>(["done", "checking", "awaiting_check_gate", "repairing", "repaired", "awaiting_plan_gate", "drafting", "awaiting_draft_gate", "drafted"]);
 
 const AT_BRIEF = ["done", "awaiting_check_gate"];
 /** The statuses each action is allowed at; an action missing here is allowed at any. */
@@ -77,15 +76,14 @@ export function must(draw: DrawFacts, action: Action): void {
 }
 
 export function tabOf(draw: Pick<DrawRow, "status" | "chosen_step" | "repaired_from">): Tab {
-  if (WRITE.has(draw.status)) return "write";
-  if (CHECK.has(draw.status) || draw.chosen_step || draw.repaired_from) return "check";
+  if (WRITE.has(draw.status) || draw.chosen_step || draw.repaired_from) return "write";
   return "ideate";
 }
 
 
-/** The tab where a draw at this status waits for a person: at a gate, or a brief nobody has checked. */
+/** The tab where a draw at this status waits for a person: at a gate, or a brief nobody has drafted. */
 export function waitsIn(status: string): Tab | null {
-  return status === "awaiting_gate" ? "ideate" : status === "done" || status === "awaiting_check_gate" ? "check" : status === "awaiting_plan_gate" || status === "awaiting_draft_gate" ? "write" : null;
+  return status === "awaiting_gate" ? "ideate" : ["done", "awaiting_check_gate", "awaiting_plan_gate", "awaiting_draft_gate"].includes(status) ? "write" : null;
 }
 
 export type LifecycleView = { stage: Tab; running: boolean; at_gate: boolean; actions: Record<Action, string | null> };

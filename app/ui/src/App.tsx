@@ -30,7 +30,6 @@ function Logo({ label }: { label?: string }) {
 
 const TABS: [string, string][] = [
   ["ideate", "#draws"],
-  ["check", "#check"],
   ["write", "#write"],
 ];
 /** Below the pipeline tabs, after a separator: the corpus the draws pull from. */
@@ -49,10 +48,14 @@ export function App() {
   }, [hash]);
   const [view, arg, arg2] = hash.split("/");
   const drawsView = view === "draws" || view === "draw";
-  // `#go/<draw>` names a draw without its stage; `develop` was check and write in one tab
+  // `#go/<draw>` names a draw without its stage; `develop` was check and write in one tab, and `check` was a tab of its own
   useEffect(() => {
+    if (view === "check") {
+      location.hash = `#write${arg ? `/${arg}` : ""}`;
+      return;
+    }
     if (view !== "go" && view !== "develop") return;
-    const fallback = view === "go" ? "#draws" : "#check";
+    const fallback = view === "go" ? "#draws" : "#write";
     if (!arg) {
       location.hash = fallback;
       return;
@@ -105,7 +108,7 @@ export function App() {
   const on = (name: string) => (name === "ideate" ? drawsView : name === "sources" ? sourcesView : view === name);
   const count = (name: string) => {
     if (!status) return null;
-    const n = name === "ideate" || name === "check" || name === "write" ? status.waiting[name] : 0;
+    const n = name === "ideate" || name === "write" ? status.waiting[name] : 0;
     return n ? <span>{n}</span> : null;
   };
   // folded, a link is its initial with the name as its title; open, it is the name and its count
@@ -160,8 +163,7 @@ export function App() {
       {drawsView && (
         <Draws status={status} selected={view === "draw" ? arg : arg === "new" ? "new" : undefined} like={arg === "new" ? arg2 : undefined} step={view === "draw" ? arg2 : undefined} />
       )}
-      {view === "check" && <Develop stage="check" selected={arg} step={arg2} />}
-      {view === "write" && <Develop stage="write" selected={arg} step={arg2} />}
+      {view === "write" && <Develop selected={arg} step={arg2} />}
     </div>
   );
 }

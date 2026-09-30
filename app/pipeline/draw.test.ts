@@ -528,14 +528,14 @@ describe("draw graph", () => {
     expect(originOf(p, draw.id)).toBeNull();                       // nothing chosen: it is only a batch
     const cs = p.candidates(draw.id);
     await p.choose(draw.id, cs[0].step_id);
-    expect(tabOf(p.draw(draw.id))).toBe("check");            // check from the choice, not from the brief
+    expect(tabOf(p.draw(draw.id))).toBe("write");            // write from the choice, not from the brief
     expect(originOf(p, draw.id)).toMatchObject({ id: draw.id, index: 1, probability: 0.03 });
     // a fork reports the candidate it develops, and the draw it came from
     const fork = await p.fork(draw.id, cs[1].step_id);
-    expect(tabOf(fork)).toBe("check");
+    expect(tabOf(fork)).toBe("write");
     expect(originOf(p, fork.id)).toMatchObject({ id: draw.id, name: draw.name, index: 2 });
     // a repair sets chosen_step a few seconds in; the link to the brief it repairs holds the stage until then
-    expect(tabOf({ status: "running", chosen_step: null, repaired_from: draw.id })).toBe("check");
+    expect(tabOf({ status: "running", chosen_step: null, repaired_from: draw.id })).toBe("write");
   });
 
   test("archiving hides a draw from the list and changes nothing else about it", async () => {

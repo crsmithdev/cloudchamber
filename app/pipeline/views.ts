@@ -9,7 +9,6 @@ import type { Pipeline, DrawRow, StepRow } from "./draw.ts";
 import type { Drafting, FindingsSummary } from "./drafting.ts";
 import { latest } from "./verdicts.ts";
 import { originOf, type Origin } from "./stage.ts";
-import { chainOf } from "./chain.ts";
 import { partsView } from "./briefparts.ts";
 import { lifecycleView, stageTab, type LifecycleView, type Tab } from "./lifecycle.ts";
 import { Lineage, type Superseded } from "./lineage.ts";
@@ -85,11 +84,8 @@ export class Views {
     const draw = { ...row, ...view, superseded: lineage.superseded(row.id) };
     const steps: StepSummary[] = this.p.steps(id).map(({ prompt, raw_response, parsed, ...s }) =>
       ({ ...s, tab: stageTab(s.stage), prompt_chars: prompt.length, raw_chars: raw_response?.length ?? 0, parsed_chars: parsed?.length ?? 0 }));
-    const chain = chainOf(this.p, id, lineage);
     return {
       draw, origin: originOf(this.p, id, lineage), steps, parts: partsView(this.p, id),
-      // the auto run that ended here, on a chain repaired before gate 1 was retired
-      auto: chain.auto(),
       artifacts: this.p.artifacts(id), candidates: this.p.candidates(id), examples: drawExamples(this.p.db, row.example_ids), forks: this.p.forks(id),
       report: this.reportExists(id),
     };

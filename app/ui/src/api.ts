@@ -22,7 +22,7 @@ export type Example = { id: string; text: string | null; words?: number; cell?: 
  * field the page reads and the server stops sending fails to compile here.
  */
 import type { DrawListRow, DrawDetail, StepSummary } from "../../pipeline/views.ts";
-import type { AutoResult, FindingsSummary, FindingsView, GateFinding } from "../../pipeline/drafting.ts";
+import type { FindingsSummary, FindingsView, GateFinding } from "../../pipeline/drafting.ts";
 import type { DraftView } from "../../pipeline/drafts.ts";
 import type { ListenReport } from "../../pipeline/listen.ts";
 import type { DraftConfig } from "../../pipeline/draftconfig.ts";
@@ -33,7 +33,7 @@ import type { GateResult } from "../../pipeline/gate.ts";
 import type { Instruction } from "../../pipeline/drafting.ts";
 export type { Instruction };
 
-export type { AutoResult, DraftConfig, Artifact, Origin, GateResult, DrawDetail };
+export type { DraftConfig, Artifact, Origin, GateResult, DrawDetail };
 export type Draw = DrawListRow;
 /** What the list row and the draw detail both carry: the row, the lifecycle answers, and what superseded it. */
 export type DrawBase = DrawDetail["draw"];

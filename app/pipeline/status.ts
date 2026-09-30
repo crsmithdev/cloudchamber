@@ -21,7 +21,7 @@ export function status(db: Db) {
     verdicts: count("SELECT count(*) AS n FROM verdicts"),
     draws: byStatus,
     // how many draws wait for a person in each tab, which the tab names show
-    waiting: Object.fromEntries((["ideate", "check", "write"] as const).map((t) => [t, byStatus.filter((r) => waitsIn(r.status) === t).reduce((a, r) => a + r.n, 0)])),
+    waiting: Object.fromEntries((["ideate", "write"] as const).map((t) => [t, byStatus.filter((r) => waitsIn(r.status) === t).reduce((a, r) => a + r.n, 0)])),
     facet_fit: db.query("SELECT backend, n, fitted_at FROM facet_fit WHERE id = 1").get(),
   };
 }

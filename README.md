@@ -178,7 +178,7 @@ store holds 619 stories and 4,082 scored passages.
 | `app/cli/` | the `cloudchamber` command |
 | `app/pipeline/` | draw, check, repair, draft and screens; prompts, tomls and the store |
 | `app/server/` | the Fastify API the UI calls |
-| `app/ui/` | the React UI: browse, ideate, check, write |
+| `app/ui/` | the React UI: browse, ideate, write |
 | `extract/` | the Python extractor: PDFs and SCP articles into passages and facets |
 | `sources/` | `manifest.toml`, which names every source, and the SCP articles |
 | `bank/` | the verdict and theme logs; tracked, because nothing else reproduces them |
