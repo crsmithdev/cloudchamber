@@ -13,9 +13,9 @@ Every model call is a headless `claude -p`. Nothing is fine-tuned and no model
 is served. The work is in the asks, the checkers and the record of what was
 already judged.
 
-<img src="docs/images/ui-ideate.png" alt="The ideate tab: a draw list, a premise at 0.47, and the vignette written from it" width="49%"> <img src="docs/images/ui-write.png" alt="The write tab: length, beats, tense, person and chronology, then the first beat of the draft" width="49%">
+<img src="docs/images/ui-stories.png" alt="The stories tab: the story list grouped by who acts next, and a story at its premises stop with the chosen premise and its vignette" width="49%"> <img src="docs/images/ui-scenes.png" alt="A story at its scenes stop: gate 2 with the rewrite controls, the form the schedule settled on, then the first beat of the draft" width="49%">
 
-*Left: the ideate tab, the chosen premise with its stated probability above the vignette that executed it. Right: the write tab, the form the schedule settled on, then each beat with its word count and its screen flags.*
+*Left: the stories list and a story at its premises stop, the chosen premise with its stated probability above the vignette that executed it. Right: the same strip at the scenes stop, gate 2's rewrite controls, the form the schedule settled on, then each beat with its word count.*
 
 A run is judged blind and pairwise against a real transcript from a narrated
 fiction channel. Five model families judge, none of them Claude, three passes
@@ -67,8 +67,7 @@ bun run ui:build && ./cloudchamber serve   # http://127.0.0.1:3002
 ```
 
 Two tabs: stories and sources. A story shows its five stops on one strip, from
-the premises to the report, and the stop that waits for you is marked. The
-screenshots above show the older ideate and write tabs.
+the premises to the report, and the stop that waits for you is marked.
 
 ## How a draw works
 
