@@ -360,36 +360,6 @@ The settled lines were accepted in earlier rounds of this brief and still
 hold. Keep every one of them true. Do not restate them and do not undo them to
 satisfy a constraint above.`,
 
-  repairVignette: `Below is a ${RUN.vignetteWords}-word vignette from a story and a set of constraints that hold.
-
-<vignette>
-{vignette}
-</vignette>
-
-{constraints}
-
-{ledger}
-
-{settled}
-
-Rewrite it in a <vignette> tag so that every line of the constraints holds, keeping its people, place, form and length. Change only the sentences that state a fact a constraint corrects, and within such a sentence change only the words that state that fact; every other word, name, number, date, time and place stays as written, even where a constraint mentions it. Add no name, number, date or time that is not already in it or in a constraint, and add a sentence only when a constraint cannot hold without one. Under ${RUN.vignetteWords + 50} words. Output only the tag.`,
-
-  repairEnding: `Below is a story's derived structure, the ending written from it, and a set of constraints that hold.
-
-{outline}
-
-<ending>
-{ending}
-</ending>
-
-{constraints}
-
-{ledger}
-
-{settled}
-
-Rewrite the ending in an <ending> tag so that every line of the constraints holds, keeping its people, place, form and length. Change only the sentences that state a fact a constraint corrects, and within such a sentence change only the words that state that fact; every other word, name, number, date, time and place stays as written, even where a constraint mentions it. Add no name, number, date or time that is not already in it or in a constraint, and add a sentence only when a constraint cannot hold without one. Under ${RUN.endingWords} words. Output only the tag.`,
-
   reviseVignette: `Below is a ${RUN.vignetteWords}-word vignette from a story and the author's instructions for it.
 
 <vignette>
@@ -400,13 +370,11 @@ Rewrite the ending in an <ending> tag so that every line of the constraints hold
 {instructions}
 </instructions>
 
-{constraints}
-
 {ledger}
 
 {settled}
 
-Rewrite it in a <vignette> tag so that it carries out every instruction{constraintLine}. Change what the instructions ask for and what has to change with it; everything else stays as written, with its people, place, form and length. Add no name, number, date or time that is not already in it, in an instruction or in a constraint. Under ${RUN.vignetteWords + 50} words. Output only the tag.`,
+Rewrite it in a <vignette> tag so that it carries out every instruction. Change what the instructions ask for and what has to change with it; everything else stays as written, with its people, place, form and length. Add no name, number, date or time that is not already in it or in an instruction. Under ${RUN.vignetteWords + 50} words. Output only the tag.`,
 
   reviseEnding: `Below is a story's derived structure, the ending written from it, and the author's instructions for the ending.
 
@@ -420,13 +388,11 @@ Rewrite it in a <vignette> tag so that it carries out every instruction{constrai
 {instructions}
 </instructions>
 
-{constraints}
-
 {ledger}
 
 {settled}
 
-Rewrite the ending in an <ending> tag so that it carries out every instruction{constraintLine}. Change what the instructions ask for and what has to change with it; everything else stays as written, with its people, place, form and length. Add no name, number, date or time that is not already in it, in an instruction or in a constraint. Under ${RUN.endingWords} words. Output only the tag.`,
+Rewrite the ending in an <ending> tag so that it carries out every instruction. Change what the instructions ask for and what has to change with it; everything else stays as written, with its people, place, form and length. Add no name, number, date or time that is not already in it or in an instruction. Under ${RUN.endingWords} words. Output only the tag.`,
 
   schedule: `Below is a story brief: a seed, a premise, an outline in four sections, three vignettes and an ending. Below that, the story's configuration.
 

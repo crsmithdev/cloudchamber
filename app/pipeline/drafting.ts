@@ -227,7 +227,7 @@ export class Drafting {
       record(this.p.db, { kind: "finding", target_id: id, verdict: "keep", method: "gate", note });
       return id;
     });
-    const accepted = chainOf(this.p, drawId).findings().filter((f) => ids.includes(f.id));
+    const accepted = chainOf(this.p, drawId).findings().filter((f) => ids.includes(f.id)).map((f) => ({ ...f, parts: f.parts! }));
     const next = await repair(this.p, drawId, accepted);
     if (draw.draft_config) commit(this.p.db, { id: next.id, links: { draft_config: draw.draft_config } });
     return this.draft(next.id, { plan: true });

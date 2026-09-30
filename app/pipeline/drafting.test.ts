@@ -957,7 +957,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
 
 describe("templates and store", () => {
   test("every check and drafting template states a word cap and passes the vocabulary rule", () => {
-    const names = ["checkStructure", "checkResemblance", "claimsExtract", "claimsVerifyWorld", "claimsVerifyReference", "readerVerify", "repairVignette", "repairEnding", "schedule", "sceneAsk", "screenLedgerAsk", "screenStructure"] as const;
+    const names = ["checkStructure", "checkResemblance", "claimsExtract", "claimsVerifyWorld", "claimsVerifyReference", "readerVerify", "reviseVignette", "reviseEnding", "schedule", "sceneAsk", "screenLedgerAsk", "screenStructure"] as const;
     for (const n of names) {
       const t = (TEMPLATES as any)[n] as string;
       expect(t).toMatch(/Under \{?\w*\}? ?words|Under \d+ words|Under \{cap\} words/);
