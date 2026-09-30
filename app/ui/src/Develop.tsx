@@ -10,33 +10,29 @@ const unquote = (s: string) => s.trim().replace(/^["“”'‘’]+|["“”'‘
  * A brief's controls: draft it, or flag it with a note. The brief's text checks run in the draft, and are read at
  * the plan gate.
  */
-function BriefControls({ d, onDraft, onFlag }: { d: Detail; onDraft: () => void; onFlag?: (note: string) => void }) {
+function BriefControls({ d, onFlag }: { d: Detail; onFlag: (note: string) => void }) {
   const [note, setNote] = useState("");
   const a = d.draw.actions;
-  // the words a draft would run to, once the draw has settled a config of its own
-  const drafted = d.draw.draft_config ? JSON.parse(d.draw.draft_config).config : null;
   return (
     <div className="controls" role="group" aria-label="Brief">
-      <Btn variant="primary" disabled={!!a.draft} onClick={onDraft} title={a.draft ?? "Set up the draft. It plans the story, checks the plan and the brief, and stops at the plan gate."}>
-        draft{drafted ? ` · ${drafted.length.words} words` : ""} <Chevron open />
-      </Btn>
-      {onFlag && (
-        <span className="end">
-          <input type="text" placeholder="note for the log" aria-label="Note for the log" value={note} onChange={(e) => setNote(e.target.value)} />
-          <Btn variant="art" disabled={!!a.flag} onClick={() => onFlag(note)} title={a.flag ?? "Mark this brief as looking wrong, with the note. Nothing runs."}>
-            flag
-          </Btn>
-        </span>
-      )}
+      {a.draft && <span className="text-mute">{a.draft}</span>}
+      <span className="end">
+        <input type="text" placeholder="note for the log" aria-label="Note for the log" value={note} onChange={(e) => setNote(e.target.value)} />
+        <Btn variant="art" disabled={!!a.flag} onClick={() => onFlag(note)} title={a.flag ?? "Mark this brief as looking wrong, with the note. Nothing runs."}>
+          flag
+        </Btn>
+      </span>
     </div>
   );
 }
 
 /** A brief that stands. `brief` names the draw whose files hold it: a branch carries its source's brief. */
-export function BriefReady({ d, brief = d.draw.id, controls = true, onFlag, onDraft, aside }: { d: Detail; brief?: string; controls?: boolean; onFlag: (note: string) => void; onDraft: () => void; aside: React.ReactNode }) {
+export function BriefReady({ d, brief = d.draw.id, controls = true, onFlag, onDraft, aside }: { d: Detail; brief?: string; controls?: boolean; onFlag: (note: string) => void; onDraft: (b: DraftBody) => void; aside: React.ReactNode }) {
   return (
     <>
-      {controls && <BriefControls d={d} onFlag={onFlag} onDraft={onDraft} />}
+      {controls && <BriefControls d={d} onFlag={onFlag} />}
+      {/* a brief ready to draft shows its settings at once */}
+      {controls && !d.draw.actions.draft && <DraftSettings d={d} onDraft={onDraft} />}
       <div className="drawbody">
         <div className="max-w-[66rem]">
           <Head>seed</Head>
@@ -222,8 +218,10 @@ function Profiles({ f }: { f: Findings }) {
 
 const AXES: Record<string, string[]> = { tense: ["past", "present"], person: ["first", "second", "third"], chronology: ["linear", "nonlinear"], container: ["prose", "document", "interleaved"] };
 
-/** The drafting settings. `again`: at the plan gate, where the settings plan the draft again from its first beat. */
-export function DraftSettings({ d, onClose, onDraft, again }: { d: Detail; onClose: () => void; onDraft: (b: { plan?: boolean; profile?: string; overrides?: Record<string, string | number>; models?: Record<string, string> }) => void; again?: boolean }) {
+type DraftBody = { plan?: boolean; profile?: string; overrides?: Record<string, string | number>; models?: Record<string, string> };
+
+/** The drafting settings. `again`: at the plan gate, where the settings plan the draft again from its first beat. With no `onClose` there is no back link. */
+export function DraftSettings({ d, onClose, onDraft, again }: { d: Detail; onClose?: () => void; onDraft: (b: DraftBody) => void; again?: boolean }) {
   const [cfg, setCfg] = useState<DraftConfigView | null>(null);
   const [profile, setProfile] = useState<string>("");
   const [models, setModels] = useState<Record<string, string>>({});
@@ -261,9 +259,11 @@ export function DraftSettings({ d, onClose, onDraft, again }: { d: Detail; onClo
   const num = (k: string, label: string, w = "4rem") => <input type="text" className="num" style={{ width: w }} aria-label={label} value={val(k)} onChange={(e) => set(k)(e.target.value)} />;
   return (
     <div className="form mt-4">
-      <button className="link" onClick={onClose}>
-        <Icon name="arrow_back" /> back
-      </button>
+      {onClose && (
+        <button className="link" onClick={onClose}>
+          <Icon name="arrow_back" /> back
+        </button>
+      )}
       <h1 className="mt-3">Draft</h1>
       <Field label="Profile" help="A profile fills the fields below. Change one after that and it goes as an override.">
         <Seg label="Profile" value={profile || "default"} options={["default", ...cfg.profiles]} onChange={pick} />

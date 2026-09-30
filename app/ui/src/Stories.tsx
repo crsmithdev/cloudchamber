@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api, type Draw, type DrawBase, type Example, type Status } from "./api.ts";
 import { DrawAside, DrawBody, DrawNotes, RowHead, StartForm, StepView, inFlight, isWorking, label, type Detail } from "./Draws.tsx";
-import { BriefReady, Building, DraftSettings, PlanGate, StoryPane } from "./Develop.tsx";
+import { BriefReady, Building, PlanGate, StoryPane } from "./Develop.tsx";
 import { ArchivedToggle, Btn, LinkBtn, Mark, lastSelected, markFor, onEnter, usePoll, useRememberSelected, useAddressBar } from "./ui.tsx";
 
 /**
@@ -67,7 +67,6 @@ export function Stories({ status, selected, like, step: stepId }: { status: Stat
   const [err, setErr] = useState("");
   const [note, setNote] = useState("");
   const [asking, setAsking] = useState(false);
-  const [settings, setSettings] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   // the stop a person picked on the strip; none follows the story as it moves
   const [picked, setPicked] = useState<Stop | null>(null);
@@ -115,7 +114,6 @@ export function Stories({ status, selected, like, step: stepId }: { status: Stat
     setErr("");
     setNote("");
     setAsking(false);
-    setSettings(false);
     setPicked(null);
   }, [current]);
   const working = isWorking(d);
@@ -228,7 +226,7 @@ export function Stories({ status, selected, like, step: stepId }: { status: Stat
             brief={briefOf(x.draw)}
             controls={BRIEF.has(x.draw.status)}
             onFlag={(n) => act(() => api.gate(x.draw.id, { action: "flag", note: n }))}
-            onDraft={() => setSettings(true)}
+            onDraft={(b) => act(() => api.draft(x.draw.id, b))}
             aside={aside(x)}
           />
         );
@@ -377,12 +375,11 @@ export function Stories({ status, selected, like, step: stepId }: { status: Stat
                       key={s}
                       type="button"
                       role="tab"
-                      aria-selected={s === stop && !step && !settings}
+                      aria-selected={s === stop && !step}
                       disabled={!can}
                       className={(s === stands ? (d.draw.at_gate || d.draw.status === "done" ? "now" : working ? "run" : "at") : can ? "past" : "") + (s === stop ? " on" : "")}
                       onClick={() => {
                         setPicked(s);
-                        setSettings(false);
                         if (step) setStepId(null);
                       }}
                     >
@@ -394,8 +391,6 @@ export function Stories({ status, selected, like, step: stepId }: { status: Stat
               </div>
               {step ? (
                 <StepView step={step} chosen={step.id === d.draw.chosen_step} onBack={() => setStepId(null)} />
-              ) : settings ? (
-                <DraftSettings d={d} onClose={() => setSettings(false)} onDraft={(b) => act(() => api.draft(d.draw.id, b)).then(() => setSettings(false))} />
               ) : (
                 body(d)
               )}
