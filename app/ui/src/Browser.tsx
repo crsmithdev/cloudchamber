@@ -388,7 +388,7 @@ export function Browser({ status, onVerdict }: { status: Status | null; onVerdic
                             }}
                           />
                           {kind === "brief" && (
-                            <a href={`#draw/${it.id}`} className="link num">
+                            <a href={`#story/${it.id}`} className="link num">
                               open draw
                             </a>
                           )}
@@ -416,7 +416,7 @@ export function Browser({ status, onVerdict }: { status: Status | null; onVerdic
                           <b className="block font-medium text-ink">
                             {it.setting ?? "unrestricted"} · {it.genre}
                           </b>
-                          <a href={`#draw/${it.id}`} className="num">
+                          <a href={`#story/${it.id}`} className="num">
                             {it.id}
                           </a>
                         </>

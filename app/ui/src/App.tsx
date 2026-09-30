@@ -3,14 +3,13 @@ import { useEffect, useState } from "react";
 const NARROW = "(max-width: 1100px)";
 import { api, type Status } from "./api.ts";
 import { Browser } from "./Browser.tsx";
-import { Draws } from "./Draws.tsx";
-import { Develop } from "./Develop.tsx";
+import { Stories } from "./Stories.tsx";
 import { Icon } from "./ui.tsx";
 
 function useHash() {
-  const [h, setH] = useState(location.hash.slice(1) || "draws");
+  const [h, setH] = useState(location.hash.slice(1) || "story");
   useEffect(() => {
-    const f = () => setH(location.hash.slice(1) || "draws");
+    const f = () => setH(location.hash.slice(1) || "story");
     addEventListener("hashchange", f);
     return () => removeEventListener("hashchange", f);
   }, []);
@@ -28,11 +27,8 @@ function Logo({ label }: { label?: string }) {
   );
 }
 
-const TABS: [string, string][] = [
-  ["ideate", "#draws"],
-  ["write", "#write"],
-];
-/** Below the pipeline tabs, after a separator: the corpus the draws pull from. */
+const TABS: [string, string][] = [["stories", "#story"]];
+/** Below the stories, after a separator: the corpus the draws pull from. */
 const SOURCES: [string, string] = ["sources", "#sources"];
 
 export function App() {
@@ -47,28 +43,13 @@ export function App() {
     refresh();
   }, [hash]);
   const [view, arg, arg2] = hash.split("/");
-  const drawsView = view === "draws" || view === "draw";
-  // `#go/<draw>` names a draw without its stage; `develop` was check and write in one tab, and `check` was a tab of its own
+  const storiesView = view === "story" || view === "new";
+  // the old tabs' routes land on the story: `draws` and `draw` were ideate, `write` and `check` the later tabs,
+  // `develop` both of those, and `go` a draw without its tab
   useEffect(() => {
-    if (view === "check") {
-      location.hash = `#write${arg ? `/${arg}` : ""}`;
-      return;
-    }
-    if (view !== "go" && view !== "develop") return;
-    const fallback = view === "go" ? "#draws" : "#write";
-    if (!arg) {
-      location.hash = fallback;
-      return;
-    }
-    api
-      .draw(arg)
-      .then((d) => {
-        location.hash = `#${d.draw.stage === "ideate" ? "draw" : d.draw.stage}/${arg}`;
-      })
-      .catch(() => {
-        location.hash = fallback;
-      });
-  }, [view, arg]);
+    if (view === "draws") location.hash = arg === "new" ? `#new${arg2 ? `/${arg2}` : ""}` : "#story";
+    else if (["draw", "write", "check", "go", "develop"].includes(view)) location.hash = `#story${arg ? `/${arg}` : ""}${view === "draw" && arg2 ? `/${arg2}` : ""}`;
+  }, [view, arg, arg2]);
   const [folded, setFolded] = useState(() => {
     try {
       return localStorage.getItem("fb-rail") === "hidden";
@@ -105,10 +86,10 @@ export function App() {
   }, [light]);
   // `browse` was the sources tab's old name; its links still land there
   const sourcesView = view === "sources" || view === "browse";
-  const on = (name: string) => (name === "ideate" ? drawsView : name === "sources" ? sourcesView : view === name);
+  const on = (name: string) => (name === "stories" ? storiesView : sourcesView);
   const count = (name: string) => {
     if (!status) return null;
-    const n = name === "ideate" || name === "write" ? status.waiting[name] : 0;
+    const n = name === "stories" ? status.waiting.ideate + status.waiting.write : 0;
     return n ? <span>{n}</span> : null;
   };
   // folded, a link is its initial with the name as its title; open, it is the name and its count
@@ -160,10 +141,7 @@ export function App() {
         </button>
       </aside>
       {sourcesView && <Browser status={status} onVerdict={refresh} />}
-      {drawsView && (
-        <Draws status={status} selected={view === "draw" ? arg : arg === "new" ? "new" : undefined} like={arg === "new" ? arg2 : undefined} step={view === "draw" ? arg2 : undefined} />
-      )}
-      {view === "write" && <Develop selected={arg} step={arg2} />}
+      {storiesView && <Stories status={status} selected={view === "new" ? "new" : arg} like={view === "new" ? arg : undefined} step={view === "story" ? arg2 : undefined} />}
     </div>
   );
 }

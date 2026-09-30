@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { marked } from "marked";
-import { api, when, type Artifact, type Example, type Facets, type Draw, type DrawBase, type DrawDetail, type FullStep, type Source, type Status, type Step } from "./api.ts";
-import { ArchivedToggle, Bar, Btn, Caret, Chip, Field, Head, Icon, Keys, LinkBtn, Mark, ModelPicks, Seg, hhmm, lastSelected, markFor, onEnter, rowKeys, secs, usageLine, usePoll, useRememberSelected, useRowsFromPage, useTick, useAddressBar, type MarkState } from "./ui.tsx";
+import { api, when, type Artifact, type Example, type Facets, type DrawBase, type DrawDetail, type FullStep, type Source, type Status, type Step } from "./api.ts";
+import { Bar, Btn, Caret, Chip, Field, Head, Icon, Keys, Mark, ModelPicks, Seg, hhmm, onEnter, rowKeys, secs, usageLine, useRowsFromPage, useTick, type MarkState } from "./ui.tsx";
 
 /** `checked` and `auto` are the chain's answers; the pane does not read them off the artifact list. */
 /** One draw in full, as the server builds it in pipeline/views.ts. */
@@ -142,313 +142,6 @@ export function RowHead({
       )}
     </>
   );
-}
-
-/** Draws in the list pane, each opening into its facts and step log; the selected draw, a step, or the start form fills the rest. */
-export function Draws({ status, selected, like, step: stepId }: { status: Status | null; selected: string | undefined; like?: string; step?: string }) {
-  const [draws, setDraws] = useState<Draw[]>([]);
-  const [details, setDetails] = useState<Record<string, Detail>>({});
-  // the current draw is the only row that can be open; this folds it
-  const [folded, setFolded] = useState(false);
-  const [note, setNote] = useState("");
-  const [showArchived, setShowArchived] = useState(false);
-  const [err, setErr] = useState("");
-  const [loaded, setLoaded] = useState(false);
-  // the strip's delete asks under the strip before it acts, like the row's
-  const [asking, setAsking] = useState(false);
-
-  const loadDraws = () =>
-    api
-      .draws(true)
-      .then((all) => {
-        setDraws(all);
-        setLoaded(true);
-      })
-      .catch(() => {});
-  const busy = draws.some((r) => r.running);
-  usePoll(loadDraws, busy, [], 3000, 15000);
-
-  // Archived draws stay out of the list until asked for, and the open one stays visible whatever its state.
-  // a repair round ran no premises: it belongs to check alone
-  const ideate = draws.filter((r) => !r.repaired_from);
-  const archived = ideate.filter((r) => r.archived_at).length;
-  // With nothing chosen, land on the draw last selected here while it is still in the list, else the newest; with no draws, the form.
-  const live = ideate.filter((r) => !r.archived_at);
-  const last = lastSelected("draws");
-  // the form only once the list has loaded and is empty; before that the pane waits
-  const current = selected ?? (ideate.find((r) => r.id === last) ?? live[0])?.id ?? (loaded && !live.length ? "new" : undefined);
-  useRememberSelected("draws", selected && selected !== "new" ? selected : undefined);
-  const shown = ideate.filter((r) => showArchived || !r.archived_at || r.id === current);
-  const isForm = current === "new";
-  const loadDetail = (id: string) =>
-    api
-      .draw(id)
-      .then((d) => setDetails((m) => ({ ...m, [id]: d })))
-      .catch((e) => setErr(e.message));
-  // the open step is the third part of the hash, so a step has a link of its own
-  const setStepId = (id: string | null) => {
-    if (current) location.hash = id ? `#draw/${current}/${id}` : `#draw/${current}`;
-  };
-  useAddressBar(isForm ? (like ? `draws/new/${like}` : "draws/new") : current ? (stepId ? `draw/${current}/${stepId}` : `draw/${current}`) : undefined);
-  useEffect(() => {
-    if (!current || isForm) return;
-    setErr("");
-    setFolded(false);
-    setAsking(false);
-  }, [current]);
-  const d = current && !isForm ? details[current] : undefined;
-  // the pane refreshes itself while the pipeline is working on this draw, and rarely once it stops
-  const working = isWorking(d);
-  usePoll(
-    () => {
-      if (current && !isForm) loadDetail(current);
-    },
-    working,
-    [current, isForm],
-  );
-
-  const select = (id: string) => {
-    if (id !== current) {
-      location.hash = `#draw/${id}`;
-      return;
-    }
-    if (stepId) {
-      setStepId(null);
-      return;
-    } // a step log is open: back to the draw before folding the row
-    setFolded((f) => !f);
-  };
-  const archiveRow = async (r: Draw) => {
-    setErr("");
-    try {
-      await api.gate(r.id, { action: r.archived_at ? "unarchive" : "archive" });
-      loadDraws();
-      if (r.id === current) loadDetail(r.id);
-    } catch (e: any) {
-      setErr(e.message);
-    }
-  };
-  const deleteRow = async (r: Draw) => {
-    setErr("");
-    try {
-      await api.deleteDraw(r.id);
-      if (r.id === current) location.hash = "#draws";
-      loadDraws();
-    } catch (e: any) {
-      setErr(e.message);
-    }
-  };
-  // superseded by a redraw is old; superseded by its own repair is a draw that went on to check
-  const redrawn = (r: DrawBase) => r.superseded?.how === "redrawn";
-  const gate = async (action: string, step_id?: string, premise?: string) => {
-    if (!d) return;
-    setErr("");
-    try {
-      const r = await api.gate(d.draw.id, { action, step_id, note, premise });
-      setNote("");
-      if (r.draw && r.draw !== d.draw.id) location.hash = `#draw/${r.draw}`;
-      else loadDetail(d.draw.id);
-      loadDraws();
-    } catch (e: any) {
-      setErr(e.message);
-    }
-  };
-  const remove = async () => {
-    if (!d) return;
-    setAsking(false);
-    try {
-      await api.deleteDraw(d.draw.id);
-      location.hash = "#draws";
-      loadDraws();
-    } catch (e: any) {
-      setErr(e.message);
-    }
-  };
-  const verdict = async (e: Example, v: "keep" | "pass", artifact = false, note = "") => {
-    await api.verdict({ kind: "example", target_id: e.id, verdict: v, artifact, note, method: "draw" });
-    if (d) loadDetail(d.draw.id);
-  };
-  const step = d && stepId ? d.steps.find((s) => s.id === stepId) : undefined;
-  const openCount = live.filter((r) => r.status === "awaiting_gate").length;
-
-  return (
-    <>
-      <div className="pane list">
-        <div className="listhead">
-          <LinkBtn variant="primary" href="#draws/new">
-            draw
-          </LinkBtn>
-          <span className="head">
-            {openCount} to choose
-            <ArchivedToggle archived={archived} shown={showArchived} onToggle={() => setShowArchived((v) => !v)} />
-          </span>
-        </div>
-        {shown.length === 0 && <div className="empty">No draws yet.</div>}
-        {shown.map((r) => {
-          const isOpen = r.id === current && !folded;
-          return (
-            <div
-              key={r.id}
-              className={"row" + (r.id === current ? " on" : "") + (isOpen ? " open" : "") + (r.running ? " running" : "") + (redrawn(r) || r.archived_at ? " old" : "")}
-              tabIndex={0}
-              aria-current={r.id === current ? "true" : undefined}
-              onClick={() => select(r.id)}
-              onKeyDown={onEnter(() => select(r.id))}
-            >
-              <RowHead
-                name={r.name ?? r.id}
-                status={label(r.status)}
-                mark={markFor(r)}
-                at={r.created_at}
-                archived={!!r.archived_at}
-                blocked={r.actions.delete ?? ""}
-                onArchive={() => archiveRow(r)}
-                onDelete={() => deleteRow(r)}
-              />
-              {isOpen && (
-                <>
-                  <div className="l2">
-                    <span className={r.running ? "sweep text-running" : ""}>{details[r.id] ? drawSummary(details[r.id]) : label(r.status)}</span>
-                  </div>
-                  <div className="l2 text-dim">
-                    {r.setting ?? "unrestricted"} · {r.genre} · {r.sampling}
-                    {r.flagged ? <span className="text-art"> · flagged</span> : null}
-                    {r.forked_from && " · fork"}
-                    {redrawn(r) && " · superseded"}
-                    {r.archived_at && " · archived"}
-                  </div>
-                  <div className="sd">{r.seed_text}</div>
-                </>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {isForm ? (
-        <StartForm status={status} like={like} />
-      ) : !current ? (
-        <div className="pane read">
-          <span className="text-dim">loading the draw…</span>
-        </div>
-      ) : (
-        <div className="pane read tt">
-          {!d ? (
-            err ? (
-              <div className="err">{err}</div>
-            ) : (
-              <span className="text-dim">loading the draw…</span>
-            )
-          ) : (
-            <>
-              <div className={"strip" + (working ? " running" : "")}>
-                <h1>{d.draw.name ?? d.draw.id}</h1>
-                <span className={"state " + (working ? "text-running" : d.draw.status === "awaiting_gate" ? "text-art" : d.draw.status === "failed" ? "text-pass" : "text-mute")} aria-live="polite">
-                  <Mark state={markFor(d.draw)} />
-                  <span className={working ? "sweep" : ""}>
-                    {label(d.draw.status)}
-                    {working ? inFlight(d) : ""}
-                  </span>
-                </span>
-                {!step && (
-                  <span className="tools" role="group" aria-label="Draw">
-                    <input type="text" name="gate-note" placeholder="note for the log" aria-label="Gate note" value={note} onChange={(e) => setNote(e.target.value)} />
-                    <Btn variant="art" title="Mark this draw as a wrong call to look at later, with the note. It stays open and nothing else changes." onClick={() => gate("flag")}>
-                      flag
-                    </Btn>
-                    {d.draw.status === "awaiting_gate" && (
-                      <LinkBtn variant="quiet" href={`#draws/new/${d.draw.id}`} title="Open the draw form with this draw's options, to start another like it. This one stays open.">
-                        redraw
-                      </LinkBtn>
-                    )}
-                    <Btn
-                      variant="quiet"
-                      title={d.draw.archived_at ? "Put this draw back in the list." : "Hide this draw from the lists. Nothing else about it changes."}
-                      onClick={() => gate(d.draw.archived_at ? "unarchive" : "archive")}
-                    >
-                      {d.draw.archived_at ? "unarchive" : "archive"}
-                    </Btn>
-                    <Btn
-                      variant="quiet"
-                      title={d.draw.actions.delete ?? "Remove this draw and every step under it. There is no undo."}
-                      disabled={!!d.draw.actions.delete}
-                      pressed={asking}
-                      onClick={() => setAsking((v) => !v)}
-                    >
-                      delete
-                    </Btn>
-                  </span>
-                )}
-              </div>
-              {asking && !step && (
-                <div className="confirm mt-2">
-                  <span>Delete {d.draw.name ?? d.draw.id} and every step under it? There is no undo.</span>
-                  <Btn variant="pass" onClick={remove}>
-                    delete
-                  </Btn>
-                  <Btn variant="quiet" onClick={() => setAsking(false)}>
-                    keep
-                  </Btn>
-                </div>
-              )}
-              {err && <div className="err mt-2">{err}</div>}
-              {step ? (
-                <StepView step={step} chosen={step.id === d.draw.chosen_step} onBack={() => setStepId(null)} />
-              ) : (
-                <DrawBody
-                  d={d}
-                  onChoose={(id) => gate("choose", id)}
-                  onFork={(id, premise) => gate("fork", id, premise)}
-                  onVerdict={verdict}
-                  aside={
-                    <DrawAside
-                      d={d}
-                      ideation
-                      onStep={setStepId}
-                      rows={[
-                        ...(d.draw.forked_from
-                          ? [
-                              [
-                                "forked from",
-                                <a href={`#draw/${d.draw.forked_from}`} className="num">
-                                  {d.draw.forked_from}
-                                </a>,
-                              ] as Row,
-                            ]
-                          : []),
-                        ...(d.draw.superseded_by
-                          ? [
-                              [
-                                redrawn(d.draw) ? "superseded by" : "repaired in",
-                                <a href={redrawn(d.draw) ? `#draw/${d.draw.superseded_by}` : `#write/${d.draw.superseded_by}`} className="num">
-                                  {d.draw.superseded_by}
-                                </a>,
-                              ] as Row,
-                            ]
-                          : []),
-                      ]}
-                    />
-                  }
-                />
-              )}
-            </>
-          )}
-        </div>
-      )}
-    </>
-  );
-}
-
-/** The open row's one summary line: where the draw stands, in a few words. The step log is in the reading pane. */
-function drawSummary(d: Detail) {
-  const running = d.steps.filter((s) => s.status === "running" && s.tab === "ideate");
-  const chosen = d.candidates.find((c) => c.step_id === d.draw.chosen_step);
-  const failed = d.steps.filter((s) => s.status === "failed" && s.tab === "ideate").length;
-  if (running.length) return `running · ${stageNames(running)}`;
-  if (d.draw.status === "awaiting_gate") return `choose a premise · ${d.candidates.length} written`;
-  if (d.draw.status === "failed") return `failed · ${failed} step${failed === 1 ? "" : "s"}`;
-  if (chosen) return `brief · #${chosen.index} chosen · in ${d.draw.stage}`;
-  return label(d.draw.status);
 }
 
 /** What the step log calls each stage, and what the stage does: the row's tooltip. */
@@ -624,23 +317,6 @@ function Log({ d, onStep, ideation }: { d: Detail; onStep: (id: string) => void;
               <td className="num text-right text-dim">—</td>
             </tr>
           )}
-          {developed && (
-            <tr className="pick" tabIndex={0} title={`The brief is in the ${d.draw.stage} tab now. Open it there.`} onClick={() => (location.hash = `#${d.draw.stage}/${d.draw.id}`)} onKeyDown={onEnter(() => (location.hash = `#${d.draw.stage}/${d.draw.id}`))}>
-              <td>
-                <Mark state={markFor(d.draw)} />
-              </td>
-              <td className="n">
-                open in {d.draw.stage}
-                <small>{label(d.draw.status)}</small>
-              </td>
-              <td></td>
-              <td className="text-right">
-                <a href={`#${d.draw.stage}/${d.draw.id}`} className="link">
-                  open <Icon name="arrow_forward" />
-                </a>
-              </td>
-            </tr>
-          )}
         </tbody>
       </table>
     </div>
@@ -648,7 +324,7 @@ function Log({ d, onStep, ideation }: { d: Detail; onStep: (id: string) => void;
 }
 
 /** The draw as a table: five premises as five rows ranked by probability, the prose a row that opens. */
-function DrawBody({
+export function DrawBody({
   d,
   onChoose,
   onFork,
@@ -757,12 +433,12 @@ function DrawBody({
                             </Btn>
                           )}
                           {chosen && (
-                            <a className="link num" href={`#write/${d.draw.id}`}>
+                            <a className="link num" href={`#story/${d.draw.id}`}>
                               in check <Icon name="arrow_forward" />
                             </a>
                           )}
                           {fork && (
-                            <a className="link num" href={`#write/${fork.id}`}>
+                            <a className="link num" href={`#story/${fork.id}`}>
                               in check <Icon name="arrow_forward" />
                             </a>
                           )}
@@ -795,7 +471,7 @@ function DrawBody({
                           )}
                           {edits.map((f) => (
                             <div key={f.id} className="mt-1">
-                              <a className="link num" href={`#write/${f.id}`} title="A draw developed from an edit of this premise.">
+                              <a className="link num" href={`#story/${f.id}`} title="A draw developed from an edit of this premise.">
                                 edited <Icon name="arrow_forward" />
                               </a>
                             </div>
@@ -967,7 +643,7 @@ export function DrawAside({ d, ideation, onStep, top, rows = [] }: { d: Detail; 
                 d.origin.id === d.draw.id ? "premise" : "from",
                 d.origin.id === d.draw.id ? "The premise this draw developed, with its stated probability." : "The draw and premise this one was developed from, with the premise's stated probability.",
                 <>
-                  <a href={`#draw/${d.origin.id}`}>{d.origin.id === d.draw.id ? `#${d.origin.index}` : `${d.origin.name ?? d.origin.id}${d.origin.index ? ` #${d.origin.index}` : ""}`}</a>
+                  <a href={`#story/${d.origin.id}`}>{d.origin.id === d.draw.id ? `#${d.origin.index}` : `${d.origin.name ?? d.origin.id}${d.origin.index ? ` #${d.origin.index}` : ""}`}</a>
                   {d.origin.probability != null && <span className="text-dim"> · {d.origin.probability.toFixed(2)}</span>}
                 </>,
                 "font-mono",
@@ -1105,7 +781,7 @@ export function StepView({ step, chosen, onBack }: { step: Step; chosen: boolean
 /** How a genre group reads on the form; the group keys in genres.toml stay lowercase. */
 const GENRE_GROUP: Record<string, string> = { scifi: "Sci-fi" };
 
-function StartForm({ status, like }: { status: Status | null; like?: string }) {
+export function StartForm({ status, like }: { status: Status | null; like?: string }) {
   const [facets, setFacets] = useState<Facets | null>(null);
   const [form, setForm] = useState<Record<string, string>>({ mode: "manual", sampling: "tail" });
   const [models, setModels] = useState<Record<string, string>>({});
@@ -1186,7 +862,7 @@ function StartForm({ status, like }: { status: Status | null; like?: string }) {
         seed_id: keepsTheme ? themeId : undefined,
         source: sources.join(",") || undefined,
       });
-      location.hash = `#draw/${id}`;
+      location.hash = `#story/${id}`;
     } catch (e: any) {
       setErr(e.message);
     } finally {
@@ -1201,7 +877,7 @@ function StartForm({ status, like }: { status: Status | null; like?: string }) {
         {like && (
           <p className="lede mb-3">
             Every option below comes from{" "}
-            <a href={`#draw/${like}`} className="num">
+            <a href={`#story/${like}`} className="num">
               {like}
             </a>
             , which stays open. Change what you want and start.

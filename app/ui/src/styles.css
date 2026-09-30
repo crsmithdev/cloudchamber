@@ -791,6 +791,90 @@
   .strip .tools input[type="text"] {
     width: 14rem;
   }
+  /* the versions of a story: the repair rounds and the branches, one chip each */
+  .strip .versions {
+    display: flex;
+    align-items: baseline;
+    gap: 0.25rem;
+  }
+  .strip .versions a {
+    padding: 0 0.4rem;
+    border: 1px solid var(--color-hair);
+    color: var(--color-mute);
+    text-decoration: none;
+  }
+  .strip .versions a:hover {
+    color: var(--color-ink);
+  }
+  .strip .versions a.on {
+    border-color: var(--color-gold);
+    color: var(--color-ink);
+  }
+  /* the story's stops, one tab each: the rule over a stop says where the story stands, the rule under it which stop is open */
+  .path {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
+    margin: 0.75rem 0 1.25rem;
+  }
+  .path button {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    text-align: left;
+    padding: 0.45rem 0.5rem 0.55rem 0;
+    background: none;
+    border: 0;
+    border-top: 3px solid var(--color-hair);
+    border-bottom: 2px solid transparent;
+    color: var(--color-mute);
+    font: inherit;
+    cursor: pointer;
+  }
+  .path button .name {
+    font-weight: 600;
+    font-variant-caps: all-small-caps;
+    letter-spacing: 0.08em;
+  }
+  .path button .note {
+    color: var(--color-dim);
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .path button.past {
+    border-top-color: var(--color-rule);
+  }
+  .path button.at {
+    border-top-color: var(--color-ink);
+  }
+  .path button.now {
+    border-top-color: var(--color-gold);
+  }
+  .path button.now .name {
+    color: var(--color-art);
+  }
+  .path button.run {
+    border-top-color: var(--color-running);
+  }
+  .path button.on {
+    border-bottom-color: var(--color-ink);
+    color: var(--color-ink);
+  }
+  .path button:hover:not(:disabled) {
+    color: var(--color-ink);
+  }
+  .path button:disabled {
+    color: var(--color-dim);
+    cursor: default;
+  }
+  iframe.report {
+    width: 100%;
+    height: calc(100vh - 15rem);
+    border: 1px solid var(--color-hair);
+    background: var(--color-sheet);
+  }
   .controls {
     display: flex;
     align-items: center;
@@ -1068,6 +1152,33 @@
     gap: 0.5rem;
     color: var(--color-mute);
     flex-wrap: wrap;
+  }
+  /* the list's groups, by who acts next */
+  .grouphead {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0.85rem 0.75rem 0.3rem;
+    border-bottom: 1px solid var(--color-hair);
+  }
+  /* a row's five stops as a bar: past, the one it waits at, the one running */
+  .minibar {
+    display: inline-flex;
+    gap: 2px;
+  }
+  .minibar i {
+    width: 14px;
+    height: 3px;
+    background: var(--color-hair);
+  }
+  .minibar i.past {
+    background: var(--color-rule);
+  }
+  .minibar i.now {
+    background: var(--color-gold);
+  }
+  .minibar i.run {
+    background: var(--color-running);
   }
   .row .sd {
     font-family: var(--font-serif);

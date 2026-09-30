@@ -1,327 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { api, type Instruction, type Draw, type DrawBase, type CheckSummary, type DraftConfigView, type Findings, type Listen, type Story } from "./api.ts";
-import { BriefFiles, DrawAside, Md, RowHead, SeedNote, StepView, boldLabels, firstParagraph, DrawNotes, inFlight, isWorking, label, stageName, stageNames, type Detail } from "./Draws.tsx";
-import { ArchivedToggle, Bar, Btn, Caret as Chevron, Chip, Facts, Field, Head, Icon, Keys, Mark, ModelPicks, Seg, lastSelected, markFor, onEnter, rowKeys, usePoll, useRememberSelected, useRowsFromPage, useAddressBar } from "./ui.tsx";
-
-/**
- * Develop a brief: the stages after a brief (docs/specs/2026-09-05-drafting-pipeline.md).
- * The list holds briefs from the moment they exist to the moment they are kept;
- * the reading pane is the findings at gate 1, the story with its
- * screens at gate 2, or the running log in between.
- */
-/** A repair chain: the root draw, its rounds oldest first, and the head. A draw with no repairs is a chain of one. */
-type Chain = { root: Draw; rounds: Draw[]; head: Draw };
-/**
- * One chain per draw that nothing repairs, its rounds as the server read them. A draw repaired more than
- * once is in several chains, and each of them holds it.
- */
-function chainsOf(draws: Draw[]): Chain[] {
-  const by = new Map(draws.map((r) => [r.id, r]));
-  return draws
-    .filter((r) => r.head)
-    .map((head) => {
-      const rounds = head.rounds.map((id) => by.get(id)).filter((r): r is Draw => !!r);
-      return { root: rounds[0] ?? head, rounds, head };
-    })
-    .sort((a, b) => (a.head.created_at < b.head.created_at ? 1 : -1));
-}
-/** The statuses of a draw with a schedule: the plan gate, then the scenes. */
-const PLANNED = new Set(["awaiting_plan_gate", "drafting", "awaiting_draft_gate", "drafted"]);
-/** A brief that stands, with no schedule: ready to draft, repaired by a later round, or left at gate 1 before it was retired. */
-const BRIEF = new Set(["done", "repaired", "awaiting_check_gate"]);
+import { api, type Instruction, type DraftConfigView, type Findings, type Listen, type Story } from "./api.ts";
+import { BriefFiles, Md, SeedNote, boldLabels, firstParagraph, label, stageName, stageNames, type Detail } from "./Draws.tsx";
+import { Bar, Btn, Caret as Chevron, Chip, Facts, Field, Head, Icon, Keys, Mark, ModelPicks, Seg, onEnter, rowKeys, useRowsFromPage } from "./ui.tsx";
 
 /** A quoted span is shown between the row's own quotation marks; a span the model already quoted would show two. */
 const unquote = (s: string) => s.trim().replace(/^["“”'‘’]+|["“”'‘’]+$/g, "");
-
-/** The write tab: every draw from the moment a candidate is chosen, the brief as it lands, the plan gate and gate 2. */
-export function Develop({ selected, step: stepId }: { selected: string | undefined; step?: string }) {
-  const stage = "write";
-  const [draws, setDraws] = useState<Draw[]>([]);
-  const [d, setD] = useState<Detail | null>(null);
-  const [err, setErr] = useState("");
-  const [settings, setSettings] = useState(false);
-  const [folded, setFolded] = useState(false);
-  const [showArchived, setShowArchived] = useState(false);
-  const loadDraws = () =>
-    api
-      .draws(true)
-      .then(setDraws)
-      .catch(() => {});
-  // one entry per repair chain, named for its root, shown where its head is; the rounds in order
-  // a chain is archived when its head is: archive acts on every round, so the list never shows part of one
-  const all = useMemo(() => chainsOf(draws).filter((c) => c.head.stage === stage), [draws, stage]);
-  const chains = all.filter((c) => !c.head.archived_at);
-  const archived = all.length - chains.length;
-  const heads = chains.map((c) => c.head);
-  const busy = heads.some((r) => r.running);
-  usePoll(loadDraws, busy, [stage], 3000, 15000);
-  // with nothing chosen, the draw last selected in this tab while its chain is still here, else the newest
-  const last = lastSelected(stage);
-  const current = selected ?? (all.some((c) => c.rounds.some((r) => r.id === last)) ? last : heads[0]?.id);
-  useRememberSelected(stage, selected);
-  // a draw repaired more than once is in several chains: the newest open one wins
-  const chainOf = (id: string | undefined) => {
-    const holds = (c: Chain) => c.rounds.some((r) => r.id === id);
-    return chains.find(holds) ?? all.find(holds);
-  };
-  const loadDetail = (id: string) =>
-    api
-      .draw(id)
-      .then(setD)
-      .catch((e) => setErr(e.message));
-  // the open step is the third part of the hash, so a step has a link of its own
-  const setStepId = (id: string | null) => {
-    if (current) location.hash = id ? `#${stage}/${current}/${id}` : `#${stage}/${current}`;
-  };
-  useAddressBar(current ? (stepId ? `${stage}/${current}/${stepId}` : `${stage}/${current}`) : undefined);
-  useEffect(() => {
-    if (!current) return;
-    setD(null);
-    setErr("");
-    setSettings(false);
-    setFolded(false);
-  }, [current]);
-  const working = isWorking(d);
-  usePoll(
-    () => {
-      if (current) loadDetail(current);
-    },
-    working,
-    [current],
-  );
-  const act = async (fn: () => Promise<any>, go?: (r: any) => string | undefined) => {
-    setErr("");
-    try {
-      const r = await fn();
-      const to = go?.(r);
-      if (to && to !== current) location.hash = `#${stage}/${to}`;
-      else if (current) loadDetail(current);
-      loadDraws();
-    } catch (e: any) {
-      setErr(e.message);
-    }
-  };
-  // archive acts on the whole chain behind its head; a round another chain also holds stays as it is
-  const archiveChain = (c: Chain) => act(() => api.gate(c.head.id, { action: c.head.archived_at ? "unarchive" : "archive" }));
-  const shown = all.filter((c) => showArchived || !c.head.archived_at || c === chainOf(current));
-  const step = d && stepId ? d.steps.find((s) => s.id === stepId) : undefined;
-  // a gate with no open finding and no repair pending has nothing to rule on: the next step is the draft
-  // the list row carries the check summary; the draw detail does not, so a draw read from the detail alone is not clean
-  const clean = (r: DrawBase & { check?: CheckSummary | null }) => !!r.check && r.at_gate && r.check.open === 0 && r.check.accepted === 0;
-  const statusLine = (r: DrawBase & { check?: CheckSummary | null }) => (r.status === "done" ? "ready to draft" : clean(r) ? "checked · nothing to fix" : label(r.status));
-  // the open row's one summary line; the step log is in the reading pane
-  const summary = (r: Draw, detail: Detail | null) => {
-    const running = detail?.steps.filter((s) => s.status === "running") ?? [];
-    if (running.length) return `${label(r.status)} · ${running.length} call${running.length > 1 ? "s" : ""} in flight`;
-    const round = chainOf(r.id)!.rounds.length > 1 ? ` · round ${chainOf(r.id)!.rounds.length}` : "";
-    if (r.check && r.at_gate) return clean(r) ? `${statusLine(r)}${round} · ready to draft` : `${statusLine(r)}${round} · ${r.check.reported} findings · total score ${r.check.total}`;
-    return `${statusLine(r)}${round}`;
-  };
-  // the strip's draw as the list knows it, with its check summary; the detail carries none
-  const listed = (id: string) => draws.find((x) => x.id === id);
-  const chain = chainOf(current);
-  const aside = d && (
-    <DrawAside
-      d={d}
-      onStep={setStepId}
-      top={
-        <>
-          {chain && chain.rounds.length > 1 && <Rounds chain={chain} current={d.draw.id} statusLine={statusLine} />}
-        </>
-      }
-      rows={[
-        ...(d.draw.repaired_from
-          ? [
-              [
-                "repairs",
-                <a href={`#${stage}/${d.draw.repaired_from}`} className="num">
-                  {d.draw.repaired_from}
-                </a>,
-              ] as [React.ReactNode, React.ReactNode],
-            ]
-          : []),
-        ...(d.draw.superseded_by
-          ? [
-              [
-                "superseded by",
-                <a href={`#${stage}/${d.draw.superseded_by}`} className="num">
-                  {d.draw.superseded_by}
-                </a>,
-              ] as [React.ReactNode, React.ReactNode],
-            ]
-          : []),
-      ]}
-    />
-  );
-  return (
-    <>
-      <div className="pane list">
-        <div className="listhead">
-          <span className="head">
-            {`${heads.filter((r) => r.at_gate).length} to review · ${heads.filter((r) => r.status === "done").length} to draft · ${heads.filter((r) => r.status === "drafted").length} kept`}
-            {chains.some((c) => c.rounds.length > 1) && <span className="note"> · {chains.filter((c) => c.rounds.length > 1).length} repair chains</span>}
-            <ArchivedToggle archived={archived} shown={showArchived} onToggle={() => setShowArchived((v) => !v)} />
-          </span>
-        </div>
-        {chains.length === 0 && <div className="empty">No briefs yet. Choose a premise in ideate to make one.</div>}
-        {shown.map((c) => {
-          const r = c.head;
-          const on = chain === c;
-          const isOpen = on && !folded;
-          return (
-            <div
-              key={c.head.id}
-              className={"row" + (on ? " on" : "") + (isOpen ? " open" : "") + (r.running ? " running" : "") + (r.archived_at ? " old" : "")}
-              tabIndex={0}
-              aria-current={on ? "true" : undefined}
-              onClick={() => {
-                if (!on) location.hash = `#${stage}/${r.id}`;
-                else if (stepId) setStepId(null);
-                else setFolded((f) => !f);
-              }}
-              onKeyDown={onEnter(() => {
-                if (!on) location.hash = `#${stage}/${r.id}`;
-                else if (stepId) setStepId(null);
-                else setFolded((f) => !f);
-              })}
-            >
-              <RowHead
-                name={c.root.name ?? c.root.id}
-                status={statusLine(r)}
-                mark={markFor(r)}
-                rounds={c.rounds.length}
-                at={r.created_at}
-                archived={!!r.archived_at}
-                blocked="a premise was chosen from it; archive it instead"
-                onArchive={() => archiveChain(c)}
-              />
-              {isOpen && (
-                <>
-                  <div className="l2">
-                    <span className={r.running ? "sweep text-running" : ""}>{summary(r, on ? d : null)}</span>
-                  </div>
-                  <div className="l2">
-                    <span className="text-dim">
-                      {r.origin?.index ? (
-                        <span className="num text-mute">
-                          #{r.origin.index}
-                          {r.origin.probability != null ? ` · ${r.origin.probability.toFixed(2)}` : ""} ·
-                        </span>
-                      ) : null}{" "}
-                      {r.setting ?? "unrestricted"} · {r.genre}
-                      {r.flagged ? <span className="text-art"> · flagged</span> : null}
-                    </span>
-                  </div>
-                  <div className="sd">{r.seed_text}</div>
-                </>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      <div className="pane read tt">
-        {!current ? (
-          <div className="empty">Nothing to write yet.</div>
-        ) : !d ? (
-          err ? (
-            <div className="err">{err}</div>
-          ) : (
-            <span className="text-dim">loading the draw…</span>
-          )
-        ) : (
-          <>
-            <div className={"strip" + (working ? " running" : "")}>
-              <h1>{d.draw.name ?? d.draw.id}</h1>
-              <span className={"state " + (working ? "text-running" : d.draw.at_gate ? "text-art" : d.draw.status === "failed" ? "text-pass" : "text-mute")} aria-live="polite">
-                <Mark state={markFor(d.draw)} />
-                <span className={working ? "sweep" : ""}>
-                  {statusLine(listed(d.draw.id) ?? d.draw)}
-                  {working ? inFlight(d) : ""}
-                </span>
-              </span>
-            </div>
-            {err && <div className="err mt-2">{err}</div>}
-            {!PLANNED.has(d.draw.status) && <DrawNotes draw={d.draw} />}
-            {step ? (
-              <StepView step={step} chosen={false} onBack={() => setStepId(null)} />
-            ) : settings ? (
-              <DraftSettings
-                d={d}
-                onClose={() => setSettings(false)}
-                onDraft={(b) =>
-                  act(async () => {
-                    await api.draft(d.draw.id, b);
-                    location.hash = `#write/${d.draw.id}`;
-                  })
-                }
-              />
-            ) : d.draw.status === "awaiting_plan_gate" ? (
-              <PlanGate d={d} onAct={act} aside={aside} />
-            ) : PLANNED.has(d.draw.status) ? (
-              <StoryPane d={d} onAct={act} aside={aside} />
-            ) : BRIEF.has(d.draw.status) ? (
-              <BriefReady d={d} onFlag={(note) => act(() => api.gate(d.draw.id, { action: "flag", note }))} onDraft={() => setSettings(true)} aside={aside} />
-            ) : (
-              <Building d={d} aside={aside} />
-            )}
-          </>
-        )}
-      </div>
-    </>
-  );
-}
-
-/** A repair chain's rounds, oldest first: score bar, score, accepted over reported. A row opens its round; the lowest score is gold. */
-function Rounds({ chain, current, statusLine }: { chain: Chain; current: string; statusLine: (r: Draw) => string }) {
-  const max = Math.max(...chain.rounds.map((x) => x.check?.total ?? 0), 1);
-  const lowest = chain.rounds.reduce((m, x) => (x.check && (!m || x.check.total < m.check!.total) ? x : m), null as Draw | null);
-  const at = chain.rounds.findIndex((x) => x.id === current) + 1;
-  return (
-    <div className="mb-6">
-      <Head as="div" note={`round ${at} of ${chain.rounds.length}${lowest ? ` · lowest score in round ${chain.rounds.indexOf(lowest) + 1}` : ""}`}>
-        rounds
-      </Head>
-      <table className="ledger">
-        <thead>
-          <tr>
-            <th className="head" title="One row per brief in the whole repair chain: every repair that reached this brief, including any before the last auto run.">
-              round
-            </th>
-            <th className="head"></th>
-            <th className="head text-right" title="The findings' scores added up. Lower is better.">
-              score
-            </th>
-            <th className="head text-right" title="Findings accepted for repair, of those reported.">
-              accepted
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {chain.rounds.map((x, i) => (
-            <tr
-              key={x.id}
-              className={x.id === current ? "sel" : ""}
-              tabIndex={0}
-              aria-current={x.id === current ? "true" : undefined}
-              onClick={() => {
-                location.hash = `#${x.stage}/${x.id}`;
-              }}
-              onKeyDown={onEnter(() => (location.hash = `#${x.stage}/${x.id}`))}
-              title={x.check ? `round ${i + 1} · ${x.check.reported} reported · ${x.check.accepted} accepted · score ${x.check.total}` : `round ${i + 1} · ${statusLine(x)}`}
-            >
-              <td className="num w-4">{i + 1}</td>
-              <td>
-                <Bar pct={x.check ? (x.check.total / max) * 100 : 0} gold={x === lowest} />
-              </td>
-              <td className={"num text-right" + (x === lowest ? " text-keep" : "")}>{x.check ? x.check.total : "—"}</td>
-              <td className="num text-right text-dim">{x.check ? `${x.check.accepted}/${x.check.reported}` : ""}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
 
 /**
  * A brief's controls: draft it, or flag it with a note. The brief's text checks run in the draft, and are read at
@@ -349,10 +32,11 @@ function BriefControls({ d, onDraft, onFlag }: { d: Detail; onDraft: () => void;
   );
 }
 
-function BriefReady({ d, onFlag, onDraft, aside }: { d: Detail; onFlag: (note: string) => void; onDraft: () => void; aside: React.ReactNode }) {
+/** A brief that stands. `brief` names the draw whose files hold it: a branch carries its source's brief. */
+export function BriefReady({ d, brief = d.draw.id, controls = true, onFlag, onDraft, aside }: { d: Detail; brief?: string; controls?: boolean; onFlag: (note: string) => void; onDraft: () => void; aside: React.ReactNode }) {
   return (
     <>
-      <BriefControls d={d} onFlag={onFlag} onDraft={onDraft} />
+      {controls && <BriefControls d={d} onFlag={onFlag} onDraft={onDraft} />}
       <div className="drawbody">
         <div className="max-w-[66rem]">
           <Head>seed</Head>
@@ -360,14 +44,14 @@ function BriefReady({ d, onFlag, onDraft, aside }: { d: Detail; onFlag: (note: s
           <Head
             className="mt-6"
             note={
-              <a href={api.briefFile(d.draw.id, "trail.md")} target="_blank" rel="noopener" className="num">
-                briefs/{d.draw.id}/trail.md
+              <a href={api.briefFile(brief, "trail.md")} target="_blank" rel="noopener" className="num">
+                briefs/{brief}/trail.md
               </a>
             }
           >
             brief
           </Head>
-          <BriefFiles id={d.draw.id} />
+          <BriefFiles id={brief} />
         </div>
         <div className="aside min-w-0">{aside}</div>
       </div>
@@ -384,7 +68,7 @@ const BUILD = ["outline", "context", "ending"];
  * is read from its artifact, because the files under briefs/ are written last
  * and all at once.
  */
-function Building({ d, aside }: { d: Detail; aside: React.ReactNode }) {
+export function Building({ d, aside }: { d: Detail; aside: React.ReactNode }) {
   const running = d.steps.filter((s) => s.status === "running");
   // a repair round's stages tick the same build steps: repair-outline is the outline written again
   const done = new Set(d.steps.filter((s) => s.status === "done").map((s) => s.stage.replace(/^repair-/, "")));
@@ -539,7 +223,7 @@ function Profiles({ f }: { f: Findings }) {
 const AXES: Record<string, string[]> = { tense: ["past", "present"], person: ["first", "second", "third"], chronology: ["linear", "nonlinear"], container: ["prose", "document", "interleaved"] };
 
 /** The drafting settings. `again`: at the plan gate, where the settings plan the draft again from its first beat. */
-function DraftSettings({ d, onClose, onDraft, again }: { d: Detail; onClose: () => void; onDraft: (b: { plan?: boolean; profile?: string; overrides?: Record<string, string | number>; models?: Record<string, string> }) => void; again?: boolean }) {
+export function DraftSettings({ d, onClose, onDraft, again }: { d: Detail; onClose: () => void; onDraft: (b: { plan?: boolean; profile?: string; overrides?: Record<string, string | number>; models?: Record<string, string> }) => void; again?: boolean }) {
   const [cfg, setCfg] = useState<DraftConfigView | null>(null);
   const [profile, setProfile] = useState<string>("");
   const [models, setModels] = useState<Record<string, string>>({});
@@ -653,11 +337,11 @@ function DraftSettings({ d, onClose, onDraft, again }: { d: Detail; onClose: () 
 
 // --- gate 2 ------------------------------------------------------------------
 
-function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<any>, go?: (r: any) => string | undefined) => void; aside: React.ReactNode }) {
+/** Gate 2. The view is the strip's: plan or scenes. A move to the other view keeps the ticks. */
+export function StoryPane({ d, onAct, aside, view, onView: setView }: { d: Detail; onAct: (fn: () => Promise<any>, go?: (r: any) => string | undefined) => void; aside: React.ReactNode; view: "story" | "plan"; onView: (v: "story" | "plan") => void }) {
   const [s, setS] = useState<Story | null>(null);
   const [note, setNote] = useState("");
   const [k, setK] = useState(1);
-  const [view, setView] = useState<"story" | "plan">("story");
   const [instruction, setInstruction] = useState("");
   // the flags ticked for a rewrite, each with the operator's note on it
   const [ticks, setTicks] = useState<Ticks>({});
@@ -751,9 +435,6 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
           <input type="text" placeholder="note for the log" aria-label="Gate note" value={note} onChange={(e) => setNote(e.target.value)} />
           <span className="end">
             {report}
-            <Btn variant="quiet" pressed={view === "plan"} onClick={() => setView(view === "plan" ? "story" : "plan")} title="The plan the scenes were written from: each beat's schedule, the plan check's findings and the symbol table it read.">
-              {view === "plan" ? "story" : "plan"}
-            </Btn>
           </span>
         </div>
       )}
@@ -874,9 +555,6 @@ function StoryPane({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<a
           </span>
           <span className="end">
             {report}
-            <Btn variant="quiet" pressed={view === "plan"} onClick={() => setView(view === "plan" ? "story" : "plan")} title="The plan the scenes were written from: each beat's schedule, the plan check's findings and the symbol table it read.">
-              {view === "plan" ? "story" : "plan"}
-            </Btn>
           </span>
         </div>
       )}
@@ -1483,7 +1161,7 @@ function EditText({ value, edit, onEdit, className, label }: { value: string; ed
  * or the finding's own patch), edited lines replace the beat's, and the plan
  * is checked again; a re-plan plans it again from a beat; write drafts it.
  */
-function PlanGate({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<any>, go?: (r: any) => string | undefined) => void; aside: React.ReactNode }) {
+export function PlanGate({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<any>, go?: (r: any) => string | undefined) => void; aside: React.ReactNode }) {
   const [s, setS] = useState<Story | null>(null);
   const [ticks, setTicks] = useState<Ticks>({});
   const [edits, setEdits] = useState<Edits>({});
@@ -1514,7 +1192,7 @@ function PlanGate({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Promise<an
     onAct(
       () => api.gate(id, { action: "instruct", instructions: [{ ...ins, text: ins.text.trim() }] }),
       () => {
-        location.hash = `#write/${id}`;
+        location.hash = `#story/${id}`;
         return undefined;
       },
     );

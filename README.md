@@ -66,9 +66,9 @@ Or drive the same actions from the UI:
 bun run ui:build && ./cloudchamber serve   # http://127.0.0.1:3002
 ```
 
-Four tabs: browse the corpus, ideate a draw, check a brief, write the story.
-Three of them show a running operation and the judgement it is waiting for at
-the same time. The screenshots above show two of them.
+Two tabs: stories and sources. A story shows its five stops on one strip, from
+the premises to the report, and the stop that waits for you is marked. The
+screenshots above show the older ideate and write tabs.
 
 ## How a draw works
 
@@ -178,7 +178,7 @@ store holds 619 stories and 4,082 scored passages.
 | `app/cli/` | the `cloudchamber` command |
 | `app/pipeline/` | draw, check, repair, draft and screens; prompts, tomls and the store |
 | `app/server/` | the Fastify API the UI calls |
-| `app/ui/` | the React UI: browse, ideate, write |
+| `app/ui/` | the React UI: stories, sources |
 | `extract/` | the Python extractor: PDFs and SCP articles into passages and facets |
 | `sources/` | `manifest.toml`, which names every source, and the SCP articles |
 | `bank/` | the verdict and theme logs; tracked, because nothing else reproduces them |
