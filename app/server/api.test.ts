@@ -13,7 +13,7 @@ import { settingsFixture } from "../pipeline/settings.fixture.ts";
 
 const CELLS = ["informational", "mixed", "involved"].flatMap((v) => ["non-narrative", "mixed", "narrative"].map((m) => [v, m]));
 const premises = `<premise><text>P1</text><probability>0.05</probability></premise><premise><text>P2</text><probability>0.02</probability></premise><premise><text>P3</text><probability>0.08</probability></premise><premise><text>P4</text><probability>0.03</probability></premise><premise><text>P5</text><probability>0.06</probability></premise>`;
-const outline = `<section name="departure">a</section><section name="particulars">b</section><section name="knowledge">c</section><section name="arrival">d</section><job>one thing</job><job>another thing</job>`;
+const outline = `<section name="departure">a</section><section name="particulars"><sym id="b" kind="fact" from="ledger:detail">b</sym></section><section name="knowledge"><sym id="c" kind="fact" from="ledger:knowledge">c</sym></section><section name="arrival">d</section><job>one thing</job><job>another thing</job>`;
 
 async function setup() {
   const dir = mkdtempSync(join(tmpdir(), "cloudchamber-api-"));

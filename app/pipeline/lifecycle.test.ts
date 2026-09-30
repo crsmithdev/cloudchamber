@@ -64,11 +64,11 @@ describe("the rules", () => {
 
 describe("a failed action puts the draw back where it stood", () => {
   test("a draft that throws leaves the brief draftable with the reason, and the next success clears it", async () => {
-    const script = draftScript({ "ledger-extract": [] });                       // exhausted: the ledger extraction fails
+    const script = draftScript({ schedule: [] });                               // exhausted: the schedule call fails
     const { d, p, draw, model } = await drawn(script);
-    await expect(d.draft(draw.id)).rejects.toThrow(/ledger-extract failed/);
-    expect(p.draw(draw.id)).toMatchObject({ status: "done", error: expect.stringMatching(/^ledger-extract failed: error/) });
-    (model as any).script["ledger-extract"] = draftScript()["ledger-extract"];
+    await expect(d.draft(draw.id)).rejects.toThrow(/schedule failed/);
+    expect(p.draw(draw.id)).toMatchObject({ status: "done", error: expect.stringMatching(/^schedule failed: error/) });
+    (model as any).script.schedule = draftScript().schedule;
     await d.draft(draw.id);
     expect(p.draw(draw.id)).toMatchObject({ status: "awaiting_draft_gate", error: null });
   });

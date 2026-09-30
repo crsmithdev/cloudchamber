@@ -46,6 +46,20 @@ export function parseSyms(text: string): Sym[] {
   return out;
 }
 
+/**
+ * The ledger an outline's declared table renders to (T4): one line per symbol,
+ * category-prefixed, the shape `ledger-extract` writes and the bind reads.
+ */
+export function renderLedger(syms: Sym[]): string {
+  return syms.map((s) => `${/ledger:(\w+)/.exec(s.from)?.[1] ?? "detail"}: ${s.text}`).join("\n");
+}
+
+/** The outline's declared table, when the ledger is still its rendering; null for a brief with no table or an amended ledger, which L1 lowers. */
+export function declaredTable(outline: string, ledger: string): Sym[] | null {
+  const syms = parseSyms(outline);
+  return syms.length && renderLedger(syms) === ledger ? syms : null;
+}
+
 // --- L1 symbolise -------------------------------------------------------------
 
 /** One call over the pinned ledger, emitting `<symbols>` (§3.2's shape). */
@@ -235,10 +249,12 @@ export async function planCheck(p: Pipeline, drawId: string, parent: string, led
   const staticStep = p.recordStep(drawId, parent, "ir-static", "deterministic", { s1: s1.length });
   for (const f of s1) store(staticStep, "plan-static", { beat: f.beat, span: whenOf(f.beat), statement: f.message, evidence: f.check });
 
-  // L1: the symbol table; a failure is its failed step, and the check ends here
+  // L1: the symbol table; a failure is its failed step, and the check ends here. A brief whose
+  // outline declared the table (T4) and whose ledger is its rendering needs no call: the table is read
   let l1: { step: StepRow; symbols: Sym[] };
   try {
-    l1 = await l1Symbolize(p, drawId, parent, ledger, pass);
+    const table = declaredTable(chainOf(p, drawId).outline(), ledger);
+    l1 = table ? { step: p.recordStep(drawId, parent, "ir-symbolize", "deterministic", table), symbols: table } : await l1Symbolize(p, drawId, parent, ledger, pass);
     out.l1 = "done";
   } catch {
     await claims;

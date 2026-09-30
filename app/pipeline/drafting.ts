@@ -26,7 +26,7 @@ import { BriefSession } from "./briefsession.ts";
 import { faultsOver, type Fault } from "./listen.ts";
 import { ofKind } from "./artifacts.ts";
 import { FAULT_LINE, linesOf, parseSchedule, runSchedule, type Schedule } from "./write.ts";
-import { planCheck, type PlanCheck } from "./ir/s2.ts";
+import { parseSyms, planCheck, renderLedger, type PlanCheck } from "./ir/s2.ts";
 import { now } from "./paths.ts";
 import { SceneSession, type Change, type ScreenPaths } from "./scenesession.ts";
 import { directionsOf, draftView, exportDraft, renderStory, type DraftView } from "./drafts.ts";
@@ -476,10 +476,20 @@ export class Drafting {
     return this.p.draw(newId);
   }
 
-  /** A draft started without a check has no ledger; one extraction supplies it. */
+  /**
+   * The chain's ledger, pinned on the first draft: rendered from the table the
+   * outline declared (T4), or, for a brief with none, one extraction.
+   */
   private async ensureLedger(drawId: string): Promise<string> {
-    const have = chainOf(this.p, drawId).ledger();
+    const chain = chainOf(this.p, drawId);
+    const have = chain.ledger();
     if (have) return have;
+    const table = parseSyms(chain.outline());
+    if (table.length) {
+      const ledger = renderLedger(table);
+      this.p.artifact(this.p.recordStep(drawId, null, "ledger-extract", "deterministic", { declared: table.length }), "ledger", ledger, { pass: passId(), sample: 1, ledger_only: true });
+      return ledger;
+    }
     const parts = briefParts(this.p, drawId);
     return extractLedger(new BriefSession(this.p, drawId, parts, "ledger-extract"), { pass: passId(), sample: 1, ledger_only: true });
   }

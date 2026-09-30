@@ -15,7 +15,7 @@ import { loadStages } from "./config.ts";
 import { loadDraftConfig } from "./draftconfig.ts";
 import { OUTPUT, VERDICT_LOG } from "./paths.ts";
 import { ofKind } from "./artifacts.ts";
-import { SCENE_3_PATCH, SPAN_A, draftScript, drawn, fixture, schedule, screenStructure, fromAsk, claimsExtract, claimVerify } from "./drafting.fixture.ts";
+import { LEDGER, proseOutline, SCENE_3_PATCH, SPAN_A, draftScript, drawn, fixture, schedule, screenStructure, fromAsk, claimsExtract, claimVerify } from "./drafting.fixture.ts";
 import { briefParts } from "./briefparts.ts";
 import { chainOf } from "./chain.ts";
 import { renderStory } from "./drafts.ts";
@@ -39,8 +39,8 @@ describe("the plan gate: the brief's checks, and an operator's instructions", ()
     expect(stagesOf(model, /^check-/).sort()).toEqual(["check-reader", "check-reader", "check-reader", "check-resemblance", "check-structure"]);
     expect(p.artifacts(draw.id).filter((a) => a.kind === "profile").map((a) => a.meta.checker).sort()).toEqual(["resemblance", "structure"]);
     expect((d.findings(draw.id).profiles as any[]).map((x) => x.checker).sort()).toEqual(["resemblance", "structure"]);
-    // gate 1's checkers are gone: the draft extracts the ledger and runs no ledger, derivation or claims check on the brief
-    expect(stagesOf(model, /^ledger-extract$/)).toEqual(["ledger-extract"]);
+    // gate 1's checkers are gone: the draft renders the ledger from the outline's table and runs no ledger, derivation or claims check on the brief
+    expect(stagesOf(model, /^ledger-extract$/)).toEqual([]);
     expect(model.calls.find((c) => c.stage === "check-resemblance")!.prompt).toContain("3. The madman");
     // every brief check reads the brief from one system prompt, the same text on every stage
     const checks = p.steps(draw.id).filter((s) => /^check-/.test(s.stage));
@@ -102,6 +102,15 @@ describe("the plan gate: the brief's checks, and an operator's instructions", ()
     expect(scenes.length).toBeGreaterThan(0);
     for (const c of scenes) expect(c.system).toContain("time: the fire was on the 3rd");
     expect(scenes[0].system).toContain(FACT);
+  });
+
+  test("a direction keeps the declared table; a fact amends the ledger past it, so L1 calls the model (T4)", async () => {
+    const { d, draw, model } = await atPlan();
+    expect(stagesOf(model, /^ir-symbolize$/)).toEqual([]);
+    const next = await d.instruct(draw.id, [{ text: DIR, parts: ["ending"], kind: "direction" }]);
+    expect(stagesOf(model, /^ir-symbolize$/)).toEqual([]);
+    await d.instruct(next.id, [{ text: FACT, parts: ["context 1"], kind: "fact" }]);
+    expect(stagesOf(model, /^ir-symbolize$/)).toEqual(["ir-symbolize"]);
   });
 
   test("archive acts on the whole repair chain, and unarchive brings it back", async () => {
@@ -314,7 +323,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(scenes.slice(1).every((c, i) => c.session?.resume === `fake-${model.calls.indexOf(scenes[i]) + 1}`)).toBe(true);
     // the examples, outline, ledger and schedule ride in the system prompt, the same on every beat, so the CLI reads them from its cache
     expect(scenes[0].system.indexOf("horror passage")).toBeLessThan(scenes[0].system.indexOf("<outline>"));
-    expect(scenes[0].system).toContain("<ledger>\ntime: the fire was on the 3rd");
+    expect(scenes[0].system).toContain("<ledger>\ndetail: the board of twelve\ntime: the fire was on the 3rd");
     expect(scenes[0].system).toContain("<schedule>");
     expect(scenes.every((c) => c.system === scenes[0].system)).toBe(true);
     expect(scenes[0].prompt).not.toContain("<outline>");
@@ -742,13 +751,23 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(JSON.parse(out.draft_config!).profile).toBe("flash");
   });
 
-  test("a draft from done extracts one ledger and runs no check on the brief", async () => {
+  test("a draft pins the ledger the outline's table renders to, with no call, and L1 reads the table with none either (T4)", async () => {
     const { p, d, draw, model } = await drawn();
     const out = await d.draft(draw.id);
     expect(out.status).toBe("awaiting_draft_gate");
-    expect(stagesOf(model, /^check-|^ledger-/)).toEqual(["ledger-extract"]);   // the extract alone, no checking
-    expect(p.artifacts(draw.id).filter((a) => a.kind === "ledger")).toHaveLength(1);
+    expect(stagesOf(model, /^check-|^ledger-|^ir-symbolize$/)).toEqual([]);
+    const ledgers = p.artifacts(draw.id).filter((a) => a.kind === "ledger");
+    expect(ledgers.map((a) => a.content)).toEqual([LEDGER]);
+    expect(p.steps(draw.id).filter((s) => s.stage === "ledger-extract" || s.stage === "ir-symbolize").map((s) => [s.stage, s.model])).toEqual([["ledger-extract", "deterministic"], ["ir-symbolize", "deterministic"]]);
+    expect(d.view(draw.id).symbols.map((s) => s.id)).toEqual(["board", "fire", "dead", "vote", "director"]);
     expect(p.artifacts(draw.id).filter((a) => a.kind === "finding" && a.meta.source === "check")).toHaveLength(0);
+  });
+
+  test("a brief whose outline declares no table has its ledger extracted and lowered by L1, as before T4", async () => {
+    const { p, d, draw, model } = await drawn();
+    proseOutline(p, draw.id);
+    await d.draft(draw.id);
+    expect(stagesOf(model, /^ledger-extract$|^ir-symbolize$/)).toEqual(["ledger-extract", "ir-symbolize"]);
   });
 
   test("rewrite k regenerates one scene under the flag's replacement, binds k and k+1 to the ledger, re-screens both", async () => {

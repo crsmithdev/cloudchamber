@@ -12,6 +12,7 @@ import { randomBytes } from "node:crypto";
 import { BANDS, DEFAULT_SAMPLING, RUN, isDarkness, isSampling, type Darkness, loadStages, resolveModels, type Sampling, type StageConfig, type StageName } from "./config.ts";
 import { TEMPLATES, compose, fill } from "./prompts.ts";
 import { need, sections, tag, tags, words, type ModelAdapter, type ModelResult, type SessionAsk } from "./model.ts";
+import { parseSyms } from "./ir/s2.ts";
 import { eligiblePassages, eligibleThemes, type Segment } from "./bank.ts";
 import { loadChecked, slice, type GenStage, type Setting } from "./settings.ts";
 import { SETTINGS } from "./paths.ts";
@@ -72,10 +73,14 @@ const id = (n = 6) => randomBytes(n).toString("hex");
 /** A draw id: the UTC second it was made, and four hex digits. */
 export const newDrawId = () => `${now().replace(/[-:TZ]/g, "").slice(0, 15)}-${id(2)}`;
 
-/** Parse an outline response, requiring every job's section. */
+/** The sections the outline declares as <sym> tags (T4): the story's contract, rendered into its ledger. */
+const DECLARED = ["particulars", "knowledge"];
+
+/** Parse an outline response, requiring every job's section, and <sym> tags in each declared one. */
 const parseOutline = (jobNames: string[]) => (text: string) => {
   const secs = sections(text);
   for (const j of jobNames) if (!secs[j]) throw new Error(`missing <section name="${j}">`);
+  for (const j of DECLARED) if (secs[j] && !parseSyms(secs[j]).length) throw new Error(`no <sym> tags in <section name="${j}">`);
   return { sections: secs, jobs: parseJobs(text) };
 };
 

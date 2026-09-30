@@ -19,7 +19,21 @@ const SPAN_C = "tears on the silk";
 export const finding = (span: string, statement: string, invalidates: string, replacement: string, evidence = "and the count closes. The last beat.", result = `contradicts:${evidence}`, patch = "") =>
   `<finding><span>${span}</span><statement>${statement}</statement><result>${result}</result><evidence>${evidence}</evidence><invalidates>${invalidates}</invalidates><replacement>${replacement}</replacement>${patch ? `<patch>${patch}</patch>` : ""}</finding>`;
 
-export const LEDGER = "time: the fire was on the 3rd\ndetail: 1,106 dead\npossession: the director holds the order";
+/** The table the outline declares (T4), in the two sections that hold it: L1's fixture table, so L3 and L4 read the same symbols either way. */
+export const DECLARED = {
+  particulars: `<sym id="board" kind="body" from="ledger:detail" seats="12">the board of twelve</sym><sym id="fire" kind="time" from="ledger:time" day="1" date="the 3rd">the fire was on the 3rd</sym><sym id="dead" kind="count" from="ledger:detail" total="1106">1,106 dead</sym><sym id="vote" kind="count" from="ledger:detail" body="board" yes="7" no="5" total="12" named_yes="director" named_no="none">the board votes seven to five</sym>`,
+  knowledge: `<sym id="director" kind="person" from="ledger:possession" member_of="order">the director holds the order</sym>`,
+};
+/** The ledger the declared table renders to; `ledger-extract` answers with it too, for a brief with no table. */
+export const LEDGER = "detail: the board of twelve\ntime: the fire was on the 3rd\ndetail: 1,106 dead\ndetail: the board votes seven to five\npossession: the director holds the order";
+// a brief made before T4: its outline's particulars are prose, so the ledger is extracted and L1 calls the model
+export function proseOutline(p: Pipeline, drawId: string): void {
+  const outline = p.artifacts(drawId).find((a) => a.kind === "outline")!;
+  p.db.query("UPDATE artifacts SET content = ? WHERE id = ?").run("## particulars\n\nThe fire was on the 3rd.", outline.id);
+}
+
+export const declaredOutline = () =>
+  ["departure", "particulars", "knowledge", "arrival"].map((n) => `<section name="${n}">${DECLARED[n as keyof typeof DECLARED] ?? `Section ${n} body.`}</section>`).join("\n");
 
 const STRUCTURE_Q = ["threat", "category-violation", "agency", "obscurity", "thickening", "spectacle", "consequence"];
 const structure = (present = ["threat", "agency", "consequence"]) => STRUCTURE_Q.map((q) => `<question name="${q}"><answer>${present.includes(q) ? "present" : "absent"}</answer><quote>a quote for ${q}</quote></question>`).join("");
@@ -108,7 +122,7 @@ export function draftScript(over: Record<string, any> = {}) {
     premises: () => [0.05, 0.03, 0.08, 0.03, 0.06].map((p, i) => `<premise><text>Premise ${i + 1} text.</text><probability>${p}</probability></premise>`).join("\n"),
     // the chosen vignette ends on two fixed phrases a test can quote
     execute: (p: string) => vignette(Number(fromAsk(p, /Premise (\d)/, "the premise number"))).replace("</vignette>", ` ${SPAN_B}, ${SPAN_C}.</vignette>`),
-    outline: () => ["departure", "particulars", "knowledge", "arrival"].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n")
+    outline: () => declaredOutline()
       + "\n<job>Test the first thing: scene one.</job>\n<job>Test a second thing: scene two.</job>",
     context: (p: string) => `<vignette>context for ${/Its job: (.*)/.exec(p)?.[1]}</vignette>`,
     ending: () => ending(),

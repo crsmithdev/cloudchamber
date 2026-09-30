@@ -14,6 +14,20 @@ export function checkTemplate(name: string, text: string): void {
   if (m) throw new Error(`prompt template ${name} violates the vocabulary rule: "${m[0]}"`);
 }
 
+/**
+ * The <sym> grammar the outline declares its particulars and knowledge in (IR
+ * spec §15.8, T4): L1's, worded for a writer instead of a reader of a ledger,
+ * so that L3 and L4 read a declared table as they read a lowered one. L1's own
+ * prompt stays as it was: it still lowers the ledger of a brief with no table.
+ */
+const SYM_RULES = `A symbol is a person, an object, a body (a council, a guild, a crew), a place, or a fact. Each tag carries: id="" (a short lowercase identifier, dotted for a property of something: suit.third), kind="person|object|body|place|fact|time|count", from="ledger:<category>" (the category the fact belongs to: time, detail, knowledge, possession, world or perspective; add "; setting:<area>" too when the fact is the kind a setting states for or against — a body, an instrument, a place, an event, a term, a rite). Add any other attribute the section states a value for: a count, a role, a custody, a shift size. A person or an object that the section places in a body — a seat-holder, a delegate, an officer, a member, a thing a body holds — carries member_of="" with that body's symbol id. The tag's content is the fact as one sentence that someone who has not seen the rest can read against prose.
+
+Two kinds need special care.
+
+Every place the section writes a calendar date beside a day number or an hour — a start, an end, an arrival, a completion — emit its own <sym kind="time" id="day.N"> (N the day number) carrying day="N", date="" (the calendar date exactly as written) and hour="" (when one is given). Emit a date only where one is written; never a date you compute from a count of days. The same day can be pinned more than once, in more than one place and more than one wording; emit a symbol for each statement, not one merged answer.
+
+Every vote or tally the section states — emit a <sym kind="count" id="..."> carrying body="" (the symbol id of the body that votes), yes="" and no="" (the two sides), total="" (a sum stated outright), named_yes="" and named_no="" (the symbol ids of the persons named on each side, comma-separated, or none), unnamed_yes="" and unnamed_no="" (how many on each side are counted without naming), using only the attributes given a value. A "N of M remain" line is a count too, with remaining="" and of="", not a vote.`;
+
 const T = {
   themes: `A theme is one sentence, under 30 words, carrying a mechanism and a turn. It is true of the story and does not occur in it. State the process, name who it is done to, and imply what it costs or why there is no exit. No names, no designations, nothing that ties the sentence to this story. Readable with the story unavailable; do not open on this, that, it or here.
 {fewshot}
@@ -78,9 +92,11 @@ Premise: {premise}
 
 <section name="departure">: State, in one sentence, the one thing in this story that is not true of the actual world. Then derive everything the premise and vignette assert from it. Anything that does not follow is a second departure: name it, cut it, and replace it with something that follows from the first.
 
-<section name="particulars">: Settle everything the prose must not drift from: every name, place, date, duration, count and quantity the story turns on, and any sum a reader could do. Where the premise is vague, decide.
+<section name="particulars">: Settle everything the prose must not drift from: every name, place, date, duration, count and quantity the story turns on, and any sum a reader could do. Where the premise is vague, decide. Write this section as <sym> tags only, one per thing it settles.
 
-<section name="knowledge">: Who knows what, and from when; what each of them cannot know; and why the people who could compare what they know do not.
+<section name="knowledge">: Who knows what, and from when; what each of them cannot know; and why the people who could compare what they know do not. Write this section as <sym> tags only, one per fact, each with the category knowledge.
+
+These two sections are the story's contract: every later scene is held to them. ${SYM_RULES} The two tagged sections may run to 900 words each.
 
 <section name="arrival">: What arrives, and what it costs one person: the thing the departure sends against someone, the place and the moment it comes in with nothing between them, what it does to them or to the place, and what they lose to it that they cannot get back. Name the person, the place, the moment and the price.
 

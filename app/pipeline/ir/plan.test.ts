@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { PLAN_SPAN, draftScript, drawn, finding, planSymbols } from "../drafting.fixture.ts";
+import { PLAN_SPAN, draftScript, drawn, finding, planSymbols, proseOutline } from "../drafting.fixture.ts";
 import { chainOf } from "../chain.ts";
 import { draftView, renderStory } from "../drafts.ts";
 import { PLAN_CAP } from "./s2.ts";
@@ -85,6 +85,7 @@ describe("the plan check at gate 2", () => {
   test("a symbolise call that fails leaves the $0 findings and the draft", async () => {
     // an exhausted script: the fake throws on the call, as a failed call does
     const { p, d, draw } = await drawn(draftScript({ "ir-symbolize": [] }));
+    proseOutline(p, draw.id);                                                    // L1 calls the model only for a brief with no declared table
     const drafted = await d.draft(draw.id);
     expect(drafted.status).toBe("awaiting_draft_gate");
     expect(chainOf(p, drafted.id).planFindings().map((f) => f.screen)).toEqual(["plan-static", "plan-static"]);
@@ -165,7 +166,7 @@ describe("the plan gate", () => {
     expect(chain.schedule()!.raw).toContain(NOTE);
     expect(chain.schedule()!.raw).not.toContain(PLAN_SPAN);
     expect(chain.schedule()!.beats[1]!.job).toContain(NOTE);
-    expect(stages(model, before)).toEqual(expect.arrayContaining(["ir-symbolize", "ir-plan-ledger"]));
+    expect(stages(model, before)).toEqual(expect.arrayContaining(["ir-plan-ledger"]));   // L1 reads the declared table, with no call
     expect(stages(model, before)).not.toContain("schedule");
     // the finding is settled, and the scenes are written from the plan as it now stands
     expect(chain.decision(pf.id).decision).toBe("accepted");
@@ -229,7 +230,7 @@ describe("no gate 1 stop for a person's draw (T2)", () => {
     expect(out.status).toBe("awaiting_plan_gate");
     // only the brief's text checks run, beside the schedule (T3); gate 1's ledger and derivation checkers are gone
     expect([...new Set(model.calls.map((c: any) => c.stage).filter((s: string) => s.startsWith("check-")))].sort()).toEqual(["check-reader", "check-resemblance", "check-structure"]);
-    expect(model.calls.map((c: any) => c.stage)).toEqual(expect.arrayContaining(["schedule", "ir-symbolize", "ir-plan-ledger"]));
+    expect(model.calls.map((c: any) => c.stage)).toEqual(expect.arrayContaining(["schedule", "ir-plan-ledger"]));
     expect(model.calls.some((c: any) => c.stage === "scene")).toBe(false);
   });
 

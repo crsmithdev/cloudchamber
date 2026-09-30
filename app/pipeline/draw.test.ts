@@ -32,7 +32,7 @@ function fixture(): { db: Db; dir: string } {
 const premises = (probs = [0.05, 0.03, 0.08, 0.03, 0.06]) =>
   probs.map((p, i) => `<premise><text>Premise ${i + 1} text.</text><probability>${p}</probability></premise>`).join("\n");
 const vignette = (n: number) => `<vignette>${Array.from({ length: 400 }, (_, i) => `w${n}_${i}`).join(" ")}</vignette>`;
-const outline = (extra: string[] = []) => ["departure", "particulars", "knowledge", "arrival", ...extra].map((n) => `<section name="${n}">Section ${n} body.</section>`).join("\n")
+const outline = (extra: string[] = []) => ["departure", "particulars", "knowledge", "arrival", ...extra].map((n) => `<section name="${n}">${n === "particulars" || n === "knowledge" ? `<sym id="${n}.one" kind="fact" from="ledger:detail">Section ${n} body.</sym>` : `Section ${n} body.`}</section>`).join("\n")
   + "\n<job>Test the first thing: scene one.</job><job>Test a second thing: scene two.</job>";
 const script = (over: Record<string, any> = {}) => ({
   premises: [premises()],
@@ -247,6 +247,15 @@ describe("draw graph", () => {
     const steps = p.steps(draw.id);
     expect(steps.map((s) => [s.stage, s.status, s.fail_reason, s.attempt])).toEqual([["premises", "failed", "shape", 1], ["premises", "failed", "shape", 2]]);
     expect(model.calls.every((c) => c.model === loadStages().premises.model)).toBe(true);
+  });
+
+  test("an outline whose particulars or knowledge carry no <sym> tag is a shape failure (T4)", async () => {
+    const { db, dir } = fixture();
+    const bare = outline().replace(/<sym [^>]*>(.*?)<\/sym>/, "$1");      // the particulars in prose
+    const { p } = pipe(db, dir, script({ outline: [bare, bare] }));
+    const draw = await p.start({ mode: "manual", genre: "horror", seed: { mode: "typed", text: "a typed seed" } });
+    await expect(p.choose(draw.id, p.candidates(draw.id)[0].step_id)).rejects.toThrow(/no <sym> tags in <section name="particulars">/);
+    expect(p.steps(draw.id).filter((s) => s.stage === "outline").map((s) => [s.status, s.fail_reason])).toEqual([["failed", "shape"], ["failed", "shape"]]);
   });
 
   test("a stage's effort reaches the model call, and an effort stages.toml does not name is refused", () => {
