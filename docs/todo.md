@@ -76,12 +76,16 @@ labels: [ir]
 ## 6. repair.ts: strip span and patch placement (place, applyPatches, localPatch, settled spans); since T3 only span-less operator instructions reach repair
 ---
 id: 6
-status: open
+status: done
 created: 2026-09-29
 updated: 2026-09-29
 priority: medium
 labels: [ir]
 ---
+
+### Notes
+
+- 2026-09-29 19:49: b3a870c: placement, repair prompts and constraint lines removed; 358 tests pass
 
 ## 7. T4 kill rule: two drafts of one declared brief, judged by ear (about $12); kill if the ending is flatter or outline shape failures pass one in five (0 of 2 so far)
 ---
