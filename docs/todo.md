@@ -145,3 +145,13 @@ labels: [ir, evals]
 ### Notes
 
 - 2026-09-30 08:55: The harness is a record of a run on ir-s1 at cea5888. It builds there (checked); on main its old arm needs gate 1, which 6f96094 removed. evals/20260928-ir-harness.md says how to run it again.
+
+## 11. The premises stop labels the chosen premise and a fork 'in check' (Draws.tsx:437, :442); the check step is gone since 947dcf4
+---
+id: 11
+status: open
+created: 2026-09-30
+updated: 2026-09-30
+priority: medium
+labels: [ui]
+---
