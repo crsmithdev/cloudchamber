@@ -155,3 +155,13 @@ updated: 2026-09-30
 priority: medium
 labels: [ui]
 ---
+
+## 12. A fork's header shows no version chip back to its source (9507 from 01c5), and its premises stop reads '#1 of 1', not the source's five
+---
+id: 12
+status: open
+created: 2026-09-30
+updated: 2026-09-30
+priority: medium
+labels: [ui]
+---
