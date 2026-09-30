@@ -101,3 +101,17 @@ labels: [ir]
 
 - 2026-09-29 20:02: 30 Sep: both drafts are written, on DB copies, from one candidate (2dae, execute-a79422be). Before T4 (a410812, prose outline): .worktrees/ear-pre/output/20260929135622-2dae/report.html. T4 (declared outline, 49 symbols): .worktrees/ear-t4/output/20260929135622-2dae/report.html. Both at gate 2. About $9 spent. Waits on Chris's ear; then remove both worktrees and scratchpad pre.db and t4.db.
 - 2026-09-29 20:24: Kept T4. Ear test on draw 2dae: 0 of 2 outline shape failures; the T4 ending is more restrained (it stops on the climb, before the fall) and loses the Colin aftermath, but Chris judged it not flatter. One sample each, so sampling noise is not ruled out.
+
+## 8. Outlines carry setting: provenance tags on a draw with no setting (seen on 2dae, unrestricted)
+---
+id: 8
+status: dropped
+created: 2026-09-29
+updated: 2026-09-29
+priority: medium
+labels: [ir]
+---
+
+### Notes
+
+- 2026-09-29 20:25: Harmless, by design. SYM_RULES (prompts.ts:23) asks for '; setting:<area>' by the kind of fact (body, place, rite...), not by whether the draw has a setting. The only reader is settingEligible/l2Resolve in ir/s2.ts:78-100. Only evals/20260928-ir-harness.ts calls it (L2 is killed), and it returns at once when the setting has no claims authority. If L2 stays dead, the grammar clause and l2Resolve can go together.
