@@ -193,12 +193,16 @@ labels: [evals]
 ## 15. Clarity and momentum plan, steps 1-3: length 7k v 10k, a rule budget, an escalation rule; each an A/B on three briefs; runs only if step 0 confirms
 ---
 id: 15
-status: open
+status: done
 created: 2026-09-30
 updated: 2026-09-30
 priority: medium
 labels: [evals]
 ---
+
+### Notes
+
+- 2026-09-30 19:18: None lands: 7k −0.06, rule budget −0.14, escalation +0.08, all inside the floor (0.33-0.48). The rules come from the brief, so a schedule clause cannot remove them
 
 ## 16. A screen-structure call that fails on shape stops the whole draft: 69c0 lost 12 written scenes to a model typo '</answter>' repeated on all three tries (check.ts:63). The parser could accept a malformed close tag, or the screen could be skipped for that beat
 ---
