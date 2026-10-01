@@ -227,3 +227,13 @@ updated: 2026-09-30
 priority: medium
 labels: [evals]
 ---
+
+## 18. A model call has no timeout: on c660 one screen-ledger call ran 597 s and one scene-edit 758 s of API time (siblings 5-37 s) and held the draft for 20 min. Hedge: retry a call that runs past a multiple of its siblings' time
+---
+id: 18
+status: open
+created: 2026-10-01
+updated: 2026-10-01
+priority: medium
+labels: [drafting]
+---
