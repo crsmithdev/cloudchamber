@@ -115,3 +115,45 @@ its winning length, so the three changes do not mask each other.
 - It does not touch the hook: todo #9 holds that, and the passes on `bf3e` disagree about it.
 - It does not change the judges or the rubric.
 - It measures text only; it says nothing about how the story sounds aloud.
+
+## Results (1 October)
+
+Step 0 confirmed the gap. Steps 1 to 3 did not close it, and none lands.
+
+| Step | Experiment | Gap | Floor (mean abs gap) | GPT-5.1 clarity | GPT-5.1 momentum | GPT-5.1 hook | Largest loss | Judging |
+|---|---|---|---|---|---|---|---|---|
+| 0, `17e7` v `qT46_pYAdyk` | `compare-Adyk-vs-17e7-muoumhta` | +1.73 | — | −0.13 | +0.50 | −0.25 | — | $0.70 |
+| 0, `69c0` v `vs-hIS0zHK8` | `compare-zHK8-vs-69c0-muouz6c3` | +1.13 | — | −1.00 (7 of 8 to the source) | −0.25 | −0.25 | — | $0.75 |
+| 1, 7k v 10k | `compare-bf3e-vs-9f29-muow1zou` | −0.06 | 0.41 | −0.08 | −0.08 | +0.29 | people −0.44, feeling −0.27 | $3.35 |
+| 2, rule budget | `compare-bf3e-vs-7243-muowh9et` | −0.14 | 0.48 | +0.29 | +0.04 | −0.21 | people −0.42, hook −0.38 | $3.36 |
+| 3, escalation | `compare-bf3e-vs-7193-muow8zni` | +0.08 | 0.33 | +0.25 | +0.17 | +0.42 | presence −0.17 (GPT-5.1) | $3.58 |
+
+Control: `bf3e`, `17e7`, `69c0` (10,000 words, listen profile). Step 1:
+`9f29`, `b9ff`, `1acf`; the 7k target ran 8,560 to 8,870 words. Step 2:
+`7243`, `4e41`, `e51b`. Step 3: `7193`, `38f1`, `a81c`. A first step 1 run
+lost 67 of 96 passes to an empty OpenRouter account and is discarded.
+
+The clauses under test, after "none is not an answer." in `scheduleListen`:
+
+- Step 2: "The thing that is wrong has at most one rule a listener must hold,
+  one a person in the story could say in a sentence; it is said plainly in
+  the beat where it is first seen, and a later beat that turns on it says it
+  again in one short line. No second rule, count or interval for the
+  listener to track."
+- Step 3: "Every beat after the first changes the danger: it comes nearer,
+  takes someone or something, or breaks what the listener thought they knew.
+  A beat of procedure, counting or reflection alone is folded into the beat
+  beside it."
+
+### Reading
+
+- **Length is not the lever.** 7k loses people and feeling more than it
+  gains clarity. H1 is not supported.
+- **The rules are in the brief, not the schedule.** A sibling copies the
+  brief, and the counting comes from it: `7243` still says "count" 30 times
+  against `bf3e`'s 39. A schedule clause cannot take out a rule the outline
+  put in. A test of H2 has to change the outline or the premise.
+- **Escalation is the best of the three** (+0.29 clarity, +0.17 momentum
+  on both judges together) but stays inside the floor. With three pairs the
+  floor is about 0.4. The floor falls with the square root of the pairs, so
+  halving it to about 0.2 takes twelve pairs.
