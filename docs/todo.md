@@ -205,3 +205,7 @@ updated: 2026-09-30
 priority: medium
 labels: [drafting, bug]
 ---
+
+### Notes
+
+- 2026-09-30 18:56: 1 Oct: the same on lab/listen-rules sibling b07d of bf3e: a scene answered '<scene>…' with no closing tag on both tries ('no <scene> tag'), and the draft failed at beat 2
