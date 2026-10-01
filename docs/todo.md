@@ -217,3 +217,13 @@ labels: [drafting, bug]
 ### Notes
 
 - 2026-09-30 18:56: 1 Oct: the same on lab/listen-rules sibling b07d of bf3e: a scene answered '<scene>…' with no closing tag on both tries ('no <scene> tag'), and the draft failed at beat 2
+
+## 17. Clarity against channel F: test a one-rule constraint in the outline or premise, not the schedule (the counting rules come from the brief); and the escalation clause on twelve pairs to bring the floor near 0.2
+---
+id: 17
+status: open
+created: 2026-09-30
+updated: 2026-09-30
+priority: medium
+labels: [evals]
+---
