@@ -195,3 +195,13 @@ updated: 2026-09-30
 priority: medium
 labels: [evals]
 ---
+
+## 16. A screen-structure call that fails on shape stops the whole draft: 69c0 lost 12 written scenes to a model typo '</answter>' repeated on all three tries (check.ts:63). The parser could accept a malformed close tag, or the screen could be skipped for that beat
+---
+id: 16
+status: open
+created: 2026-09-30
+updated: 2026-09-30
+priority: medium
+labels: [drafting, bug]
+---
