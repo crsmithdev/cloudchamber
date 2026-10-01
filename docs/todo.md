@@ -179,12 +179,16 @@ labels: [ui, bug]
 ## 14. Clarity and momentum plan, step 0: draw and judge two more channel F titles to confirm the gap (docs/reviews/2026-09-30-the-plan-for-clarity-and-momentum.md)
 ---
 id: 14
-status: open
+status: done
 created: 2026-09-30
 updated: 2026-09-30
 priority: medium
 labels: [evals]
 ---
+
+### Notes
+
+- 2026-09-30 19:18: Confirmed: GPT-5.1 gives the source hook on all three stories and clarity on two (69c0 −1.00). Results in docs/reviews/2026-09-30-the-plan-for-clarity-and-momentum.md
 
 ## 15. Clarity and momentum plan, steps 1-3: length 7k v 10k, a rule budget, an escalation rule; each an A/B on three briefs; runs only if step 0 confirms
 ---
