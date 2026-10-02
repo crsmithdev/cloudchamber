@@ -365,3 +365,13 @@ Why: on one draft a brief, B read +0.91 / +0.86 / +0.70 against controls at +0.5
 Done when: the pooled gap of B against the control, both orders, is read on twelve pairs with its halves, and the counter is kept or dropped on it.
 
 Where: open. See evals/20261002-figures-and-first-person.md.
+
+## 29. Narration intro and outro cuts are channel F's only: loadStoryText and loadNarrationPool cut on 'Let's dive into today's story'; channel L transcripts open on the story but one (2qk6eDM86NI) ends in a sponsor plug the judge reads, and the listen pool's wpm and profile now include channel L's six videos
+---
+id: 29
+status: open
+created: 2026-10-02
+updated: 2026-10-02
+priority: medium
+labels: [eval, narration]
+---
