@@ -309,3 +309,13 @@ updated: 2026-10-01
 priority: medium
 labels: [drafting, evals]
 ---
+
+## 25. Judging against channel F: Gemini 3.1 Pro gives our drafts 4.4-5.0 on every axis (48 passes, 30 Sep-1 Oct) and carries no information there; GPT-5.1 is the only judge that still loses axes (hook, clarity, momentum). Decide whether channel-F readings run on GPT-5.1 alone, and recalibrate GAP_MARGIN for one judge
+---
+id: 25
+status: open
+created: 2026-10-01
+updated: 2026-10-01
+priority: medium
+labels: [evals]
+---
