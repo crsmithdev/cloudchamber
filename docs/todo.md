@@ -299,3 +299,13 @@ updated: 2026-10-01
 priority: medium
 labels: [ui]
 ---
+
+## 24. Listen profile: a schedule can pass chronology=linear in its <form> and still open at the last hour and jump back (69c0: beat 1 hour sixty-one, beat 2 hour zero); the fixed-axis check reads the form line only. Check the beats' <when> order, or ask the schedule for it in words
+---
+id: 24
+status: open
+created: 2026-10-01
+updated: 2026-10-01
+priority: medium
+labels: [drafting, evals]
+---
