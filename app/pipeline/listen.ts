@@ -32,7 +32,15 @@ export type NarrationPool = { text: string; wpm: number; videos: number };
 const BODY = /\b(chest|stomach|gut|throat|breath|breathing|breathe|breathed|hands?|skin|spine|neck|heart|pulse|shoulders?|teeth|jaw|knees?|legs?|face|eyes|mouth|tongue|fingers?|sweat|shiver(?:ed|ing)?|shak(?:ing|e|es|en)|shook|trembl(?:ed|ing|e)|nausea|dizzy|numb)\b/gi;
 const FIRST = /\b(i|i'm|i'd|i've|i'll|me|my|mine|we|we're|we'd|we've|our|us)\b/gi;
 const YOU = /\byou(?:'re|'d|'ve|'ll)?\b/gi;
-const NUMERAL = /\b\d[\d,.:]*\b/g;
+/**
+ * A figure is a figure to the ear whether it is written in digits or in words.
+ * The signal register asks for the numbers a person would say aloud, and the
+ * scenes answer by spelling them: the three channel F drafts of 30 Sep–1 Oct
+ * carried 1–2 digit figures per 1k words and 18–24 spelled ones, where the
+ * narration pool carries 2.7 and 2.4. Counting digits alone, the ceiling saw
+ * none of it. `one` is left out: it is a pronoun as often as a count.
+ */
+const NUMERAL = /\b(?:\d[\d,.:]*|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|million)\b/gi;
 const QUOTE = /["“”]/g;
 const wordsOf = (t: string) => t.match(/[A-Za-z][A-Za-z'’-]*/g) ?? [];
 const sentencesOf = (t: string) => t.split(/(?<=[.!?]["”’']?)\s+|\n+/).map((x) => x.trim()).filter((x) => wordsOf(x).length > 0);
@@ -54,7 +62,7 @@ export function faultsOver(text: string, ceilings: { long_share_max?: number; nu
 
 /** The sentences the faults point at: over LONG_WORDS words, or holding a figure. */
 export function atFault(text: string, faults: Fault[]): string[] {
-  return sentencesOf(text).filter((s) => (faults.includes("long") && wordsOf(s).length > LONG_WORDS) || (faults.includes("numerals") && new RegExp(NUMERAL.source).test(s)));
+  return sentencesOf(text).filter((s) => (faults.includes("long") && wordsOf(s).length > LONG_WORDS) || (faults.includes("numerals") && new RegExp(NUMERAL.source, "i").test(s)));
 }
 
 export function profile(text: string): ListenProfile {

@@ -49,8 +49,9 @@ slop_baseline = "pool"
 samples = 1
 [screens.listen]
 long_share_max = 0.12    # share of a beat's sentences over 30 words; the narration pool sits at 0.04; over this, one rewrite
-numerals_max = 12        # figures per 1k words in a beat; the pool sits at 3.2 and the parity drafts peak at 16.6,
-                         # but the draft three labs could not track ran 9-29 a beat; over this, one rewrite
+numerals_max = 24        # figures per 1k words in a beat, in digits or in words (one excepted); the pool sits at 5.1 and channel F
+                         # at 5-7, while the three channel F drafts of 30 Sep-1 Oct ran 20-26 a draft and 38-47 at the peak beat,
+                         # nearly all of it spelled out and unseen while only digits counted (then: pool 3.2, ceiling 12); over this, one rewrite
 fix = "edit"             # edit | rewrite: 80 of 165 rewrites (19-26 Sep) were for length or numerals alone, and a rewrite
                          # changes 45-80% of a scene; edit rewrites only the sentences at fault, in one call, in place
 
@@ -97,13 +98,18 @@ form.ending = "open"
 structure.template = "signal"
 
 # what a listener needs, as requirements and not as a plot: a first beat they cannot stop inside, an arrival
-# in the flesh, a cost paid by a named person before the last beat, an aftermath; the form is the brief's,
-# but the chronology is linear: heard once, a cold open and a flashback lost clarity in both orders
+# in the flesh, a cost paid by a named person before the last beat, an aftermath; the container is the brief's,
+# but the chronology is linear (heard once, a cold open and a flashback lost clarity in both orders) and the
+# story is one person's, told afterward: left to the brief, three drafts in a row took close third with two or
+# three focal figures, two in the present tense, and GPT-5.1 named the shifts of view on 7 of its 8 clarity
+# losses against channel F, whose stories are all one narrator, past tense
 [profiles.listen]
 length.words = 10000
 beats.min = 10
 beats.max = 14
 beats.words_max = 1100
+form.person = "first"
+form.tense = "past"
 form.chronology = "linear"
 form.ending = "open"
 structure.template = "listen"
