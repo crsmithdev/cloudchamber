@@ -405,3 +405,13 @@ updated: 2026-10-02
 priority: medium
 labels: [docs, skill]
 ---
+
+## 31. Spec 2026-09-30 rule 5 names only #story/<id>/<step>; the UI now also reads a stop name there (cd91016). Make the spec say so
+---
+id: 31
+status: open
+created: 2026-10-02
+updated: 2026-10-02
+priority: medium
+labels: []
+---
