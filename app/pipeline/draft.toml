@@ -98,18 +98,16 @@ form.ending = "open"
 structure.template = "signal"
 
 # what a listener needs, as requirements and not as a plot: a first beat they cannot stop inside, an arrival
-# in the flesh, a cost paid by a named person before the last beat, an aftermath; the container is the brief's,
-# but the chronology is linear (heard once, a cold open and a flashback lost clarity in both orders) and the
-# story is one person's, told afterward: left to the brief, three drafts in a row took close third with two or
-# three focal figures, two in the present tense, and GPT-5.1 named the shifts of view on 7 of its 8 clarity
-# losses against channel F, whose stories are all one narrator, past tense
+# in the flesh, a cost paid by a named person before the last beat, an aftermath; the form is the brief's,
+# but the chronology is linear: heard once, a cold open and a flashback lost clarity in both orders. Person and
+# tense stay the brief's: fixed to first and past (the channels' form) on 2 Oct, two drafts came out as a
+# narrator's log, interior and doubling back, and GPT-5.1 gave the channel momentum and the hook
+# (evals/20261002-figures-and-first-person.md)
 [profiles.listen]
 length.words = 10000
 beats.min = 10
 beats.max = 14
 beats.words_max = 1100
-form.person = "first"
-form.tense = "past"
 form.chronology = "linear"
 form.ending = "open"
 structure.template = "listen"

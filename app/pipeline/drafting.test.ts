@@ -18,9 +18,6 @@ import { OUTPUT, VERDICT_LOG } from "./paths.ts";
 import { ofKind } from "./artifacts.ts";
 import { LEDGER, proseOutline, SCENE_3_PATCH, SPAN_A, draftScript, drawn, fixture, schedule, screenStructure, fromAsk, claimsExtract, claimVerify } from "./drafting.fixture.ts";
 import { briefParts } from "./briefparts.ts";
-
-/** The form the listen profile fixes: one narrator, told afterward, in order. */
-const listenForm = "tense: past\nperson: first\nchronology: linear\ncontainer: prose";
 import { chainOf } from "./chain.ts";
 import { renderStory } from "./drafts.ts";
 import { constraintsBlock } from "./repair.ts";
@@ -434,14 +431,12 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(JSON.parse(p.draw(draw.id).draft_config!).config.structure.template).toBe("signal");
   });
 
-  test("the listen profile states the requirements, fixes the chronology, the person and the tense, and pays for its register", async () => {
-    const { p, d, draw, model } = await drawn(draftScript({ schedule: () => schedule({ cap: 1100, form: listenForm }) }));
+  test("the listen profile states the requirements, fixes only the chronology, and pays for its register", async () => {
+    const { p, d, draw, model } = await drawn(draftScript({ schedule: () => schedule({ cap: 1100 }) }));
     await d.draft(draw.id, { profile: "listen", overrides: { "beats.min": 8, "screens.listen.long_share_max": 1 } });
     const sched = model.calls.find((c) => c.stage === "schedule")!;
     expect(sched.prompt).toContain("Derive the shape from the brief");
-    expect(sched.prompt).toContain("form: derive container from the brief and state it");
-    expect(sched.prompt).toContain("tense: past");
-    expect(sched.prompt).toContain("person: first");
+    expect(sched.prompt).toContain("form: derive tense, person, container");
     expect(sched.prompt).toContain("chronology: linear");
     expect(sched.prompt).toContain("so is the chronology unless the configuration fixes it");
     expect(sched.prompt).not.toContain("<register>");
@@ -453,7 +448,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
   });
 
   test("a schedule that marks a beat <pays> moves the arrival screen to that beat", async () => {
-    const withPays = schedule({ cap: 1100, form: listenForm }).replace(/(<beat n="5"[^>]*>)/, "$1<pays>yes</pays>");
+    const withPays = schedule({ cap: 1100 }).replace(/(<beat n="5"[^>]*>)/, "$1<pays>yes</pays>");
     const { d, draw, model } = await drawn(draftScript({ schedule: () => withPays }));
     await d.draft(draw.id, { profile: "listen", overrides: { "beats.min": 8, "screens.listen.long_share_max": 1 } });
     const st5 = model.calls.find((c) => c.stage === "screen-structure" && /<scene n="5">/.test(c.prompt))!;
@@ -534,7 +529,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
   });
 
   test("a late hook, one voice and a beat where nothing happens each send the beat back once, under their lines", async () => {
-    const signalForm = listenForm;
+    const signalForm = "tense: past\nperson: third\nchronology: linear\ncontainer: prose";
     const seen = new Set<string>();
     const answer = (prompt: string) => {
       const n = Number(fromAsk(prompt, /<scene n="(\d+)">/, "the scene number"));
@@ -558,7 +553,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
   });
 
   test("the listen schedule asks the thing back for a second beat, and every shape asks it to do harm", async () => {
-    const { d, draw, model } = await drawn(draftScript({ schedule: () => schedule({ cap: 1100, form: listenForm }) }));
+    const { d, draw, model } = await drawn(draftScript({ schedule: () => schedule({ cap: 1100 }) }));
     await d.draft(draw.id, { profile: "listen", overrides: { "beats.min": 8, "screens.listen.long_share_max": 1 } });
     const sched = model.calls.find((c) => c.stage === "schedule")!;
     expect(sched.prompt).toContain("does harm to that person or that place, and does not explain itself");
@@ -753,7 +748,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
   test("the listen profile fixes a linear chronology, and a nonlinear schedule does not pass for it", () => {
     const cfg = loadDraftConfig("listen").config;
     expect(cfg.form.chronology).toBe("linear");
-    const text = (chronology: string) => `<form>tense: past\nperson: first\nchronology: ${chronology}\ncontainer: prose</form>` + Array.from({ length: 10 }, (_, i) =>
+    const text = (chronology: string) => `<form>tense: past\nperson: third\nchronology: ${chronology}\ncontainer: prose</form>` + Array.from({ length: 10 }, (_, i) =>
       `<beat n="${i + 1}" words="1000"><job>Beat ${i + 1}.</job><known>Thing.</known><withheld>none</withheld><stakes>x</stakes><absorbs>none</absorbs></beat>`).join("");
     expect(() => parseSchedule(text("linear, one strand, from the draw to the landing"), cfg)).not.toThrow();
     for (const said of ["nonlinear: opens at the second bell, then goes back", "non-linear", "opens on Deck Zero, goes back three days, then runs forward"])
@@ -1060,7 +1055,7 @@ describe("the claims screen", () => {
       if (n === 3) out = out.replace(/(<question name="one-voice"><answer>)absent/, "$1present");
       return out;
     };
-    const { p, d, draw, model } = await drawn(draftScript({ schedule: () => schedule({ cap: 1100, form: listenForm }), "screen-structure": answer }));
+    const { p, d, draw, model } = await drawn(draftScript({ schedule: () => schedule({ cap: 1100 }), "screen-structure": answer }));
     await d.draft(draw.id, { profile: "listen", overrides: { "beats.min": 8, "screens.listen.long_share_max": 1 } });
 
     // Both beat 2 and beat 3 were due in round 0:
@@ -1110,7 +1105,7 @@ describe("the claims screen", () => {
     const sceneClaims = () => `<claim><span>s1w7 s1w8</span><statement>The basin holds nine wells.</statement></claim>`;
     const sceneVerify = () => `<finding><span>s1w7 s1w8</span><statement>The basin holds nine wells.</statement><result>contradicted</result><evidence>Places: "the basin holds three wells"</evidence><invalidates>none</invalidates><replacement>The basin holds three wells.</replacement><patch>none</patch></finding>`;
     const script = draftScript({
-      schedule: () => schedule({ cap: 1100, form: listenForm }),
+      schedule: () => schedule({ cap: 1100 }),
       "check-claims-extract": (_p: string, _m: string, system: string) => { extracts++; return system.includes("s1w7") ? sceneClaims() : claimsExtract(); },
       "check-claims-verify": (p: string) => (p.includes("nine wells") ? sceneVerify() : claimVerify(p)),
     });
