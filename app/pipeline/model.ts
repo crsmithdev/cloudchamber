@@ -45,7 +45,7 @@ function usageOf(j: any): Usage | undefined {
 
 export interface ModelAdapter {
   /** `tools` is a comma-separated list passed as both --tools and --allowedTools; empty or absent seals the call. `effort` is how long the stage is asked to think; unset leaves the CLI default. */
-  call(stage: string, system: string, prompt: string, model: string, tools?: string, effort?: string, session?: SessionAsk): Promise<ModelResult>;
+  call(stage: string, system: string, prompt: string, model: string, tools?: string, effort?: string, session?: SessionAsk, limitMs?: () => number): Promise<ModelResult>;
 }
 
 export class ClaudeCli implements ModelAdapter {
@@ -54,7 +54,8 @@ export class ClaudeCli implements ModelAdapter {
 
   constructor(private timeoutMs = 15 * 60 * 1000) {}
 
-  async call(stage: string, system: string, prompt: string, model: string, tools = "", effort?: string, session?: SessionAsk): Promise<ModelResult> {
+  /** `limitMs` is read again while the call runs: a call past it is killed and comes back as a `stalled` error. */
+  async call(stage: string, system: string, prompt: string, model: string, tools = "", effort?: string, session?: SessionAsk, limitMs?: () => number): Promise<ModelResult> {
     const dir = mkdtempSync(join(tmpdir(), "cloudchamber-call-"));
     const promptPath = join(dir, `${stage}.prompt`);
     writeFileSync(promptPath, prompt);
@@ -67,11 +68,17 @@ export class ClaudeCli implements ModelAdapter {
       ...(effort ? ["--effort", effort] : [])];
     const t0 = Date.now();
     const proc = Bun.spawn(args, { env: env as any, stdin: Bun.file(promptPath), stdout: "pipe", stderr: "pipe" });
-    const timer = setTimeout(() => proc.kill(), this.timeoutMs);
+    let stalled = false;
+    const timer = setInterval(() => {
+      if (Date.now() - t0 < Math.min(this.timeoutMs, limitMs?.() ?? Infinity)) return;
+      stalled = true;
+      proc.kill();
+    }, 5000);
     const [out, err] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
     await proc.exited;
-    clearTimeout(timer);
+    clearInterval(timer);
     const durationMs = Date.now() - t0;
+    if (stalled) return { text: "", stop: "error", raw: out, model, durationMs, error: `stalled: killed after ${Math.round(durationMs / 1000)} s` };
     try {
       const j = JSON.parse(out);
       const used = Object.keys(j.modelUsage ?? {}).find((m) => !/haiku/.test(m)) ?? model;
@@ -93,7 +100,7 @@ export class FakeModel implements ModelAdapter {
   calls: { stage: string; system: string; prompt: string; model: string; tools: string; effort?: string; session?: SessionAsk }[] = [];
   constructor(private script: Record<string, (string | Partial<ModelResult>)[] | ((prompt: string, model: string, system: string) => string | Partial<ModelResult>)>) {}
 
-  async call(stage: string, system: string, prompt: string, model: string, tools = "", effort?: string, session?: SessionAsk): Promise<ModelResult> {
+  async call(stage: string, system: string, prompt: string, model: string, tools = "", effort?: string, session?: SessionAsk, _limitMs?: () => number): Promise<ModelResult> {
     this.calls.push({ stage, system, prompt, model, tools, effort, ...(session ? { session } : {}) });
     const s = this.script[stage];
     if (!s) throw new Error(`FakeModel: no script for stage ${stage}`);

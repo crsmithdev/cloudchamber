@@ -68,7 +68,22 @@ export class StepFailure extends Error {
 }
 
 /** An error the API reports on its own side, as the CLI words it: `API Error: 529 Overloaded`, `API Error: 500 Internal server error`. */
-const TRANSIENT = /API Error: (5\d\d|529)\b/;
+const TRANSIENT = /API Error: (5\d\d|529)\b|^stalled:/;
+/**
+ * A call is stalled when it runs past the larger of STALL_FLOOR_MS and STALL_X
+ * times the median of the calls of its stage in its draw that this process has
+ * finished, once STALL_MIN_SEEN have. On 1 Oct one screen-ledger call ran 597 s
+ * and one scene-edit 758 s of API time beside siblings of 5-37 s, and held the
+ * draft for 20 minutes. The floor sits above the p99 of every per-beat stage.
+ */
+const STALL_FLOOR_MS = 240_000, STALL_X = 5, STALL_MIN_SEEN = 3;
+
+/** The time a call may run before it counts as stalled, from the times of its finished siblings; Infinity until enough have finished. */
+export function stallLimit(took: number[]): number {
+  if (took.length < STALL_MIN_SEEN) return Infinity;
+  const s = [...took].sort((a, b) => a - b);
+  return Math.max(STALL_FLOOR_MS, STALL_X * s[Math.floor(s.length / 2)]!);
+}
 const id = (n = 6) => randomBytes(n).toString("hex");
 /** A draw id: the UTC second it was made, and four hex digits. */
 export const newDrawId = () => `${now().replace(/[-:TZ]/g, "").slice(0, 15)}-${id(2)}`;
@@ -113,6 +128,8 @@ export type InvokeOpts = { storyId?: string | null; tools?: string; context?: st
 export class Pipeline {
   stages: Record<StageName, StageConfig>;
   backoffMs: readonly number[];
+  /** The durations of the finished calls, by draw and stage, that a running call's stall limit reads. */
+  private took = new Map<string, number[]>();
   cacheLeadMs: number;
   briefsDir: string | undefined;
   settingsDir: string;
@@ -178,16 +195,19 @@ export class Pipeline {
     const cfg = this.stageFor(stage, draw);
     const allowed = tools ?? cfg.tools ?? "";
     const system = context ? `${context}\n\n${cfg.system}` : cfg.system;
-    const attempt = async (model: string, n: number): Promise<{ step: StepRow; value?: T; session?: string; outcome: "ok" | "shape" | "refusal" | "error" }> => {
+    const key = `${draw}|${stage}`;
+    const attempt = async (model: string, n: number, limited = true): Promise<{ step: StepRow; value?: T; session?: string; outcome: "ok" | "shape" | "refusal" | "error" }> => {
       const step = this.insertStep(draw, parent, stage, model, system, prompt, n, storyId, allowed, pass);
       // a call that throws (no claude on PATH, a spawn that fails) is an error result, so the step does not stay running
-      const r = await this.model.call(stage, system, prompt, model, allowed, cfg.effort, session)
+      const limit = limited ? () => stallLimit(this.took.get(key) ?? []) : undefined;
+      const r = await this.model.call(stage, system, prompt, model, allowed, cfg.effort, session, limit)
         .catch((e: unknown): ModelResult => ({ text: "", stop: "error", raw: "", model, durationMs: 0, error: String((e as Error)?.message ?? e) }));
       step.raw_response = r.raw;
       step.model = r.model || model;
       step.usage = r.usage ? JSON.stringify(r.usage) : null;
       if (r.stop === "refusal") { this.finishStep(step, { status: "failed", fail_reason: "refusal", error: r.text.slice(0, 500) }); return { step, outcome: "refusal" }; }
       if (r.stop === "error" || r.error) { this.finishStep(step, { status: "failed", fail_reason: "error", error: r.error ?? r.text.slice(0, 500) }); return { step, outcome: "error" }; }
+      if (r.durationMs) this.took.set(key, [...(this.took.get(key) ?? []), r.durationMs]);
       try {
         const value = parse(r.text);
         this.finishStep(step, { status: "done", parsed: JSON.stringify(value) });
@@ -202,8 +222,10 @@ export class Pipeline {
       let r = await attempt(model, n);
       for (const ms of this.backoffMs) {
         if (r.outcome !== "error" || !TRANSIENT.test(r.step.error ?? "")) break;
-        await Bun.sleep(ms);
-        r = await attempt(model, n);
+        // a stalled call goes again at once and without a limit, so a call that is long and not stuck is not killed twice
+        const stalled = /^stalled:/.test(r.step.error ?? "");
+        if (!stalled) await Bun.sleep(ms);
+        r = await attempt(model, n, !stalled);
       }
       return r;
     };

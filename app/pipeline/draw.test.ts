@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { openDb, type Db } from "./store/db.ts";
 import { FakeModel } from "./model.ts";
-import { Pipeline, StepFailure } from "./draw.ts";
+import { Pipeline, StepFailure, stallLimit } from "./draw.ts";
 import { originOf } from "./stage.ts";
 import { ofKind } from "./artifacts.ts";
 import { tabOf } from "./lifecycle.ts";
@@ -298,6 +298,25 @@ describe("draw graph", () => {
     expect(draw.status).toBe("done");
     expect(p.steps(draw.id).filter((s) => s.stage === "outline").map((s) => [s.status, s.fail_reason])).toEqual([["failed", "error"], ["failed", "error"], ["done", null]]);
     expect(model.calls.filter((c) => c.stage === "outline")).toHaveLength(3);
+  });
+
+  test("a stalled call goes again at once and without a limit, and each attempt keeps its step", async () => {
+    const { db, dir } = fixture();
+    const stalled = { text: "", stop: "error", error: "stalled: killed after 600 s" };
+    const { p, model } = pipe(db, dir, script({ outline: [stalled, outline()] }));
+    const limited: boolean[] = [];
+    const call = model.call.bind(model);
+    model.call = (...a: Parameters<typeof model.call>) => { if (a[0] === "outline") limited.push(!!a[7]); return call(...a); };
+    const draw = await p.start({ mode: "auto", genre: "horror" });
+    expect(draw.status).toBe("done");
+    expect(p.steps(draw.id).filter((s) => s.stage === "outline").map((s) => [s.status, s.fail_reason])).toEqual([["failed", "error"], ["done", null]]);
+    expect(limited).toEqual([true, false]);
+  });
+
+  test("the stall limit waits for three finished siblings, then is five times their median, never under four minutes", () => {
+    expect(stallLimit([10_000, 20_000])).toBe(Infinity);
+    expect(stallLimit([10_000, 20_000, 30_000])).toBe(240_000);
+    expect(stallLimit([100_000, 60_000, 90_000, 120_000])).toBe(500_000);
   });
 
   test("the retries run out, and an error of any other kind is not retried", async () => {
