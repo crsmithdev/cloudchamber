@@ -279,3 +279,13 @@ updated: 2026-10-01
 priority: medium
 labels: [ui]
 ---
+
+## 22. UI: gate 2 shows two 'note for the log' inputs, the header's (flag, choose, fork) and the keep row's (keep, rewrite); which note goes where is not said
+---
+id: 22
+status: open
+created: 2026-10-01
+updated: 2026-10-01
+priority: medium
+labels: [ui]
+---
