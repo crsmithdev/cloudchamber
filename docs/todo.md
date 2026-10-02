@@ -415,3 +415,15 @@ updated: 2026-10-02
 priority: medium
 labels: []
 ---
+
+## 32. Title: the finished drafts in the store from before 2 Oct have none; run gate <draw> title on each (one Opus call, about $0.17 and 5 s) or keep them untitled
+---
+id: 32
+status: open
+created: 2026-10-02
+updated: 2026-10-02
+priority: medium
+labels: [title, drafting]
+---
+
+Since d2c0014 a draft gets its title after its last screen, and `cloudchamber gate <draw> title` writes one for any draw at gate 2 or kept. The store holds about twenty drafts at awaiting_draft_gate or drafted from before that commit; the list and the report show their slug until one runs. Done when every kept draft in the store has a title, or Chris says the old ones stay as they are.
