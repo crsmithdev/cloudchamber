@@ -335,10 +335,14 @@ labels: [drafting, evals]
 id: 25
 status: open
 created: 2026-10-01
-updated: 2026-10-01
+updated: 2026-10-02
 priority: medium
 labels: [evals]
 ---
+
+### Notes
+
+- 2026-10-02 09:36: Channel L (evals/20261002-channel-l.md): GPT-5.1 alone, 3 pairs at 8 passes, 24 of 24 overall to ours, mean +1.48; every axis saturates near +2 except clarity (-0.17, lost 54%) and hook on one pair. Channel L is a weaker opponent than F for the instrument; clarity is the one axis it still reads
 
 ## 26. UI: a 'ready to draft' row carries the filled green mark that 'kept' rows carry, though it needs the operator
 ---
