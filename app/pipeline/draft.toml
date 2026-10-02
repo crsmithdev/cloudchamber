@@ -49,8 +49,9 @@ slop_baseline = "pool"
 samples = 1
 [screens.listen]
 long_share_max = 0.12    # share of a beat's sentences over 30 words; the narration pool sits at 0.04; over this, one rewrite
-numerals_max = 12        # figures per 1k words in a beat; the pool sits at 3.2 and the parity drafts peak at 16.6,
-                         # but the draft three labs could not track ran 9-29 a beat; over this, one rewrite
+numerals_max = 24        # figures per 1k words in a beat, in digits or in words (one excepted); the pool sits at 5.1 and channel F
+                         # at 5-7, while the three channel F drafts of 30 Sep-1 Oct ran 20-26 a draft and 38-47 at the peak beat,
+                         # nearly all of it spelled out and unseen while only digits counted (then: pool 3.2, ceiling 12); over this, one rewrite
 fix = "edit"             # edit | rewrite: 80 of 165 rewrites (19-26 Sep) were for length or numerals alone, and a rewrite
                          # changes 45-80% of a scene; edit rewrites only the sentences at fault, in one call, in place
 
@@ -98,7 +99,10 @@ structure.template = "signal"
 
 # what a listener needs, as requirements and not as a plot: a first beat they cannot stop inside, an arrival
 # in the flesh, a cost paid by a named person before the last beat, an aftermath; the form is the brief's,
-# but the chronology is linear: heard once, a cold open and a flashback lost clarity in both orders
+# but the chronology is linear: heard once, a cold open and a flashback lost clarity in both orders. Person and
+# tense stay the brief's: fixed to first and past (the channels' form) on 2 Oct, two drafts came out as a
+# narrator's log, interior and doubling back, and GPT-5.1 gave the channel momentum and the hook
+# (evals/20261002-figures-and-first-person.md)
 [profiles.listen]
 length.words = 10000
 beats.min = 10

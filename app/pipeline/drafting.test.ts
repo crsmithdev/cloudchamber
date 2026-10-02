@@ -598,7 +598,8 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
   test("the rewrite plan is a function of the profiles, the scenes and the ceilings", () => {
     const cfg = loadDraftConfig("signal").config;
     const figures = Array.from({ length: 30 }, (_, i) => `${1000 + i}.`).join(" ");
-    const short = Array.from({ length: 30 }, () => "one two three four five six seven eight nine.").join(" ");
+    // no figures in words either: "one two three" would now count
+    const short = Array.from({ length: 30 }, () => "a b c d e f g h i.").join(" ");
     const long = Array.from({ length: 40 }, (_, i) => `w${i}`).join(" ") + ".";
     const plan = rewritePlan(
       [{ beat: 2, flags: ["bodily-emotion"] }, { beat: 5, flags: ["theme-stated"] }, { beat: 7, flags: ["presence-in-room", "cost-in-scene", "presence-arrives"] }],
@@ -752,6 +753,20 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(() => parseSchedule(text("linear, one strand, from the draw to the landing"), cfg)).not.toThrow();
     for (const said of ["nonlinear: opens at the second bell, then goes back", "non-linear", "opens on Deck Zero, goes back three days, then runs forward"])
       expect(() => parseSchedule(text(said), cfg)).toThrow(/chronology is fixed to linear/);
+  });
+
+  // 69c0 (1 Oct): the form line said linear and beat 1 was hour sixty-one, beat 2 hour zero; the form check alone passed it
+  test("a fixed linear chronology holds the beats' <when> order, not the form line alone", () => {
+    const cfg = loadDraftConfig("listen").config;
+    const text = (whens: string[]) => `<form>tense: present\nperson: third\nchronology: linear, single timeline\ncontainer: prose</form>` + whens.map((w, i) =>
+      `<beat n="${i + 1}" words="1000"><job>Beat ${i + 1}.</job><when>${w}</when><known>Thing.</known><withheld>none</withheld><stakes>x</stakes><absorbs>none</absorbs></beat>`).join("");
+    const inOrder = ["Hour zero, 13:52, 2 September 2019", "Hour three, 16:52, day one", "Hour seven, 20:52, day one", "Hours nineteen to twenty, day two", "Hour twenty-nine, day two",
+      "Day three, about hour thirty-four", "Day three into day four, hours thirty-five to sixty", "Day four, hour sixty-one", "Day four, after", "Day five"];
+    expect(() => parseSchedule(text(inOrder), cfg)).not.toThrow();
+    const coldOpen = ["Hour sixty-one, day three, late in the second light", ...inOrder.slice(0, 9)];
+    expect(() => parseSchedule(text(coldOpen), cfg)).toThrow(/chronology is fixed to linear, but beat 2 \("Hour zero.*reads earlier in the story than beat 1/);
+    // under `auto` the same schedule parses, and the plan check reports the order as a gate-2 finding instead
+    expect(() => parseSchedule(text(coldOpen), loadDraftConfig("listen", { "form.chronology": "auto" }).config)).not.toThrow();
   });
 
   test("a schedule contradicting a fixed axis, or outside the beat bounds, fails shape", async () => {

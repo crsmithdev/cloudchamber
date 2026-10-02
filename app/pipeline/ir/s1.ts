@@ -23,9 +23,11 @@ export type S1Finding = {
 /**
  * `day` is the story's day count; `era` is a "Year N" of the story's own
  * reckoning ("Year 400, Day 40"); `date` and `year` are the calendar's.
+ * `hour` is the clock's; `elapsed` is the story's own hour count ("hour
+ * zero", "hour sixty-one"), which never wraps and so orders beats across days.
  */
 export type When = {
-  day: number | null; era: number | null; date: { day: number; month: number } | null; year: number | null; hour: number | null;
+  day: number | null; era: number | null; date: { day: number; month: number } | null; year: number | null; hour: number | null; elapsed: number | null;
   /** How many day numbers and how many dates the text mentions: a beat that names two of either ("day 31 morning; events of day 1, 4 March") does not say which pair goes together. */
   mentions: { days: number; dates: number };
 };
@@ -119,12 +121,15 @@ export function parseWhen(raw: string): When {
     if (oh) hour = ordinalValue(oh, 1);
     else { const nh = /\b(\d{1,2})(?:th|st|nd|rd)?\s+hour\b/.exec(h); if (nh) hour = Number(nh[1]); }
   }
+  // the story's hour count, "hour N" or "hour <cardinal>" ("hours zero to three" is hour 0, as "Days 5–11" is day 5); "nine-hour night" and "two hours out" are durations and are not read
+  const el = new RegExp(`\\bhours?\\s+(?:(\\d{1,3})|(zero)|${CARDINAL})\\b`).exec(s);
+  const elapsed = el ? (el[1] ? Number(el[1]) : el[2] ? 0 : cardinalValue(el, 3)) : null;
   const mentions = {
     days: (s.match(/\bdays?\s*\d+/g) ?? []).length + (s.match(new RegExp(`${ORDINAL}\\s+day\\b`, "g")) ?? []).length + (s.match(new RegExp(`\\bdays?\\s+${CARDINAL}\\b`, "g")) ?? []).length,
     dates: (s.match(new RegExp(`\\b\\d{1,2}(?:st|nd|rd|th)?(?:\\s*[-–—]\\s*\\d{1,2}(?:st|nd|rd|th)?)?\\s+(?:${MONTH_ALT})\\b`, "g")) ?? []).length
       + (s.match(new RegExp(`\\b(?:${MONTH_ALT})\\s+\\d{1,2}(?:st|nd|rd|th)?\\b`, "g")) ?? []).length + (s.match(/\b\d{4}-\d{2}-\d{2}\b/g) ?? []).length,
   };
-  return { day, era, date, year, hour, mentions };
+  return { day, era, date, year, hour, elapsed, mentions };
 }
 
 /** A date's serial day number within a year, for comparison across months (leap years not modelled: nothing in the corpus needs one). */
@@ -142,14 +147,21 @@ const dateOf = (n: number): string => {
 /**
  * Does `cur` read earlier in the story than `prev`? Day numbers compare with
  * day numbers (with the era when both state one), dates with dates (with the
- * year when both state one). A day number is never compared to a date, and
+ * year when both state one), and the story's hour count with itself, on one
+ * day or when a beat names no day (69c0: "Hour sixty-one, day three" opened a
+ * linear schedule that went back to "Hour zero, 13:52, 2 September 2019").
+ * The clock hour is never compared: a beat told later can happen earlier by
+ * the clock in another place. A day number is never compared to a date, and
  * two beats with no shared domain are not comparable (`null`).
  */
 export function readsEarlier(prev: When, cur: When): boolean | null {
+  const byElapsed = prev.elapsed !== null && cur.elapsed !== null ? cur.elapsed < prev.elapsed : null;
   if (prev.day !== null && cur.day !== null) {
     if (prev.era !== null && cur.era !== null && prev.era !== cur.era) return cur.era < prev.era;
-    return cur.day < prev.day;
+    if (cur.day !== prev.day) return cur.day < prev.day;
+    return byElapsed ?? false;
   }
+  if (byElapsed !== null) return byElapsed;
   if (prev.date && cur.date) {
     if (prev.year !== null && cur.year !== null && prev.year !== cur.year) return cur.year < prev.year;
     return serial(cur.date) < serial(prev.date);
@@ -178,27 +190,42 @@ const plural = (ns: number[], one: string, many: string) => (ns.length === 1 ? o
  * actually planned under (`write.ts`'s `parseSchedule` holds `cfg`'s fixed
  * value to the same line when `cfg` fixes it).
  */
+/**
+ * The beats whose `when` reads earlier in the story than a beat before it: each
+ * against the nearest earlier beat it can be compared with. Nothing under a
+ * linear chronology should be listed. `parseSchedule` asks this when the
+ * configuration fixes the chronology to linear, so a schedule that says
+ * `linear` on its form line and opens at the last hour is refused as a form
+ * mismatch is; `lintS1` asks it over the chronology the schedule derived.
+ */
+export function outOfOrder(beats: { n: number; when: string }[]): { beat: number; before: number; message: string }[] {
+  const whens = beats.map((b) => ({ n: b.n, raw: b.when, w: b.when ? parseWhen(b.when) : null }));
+  const out: { beat: number; before: number; message: string }[] = [];
+  for (let i = 0; i < whens.length; i++) {
+    const cur = whens[i]!;
+    if (!cur.w) continue;
+    for (let j = i - 1; j >= 0; j--) {
+      const prev = whens[j]!;
+      if (!prev.w) continue;
+      const earlier = readsEarlier(prev.w, cur.w);
+      if (earlier === null) continue;
+      if (earlier) out.push({ beat: cur.n, before: prev.n, message: `beat ${cur.n} ("${cur.raw}") reads earlier in the story than beat ${prev.n} ("${prev.raw}")` });
+      break;
+    }
+  }
+  return out;
+}
+
 export function lintS1(schedule: Schedule): S1Finding[] {
   const out: S1Finding[] = [];
   const beats = schedule.beats;
   const M = beats.length;
   const whens = beats.map((b) => ({ n: b.n, raw: b.when, w: b.when ? parseWhen(b.when) : null }));
 
-  // --- monotonic `when` under `linear`: each beat against the nearest earlier beat it can be compared with ---
+  // --- monotonic `when` under `linear` ---
   const chronology = schedule.form.chronology ?? "";
   if (/(^|[^a-z-])linear(?![a-z])/i.test(chronology)) {
-    for (let i = 0; i < whens.length; i++) {
-      const cur = whens[i]!;
-      if (!cur.w) continue;
-      for (let j = i - 1; j >= 0; j--) {
-        const prev = whens[j]!;
-        if (!prev.w) continue;
-        const earlier = readsEarlier(prev.w, cur.w);
-        if (earlier === null) continue;
-        if (earlier) out.push({ check: "monotonic", beat: cur.n, message: `chronology is linear, but beat ${cur.n} ("${cur.raw}") reads earlier in the story than beat ${prev.n} ("${prev.raw}")` });
-        break;
-      }
-    }
+    for (const o of outOfOrder(beats)) out.push({ check: "monotonic", beat: o.beat, message: `chronology is linear, but ${o.message}` });
   }
 
   // --- one day-to-date offset: every beat that states one day number and one date must put day 1 on the same date ---

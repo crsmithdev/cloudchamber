@@ -41,7 +41,7 @@ describe("draft config", () => {
 
   test("screens.listen ceilings are typed, coerced, and validated", () => {
     const d = loadDraftConfig().config;
-    expect(d.screens.listen).toEqual({ long_share_max: 0.12, numerals_max: 12, fix: "edit" });
+    expect(d.screens.listen).toEqual({ long_share_max: 0.12, numerals_max: 24, fix: "edit" });
 
     // override coercion
     const over = loadDraftConfig(undefined, {

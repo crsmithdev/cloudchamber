@@ -14,6 +14,7 @@ import { FORM_VALUES, type DraftConfig, type FormAxis } from "./draftconfig.ts";
 import { type Answer } from "./check.ts";
 import type { BriefParts } from "./briefparts.ts";
 import type { Fault } from "./listen.ts";
+import { outOfOrder } from "./ir/s1.ts";
 
 /** `until` is the beat that reveals the item; one past the last beat means the story never does. */
 type Withheld = { item: string; until: number };
@@ -124,6 +125,8 @@ export function parseSchedule(text: string, cfg: DraftConfig): Schedule {
   if (sum > target * (1 + tolerance) || sum < target * (1 - tolerance)) throw new Error(`caps sum to ${sum}, target ${target} ±${Math.round(tolerance * 100)}%`);
   const seen = new Map<string, number>();
   for (const b of beats) if (ABSORBABLE.includes(b.absorbs)) { if (seen.has(b.absorbs)) throw new Error(`${b.absorbs} absorbed by beats ${seen.get(b.absorbs)} and ${b.n}`); seen.set(b.absorbs, b.n); }
+  // a fixed linear chronology holds the beats, not the form line alone: 69c0 said `linear` and opened at hour sixty-one, then went back to hour zero
+  if (cfg.form.chronology === "linear") { const o = outOfOrder(beats)[0]; if (o) throw new Error(`form chronology is fixed to linear, but ${o.message}`); }
   return { form, beats, raw: text.trim() };
 }
 

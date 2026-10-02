@@ -37,6 +37,19 @@ describe("parseWhen", () => {
     expect(parseWhen("Day 31, 3 April, 1400").hour).toBe(14);
   });
 
+  // 69c0 (1 Oct): a linear schedule counted on wristwatches, "hour zero to hour sixty-one"
+  test("reads the story's hour count after `hour`, in digits or in words, apart from the clock hour", () => {
+    expect(parseWhen("Hour sixty-one, day three, late in the second light")).toMatchObject({ elapsed: 61, day: 3, hour: null });
+    expect(parseWhen("Hour zero, 13:52, 2 September 2019")).toMatchObject({ elapsed: 0, day: null, hour: 13, year: 2019 });
+    expect(parseWhen("Day one, hours zero to three").elapsed).toBe(0);
+    expect(parseWhen("Day three, about hour thirty-four").elapsed).toBe(34);
+    expect(parseWhen("Day two, hour 20, four miles out").elapsed).toBe(20);
+    // a duration is not a count, and neither is the clock
+    expect(parseWhen("Day one into day two, through the nine-hour night").elapsed).toBeNull();
+    expect(parseWhen("Later the same light, two hours out").elapsed).toBeNull();
+    expect(parseWhen("Day 31, 3 April, 1400").elapsed).toBeNull();
+  });
+
   test("a field the text does not state is null, independently of the others", () => {
     const w = parseWhen("late September 2026, with the pipes going");
     expect(w.day).toBeNull();
@@ -95,6 +108,15 @@ describe("readsEarlier", () => {
   test("a date with a year and one without compare within the year", () => {
     expect(readsEarlier(parseWhen("3 March 1911, sixth hour"), parseWhen("First day, 3 March, afternoon"))).toBe(false);
   });
+
+  test("the story's hour count orders beats on one day, and across a beat that names no day", () => {
+    expect(readsEarlier(parseWhen("Day one, hour seven, 20:52"), parseWhen("Day one, hour three, 16:52"))).toBe(true);
+    expect(readsEarlier(parseWhen("Day one, hour three"), parseWhen("Day one, hour seven"))).toBe(false);
+    expect(readsEarlier(parseWhen("Hour sixty-one, day three"), parseWhen("Hour zero, 13:52, 2 September 2019"))).toBe(true);
+    // the day decides before the hour count, and the clock hour decides nothing
+    expect(readsEarlier(parseWhen("Day two, hour nineteen"), parseWhen("Day three, hour four"))).toBe(false);
+    expect(readsEarlier(parseWhen("Day 4, 11:40 on the plain"), parseWhen("Day 4, 09:12 Montréal time"))).toBe(false);
+  });
 });
 
 describe("lintS1: the 08aa opening, and one offset per schedule", () => {
@@ -142,6 +164,16 @@ describe("lintS1: monotonic when under linear", () => {
   test("a non-decreasing schedule under linear raises nothing", () => {
     const s = schedule([{ when: "Day 1, 3 March" }, { when: "Day 1, 3 March" }, { when: "Day 4, 6 March" }]);
     expect(lintS1(s).filter((f) => f.check === "monotonic")).toHaveLength(0);
+  });
+
+  test("69c0: a linear schedule that opens at hour sixty-one and goes back to hour zero is flagged on the beat that goes back", () => {
+    const s = schedule([
+      { when: "Hour sixty-one, day three, late in the second light" }, { when: "Hour zero, 13:52, 2 September 2019" },
+      { when: "Hour three, 16:52, day one" }, { when: "Hour seven, 20:52, day one" }, { when: "Hours nineteen to twenty, day two" },
+    ]);
+    const monotonic = lintS1(s).filter((f) => f.check === "monotonic");
+    expect(monotonic.map((f) => f.beat)).toEqual([2]);
+    expect(monotonic[0]!.message).toMatch(/beat 2 \("Hour zero.*reads earlier in the story than beat 1/);
   });
 });
 

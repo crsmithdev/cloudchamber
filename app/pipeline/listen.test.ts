@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { listenScreen, loadNarrationPool, profile } from "./listen.ts";
+import { atFault, faultsOver, listenScreen, loadNarrationPool, profile } from "./listen.ts";
 
 describe("listenability", () => {
   test("profile: sentence length, long share, numerals, quotes, the body, the listener, the first person, per 1k words", () => {
@@ -16,6 +16,15 @@ describe("listenability", () => {
     expect(p.body_per_1k).toBeCloseTo(56.6, 1);            // chest, hands, shake
     expect(p.you_per_1k).toBeCloseTo(18.9, 1);             // You; "your" is not the listener addressed
     expect(p.first_person_per_1k).toBeCloseTo(56.6, 1);    // I, my, I
+  });
+
+  test("a figure spelled out is a figure: number words count, and `one` does not", () => {
+    const text = "He counted sixty-one of them. Two hundred twelve marks sat on the card at 11:40. Twenty more came after, and one of them spoke.";
+    const p = profile(text);
+    expect(p.words).toBe(23);                                // 11:40 is not a word; sixty-one is one
+    expect(p.numerals_per_1k).toBeCloseTo(260.9, 1);         // sixty, Two, hundred, twelve, 11:40, Twenty: 6 of 23
+    expect(atFault(text, ["numerals"])).toEqual(["He counted sixty-one of them.", "Two hundred twelve marks sat on the card at 11:40.", "Twenty more came after, and one of them spoke."]);
+    expect(faultsOver("Nobody counted anything, and one of them left.", { numerals_max: 12 })).toEqual([]);
   });
 
   test("the pool is every transcript under the directory, its intro cut, at the pace its timings give", () => {
