@@ -305,12 +305,16 @@ labels: [ui]
 ## 23. UI: a version chip names its relation (round, branch, fork) only in its tooltip
 ---
 id: 23
-status: open
+status: done
 created: 2026-10-01
-updated: 2026-10-01
+updated: 2026-10-02
 priority: medium
 labels: [ui]
 ---
+
+### Notes
+
+- 2026-10-02 09:23: a version chip shows round n / this draw / branched from / branch / fork after the id (03f49c5)
 
 ## 24. Listen profile: a schedule can pass chronology=linear in its <form> and still open at the last hour and jump back (69c0: beat 1 hour sixty-one, beat 2 hour zero); the fixed-axis check reads the form line only. Check the beats' <when> order, or ask the schedule for it in words
 ---
