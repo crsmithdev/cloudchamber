@@ -289,3 +289,13 @@ updated: 2026-10-01
 priority: medium
 labels: [ui]
 ---
+
+## 23. UI: a version chip names its relation (round, branch, fork) only in its tooltip
+---
+id: 23
+status: open
+created: 2026-10-01
+updated: 2026-10-01
+priority: medium
+labels: [ui]
+---
