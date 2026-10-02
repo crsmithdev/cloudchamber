@@ -427,3 +427,13 @@ labels: [title, drafting]
 ---
 
 Since d2c0014 a draft gets its title after its last screen, and `cloudchamber gate <draw> title` writes one for any draw at gate 2 or kept. The store holds about twenty drafts at awaiting_draft_gate or drafted from before that commit; the list and the report show their slug until one runs. Done when every kept draft in the store has a title, or Chris says the old ones stay as they are.
+
+## 33. Listen profile: person=auto gave a third-person present draft (ba9d, 2 first-person words per 1k) from a first-person channel title; the channel's stories are all first person. Decide whether the listen profile fixes person=first, or the title's person carries into the draw
+---
+id: 33
+status: open
+created: 2026-10-02
+updated: 2026-10-02
+priority: medium
+labels: [listen, drafting]
+---
