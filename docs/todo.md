@@ -149,12 +149,16 @@ labels: [ir, evals]
 ## 11. The premises stop labels the chosen premise and a fork 'in check' (Draws.tsx:437, :442); the check step is gone since 947dcf4
 ---
 id: 11
-status: open
+status: done
 created: 2026-09-30
-updated: 2026-09-30
+updated: 2026-10-01
 priority: medium
 labels: [ui]
 ---
+
+### Notes
+
+- 2026-10-01 17:48: The chosen premise reads 'chosen'; a fork links as 'fork →' (281df73)
 
 ## 12. A fork's header shows no version chip back to its source (9507 from 01c5), and its premises stop reads '#1 of 1', not the source's five
 ---
