@@ -263,12 +263,16 @@ labels: [drafting]
 ## 20. UI: the rail's stories count and the list's 'need you' count differ (47 v 46): the server counts by status, the list by group
 ---
 id: 20
-status: open
+status: done
 created: 2026-10-01
-updated: 2026-10-01
+updated: 2026-10-02
 priority: medium
 labels: [ui]
 ---
+
+### Notes
+
+- 2026-10-02 09:23: status.needs counts rule 1's needs-you group; the rail reads it; 52 = 52 on the store copy (4779ed2)
 
 ## 21. UI: the strip's stops have no route; #story/<id>/plan is read as a step id and lands on the stop the story stands at (spec 2026-09-30 rule 5 says a stop has a route)
 ---
