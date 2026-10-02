@@ -25,7 +25,7 @@ register = "auto"       # auto | none | told | signal: the block every scene ask
 template = "auto"       # auto | listen | told | signal: listen states what a listener needs and derives the form from the brief; told is the narrated shape, a cold open, set pieces, an arrival, a cost, an aftermath; signal is the mission shape, one specialist close, an ensemble, a contact, a split, a cost, a return
 
 [scenes]
-order = "sequential"    # sequential | parallel
+order = "sequential"    # sequential | parallel | acts: acts writes three runs of consecutive beats at once
 
 [checks]
 # the checks that read the brief as text, run by `draft` beside the schedule and shown at the plan gate. Gate 1's

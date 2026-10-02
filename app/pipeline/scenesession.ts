@@ -38,6 +38,20 @@ import {
 
 /** The fewest binds a base session pays for: the base costs about what four forks save (bindBase). */
 const BASE_MIN_BINDS = 5;
+/** The runs of consecutive beats an `acts` order writes at once: the parallel order lost presence and doubled what the canon guard finds (1 Oct). */
+const ACT_CHAINS = 3;
+
+/** `xs` cut into `n` runs of consecutive items, the longer runs first. */
+export function chunk<T>(xs: T[], n: number): T[][] {
+  const size = Math.floor(xs.length / n), extra = xs.length % n;
+  const out: T[][] = [];
+  for (let i = 0, at = 0; i < n && at < xs.length; i++) {
+    const len = size + (i < extra ? 1 : 0);
+    out.push(xs.slice(at, at + len));
+    at += len;
+  }
+  return out.filter((r) => r.length);
+}
 
 /** A beat written again under a constraints block, marked as a rewrite, with the flag or the operator's instruction it answers when there is one. */
 type Rewrite = { beat: number; kind: "rewrite"; constraints?: string; findings?: string[]; instruction?: string };
@@ -143,15 +157,23 @@ export class SceneSession {
       const base = await this.bindBase([...done, ...raw], raw.length);
       return [...done, ...await Promise.all(raw.map((sc, i) => this.bind(sc, i ? raw[i - 1] : done.at(-1), base)))];
     }
+    // acts: the beats in ACT_CHAINS runs of consecutive beats, written at once; a run's first beat reads the plan alone
+    const runs = this.cfg.scenes.order === "acts" ? chunk(todo, ACT_CHAINS) : [todo];
+    const raw = (await Promise.all(runs.map((run, i) => this.chain(run, i ? [] : done, under)))).flat();
+    const base = await this.bindBase([...done, ...raw], raw.length);
+    return [...done, ...await Promise.all(raw.map((sc, i) => this.bind(sc, i ? raw[i - 1] : done.at(-1), base)))];
+  }
+
+  /** Beats written as turns of one session, each forking the one before; the first reads `before` in its ask. */
+  private async chain(beats: Beat[], before: Scene[], under: object): Promise<Scene[]> {
     const raw: Scene[] = [];
     let session: string | undefined;
-    for (const b of todo) {
-      const { session: next, ...scene } = await this.write(b, session ? [] : done.map((x) => x.text), { ...under, session: session ? { resume: session } : {} });
+    for (const b of beats) {
+      const { session: next, ...scene } = await this.write(b, session ? [] : before.map((x) => x.text), { ...under, session: session ? { resume: session } : {} });
       raw.push(scene);
       session = next;
     }
-    const base = await this.bindBase([...done, ...raw], raw.length);
-    return [...done, ...await Promise.all(raw.map((sc, i) => this.bind(sc, i ? raw[i - 1] : done.at(-1), base)))];
+    return raw;
   }
 
   /**
@@ -250,7 +272,7 @@ export class SceneSession {
     }));
     for (const c of changes.filter((c): c is Rewrite => c.kind === "rewrite").sort((a, b) => a.beat - b.beat)) {
       const before = this.scenes().filter((s) => s.beat < c.beat).map((s) => s.text);
-      await this.write(this.schedule.beats[c.beat - 1], this.cfg.scenes.order === "sequential" ? before : [], { constraints: c.constraints, rewrite: { findings: c.findings }, instruction: c.instruction });
+      await this.write(this.schedule.beats[c.beat - 1], this.cfg.scenes.order === "parallel" ? [] : before, { constraints: c.constraints, rewrite: { findings: c.findings }, instruction: c.instruction });
       facts.add(c.beat);
       full.add(c.beat);
     }

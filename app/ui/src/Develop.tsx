@@ -318,8 +318,8 @@ export function DraftSettings({ d, onClose, onDraft, again }: { d: Detail; onClo
           </span>
         </div>
       </Field>
-      <Field label="Scenes" help="Sequential carries the text so far into each scene call. Parallel writes all beats at once from the schedule alone.">
-        <Seg label="Scene order" value={val("scenes.order")} options={["sequential", "parallel"]} onChange={set("scenes.order")} />
+      <Field label="Scenes" help="Sequential carries the text so far into each scene call. Parallel writes all beats at once from the schedule alone. Acts writes three runs of consecutive beats at once, each run sequential.">
+        <Seg label="Scene order" value={val("scenes.order")} options={["sequential", "parallel", "acts"]} onChange={set("scenes.order")} />
       </Field>
       {!again && (
         <Field label="Plan" help="Stop at the plan: plan the draft and check the plan, then wait before any scene. You fix the plan, plan it again from a beat, or write the draft from it.">

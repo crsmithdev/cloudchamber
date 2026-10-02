@@ -7,6 +7,7 @@ import type { PdfPrinter } from "./report.ts";
 import { EVENT_LINE, HOOK_LINE, THEME_LINE, VOICES_LINE } from "./write.ts";
 import { movedIn, parseSchedule, scenePrompt, STRUCTURE_RULES, structureScreen } from "./write.ts";
 import { NOT_IN_PROSE, parseVerdicts } from "./check.ts";
+import { chunk } from "./scenesession.ts";
 import { settingsFixture } from "./settings.fixture.ts";
 import { LISTS, loadSetting } from "./settings.ts";
 import { latest, readLog } from "./verdicts.ts";
@@ -649,6 +650,22 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(scenes).toHaveLength(8);
     expect(scenes.every((c) => !c.prompt.includes("<story-so-far>"))).toBe(true);
     expect(d.view(draw.id).scenes.map((s) => s.beat)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+  });
+
+  test("acts order writes three runs at once: each run's first beat reads the plan alone, the rest read their run's text so far", async () => {
+    const { d, draw, model } = await drawn();
+    const out = await d.draft(draw.id, { overrides: { "scenes.order": "acts" } });
+    expect(out.status).toBe("awaiting_draft_gate");
+    const scenes = model.calls.filter((c) => c.stage === "scene");
+    expect(scenes).toHaveLength(8);
+    // 8 beats in runs of 3, 3, 2: beats 1, 4 and 7 open a run, and none carries a story so far
+    expect(scenes.filter((c) => !c.session?.resume).length).toBe(3);
+    expect(d.view(draw.id).scenes.map((s) => s.beat)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+  });
+
+  test("chunk cuts consecutive runs, the longer first", () => {
+    expect(chunk([1, 2, 3, 4, 5, 6, 7, 8], 3)).toEqual([[1, 2, 3], [4, 5, 6], [7, 8]]);
+    expect(chunk([1, 2], 3)).toEqual([[1], [2]]);
   });
 
   test("a withheld item with no reveal beat is never revealed: it stays withheld past the last beat, and the screens say so", () => {
