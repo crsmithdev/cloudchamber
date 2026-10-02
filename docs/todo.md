@@ -269,3 +269,13 @@ updated: 2026-10-01
 priority: medium
 labels: [ui]
 ---
+
+## 21. UI: the strip's stops have no route; #story/<id>/plan is read as a step id and lands on the stop the story stands at (spec 2026-09-30 rule 5 says a stop has a route)
+---
+id: 21
+status: open
+created: 2026-10-01
+updated: 2026-10-01
+priority: medium
+labels: [ui]
+---
