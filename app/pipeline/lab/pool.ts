@@ -194,7 +194,17 @@ export function scoreGap(runs: Run[]): { gap: number; passes: number } {
   return { gap: gaps.length ? gaps.reduce((t, x) => t + x, 0) / gaps.length : NaN, passes: gaps.length };
 }
 
-/** A score gap has to clear this, in either direction, before it says one draft is better. */
+/**
+ * A score gap has to clear this, in either direction, before it says one draft is better.
+ *
+ * Checked again for GPT-5.1 and Grok 4.3 at eight passes a judge on 2 October.
+ * Over the 18 pairs both judges read, the two disjoint sets of four passes a
+ * judge differ from the pooled gap by a median of 0.05, p90 0.15, max 0.29;
+ * for GPT-5.1 and Gemini 3.1 Pro over 29 pairs, median 0.08, p90 0.14. That
+ * deviation is the error of the pooled gap itself, so the margin holds for the
+ * pair. One judge alone does not: GPT-5.1 by itself has p90 0.27
+ * (`evals/20261002-grok-for-gemini.md`).
+ */
 export const GAP_MARGIN = 0.15;
 
 /** One matched pair between two arms, pooled. */

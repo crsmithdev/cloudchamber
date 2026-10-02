@@ -22,8 +22,14 @@ import { GAP_MARGIN, floorPairs, scoreGap } from "./pool.ts";
  * The panel. GLM-4.7 left it on 26 September: it set the wall time of every
  * judged run (p50 123 s, max 504 s), and without it every stored experiment's
  * mean kept its side (`evals/20260925-fewer-judges.md`).
+ *
+ * Grok 4.3 took Gemini 3.1 Pro's place on 2 October. Against channel F, Gemini
+ * gave our drafts +2.0 to +2.8 on three pairs and lost no axis, so it told
+ * nothing apart there. On the same pairs Grok read +1.0 to +1.4, ranked them in
+ * GPT-5.1's order, lost clarity where GPT-5.1 lost it, and cost a fifth of
+ * Gemini a pass (`evals/20261002-grok-for-gemini.md`).
  */
-export const JUDGES = ["google/gemini-3.1-pro-preview", "openai/gpt-5.1"];
+export const JUDGES = ["x-ai/grok-4.3", "openai/gpt-5.1"];
 
 export type BestOpts = {
   n?: number;

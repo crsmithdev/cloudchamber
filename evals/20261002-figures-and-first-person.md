@@ -140,9 +140,58 @@ B 17.0 / 14.0 / 16.1; A 18.8 / 20.0 / 18.2. The B figures given above
 (18.9 / 19.2 / 16.6) were a different count; these are `listen.ts`'s
 `profile` over the final scene of each beat.
 
+## Arm B on twelve pairs: no gain over the control
+
+Later on 2 October. Two more siblings a brief for each arm (todo #28), so
+each brief has two control drafts and two B drafts, and every B draft was
+read against every control draft of its brief: twelve pairs, eight passes a
+judge, both orders, GPT-5.1 and Grok 4.3. The gap is B minus the control.
+
+| brief | B v control | GPT-5.1 | Grok 4.3 | both |
+|---|---|---|---|---|
+| `bf3e` | `62f0` v `bf3e` | −0.22 | −0.16 | −0.19 |
+| | `0cdd` v `bf3e` | −0.09 | −0.16 | −0.13 |
+| | `62f0` v `24a5` | +0.19 | +0.14 | +0.16 |
+| | `0cdd` v `24a5` | −0.41 | −0.14 | −0.27 |
+| `17e7` | `8ca1` v `17e7` | −0.22 | +0.07 | −0.08 |
+| | `b371` v `17e7` | −0.20 | −0.19 | −0.20 |
+| | `8ca1` v `7ee7` | +0.14 | −0.19 | −0.02 |
+| | `b371` v `7ee7` | +0.11 | +0.09 | +0.10 |
+| `69c0` | `14a8` v `69c0` | +0.33 | +0.44 | +0.38 |
+| | `efc5` v `69c0` | +0.16 | +0.59 | +0.36 |
+| | `14a8` v `a43f` | −0.13 | +0.08 | −0.02 |
+| | `efc5` v `a43f` | −0.22 | +0.16 | −0.04 |
+| **pooled** | 12 pairs | **−0.05** (96 passes; halves −0.04, −0.06) | **+0.06** (92; −0.02, +0.13) | **0.00** |
+
+By brief, both judges: `bf3e` −0.11, `17e7` −0.05, `69c0` +0.17. By axis,
+pooled over the twelve pairs:
+
+| | GPT-5.1 | Grok 4.3 |
+|---|---|---|
+| clarity | +0.05 | +0.23 |
+| momentum | +0.02 | −0.03 |
+| hook | −0.14 | +0.04 |
+| presence | −0.15 | +0.07 |
+| people | −0.11 | +0.10 |
+| feeling, cost, ending | −0.07 to +0.03 | −0.01 to +0.05 |
+
+**B does not beat the control.** The pooled gap is inside ±0.15 on each
+judge and 0.00 on both. The one-draft lead (+0.91 / +0.86 / +0.70 against
++0.55 / +0.67 / +0.30) was draft variance: on `69c0`, B beats the first
+control draft by +0.37 and the second by −0.03, so the first control was the
+weak draft. The clarity and momentum gains of the one-draft reading are gone
+on GPT-5.1 (+0.05, +0.02); Grok keeps a small clarity lead (+0.23).
+
+The counter stays: it measures the figures the drafts carry, the edit
+brings a beat under the ceiling, and on twelve pairs it costs nothing. It
+is not a judged gain. Experiments, GPT-5.1: `mur7p0rn`, `mur7ragr`,
+`mur7tt3y`, `mur7wd4z`, `mur7z3fs`, `mur81hz3`; Grok 4.3: `mur7r4q7`,
+`mur7tm0l`, `mur7vsu6`, `mur7xphd`, `mur804kb`, `mur825mm` (each
+`compare-<control>-vs-<B>-<suffix>`). Judging cost $3.65.
+
 ## Follow-ups
 
 - ~~The figure edit does not bring a beat under the ceiling (todo #27).~~ Corrected above.
-- Arm B on twelve pairs, after a credit top-up (todo #28).
+- ~~Arm B on twelve pairs, after a credit top-up (todo #28).~~ Above: no gain.
 - A linear schedule can still open at the last hour and jump back (todo #24).
-- Channel F readings on GPT-5.1 alone, and a one-judge margin (todo #25).
+- ~~Channel F readings on GPT-5.1 alone, and a one-judge margin (todo #25).~~ Grok 4.3 replaces Gemini (`evals/20261002-grok-for-gemini.md`).

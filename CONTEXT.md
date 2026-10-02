@@ -286,7 +286,7 @@ Stock phrasing a draft uses and the narration pool does not.
 ## Evaluation
 
 **Panel**:
-The five judges from outside the generator's model family that judge a draft.
+The judges from outside the generator's model family that judge a draft: `JUDGES` in `app/pipeline/lab/best.ts`.
 
 **Pass** (judging):
 One judge's reading of two texts, answering each axis and an overall call.

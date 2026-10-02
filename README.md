@@ -126,8 +126,7 @@ Two unlabelled transcripts go to a judge as Story One and Story Two. The judge
 answers eight questions a listener can answer — the hook, whether the thing
 arrives in the flesh, whether the people sound like people, feeling, cost, the
 ending, clarity by ear, momentum — and then makes an overall call. The order
-swaps between passes. The panel is Gemini 3.1 Pro, GPT-5.1, Grok 4.3,
-Kimi K2.5 and GLM-4.7, three passes each.
+swaps between passes. The panel is GPT-5.1 and Grok 4.3, eight passes each.
 
 The limits are real: one seed, one source transcript, one story per run, and
 judges that stand in for a listener rather than being one. The reports under
