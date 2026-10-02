@@ -347,3 +347,21 @@ Why: the model reads most figures as ones a person would say aloud, so the edit 
 Done when: a beat edited for figures ends under the ceiling in most cases, measured first -> final per beat (scratch: figures.py reads artifacts meta from the store), or `fix = "rewrite"` for the numeral fault is shown to do it; and the gain is re-measured as in evals/20261002-figures-and-first-person.md.
 
 Where: open. See evals/20261002-figures-and-first-person.md.
+
+## 28. Settle arm B (the figure counter alone) against channel F on twelve pairs
+---
+id: 28
+status: open
+created: 2026-10-01
+updated: 2026-10-01
+priority: medium
+labels: [evaluation, listen]
+---
+
+What: two more siblings a brief for the control and for arm B of 2 Oct (bf3e, 17e7, 69c0 under the listen profile), six drafts in about 25 minutes, judged GPT-5.1 alone at eight passes against the transcript: twelve pairs, about $3 at today's rates, floor near 0.2.
+
+Why: on one draft a brief, B read +0.91 / +0.86 / +0.70 against controls at +0.55 / +0.67 / +0.30, clarity +0.46 to +1.25 and momentum +0.64 to +1.00 on every brief; draft variance is about this size, so it is a lead and not a result. Needs an OpenRouter top-up: the account held about $1.35 at the end of 2 Oct.
+
+Done when: the pooled gap of B against the control, both orders, is read on twelve pairs with its halves, and the counter is kept or dropped on it.
+
+Where: open. See evals/20261002-figures-and-first-person.md.
