@@ -177,6 +177,7 @@ const STAGE: Record<string, { name: string; does: string }> = {
   "ir-plan-ledger": { name: "check plan", does: "Reads the schedule against the symbol table and reports each beat that contradicts the ledger." },
   scene: { name: "write scene", does: "Writes one beat of the schedule as a scene. A rewrite of a scene adds one more run." },
   "scene-edit": { name: "edit scene", does: "Rewrites in place only the sentences of a scene that break a length or numeral rule; the rest of the scene stands." },
+  title: { name: "write title", does: "Writes the story's title from the finished scenes and the premise: two sentences, where the narrator stands and the one wrong thing, with nothing the story keeps back. A typed title is a run with no model call." },
   "screen-ledger": { name: "screen facts", does: "Checks one scene against the ledger of settled facts and flags each contradiction with a replacement." },
   "screen-structure": { name: "screen structure", does: "Asks one scene the present-or-absent questions that mark a weak draft, each answered with a quote." },
   "screen-restated": { name: "screen restated", does: "Finds each sentence a beat says again from an earlier beat. No model call." },

@@ -143,7 +143,8 @@ export function renderReport(p: Pipeline, drawId: string): string {
   const sceneArts = ofKind(p.artifacts(drawId), "scene");
   const openBy = (screen: string) => v.screenFindings.filter((f) => f.decision === "open" && f.screen === screen).length;
   const structureFlags = v.profiles.reduce((a, pr) => a + pr.flags.length, 0);
-  const title = tip.name || drawId;
+  // the draft's title heads the report; the draw's name stands in until one is written, and joins the meta line after
+  const title = v.title || tip.name || drawId;
 
   const glance: [string, string][] = [
     ["words", n(storyWords)], ["beats", String(v.scenes.length)],
@@ -273,7 +274,7 @@ export function renderReport(p: Pipeline, drawId: string): string {
     <div class="brand">${MARK}<span>Cloud Chamber · draft report · ${esc(tip.status.replace(/_/g, " "))}</span></div>
     <h1>${esc(title)}</h1>
     <p class="seedline">${esc(root.seed_text)}</p>
-    <p class="meta">${esc(drawId)} · ${esc(root.genre)}${resolved?.profile ? ` · profile ${esc(resolved.profile)}` : ""} · written ${esc(ended.slice(0, 16).replace("T", " "))} UTC</p>
+    <p class="meta">${esc(drawId)}${v.title && tip.name ? ` · ${esc(tip.name)}` : ""} · ${esc(root.genre)}${resolved?.profile ? ` · profile ${esc(resolved.profile)}` : ""} · written ${esc(ended.slice(0, 16).replace("T", " "))} UTC</p>
     <dl class="glance">${glance.map(([k, x]) => `<div><dt>${k}</dt><dd>${x}</dd></div>`).join("")}</dl>
   </header>
   <section class="story break">

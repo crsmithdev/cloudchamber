@@ -987,7 +987,7 @@ describe("templates and store", () => {
     const withTools = Object.entries(s).filter(([, c]) => c.tools).map(([n]) => n);
     expect(withTools).toEqual(["check-claims-verify"]);
     expect(s["check-claims-verify"].tools).toBe("WebSearch,WebFetch");
-    for (const n of ["check-structure", "check-resemblance", "repair-vignette", "repair-outline", "repair-ending", "schedule", "scene", "screen-ledger", "screen-structure"]) expect((s as any)[n].model).toMatch(/^claude-/);
+    for (const n of ["check-structure", "check-resemblance", "repair-vignette", "repair-outline", "repair-ending", "schedule", "scene", "title", "screen-ledger", "screen-structure"]) expect((s as any)[n].model).toMatch(/^claude-/);
   });
 });
 

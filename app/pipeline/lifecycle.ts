@@ -27,7 +27,7 @@ export type Status = (typeof STATUSES)[number];
 // the tab a stage belongs in is a fact about the stage: config.ts holds the table, and this re-export keeps one import for the page
 export { stageTab, type Tab };
 
-export const ACTIONS = ["choose", "fork", "flag", "archive", "unarchive", "delete", "draft", "branch", "rewrite", "keep", "apply", "replan", "write", "mark", "instruct"] as const;
+export const ACTIONS = ["choose", "fork", "flag", "archive", "unarchive", "delete", "draft", "branch", "rewrite", "keep", "apply", "replan", "write", "mark", "instruct", "title"] as const;
 export type Action = (typeof ACTIONS)[number];
 
 const RUNNING = new Set<string>(["running", "checking", "repairing", "drafting"]);
@@ -49,6 +49,8 @@ const WHEN: Partial<Record<Action, string[]>> = {
   instruct: ["awaiting_plan_gate"],
   // a branch develops a draft, so there has to be one; a draft still being written has no settled scenes to carry
   branch: ["awaiting_draft_gate", "drafted"],
+  // the title is written again from the scenes, or typed: at gate 2, and on a kept draft, whose export is written again
+  title: ["awaiting_draft_gate", "drafted"],
 };
 
 /** What the rules read off a draw. `referenced_by` is every draw pointing at it, which only delete reads. */

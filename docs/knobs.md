@@ -152,6 +152,7 @@ stages.toml: the model each stage calls, the one it falls back to on a refusal, 
 | `schedule` | claude-opus-5 → claude-sonnet-5 |
 | `scene` | claude-opus-5 → claude-sonnet-5 |
 | `scene-edit` | claude-opus-5 → claude-sonnet-5 · effort low |
+| `title` | claude-opus-5 → claude-sonnet-5 |
 | `ir-symbolize` | claude-opus-5 → claude-sonnet-5 |
 | `ir-plan-ledger` | claude-opus-5 → claude-sonnet-5 |
 | `screen-ledger` | claude-opus-5 → claude-sonnet-5 · effort low |

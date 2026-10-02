@@ -57,6 +57,8 @@ const groupOf = (r: Draw): Group =>
 const statusLine = (r: DrawBase) => (r.status === "done" ? "ready to draft" : label(r.status));
 /** A draw's short name: the four characters after its timestamp. */
 const short = (id: string) => id.split("-").at(-1) ?? id;
+/** The draft's title as it stands: the latest title artifact on the draw, or none before one is written. */
+const titleOf = (d: Detail) => d.artifacts.filter((a) => a.kind === "title").at(-1)?.content;
 
 /** `sub` is the route's third part: a stop pins the strip, anything else names a step; none follows the story as it moves. */
 export function Stories({ status, selected, like, sub }: { status: Status | null; selected: string | undefined; like?: string; sub?: string }) {
@@ -287,7 +289,7 @@ export function Stories({ status, selected, like, sub }: { status: Status | null
                     onKeyDown={onEnter(() => (location.hash = `#story/${r.id}`))}
                   >
                     <RowHead
-                      name={c.root.name ?? c.root.id}
+                      name={r.title ?? c.root.name ?? c.root.id}
                       status={statusLine(r)}
                       mark={markFor(r)}
                       rounds={c.rounds.length}
@@ -329,7 +331,7 @@ export function Stories({ status, selected, like, sub }: { status: Status | null
           ) : (
             <>
               <div className={"strip" + (working ? " running" : "")}>
-                <h1>{chain?.root.name ?? d.draw.name ?? d.draw.id}</h1>
+                <h1 title={titleOf(d) ? (chain?.root.name ?? d.draw.name ?? undefined) : undefined}>{titleOf(d) ?? chain?.root.name ?? d.draw.name ?? d.draw.id}</h1>
                 <span className={"state " + (working ? "text-running" : d.draw.at_gate ? "text-art" : d.draw.status === "failed" ? "text-pass" : "text-mute")} aria-live="polite">
                   <Mark state={markFor(d.draw)} />
                   <span className={working ? "sweep" : ""}>

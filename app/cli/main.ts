@@ -32,6 +32,7 @@ const DOC = `cloudchamber — the one command the skill and the UI drive.
        checks the plan again; replan plans it again from beat K; instruct rewrites the brief's parts it names as a
        new draw, which drafts on to the plan gate; write writes the scenes and stops at gate 2
    cloudchamber gate <draw> keep | rewrite <k>[,k...] [--finding ID[,ID...]] [--instruction "..."]  [--note "..."]
+   cloudchamber gate <draw> title [--text "..."]  write the title again from the scenes, or set your own; at gate 2 or on a kept draft
    cloudchamber draft <draw> [--plan] [--profile P] [--words N] [--beats N] [--tense T] [--person P] [--chronology C] [--container C] [--order O] [--models G=M,...]
      --plan stops the draft at the plan gate with its plan checked, before any scene is written
      --models sets the model per stage or group (prose, judgement, corpus) for the draw and the draws made from it, e.g. judgement=claude-sonnet-5
@@ -202,7 +203,7 @@ async function main() {
       break;
     }
     case "gate": {
-      const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, options: { note: { type: "string", default: "" }, finding: { type: "string" }, instruction: { type: "string" }, parts: { type: "string" }, kind: { type: "string", default: "direction" }, premise: { type: "string" }, fix: { type: "string" }, edit: { type: "string", multiple: true }, real: { type: "boolean" }, "not-real": { type: "boolean" }, profile: { type: "string" } } });
+      const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, options: { note: { type: "string", default: "" }, finding: { type: "string" }, instruction: { type: "string" }, parts: { type: "string" }, kind: { type: "string", default: "direction" }, premise: { type: "string" }, fix: { type: "string" }, edit: { type: "string", multiple: true }, real: { type: "boolean" }, "not-real": { type: "boolean" }, profile: { type: "string" }, text: { type: "string" } } });
       const [drawId, action, ...args] = positionals;
       const p = pipeline(), d = drafting();
       if (!drawId || !action) usage();
@@ -218,7 +219,7 @@ async function main() {
         step_id: args[0], findings: action === "rewrite" || action === "apply" ? ticked : args,
         notes: action === "apply" && values.fix ? { [ticked![0]!]: values.fix } : undefined, at_beat: action === "replan" ? Number(args[0]) : undefined,
         edits: action === "apply" ? (values.edit ?? []).map(parseEdit) : undefined, beats: action === "rewrite" ? args[0].split(",").map(Number) : undefined, instruction: values.instruction, premise: values.premise,
-        real: action === "mark" ? !!values.real : undefined, profile: action === "replan" ? values.profile : undefined,
+        real: action === "mark" ? !!values.real : undefined, profile: action === "replan" ? values.profile : undefined, text: values.text,
         instructions: action === "instruct" ? [{ text: values.instruction!, parts: (values.parts ?? "").split(",").map((x) => x.trim()).filter(Boolean), kind: values.kind as "fact" | "direction" }] : undefined,
       };
       // the CLI waits for the work whether or not it runs on: there is nothing else to go back to

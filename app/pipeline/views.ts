@@ -22,6 +22,8 @@ export type DrawListRow = DrawRow & LifecycleView & {
   superseded: Superseded | null;
   origin: Origin | null;
   check: FindingsSummary | null;
+  /** The draft's title as it stands (title.ts), or null before one is written. */
+  title: string | null;
 };
 
 /** A step without its text; the step route carries the text when one is opened. */
@@ -68,11 +70,14 @@ export class Views {
     const all = this.p.draws(true);
     // every link question is answered from the rows already here: a draw nothing repairs heads its chain
     const lineage = new Lineage(all);
+    // every title in one read, oldest first, so the last set per draw is the one that stands (14 ms over 17k artifacts)
+    const titles = new Map<string, string>();
+    for (const t of this.p.db.query("SELECT s.draw_id, a.content FROM artifacts a JOIN steps s ON s.id = a.step_id WHERE a.kind = 'title' ORDER BY s.started_at, a.rowid").all() as { draw_id: string; content: string }[]) titles.set(t.draw_id, t.content);
     return all.filter((r) => archived || !r.archived_at).map((r) => {
       const view = lifecycleView({ ...r, referenced_by: lineage.referencedBy(r.id) });
       // the candidate is what tells two briefs of one batch apart, so the list needs it too
       return { ...r, ...view, origin: view.stage === "ideate" ? null : originOf(this.p, r.id, lineage), check: this.checkSummary(r, view.stage, verdicts),
-        rounds: lineage.rounds(r.id), head: lineage.isTip(r.id), superseded: lineage.superseded(r.id) };
+        rounds: lineage.rounds(r.id), head: lineage.isTip(r.id), superseded: lineage.superseded(r.id), title: titles.get(r.id) ?? null };
     });
   }
 

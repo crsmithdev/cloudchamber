@@ -15,8 +15,11 @@ import type { SlopReport } from "./slop.ts";
 import type { ListenReport } from "./listen.ts";
 import { pipelineVersion } from "./version.ts";
 import { PLAN_CAP, type Sym } from "./ir/s2.ts";
+import { titleOf } from "./title.ts";
 
 export type DraftView = {
+  /** The draft's title as it stands (title.ts), or null before one is written. */
+  title: string | null;
   schedule: { form: Record<string, string>; beats: Beat[]; raw: string } | null;
   scenes: Scene[];
   profiles: Profile[];
@@ -64,7 +67,7 @@ export function draftView(p: Pipeline, drawId: string): DraftView {
   // the latest reading of each finding: artifacts come oldest first
   const readings: Record<string, "real" | "not real"> = {};
   for (const a of ofKind(p.artifacts(drawId), "reading")) readings[a.meta.finding] = a.meta.real ? "real" : "not real";
-  return { schedule: chain.schedule(), scenes, profiles: chain.screenProfiles(), screenFindings: chain.screenFindings(), planFindings, planCapped: planFindings.filter((f) => f.screen === "plan-ledger").length >= PLAN_CAP, readings, symbols: l1 ? (JSON.parse(l1.parsed!) as Sym[]) : [], rewrittenUnder, slop: chain.slop(), listen: chain.listen(), judge: chain.judge(), directions: directionsOf(p, drawId) };
+  return { title: titleOf(p, drawId), schedule: chain.schedule(), scenes, profiles: chain.screenProfiles(), screenFindings: chain.screenFindings(), planFindings, planCapped: planFindings.filter((f) => f.screen === "plan-ledger").length >= PLAN_CAP, readings, symbols: l1 ? (JSON.parse(l1.parsed!) as Sym[]) : [], rewrittenUnder, slop: chain.slop(), listen: chain.listen(), judge: chain.judge(), directions: directionsOf(p, drawId) };
 }
 
 /** One line for a plan finding, as the story and the export print it: its kind, its beat if it has one, the finding, and the fix where L4 gave one. */
@@ -145,7 +148,8 @@ export function exportDraft(p: Pipeline, drawId: string, resolved: Resolved, gat
   const dir = join(base, drawId);
   mkdirSync(dir, { recursive: true });
   const w = (name: string, body: string) => writeFileSync(join(dir, name), body.trimEnd() + "\n");
-  w("story.md", renderStory(v, false));
+  // the title heads the export alone: `renderStory` is what the judges and the listen render read, and they read no title
+  w("story.md", (v.title ? `# ${v.title}\n\n` : "") + renderStory(v, false));
   w("schedule.md", renderSchedule(v));
   w("findings.md", renderFindings(p, drawId, v));
   w("config.toml", toToml(resolved));
@@ -156,8 +160,9 @@ export function exportDraft(p: Pipeline, drawId: string, resolved: Resolved, gat
   const trail = [
     existsSync(briefTrail) ? readFileSync(briefTrail, "utf8").trimEnd() : `# Trail — ${drawId}`, "",
     "## draft", "",
+    ...(v.title ? [`title: ${v.title}`, ""] : []),
     `config: ${resolved.profile ? `profile ${resolved.profile}` : "defaults"}${resolved.overridden.length ? ` · overridden ${resolved.overridden.join(", ")}` : ""}`, "",
-    "### models", "", ...[...models].filter(([s]) => /^(check|repair|schedule|scene|screen)/.test(s)).map(([s, m]) => `- ${s}: ${m}`), "",
+    "### models", "", ...[...models].filter(([s]) => /^(check|repair|schedule|scene|screen|title)/.test(s)).map(([s, m]) => `- ${s}: ${m}`), "",
     "### scenes", "", ...v.scenes.map((s) => `- beat ${s.beat}: ${words(s.text)} words`), "",
     `screen flags: ${v.screenFindings.length} ledger, ${v.profiles.reduce((a, x) => a + x.flags.length, 0)} structure`,
     `plan findings: ${v.planFindings.length}${v.planFindings.some((f) => f.question) ? ` (${v.planFindings.filter((f) => f.question).length} questions)` : ""}`, "",

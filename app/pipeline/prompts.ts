@@ -450,6 +450,33 @@ The material above is the brief's own vignette for this beat; use it as far as i
   sceneAsk: `Write beat {n} of the story, in a <scene> tag. Its job: {job}{whenLine} By its end the reader knows: {known} Still withheld after it: {withheld} Form: {form}. Under {cap} words. The schedule above has settled the story: write within it and add nothing it does not hold.{constraintLine} Output only the tag.`,
 
   // the listen screen's lines, applied to the sentences it measured at fault, not to the whole scene
+  /** The title (title.ts): the examples are in the register of the narration channels' own titles, not quoted from them. */
+  title: `Below is a story told aloud on a horror and science-fiction channel, and the premise it was written from. Write its title.
+
+The title is two short sentences in Title Case, at most {words} words in all, with no colon, dash, subtitle or quotation marks. The first sentence places the narrator: the work they do, the place they are in, or what happened to them, in the story's own person (I, We or They). The second names the one wrong thing as a plain fact and leaves it unexplained. No name from the story; nothing the story holds back until its last third; nothing the story does not deliver.
+
+The shape, in titles of the kind the channels run:
+- I Run the Night Shift at a Dam. The Water Upstream Keeps Rising
+- We Pulled a Core Sample in Antarctica. Something in It Was Still Warm
+- I Monitor Deep-Space Probes. One of Them Started Answering
+- They Flew Us Out to Fix a Weather Station. The Crew Before Us Never Left
+- Our Town Tests Its Siren Every Noon. Yesterday It Did Not Stop
+{kept}
+<premise>
+{premise}
+</premise>
+
+<story>
+{story}
+</story>
+
+Output one <title> tag and nothing else.`,
+
+  titleKept: `
+The story keeps these back until late; the title names none of them:
+{items}
+`,
+
   sceneEdit: `<scene>
 {scene}
 </scene>

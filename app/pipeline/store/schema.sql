@@ -162,7 +162,7 @@ CREATE TABLE IF NOT EXISTS artifacts (
   id       TEXT PRIMARY KEY,
   step_id  TEXT NOT NULL REFERENCES steps(id),
   kind     TEXT NOT NULL,              -- premise | vignette | outline | job | ending | brief
-                                       -- | finding | ledger | profile | claim | schedule | scene | slop | draft
+                                       -- | finding | ledger | profile | claim | schedule | scene | slop | draft | title
   content  TEXT NOT NULL,
   meta     TEXT NOT NULL DEFAULT '{}'  -- JSON
 );

@@ -329,6 +329,8 @@ export function DraftSettings({ d, onClose, onDraft, again }: { d: Detail; onClo
 /** Gate 2. The view is the strip's: plan or scenes. A move to the other view keeps the ticks. `note` is the header's gate note, which every action here sends. */
 export function StoryPane({ d, note, onAct, aside, view, onView: setView }: { d: Detail; note: string; onAct: (fn: () => Promise<any>, go?: (r: any) => string | undefined) => void; aside: React.ReactNode; view: "story" | "plan"; onView: (v: "story" | "plan") => void }) {
   const [s, setS] = useState<Story | null>(null);
+  // the title as the operator edits it; it follows the story's own until typed over
+  const [titleText, setTitleText] = useState("");
   const [k, setK] = useState(1);
   const [instruction, setInstruction] = useState("");
   // the flags ticked for a rewrite, each with the operator's note on it
@@ -345,7 +347,10 @@ export function StoryPane({ d, note, onAct, aside, view, onView: setView }: { d:
   useEffect(() => {
     api
       .story(id)
-      .then(setS)
+      .then((x) => {
+        setS(x);
+        setTitleText(x.title ?? "");
+      })
       .catch((e) => setErr(`the story did not load: ${e.message}`));
   }, [id, d.steps.length]);
   // the keys act on the focused scene row: Enter opens its beat in the story
@@ -363,6 +368,8 @@ export function StoryPane({ d, note, onAct, aside, view, onView: setView }: { d:
   });
   if (!s) return err ? <div className="err mt-3">{err}</div> : <span className="text-dim">loading the story…</span>;
   const gating = d.draw.actions.keep === null;
+  // the title can be written again or typed at gate 2 and on a kept draft; the lifecycle says when
+  const titling = d.draw.actions.title === null;
   const gate = (action: string, extra: Record<string, unknown> = {}) => onAct(() => api.gate(id, { action, note, ...extra }));
   const M = s.scenes.length;
   const flags = [...s.screenFindings, ...s.planFindings];
@@ -437,6 +444,30 @@ export function StoryPane({ d, note, onAct, aside, view, onView: setView }: { d:
   );
   return (
     <>
+      {titling && (
+        <div className="controls" role="group" aria-label="Title">
+          <input
+            type="text"
+            className="title-input"
+            aria-label="Title"
+            placeholder="no title yet"
+            value={titleText}
+            onChange={(e) => setTitleText(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && titleText.trim() && titleText.trim() !== (s.title ?? "") && gate("title", { text: titleText.trim() })}
+          />
+          <Btn
+            variant="quiet"
+            disabled={!titleText.trim() || titleText.trim() === (s.title ?? "")}
+            onClick={() => gate("title", { text: titleText.trim() })}
+            title="Keep what you typed as the title. No model call; a kept draft's export is written again."
+          >
+            set title
+          </Btn>
+          <Btn variant="quiet" onClick={() => gate("title")} title="Write the title again from the scenes as they stand. One model call.">
+            retitle
+          </Btn>
+        </div>
+      )}
       {gating && (
         <div className="controls" role="group" aria-label="Draft review">
           <Btn variant="primary" onClick={() => gate("keep")} title={`Keep the story, with the header's note. It is exported to drafts/${id}/ with its schedule, findings, configuration and trail.`}>

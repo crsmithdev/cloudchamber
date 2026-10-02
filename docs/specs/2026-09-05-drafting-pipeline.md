@@ -91,6 +91,21 @@ differ, this file wins.
 >   stopped on, and is not restored: an earlier round is superseded, and
 >   reviving it would put the chain in two places at once.
 
+> Amendment, 2026-10-02. **The title.** A draft ends on one more call after
+> its last screen: the `title` stage reads the premise and the scenes as they
+> stand, with the schedule's items withheld past the midpoint named as what the
+> title must not say, and writes two sentences in the register of the narration
+> channels' own titles: where the narrator stands, then the one wrong thing.
+> Stored as a `title` artifact on the draw; the latest holds, so no column
+> moves. A failed call leaves its step and the draft reaches gate 2 without a
+> title. The `title` action (`cloudchamber gate <draw> title [--text "..."]`,
+> the gate 2 pane) writes it again or takes the operator's own, at
+> `awaiting_draft_gate` and on a `drafted` draw, whose `drafts/<draw>/` and
+> report are then written again. `story.md` opens on `# <title>`; the trail
+> names it; the report heads on it; `renderStory`, which the judges and the
+> listen render read, carries none. A gate 2 rewrite does not title the draft
+> again. Code: `app/pipeline/title.ts`.
+
 > Amendments, 2026-09-19. The text below keeps the words it was written
 > with; where it and this list disagree, this list is the code.
 >

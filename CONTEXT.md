@@ -214,6 +214,10 @@ A finding's span rewritten in place, no longer than the span, applied without a 
 The story the pipeline writes from a brief: a schedule, then scenes.
 _Avoid_: story (a story is corpus), manuscript
 
+**Title**:
+Two sentences a listener sees before a draft: where its narrator stands, then the one wrong thing; written from the finished scenes and the premise after the last screen, and never from what the schedule keeps back. The latest title on a draw holds; the operator writes it again or types one at gate 2 or on a kept draft.
+_Avoid_: name (a name is the draw's slug from the seed), headline
+
 **Profile** (drafting):
 A named bundle of drafting settings: length, beat range, form and template.
 

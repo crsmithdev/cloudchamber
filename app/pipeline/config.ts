@@ -3,7 +3,7 @@ import genresToml from "./genres.toml";
 
 type GenStageName = "themes" | "redundancy" | "distill-map" | "distill" | "premises" | "execute" | "outline" | "context" | "ending";
 export type CheckStageName = "ledger-extract" | "check-derivation" | "check-ledger" | "check-verify" | "check-structure" | "check-resemblance" | "check-reader" | "check-claims-extract" | "check-claims-verify" | "check-claims-confirm";
-type DraftStageName = "reconcile" | "repair-vignette" | "repair-context" | "repair-outline" | "repair-ending" | "schedule" | "scene" | "scene-edit" | "screen-ledger" | "screen-structure" | "reference-bind";
+type DraftStageName = "reconcile" | "repair-vignette" | "repair-context" | "repair-outline" | "repair-ending" | "schedule" | "scene" | "scene-edit" | "title" | "screen-ledger" | "screen-structure" | "reference-bind";
 /** The story-IR lowering passes (docs/specs/2026-09-28-story-ir.md §4.2, S2): L1 symbolise and L4 plan-vs-ledger are the only new model calls; L2 reuses `check-claims-verify`, L3 and L5 make none. */
 type IrStageName = "ir-symbolize" | "ir-plan-ledger";
 export type StageName = GenStageName | CheckStageName | DraftStageName | IrStageName;
@@ -73,6 +73,8 @@ const STAGE_TABLE: Readonly<Record<string, StageFacts>> = {
   schedule: { tab: "write", group: "prose" },
   scene: { tab: "write", group: "prose" },
   "scene-edit": { tab: "write", group: "prose" },
+  // the draft's title, one call after the last screen (title.ts)
+  title: { tab: "write", group: "prose" },
   "ir-symbolize": { tab: "write", group: "judgement" },
   "ir-plan-ledger": { tab: "write", group: "judgement" },
   // the plan check's $0 half: S1 on the schedule and L3 on the symbols, no model call

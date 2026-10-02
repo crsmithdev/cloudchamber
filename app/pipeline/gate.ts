@@ -28,6 +28,7 @@ export type GateArgs = {
   at_beat?: number;                                                     // branch, replan
   real?: boolean;                                                       // mark: the finding read as real, or not, replan
   edits?: PlanEdit[];                                                   // apply: fields of beats the operator rewrote at the plan gate
+  text?: string;                                                        // title: the operator's own title; absent, the model writes one
   models?: Record<string, string>;                                      // any action: {stage or group: model}, set on the draw before it runs
 };
 
@@ -77,6 +78,8 @@ export function gateCommand(p: Pipeline, d: Drafting, id: string, action: string
       return cmd(false, null, d.mark(id, need(a.finding, "finding"), a.real, note));
     }
     case "write": return cmd(true, id, d.writeScenes(id));
+    // a typed title is written at once; the model's runs on
+    case "title": return cmd(a.text === undefined, id, d.retitle(id, a.text));
     case "rewrite": return cmd(true, id, d.rewrite(id, a.beats?.length ? a.beats.map(Number) : [Number(need(a.beat, "beat"))], { findings: a.findings, notes: a.notes, instruction: a.instruction }));
     case "draft": return cmd(true, id, d.draft(id, { plan: !!a.plan, profile: a.profile, overrides: a.overrides }));
     // the repair makes a new draw, which drafts on to the plan gate: that draw is the one to show once it runs

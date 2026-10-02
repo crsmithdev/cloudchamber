@@ -80,6 +80,8 @@ export const sceneFor = (prompt: string, over: Record<number, number> = { 2: 700
 };
 
 export const SCENE_3_PATCH = "Scene 3 opens on the 3rd";
+/** The title the fixture's draft gets: the shape the ask describes, in the fixture's own world. */
+export const TITLE = "I Keep the Count at the Reliquary. The Twelfth Relic Was Never There";
 
 /** The plan check's symbol table: the fixture ledger's three lines, a body, and a vote whose named voter belongs to another body. */
 export const planSymbols = () => `<symbols>
@@ -144,6 +146,8 @@ export function draftScript(over: Record<string, any> = {}) {
     "ir-symbolize": () => planSymbols(),
     "ir-plan-ledger": () => planFindings(),
     scene: (p: string) => sceneFor(p),
+    // the model's reply wears quotes and a final stop, which the parser takes off
+    title: () => `<title>"${TITLE}."</title>`,
     "screen-ledger": screenLedger,
     "screen-structure": screenStructure,
     ...over,

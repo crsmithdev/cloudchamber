@@ -3,7 +3,7 @@
  *
  *   brief → draft: ledger ∥ structure, resemblance, reader ∥ schedule → plan check
  *         → PLAN GATE (apply | replan | instruct | mark | write)
- *         → scene ×M, each bound to the ledger as written → screen ×M → GATE 2 (keep | rewrite k)
+ *         → scene ×M, each bound to the ledger as written → screen ×M → title → GATE 2 (keep | rewrite k | title)
  *         → drafts/<draw>/
  *
  * Statuses on the draw: done → drafting → awaiting_plan_gate → drafting →
@@ -13,7 +13,8 @@
  * §15, T3); draws that stand at its statuses keep them and can still draft.
  */
 import { writeBrief } from "./brief.ts";
-import { newDrawId, type DrawRow, type Pipeline } from "./draw.ts";
+import { newDrawId, StepFailure, type DrawRow, type Pipeline } from "./draw.ts";
+import { runTitle, setTitle } from "./title.ts";
 import { copyBrief, copyDraft } from "./branch.ts";
 import { record, type DismissReason } from "./verdicts.ts";
 import { act, commit, must, type Action, type Status } from "./lifecycle.ts";
@@ -87,6 +88,11 @@ export function rewritePlan(profiles: { beat: number; flags: string[] }[], scene
 }
 /** What one beat owes: the register lines its structure flags map to, and the listen faults over the ceilings. */
 export type Owed = { register: string[]; faults: Fault[] };
+
+/** The gate 2 decisions the trail lists: each beat rewritten, with the flags it was ticked for and the instruction it was given. */
+const gate2Of = (p: Pipeline, drawId: string): string[] =>
+  ofKind(p.artifacts(drawId), "scene").filter((a) => a.meta.rewrite)
+    .map((a) => `rewrite ${a.meta.beat}${a.meta.rewrite_finding ? ` ${a.meta.rewrite_finding}` : ""}${a.meta.instruction ? `: ${a.meta.instruction}` : ""}`);
 /** Every line a beat owes, register lines first. */
 const owedLines = (o: Owed) => [...o.register, ...o.faults.map((f) => FAULT_LINE[f])];
 
@@ -432,6 +438,34 @@ export class Drafting {
     // one rewrite of each beat the screens flag: the register lines only under a shaped template, the ceilings always
     await this.registerRewrites(session.drawId, cfg, from);
     await session.screenClaims(session.scenes());
+    await this.title(session.drawId);
+  }
+
+  /**
+   * The draft's title, from the scenes as they stand (title.ts). A failed call
+   * leaves its step and the draft goes on to gate 2 without one: `title` at
+   * the gate writes it then. A rewrite at gate 2 does not title the draft
+   * again; the operator does, when the rewrite moved what the title names.
+   */
+  private async title(drawId: string): Promise<void> {
+    try { await runTitle(this.p, drawId); } catch (e) { if (!(e instanceof StepFailure)) throw e; }
+  }
+
+  /**
+   * Title the draft again from its scenes, or take the operator's own `text`.
+   * At gate 2 or on a kept draft; a kept draft's export and report are written
+   * again, so drafts/<draw>/ carries the title that stands.
+   */
+  async retitle(drawId: string, text?: string): Promise<DrawRow> {
+    const draw = this.must(drawId, "title");
+    const at = draw.status as Status;
+    if (text !== undefined) setTitle(this.p, drawId, text);
+    else await act(this.p.db, { id: drawId, during: "drafting", back: at }, () => runTitle(this.p, drawId), () => ({ id: drawId, status: at }));
+    if (at === "drafted") {
+      exportDraft(this.p, drawId, this.resolved(draw), gate2Of(this.p, drawId), this.opts.draftsDir, this.p.briefsDir);
+      void writeReport(this.p, drawId, this.opts.outputDir, this.opts.printPdf ?? defaultPrinter()).catch(() => {});
+    } else await writeReport(this.p, drawId, this.opts.outputDir, noPdf);
+    return this.p.draw(drawId);
   }
 
   /**
@@ -586,10 +620,7 @@ export class Drafting {
   keep(drawId: string, note = ""): { draw: DrawRow; dir: string } {
     const draw = this.must(drawId, "keep");
     record(this.p.db, { kind: "draft", target_id: drawId, verdict: "keep", method: "gate", note });
-    const resolved = this.resolved(draw);
-    const gate2 = ofKind(this.p.artifacts(drawId), "scene").filter((a) => a.meta.rewrite)
-      .map((a) => `rewrite ${a.meta.beat}${a.meta.rewrite_finding ? ` ${a.meta.rewrite_finding}` : ""}${a.meta.instruction ? `: ${a.meta.instruction}` : ""}`);
-    const dir = exportDraft(this.p, drawId, resolved, gate2, this.opts.draftsDir, this.p.briefsDir);
+    const dir = exportDraft(this.p, drawId, this.resolved(draw), gate2Of(this.p, drawId), this.opts.draftsDir, this.p.briefsDir);
     commit(this.p.db, { id: drawId, status: "drafted", ended: true });
     // the one place the PDF is worth printing, and it is not waited on: the route says to run
     // `cloudchamber report <draw>` while it is missing, and a CLI keep may exit before it lands
