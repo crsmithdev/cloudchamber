@@ -455,3 +455,19 @@ updated: 2026-10-02
 priority: medium
 labels: [listen, drafting]
 ---
+
+## 34. lab compare records the draw id as typed: a short id (bf3e) lands in judgements.jsonl instead of the full id, so stored rows of one pair split by spelling
+---
+id: 34
+status: open
+created: 2026-10-02
+updated: 2026-10-02
+priority: medium
+labels: [evals]
+---
+
+What: `compare` (app/pipeline/lab/compare.ts) resolves an arm's draw id with `resolveDrawId` to load the text, but the pass rows keep the id as typed. Rows of 2 Oct from `--arm bf3e` carry `ours: "bf3e"`; earlier rows of the same draft carry `20260930172922-bf3e`.
+
+Why: pooling by `ours`/`source` across experiments splits one pair in two, and `asRuns`-based readers miss the old rows. Found while pooling Grok 4.3 against GPT-5.1 on the channel F pairs (evals/20261002-grok-for-gemini.md); the analysis keyed on the last four characters to get round it.
+
+Done when: compare records the resolved draw id (transcripts unchanged), with a test. The rows already written stay as they are (the log is append-only); a reader that needs them matches on the suffix.
