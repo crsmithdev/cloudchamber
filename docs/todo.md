@@ -277,12 +277,16 @@ labels: [ui]
 ## 21. UI: the strip's stops have no route; #story/<id>/plan is read as a step id and lands on the stop the story stands at (spec 2026-09-30 rule 5 says a stop has a route)
 ---
 id: 21
-status: open
+status: done
 created: 2026-10-01
-updated: 2026-10-01
+updated: 2026-10-02
 priority: medium
 labels: [ui]
 ---
+
+### Notes
+
+- 2026-10-02 09:23: #story/<id>/<stop> pins a stop, a stop click writes the route; a step route still opens the step (03f49c5)
 
 ## 22. UI: gate 2 shows two 'note for the log' inputs, the header's (flag, choose, fork) and the keep row's (keep, rewrite); which note goes where is not said
 ---
