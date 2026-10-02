@@ -291,12 +291,16 @@ labels: [ui]
 ## 22. UI: gate 2 shows two 'note for the log' inputs, the header's (flag, choose, fork) and the keep row's (keep, rewrite); which note goes where is not said
 ---
 id: 22
-status: open
+status: done
 created: 2026-10-01
-updated: 2026-10-01
+updated: 2026-10-02
 priority: medium
 labels: [ui]
 ---
+
+### Notes
+
+- 2026-10-02 09:23: gate 2's own note input goes; its actions send the header's note, n focuses it (03f49c5)
 
 ## 23. UI: a version chip names its relation (round, branch, fork) only in its tooltip
 ---
