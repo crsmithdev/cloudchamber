@@ -363,7 +363,7 @@ labels: [ui]
 id: 27
 status: open
 created: 2026-10-01
-updated: 2026-10-01
+updated: 2026-10-02
 priority: medium
 labels: [listen, drafting]
 ---
@@ -375,6 +375,10 @@ Why: the model reads most figures as ones a person would say aloud, so the edit 
 Done when: a beat edited for figures ends under the ceiling in most cases, measured first -> final per beat (scratch: figures.py reads artifacts meta from the store), or `fix = "rewrite"` for the numeral fault is shown to do it; and the gain is re-measured as in evals/20261002-figures-and-first-person.md.
 
 Where: open. See evals/20261002-figures-and-first-person.md.
+
+### Notes
+
+- 2026-10-02 09:37: Measured first -> final per beat in step order (steps.started_at) over the six 2 Oct siblings: 34 numeral edits, all on beats over 24/1k, 30 end under the ceiling; mean beat 32.6 -> 17.1 figures per 1k (B arm alone: 13 edits, 11 under, 31.5 -> 16.1). The premise read the artifact order backwards: 62f0 beat 5 went 37 -> 24 and 8ca1 beat 4 went 30 -> 8, not the reverse. The four that stay over start at 35-45 or land at 24.4. Correction appended to evals/20261002-figures-and-first-person.md. fix = rewrite is not needed. The gain re-measure is #28.
 
 ## 28. Settle arm B (the figure counter alone) against channel F on twelve pairs
 ---
