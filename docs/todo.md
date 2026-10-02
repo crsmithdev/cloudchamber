@@ -386,7 +386,7 @@ Where: open. See evals/20261002-figures-and-first-person.md.
 id: 28
 status: open
 created: 2026-10-01
-updated: 2026-10-01
+updated: 2026-10-02
 priority: medium
 labels: [evaluation, listen]
 ---
@@ -398,6 +398,10 @@ Why: on one draft a brief, B read +0.91 / +0.86 / +0.70 against controls at +0.5
 Done when: the pooled gap of B against the control, both orders, is read on twelve pairs with its halves, and the counter is kept or dropped on it.
 
 Where: open. See evals/20261002-figures-and-first-person.md.
+
+### Notes
+
+- 2026-10-02 09:43: 2 Oct, later: six siblings drafted on the subscription (8-15 min each) under the listen profile as it stands (person and tense the brief's). Control = screens.listen.numerals_max overridden to 1,000,000 (the counter off; the old controls had no numeral edit either), B = the profile at 24. Pairs by brief: bf3e: control 20261002162455-24a5 (19.8 figures/1k), B 20261002162455-0cdd (17.0); 17e7: control 20261002162455-7ee7 (22.7), B 20261002162455-b371 (15.6); 69c0: control 20261002162455-a43f (24.7), B 20261002162455-efc5 (17.9). B's 21 numeral edits all fired on beats over 24, 16 end under, mean beat 32-38 -> 16-18; controls had 0 numeral edits. The judged run (twelve pairs of B against control, GPT-5.1 alone, 8 passes, about 96 passes, about 2.9 dollars at 0.03 a pass) is denied to a subagent by the auto-mode classifier as a real-world transaction. By hand, from a checkout with CLOUDCHAMBER_CORPUS=~/cloudchamber-corpus, CLOUDCHAMBER_BANK=~/cloudchamber/bank and ~/.config/cloudchamber/env sourced: for c in bf3e 24a5: bun cloudchamber lab compare --arm $c --arm 62f0,0cdd --judges openai/gpt-5.1 --passes 8 --concurrency 2; for c in 17e7 7ee7: the same with --arm 8ca1,b371; for c in 69c0 a43f: the same with --arm 14a8,efc5. The gap is B minus control (ours is the second arm). Then pool the twelve pairs and their halves and keep or drop the counter.
 
 ## 29. Narration intro and outro cuts are channel F's only: loadStoryText and loadNarrationPool cut on 'Let's dive into today's story'; channel L transcripts open on the story but one (2qk6eDM86NI) ends in a sponsor plug the judge reads, and the listen pool's wpm and profile now include channel L's six videos
 ---
