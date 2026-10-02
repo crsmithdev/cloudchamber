@@ -321,10 +321,14 @@ labels: [ui]
 id: 24
 status: open
 created: 2026-10-01
-updated: 2026-10-01
+updated: 2026-10-02
 priority: medium
 labels: [drafting, evals]
 ---
+
+### Notes
+
+- 2026-10-02 09:36: Seen again on channel L: a529 (chronology=linear) opens on day four, says 'go back three nights', and jumps 'months later'; GPT-5.1 gave the source clarity in 6 of 8 passes for the time jumps and debriefs (evals/20261002-channel-l.md)
 
 ## 25. Judging against channel F: Gemini 3.1 Pro gives our drafts 4.4-5.0 on every axis (48 passes, 30 Sep-1 Oct) and carries no information there; GPT-5.1 is the only judge that still loses axes (hook, clarity, momentum). Decide whether channel-F readings run on GPT-5.1 alone, and recalibrate GAP_MARGIN for one judge
 ---
