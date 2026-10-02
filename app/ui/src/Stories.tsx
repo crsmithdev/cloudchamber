@@ -58,7 +58,8 @@ const statusLine = (r: DrawBase) => (r.status === "done" ? "ready to draft" : la
 /** A draw's short name: the four characters after its timestamp. */
 const short = (id: string) => id.split("-").at(-1) ?? id;
 
-export function Stories({ status, selected, like, step: stepId }: { status: Status | null; selected: string | undefined; like?: string; step?: string }) {
+/** `sub` is the route's third part: a stop pins the strip, anything else names a step; none follows the story as it moves. */
+export function Stories({ status, selected, like, sub }: { status: Status | null; selected: string | undefined; like?: string; sub?: string }) {
   const [draws, setDraws] = useState<Draw[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [d, setD] = useState<Detail | null>(null);
@@ -68,8 +69,8 @@ export function Stories({ status, selected, like, step: stepId }: { status: Stat
   const [note, setNote] = useState("");
   const [asking, setAsking] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
-  // the stop a person picked on the strip; none follows the story as it moves
-  const [picked, setPicked] = useState<Stop | null>(null);
+  const picked = sub && (STOPS as readonly string[]).includes(sub) ? (sub as Stop) : null;
+  const stepId = picked ? undefined : sub;
 
   const loadDraws = () =>
     api
@@ -87,7 +88,7 @@ export function Stories({ status, selected, like, step: stepId }: { status: Stat
   const last = lastSelected("story");
   const current = isForm ? undefined : (selected ?? (draws.some((r) => r.id === last) ? last : live[0]?.head.id) ?? undefined);
   useRememberSelected("story", isForm ? undefined : selected);
-  useAddressBar(isForm ? (like ? `new/${like}` : "new") : current ? (stepId ? `story/${current}/${stepId}` : `story/${current}`) : undefined);
+  useAddressBar(isForm ? (like ? `new/${like}` : "new") : current ? (sub ? `story/${current}/${sub}` : `story/${current}`) : undefined);
   // with no draws at all, the form
   useEffect(() => {
     if (loaded && !draws.length && !selected) location.hash = "#new";
@@ -114,7 +115,6 @@ export function Stories({ status, selected, like, step: stepId }: { status: Stat
     setErr("");
     setNote("");
     setAsking(false);
-    setPicked(null);
   }, [current]);
   const working = isWorking(d);
   usePoll(
@@ -136,13 +136,19 @@ export function Stories({ status, selected, like, step: stepId }: { status: Stat
         .catch((e) => setErr(e.message));
   }, [d, stop, rootId, rootD]);
 
+  // the routes (spec rule 5): `#story/<id>/<stop>` pins a stop, `#story/<id>/<step>` opens a step, `#story/<id>` follows the story
   const setStepId = (id: string | null) => {
     if (current) location.hash = id ? `#story/${current}/${id}` : `#story/${current}`;
   };
+  const goStop = (s: Stop) => {
+    if (current) location.hash = `#story/${current}/${s}`;
+  };
+  // the header's note goes to the log with the next action, whichever stop takes it; it clears once that action lands
   const act = async (fn: () => Promise<any>, go?: (r: any) => string | undefined) => {
     setErr("");
     try {
       const r = await fn();
+      setNote("");
       const to = go?.(r);
       if (to && to !== current) location.hash = `#story/${to}`;
       else if (current) loadDetail(current);
@@ -157,7 +163,6 @@ export function Stories({ status, selected, like, step: stepId }: { status: Stat
       () => api.gate(id, { action, step_id, note, premise }),
       (r) => r.draw,
     ).then(() => {
-      setNote("");
       if (rootId) api.draw(rootId).then(setRootD);
     });
   const verdict = async (e: Example, v: "keep" | "pass", artifact = false, vnote = "") => {
@@ -195,8 +200,14 @@ export function Stories({ status, selected, like, step: stepId }: { status: Stat
         ...draws.filter((r) => r.branched_from === d.draw.id || r.forked_from === d.draw.id),
       ].filter((r, i, xs) => xs.findIndex((x) => x.id === r.id) === i)
     : [];
-  const versionNote = (r: Draw) =>
-    r.id === d?.draw.branched_from ? "branched from" : r.branched_from === d?.draw.id ? "a branch" : r.forked_from === d?.draw.id ? "a fork" : r.repaired_from ? "a repair round" : "the first round";
+  // a chip's relation to the draw open, which the chip shows: its round in the chain, or the branch or fork link
+  const relationOf = (r: Draw) => {
+    const round = chain && chain.rounds.length > 1 ? chain.rounds.findIndex((x) => x.id === r.id) : -1;
+    if (round >= 0) return `round ${round + 1}`;
+    if (r.id === d?.draw.id) return "this draw";
+    if (r.id === d?.draw.branched_from) return "branched from";
+    return r.branched_from === d?.draw.id ? "branch" : "fork";
+  };
 
   // a branch writes no brief of its own: it carries its source's
   const briefOf = (r: DrawBase): string => {
@@ -235,7 +246,7 @@ export function Stories({ status, selected, like, step: stepId }: { status: Stat
     if (stop === "report") return <iframe className="report" title="The report" src={api.reportPdf(x.draw.id)} />;
     if (stop === "plan" && x.draw.status === "awaiting_plan_gate") return <PlanGate d={x} onAct={act} aside={aside(x)} />;
     // plan and scenes share one gate 2 pane, so the ticks made in one survive a move to the other
-    return <StoryPane d={x} onAct={act} aside={aside(x)} view={stop === "plan" ? "plan" : "story"} onView={(v) => setPicked(v === "plan" ? "plan" : "scenes")} />;
+    return <StoryPane d={x} note={note} onAct={act} aside={aside(x)} view={stop === "plan" ? "plan" : "story"} onView={(v) => goStop(v === "plan" ? "plan" : "scenes")} />;
   };
 
   return (
@@ -272,7 +283,7 @@ export function Stories({ status, selected, like, step: stepId }: { status: Stat
                     className={"row" + (on ? " on" : "") + (r.running ? " running" : "") + (r.archived_at ? " old" : "")}
                     tabIndex={0}
                     aria-current={on ? "true" : undefined}
-                    onClick={() => (on && stepId ? setStepId(null) : (location.hash = `#story/${r.id}`))}
+                    onClick={() => (location.hash = `#story/${r.id}`)}
                     onKeyDown={onEnter(() => (location.hash = `#story/${r.id}`))}
                   >
                     <RowHead
@@ -330,8 +341,8 @@ export function Stories({ status, selected, like, step: stepId }: { status: Stat
                   <span className="versions" role="group" aria-label="Versions">
                     <span className="text-dim">versions</span>
                     {[...(versions.some((v) => v.id === d.draw.id) ? [] : [d.draw as Draw]), ...versions].map((v) => (
-                      <a key={v.id} href={`#story/${v.id}`} className={"num" + (v.id === d.draw.id ? " on" : "")} title={`${v.id === d.draw.id ? "this draw" : versionNote(v)} · ${statusLine(v)}`}>
-                        {short(v.id)}
+                      <a key={v.id} href={`#story/${v.id}`} className={"num" + (v.id === d.draw.id ? " on" : "")} title={`${relationOf(v)} · ${statusLine(v)}`}>
+                        {short(v.id)} <span className="text-dim">{relationOf(v)}</span>
                       </a>
                     ))}
                   </span>
@@ -339,7 +350,7 @@ export function Stories({ status, selected, like, step: stepId }: { status: Stat
                 {!step && (
                   <span className="tools" role="group" aria-label="Draw">
                     <input type="text" name="gate-note" placeholder="note for the log" aria-label="Gate note" value={note} onChange={(e) => setNote(e.target.value)} />
-                    <Btn variant="art" title="Mark this draw as a wrong call to look at later, with the note. It stays open and nothing else changes." onClick={() => act(() => api.gate(d.draw.id, { action: "flag", note })).then(() => setNote(""))}>
+                    <Btn variant="art" title="Mark this draw as a wrong call to look at later, with the note. It stays open and nothing else changes." onClick={() => act(() => api.gate(d.draw.id, { action: "flag", note }))}>
                       flag
                     </Btn>
                     {d.draw.status === "awaiting_gate" && (
@@ -380,10 +391,7 @@ export function Stories({ status, selected, like, step: stepId }: { status: Stat
                       aria-selected={s === stop && !step}
                       disabled={!can}
                       className={(s === stands ? (d.draw.at_gate || d.draw.status === "done" ? "now" : working ? "run" : "at") : can ? "past" : "") + (s === stop ? " on" : "")}
-                      onClick={() => {
-                        setPicked(s);
-                        if (step) setStepId(null);
-                      }}
+                      onClick={() => goStop(s)}
                     >
                       <span className="name">{s}</span>
                       <span className="note num">{stopNote(s, d, rootD)}</span>

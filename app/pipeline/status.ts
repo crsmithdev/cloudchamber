@@ -1,7 +1,6 @@
 import type { Db } from "./store/db.ts";
 import { eligibleCounts } from "./bank.ts";
 import { passedStories } from "./verdicts.ts";
-import { waitsIn } from "./lifecycle.ts";
 
 export function status(db: Db) {
   const count = (sql: string) => (db.query(sql).get() as any)?.n ?? 0;
@@ -20,8 +19,9 @@ export function status(db: Db) {
     themes_eligible: eligible.themes,
     verdicts: count("SELECT count(*) AS n FROM verdicts"),
     draws: byStatus,
-    // how many draws wait for a person in each tab, which the tab names show
-    waiting: Object.fromEntries((["ideate", "write"] as const).map((t) => [t, byStatus.filter((r) => waitsIn(r.status) === t).reduce((a, r) => a + r.n, 0)])),
+    // how many stories need a person, which the rail shows: the list's "needs you" group (docs/specs/2026-09-30-stories.md
+    // rule 1), so a draw a redraw replaced stays out, as does `awaiting_check_gate`, which the list files under "other"
+    needs: count("SELECT count(*) AS n FROM draws WHERE archived_at IS NULL AND superseded_by IS NULL AND status IN ('awaiting_gate', 'done', 'awaiting_plan_gate', 'awaiting_draft_gate')"),
     facet_fit: db.query("SELECT backend, n, fitted_at FROM facet_fit WHERE id = 1").get(),
   };
 }

@@ -101,8 +101,8 @@ export type Status = {
   themes_eligible: number;
   verdicts: number;
   draws: { status: string; n: number }[];
-  /** How many draws wait for a person in each tab. */
-  waiting: { ideate: number; check: number; write: number };
+  /** How many stories need a person: the list's "needs you" group. */
+  needs: number;
 };
 export type Source = { id: string; genre: string; group: string; title: string };
 /** The options one draw was made with, for a form that starts another like it. */

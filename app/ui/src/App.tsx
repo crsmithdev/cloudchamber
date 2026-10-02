@@ -89,7 +89,7 @@ export function App() {
   const on = (name: string) => (name === "stories" ? storiesView : sourcesView);
   const count = (name: string) => {
     if (!status) return null;
-    const n = name === "stories" ? status.waiting.ideate + status.waiting.write : 0;
+    const n = name === "stories" ? status.needs : 0;
     return n ? <span>{n}</span> : null;
   };
   // folded, a link is its initial with the name as its title; open, it is the name and its count
@@ -141,7 +141,7 @@ export function App() {
         </button>
       </aside>
       {sourcesView && <Browser status={status} onVerdict={refresh} />}
-      {storiesView && <Stories status={status} selected={view === "new" ? "new" : arg} like={view === "new" ? arg : undefined} step={view === "story" ? arg2 : undefined} />}
+      {storiesView && <Stories status={status} selected={view === "new" ? "new" : arg} like={view === "new" ? arg : undefined} sub={view === "story" ? arg2 : undefined} />}
     </div>
   );
 }

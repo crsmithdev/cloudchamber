@@ -104,16 +104,17 @@ export function Keys({ keys }: { keys: [string, string][] }) {
   );
 }
 /** The mark for a draw: running and waiting come from the server, the rest from the status it names. */
+// a brief ready to draft (`done`) waits for a person like a gate does: hollow, not the filled mark of a kept draft
 export const markFor = ({ status, running, at_gate }: { status: string; running: boolean; at_gate: boolean }): MarkState =>
   running
     ? "run"
-    : at_gate
+    : at_gate || status === "done"
       ? "wait"
       : status === "failed"
         ? "fail"
         : status === "repaired"
           ? "rep"
-          : status === "done" || status === "drafted"
+          : status === "drafted"
             ? "held"
             : "";
 

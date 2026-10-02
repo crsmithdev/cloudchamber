@@ -326,10 +326,9 @@ export function DraftSettings({ d, onClose, onDraft, again }: { d: Detail; onClo
 
 // --- gate 2 ------------------------------------------------------------------
 
-/** Gate 2. The view is the strip's: plan or scenes. A move to the other view keeps the ticks. */
-export function StoryPane({ d, onAct, aside, view, onView: setView }: { d: Detail; onAct: (fn: () => Promise<any>, go?: (r: any) => string | undefined) => void; aside: React.ReactNode; view: "story" | "plan"; onView: (v: "story" | "plan") => void }) {
+/** Gate 2. The view is the strip's: plan or scenes. A move to the other view keeps the ticks. `note` is the header's gate note, which every action here sends. */
+export function StoryPane({ d, note, onAct, aside, view, onView: setView }: { d: Detail; note: string; onAct: (fn: () => Promise<any>, go?: (r: any) => string | undefined) => void; aside: React.ReactNode; view: "story" | "plan"; onView: (v: "story" | "plan") => void }) {
   const [s, setS] = useState<Story | null>(null);
-  const [note, setNote] = useState("");
   const [k, setK] = useState(1);
   const [instruction, setInstruction] = useState("");
   // the flags ticked for a rewrite, each with the operator's note on it
@@ -359,7 +358,7 @@ export function StoryPane({ d, onAct, aside, view, onView: setView }: { d: Detai
   useRowsFromPage(scenesEl);
   const keys = rowKeys({
     Enter: (b) => goBeat(Number(b)),
-    n: () => document.querySelector<HTMLInputElement>(".controls input[type=text]")?.focus(),
+    n: () => document.querySelector<HTMLInputElement>("input[name=gate-note]")?.focus(),
     i: () => document.getElementById("instruction")?.focus(),
   });
   if (!s) return err ? <div className="err mt-3">{err}</div> : <span className="text-dim">loading the story…</span>;
@@ -440,10 +439,9 @@ export function StoryPane({ d, onAct, aside, view, onView: setView }: { d: Detai
     <>
       {gating && (
         <div className="controls" role="group" aria-label="Draft review">
-          <Btn variant="primary" onClick={() => gate("keep")} title={`Keep the story. It is exported to drafts/${id}/ with its schedule, findings, configuration and trail.`}>
+          <Btn variant="primary" onClick={() => gate("keep")} title={`Keep the story, with the header's note. It is exported to drafts/${id}/ with its schedule, findings, configuration and trail.`}>
             keep and export
           </Btn>
-          <input type="text" placeholder="note for the log" aria-label="Gate note" value={note} onChange={(e) => setNote(e.target.value)} />
           <span className="end">
             {report}
           </span>
