@@ -323,12 +323,16 @@ labels: [evals]
 ## 26. UI: a 'ready to draft' row carries the filled green mark that 'kept' rows carry, though it needs the operator
 ---
 id: 26
-status: open
+status: done
 created: 2026-10-01
-updated: 2026-10-01
+updated: 2026-10-02
 priority: medium
 labels: [ui]
 ---
+
+### Notes
+
+- 2026-10-02 09:23: markFor gives done the hollow waiting mark (f91c3e1 on worktree-agent-a42a847fc3356bdf1)
 
 ## 27. Listen screen: the figure edit under NUMERAL_LINE leaves most beats it touches over the ceiling
 ---
