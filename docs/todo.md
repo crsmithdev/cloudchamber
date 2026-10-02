@@ -231,12 +231,16 @@ labels: [evals]
 ## 18. A model call has no timeout: on c660 one screen-ledger call ran 597 s and one scene-edit 758 s of API time (siblings 5-37 s) and held the draft for 20 min. Hedge: retry a call that runs past a multiple of its siblings' time
 ---
 id: 18
-status: open
+status: done
 created: 2026-10-01
 updated: 2026-10-01
 priority: medium
 labels: [drafting]
 ---
+
+### Notes
+
+- 2026-10-01 17:03: Landed 1934fee: stalled past max(240 s, 5x sibling median), killed, retried once without a limit; kill path checked on a real claude process
 
 ## 19. Scenes in act chains: 2-3 sequential chains, one per act, to cut scene time to 2-3 min; parallel scenes lost (-0.23, presence -0.56) and raised surviving contradictions 15 to 20-29 a draft
 ---
