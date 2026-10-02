@@ -182,6 +182,8 @@ export function Facts({ rows, className = "" }: { rows: [React.ReactNode, React.
 /** Seconds between two timestamps, or "running". */
 /** Seconds from a start to an end, or to now while the step still runs; pair with useTick so the cell ticks. */
 export const secs = (a: string, b: string | null) => `${Math.max(0, Math.round(((b ? Date.parse(b) : Date.now()) - Date.parse(a)) / 1000))}`;
+/** A duration in seconds as a person reads it: "87 s", "21 min", "1 h 12 min". */
+export const dur = (s: number) => (s < 120 ? `${s} s` : s < 3600 ? `${Math.round(s / 60)} min` : `${Math.floor(s / 3600)} h ${Math.round((s % 3600) / 60)} min`);
 /** Poll: call fn now and every `fast` ms while active, every `slow` ms otherwise, again whenever deps change. */
 export function usePoll(fn: () => void, active: boolean, deps: unknown[], fast = 2500, slow = 20000) {
   useEffect(() => {

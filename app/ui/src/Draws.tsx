@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { marked } from "marked";
 import { api, when, type Artifact, type Example, type Facets, type DrawBase, type DrawDetail, type FullStep, type Source, type Status, type Step } from "./api.ts";
-import { Bar, Btn, Caret, Chip, Field, Head, Icon, Keys, Mark, ModelPicks, Seg, hhmm, onEnter, rowKeys, secs, usageLine, useRowsFromPage, useTick, type MarkState } from "./ui.tsx";
+import { Bar, Btn, Caret, Chip, Field, Head, Icon, Keys, Mark, ModelPicks, Seg, dur, hhmm, onEnter, rowKeys, secs, usageLine, useRowsFromPage, useTick, type MarkState } from "./ui.tsx";
 
 /** `checked` and `auto` are the chain's answers; the pane does not read them off the artifact list. */
 /** One draw in full, as the server builds it in pipeline/views.ts. */
@@ -34,6 +34,8 @@ const DARKNESS_HELP: Record<string, string> = {
   dark: "The cost is total or the way out is closed; no consolation.",
   black: "The worst outcome the premise supports, reaching past the protagonist.",
 };
+/** The top of each sampling band's stated probability, as the aside also states it. */
+const BAND_CEILING: Record<string, number> = { tail: 0.1, "off-centre": 0.35, standard: 1 };
 const develop = (index: number) => `Develop premise ${index} as a draw of its own: the same seed and examples, its own outline, context vignettes, ending and brief.`;
 export const firstParagraph = (s: string) =>
   s
@@ -167,10 +169,18 @@ const STAGE: Record<string, { name: string; does: string }> = {
   "check-resemblance": { name: "check resemblance", does: "Matches the brief against the list of overused premises and names the nearest published work." },
   "check-claims-extract": { name: "find claims", does: "Lists the brief's factual claims that the setting's authority can confirm or deny." },
   "check-claims-verify": { name: "verify claim", does: "Checks one claim against the setting's authority: the setting file, its reference files or the web." },
+  "check-reader": { name: "check reader", does: "Reads the brief as a reader would and asks the questions a plot hole leaves open." },
+  "check-claims-confirm": { name: "confirm claim", does: "Reads a contradicted claim a second time against its evidence; a no makes the claim unverifiable." },
   schedule: { name: "plan scenes", does: "Plans the story as beats: each beat's job, its word cap, what the reader knows by its end and what stays withheld." },
+  "ir-static": { name: "lint plan", does: "Reads the schedule for shape faults: a beat with no job, a withheld item never revealed. No model call." },
+  "ir-symbolize": { name: "read symbols", does: "Reads the pinned ledger into a table of symbols: people, bodies, places, objects, times, counts and facts." },
+  "ir-plan-ledger": { name: "check plan", does: "Reads the schedule against the symbol table and reports each beat that contradicts the ledger." },
   scene: { name: "write scene", does: "Writes one beat of the schedule as a scene. A rewrite of a scene adds one more run." },
+  "scene-edit": { name: "edit scene", does: "Rewrites in place only the sentences of a scene that break a length or numeral rule; the rest of the scene stands." },
   "screen-ledger": { name: "screen facts", does: "Checks one scene against the ledger of settled facts and flags each contradiction with a replacement." },
   "screen-structure": { name: "screen structure", does: "Asks one scene the present-or-absent questions that mark a weak draft, each answered with a quote." },
+  "screen-restated": { name: "screen restated", does: "Finds each sentence a beat says again from an earlier beat. No model call." },
+  "screen-listen": { name: "screen listen", does: "Measures the draft against the narrated pool: sentence length, numerals, quote marks, the body and the listener named. No model call." },
   instruction: { name: "your instruction", does: "An instruction you gave at gate 1, stored as a finding and accepted with the others. No model call." },
   "screen-slop": { name: "count slop", does: "Counts overused words, not-X-but-Y turns, repeated trigrams and paragraph shape against the passage pool. No model call." },
 };
@@ -344,7 +354,9 @@ export function DrawBody({
   const [editing, setEditing] = useState<string | null>(null);
   const [edit, setEdit] = useState("");
   const cands = d.candidates;
-  const maxP = Math.max(...cands.map((c) => c.probability), 0.01);
+  // the bar is the stated probability against the sampling band's ceiling, so five tail premises do not all read as full
+  const band = BAND_CEILING[d.draw.sampling] ?? 1;
+  const maxP = Math.max(...cands.map((c) => c.probability), band);
   const gating = d.draw.actions.choose === null;
   const running = d.steps.filter((s) => s.status === "running");
   const runningExec = new Set(running.filter((s) => s.stage === "execute").map((s) => s.id));
@@ -374,7 +386,7 @@ export function DrawBody({
               className="mt-5"
               note={
                 <>
-                  lowest probability first
+                  lowest probability first · bars out of {band}, the {d.draw.sampling} band's ceiling
                   {gating && " · choose runs the outline, the context plan, two contexts and the ending: 5 model calls"}
                   {(gating || forkable) && (
                     <>
@@ -432,14 +444,10 @@ export function DrawBody({
                               choose
                             </Btn>
                           )}
-                          {chosen && (
-                            <a className="link num" href={`#story/${d.draw.id}`}>
-                              in check <Icon name="arrow_forward" />
-                            </a>
-                          )}
+                          {chosen && <span className="text-gold">chosen</span>}
                           {fork && (
-                            <a className="link num" href={`#story/${fork.id}`}>
-                              in check <Icon name="arrow_forward" />
+                            <a className="link num" href={`#story/${fork.id}`} title="The draw developed from this premise as a fork.">
+                              fork <Icon name="arrow_forward" />
                             </a>
                           )}
                           {!gating && !chosen && !fork && d.draw.chosen_step && (
@@ -472,7 +480,7 @@ export function DrawBody({
                           {edits.map((f) => (
                             <div key={f.id} className="mt-1">
                               <a className="link num" href={`#story/${f.id}`} title="A draw developed from an edit of this premise.">
-                                edited <Icon name="arrow_forward" />
+                                edited fork <Icon name="arrow_forward" />
                               </a>
                             </div>
                           ))}
@@ -679,7 +687,7 @@ export function DrawAside({ d, ideation, onStep, top, rows = [] }: { d: Detail; 
               "model calls",
               "The model calls that finished, and their seconds added together.",
               <>
-                {steps.length} <span className="text-dim">· {callSecs} s</span>
+                {steps.length} <span className="text-dim">· {dur(callSecs)}</span>
               </>,
               "font-mono",
             )}
@@ -702,13 +710,15 @@ export function DrawAside({ d, ideation, onStep, top, rows = [] }: { d: Detail; 
 /** The step's own text is fetched here: a draw's steps arrive without it. */
 export function StepView({ step, chosen, onBack }: { step: Step; chosen: boolean; onBack: () => void }) {
   const [full, setFull] = useState<{ step: FullStep; artifacts: Artifact[] } | null>(null);
+  const [err, setErr] = useState("");
   useTick(!step.ended_at);
   useEffect(() => {
     setFull(null);
+    setErr("");
     api
       .step(step.id)
       .then(setFull)
-      .catch(() => {});
+      .catch((e) => setErr(`the step's text did not load: ${e.message}`));
   }, [step.id]);
   const raw = (() => {
     const r = full?.step.raw_response;
@@ -738,6 +748,7 @@ export function StepView({ step, chosen, onBack }: { step: Step; chosen: boolean
         {chosen && <span className="text-keep">chosen</span>}
       </div>
       {step.error && <div className="err mt-3">{step.error}</div>}
+      {err && <div className="err mt-3">{err}</div>}
       <Head className="mt-5">system</Head>
       <div className="text-mute">{step.system_prompt}</div>
       <Head className="mt-5" note={`${step.prompt_chars} chars`}>
@@ -1018,6 +1029,8 @@ export function BriefFiles({ id, open = "outline.md" }: { id: string; open?: str
   const [openFile, setOpenFile] = useState<string | null>(open);
   useEffect(() => setOpenFile(open), [open, id]);
   if (!brief) return <span className="text-dim">loading the brief…</span>;
+  // the fetch failed, or the files were never written: an empty table would say nothing
+  if (!BRIEF_FILES.some((f) => brief[f])) return <span className="text-dim">no brief files under briefs/{id}/</span>;
   return (
     <table className="mt-1">
       <tbody>

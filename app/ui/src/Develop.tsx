@@ -7,30 +7,17 @@ import { Bar, Btn, Caret as Chevron, Chip, Facts, Field, Head, Icon, Keys, Mark,
 const unquote = (s: string) => s.trim().replace(/^["“”'‘’]+|["“”'‘’]+$/g, "");
 
 /**
- * A brief's controls: draft it, or flag it with a note. The brief's text checks run in the draft, and are read at
- * the plan gate.
+ * A brief that stands. `brief` names the draw whose files hold it: a branch carries its source's brief. The flag
+ * control is the pane header's; here the brief says only why it cannot be drafted, or shows its draft settings.
  */
-function BriefControls({ d, onFlag }: { d: Detail; onFlag: (note: string) => void }) {
-  const [note, setNote] = useState("");
-  const a = d.draw.actions;
-  return (
-    <div className="controls" role="group" aria-label="Brief">
-      {a.draft && <span className="text-mute">{a.draft}</span>}
-      <span className="end">
-        <input type="text" placeholder="note for the log" aria-label="Note for the log" value={note} onChange={(e) => setNote(e.target.value)} />
-        <Btn variant="art" disabled={!!a.flag} onClick={() => onFlag(note)} title={a.flag ?? "Mark this brief as looking wrong, with the note. Nothing runs."}>
-          flag
-        </Btn>
-      </span>
-    </div>
-  );
-}
-
-/** A brief that stands. `brief` names the draw whose files hold it: a branch carries its source's brief. */
-export function BriefReady({ d, brief = d.draw.id, controls = true, onFlag, onDraft, aside }: { d: Detail; brief?: string; controls?: boolean; onFlag: (note: string) => void; onDraft: (b: DraftBody) => void; aside: React.ReactNode }) {
+export function BriefReady({ d, brief = d.draw.id, controls = true, onDraft, aside }: { d: Detail; brief?: string; controls?: boolean; onDraft: (b: DraftBody) => void; aside: React.ReactNode }) {
   return (
     <>
-      {controls && <BriefControls d={d} onFlag={onFlag} />}
+      {controls && d.draw.actions.draft && (
+        <div className="controls">
+          <span className="text-mute">{d.draw.actions.draft}</span>
+        </div>
+      )}
       {/* a brief ready to draft shows its settings at once */}
       {controls && !d.draw.actions.draft && <DraftSettings d={d} onDraft={onDraft} />}
       <div className="drawbody">
@@ -66,6 +53,8 @@ const BUILD = ["outline", "context", "ending"];
  */
 export function Building({ d, aside }: { d: Detail; aside: React.ReactNode }) {
   const running = d.steps.filter((s) => s.status === "running");
+  // a failed draw stops here with what landed; nothing is in flight and nothing refreshes
+  const failed = d.draw.status === "failed";
   // a repair round's stages tick the same build steps: repair-outline is the outline written again
   const done = new Set(d.steps.filter((s) => s.status === "done").map((s) => s.stage.replace(/^repair-/, "")));
   const { vignette, outline, contexts, ending } = d.parts;
@@ -75,7 +64,7 @@ export function Building({ d, aside }: { d: Detail; aside: React.ReactNode }) {
       <tr className={body ? "pick" : "faded"} tabIndex={body ? 0 : undefined} onClick={() => body && setOpenPart(openPart === name ? null : name)} onKeyDown={onEnter(() => body && setOpenPart(openPart === name ? null : name))}>
         <td className="w-4">{body ? <Chevron open={openPart === name} /> : <Mark state={running.length ? "run" : "todo"} />}</td>
         <td className="num whitespace-nowrap text-dim">{name}</td>
-        <td className="text-mute">{body ? <span className="line-clamp-1">{firstParagraph(body).slice(0, 90)}</span> : <span className={running.length ? "sweep inline-block text-running" : ""}>waiting</span>}</td>
+        <td className="text-mute">{body ? <span className="line-clamp-1">{firstParagraph(body).slice(0, 90)}</span> : failed ? <span className="text-dim">not written</span> : <span className={running.length ? "sweep inline-block text-running" : ""}>waiting</span>}</td>
       </tr>
       {body && openPart === name && (
         <tr className="spans">
@@ -99,11 +88,11 @@ export function Building({ d, aside }: { d: Detail; aside: React.ReactNode }) {
                   {done.has(s) && <Icon name="check" />}
                 </React.Fragment>
               ))}
-              {" · the page refreshes itself"}
+              {!failed && " · the page refreshes itself"}
             </>
           }
         >
-          {running.length ? `${running.length} call${running.length > 1 ? "s" : ""} in flight: ${stageNames(running)}` : "waiting for the next step"}
+          {running.length ? `${running.length} call${running.length > 1 ? "s" : ""} in flight: ${stageNames(running)}` : failed ? "the draw failed; nothing runs" : "waiting for the next step"}
         </Head>
         <Head className="mt-6">the brief, as it lands</Head>
         <table className="mt-1">
@@ -351,13 +340,14 @@ export function StoryPane({ d, onAct, aside, view, onView: setView }: { d: Detai
   const [how, setHow] = useState<"rewrite" | "replan" | "plan">("rewrite");
   // under "fix the plan": a beat's lines rewritten in the plan view
   const [edits, setEdits] = useState<Edits>({});
+  const [err, setErr] = useState("");
   const id = d.draw.id;
   const marks = useMarks(id, s);
   useEffect(() => {
     api
       .story(id)
       .then(setS)
-      .catch(() => {});
+      .catch((e) => setErr(`the story did not load: ${e.message}`));
   }, [id, d.steps.length]);
   // the keys act on the focused scene row: Enter opens its beat in the story
   const goBeat = (beat: number) => {
@@ -372,7 +362,7 @@ export function StoryPane({ d, onAct, aside, view, onView: setView }: { d: Detai
     n: () => document.querySelector<HTMLInputElement>(".controls input[type=text]")?.focus(),
     i: () => document.getElementById("instruction")?.focus(),
   });
-  if (!s) return <span className="text-dim">loading the story…</span>;
+  if (!s) return err ? <div className="err mt-3">{err}</div> : <span className="text-dim">loading the story…</span>;
   const gating = d.draw.actions.keep === null;
   const gate = (action: string, extra: Record<string, unknown> = {}) => onAct(() => api.gate(id, { action, note, ...extra }));
   const M = s.scenes.length;
@@ -419,6 +409,27 @@ export function StoryPane({ d, onAct, aside, view, onView: setView }: { d: Detai
   const words = s.scenes.reduce((a, x) => a + wordsOf(x.text), 0);
   const cfg = d.draw.draft_config ? JSON.parse(d.draw.draft_config) : null;
   const nStructure = s.profiles.reduce((a, p) => a + p.flags.length, 0);
+  // what the draft was asked for and what it became; in the aside beside the draw's own facts, so the story starts at the top
+  const draftFacts = (
+    <div className="facts-block mb-6">
+      <Head as="div">draft</Head>
+      <Facts
+        className="mt-1"
+        rows={
+          cfg
+            ? ([
+                ["length", `${cfg.config.length.words.toLocaleString()} words asked · ${words.toLocaleString()} written`],
+                ["beats", `${M}${cfg.config.beats.count === "auto" ? ` · auto ${cfg.config.beats.min}–${cfg.config.beats.max}` : ""}`],
+                ...Object.entries(s.schedule?.form ?? {}).map(([a, x]) => [a, x] as [React.ReactNode, React.ReactNode]),
+                ["ending", cfg.config.form.ending],
+                ["scenes", cfg.config.scenes.order],
+                ...(cfg.profile ? [["profile", cfg.profile] as [React.ReactNode, React.ReactNode]] : []),
+              ] as [React.ReactNode, React.ReactNode][])
+            : ([["written", `${words.toLocaleString()} words`]] as [React.ReactNode, React.ReactNode][])
+        }
+      />
+    </div>
+  );
   // the report is printed after the draft settles, so the link appears on a later poll
   const report = d.report && (
     <a href={api.reportPdf(id)} target="_blank" rel="noopener" className="num" title={`The story and everything that made it, from output/${id}/report.pdf.`}>
@@ -518,7 +529,7 @@ export function StoryPane({ d, onAct, aside, view, onView: setView }: { d: Detai
                     : `A new draft, branched from this one: beats before ${beats[0] ?? 1} are carried word for word, the schedule is planned again from beat ${beats[0] ?? 1} under the instruction, and every beat from there is written under it. Ticked flags are not carried. This draft stays as it is.`
                 }
               >
-                {how === "rewrite" ? `rewrite ${beats.length === 1 ? `beat ${beats[0]}` : `${beats.length} beats`}${nTicked ? ` · ${nTicked} flag${nTicked > 1 ? "s" : ""}` : ""}` : `branch and re-plan from ${beats[0] ?? 1}`}
+                {how === "rewrite" ? `rewrite${beats.length === 1 ? ` beat ${beats[0]}` : beats.length ? ` ${beats.length} beats` : ""}${nTicked ? ` · ${nTicked} flag${nTicked > 1 ? "s" : ""}` : ""}` : `branch and re-plan from ${beats[0] ?? 1}`}
               </Btn>
               )}
             </span>
@@ -558,21 +569,6 @@ export function StoryPane({ d, onAct, aside, view, onView: setView }: { d: Detai
           </span>
         </div>
       )}
-      <Facts
-        className="mt-3 max-w-[48rem]"
-        rows={[
-          ...(cfg
-            ? ([
-                ["length", `${cfg.config.length.words.toLocaleString()} words · ${words.toLocaleString()} written`],
-                ["beats", `${M}${cfg.config.beats.count === "auto" ? ` · auto ${cfg.config.beats.min}–${cfg.config.beats.max}` : ""}`],
-                ...Object.entries(s.schedule?.form ?? {}).map(([a, x]) => [a, x] as [React.ReactNode, React.ReactNode]),
-                ["ending", cfg.config.form.ending],
-                ["scenes", cfg.config.scenes.order],
-                ...(cfg.profile ? [["profile", cfg.profile] as [React.ReactNode, React.ReactNode]] : []),
-              ] as [React.ReactNode, React.ReactNode][])
-            : ([["written", `${words.toLocaleString()} words`]] as [React.ReactNode, React.ReactNode][])),
-        ]}
-      />
       <div className="drawbody wide">
         <div className="min-w-0">
           {view === "plan" && s.schedule ? (
@@ -594,8 +590,8 @@ export function StoryPane({ d, onAct, aside, view, onView: setView }: { d: Detai
                           {beat ? ` / ${beat.words}` : ""}
                           {over ? " · over the word cap" : ""}
                         </span>
-                        {beat && beat.absorbs !== "none" && <> · absorbs {beat.absorbs}</>} · <span className="text-mute">{nOpen ? `${nOpen} open` : "nothing open"}</span>
-                        {fl.plan.length > 0 && <span className="text-running"> · {fl.plan.length} plan</span>}
+                        {beat && beat.absorbs !== "none" && <> · absorbs {beat.absorbs}</>} · <span className="text-mute">{nOpen ? `${nOpen} open flag${nOpen > 1 ? "s" : ""}` : "no open flags"}</span>
+                        {fl.plan.length > 0 && <span className="text-running"> · {fl.plan.length} plan finding{fl.plan.length > 1 ? "s" : ""}</span>}
                       </>
                     }
                   >
@@ -609,6 +605,7 @@ export function StoryPane({ d, onAct, aside, view, onView: setView }: { d: Detai
           )}
         </div>
         <div className="aside min-w-0">
+          {draftFacts}
           {view === "plan" ? (
             <>
               <SymbolTable s={s} sym={sym} setSym={setSym} />
@@ -1049,7 +1046,7 @@ function PlanView({ s, ticks, setTicks, gating, sym, onSym, edits, setEdits, rea
       <div className="mt-6">
       <Head note="what stays hidden until which beat · shaded is withheld, the gold cell is the beat that reveals it">withholding</Head>
       <div className="mt-2 overflow-x-auto">
-        <div className="chart" style={{ gridTemplateColumns: `minmax(0, 2fr) repeat(${M}, minmax(0, 1fr))` }}>
+        <div className="chart" style={{ gridTemplateColumns: `minmax(14rem, 3fr) repeat(${M}, minmax(0, 1fr))` }}>
           <div className="h" style={{ textAlign: "right", paddingRight: 12 }}>
             beat
           </div>
@@ -1172,19 +1169,21 @@ export function PlanGate({ d, onAct, aside }: { d: Detail; onAct: (fn: () => Pro
   // the brief's text checks ran in the draft (IR spec §15.3): the reader's questions and the profiles
   const [f, setF] = useState<Findings | null>(null);
   const [ins, setIns] = useState<Instruction>({ text: "", parts: [], kind: "direction" });
+  const [err, setErr] = useState("");
   const id = d.draw.id;
   const marks = useMarks(id, s);
   useEffect(() => {
     api
       .story(id)
       .then(setS)
-      .catch(() => {});
+      .catch((e) => setErr(`the plan did not load: ${e.message}`));
+    // the brief's checks are an aside here: a failed fetch leaves them out
     api
       .findings(id)
       .then(setF)
       .catch(() => {});
   }, [id, d.steps.length]);
-  if (!s || !s.schedule) return <span className="text-dim">loading the plan…</span>;
+  if (!s || !s.schedule) return err ? <div className="err mt-3">{err}</div> : <span className="text-dim">loading the plan…</span>;
   const partNames = ["vignette", "ending", ...d.parts.contexts.map((c) => `context ${c.index}`)];
   const questions = f?.listed.filter((x) => x.checkers.includes("reader")) ?? [];
   // the repair makes a new draw and plans it again; this one is superseded, and the check tab links to the new one

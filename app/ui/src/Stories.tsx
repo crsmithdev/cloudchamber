@@ -207,7 +207,8 @@ export function Stories({ status, selected, like, step: stepId }: { status: Stat
   const body = (x: Detail) => {
     if (stop === "premises") {
       const p = rootId ? (rootD?.draw.id === rootId ? rootD : null) : x;
-      if (!p) return <span className="text-dim">loading the premises…</span>;
+      // a fetch that failed shows its error above the strip; nothing else is coming
+      if (!p) return err ? null : <span className="text-dim">loading the premises…</span>;
       return (
         <DrawBody
           d={p}
@@ -225,7 +226,6 @@ export function Stories({ status, selected, like, step: stepId }: { status: Stat
             d={x}
             brief={briefOf(x.draw)}
             controls={BRIEF.has(x.draw.status)}
-            onFlag={(n) => act(() => api.gate(x.draw.id, { action: "flag", note: n }))}
             onDraft={(b) => act(() => api.draft(x.draw.id, b))}
             aside={aside(x)}
           />
@@ -245,10 +245,12 @@ export function Stories({ status, selected, like, step: stepId }: { status: Stat
           <LinkBtn variant="primary" href="#new">
             draw
           </LinkBtn>
-          <span className="head">
-            {live.filter((c) => groupOf(c.head) === "needs").length} need you
-            <ArchivedToggle archived={archived} shown={showArchived} onToggle={() => setShowArchived((v) => !v)} />
-          </span>
+          {loaded && (
+            <span className="head">
+              {live.filter((c) => groupOf(c.head) === "needs").length} need you
+              <ArchivedToggle archived={archived} shown={showArchived} onToggle={() => setShowArchived((v) => !v)} />
+            </span>
+          )}
         </div>
         {loaded && !shown.length && <div className="empty">No stories yet.</div>}
         {GROUPS.map((g) => {
@@ -409,7 +411,13 @@ function stopNote(s: Stop, d: Detail, root: Detail | null): string {
     const chosen = p.candidates.find((c) => c.step_id === p.draw.chosen_step);
     return chosen ? `#${chosen.index} of ${p.candidates.length}` : p.candidates.length ? `${p.candidates.length} to choose from` : p === d && d.origin && d.origin.id !== d.draw.id ? "chosen" : "being written";
   }
-  if (s === "brief") return BRIEF.has(d.draw.status) || PLANNED.has(d.draw.status) ? "outline · ending" : d.draw.chosen_step || d.draw.repaired_from ? "being written" : "—";
+  if (s === "brief") {
+    if (BRIEF.has(d.draw.status) || PLANNED.has(d.draw.status)) return "outline · ending";
+    if (!d.draw.chosen_step && !d.draw.repaired_from) return "—";
+    // a failed draw stops with what landed: the whole brief, or part of it
+    if (d.draw.status === "failed") return d.parts.ending ? "outline · ending" : "stopped";
+    return "being written";
+  }
   if (s === "plan") return d.draw.status === "awaiting_plan_gate" ? "the plan gate" : PLANNED.has(d.draw.status) ? "beats · symbols" : "—";
   if (s === "scenes") return d.draw.status === "awaiting_draft_gate" ? "gate 2" : d.draw.status === "drafted" ? "kept" : d.draw.status === "drafting" ? "being written" : "—";
   return d.report ? "report.pdf" : "—";

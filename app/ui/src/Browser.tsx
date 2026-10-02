@@ -159,6 +159,8 @@ export function Browser({ status, onVerdict }: { status: Status | null; onVerdic
   );
   const bySource = new Map(status?.per_source.map((s) => [s.source, s]) ?? []);
   const withItems = kind === "example" || kind === "story";
+  // only a passage sits in a cell; the column is left out of the other tables
+  const withCell = kind === "example";
   const active = Object.entries(f)
     .filter(([, v]) => v)
     .map(([k, v]) => `${k}: ${v}`);
@@ -336,7 +338,7 @@ export function Browser({ status, onVerdict }: { status: Status | null; onVerdic
               <tr>
                 <th className="head sticky">{kind === "story" ? "story" : "text"}</th>
                 <th className="head sticky">from</th>
-                <th className="head sticky">voice / mode</th>
+                {withCell && <th className="head sticky">voice / mode</th>}
                 <th className="head sticky w-12 text-center">state</th>
                 <th className="head sticky">verdict</th>
                 <th className="head sticky"></th>
@@ -422,10 +424,12 @@ export function Browser({ status, onVerdict }: { status: Status | null; onVerdic
                         </>
                       )}
                     </td>
-                    <td className="num text-dim">
-                      {it.cell}
-                      {it.suspect?.length ? <div className="warn font-sans">{it.suspect.join(", ")}</div> : null}
-                    </td>
+                    {withCell && (
+                      <td className="num text-dim">
+                        {it.cell}
+                        {it.suspect?.length ? <div className="warn font-sans">{it.suspect.join(", ")}</div> : null}
+                      </td>
+                    )}
                     <td className="text-center">
                       <Mark state={verdictMark(it)} />
                     </td>
