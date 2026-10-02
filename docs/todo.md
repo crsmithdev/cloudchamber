@@ -375,3 +375,13 @@ updated: 2026-10-02
 priority: medium
 labels: [eval, narration]
 ---
+
+## 30. The cloudchamber skill's command list is stale: it names draft --auto, check, gate accept|auto|dismiss|hold, which the CLI no longer has; draw-show, lab, branch and the plan gate are missing
+---
+id: 30
+status: open
+created: 2026-10-02
+updated: 2026-10-02
+priority: medium
+labels: [docs, skill]
+---
