@@ -319,3 +319,13 @@ updated: 2026-10-01
 priority: medium
 labels: [evals]
 ---
+
+## 26. UI: a 'ready to draft' row carries the filled green mark that 'kept' rows carry, though it needs the operator
+---
+id: 26
+status: open
+created: 2026-10-01
+updated: 2026-10-01
+priority: medium
+labels: [ui]
+---
