@@ -245,9 +245,13 @@ labels: [drafting]
 ## 19. Scenes in act chains: 2-3 sequential chains, one per act, to cut scene time to 2-3 min; parallel scenes lost (-0.23, presence -0.56) and raised surviving contradictions 15 to 20-29 a draft
 ---
 id: 19
-status: open
+status: done
 created: 2026-10-01
 updated: 2026-10-01
 priority: medium
 labels: [drafting]
 ---
+
+### Notes
+
+- 2026-10-01 17:22: Landed e936a22 as scenes.order = acts, default unchanged: -0.07 (floor 0.30), canon 12/19/19 v 15/15/15, scenes 2-2.7 min v ~6
