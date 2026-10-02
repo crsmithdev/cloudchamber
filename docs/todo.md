@@ -329,3 +329,21 @@ updated: 2026-10-01
 priority: medium
 labels: [ui]
 ---
+
+## 27. Listen screen: the figure edit under NUMERAL_LINE leaves most beats it touches over the ceiling
+---
+id: 27
+status: open
+created: 2026-10-01
+updated: 2026-10-01
+priority: medium
+labels: [listen, drafting]
+---
+
+What: after a beat trips `numerals_max` (24 per 1k, digits or words since c98ed95), the one `sceneEdit` under NUMERAL_LINE brings the beat under the ceiling in few cases. 2 Oct siblings: 62f0 beat 5 24 -> 37, 8ca1 beat 4 8 -> 30 (after a register rewrite then the edit), 0458 beat 3 16 -> 37, 6dcc beat 7 25 -> 49 untouched. Final draft means stay 17-27 against a pool of 5.1.
+
+Why: the model reads most figures as ones a person would say aloud, so the edit keeps them; the ceiling is an instrument that reports and does not bite. B arm drafts (counter alone) read +0.70 to +0.91 against channel F on GPT-5.1 (controls +0.30 to +0.67), so there is a gain to chase, but the mechanism is not shown while the edit does not move the rate.
+
+Done when: a beat edited for figures ends under the ceiling in most cases, measured first -> final per beat (scratch: figures.py reads artifacts meta from the store), or `fix = "rewrite"` for the numeral fault is shown to do it; and the gain is re-measured as in evals/20261002-figures-and-first-person.md.
+
+Where: open. See evals/20261002-figures-and-first-person.md.
