@@ -259,3 +259,13 @@ labels: [drafting]
 ### Notes
 
 - 2026-10-01 17:22: Landed e936a22 as scenes.order = acts, default unchanged: -0.07 (floor 0.30), canon 12/19/19 v 15/15/15, scenes 2-2.7 min v ~6
+
+## 20. UI: the rail's stories count and the list's 'need you' count differ (47 v 46): the server counts by status, the list by group
+---
+id: 20
+status: open
+created: 2026-10-01
+updated: 2026-10-01
+priority: medium
+labels: [ui]
+---
