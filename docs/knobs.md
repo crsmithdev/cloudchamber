@@ -97,12 +97,15 @@ cloudchamber draft; every key of draft.toml is overridable per draw, and a profi
 
 | | |
 |---|---|
-| `--profile` | flash, novelette, narrated, signal, listen |
+| `--profile` | listen, testimony, rules, dossier |
 | `--words` | 5000 (tolerance 0.2) |
 | `--beats` | auto, between 5 and 10 of 400-800 words |
 | `--tense / --person` | past \| present · first \| second \| third |
-| `--chronology / --container` | linear \| nonlinear · prose \| document \| interleaved |
+| `--chronology / --container` | linear \| nonlinear · prose \| document \| interleaved \| told \| rules |
 | `--order` | sequential |
+| `structure` | template auto (auto \| listen \| told \| signal) · register auto (auto \| none \| told \| signal \| teller) |
+| `opening` | mode scene (scene \| promise \| cold \| slow) · window 150 words · echo_title false |
+| `clarity` | signposts scene (scene \| spoken) · focal auto (auto \| 1) · recap false |
 | `checks` | structure, resemblance, reader · 2 samples, kept at 2 |
 | `screens` | plan, ledger, structure, slop, listen, claims · 1 samples, kept at 1 |
 | `repair` | auto: up to 4 rounds, accepting findings scoring 7+, patience 2 |

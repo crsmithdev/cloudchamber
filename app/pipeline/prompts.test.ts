@@ -20,6 +20,10 @@ const BUDGET: Record<string, number> = {
   scheduleTold: 126,
   sceneSignal: 110,
   sceneTold: 77,
+  // the testimony, rules and dossier profiles (3 Oct): sceneSignal and sceneTeller carry one of the time sentences in {time}
+  sceneTeller: 159,
+  scheduleRules: 135,
+  timeSpoken: 48,
 };
 
 describe("drafting prompt budgets", () => {

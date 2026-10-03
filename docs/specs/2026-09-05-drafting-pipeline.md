@@ -1031,3 +1031,47 @@ compound given to every soldier. Neither was in the brief, so no check pass
 could have seen them. The pass cost $1.27: $0.23 to extract and $1.04 to
 verify twelve claims on Sonnet.
 
+
+### Amendment 2026-10-03: the opening and clarity keys, and three channel profiles
+
+The hook and clarity rules were fixed text: the hook-late question and
+`HOOK_LINE` used a 150-word window, and the signal register told every beat
+that moves to give the time and place in its first sentence, which made beat
+1 open on a time and a place. On `3cee` and `1b09` the first wrong thing came
+at word 101 and 83, after time, place and routine, and the screen let it pass
+(todo #9). These rules are now keys in `draft.toml`:
+
+| key | values | default |
+|---|---|---|
+| `opening.mode` | `scene` · `promise` (the narrator's situation and the wrong thing first, as the title states them) · `cold` (open inside the wrong thing) · `slow` (no hook question) | `scene` |
+| `opening.window` | words: the hook-late question, its rewrite line and the listen schedule's first beat | 150 |
+| `opening.echo_title` | beat 1 keeps the seed title's promise, in the schedule and in the scene ask | false |
+| `clarity.signposts` | `scene` · `spoken` (a moved beat opens on a mark a teller says aloud; the register no longer asks beat 1's first sentence for a time and a place) | `scene` |
+| `clarity.focal` | `auto` · `1` (one point of view, the narrator's, in the schedule and every scene) | `auto` |
+| `clarity.recap` | each beat after the first says its stake once in its first three sentences | false |
+
+`structure.register` gains `teller`: the signal register's plain speech and
+spoken numbers from a narrator who speaks to the listener as "you" and faces
+outward, not a log. First person alone made inward drafts on 2 October
+(`evals/20261002-figures-and-first-person.md`). `form.container` gains
+`rules`: the schedule lists the rules in a `<rules>` tag, and each rule opens
+a beat or a run of beats. Under `promise` and `cold`, beat 1's scene ask
+carries the opening line too, not only its rewrite. What a key adds to a
+scene ask goes in one `<telling>` block after the register.
+
+The defaults reproduce the prompts of `c814392` byte for byte, for the
+default configuration and for the listen profile; `opening.golden.json`
+holds them and `opening.test.ts` compares. A configuration stored before the
+keys existed drafts under their defaults.
+
+The `flash`, `novelette`, `narrated` and `signal` profiles are removed; the
+`told` and `signal` templates stay as values. Three profiles come in, each
+modelled on one channel's transcripts:
+
+| profile | channel | length, beats | settings beyond listen |
+|---|---|---|---|
+| `testimony` | F (6,700 and 7,400 words) | 7,000; 8–11 of up to 1,000 | first person, past, register teller, promise, window 40, echo_title, spoken signposts, focal 1 |
+| `rules` | L, its rules stories (5,300–6,800) | 6,000; 7–10 of up to 900 | testimony, and container rules |
+| `dossier` | S (9,200–19,000, most near 11,000) | 11,000; 10–14 of up to 1,200 | register teller, promise, spoken signposts, recap; person from the brief |
+
+First run of the three profiles: `evals/20261003-profiles-testimony-rules-dossier.md`.

@@ -219,19 +219,31 @@ Two sentences a listener sees before a draft: where its narrator stands, then th
 _Avoid_: name (a name is the draw's slug from the seed), headline
 
 **Profile** (drafting):
-A named bundle of drafting settings: length, beat range, form and template.
+A named bundle of drafting settings: length, beat range, form, template, register, opening and clarity. *listen* is the control; *testimony*, *rules* and *dossier* are modelled on channels F, L and S.
 
 **Form**:
 A draft's tense, person, chronology and container. An axis a profile fixes cannot be changed by the schedule.
 
 **Container**:
-What the draft is presented as: prose, a document, interleaved strands, or told afterward to a listener.
+What the draft is presented as: prose, a document, interleaved strands, told afterward to a listener, or *rules*: hung on a numbered list of rules the narrator was given, each rule opening a beat or a run of beats.
 
 **Template**:
 The shape the schedule is asked for: *told*, *signal*, *listen*, or derived from the brief.
 
 **Register**:
-The block every scene ask carries about how the prose sounds: *told* or *signal*.
+The block every scene ask carries about how the prose sounds: *told*, *signal* or *teller*. *Teller* is signal's plain speech and spoken numbers from a narrator who speaks to the listener as "you".
+
+**Opening**:
+How beat 1 opens, and what the hook screen asks of it: *scene* (the hook inside the window), *promise* (the narrator's situation and the wrong thing first, as the title states them), *cold* (inside the wrong thing) or *slow* (no hook screen).
+
+**Window**:
+The words of beat 1 that must say what is wrong: the hook screen's question and the line its rewrite carries.
+
+**Signposts**:
+How a beat that moves in time says so: *scene* (its first sentence gives the time and place) or *spoken* (a mark a person telling it would say aloud, such as "Two nights later").
+
+**Recap**:
+One sentence early in a beat that says again what is at stake now.
 
 **Schedule**:
 The draft's plan, one entry per beat: what each beat does, when it happens, what the reader knows and what is still withheld.

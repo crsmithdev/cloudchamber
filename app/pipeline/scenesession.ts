@@ -124,7 +124,7 @@ export class SceneSession {
 
   /** One beat. `rewrite` marks a gate-2 rewrite, with the flag it answers when there is one; `instruction` is the operator's, when the beat is written under one. */
   async write(b: Beat, soFar: string[], opts: { constraints?: string; rewrite?: { findings?: string[] }; instruction?: string; session?: SessionAsk } = {}): Promise<Scene & { session?: string }> {
-    const prompt = scenePrompt(this.parts, this.schedule, b, soFar, opts.constraints, this.cfg.structure);
+    const prompt = scenePrompt(this.parts, this.schedule, b, soFar, opts.constraints, this.cfg);
     const { step, value, session } = await this.p.invoke(this.drawId, this.parent, "scene", prompt, (t) => need(t, "scene"), { context: this.context, session: opts.session });
     const n = words(value);
     const artifact_id = this.p.artifact(step, "scene", value, {
@@ -314,7 +314,7 @@ export class SceneSession {
     if (enabled.includes("structure")) await Promise.all((opts.structure ?? beats).map(async (k) => {
       const scene = scenes.find((x) => x.beat === k)!;
       const { samples: n, keep_if } = samplesFor(this.cfg.screens, "structure");
-      const { prompt, names } = structureScreen(s, k, scene.text, this.cfg.structure.template);
+      const { prompt, names } = structureScreen(s, k, scene.text, this.cfg.structure.template, this.cfg.opening);
       const rs = await runSamples(this.p, { draw: this.drawId, parent: scene.step_id, stage: "screen-structure", prompt, samples: n, parse: (t) => parseQuestions(t, names) });
       const answers = voteAnswers(rs, names, keep_if);
       const flags = flagsOf(answers, k === M);

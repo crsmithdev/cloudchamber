@@ -30,6 +30,10 @@ const atPlan = async (script = draftScript()) => {
   await t.d.draft(t.draw.id, { plan: true });
   return t;
 };
+/** The told and signal templates as the narrated and signal profiles set them, before those profiles were removed (3 Oct). */
+const TOLD = { "length.words": 7000, "beats.min": 8, "beats.max": 10, "beats.words_max": 1000, "form.person": "first", "form.tense": "past", "form.container": "told", "form.ending": "open", "structure.template": "told" };
+const SIGNAL = { "length.words": 10000, "beats.min": 10, "beats.max": 14, "beats.words_max": 1100, "form.person": "third", "form.tense": "past", "form.chronology": "linear", "form.container": "prose", "form.ending": "open", "structure.template": "signal" };
+
 const DIR = "The ending leaves the safe open; the weight stays on the pier.";
 const FACT = "The weights were last certified before the war.";
 
@@ -384,10 +388,10 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(existsSync(join(dir, "drafts", draw.id))).toBe(false);          // nothing exported before keep
   });
 
-  test("the narrated profile: the schedule is asked for the told shape, every scene carries the register, the last beat is asked what it paid, and a beat that names no body is rewritten once", async () => {
+  test("the told template: the schedule is asked for the told shape, every scene carries the register, the last beat is asked what it paid, and a beat that names no body is rewritten once", async () => {
     const toldForm = "tense: past\nperson: first\nchronology: linear\ncontainer: told";
     const { p, d, draw, model } = await drawn(draftScript({ schedule: () => schedule({ form: toldForm, cap: 875 }) }));
-    await d.draft(draw.id, { profile: "narrated", overrides: { "screens.samples": 3, "screens.keep_if": 2, "screens.listen.long_share_max": 1 } });
+    await d.draft(draw.id, { overrides: { ...TOLD, "screens.samples": 3, "screens.keep_if": 2, "screens.listen.long_share_max": 1 } });
     const sched = model.calls.find((c) => c.stage === "schedule")!;
     expect(sched.prompt).toContain("told afterward, by its narrator, to a listener");
     expect(sched.prompt).toContain("<set_piece>");
@@ -416,10 +420,10 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(JSON.parse(p.draw(draw.id).draft_config!).config.structure.template).toBe("told");
   });
 
-  test("the signal profile asks for the mission shape, carries its register into every scene, and pays for it", async () => {
+  test("the signal template asks for the mission shape, carries its register into every scene, and pays for it", async () => {
     const signalForm = "tense: past\nperson: third\nchronology: linear\ncontainer: prose";
     const { p, d, draw, model } = await drawn(draftScript({ schedule: () => schedule({ form: signalForm, cap: 1100 }) }));
-    await d.draft(draw.id, { profile: "signal", overrides: { "beats.min": 8, "screens.listen.long_share_max": 1 } });
+    await d.draft(draw.id, { overrides: { ...SIGNAL, "beats.min": 8, "screens.listen.long_share_max": 1 } });
     const sched = model.calls.find((c) => c.stage === "schedule")!;
     expect(sched.prompt).toContain("follows one specialist, close");
     expect(sched.prompt).toContain("person: third");
@@ -447,6 +451,31 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(JSON.parse(p.draw(draw.id).draft_config!).config.structure.template).toBe("listen");
   });
 
+  test("a draft carries the opening and clarity keys into its schedule, its scenes and its beat 1 screen", async () => {
+    const { p, d, draw, model } = await drawn(draftScript({ schedule: () => schedule({ cap: 1100 }) }));
+    await d.draft(draw.id, { profile: "listen", overrides: { "beats.min": 8, "screens.listen.long_share_max": 1, "opening.mode": "promise", "opening.window": 40, "clarity.focal": 1, "structure.register": "teller" } });
+    expect(model.calls.find((c) => c.stage === "schedule")!.prompt).toContain("Beat 1 opens on a promise: within its first 40 words");
+    const scenes = model.calls.filter((c) => c.stage === "scene");
+    expect(scenes[0].prompt).toContain("Within the first 40 words of this beat, in one or two sentences");
+    expect(scenes.every((c) => c.prompt.includes("One point of view: the narrator's.") && c.prompt.includes('speak to as "you"'))).toBe(true);
+    const st1 = model.calls.find((c) => c.stage === "screen-structure" && /<scene n="1">/.test(c.prompt))!;
+    expect(st1.prompt).toContain("hook-late: the first 40 words do not say both who is telling this and what went wrong");
+    expect(JSON.parse(p.draw(draw.id).draft_config!).config.opening).toEqual({ mode: "promise", window: 40, echo_title: false });
+  });
+
+  test("a draft stored before the opening and clarity keys rewrites a beat under their defaults", async () => {
+    const { p, d, draw, model } = await drawn(draftScript({ schedule: () => schedule({ cap: 1100 }) }));
+    await d.draft(draw.id, { profile: "listen", overrides: { "beats.min": 8, "screens.listen.long_share_max": 1 } });
+    const stored = JSON.parse(p.draw(draw.id).draft_config!);
+    delete stored.config.opening;
+    delete stored.config.clarity;
+    p.db.query("UPDATE draws SET draft_config = ? WHERE id = ?").run(JSON.stringify(stored), draw.id);
+    await d.rewrite(draw.id, [1], { instruction: "Open on the gauge." });
+    const last = model.calls.filter((c) => c.stage === "scene").at(-1)!;
+    expect(last.prompt).toContain("Write beat 1 of the story");
+    expect(last.prompt).toContain("When the time or the place changes, the first sentence says so.");
+  });
+
   test("a schedule that marks a beat <pays> moves the arrival screen to that beat", async () => {
     const withPays = schedule({ cap: 1100 }).replace(/(<beat n="5"[^>]*>)/, "$1<pays>yes</pays>");
     const { d, draw, model } = await drawn(draftScript({ schedule: () => withPays }));
@@ -467,7 +496,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
       return `<scene>Scene ${n} opens.${rewrite} ${Array.from({ length: 297 }, (_, i) => `s${n}w${i}`).join(" ")}</scene>`;
     };
     const { d, draw, model } = await drawn(draftScript({ schedule: () => schedule({ form: signalForm, cap: 1100 }), scene: oneSentence }));
-    await d.draft(draw.id, { profile: "signal", overrides: { "beats.min": 8, "screens.listen.fix": "rewrite" } });
+    await d.draft(draw.id, { overrides: { ...SIGNAL, "beats.min": 8, "screens.listen.fix": "rewrite" } });
     const rewrites = model.calls.filter((c) => c.stage === "scene" && c.prompt.includes("<constraints>"));
     expect(rewrites.length).toBe(8);
     expect(rewrites.every((c) => c.prompt.includes("no sentence over thirty words"))).toBe(true);
@@ -487,7 +516,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     const split = (prompt: string) => [...prompt.matchAll(/<sentence>([\s\S]*?)<\/sentence>/g)]
       .map(([, s]) => `<edit><from>${s}</from><to>${s!.replace(/ (s\d+w150) /, ". $1 ")}</to></edit>`).join("");
     const { p, d, draw, model } = await drawn(draftScript({ schedule: () => schedule({ form: signalForm, cap: 1100 }), scene: oneSentence, "scene-edit": split }));
-    await d.draft(draw.id, { profile: "signal", overrides: { "beats.min": 8 } });
+    await d.draft(draw.id, { overrides: { ...SIGNAL, "beats.min": 8 } });
     // beat 2 also names no body, so it owes a register line as well and is rewritten whole; the other seven are edited
     const rewrites = model.calls.filter((c) => c.stage === "scene" && c.prompt.includes("<constraints>"));
     expect(rewrites.map((c) => /Write beat (\d+)/.exec(c.prompt)![1])).toEqual(["2"]);
@@ -515,7 +544,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
       return out.replace(/(<question name="presence-in-room"><answer>)present/, "$1absent");
     };
     const { d, draw, model } = await drawn(draftScript({ schedule: () => withPays, "screen-structure": glass }));
-    await d.draft(draw.id, { profile: "signal", overrides: { "beats.min": 8, "screens.listen.long_share_max": 1 } });
+    await d.draft(draw.id, { overrides: { ...SIGNAL, "beats.min": 8, "screens.listen.long_share_max": 1 } });
     const rewrites = model.calls.filter((c) => c.stage === "scene" && c.prompt.includes("<constraints>"));
     // beat 2 for the body, beat 5 for the presence; nothing else
     expect(rewrites.map((c) => /Write beat (\d+)/.exec(c.prompt)![1])).toEqual(["2", "5"]);
@@ -584,7 +613,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
       return `<scene>Scene ${n} opens.${rewrite} ${[...figures, ...filler].join(" ")}</scene>`;
     };
     const { d, draw, model } = await drawn(draftScript({ scene: heavy, schedule: () => schedule({ form: signalForm, cap: 1100 }) }));
-    await d.draft(draw.id, { profile: "signal", overrides: { "beats.min": 8, "screens.listen.long_share_max": 1, "screens.listen.fix": "rewrite" } });
+    await d.draft(draw.id, { overrides: { ...SIGNAL, "beats.min": 8, "screens.listen.long_share_max": 1, "screens.listen.fix": "rewrite" } });
     const rewrites = model.calls.filter((c) => c.stage === "scene" && c.prompt.includes("<constraints>"));
     // beat 2 names no body and is rewritten for that; beat 3 is rewritten for its figures alone
     expect(rewrites.map((c) => /Write beat (\d+)/.exec(c.prompt)![1])).toEqual(["2", "3"]);
@@ -596,7 +625,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
   });
 
   test("the rewrite plan is a function of the profiles, the scenes and the ceilings", () => {
-    const cfg = loadDraftConfig("signal").config;
+    const cfg = loadDraftConfig(undefined, SIGNAL).config;
     const figures = Array.from({ length: 30 }, (_, i) => `${1000 + i}.`).join(" ");
     // no figures in words either: "one two three" would now count
     const short = Array.from({ length: 30 }, () => "a b c d e f g h i.").join(" ");
@@ -621,7 +650,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
       return `<scene>Scene ${n} opens.${rewrite ? " REWRITTEN" : ""} ${figures}${shortLines(n, 30)}</scene>`;
     };
     const { d, draw, model } = await drawn(draftScript({ scene, schedule: () => schedule({ form: signalForm, cap: 1100 }) }));
-    await d.draft(draw.id, { profile: "signal", overrides: { "beats.min": 8, "screens.listen.fix": "rewrite" } });
+    await d.draft(draw.id, { overrides: { ...SIGNAL, "beats.min": 8, "screens.listen.fix": "rewrite" } });
     const rewrites = model.calls.filter((c) => c.stage === "scene" && c.prompt.includes("<constraints>"));
     // round one: beat 2 for the body, beat 3 for its figures; round two: beat 3 again, now for its length. Beat 2 still names no body and is not sent back
     expect(rewrites.map((c) => /Write beat (\d+)/.exec(c.prompt)![1])).toEqual(["2", "3", "3"]);
@@ -778,9 +807,9 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     await expect(d2.draft(draw2.id)).rejects.toThrow(/shape/);
     expect(p2.steps(draw2.id).filter((s) => s.stage === "schedule")[0].error).toMatch(/3 beats; config asks 5\.\.10/);
     const { d: d3, draw: draw3 } = await drawn(draftScript({ schedule: () => schedule({ beats: 3, cap: 500 }) }));
-    const out = await d3.draft(draw3.id, { profile: "flash" });
+    const out = await d3.draft(draw3.id, { profile: "listen", overrides: { "length.words": 1500, "beats.count": 3 } });
     expect(out.status).toBe("awaiting_draft_gate");
-    expect(JSON.parse(out.draft_config!).profile).toBe("flash");
+    expect(JSON.parse(out.draft_config!).profile).toBe("listen");
   });
 
   test("a draft pins the ledger the outline's table renders to, with no call, and L1 reads the table with none either (T4)", async () => {
@@ -1103,7 +1132,7 @@ describe("the claims screen", () => {
     const parts = briefParts(p, draw.id);
     const before3 = chain.scenes().filter((s) => s.beat < 3).map((s) => s.text);
     const cfg = JSON.parse(p.draw(draw.id).draft_config!).config;
-    const expectedPrompt = scenePrompt(parts, sched, sched.beats[2], before3, constraintsBlock([{ replacement: VOICES_LINE }]), cfg.structure);
+    const expectedPrompt = scenePrompt(parts, sched, sched.beats[2], before3, constraintsBlock([{ replacement: VOICES_LINE }]), cfg);
     expect(scene3.prompt).toBe(expectedPrompt);
 
     // The bind prompt for beat 3 bind reads rewritten beat 2 in previous-scene:

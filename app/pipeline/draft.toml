@@ -17,12 +17,28 @@ words_max = 800
 tense = "auto"          # past | present
 person = "auto"         # first | second | third
 chronology = "auto"     # linear | nonlinear
-container = "auto"      # prose | document | interleaved
+container = "auto"      # prose | document | interleaved | told | rules: rules hangs the story on a numbered list of rules the narrator was given
 ending = "brief"        # brief | open
 
 [structure]
-register = "auto"       # auto | none | told | signal: the block every scene ask carries; auto follows the container (told) or the template (signal)
+register = "auto"       # auto | none | told | signal | teller: the block every scene ask carries; auto follows the container (told) or the template (signal);
+                        # teller is signal's plain speech and spoken numbers from a narrator who faces the listener and speaks to "you"
 template = "auto"       # auto | listen | told | signal: listen states what a listener needs and derives the form from the brief; told is the narrated shape, a cold open, set pieces, an arrival, a cost, an aftermath; signal is the mission shape, one specialist close, an ensemble, a contact, a split, a cost, a return
+
+[opening]
+# how beat 1 opens, and what the hook screen asks of it (todo #9: the screen's 150-word window let 80-100 words of
+# time, place and routine pass on 3cee and 1b09)
+mode = "scene"          # scene: the hook within the window, the register's time-and-place first sentence; promise: the first one or two
+                        # sentences say who the narrator is and what went wrong, as the title does; cold: open inside the anomaly;
+                        # slow: no hook screen, for a slow-burn written story
+window = 150            # words: the hook-late screen question, the line its rewrite carries, and the listen schedule's first beat
+echo_title = false      # beat 1 keeps the seed title's promise in its own words (ba9d: a moon-signal title opened in a cellar)
+
+[clarity]
+signposts = "scene"     # scene: a beat that moves says the time and place in its first sentence; spoken: it opens on a mark a teller
+                        # would say aloud ("Two nights later"), and beat 1's first sentence is the narrator's, not a time and a place
+focal = "auto"          # auto | 1: one point of view, the narrator's
+recap = false           # each beat after the first says once, early, what is at stake now
 
 [scenes]
 order = "sequential"    # sequential | parallel | acts: acts writes three runs of consecutive beats at once
@@ -60,43 +76,6 @@ rounds = 4              # auto repair rounds at most, and the loop's only hard b
 stop_score = 7          # auto accepts reported findings scoring this or more, and stops when none do
 patience = 2            # stop when the total open score has not fallen for this many rounds
 
-[profiles.flash]
-length.words = 1500
-beats.count = 3
-
-[profiles.novelette]
-length.words = 12000
-beats.min = 10
-beats.max = 18
-
-# told afterward to a listener, the way the narrated channels tell theirs: first person past, a cold open,
-# an arrival and a cost, an aftermath; the register asks for the body before the meaning
-[profiles.narrated]
-length.words = 7000
-beats.min = 8
-beats.max = 10
-beats.words_max = 1000
-form.person = "first"
-form.tense = "past"
-form.container = "told"
-form.ending = "open"
-structure.template = "told"
-
-# the mission shape of the long narrated channels: third person past, close on the one person who read the
-# anomaly first, an ensemble named by role, a contact in the flesh, a split decision, a paid cost, a return;
-# people speak in quoted lines and the feeling is named as it is felt
-[profiles.signal]
-length.words = 10000
-beats.min = 10
-beats.max = 14
-beats.words_max = 1100
-form.person = "third"
-form.tense = "past"
-form.chronology = "linear"
-form.container = "prose"
-form.ending = "open"
-structure.template = "signal"
-
 # what a listener needs, as requirements and not as a plot: a first beat they cannot stop inside, an arrival
 # in the flesh, a cost paid by a named person before the last beat, an aftermath; the form is the brief's,
 # but the chronology is linear: heard once, a cold open and a flashback lost clarity in both orders. Person and
@@ -112,3 +91,61 @@ form.chronology = "linear"
 form.ending = "open"
 structure.template = "listen"
 structure.register = "signal"   # quoted plain speech, the feeling named, the hour, only the numbers a person would say aloud
+
+# channel F's form: one narrator, first person, past, who faces the listener and tells it to be believed. The first
+# sentences say what the title says, the narrator's work and the wrong thing; the time moves on spoken marks; there
+# is one point of view. F's two stories run 6,700 and 7,400 words. The teller register and the promise opening face
+# the narrator outward: first person alone made a narrator's log on 2 Oct (evals/20261002-figures-and-first-person.md)
+[profiles.testimony]
+length.words = 7000
+beats.min = 8
+beats.max = 11
+beats.words_max = 1000
+form.person = "first"
+form.tense = "past"
+form.chronology = "linear"
+form.ending = "open"
+structure.template = "listen"
+structure.register = "teller"
+opening.mode = "promise"
+opening.window = 40
+opening.echo_title = true
+clarity.signposts = "spoken"
+clarity.focal = 1
+
+# channel L's rules stories: testimony, hung on a numbered list of rules the narrator was given, each rule opening a
+# beat or a run of beats. L's three rules stories run 5,300 to 6,800 words, five or six rules each
+[profiles.rules]
+length.words = 6000
+beats.min = 7
+beats.max = 10
+beats.words_max = 900
+form.person = "first"
+form.tense = "past"
+form.chronology = "linear"
+form.container = "rules"
+form.ending = "open"
+structure.template = "listen"
+structure.register = "teller"
+opening.mode = "promise"
+opening.window = 40
+opening.echo_title = true
+clarity.signposts = "spoken"
+clarity.focal = 1
+
+# channel S's accounts: a narrator who speaks to the listener as "you", says at the outset what this account is and
+# what it cost, and stops to say what is at stake and what will matter later. Five of S's seven stories are first
+# person; the person stays the brief's. S runs 9,200 to 19,000 words, most near 11,000; its openings reach the wrong
+# thing within about 40 to 130 words, so the window stays at 150, and its time moves on spoken marks
+[profiles.dossier]
+length.words = 11000
+beats.min = 10
+beats.max = 14
+beats.words_max = 1200
+form.chronology = "linear"
+form.ending = "open"
+structure.template = "listen"
+structure.register = "teller"
+opening.mode = "promise"
+clarity.signposts = "spoken"
+clarity.recap = true

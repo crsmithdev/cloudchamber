@@ -12,6 +12,8 @@ export type DraftConfig = {
   beats: { count: "auto" | number; min: number; max: number; words_min: number; words_max: number };
   form: { tense: string; person: string; chronology: string; container: string; ending: "brief" | "open" };
   structure: { template: string; register: string };
+  opening: Opening;
+  clarity: Clarity;
   scenes: { order: "sequential" | "parallel" | "acts" };
   checks: { enabled: string[]; samples: number; keep_if: number } & Record<string, unknown>;
   screens: {
@@ -28,10 +30,14 @@ export type DraftConfig = {
   } & Record<string, unknown>;
   repair: { rounds: number; stop_score: number; patience: number };
 };
+/** How beat 1 opens and what the hook screen asks of it. */
+export type Opening = { mode: "scene" | "promise" | "cold" | "slow"; window: number; echo_title: boolean };
+/** How a listener keeps the thread: the time marks, the point of view and the stake said again. */
+export type Clarity = { signposts: "scene" | "spoken"; focal: "auto" | 1; recap: boolean };
 export type Resolved = { config: DraftConfig; overridden: string[]; profile: string | null };
 
 export const FORM_VALUES: Record<FormAxis, string[]> = {
-  tense: ["past", "present"], person: ["first", "second", "third"], chronology: ["linear", "nonlinear"], container: ["prose", "document", "interleaved", "told"],
+  tense: ["past", "present"], person: ["first", "second", "third"], chronology: ["linear", "nonlinear"], container: ["prose", "document", "interleaved", "told", "rules"],
 };
 
 /** Flags as dotted keys: `length.words`, `beats.count`, `form.tense`, `scenes.order`, `checks.samples`. */
@@ -59,9 +65,14 @@ function flatten(obj: any, prefix = ""): [string, unknown][] {
 function coerce(path: string, v: string | number): unknown {
   if (typeof v === "number") return v;
   if (path === "beats.count" && v === "auto") return "auto";
+  if (path === "clarity.focal" && v === "auto") return "auto";
+  if (/^(opening\.echo_title|clarity\.recap)$/.test(path)) {
+    if (v !== "true" && v !== "false") throw new Error(`draft config: ${path} must be true or false, got ${v}`);
+    return v === "true";
+  }
   // a list of checkers or screens, comma-separated, so one run can turn one on or off
   if (/^(checks|screens)\.enabled$/.test(path)) return v.split(",").map((x) => x.trim()).filter(Boolean);
-  if (/^(length\.(words|tolerance)|beats\.(count|min|max|words_min|words_max)|checks\..*samples|checks\..*keep_if|screens\..*samples|screens\..*keep_if|screens\.listen\.(long_share_max|numerals_max)|repair\.(rounds|stop_score|patience))$/.test(path)) {
+  if (/^(length\.(words|tolerance)|beats\.(count|min|max|words_min|words_max)|checks\..*samples|checks\..*keep_if|screens\..*samples|screens\..*keep_if|screens\.listen\.(long_share_max|numerals_max)|repair\.(rounds|stop_score|patience)|opening\.window|clarity\.focal)$/.test(path)) {
     const n = Number(v);
     if (!Number.isFinite(n)) throw new Error(`draft config: ${path} must be a number, got ${v}`);
     return n;
@@ -100,7 +111,13 @@ function validate(c: DraftConfig): void {
   }
   if (!["brief", "open"].includes(c.form.ending)) bad(`form.ending must be brief or open, got ${c.form.ending}`);
   if (!["auto", "listen", "told", "signal"].includes(c.structure.template)) bad(`structure.template must be auto, listen, told or signal, got ${c.structure.template}`);
-  if (!["auto", "none", "told", "signal"].includes(c.structure.register)) bad(`structure.register must be auto, none, told or signal, got ${c.structure.register}`);
+  if (!["auto", "none", "told", "signal", "teller"].includes(c.structure.register)) bad(`structure.register must be auto, none, told, signal or teller, got ${c.structure.register}`);
+  if (!["scene", "promise", "cold", "slow"].includes(c.opening.mode)) bad(`opening.mode must be scene, promise, cold or slow, got ${c.opening.mode}`);
+  if (!(Number.isInteger(c.opening.window) && c.opening.window > 0)) bad(`opening.window must be a positive whole number of words, got ${c.opening.window}`);
+  if (typeof c.opening.echo_title !== "boolean") bad(`opening.echo_title must be true or false, got ${c.opening.echo_title}`);
+  if (!["scene", "spoken"].includes(c.clarity.signposts)) bad(`clarity.signposts must be scene or spoken, got ${c.clarity.signposts}`);
+  if (c.clarity.focal !== "auto" && c.clarity.focal !== 1) bad(`clarity.focal must be auto or 1, got ${c.clarity.focal}`);
+  if (typeof c.clarity.recap !== "boolean") bad(`clarity.recap must be true or false, got ${c.clarity.recap}`);
   if (!["sequential", "parallel", "acts"].includes(c.scenes.order)) bad(`scenes.order must be sequential, parallel or acts, got ${c.scenes.order}`);
   if (!(c.checks.samples >= 1 && c.checks.keep_if >= 1)) bad("checks.samples and checks.keep_if must be at least 1");
   if (!(c.screens.samples >= 1 && c.screens.keep_if >= 1)) bad("screens.samples and screens.keep_if must be at least 1");

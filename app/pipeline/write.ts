@@ -10,7 +10,7 @@
 import type { Pipeline, StepRow } from "./draw.ts";
 import { fill, type TemplateName } from "./prompts.ts";
 import { tag } from "./model.ts";
-import { FORM_VALUES, type DraftConfig, type FormAxis } from "./draftconfig.ts";
+import { FORM_VALUES, loadDraftConfig, type Clarity, type DraftConfig, type FormAxis, type Opening } from "./draftconfig.ts";
 import { type Answer } from "./check.ts";
 import type { BriefParts } from "./briefparts.ts";
 import type { Fault } from "./listen.ts";
@@ -31,6 +31,7 @@ export const BODY_LINE = "When a thing happens in this beat, the narrator says w
 export const PRESENCE_LINE = "In this beat the thing the story withholds is in the same place as a character with nothing between them, and it acts: it touches, moves, breaks or takes a person or a thing, on the page, at the time. It does not stand behind glass, in a doorway, or on a channel, and it does not only get looked at.";
 export const COST_LINE = "In this beat the loss happens as it happens, on the page, in the moment, with the person who pays it present; the narrator does not report it afterward.";
 const TIME_LINE = "This beat happens at a different point in the story's chronology from the beat before it. Its opening places the listener in the new time, in its own words, before the beat's events begin.";
+const TIME_LINE_SPOKEN = "This beat happens at a different point in the story's chronology from the beat before it. Its first words mark the move aloud, the way a person telling it would, before the beat's events begin.";
 export const THEME_LINE = "No sentence in this beat says what the story means or what its lesson is; the events carry it, and nobody names it.";
 const WITHHELD_LINE = "What the schedule lists as withheld after this beat stays withheld: the beat may imply it and may not state it.";
 const WRONG_LINE = "The point-of-view character is allowed to be mistaken, unfair or at fault somewhere in this beat, and the beat lets it stand.";
@@ -39,7 +40,19 @@ const OPEN_LINE = "The last beat leaves at least one question the story raised o
 /** Three outside judges gave the source people, momentum and the hook on the clean text (evals/20260920-clean-judge.md): a cast told apart by ear, one visible event a beat, and what is wrong said first. */
 export const VOICES_LINE = "The people in this beat speak in quoted lines and are told apart by how they talk, as the schedule's cast says; no two sound alike, and no line could be moved from one mouth to another.";
 export const EVENT_LINE = "Something happens in this beat that a second person present could see or hear: an act, an arrival, a breakage, a refusal said aloud. It is not thought, recollection or measurement alone.";
-export const HOOK_LINE = "The first 150 words of this beat say what is wrong: the thing the story is about, or its first effect, named or shown before any routine, setting or history.";
+/** The line a beat 1 flagged hook-late is rewritten under, by opening mode; under promise and cold it is also beat 1's first ask. Slow asks no hook. */
+export const hookLine = (o: Opening): string =>
+  o.mode === "promise" ? `Within the first ${o.window} words of this beat, in one or two sentences, the narrator says who they are and what went wrong, plainly, the way the story's title would, before any routine, setting or history; then the beat shows how it began.`
+  : o.mode === "cold" ? `This beat opens inside the wrong thing, while it is happening: within its first ${o.window} words the thing the story is about, or its first effect, is on the page, before any routine, setting or history.`
+  : `The first ${o.window} words of this beat say what is wrong: the thing the story is about, or its first effect, named or shown before any routine, setting or history.`;
+/** The drafting defaults: what a caller that passes no configuration gets. */
+const DEFAULTS = loadDraftConfig().config;
+export const HOOK_LINE = hookLine(DEFAULTS.opening);
+/** Beat 1 keeps the seed title's promise (ba9d: a moon-signal title opened on a woman in a cellar, and tied the hook). */
+const echoLine = (seed: string) => `The story's title is "${seed}". This beat keeps the title's promise in its own words: the narrator the title names and the wrong thing it names are both here, in its first lines, without quoting the title.`;
+const FOCAL_LINE = "One point of view: the narrator's. Do not go inside another person's head; what others did and felt is what the narrator saw, heard or was told.";
+const recapLine = (stakes: string) => `Within its first three sentences, this beat says once, plainly, in the narrator's voice, what is at stake now (${stakes.replace(/\.$/, "")}): one sentence, not a summary of what came before.`;
+const RULES_LINE = "When the schedule has this beat open a rule, the beat opens on the rule, its number and its words as the narrator was given them, said aloud; then what happened under it.";
 /** The listen screen's long-sentence share, over the configured ceiling, sends a beat back for one rewrite under this line. */
 export const LENGTH_LINE = "One thing per sentence, short enough to say aloud in one breath; no sentence over thirty words.";
 /** The listen screen's numeral rate, over the configured ceiling, sends a beat back for one rewrite under this line. */
@@ -74,8 +87,13 @@ export const STRUCTURE_RULES: ScreenRule[] = [
 ];
 const RULE = new Map(STRUCTURE_RULES.map((r) => [r.name, r]));
 /** The lines the flags of one beat carry, each once, in rule order; `register` keeps only the flags that send a beat back on their own. */
-export const linesOf = (flags: string[], register = false) =>
-  STRUCTURE_RULES.filter((r) => flags.includes(r.name) && (!register || r.register)).map((r) => r.line).filter((l, i, a) => a.indexOf(l) === i);
+export const linesOf = (flags: string[], register = false, cfg: Telling = DEFAULTS) =>
+  STRUCTURE_RULES.filter((r) => flags.includes(r.name) && (!register || r.register)).map((r) => lineFor(r, cfg)).filter((l, i, a) => a.indexOf(l) === i);
+/** The keys a scene ask, a screen and a rewrite line read beyond the beat itself. */
+export type Telling = Pick<DraftConfig, "structure" | "opening" | "clarity">;
+/** The line a rule's flag carries under this configuration: the hook follows the opening, the time move the signposts. */
+const lineFor = (r: ScreenRule, cfg: Telling): string =>
+  r.name === "hook-late" ? hookLine(cfg.opening) : r.name === "time-unplaced" && cfg.clarity.signposts === "spoken" ? TIME_LINE_SPOKEN : r.line;
 
 // --- schedule -------------------------------------------------------------------
 
@@ -147,7 +165,20 @@ function schedulePrompt(brief: string, cfg: DraftConfig, replan?: Replan): strin
   const shape: TemplateName | undefined = SHAPE_TEMPLATE[cfg.structure.template];
   const kept = replan && replan.from > 1 ? fill("scheduleKept", { last: String(replan.from - 1), from: String(replan.from), written: replan.schedule.raw }) : "";
   const asked = replan ? fill("scheduleReplan", { instructions: `- ${replan.instruction}`, kept }) : "";
-  return fill("schedule", { brief, words: String(cfg.length.words), beatsLine, formLines, endingLine, shape: asked + (shape ? fill(shape, {}) : "") });
+  const window = String(cfg.opening.window);
+  const firstBeat = cfg.opening.mode === "slow" ? fill("listenFirstBeatSlow", {}) : fill("listenFirstBeat", { window });
+  return fill("schedule", { brief, words: String(cfg.length.words), beatsLine, formLines, endingLine, shape: asked + (shape ? fill(shape, { firstBeat }) : "") + scheduleTelling(cfg) });
+}
+
+/** What the opening, the clarity and the rules container add to the schedule ask: a paragraph each, none under the defaults. */
+function scheduleTelling(cfg: DraftConfig): string {
+  const asks: TemplateName[] = [
+    ...(cfg.opening.mode === "promise" ? ["scheduleOpenPromise" as const] : cfg.opening.mode === "cold" ? ["scheduleOpenCold" as const] : []),
+    ...(cfg.opening.echo_title ? ["scheduleEchoTitle" as const] : []),
+    ...(cfg.clarity.focal === 1 ? ["scheduleFocal" as const] : []),
+    ...(cfg.form.container === "rules" ? ["scheduleRules" as const] : []),
+  ];
+  return asks.map((t) => fill(t, { window: String(cfg.opening.window) }) + "\n\n").join("");
 }
 
 /**
@@ -169,13 +200,30 @@ export async function runSchedule(p: Pipeline, drawId: string, parts: BriefParts
 const formLine = (s: Schedule) => (Object.keys(FORM_VALUES) as FormAxis[]).map((a) => `${a} ${s.form[a]}`).join("; ");
 /** A schedule whose container is told carries the narrated register into every scene; the signal template carries its own. */
 const told = (s: Schedule) => /\btold\b/i.test(s.form.container);
-const register = (s: Schedule, structure: { template: string; register: string }) => {
+const register = (s: Schedule, cfg: Telling) => {
+  const { structure } = cfg;
   const r = structure.register === "auto" ? (structure.template === "signal" ? "signal" : told(s) ? "told" : "none") : structure.register;
-  return r === "signal" ? [fill("sceneSignal", {})] : r === "told" ? [fill("sceneTold", {})] : [];
+  const time = fill(cfg.clarity.signposts === "spoken" ? "timeSpoken" : "timeScene", {});
+  return r === "signal" ? [fill("sceneSignal", { time })] : r === "teller" ? [fill("sceneTeller", { time })] : r === "told" ? [fill("sceneTold", {})] : [];
+};
+/** A schedule whose container is rules hangs its beats on a numbered list. */
+const rules = (s: Schedule) => /\brules\b/i.test(s.form.container);
+/** What the opening and clarity keys ask of this one beat, as one block; nothing under the defaults. */
+const telling = (parts: BriefParts, s: Schedule, b: Beat, cfg: Telling): string[] => {
+  const lines = [
+    ...(b.n === 1 && (cfg.opening.mode === "promise" || cfg.opening.mode === "cold") ? [hookLine(cfg.opening)] : []),
+    ...(b.n === 1 && cfg.opening.echo_title ? [echoLine(parts.seed.trim())] : []),
+    ...(cfg.clarity.focal === 1 ? [FOCAL_LINE] : []),
+    ...(b.n > 1 && cfg.clarity.recap && b.stakes ? [recapLine(b.stakes.trim())] : []),
+    ...(rules(s) ? [RULES_LINE] : []),
+  ];
+  return lines.length ? [fill("sceneTelling", { lines: lines.join("\n") })] : [];
 };
 /** What the scene ask says about the beat's place in time: nothing, the time, or the time and the move to it. */
-const whenLine = (b: Beat, prev?: Beat) =>
-  !b.when ? "" : movedIn(b, prev) ? ` It happens at ${b.when}; the beat before it happened at ${prev!.when}, so its opening places the listener in the new time before its events begin.` : ` It happens at ${b.when}.`;
+const whenLine = (b: Beat, prev: Beat | undefined, signposts: Clarity["signposts"]) =>
+  !b.when ? "" : !movedIn(b, prev) ? ` It happens at ${b.when}.`
+  : signposts === "spoken" ? ` It happens at ${b.when}; the beat before it happened at ${prev!.when}, so its first words mark the move aloud, the way a person telling it would, before its events begin.`
+  : ` It happens at ${b.when}; the beat before it happened at ${prev!.when}, so its opening places the listener in the new time before its events begin.`;
 const withheldLine = (b: Beat, M: number) => b.withheld.length ? b.withheld.map((w) => `${w.item} (${w.until > M ? "never revealed" : `beat ${w.until}`})`).join("; ") : "nothing";
 
 /**
@@ -194,14 +242,15 @@ export function sceneContext(parts: BriefParts, ledger: string, s: Schedule): st
 }
 
 /** The beat's own ask; `sceneContext` carries the rest. */
-export function scenePrompt(parts: BriefParts, s: Schedule, b: Beat, soFar: string[], constraints?: string, structure = { template: "auto", register: "auto" }): string {
+export function scenePrompt(parts: BriefParts, s: Schedule, b: Beat, soFar: string[], constraints?: string, cfg: Telling = DEFAULTS): string {
   const material: Record<string, string> = { chosen: parts.vignette, "context-1": parts.contexts[0] ?? "", "context-2": parts.contexts[1] ?? "", ending: parts.ending };
   const blocks = [
     ...(soFar.length ? [`<story-so-far>\n${soFar.join("\n\n")}\n</story-so-far>`] : []),
     ...(material[b.absorbs] ? [fill("sceneMaterial", { material: material[b.absorbs] })] : []),
-    ...register(s, structure),
+    ...register(s, cfg),
+    ...telling(parts, s, b, cfg),
     ...(constraints ? [constraints] : []),
-    fill("sceneAsk", { n: String(b.n), job: b.job, whenLine: whenLine(b, s.beats[b.n - 2]), known: b.known, withheld: withheldLine(b, s.beats.length), form: formLine(s), cap: String(b.words), constraintLine: constraints ? " Every line of the constraints holds." : "" }),
+    fill("sceneAsk", { n: String(b.n), job: b.job, whenLine: whenLine(b, s.beats[b.n - 2], cfg.clarity.signposts), known: b.known, withheld: withheldLine(b, s.beats.length), form: formLine(s), cap: String(b.words), constraintLine: constraints ? " Every line of the constraints holds." : "" }),
   ];
   return blocks.filter(Boolean).join("\n\n");
 }
@@ -220,6 +269,9 @@ const cleanWhen = (w: string | null) => (w ?? "").replace(/<\/?[a-z_]+>/gi, "").
 const whenKey = (w: string) => w.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 export const movedIn = (b: Beat, prev?: Beat) => !!b.when && !!prev?.when && whenKey(b.when) !== whenKey(prev.when);
 
+/** The hook-late question each opening mode asks of beat 1; slow asks none. */
+const FIRST_BEAT: Record<Exclude<Opening["mode"], "slow">, TemplateName> = { scene: "screenFirstBeat", promise: "screenFirstBeatPromise", cold: "screenFirstBeatCold" };
+
 /** Where a beat stands in the schedule, which decides the rules the structure screen asks of it. */
 type Position = { first: boolean; last: boolean; paying: boolean; moved: boolean };
 const ASKED: Record<ScreenRule["asked"], (at: Position) => boolean> = {
@@ -233,17 +285,18 @@ const ASKED: Record<ScreenRule["asked"], (at: Position) => boolean> = {
  * else under a shaped template the one before the last, which is the aftermath;
  * under `auto`, the last.
  */
-export function structureScreen(s: Schedule, k: number, scene: string, template: string): { prompt: string; names: string[] } {
+export function structureScreen(s: Schedule, k: number, scene: string, template: string, opening: Opening = DEFAULTS.opening): { prompt: string; names: string[] } {
   const M = s.beats.length, b = s.beats[k - 1]!, prev = s.beats[k - 2];
   const paying = template === "auto" || M < 2 ? M : s.beats.find((x) => x.pays)?.n ?? M - 1;
   const at: Position = { first: k === 1, last: k === M, paying: k === paying, moved: movedIn(b, prev) };
   const later = b.withheld.filter((w) => w.until > b.n);
   const prompt = fill("screenStructure", {
     n: String(b.n), job: b.job, withheld: later.length ? later.map((w) => `${w.item} — ${w.until > M ? "never revealed" : `beat ${w.until}`}`).join("\n") : "none", scene,
-    fifth: fill(at.last ? "screenResolvesEverything" : "screenResolved", {}), first: at.first ? fill("screenFirstBeat", {}) : "", last: at.paying ? fill("screenLastBeat", {}) : "",
+    fifth: fill(at.last ? "screenResolvesEverything" : "screenResolved", {}), first: at.first && opening.mode !== "slow" ? fill(FIRST_BEAT[opening.mode], { window: String(opening.window) }) : "", last: at.paying ? fill("screenLastBeat", {}) : "",
     moved: at.moved ? fill("screenTimeMoved", { prev: prev!.when, when: b.when }) : "",
   });
-  return { prompt, names: STRUCTURE_RULES.filter((r) => ASKED[r.asked](at)).map((r) => r.name) };
+  // a slow opening asks no hook: the question is not in the prompt, so no answer is read for it
+  return { prompt, names: STRUCTURE_RULES.filter((r) => ASKED[r.asked](at) && !(r.name === "hook-late" && opening.mode === "slow")).map((r) => r.name) };
 }
 
 /** The flags an answer set raises. The theme may be stated once, on the last beat, the way a narrated story closes. */

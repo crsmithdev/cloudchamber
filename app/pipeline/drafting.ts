@@ -77,7 +77,7 @@ export function rewritePlan(profiles: { beat: number; flags: string[] }[], scene
   const at = (k: number) => plan.get(k) ?? plan.set(k, { register: [], faults: [] }).get(k)!;
   // a register line imposes a register, so it needs a template that asked for one; a ceiling is a measurement against the pool and does not
   if (cfg.structure.template !== "auto") for (const pr of profiles) {
-    const lines = linesOf(pr.flags, true);
+    const lines = linesOf(pr.flags, true, cfg);
     if (lines.length) at(pr.beat).register.push(...lines.filter((l) => !at(pr.beat).register.includes(l)));
   }
   for (const sc of scenes) {
@@ -117,6 +117,13 @@ function withPlan(r: Resolved): Resolved {
   return { ...r, config: { ...r.config, screens: { ...r.config.screens, enabled: ["plan", ...on] } } };
 }
 
+/** A configuration stored before the opening and clarity keys existed drafted under their defaults, so a rewrite of it reads them. */
+function withTelling(r: Resolved): Resolved {
+  if (r.config.opening && r.config.clarity) return r;
+  const d = loadDraftConfig().config;
+  return { ...r, config: { ...r.config, opening: r.config.opening ?? d.opening, clarity: r.config.clarity ?? d.clarity } };
+}
+
 /** One field of one beat, as the operator writes it at the plan gate. */
 export type PlanEdit = { beat: number; field: "job" | "when" | "known" | "stakes" | "set_piece"; text: string };
 
@@ -146,7 +153,7 @@ export class Drafting {
     return d;
   }
   private resolved(draw: DrawRow, opts: DraftOpts = {}): Resolved {
-    if (draw.draft_config && !opts.profile && !opts.overrides) return withPlan(JSON.parse(draw.draft_config) as Resolved);
+    if (draw.draft_config && !opts.profile && !opts.overrides) return withPlan(withTelling(JSON.parse(draw.draft_config) as Resolved));
     return loadDraftConfig(opts.profile, opts.overrides ?? {});
   }
 
@@ -556,7 +563,7 @@ export class Drafting {
       const note = (id: string) => o.notes?.[id]?.trim();
       const chosen = mine.length
         ? mine.flatMap((f) => [f, ...(note(f.id) ? [{ replacement: note(f.id)! }] : [])])
-        : [...open.filter((f) => f.beat === k && f.source === "screen"), ...linesOf(v.profiles.find((pr) => pr.beat === k)?.flags ?? []).map((replacement) => ({ replacement }))];
+        : [...open.filter((f) => f.beat === k && f.source === "screen"), ...linesOf(v.profiles.find((pr) => pr.beat === k)?.flags ?? [], false, cfg).map((replacement) => ({ replacement }))];
       // an instruction given for this beat before still holds: a rewrite for a flag must not undo it
       const earlier = v.directions.filter((x) => x.beats.includes(k) && x.text !== instruction).map((x) => ({ replacement: x.text }));
       const lines = [...chosen, ...earlier, ...(instruction ? [{ replacement: instruction }] : [])];

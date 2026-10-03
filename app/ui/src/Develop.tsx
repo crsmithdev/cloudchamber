@@ -205,7 +205,7 @@ function Profiles({ f }: { f: Findings }) {
 
 // --- draft settings ----------------------------------------------------------
 
-const AXES: Record<string, string[]> = { tense: ["past", "present"], person: ["first", "second", "third"], chronology: ["linear", "nonlinear"], container: ["prose", "document", "interleaved"] };
+const AXES: Record<string, string[]> = { tense: ["past", "present"], person: ["first", "second", "third"], chronology: ["linear", "nonlinear"], container: ["prose", "document", "interleaved", "rules"] };
 
 type DraftBody = { plan?: boolean; profile?: string; overrides?: Record<string, string | number>; models?: Record<string, string> };
 
