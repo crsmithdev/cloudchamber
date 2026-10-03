@@ -483,3 +483,13 @@ updated: 2026-10-03
 priority: medium
 labels: [drafting]
 ---
+
+## 36. UI: the Form axes in Develop.tsx offer no 'told' container, so a config that sets it shows a value the control does not list
+---
+id: 36
+status: open
+created: 2026-10-03
+updated: 2026-10-03
+priority: medium
+labels: [ui]
+---
