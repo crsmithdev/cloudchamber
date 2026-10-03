@@ -493,3 +493,13 @@ updated: 2026-10-03
 priority: medium
 labels: [ui]
 ---
+
+## 37. Teller register: its one example line ('I'll start with the part nobody believes') is copied into 4 of 9 profile drafts, 2 as the first sentence; and under dossier (person from the brief) a third-person schedule still opens on a first-person teller (8219). Replace the example with a description, and say how a teller works in third person or fix dossier's person
+---
+id: 37
+status: open
+created: 2026-10-03
+updated: 2026-10-03
+priority: medium
+labels: [drafting, evals]
+---
