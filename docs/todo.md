@@ -455,10 +455,14 @@ Since d2c0014 a draft gets its title after its last screen, and `cloudchamber ga
 id: 33
 status: open
 created: 2026-10-02
-updated: 2026-10-02
+updated: 2026-10-03
 priority: medium
 labels: [listen, drafting]
 ---
+
+### Notes
+
+- 2026-10-03 15:56: 3 Oct: the testimony and rules profiles fix person=first and past with the teller register; first-person drafts faced outward (49-64 first-person words, 9-17 'you' words per 1k). listen is unchanged, so this item stays open for listen
 
 ## 34. lab compare records the draw id as typed: a short id (bf3e) lands in judgements.jsonl instead of the full id, so stored rows of one pair split by spelling
 ---
