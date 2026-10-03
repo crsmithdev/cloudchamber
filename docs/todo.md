@@ -473,3 +473,13 @@ What: `compare` (app/pipeline/lab/compare.ts) resolves an arm's draw id with `re
 Why: pooling by `ours`/`source` across experiments splits one pair in two, and `asRuns`-based readers miss the old rows. Found while pooling Grok 4.3 against GPT-5.1 on the channel F pairs (evals/20261002-grok-for-gemini.md); the analysis keyed on the last four characters to get round it.
 
 Done when: compare records the resolved draw id (transcripts unchanged), with a test. The rows already written stay as they are (the log is append-only); a reader that needs them matches on the suffix.
+
+## 35. Rules container: the restated screen flags a rule said again when a beat opens on it, as the list in beat 1 or 2 already said it; exempt rule lines (from the schedule's <rules> tag) as the told template exempts beat 1
+---
+id: 35
+status: open
+created: 2026-10-03
+updated: 2026-10-03
+priority: medium
+labels: [drafting]
+---
