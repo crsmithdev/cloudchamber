@@ -121,7 +121,7 @@ labels: [ir]
 ## 9. Plan step 3: one change for the hook; the diagnosis is done, the change and two drafts (~$30) wait on step 1's listen
 ---
 id: 9
-status: open
+status: done
 created: 2026-09-29
 updated: 2026-10-03
 priority: medium
@@ -132,6 +132,7 @@ labels: [plan]
 
 - 2026-09-29 20:41: Diagnosis from the stored steps of 3cee and 1b09 (29 Sep, $0): the hook-late screen question (prompts.ts:516-517, added for beat 1 at write.ts:240) ran and answered 'absent' on both drafts (screen-structure-00c0334d, screen-structure-3b4e47df). The first thing wrong comes at word 101 (3cee) and 83 (1b09), inside the 150-word window, after 80-100 words of time, place, routine and history. So the register flag (write.ts:63) queued no rewrite, and HOOK_LINE (write.ts:41) never reached a model. The layer to change is the screen question: it has two conditions ('in the first 150 words' and 'before routine, setting or history'), and the model resolves them in favour of the window. Suggested: flag when the first one or two sentences (about 40 words) give time, place, routine or history before anything is wrong; both stored openings would fire. Risks: HOOK_LINE also says 150 words (a rewrite under it may change little: the next layer); sceneSignal (prompts.ts:441) tells the first sentence to give time and place; the schedule put the worst moment at beat 3 under linear chronology. Judgements: 3cee lost hook to channel F 11 of 12 (vs-hIS0zHK8).
 - 2026-10-03 15:56: 3 Oct: the hook rules are keys (opening.mode, opening.window; branch worktree-agent-ab214df79eddb5a83, 0056d55). Testimony (promise, window 40) on F: GPT-5.1 hook -0.21 -> +0.58, passes lost 12 of 24 -> 3 of 24 (evals/20261003-profiles-testimony-rules-dossier.md)
+- 2026-10-03 15:56: Opening and clarity keys, testimony profile; F hook lost 12/24 -> 3/24 on GPT-5.1
 
 ## 10. evals/20260928-ir-harness.ts does not build: it imports l5Link, which ir/s2.ts no longer exports (already broken before 8ee09a4)
 ---
