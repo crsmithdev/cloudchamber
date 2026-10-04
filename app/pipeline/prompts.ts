@@ -438,9 +438,9 @@ The narrator tells this afterward to a listener who cannot see it. When a thing 
   listenFirstBeatSlow: `A first beat that holds the ordinary the story will break, with one thing in it already out of place.`,
 
   /** What the opening and clarity keys add to any schedule ask, each a paragraph after the shape. */
-  scheduleOpenPromise: `Beat 1 opens on a promise: within its first {window} words the narrator says who they are and what went wrong, plainly, the way the story's title would, and only then shows how it began. Its <job> says what that opening states.`,
+  scheduleOpenPromise: `Beat 1 opens on a promise: within its first {window} words the narrator states their situation, the work or the place the story happens in, and what went wrong there, plainly, the way the story's title would, and only then shows how it began; the opening does not introduce the narrator by name. Its <job> says what that opening states.`,
   scheduleOpenCold: `Beat 1 opens inside the wrong thing, while it is happening; who, where and when come after, from inside it.`,
-  scheduleEchoTitle: `The seed is the story's title, and beat 1 keeps its promise: the narrator the title names and the wrong thing it names are both in beat 1, and its <job> says how.`,
+  scheduleEchoTitle: `The seed is the story's title, and beat 1 keeps its promise: the narrator's situation and the wrong thing the title states are both in beat 1, and its <job> says how.`,
   scheduleFocal: `One point of view in every beat: the narrator's. No beat goes inside another person's head; what others did and felt is what the narrator saw, heard or was told.`,
   scheduleRules: `The story hangs on a numbered list of rules the narrator was given: who gave it, on what, and with what warning is told by the end of beat 2. Before the beats, a <rules> tag: the list, numbered, one rule per line, in the plain, specific and strange words of whoever wrote them, five to seven in all. From the beat after the list is first read, each rule opens a beat or a run of beats in order, and that beat's <job> names the rule; the beats under a rule show why it exists, what happened to someone who broke it, or what it was really for. The last rule is the one the narrator breaks, or the one that turns out to be about them. The <form> tag's container line says rules.`,
 
@@ -575,7 +575,7 @@ time-unplaced: this scene stands at a different point in the story's chronology 
   screenFirstBeat: `
 hook-late: the first {window} words do not say what is wrong: the thing the story is about, or its first effect, is not named or shown before routine, setting or history.`,
   screenFirstBeatPromise: `
-hook-late: the first {window} words do not say both who is telling this and what went wrong: the narrator's situation and the thing the story is about, or its first effect, are not both stated before routine, setting or history.`,
+hook-late: the first {window} words do not state both the narrator's situation and what went wrong: the work or the place the story happens in and the thing the story is about, or its first effect, are not both stated before routine, setting or history.`,
   screenFirstBeatCold: `
 hook-late: the scene does not open inside the wrong thing: within its first {window} words the thing the story is about, or its first effect, is not happening on the page before routine, setting or history.`,
   screenResolvesEverything: `resolves-everything: no question the story raised is left open at the end of the scene.`,

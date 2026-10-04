@@ -42,14 +42,14 @@ export const VOICES_LINE = "The people in this beat speak in quoted lines and ar
 export const EVENT_LINE = "Something happens in this beat that a second person present could see or hear: an act, an arrival, a breakage, a refusal said aloud. It is not thought, recollection or measurement alone.";
 /** The line a beat 1 flagged hook-late is rewritten under, by opening mode; under promise and cold it is also beat 1's first ask. Slow asks no hook. */
 export const hookLine = (o: Opening): string =>
-  o.mode === "promise" ? `Within the first ${o.window} words of this beat, in one or two sentences, the narrator says who they are and what went wrong, plainly, the way the story's title would, before any routine, setting or history; then the beat shows how it began.`
+  o.mode === "promise" ? `Within the first ${o.window} words of this beat, in one or two sentences, the narrator states their situation, the work or the place the story happens in, and what went wrong there, plainly, the way the story's title would, before any routine, setting or history; the opening does not introduce the narrator by name. Then the beat shows how it began.`
   : o.mode === "cold" ? `This beat opens inside the wrong thing, while it is happening: within its first ${o.window} words the thing the story is about, or its first effect, is on the page, before any routine, setting or history.`
   : `The first ${o.window} words of this beat say what is wrong: the thing the story is about, or its first effect, named or shown before any routine, setting or history.`;
 /** The drafting defaults: what a caller that passes no configuration gets. */
 const DEFAULTS = loadDraftConfig().config;
 export const HOOK_LINE = hookLine(DEFAULTS.opening);
 /** Beat 1 keeps the seed title's promise (ba9d: a moon-signal title opened on a woman in a cellar, and tied the hook). */
-const echoLine = (seed: string) => `The story's title is "${seed}". This beat keeps the title's promise in its own words: the narrator the title names and the wrong thing it names are both here, in its first lines, without quoting the title.`;
+const echoLine = (seed: string) => `The story's title is "${seed}". This beat keeps the title's promise in its own words: the narrator's situation and the wrong thing the title states are both here, in its first lines, without quoting the title.`;
 const FOCAL_LINE = "One point of view: the narrator's. Do not go inside another person's head; what others did and felt is what the narrator saw, heard or was told.";
 const recapLine = (stakes: string) => `Within its first three sentences, this beat says once, plainly, in the narrator's voice, what is at stake now (${stakes.replace(/\.$/, "")}): one sentence, not a summary of what came before.`;
 const RULES_LINE = "When the schedule has this beat open a rule, the beat opens on the rule, its number and its words as the narrator was given them, said aloud; then what happened under it.";

@@ -459,7 +459,7 @@ describe("draft: schedule, scenes, screens, gate 2", () => {
     expect(scenes[0].prompt).toContain("Within the first 40 words of this beat, in one or two sentences");
     expect(scenes.every((c) => c.prompt.includes("One point of view: the narrator's.") && c.prompt.includes('speak to as "you"'))).toBe(true);
     const st1 = model.calls.find((c) => c.stage === "screen-structure" && /<scene n="1">/.test(c.prompt))!;
-    expect(st1.prompt).toContain("hook-late: the first 40 words do not say both who is telling this and what went wrong");
+    expect(st1.prompt).toContain("hook-late: the first 40 words do not state both the narrator's situation and what went wrong");
     expect(JSON.parse(p.draw(draw.id).draft_config!).config.opening).toEqual({ mode: "promise", window: 40, echo_title: false });
   });
 

@@ -29,7 +29,7 @@ template = "auto"       # auto | listen | told | signal: listen states what a li
 # how beat 1 opens, and what the hook screen asks of it (todo #9: the screen's 150-word window let 80-100 words of
 # time, place and routine pass on 3cee and 1b09)
 mode = "scene"          # scene: the hook within the window, the register's time-and-place first sentence; promise: the first one or two
-                        # sentences say who the narrator is and what went wrong, as the title does; cold: open inside the anomaly;
+                        # sentences state the narrator's situation and what went wrong, as the title does, with no name introduction; cold: open inside the anomaly;
                         # slow: no hook screen, for a slow-burn written story
 window = 150            # words: the hook-late screen question, the line its rewrite carries, and the listen schedule's first beat
 echo_title = false      # beat 1 keeps the seed title's promise in its own words (ba9d: a moon-signal title opened in a cellar)

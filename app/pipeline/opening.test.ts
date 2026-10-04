@@ -27,11 +27,11 @@ describe("the opening and clarity keys", () => {
 
   test("opening.mode: promise and cold ask beat 1 for their opening, in the schedule, the scene, the screen and the rewrite; slow asks no hook", async () => {
     const promise = await capture("listen", { "opening.mode": "promise", "opening.window": 40 });
-    expect(promise.schedule).toContain("Beat 1 opens on a promise: within its first 40 words the narrator says who they are and what went wrong");
+    expect(promise.schedule).toContain("Beat 1 opens on a promise: within its first 40 words the narrator states their situation, the work or the place the story happens in, and what went wrong there");
     expect(promise["scene-1"]).toContain(`<telling>\n${hookLine({ mode: "promise", window: 40, echo_title: false })}\n</telling>`);
     expect(promise["scene-2"]).not.toContain("<telling>");
-    expect(screen(promise, 1).prompt).toContain("hook-late: the first 40 words do not say both who is telling this and what went wrong");
-    expect(promise["lines-register"]).toContain("the narrator says who they are and what went wrong");
+    expect(screen(promise, 1).prompt).toContain("hook-late: the first 40 words do not state both the narrator's situation and what went wrong");
+    expect(promise["lines-register"]).toContain("the narrator states their situation, the work or the place the story happens in, and what went wrong there");
     const cold = await capture("listen", { "opening.mode": "cold" });
     expect(cold.schedule).toContain("Beat 1 opens inside the wrong thing, while it is happening");
     expect(cold["scene-1"]).toContain("This beat opens inside the wrong thing");
@@ -42,6 +42,14 @@ describe("the opening and clarity keys", () => {
     expect(slow.schedule).toContain("A first beat that holds the ordinary the story will break");
     expect(slow.schedule).not.toContain("150 words");
     expect(slow["scene-1"]).not.toContain("<telling>");
+  });
+
+  test("the promise opening asks for the narrator's situation, not a name or a self-introduction (todo #38)", async () => {
+    const c = await capture("testimony");
+    const asks = [c.schedule!, c["scene-1"]!, screen(c, 1).prompt, c["lines-register"]!].join("\n");
+    expect(asks).toContain("the opening does not introduce the narrator by name");
+    expect(asks).not.toMatch(/who (they are|is telling|the narrator is)|the narrator the title names|introduces? (themselves|himself|herself)/i);
+    expect(asks).not.toMatch(/\b(says|gives|states|tells)\b[^.]{0,30}\b(their|his|her|the narrator's|a) name\b/i);
   });
 
   test("opening.echo_title puts the seed title's promise in the schedule and beat 1", async () => {
