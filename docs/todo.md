@@ -537,3 +537,15 @@ labels: [evals]
 ---
 
 What: in evals/20261003-testimony-confirm.md the listen siblings run 11,014-12,220 words (profile 10,000) and the testimony drafts 7,957-8,870 (profile 7,000); F's transcripts run 6,665-8,488. Why: part of testimony's clarity and momentum gain over listen can be length. Done when: listen siblings at length.words 7000 are judged against the same six F videos and the testimony minus listen gap is reported again. Both arms also overrun their length target by 15-20%.
+
+## 40. Testimony drafts repeat 'I want you to understand' (11 of 12 drafts; 1 of 6 F transcripts)
+---
+id: 40
+status: open
+created: 2026-10-04
+updated: 2026-10-04
+priority: medium
+labels: [drafting, evals]
+---
+
+What: 'I want you to understand' appears once or twice in 11 of 12 testimony drafts (3-4 Oct: a5d2, eb18, fc58, 5ecb, 63ff, b921, 5fdd, d7ef, 0519, 8b35), and in the first 300 words of 3 of them (a5d2, 0519, 8b35); it appears in 1 of 6 F transcripts (qT46_pYAdyk). Why: a stock line across drafts is the #37 symptom again, probably from the teller stance ('tells it to be believed'). Done when: a run of six testimony drafts has the line in no more than two. Where: evals/20261004-testimony-length.md.
