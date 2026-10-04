@@ -561,3 +561,15 @@ labels: [drafting, evals]
 ---
 
 What: on F, testimony's people axis on GPT-5.1 lost 8 of 48 passes on 3 Oct and 19 of 48 on the post-#38 drafts of 4 Oct (d7ef lost 8 of 8, 4a09 6 of 8); Grok 4 then 8 of 48. The matched-length listen arm lost 8 of 48. Why: people is testimony's weakest axis, and one draft a brief cannot tell draw variance from a cause; d7ef has half the quoted lines of its 3 Oct sibling fc58 (11.7 against 23.0 a 1,000 words). Done when: a second testimony draft on d7ef's and 4a09's briefs, or a count of quoted speakers against the people score, says whether the fall is variance. Where: evals/20261004-testimony-length.md.
+
+## 42. Listen profile's 10,000 words costs hook, clarity and momentum against F; reconsider its length
+---
+id: 42
+status: open
+created: 2026-10-04
+updated: 2026-10-04
+priority: medium
+labels: [drafting, evals]
+---
+
+What: the listen profile drafts at length.words 10,000 (runs to about 10,000 by a word count). On six F briefs, listen at 7,000 words scored higher against F than listen at 10,000: hook +0.15 / +0.83, clarity +0.23 / +0.92, momentum +0.29 / +0.87 (GPT-5.1 / Grok); people, presence, feeling, cost flat; ending +0.19 / +0.42. Why: the long length costs the listen arm most of what testimony gained over it. Done when: the listen profile's length is decided against F and at least one other channel's transcript lengths (S runs 9,200-19,000, so a single short length may not fit all), and draft.toml is changed or the reason to keep 10,000 is written down. Where: evals/20261004-testimony-length.md.
