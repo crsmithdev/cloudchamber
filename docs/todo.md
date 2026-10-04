@@ -549,3 +549,15 @@ labels: [drafting, evals]
 ---
 
 What: 'I want you to understand' appears once or twice in 11 of 12 testimony drafts (3-4 Oct: a5d2, eb18, fc58, 5ecb, 63ff, b921, 5fdd, d7ef, 0519, 8b35), and in the first 300 words of 3 of them (a5d2, 0519, 8b35); it appears in 1 of 6 F transcripts (qT46_pYAdyk). Why: a stock line across drafts is the #37 symptom again, probably from the teller stance ('tells it to be believed'). Done when: a run of six testimony drafts has the line in no more than two. Where: evals/20261004-testimony-length.md.
+
+## 41. Testimony's people on F fell to 19 of 48 GPT-5.1 passes lost after #38: variance or cause
+---
+id: 41
+status: open
+created: 2026-10-04
+updated: 2026-10-04
+priority: medium
+labels: [drafting, evals]
+---
+
+What: on F, testimony's people axis on GPT-5.1 lost 8 of 48 passes on 3 Oct and 19 of 48 on the post-#38 drafts of 4 Oct (d7ef lost 8 of 8, 4a09 6 of 8); Grok 4 then 8 of 48. The matched-length listen arm lost 8 of 48. Why: people is testimony's weakest axis, and one draft a brief cannot tell draw variance from a cause; d7ef has half the quoted lines of its 3 Oct sibling fc58 (11.7 against 23.0 a 1,000 words). Done when: a second testimony draft on d7ef's and 4a09's briefs, or a count of quoted speakers against the people score, says whether the fall is variance. Where: evals/20261004-testimony-length.md.
