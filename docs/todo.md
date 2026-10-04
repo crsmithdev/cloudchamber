@@ -513,3 +513,15 @@ labels: [drafting, evals]
 ### Notes
 
 - 2026-10-03 16:45: 787154a on branch worktree-agent-a1cbeac5a973eab74: sceneTeller quotes no example line; under a second- or third-person schedule the teller is an outside narrator who never says I. Tests in opening.test.ts; a real beat 1 of 8219 (third limited) had no first-person word.
+
+## 38. Testimony's promise opening makes 'My name is X.' the first sentence of 4 of 6 F drafts
+---
+id: 38
+status: open
+created: 2026-10-03
+updated: 2026-10-03
+priority: medium
+labels: [drafting, evals]
+---
+
+What: under the testimony profile (opening.mode promise, window 40), four of six F drafts of 3 Oct (a5d2, b921, fc58, 5ecb) open with the sentence 'My name is <name>.'; the other two open 'I'm a <job>' and 'I am the woman who'. Why: the hook line asks the narrator to say who they are within 40 words, and the drafts answer it the same way; across drafts that is a stock opener, the #37 symptom at the level of form. Done when: the promise line or the register says the narrator's identity comes through their situation and not a name introduction, and a run of six testimony drafts has no first sentence of the same pattern in more than two. Where: evals/20261003-testimony-confirm.md.
