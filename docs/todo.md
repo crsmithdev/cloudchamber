@@ -517,9 +517,9 @@ labels: [drafting, evals]
 ## 38. Testimony's promise opening makes 'My name is X.' the first sentence of 4 of 6 F drafts
 ---
 id: 38
-status: open
+status: done
 created: 2026-10-03
-updated: 2026-10-03
+updated: 2026-10-04
 priority: medium
 labels: [drafting, evals]
 ---
