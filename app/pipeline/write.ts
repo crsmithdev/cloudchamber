@@ -200,11 +200,16 @@ export async function runSchedule(p: Pipeline, drawId: string, parts: BriefParts
 const formLine = (s: Schedule) => (Object.keys(FORM_VALUES) as FormAxis[]).map((a) => `${a} ${s.form[a]}`).join("; ");
 /** A schedule whose container is told carries the narrated register into every scene; the signal template carries its own. */
 const told = (s: Schedule) => /\btold\b/i.test(s.form.container);
+/** The teller follows the schedule's person line ("third limited", "First"): under second or third person the narrator stands outside the story. */
+const tellerStance = (person: string) => {
+  const outside = /\bfirst\b/i.test(person) ? null : /\b(second|third)\b/i.exec(person);
+  return outside ? fill("tellerOutside", { person: outside[1]!.toLowerCase() }) : fill("tellerFirst", {});
+};
 const register = (s: Schedule, cfg: Telling) => {
   const { structure } = cfg;
   const r = structure.register === "auto" ? (structure.template === "signal" ? "signal" : told(s) ? "told" : "none") : structure.register;
   const time = fill(cfg.clarity.signposts === "spoken" ? "timeSpoken" : "timeScene", {});
-  return r === "signal" ? [fill("sceneSignal", { time })] : r === "teller" ? [fill("sceneTeller", { time })] : r === "told" ? [fill("sceneTold", {})] : [];
+  return r === "signal" ? [fill("sceneSignal", { time })] : r === "teller" ? [fill("sceneTeller", { time, stance: tellerStance(s.form.person) })] : r === "told" ? [fill("sceneTold", {})] : [];
 };
 /** A schedule whose container is rules hangs its beats on a numbered list. */
 const rules = (s: Schedule) => /\brules\b/i.test(s.form.container);

@@ -452,10 +452,17 @@ The narrator tells this afterward to a listener who cannot see it. When a thing 
 One narrator reads this aloud to listeners who cannot see it. Name the feeling as it is felt, and the body with it. People speak in quoted lines, plainly, the way they speak at work; let the argument happen in the room. Each person speaks the way the schedule's cast says they do, and no two alike. {time} Keep only the numbers a person would say aloud, round the rest, and never put two exact figures in one sentence. One thing per sentence, short enough to say in one breath.
 </register>`,
 
-  /** The signal register's plain speech and spoken numbers, from a narrator who faces the listener: a teller, not a log. */
+  /**
+   * The signal register's plain speech and spoken numbers, from a narrator who faces the listener: a teller, not a log.
+   * {stance} follows the schedule's person. No example line: a quoted line here is copied into drafts (todo #37).
+   */
   sceneTeller: `<register>
-One narrator tells this aloud to a listener they speak to as "you", and tells it to be believed. They say what they are about to tell and why it matters ("I'll start with the part nobody believes"), they say plainly what they know and what they do not, and they tell the listener when a detail will count later. The narrator faces the listener, not a diary: no log entries, no musing that circles back on itself. Name the feeling as it is felt, and the body with it. People speak in quoted lines, plainly, the way they speak at work; let the argument happen in the room. Each person speaks the way the schedule's cast says they do, and no two alike. {time} Keep only the numbers a person would say aloud, round the rest, and never put two exact figures in one sentence. One thing per sentence, short enough to say in one breath.
+{stance} They say what they are about to tell and why it matters, in their own words and never in a stock phrase, they say plainly what they know and what they do not, and they tell the listener when a detail will count later. The narrator faces the listener, not a diary: no log entries, no musing that circles back on itself. Name the feeling as it is felt, and the body with it. People speak in quoted lines, plainly, the way they speak at work; let the argument happen in the room. Each person speaks the way the schedule's cast says they do, and no two alike. {time} Keep only the numbers a person would say aloud, round the rest, and never put two exact figures in one sentence. One thing per sentence, short enough to say in one breath.
 </register>`,
+
+  /** The teller's stance, by the schedule's person: in the first person the narrator is the one it happened to; otherwise the narrator stands outside the story and never says I. */
+  tellerFirst: `One narrator tells this aloud to a listener they speak to as "you", and tells it to be believed.`,
+  tellerOutside: `One narrator tells this aloud to a listener they speak to as "you", and tells it to be believed. It did not happen to the narrator: they tell it in the {person} person about the people it happened to, and they never say I, me or my.`,
 
   /** The register's time sentence, by clarity.signposts. */
   timeScene: `When the time or the place changes, the first sentence says so. Give the hour when there is one.`,

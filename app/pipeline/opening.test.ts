@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { capture, PARTS, SCHEDULE } from "./opening.capture.ts";
 import { loadDraftConfig } from "./draftconfig.ts";
 import { HOOK_LINE, hookLine, scenePrompt } from "./write.ts";
+import { TEMPLATES } from "./prompts.ts";
 
 /** The prompts captured on c814392, before the opening and clarity keys: the defaults and the listen profile must still produce them. */
 const GOLDEN = JSON.parse(readFileSync(join(import.meta.dir, "opening.golden.json"), "utf8")) as Record<string, Record<string, string>>;
@@ -80,6 +81,27 @@ describe("the opening and clarity keys", () => {
     expect(c["scene-1"]).toContain("Keep only the numbers a person would say aloud");
     expect(c["scene-1"]).toContain("When the time or the place changes, the first sentence says so.");
     expect(c["scene-1"]).not.toContain("One narrator reads this aloud to listeners");
+  });
+
+  test("the teller register quotes no line a draft could copy (todo #37)", async () => {
+    const texts = [TEMPLATES.sceneTeller, TEMPLATES.tellerFirst, TEMPLATES.tellerOutside];
+    // a quoted span of two words or more is a line to copy; "you" alone names the address
+    for (const t of texts) expect(t).not.toMatch(/"[^"\n]*\s[^"\n]*"/);
+    const c = await capture("testimony");
+    expect(c["scene-1"]).not.toContain("nobody believes");
+  });
+
+  test("the teller follows the schedule's person: a third-person schedule gets an outside narrator who never says I", () => {
+    const cfg = loadDraftConfig("dossier").config;
+    const third = { ...SCHEDULE, form: { ...SCHEDULE.form, person: "third limited" } };
+    const p = scenePrompt(PARTS, third, third.beats[0]!, [], undefined, cfg);
+    const reg = p.slice(p.indexOf("<register>"), p.indexOf("</register>"));
+    expect(reg).toContain('speak to as "you"');
+    expect(reg).toContain("It did not happen to the narrator: they tell it in the third person");
+    expect(reg).toContain("they never say I, me or my");
+    const first = scenePrompt(PARTS, SCHEDULE, SCHEDULE.beats[0]!, [], undefined, cfg);
+    expect(first).not.toContain("never say I");
+    expect(first).toContain('One narrator tells this aloud to a listener they speak to as "you", and tells it to be believed. They say what they are about to tell');
   });
 
   test("form.container = rules asks the schedule for the list and every scene to open a rule on it", async () => {
