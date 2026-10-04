@@ -529,9 +529,9 @@ What: under the testimony profile (opening.mode promise, window 40), four of six
 ## 39. Testimony vs listen on F is confounded by length: a length-matched listen control
 ---
 id: 39
-status: open
+status: done
 created: 2026-10-03
-updated: 2026-10-03
+updated: 2026-10-04
 priority: medium
 labels: [evals]
 ---
