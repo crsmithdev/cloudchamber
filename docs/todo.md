@@ -525,3 +525,15 @@ labels: [drafting, evals]
 ---
 
 What: under the testimony profile (opening.mode promise, window 40), four of six F drafts of 3 Oct (a5d2, b921, fc58, 5ecb) open with the sentence 'My name is <name>.'; the other two open 'I'm a <job>' and 'I am the woman who'. Why: the hook line asks the narrator to say who they are within 40 words, and the drafts answer it the same way; across drafts that is a stock opener, the #37 symptom at the level of form. Done when: the promise line or the register says the narrator's identity comes through their situation and not a name introduction, and a run of six testimony drafts has no first sentence of the same pattern in more than two. Where: evals/20261003-testimony-confirm.md.
+
+## 39. Testimony vs listen on F is confounded by length: a length-matched listen control
+---
+id: 39
+status: open
+created: 2026-10-03
+updated: 2026-10-03
+priority: medium
+labels: [evals]
+---
+
+What: in evals/20261003-testimony-confirm.md the listen siblings run 11,014-12,220 words (profile 10,000) and the testimony drafts 7,957-8,870 (profile 7,000); F's transcripts run 6,665-8,488. Why: part of testimony's clarity and momentum gain over listen can be length. Done when: listen siblings at length.words 7000 are judged against the same six F videos and the testimony minus listen gap is reported again. Both arms also overrun their length target by 15-20%.
